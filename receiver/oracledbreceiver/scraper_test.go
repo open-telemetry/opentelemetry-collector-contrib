@@ -386,13 +386,13 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 // scrapeWithConfig starts a scraper over the shared fake responses and returns one scrape.
 func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.OracledbSessionWaits.Enabled = true
-	cfg.Metrics.OracledbSessionWaitTime.Enabled = true
-	cfg.Metrics.OracledbSessionStoredProcedureMemory.Enabled = true
-	cfg.Metrics.OracledbJvmMemoryUsed.Enabled = true
 	cfg.Metrics.OracledbJvmMemoryCommitted.Enabled = true
 	cfg.Metrics.OracledbJvmMemoryLive.Enabled = true
+	cfg.Metrics.OracledbJvmMemoryUsed.Enabled = true
 	cfg.Metrics.OracledbOsSwaps.Enabled = true
+	cfg.Metrics.OracledbSessionStoredProcedureMemory.Enabled = true
+	cfg.Metrics.OracledbSessionWaitTime.Enabled = true
+	cfg.Metrics.OracledbSessionWaits.Enabled = true
 
 	m := scrapeWithConfig(t, cfg)
 
@@ -401,33 +401,33 @@ func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
 	for i := 0; i < metrics.Len(); i++ {
 		me := metrics.At(i)
 		switch me.Name() {
-		case "oracledb.session.waits":
-			seen++
-			dp := me.Sum().DataPoints().At(0)
-			state, _ := dp.Attributes().Get("oracledb.session.wait.state")
-			assert.Equal(t, "non_idle", state.Str())
-			assert.Equal(t, int64(98765), dp.IntValue())
-		case "oracledb.session.wait.time":
-			seen++
-			dp := me.Sum().DataPoints().At(0)
-			state, _ := dp.Attributes().Get("oracledb.session.wait.state")
-			assert.Equal(t, "non_idle", state.Str())
-			assert.InDelta(t, 45.0, dp.DoubleValue(), 1e-9) // 4500 cs ÷ 100
-		case "oracledb.os.swaps":
-			seen++
-			assert.Equal(t, int64(17), me.Sum().DataPoints().At(0).IntValue())
-		case "oracledb.session.stored_procedure.memory":
-			seen++
-			assert.Equal(t, int64(262144), me.Gauge().DataPoints().At(0).IntValue())
-		case "oracledb.jvm.memory.used":
-			seen++
-			assert.Equal(t, int64(2097152), me.Gauge().DataPoints().At(0).IntValue())
 		case "oracledb.jvm.memory.committed":
 			seen++
 			assert.Equal(t, int64(4194304), me.Gauge().DataPoints().At(0).IntValue())
 		case "oracledb.jvm.memory.live":
 			seen++
 			assert.Equal(t, int64(1048576), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.jvm.memory.used":
+			seen++
+			assert.Equal(t, int64(2097152), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.os.swaps":
+			seen++
+			assert.Equal(t, int64(17), me.Sum().DataPoints().At(0).IntValue())
+		case "oracledb.session.stored_procedure.memory":
+			seen++
+			assert.Equal(t, int64(262144), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.session.wait.time":
+			seen++
+			dp := me.Sum().DataPoints().At(0)
+			state, _ := dp.Attributes().Get("oracledb.session.wait.state")
+			assert.Equal(t, "non_idle", state.Str())
+			assert.InDelta(t, 45.0, dp.DoubleValue(), 1e-9) // 4500 cs ÷ 100
+		case "oracledb.session.waits":
+			seen++
+			dp := me.Sum().DataPoints().At(0)
+			state, _ := dp.Attributes().Get("oracledb.session.wait.state")
+			assert.Equal(t, "non_idle", state.Str())
+			assert.Equal(t, int64(98765), dp.IntValue())
 		}
 	}
 	assert.Equal(t, 7, seen)

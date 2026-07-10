@@ -116,14 +116,6 @@ const (
 	sqlnetBytesSentToClient          = "bytes sent via SQL*Net to client"
 	sqlnetBytesSentToDBLink          = "bytes sent via SQL*Net to dblink"
 
-	// Session, JVM & OS resource v$sysstat names
-	javaCallHeapLiveSize         = "java call heap live size"
-	javaCallHeapTotalSize        = "java call heap total size"
-	javaCallHeapUsedSize         = "java call heap used size"
-	osSwaps                      = "OS Swaps"
-	sessionNonIdleWaitCount      = "non-idle wait count"
-	sessionNonIdleWaitTime       = "non-idle wait time"
-	sessionStoredProcedureSpace  = "session stored procedure space"
 	dbTimeStat                   = "DB time"
 	enqueueConversionsStat       = "enqueue conversions"
 	enqueueReleasesStat          = "enqueue releases"
@@ -133,15 +125,22 @@ const (
 	indexFastFullScansDirectStat = "index fast full scans (direct read)"
 	indexFastFullScansFullStat   = "index fast full scans (full)"
 	indexFastFullScansRowidStat  = "index fast full scans (rowid ranges)"
+	javaCallHeapLiveSize         = "java call heap live size"
+	javaCallHeapTotalSize        = "java call heap total size"
+	javaCallHeapUsedSize         = "java call heap used size"
 	lobReadsStat                 = "lob reads"
 	lobWritesStat                = "lob writes"
 	openedCursorsCurrentStat     = "opened cursors current"
+	osSwaps                      = "OS Swaps"
 	parseTimeCPUStat             = "parse time cpu"
 	parseTimeElapsedStat         = "parse time elapsed"
 	recursiveCallsStat           = "recursive calls"
 	recursiveCPUUsageStat        = "recursive cpu usage"
 	sessionCursorCacheCountStat  = "session cursor cache count"
 	sessionCursorCacheHitsStat   = "session cursor cache hits"
+	sessionNonIdleWaitCount      = "non-idle wait count"
+	sessionNonIdleWaitTime       = "non-idle wait time"
+	sessionStoredProcedureSpace  = "session stored procedure space"
 	sortsDiskStat                = "sorts (disk)"
 	sortsMemoryStat              = "sorts (memory)"
 	sortsRowsStat                = "sorts (rows)"
@@ -371,13 +370,6 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferred.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryCommitted.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryLive.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryUsed.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbOsSwaps.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSessionStoredProcedureMemory.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSessionWaitTime.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSessionWaits.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCallCount.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCallRecursiveCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCursorCacheHits.Enabled ||
@@ -385,11 +377,18 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbCursorOpen.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbDbTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryCommitted.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryLive.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryUsed.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbLobOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbOsSwaps.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbParseCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbParseElapsedTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbScanCount.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbScanTableRows.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSessionStoredProcedureMemory.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSessionWaitTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSessionWaits.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSortOperations.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSortRows.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockChanges.Enabled ||
