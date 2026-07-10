@@ -117,14 +117,12 @@ func udpInputAttributesTest(input []byte, expected []string, stable bool) func(t
 
 					if addr, ok := udpInput.connection.LocalAddr().(*net.UDPAddr); ok {
 						expectedAttributes["network.local.address"] = addr.IP.String()
-						expectedAttributes["network.local.port"] =
-							strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["network.local.port"] = strconv.FormatInt(int64(addr.Port), 10)
 					}
 
 					if addr, ok := conn.LocalAddr().(*net.UDPAddr); ok {
 						expectedAttributes["network.peer.address"] = addr.IP.String()
-						expectedAttributes["network.peer.port"] =
-							strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["network.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
 					}
 				} else {
 					expectedAttributes["net.transport"] = "IP.UDP"
@@ -132,19 +130,15 @@ func udpInputAttributesTest(input []byte, expected []string, stable bool) func(t
 					if addr, ok := udpInput.connection.LocalAddr().(*net.UDPAddr); ok {
 						ip := addr.IP.String()
 						expectedAttributes["net.host.ip"] = ip
-						expectedAttributes["net.host.port"] =
-							strconv.FormatInt(int64(addr.Port), 10)
-						expectedAttributes["net.host.name"] =
-							udpInput.resolver.GetHostFromIP(ip)
+						expectedAttributes["net.host.port"] = strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["net.host.name"] = udpInput.resolver.GetHostFromIP(ip)
 					}
 
 					if addr, ok := conn.LocalAddr().(*net.UDPAddr); ok {
 						ip := addr.IP.String()
 						expectedAttributes["net.peer.ip"] = ip
-						expectedAttributes["net.peer.port"] =
-							strconv.FormatInt(int64(addr.Port), 10)
-						expectedAttributes["net.peer.name"] =
-							udpInput.resolver.GetHostFromIP(ip)
+						expectedAttributes["net.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["net.peer.name"] = udpInput.resolver.GetHostFromIP(ip)
 					}
 				}
 				require.Equal(t, expectedBody, entry.Body)
