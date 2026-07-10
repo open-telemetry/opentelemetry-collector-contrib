@@ -37,7 +37,7 @@ type awsSecretProvider struct {
 	logger   *zap.Logger
 	client   secretsManagerClient
 	secret   atomic.Pointer[string]
-	onChange func(string)
+	onChange atomic.Pointer[func(string)]
 	cancel   context.CancelFunc
 	wg       sync.WaitGroup
 }
@@ -91,7 +91,7 @@ func (p *awsSecretProvider) GetSecret(_ context.Context) (string, error) {
 }
 
 func (p *awsSecretProvider) OnChange(fn func(string)) {
-	p.onChange = fn
+	p.onChange.Store(&fn)
 }
 
 func (p *awsSecretProvider) refreshLoop(ctx context.Context) {
@@ -114,8 +114,8 @@ func (p *awsSecretProvider) refreshLoop(ctx context.Context) {
 			}
 			p.secret.Store(&raw)
 			p.logger.Info("secret value rotated")
-			if p.onChange != nil {
-				p.onChange(raw)
+			if cb := p.onChange.Load(); cb != nil {
+				(*cb)(raw)
 			}
 		}
 	}
