@@ -414,18 +414,22 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 			s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaRedoRateDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
 		}
 
-		val, err = retrieveFloat(row, estimatedDataLossKey)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
-		} else {
-			s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossDataPoint(now, val.(float64), agName, dbName, replicaName)
+		if row[estimatedDataLossKey] != "" {
+			val, err = retrieveFloat(row, estimatedDataLossKey)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+			} else {
+				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossDataPoint(now, val.(float64), agName, dbName, replicaName)
+			}
 		}
 
-		val, err = retrieveFloat(row, estimatedRecoveryKey)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
-		} else {
-			s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeDataPoint(now, val.(float64), agName, dbName, replicaName)
+		if row[estimatedRecoveryKey] != "" {
+			val, err = retrieveFloat(row, estimatedRecoveryKey)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+			} else {
+				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeDataPoint(now, val.(float64), agName, dbName, replicaName)
+			}
 		}
 
 		// hardened_latency may be NULL on SQL Server < 2016

@@ -1108,9 +1108,18 @@ DECLARE
 	 @SqlStatement AS nvarchar(max)
 	,@MajorMinorVersion AS int = CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),4) AS int) * 100 + CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),3) AS int)
 	,@HardenedLatencyCol AS nvarchar(max) = N'NULL'
+	,@EstimatedDataLossCol AS nvarchar(max) = N'NULL'
+	,@EstimatedRecoveryTimeCol AS nvarchar(max) = N'NULL'
 
 IF @MajorMinorVersion >= 1300 BEGIN
 	SET @HardenedLatencyCol = N'drs.[secondary_lag_seconds]'
+END
+
+-- estimated_data_loss_seconds and estimated_recovery_time_seconds were removed in SQL Server 2022 (v16).
+-- On SQL Server 2019 (v15) and earlier (>= SQL 2012, v1100) these columns exist in the DMV.
+IF @MajorMinorVersion >= 1100 AND @MajorMinorVersion < 1600 BEGIN
+	SET @EstimatedDataLossCol = N'drs.[estimated_data_loss_seconds]'
+	SET @EstimatedRecoveryTimeCol = N'drs.[estimated_recovery_time_seconds]'
 END
 
 SET @SqlStatement = N'
@@ -1122,8 +1131,8 @@ SELECT
 	,drs.[log_send_rate]                          AS [log_send_rate]
 	,drs.[redo_queue_size]                        AS [redo_queue_size]
 	,drs.[redo_rate]                              AS [redo_rate]
-	,drs.[estimated_data_loss_seconds]            AS [estimated_data_loss]
-	,drs.[estimated_recovery_time_seconds]        AS [estimated_recovery_time]
+	,' + @EstimatedDataLossCol + N'               AS [estimated_data_loss]
+	,' + @EstimatedRecoveryTimeCol + N'           AS [estimated_recovery_time]
 	,' + @HardenedLatencyCol + N'                 AS [hardened_latency]
 FROM sys.dm_hadr_database_replica_states AS drs WITH (NOLOCK)
 INNER JOIN sys.availability_replicas AS ar WITH (NOLOCK)
