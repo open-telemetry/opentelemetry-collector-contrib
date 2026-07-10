@@ -108,7 +108,7 @@ receivers:
 
 ```yaml
 receivers:
-    webhookevent:
+    webhook_event:
         endpoint: localhost:8088
         path: "/fingerprint/webhooks"
         hmac_signature:

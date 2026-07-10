@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -426,6 +427,60 @@ func TestHMACSignatureWithFingerprintPrefix(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(body))
 	req.Header.Set("fpjs-event-signature", signature)
+
+	w := httptest.NewRecorder()
+	r.handleReq(w, req, httprouter.ParamsFromContext(t.Context()))
+	require.Equal(t, http.StatusOK, w.Result().StatusCode)
+}
+
+func TestHMACSignatureWithGzipBody(t *testing.T) {
+	secret := "webhook-secret"
+
+	// Build a gzip-compressed JSON payload.
+	msgStruct := struct {
+		Field1 string
+		Field2 int
+		Field3 string
+	}{
+		Field1: "hello",
+		Field2: 42,
+		Field3: "world",
+	}
+	msgJSON, err := json.Marshal(msgStruct)
+	require.NoError(t, err, "failed to marshall message into valid json")
+
+	var msg bytes.Buffer
+	gzipWriter := gzip.NewWriter(&msg)
+	_, err = gzipWriter.Write(msgJSON)
+	require.NoError(t, err, "Gzip writer failed")
+	require.NoError(t, gzipWriter.Close(), "Gzip writer failed to close")
+
+	compressed := msg.Bytes()
+	// Webhook providers sign the raw (compressed) bytes that are sent on the wire,
+	// so the signature must be computed over the gzipped payload.
+	signature := "sha256=" + computeHMACSHA256(secret, string(compressed))
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.NetAddr.Endpoint = "localhost:0"
+	cfg.HMACSignature = HMACSignature{
+		Secret: configopaque.String(secret),
+		Header: "X-Hub-Signature-256",
+		Prefix: "sha256=",
+	}
+
+	consumer := consumertest.NewNop()
+	receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), *cfg, consumer)
+	require.NoError(t, err)
+
+	r := receiver.(*eventReceiver)
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, r.Shutdown(t.Context()))
+	}()
+
+	req := httptest.NewRequest(http.MethodPost, "http://localhost/events", bytes.NewReader(compressed))
+	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("X-Hub-Signature-256", signature)
 
 	w := httptest.NewRecorder()
 	r.handleReq(w, req, httprouter.ParamsFromContext(t.Context()))
