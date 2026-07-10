@@ -23,8 +23,8 @@ github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.30 h1:xM/Is9cKMHa8Jj8zk
 github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.30/go.mod h1:WueJeNDZvK1fMYEWJIkcivBfEzUkTpBhzlrUKKY8EuA=
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.30 h1:jn46zC9LdsVR/ZpMIJqMqb8hHv31BlLx3ulVqNspUOk=
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.30/go.mod h1:1hTMsAgbdS/AtUi4bw8+gUuh1pceo+eXRLfpSuSQj3M=
-github.com/aws/aws-sdk-go-v2/service/ec2 v1.312.0 h1:w7A3oil4Im9VOV6fmodiBB0UyIAC/F0pu+oaYpyHkPs=
-github.com/aws/aws-sdk-go-v2/service/ec2 v1.312.0/go.mod h1:eoF0SIRbTgKWnTcTPYckiURPba/7ilfEkvwL4V1iHK4=
+github.com/aws/aws-sdk-go-v2/service/ec2 v1.313.0 h1:IkVPFiv4v1tSMfhtzxeO/qYa47lJhRuBHFC6g3vHJdo=
+github.com/aws/aws-sdk-go-v2/service/ec2 v1.313.0/go.mod h1:eoF0SIRbTgKWnTcTPYckiURPba/7ilfEkvwL4V1iHK4=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.13 h1:mbRIur/BiHK6SKPjoBIXSE/hJ6g6JGRLuxQy1jGjlN4=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.13/go.mod h1:ITg9em2KbJx1s0y4aqRX5OYWG6HBZ5TVR//OdpEZ2CQ=
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.30 h1:/Z5jmNrKsSD7EmDjzAPsm/3L9IuOkzaynklJZ1qX7S4=
@@ -262,8 +262,8 @@ github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7
 github.com/ryanuber/columnize v0.0.0-20160712163229-9b3edd62028f/go.mod h1:sm1tb6uqfes/u+d4ooFouqFdy9/2g9QGwK3SQygK0Ts=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 h1:nn5Wsu0esKSJiIVhscUtVbo7ada43DJhG55ua/hjS5I=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
-github.com/shirou/gopsutil/v4 v4.26.5 h1:RPcBXkpz7kOj9PqGFQOlBPZHsyaPvPVQc098y9RmCNM=
-github.com/shirou/gopsutil/v4 v4.26.5/go.mod h1:LZ6ewCSkBqUpvSOf+LsTGnRinC6iaNUNMGBtDkJBaLQ=
+github.com/shirou/gopsutil/v4 v4.26.6 h1:Mzr/npDtQC/xpeEuQKHZt8Zo9CmPvhTj8nkR8w5TLDs=
+github.com/shirou/gopsutil/v4 v4.26.6/go.mod h1:LZ6ewCSkBqUpvSOf+LsTGnRinC6iaNUNMGBtDkJBaLQ=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
 github.com/spf13/pflag v1.0.9 h1:9exaQaMOCwffKiiiYk6/BndUBv+iRViNW+4lEMi0PvY=
