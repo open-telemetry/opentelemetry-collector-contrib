@@ -1,0 +1,9 @@
+change_type: enhancement
+component: processor/lookup
+note: Add a `csv` lookup source supporting headered and headerless files, scalar or whole-row (map) values, and optional periodic reload.
+issues: [41816]
+subtext: |
+  Columns may be selected by header name (`key_column`/`value_column`) or by 0-based
+  index (`key_column_index`/`value_column_index`). Set `reload_interval` to re-read the
+  file without a collector restart.
+change_logs: [user]
