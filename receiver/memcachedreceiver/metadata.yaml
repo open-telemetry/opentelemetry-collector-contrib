@@ -130,7 +130,7 @@ metrics:
     enabled: true
     description: Bytes transferred over the network.
     stability: development
-    unit: by
+    unit: By
     sum:
       value_type: int
       monotonic: true
