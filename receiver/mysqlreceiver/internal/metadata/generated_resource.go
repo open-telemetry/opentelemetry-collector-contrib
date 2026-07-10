@@ -21,6 +21,20 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetDbSystemName sets provided value as "db.system.name" attribute.
+func (rb *ResourceBuilder) SetDbSystemName(val string) {
+	if rb.config.DbSystemName.Enabled {
+		rb.res.Attributes().PutStr("db.system.name", val)
+	}
+}
+
+// SetDbSystemVersion sets provided value as "db.system.version" attribute.
+func (rb *ResourceBuilder) SetDbSystemVersion(val string) {
+	if rb.config.DbSystemVersion.Enabled {
+		rb.res.Attributes().PutStr("db.system.version", val)
+	}
+}
+
 // SetMysqlInstanceEndpoint sets provided value as "mysql.instance.endpoint" attribute.
 func (rb *ResourceBuilder) SetMysqlInstanceEndpoint(val string) {
 	if rb.config.MysqlInstanceEndpoint.Enabled {
