@@ -16,8 +16,12 @@ type tracesProcessor struct {
 	next consumer.Traces
 }
 
-func newTracesProcessor(logger *zap.Logger, cfg *Config, next consumer.Traces, endpoints endpointsFn) *tracesProcessor {
-	return &tracesProcessor{ecsCore: newCore(logger, cfg, endpoints), next: next}
+func newTracesProcessor(logger *zap.Logger, cfg *Config, next consumer.Traces, endpoints endpointsFn) (*tracesProcessor, error) {
+	core, err := newCore(logger, cfg, endpoints)
+	if err != nil {
+		return nil, err
+	}
+	return &tracesProcessor{ecsCore: core, next: next}, nil
 }
 
 func (p *tracesProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {

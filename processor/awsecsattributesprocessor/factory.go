@@ -49,10 +49,7 @@ func createLogsProcessor(
 	if !ok {
 		return nil, fmt.Errorf("invalid config for processor %s", metadata.Type.String())
 	}
-	if err := config.init(); err != nil {
-		return nil, err
-	}
-	return newLogsProcessor(set.Logger, config, nextConsumer, getEndpoints), nil
+	return newLogsProcessor(set.Logger, config, nextConsumer, getEndpoints)
 }
 
 func createMetricsProcessor(
@@ -65,10 +62,7 @@ func createMetricsProcessor(
 	if !ok {
 		return nil, fmt.Errorf("invalid config for processor %s", metadata.Type.String())
 	}
-	if err := config.init(); err != nil {
-		return nil, err
-	}
-	return newMetricsProcessor(set.Logger, config, nextConsumer, getEndpoints), nil
+	return newMetricsProcessor(set.Logger, config, nextConsumer, getEndpoints)
 }
 
 func createTracesProcessor(
@@ -81,10 +75,7 @@ func createTracesProcessor(
 	if !ok {
 		return nil, fmt.Errorf("invalid config for processor %s", metadata.Type.String())
 	}
-	if err := config.init(); err != nil {
-		return nil, err
-	}
-	return newTracesProcessor(set.Logger, config, nextConsumer, getEndpoints), nil
+	return newTracesProcessor(set.Logger, config, nextConsumer, getEndpoints)
 }
 
 func createProfilesProcessor(
@@ -97,8 +88,5 @@ func createProfilesProcessor(
 	if !ok {
 		return nil, fmt.Errorf("invalid config for processor %s", metadata.Type.String())
 	}
-	if err := config.init(); err != nil {
-		return nil, err
-	}
-	return newProfilesProcessor(set.Logger, config, nextConsumer, getEndpoints), nil
+	return newProfilesProcessor(set.Logger, config, nextConsumer, getEndpoints)
 }

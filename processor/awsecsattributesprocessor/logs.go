@@ -16,8 +16,12 @@ type logsProcessor struct {
 	next consumer.Logs
 }
 
-func newLogsProcessor(logger *zap.Logger, cfg *Config, next consumer.Logs, endpoints endpointsFn) *logsProcessor {
-	return &logsProcessor{ecsCore: newCore(logger, cfg, endpoints), next: next}
+func newLogsProcessor(logger *zap.Logger, cfg *Config, next consumer.Logs, endpoints endpointsFn) (*logsProcessor, error) {
+	core, err := newCore(logger, cfg, endpoints)
+	if err != nil {
+		return nil, err
+	}
+	return &logsProcessor{ecsCore: core, next: next}, nil
 }
 
 func (p *logsProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {

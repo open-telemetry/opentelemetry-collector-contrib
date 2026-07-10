@@ -16,8 +16,12 @@ type metricsProcessor struct {
 	next consumer.Metrics
 }
 
-func newMetricsProcessor(logger *zap.Logger, cfg *Config, next consumer.Metrics, endpoints endpointsFn) *metricsProcessor {
-	return &metricsProcessor{ecsCore: newCore(logger, cfg, endpoints), next: next}
+func newMetricsProcessor(logger *zap.Logger, cfg *Config, next consumer.Metrics, endpoints endpointsFn) (*metricsProcessor, error) {
+	core, err := newCore(logger, cfg, endpoints)
+	if err != nil {
+		return nil, err
+	}
+	return &metricsProcessor{ecsCore: core, next: next}, nil
 }
 
 func (p *metricsProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {

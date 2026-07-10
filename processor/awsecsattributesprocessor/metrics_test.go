@@ -14,8 +14,9 @@ import (
 func TestConsumeMetrics(t *testing.T) {
 	srv := newMetadataServer(t)
 	cfg := defaultTestConfig()
-	require.NoError(t, cfg.init())
-	p := newMetricsProcessor(zaptestLogger(t), cfg, consumertest.NewNop(), staticEndpoints(srv.URL))
+	require.NoError(t, cfg.Validate())
+	p, err := newMetricsProcessor(zaptestLogger(t), cfg, consumertest.NewNop(), staticEndpoints(srv.URL))
+	require.NoError(t, err)
 
 	md := pmetric.NewMetrics()
 	md.ResourceMetrics().AppendEmpty().Resource().Attributes().PutStr("container.id", testContainerID)

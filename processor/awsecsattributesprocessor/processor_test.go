@@ -28,6 +28,36 @@ func TestCapabilities(t *testing.T) {
 	require.Equal(t, consumer.Capabilities{MutatesData: true}, c.Capabilities())
 }
 
+func TestAllowAttr(t *testing.T) {
+	t.Run("with patterns", func(t *testing.T) {
+		cfg := &Config{
+			CacheTTL:    60,
+			Attributes:  []string{"^aws.*", "^docker.*", "^image.*"},
+			ContainerID: ContainerID{Sources: []string{"container.id"}},
+		}
+		c := newTestCore(t, cfg, staticEndpoints("http://unused"))
+		require.True(t, c.allowAttr("aws.ecs.cluster"))
+		require.True(t, c.allowAttr("docker.id"))
+		require.True(t, c.allowAttr("image.id"))
+		require.False(t, c.allowAttr("random.attribute"))
+	})
+
+	t.Run("empty patterns allow all", func(t *testing.T) {
+		c := newTestCore(t, defaultTestConfig(), staticEndpoints("http://unused"))
+		require.True(t, c.allowAttr("anything"))
+	})
+}
+
+func TestNewCoreInvalidPattern(t *testing.T) {
+	cfg := &Config{
+		CacheTTL:    60,
+		Attributes:  []string{"?="},
+		ContainerID: ContainerID{Sources: []string{"container.id"}},
+	}
+	_, err := newCore(zaptestLogger(t), cfg, staticEndpoints("http://unused"))
+	require.Error(t, err)
+}
+
 func TestSyncMetadataAndGet(t *testing.T) {
 	srv := newMetadataServer(t)
 	c := newTestCore(t, defaultTestConfig(), staticEndpoints(srv.URL))

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -36,6 +37,10 @@ type ecsCore struct {
 	logger    *zap.Logger
 	endpoints endpointsFn
 
+	// attrExpressions holds the compiled cfg.Attributes patterns, used by
+	// allowAttr to filter the enrichment attributes.
+	attrExpressions []*regexp.Regexp
+
 	// newDockerClient creates the Docker client used for container discovery and
 	// event subscription. It is a field so tests can substitute a fake.
 	newDockerClient func() (*client.Client, error)
@@ -52,18 +57,43 @@ type ecsCore struct {
 	stop chan struct{}
 }
 
-func newCore(logger *zap.Logger, cfg *Config, endpoints endpointsFn) *ecsCore {
+func newCore(logger *zap.Logger, cfg *Config, endpoints endpointsFn) (*ecsCore, error) {
+	attrExpressions := make([]*regexp.Regexp, 0, len(cfg.Attributes))
+	for _, expr := range cfg.Attributes {
+		re, err := regexp.Compile(expr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid expression found under attributes pattern %s - %w", expr, err)
+		}
+		attrExpressions = append(attrExpressions, re)
+	}
+
 	return &ecsCore{
-		cfg:       cfg,
-		logger:    logger,
-		endpoints: endpoints,
+		cfg:             cfg,
+		logger:          logger,
+		endpoints:       endpoints,
+		attrExpressions: attrExpressions,
 		newDockerClient: func() (*client.Client, error) {
 			return client.New(client.WithHostFromEnv())
 		},
 		metadata:    make(map[string]containerMetadata),
 		metadataAge: time.Now(),
 		stop:        make(chan struct{}),
+	}, nil
+}
+
+// allowAttr reports whether the attribute key matches any configured pattern.
+// When no patterns are configured, all attributes are allowed.
+func (e *ecsCore) allowAttr(k string) bool {
+	if len(e.attrExpressions) == 0 {
+		return true
 	}
+
+	for _, re := range e.attrExpressions {
+		if re.MatchString(k) {
+			return true
+		}
+	}
+	return false
 }
 
 // Capabilities reports that the processor mutates resource attributes.
@@ -224,7 +254,7 @@ func (e *ecsCore) enrichResource(ctx context.Context, res pcommon.Resource) {
 			continue
 		}
 		val := fmt.Sprintf("%v", v)
-		if !e.cfg.allowAttr(k) || val == "" {
+		if !e.allowAttr(k) || val == "" {
 			continue
 		}
 		res.Attributes().PutStr(k, val)

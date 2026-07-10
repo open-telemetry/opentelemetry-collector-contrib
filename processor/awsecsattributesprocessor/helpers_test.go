@@ -165,8 +165,9 @@ func zaptestLogger(t *testing.T) *zap.Logger {
 // client, with an initialized config.
 func newTestCore(t *testing.T, cfg *Config, endpoints endpointsFn) *ecsCore {
 	t.Helper()
-	require.NoError(t, cfg.init())
-	c := newCore(zaptestLogger(t), cfg, endpoints)
+	require.NoError(t, cfg.Validate())
+	c, err := newCore(zaptestLogger(t), cfg, endpoints)
+	require.NoError(t, err)
 	c.newDockerClient = recoverableDockerClient
 	return c
 }

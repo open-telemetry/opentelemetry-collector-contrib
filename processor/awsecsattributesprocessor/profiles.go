@@ -16,8 +16,12 @@ type profilesProcessor struct {
 	next xconsumer.Profiles
 }
 
-func newProfilesProcessor(logger *zap.Logger, cfg *Config, next xconsumer.Profiles, endpoints endpointsFn) *profilesProcessor {
-	return &profilesProcessor{ecsCore: newCore(logger, cfg, endpoints), next: next}
+func newProfilesProcessor(logger *zap.Logger, cfg *Config, next xconsumer.Profiles, endpoints endpointsFn) (*profilesProcessor, error) {
+	core, err := newCore(logger, cfg, endpoints)
+	if err != nil {
+		return nil, err
+	}
+	return &profilesProcessor{ecsCore: core, next: next}, nil
 }
 
 func (p *profilesProcessor) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {

@@ -14,8 +14,9 @@ import (
 func TestConsumeProfiles(t *testing.T) {
 	srv := newMetadataServer(t)
 	cfg := defaultTestConfig()
-	require.NoError(t, cfg.init())
-	p := newProfilesProcessor(zaptestLogger(t), cfg, consumertest.NewNop(), staticEndpoints(srv.URL))
+	require.NoError(t, cfg.Validate())
+	p, err := newProfilesProcessor(zaptestLogger(t), cfg, consumertest.NewNop(), staticEndpoints(srv.URL))
+	require.NoError(t, err)
 
 	pd := pprofile.NewProfiles()
 	pd.ResourceProfiles().AppendEmpty().Resource().Attributes().PutStr("container.id", testContainerID)
