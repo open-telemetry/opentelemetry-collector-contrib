@@ -61,6 +61,10 @@ type TraceData struct {
 	batchID       uint64
 }
 
+// DecisionHook is called when a sampling decision is made for a trace. When
+// the processor is configured with num_shards greater than 1, hooks are
+// invoked concurrently from multiple shard goroutines and must be safe for
+// concurrent use.
 type DecisionHook func(ctx context.Context, id pcommon.TraceID, td *TraceData)
 
 type tailSamplingSpanProcessor struct {
@@ -88,10 +92,8 @@ type tailSamplingSpanProcessor struct {
 	cfg  Config
 	host component.Host
 
-	// tracesOnMemory counts the traces held in memory across all shards of
-	// the same processor. It is shared so the traces_on_memory gauge reports
-	// the processor-wide total instead of per-shard values overwriting each
-	// other on the same time series.
+	// tracesOnMemory is shared across all shards of the same processor; see
+	// shardShared for the rationale.
 	tracesOnMemory *atomic.Int64
 
 	sampledHooks    []DecisionHook
@@ -118,13 +120,8 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 // newShardProcessor creates a single shard: an independent event loop with
 // its own trace storage and decision batcher. Shards are created and routed
 // to by the shardedProcessor returned from newTracesProcessor.
-func newShardProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config, tracesOnMemory *atomic.Int64) (*tailSamplingSpanProcessor, error) {
-	telemetrySettings := set.TelemetrySettings
-	telemetry, err := metadata.NewTelemetryBuilder(telemetrySettings)
-	if err != nil {
-		return nil, err
-	}
-	tracer := metadata.Tracer(telemetrySettings)
+func newShardProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config, shared shardShared) (*tailSamplingSpanProcessor, error) {
+	var err error
 	nopCache := cache.NewNopDecisionCache()
 	sampledDecisions := nopCache
 	nonSampledDecisions := nopCache
@@ -145,8 +142,8 @@ func newShardProcessor(ctx context.Context, set processor.Settings, nextConsumer
 		ctx:                ctx,
 		cfg:                cfg,
 		set:                set,
-		telemetry:          telemetry,
-		tracer:             tracer,
+		telemetry:          shared.telemetry,
+		tracer:             shared.tracer,
 		nextConsumer:       nextConsumer,
 		sampledIDCache:     sampledDecisions,
 		nonSampledIDCache:  nonSampledDecisions,
@@ -156,7 +153,7 @@ func newShardProcessor(ctx context.Context, set processor.Settings, nextConsumer
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
 		blockOnOverflow:    cfg.BlockOnOverflow,
 		maxTraceSizeBytes:  cfg.MaximumTraceSizeBytes,
-		tracesOnMemory:     tracesOnMemory,
+		tracesOnMemory:     shared.tracesOnMemory,
 		// Similar to the id batcher, allow a batch per CPU to be buffered before blocking ConsumeTraces.
 		workChan: make(chan []traceBatch, runtime.NumCPU()),
 		// We need to buffer one new policy command/size update so that external callers can
@@ -319,6 +316,8 @@ var (
 type Option func(*tailSamplingSpanProcessor)
 
 // WithSampledDecisionCache sets the cache which the processor uses to store recently sampled trace IDs.
+// When num_shards is greater than 1 the same cache instance is shared by all
+// shards and must be safe for concurrent use.
 func WithSampledDecisionCache(c cache.Cache) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.sampledIDCache = c
@@ -326,6 +325,8 @@ func WithSampledDecisionCache(c cache.Cache) Option {
 }
 
 // WithNonSampledDecisionCache sets the cache which the processor uses to store recently non-sampled trace IDs.
+// When num_shards is greater than 1 the same cache instance is shared by all
+// shards and must be safe for concurrent use.
 func WithNonSampledDecisionCache(c cache.Cache) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.nonSampledIDCache = c

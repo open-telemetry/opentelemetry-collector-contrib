@@ -195,6 +195,10 @@ func TestShardedProcessorDeterministicRouting(t *testing.T) {
 		id := uInt64ToTraceID(uint64(i))
 		shardCounts[sp.traceIDToShard(id)]++
 	}
+	// Sequential (non-random) trace IDs must still spread over every shard;
+	// this guards against routing regressions that concentrate traffic on
+	// one shard, such as taking raw ID bytes modulo numShards.
+	require.Len(t, shardCounts, int(sp.numShards), "all shards must receive traces")
 	for shard, count := range shardCounts {
 		assert.Positive(t, count, "shard %d received no traces", shard)
 	}
@@ -334,19 +338,24 @@ func TestShardedProcessorCapabilities(t *testing.T) {
 func TestTraceIDToShard(t *testing.T) {
 	sp := &shardedProcessor{numShards: 8}
 
-	// Verify shard assignment is based on the lower 8 bytes (little-endian)
+	seen := make(map[uint32]int)
 	id := pcommon.TraceID{}
-	binary.LittleEndian.PutUint64(id[8:], 0)
-	assert.Equal(t, uint32(0), sp.traceIDToShard(id))
+	for i := range uint64(1000) {
+		// Worst-case skew: IDs identical except for a counter in one byte
+		// range, as produced by SDKs embedding timestamps or constants.
+		binary.BigEndian.PutUint64(id[8:], i)
+		shard := sp.traceIDToShard(id)
+		assert.Less(t, shard, sp.numShards)
+		seen[shard]++
+	}
 
-	binary.LittleEndian.PutUint64(id[8:], 1)
-	assert.Equal(t, uint32(1), sp.traceIDToShard(id))
-
-	binary.LittleEndian.PutUint64(id[8:], 8)
-	assert.Equal(t, uint32(0), sp.traceIDToShard(id))
-
-	binary.LittleEndian.PutUint64(id[8:], 15)
-	assert.Equal(t, uint32(7), sp.traceIDToShard(id))
+	// The mixing hash must spread even highly regular IDs over all shards.
+	require.Len(t, seen, int(sp.numShards), "all shards must be used")
+	for shard, count := range seen {
+		// With uniform routing each shard expects 125 of 1000; allow wide
+		// tolerance since the hash is deterministic, not random.
+		assert.Greater(t, count, 50, "shard %d is severely underloaded", shard)
+	}
 }
 
 func TestShardedProcessorMinNumTraces(t *testing.T) {

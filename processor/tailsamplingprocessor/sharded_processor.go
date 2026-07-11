@@ -27,10 +27,20 @@ import (
 // decision evaluation under high load. It is the single code path for all
 // configurations: num_shards of 1 (the default) simply creates one shard.
 type shardedProcessor struct {
-	ctx       context.Context
 	tracer    trace.Tracer
 	shards    []*tailSamplingSpanProcessor
 	numShards uint32
+}
+
+// shardShared holds the dependencies all shards of one processor have in
+// common, built once instead of per shard.
+type shardShared struct {
+	telemetry *metadata.TelemetryBuilder
+	tracer    trace.Tracer
+	// tracesOnMemory counts the traces held in memory across all shards so
+	// the traces_on_memory gauge reports the processor-wide total instead of
+	// per-shard values overwriting each other on the same time series.
+	tracesOnMemory *atomic.Int64
 }
 
 func newShardedTracesProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config) (*shardedProcessor, error) {
@@ -43,23 +53,24 @@ func newShardedTracesProcessor(ctx context.Context, set processor.Settings, next
 		// Decision caches are keyed on trace_id and each shard only sees ~1/N of
 		// the trace_id space. Without this division total decision-cache memory
 		// would scale by num_shards, defeating the memory benefit of sharding.
-		// A size of 0 means the cache is disabled and must stay 0.
-		if cfg.DecisionCache.SampledCacheSize > 0 {
-			shardCfg.DecisionCache.SampledCacheSize = max(1, cfg.DecisionCache.SampledCacheSize/int(numShards))
-		}
-		if cfg.DecisionCache.NonSampledCacheSize > 0 {
-			shardCfg.DecisionCache.NonSampledCacheSize = max(1, cfg.DecisionCache.NonSampledCacheSize/int(numShards))
-		}
+		shardCfg.DecisionCache.SampledCacheSize = divideRate(cfg.DecisionCache.SampledCacheSize, numShards)
+		shardCfg.DecisionCache.NonSampledCacheSize = divideRate(cfg.DecisionCache.NonSampledCacheSize, numShards)
 		shardCfg.PolicyCfgs = dividePolicyRates(cfg.PolicyCfgs, numShards)
 	}
 
-	// Shared across shards so the traces_on_memory gauge reports the
-	// processor-wide total.
-	tracesOnMemory := new(atomic.Int64)
+	telemetry, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+	shared := shardShared{
+		telemetry:      telemetry,
+		tracer:         metadata.Tracer(set.TelemetrySettings),
+		tracesOnMemory: new(atomic.Int64),
+	}
 
 	shards := make([]*tailSamplingSpanProcessor, numShards)
 	for i := range numShards {
-		p, err := newShardProcessor(ctx, set, nextConsumer, shardCfg, tracesOnMemory)
+		p, err := newShardProcessor(ctx, set, nextConsumer, shardCfg, shared)
 		if err != nil {
 			return nil, err
 		}
@@ -67,8 +78,7 @@ func newShardedTracesProcessor(ctx context.Context, set processor.Settings, next
 	}
 
 	return &shardedProcessor{
-		ctx:       ctx,
-		tracer:    metadata.Tracer(set.TelemetrySettings),
+		tracer:    shared.tracer,
 		shards:    shards,
 		numShards: numShards,
 	}, nil
@@ -126,15 +136,15 @@ func divideSharedPolicyRates(cfg *sharedPolicyCfg, numShards uint32) {
 	cfg.BytesLimitingCfg.BurstCapacity = divideRate(cfg.BytesLimitingCfg.BurstCapacity, numShards)
 }
 
-// divideRate splits a positive per-second limit across numShards, keeping a
-// minimum of 1 so a limit smaller than numShards doesn't round down to
-// "sample nothing". Zero and negative values mean unset/disabled and are
-// preserved.
-func divideRate(v int64, numShards uint32) int64 {
+// divideRate splits a positive limit across numShards, keeping a minimum of
+// 1 so a limit smaller than numShards doesn't round down to 0 (which would
+// mean "sample nothing" for rates and "disabled" for cache sizes). Zero and
+// negative values mean unset/disabled and are preserved.
+func divideRate[T int | int64](v T, numShards uint32) T {
 	if v <= 0 {
 		return v
 	}
-	return max(1, v/int64(numShards))
+	return max(1, v/T(numShards))
 }
 
 func (*shardedProcessor) Capabilities() consumer.Capabilities {
@@ -217,6 +227,17 @@ func (sp *shardedProcessor) SetMaximumTraceSizeBytes(size uint64) {
 }
 
 func (sp *shardedProcessor) traceIDToShard(id pcommon.TraceID) uint32 {
-	h := binary.LittleEndian.Uint64(id[8:])
+	// Mix the full trace ID instead of taking raw bytes modulo numShards:
+	// real-world trace IDs are not always uniformly random (some SDKs and
+	// proxies embed timestamps or constants, or zero-pad 64-bit IDs), and a
+	// raw modulo would concentrate such IDs on few shards, exhausting one
+	// shard's NumTraces budget while the others sit empty.
+	h := binary.LittleEndian.Uint64(id[0:8]) ^ binary.LittleEndian.Uint64(id[8:16])
+	// splitmix64 finalizer.
+	h ^= h >> 30
+	h *= 0xbf58476d1ce4e5b9
+	h ^= h >> 27
+	h *= 0x94d049bb133111eb
+	h ^= h >> 31
 	return uint32(h % uint64(sp.numShards))
 }
