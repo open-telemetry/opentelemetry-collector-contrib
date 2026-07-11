@@ -945,7 +945,7 @@ func TestRegression_TreesSplitAfterEnoughSamples(t *testing.T) {
 	forest := newOnlineIsolationForest(1, 200, 8, 0.1, minNodeSamples)
 
 	// Feed clearly varied samples so the split can pick a non-constant feature.
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		forest.ProcessSample([]float64{float64(i), float64(i % 7)})
 	}
 
