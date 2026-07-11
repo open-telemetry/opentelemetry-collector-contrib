@@ -1,0 +1,61 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: oracledb.instance.name
+          value:
+            stringValue: oraclehost:1521/ORCL
+        - key: host.name
+          value:
+            stringValue: ""
+        - key: service.instance.id
+          value:
+            stringValue: oraclehost:1521/ORCL
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: oracledb.sid
+                value:
+                  stringValue: "100"
+              - key: oracledb.serial
+                value:
+                  stringValue: "12345"
+              - key: oracledb.event
+                value:
+                  stringValue: db file sequential read
+              - key: oracledb.wait_class
+                value:
+                  stringValue: User I/O
+              - key: oracledb.wait.count
+                value:
+                  intValue: "1500"
+              - key: oracledb.wait.duration
+                value:
+                  doubleValue: 25.5
+            body: {}
+            eventName: db.server.session.wait_sample
+            timeUnixNano: "1759142300369458000"
+          - attributes:
+              - key: oracledb.sid
+                value:
+                  stringValue: "101"
+              - key: oracledb.serial
+                value:
+                  stringValue: "12346"
+              - key: oracledb.event
+                value:
+                  stringValue: log file sync
+              - key: oracledb.wait_class
+                value:
+                  stringValue: Commit
+              - key: oracledb.wait.count
+                value:
+                  intValue: "800"
+              - key: oracledb.wait.duration
+                value:
+                  doubleValue: 12.3
+            body: {}
+            eventName: db.server.session.wait_sample
+            timeUnixNano: "1759142300369458000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
+          version: latest

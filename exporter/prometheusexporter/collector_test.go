@@ -739,7 +739,11 @@ func TestCollectMetrics(t *testing.T) {
 						continue
 					}
 
-					require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
+					expectedName := "test_space_test_metric"
+					if tt.metricType == prometheus.CounterValue {
+						expectedName += "_total"
+					}
+					require.Contains(t, m.Desc().String(), `fqName: "`+expectedName+`"`)
 					require.Contains(t, m.Desc().String(), `variableLabels: {label_1,label_2,otel_scope_name,otel_scope_version,otel_scope_schema_url,job,instance}`)
 
 					pbMetric := io_prometheus_client.Metric{}

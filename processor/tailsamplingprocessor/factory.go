@@ -46,5 +46,8 @@ func createTracesProcessor(
 	if telemetry.IsRecordPolicyEnabled() {
 		tCfg.Options = append(tCfg.Options, withRecordPolicy())
 	}
+	if telemetry.IsUseTracestateEnabled() {
+		tCfg.Options = append(tCfg.Options, withUseTracestate())
+	}
 	return newTracesProcessor(ctx, params, nextConsumer, *tCfg)
 }

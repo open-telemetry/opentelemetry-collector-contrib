@@ -64,7 +64,7 @@ func TestNewConnector(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, smc)
 
-			assert.Equal(t, tc.wantDimensions, smc.dimensions)
+			assert.Equal(t, tc.wantDimensions, smc.dimensions.nameDimensions)
 		})
 	}
 }

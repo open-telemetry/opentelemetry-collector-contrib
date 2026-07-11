@@ -263,6 +263,7 @@ func (kr *k8sobjectsreceiver) stopWatches() {
 	for _, stopperChan := range kr.stopperChanList {
 		close(stopperChan)
 	}
+	kr.stopperChanList = nil
 	kr.mu.Unlock()
 	kr.wg.Wait()
 }
@@ -306,10 +307,46 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		return err
 	}
 
-	stopChan := obs.Start(ctx, &kr.wg)
+	stopChan := kr.startObserver(ctx, obs, object)
+	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopChan)
+	kr.mu.Unlock()
 
 	return nil
+}
+
+func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventory.Observer, object *K8sObjectsConfig) chan struct{} {
+	if object.Mode != k8sinventory.PullMode || object.InitialDelay <= 0 {
+		return obs.Start(ctx, &kr.wg)
+	}
+
+	stopChan := make(chan struct{})
+	kr.wg.Add(1)
+	//nolint:modernize // WaitGroup.Go not available without additional dependencies
+	go func() {
+		defer kr.wg.Done()
+
+		timer := time.NewTimer(object.InitialDelay)
+		defer timer.Stop()
+
+		select {
+		case <-timer.C:
+		case <-stopChan:
+			return
+		case <-ctx.Done():
+			return
+		}
+
+		observerStopChan := obs.Start(ctx, &kr.wg)
+
+		select {
+		case <-stopChan:
+			close(observerStopChan)
+		case <-ctx.Done():
+		}
+	}()
+
+	return stopChan
 }
 
 // handleError handles errors according to the configured error mode

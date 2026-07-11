@@ -171,3 +171,25 @@ func minimalValidConfig() *Config {
 	cfg.AuthToken = configopaque.String("token")
 	return cfg
 }
+
+func TestValidateRejectsTraversalOrgSlug(t *testing.T) {
+	t.Parallel()
+	cases := []string{
+		"../../organizations/victim/members",
+		"foo/../../bar",
+		"slug/with/slashes",
+	}
+
+	for _, payload := range cases {
+		t.Run(payload, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := minimalValidConfig()
+			cfg.OrgSlug = payload
+
+			err := cfg.Validate()
+			require.Error(t, err, "Validate must reject org_slug %q", payload)
+			assert.Contains(t, err.Error(), "org_slug")
+		})
+	}
+}

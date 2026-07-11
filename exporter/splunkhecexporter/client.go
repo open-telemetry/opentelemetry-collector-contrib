@@ -6,6 +6,7 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -17,8 +18,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
@@ -26,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
@@ -84,6 +88,21 @@ func newMetricsClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthMetrics)
 }
 
+func newProfilesClient(set exporter.Settings, cfg *Config) *client {
+	return newClient(set, cfg, cfg.MaxContentLengthLogs)
+}
+
+// accessTokenForResources returns the first HEC access token found by iterating through resources
+// using the provided accessor function. Returns empty string if none is found.
+func accessTokenForResources(count int, attrsFn func(i int) pcommon.Map) string {
+	for i := range count {
+		if token, found := attrsFn(i).Get(splunk.HecTokenLabel); found {
+			return token.Str()
+		}
+	}
+	return ""
+}
+
 func (c *client) pushMetricsData(
 	ctx context.Context,
 	md pmetric.Metrics,
@@ -92,11 +111,10 @@ func (c *client) pushMetricsData(
 	defer c.wg.Done()
 
 	localHeaders := map[string]string{}
-	if md.ResourceMetrics().Len() != 0 {
-		accessToken, found := md.ResourceMetrics().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
-		if found {
-			localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
-		}
+	if token := accessTokenForResources(md.ResourceMetrics().Len(), func(i int) pcommon.Map {
+		return md.ResourceMetrics().At(i).Resource().Attributes()
+	}); token != "" {
+		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(token)
 	}
 
 	if c.config.UseMultiMetricFormat {
@@ -113,11 +131,10 @@ func (c *client) pushTraceData(
 	defer c.wg.Done()
 
 	localHeaders := map[string]string{}
-	if td.ResourceSpans().Len() != 0 {
-		accessToken, found := td.ResourceSpans().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
-		if found {
-			localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
-		}
+	if token := accessTokenForResources(td.ResourceSpans().Len(), func(i int) pcommon.Map {
+		return td.ResourceSpans().At(i).Resource().Attributes()
+	}); token != "" {
+		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(token)
 	}
 
 	return c.pushTracesDataInBatches(ctx, td, localHeaders)
@@ -132,11 +149,10 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 	}
 
 	localHeaders := map[string]string{}
-
-	// All logs in a batch have the same access token after batchperresourceattr, so we can just check the first one.
-	accessToken, found := ld.ResourceLogs().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
-	if found {
-		localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+	if token := accessTokenForResources(ld.ResourceLogs().Len(), func(i int) pcommon.Map {
+		return ld.ResourceLogs().At(i).Resource().Attributes()
+	}); token != "" {
+		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(token)
 	}
 
 	// All logs in a batch have only one type (regular or profiling logs) after perScopeBatcher,
@@ -154,12 +170,130 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 	return c.pushLogDataInBatches(ctx, ld, localHeaders)
 }
 
+func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) error {
+	c.wg.Add(1)
+	defer c.wg.Done()
+
+	if pp.ResourceProfiles().Len() == 0 {
+		return nil
+	}
+
+	localHeaders := map[string]string{}
+	localHeaders[libraryHeaderName] = profilingLibraryName
+	getResourceAttrs := func(i int) pcommon.Map {
+		return pp.ResourceProfiles().At(i).Resource().Attributes()
+	}
+	if token := accessTokenForResources(pp.ResourceProfiles().Len(), getResourceAttrs); token != "" {
+		localHeaders[authorizationHeaderName] = splunk.BuildHECAuthHeader(token)
+	}
+
+	ld, permanentErrors := buildProfilesLogs(pp)
+
+	sendErr := c.pushLogDataInBatches(ctx, ld, localHeaders)
+	return multierr.Combine(append(permanentErrors, sendErr)...)
+}
+
+// buildProfilesLogs converts pprofile.Profiles into a plog.Logs payload for the Splunk HEC profiling endpoint.
+// It returns permanent errors for individual profiles that fail translation or encoding.
+func buildProfilesLogs(pp pprofile.Profiles) (plog.Logs, []error) {
+	ld := plog.NewLogs()
+	var permanentErrors []error
+
+	for _, rp := range pp.ResourceProfiles().All() {
+		rl := ld.ResourceLogs().AppendEmpty()
+		rp.Resource().Attributes().MoveTo(rl.Resource().Attributes())
+
+		sl := rl.ScopeLogs().AppendEmpty()
+		sl.Scope().SetName(profilingLibraryName)
+		sl.Scope().SetVersion(profilingLibraryVersion)
+
+		for _, sp := range rp.ScopeProfiles().All() {
+			for _, prof := range sp.Profiles().All() {
+				lr, err := profileToLogRecord(pp, rp, sp, prof)
+				if err != nil {
+					permanentErrors = append(permanentErrors, err)
+					continue
+				}
+				lr.MoveTo(sl.LogRecords().AppendEmpty())
+			}
+		}
+	}
+
+	return ld, permanentErrors
+}
+
+// profileToLogRecord translates a single pprofile.Profile into a plog.LogRecord.
+// Returns a permanent error if translation or encoding fails; on error the returned record is unset.
+func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) (plog.LogRecord, error) {
+	expanded := prepareProfilesForPprofConversion(pp, rp, scope, prof)
+	p, err := pprof.ConvertPprofileToPprof(&expanded)
+	if err != nil {
+		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err))
+	}
+	translator.AddProfilingPprofSampleLabels(p, pp.Dictionary(), scope.Scope(), prof)
+
+	var buf bytes.Buffer
+	// The Write method encodes the profile to a gzipped protobuf
+	if err := p.Write(&buf); err != nil {
+		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("failed to write profile: %w", err))
+	}
+
+	lr := plog.NewLogRecord()
+	lr.Body().SetStr(base64.StdEncoding.EncodeToString(buf.Bytes()))
+	lr.SetTimestamp(prof.Time())
+	lr.Attributes().PutStr(splunk.DefaultSourceTypeLabel, profilingLibraryName)
+	typeIdx := int(prof.SampleType().TypeStrindex())
+	stringTable := pp.Dictionary().StringTable()
+	if typeIdx < 0 || typeIdx >= stringTable.Len() {
+		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("profile sample type string index %d out of range (string table len %d)", typeIdx, stringTable.Len()))
+	}
+	lr.Attributes().PutStr(profilingDataTypeKey, stringTable.At(typeIdx))
+	lr.Attributes().PutStr(profilingDataFormatKey, profilingDataFormatPprofGzipBase64)
+	var totalFrameCount int64
+	for _, s := range prof.Samples().All() {
+		totalFrameCount += int64(pp.Dictionary().StackTable().At(int(s.StackIndex())).LocationIndices().Len())
+	}
+	lr.Attributes().PutInt(profilingDataTotalFrameCountKey, totalFrameCount)
+	// TODO find whether it is continuous or snapshot
+	lr.Attributes().PutStr(profilingInstrumentationSourceKey, profilingInstrumentationSourceContinuous)
+	return lr, nil
+}
+
+// prepareProfilesForPprofConversion wraps a single OTel pprofile.Profile into a pprofile.Profiles
+// holding exactly one ResourceProfiles / ScopeProfiles / Profile, as required by ConvertPprofileToPprof.
+// Samples are copied as-is; shape validation and per-observation expansion are handled by the converter.
+func prepareProfilesForPprofConversion(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) pprofile.Profiles {
+	profiles := pprofile.NewProfiles()
+	pp.Dictionary().CopyTo(profiles.Dictionary())
+
+	dstRP := profiles.ResourceProfiles().AppendEmpty()
+	rp.Resource().CopyTo(dstRP.Resource())
+	dstRP.SetSchemaUrl(rp.SchemaUrl())
+
+	dstScope := dstRP.ScopeProfiles().AppendEmpty()
+	scope.Scope().CopyTo(dstScope.Scope())
+	dstScope.SetSchemaUrl(scope.SchemaUrl())
+
+	dstProfile := dstScope.Profiles().AppendEmpty()
+	prof.CopyTo(dstProfile)
+
+	return profiles
+}
+
 // A guesstimated value > length of bytes of a single event.
 // Added to buffer capacity so that buffer is likely to grow by reslicing when buf.Len() > bufCap.
 const (
-	bufCapPadding        = uint(4096)
-	libraryHeaderName    = "X-Splunk-Instrumentation-Library"
-	profilingLibraryName = "otel.profiling"
+	bufCapPadding                            = uint(4096)
+	libraryHeaderName                        = "X-Splunk-Instrumentation-Library"
+	authorizationHeaderName                  = "Authorization"
+	profilingLibraryName                     = "otel.profiling"
+	profilingLibraryVersion                  = "0.1.0"
+	profilingDataTypeKey                     = "profiling.data.type"
+	profilingDataFormatKey                   = "profiling.data.format"
+	profilingDataFormatPprofGzipBase64       = "pprof-gzip-base64"
+	profilingDataTotalFrameCountKey          = "profiling.data.total.frame.count"
+	profilingInstrumentationSourceKey        = "profiling.instrumentation.source"
+	profilingInstrumentationSourceContinuous = "continuous"
 )
 
 func isProfilingData(sl plog.ScopeLogs) bool {
@@ -667,9 +801,9 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 		"Connection":           "keep-alive",
 		"Content-Type":         "application/json",
 		"User-Agent":           config.SplunkAppName + "/" + appVersion,
-		"Authorization":        splunk.HECTokenHeader + " " + string(config.Token),
+		"Authorization":        splunk.BuildHECAuthHeader(string(config.Token)),
 		"__splunk_app_name":    config.SplunkAppName,
-		"__splunk_app_version": config.SplunkAppVersion,
+		"__splunk_app_version": appVersion,
 	}
 }
 

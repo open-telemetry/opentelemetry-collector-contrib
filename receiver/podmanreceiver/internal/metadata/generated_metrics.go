@@ -31,7 +31,8 @@ var MetricsInfo = metricsInfo{
 		Name: "container.cpu.percent",
 	},
 	ContainerCPUUsagePercpu: metricInfo{
-		Name: "container.cpu.usage.percpu",
+		Name:       "container.cpu.usage.percpu",
+		Attributes: []string{"core"},
 	},
 	ContainerCPUUsageSystem: metricInfo{
 		Name: "container.cpu.usage.system",
@@ -71,7 +72,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricContainerBlockioIoServiceBytesRecursiveRead struct {
@@ -84,7 +86,7 @@ type metricContainerBlockioIoServiceBytesRecursiveRead struct {
 func (m *metricContainerBlockioIoServiceBytesRecursiveRead) init() {
 	m.data.SetName("container.blockio.io_service_bytes_recursive.read")
 	m.data.SetDescription("Number of bytes transferred from the disk by the container")
-	m.data.SetUnit("{operations}")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -136,7 +138,7 @@ type metricContainerBlockioIoServiceBytesRecursiveWrite struct {
 func (m *metricContainerBlockioIoServiceBytesRecursiveWrite) init() {
 	m.data.SetName("container.blockio.io_service_bytes_recursive.write")
 	m.data.SetDescription("Number of bytes transferred to the disk by the container")
-	m.data.SetUnit("{operations}")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

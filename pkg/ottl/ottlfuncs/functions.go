@@ -23,6 +23,7 @@ func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 		NewReplaceMatchFactory[K](),
 		NewReplacePatternFactory[K](),
 		NewSetFactory[K](),
+		NewStringifyAllFactory[K](),
 		NewTruncateAllFactory[K](),
 	}
 	f = append(f, converters[K]()...)
@@ -38,6 +39,8 @@ func StandardConverters[K any]() map[string]ottl.Factory[K] {
 func converters[K any]() []ottl.Factory[K] {
 	return []ottl.Factory[K]{
 		// Converters
+		NewAllFactory[K](),
+		NewAnyFactory[K](),
 		NewBase64DecodeFactory[K](),
 		NewBase64EncodeFactory[K](),
 		NewBoolFactory[K](),
@@ -54,6 +57,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewDurationFactory[K](),
 		NewExtractPatternsFactory[K](),
 		NewExtractGrokPatternsFactory[K](),
+		NewFilterFactory[K](),
 		NewFnvFactory[K](),
 		NewGetXMLFactory[K](),
 		NewHasPrefixFactory[K](),
@@ -73,6 +77,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewLenFactory[K](),
 		NewLogFactory[K](),
 		NewIsValidLuhnFactory[K](),
+		NewMapEachFactory[K](),
 		NewMD5Factory[K](),
 		NewMicrosecondsFactory[K](),
 		NewMillisecondsFactory[K](),
@@ -123,6 +128,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewURLFactory[K](),
 		NewValuesFactory[K](),
 		NewWeekdayFactory[K](),
+		NewWhenFactory[K](),
 		NewUserAgentFactory[K](),
 		NewAppendFactory[K](),
 		NewDeleteIndexFactory[K](),

@@ -2,12 +2,26 @@ $defs:
   query_sample:
     type: object
     properties:
+      allowed_comment_keys:
+        type: array
+        items:
+          type: string
+      max_rows_per_query:
+        type: integer
+        x-customType: uint64
+  session_wait_event:
+    type: object
+    properties:
       max_rows_per_query:
         type: integer
         x-customType: uint64
   top_query_collection:
     type: object
     properties:
+      allowed_comment_keys:
+        type: array
+        items:
+          type: string
       collection_interval:
         type: string
         format: duration
@@ -35,3 +49,4 @@ allOf:
   - $ref: ./internal/metadata.logs_builder_config
   - $ref: top_query_collection
   - $ref: query_sample
+  - $ref: session_wait_event

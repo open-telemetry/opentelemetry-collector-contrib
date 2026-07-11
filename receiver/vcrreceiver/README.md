@@ -5,7 +5,6 @@ The OpenTelemetry **Verbatim Capture & Replay (VCR) toolset** enables full-fidel
 telemetry data stored on disk. It replays previously captured telemetry while **preserving original event timestamps**,
 allowing you to simulate realistic traffic timing independent of when the data was captured.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: traces, metrics, logs, profiles   |

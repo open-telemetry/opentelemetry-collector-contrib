@@ -107,6 +107,8 @@ func extractMetaFromResourceAttributes(resourceAttributes pcommon.Map) faroTypes
 	}
 	if environment, ok := resourceAttributes.Get(string(conventionsv126.DeploymentEnvironmentKey)); ok {
 		app.Environment = environment.Str()
+	} else if environment, ok := resourceAttributes.Get(string(conventions.DeploymentEnvironmentNameKey)); ok {
+		app.Environment = environment.Str()
 	}
 	if appBundleID, ok := resourceAttributes.Get(faroAppBundleID); ok {
 		app.BundleID = appBundleID.Str()

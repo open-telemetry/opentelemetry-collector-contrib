@@ -5,7 +5,6 @@ The Redis Receiver is designed to retrieve Redis INFO data from a single Redis
 instance, build metrics from that data, and send them to the next consumer at a
 configurable interval.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

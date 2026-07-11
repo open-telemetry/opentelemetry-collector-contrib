@@ -8,5 +8,31 @@ properties:
   root_path:
     description: RootPath is the host's root directory (linux only).
     type: string
+  scrapers:
+    description: Map of scrapers to be run, keyed by scraper type.
+    type: object
+    properties:
+      cpu:
+        $ref: ./internal/scraper/cpuscraper.config
+      disk:
+        $ref: ./internal/scraper/diskscraper.config
+      filesystem:
+        $ref: ./internal/scraper/filesystemscraper.config
+      load:
+        $ref: ./internal/scraper/loadscraper.config
+      memory:
+        $ref: ./internal/scraper/memoryscraper.config
+      network:
+        $ref: ./internal/scraper/networkscraper.config
+      nfs:
+        $ref: ./internal/scraper/nfsscraper.config
+      paging:
+        $ref: ./internal/scraper/pagingscraper.config
+      process:
+        $ref: ./internal/scraper/processscraper.config
+      processes:
+        $ref: ./internal/scraper/processesscraper.config
+      system:
+        $ref: ./internal/scraper/systemscraper.config
 allOf:
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config

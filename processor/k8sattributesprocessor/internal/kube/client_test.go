@@ -57,6 +57,24 @@ func newPodIdentifier(from, name, value string) PodIdentifier {
 	}
 }
 
+func podWithContainerID(uid, containerID string, restartCount int32) *api_v1.Pod {
+	startTime := meta_v1.NewTime(time.Unix(1, 0))
+	return &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: "pod-a",
+			UID:  types.UID(uid),
+		},
+		Status: api_v1.PodStatus{
+			StartTime: &startTime,
+			ContainerStatuses: []api_v1.ContainerStatus{{
+				Name:         "container",
+				ContainerID:  "containerd://" + containerID,
+				RestartCount: restartCount,
+			}},
+		},
+	}
+}
+
 func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	assert.Empty(t, c.Pods)
 
@@ -154,11 +172,11 @@ func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 }
 
 func TestDefaultClientset(t *testing.T) {
-	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, InformersFactoryList{}, false, 10*time.Second, 0)
+	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, InformersFactoryList{}, false, 10*time.Second, 0, 120*time.Second)
 	require.EqualError(t, err, "invalid authType for kubernetes: ")
 	assert.Nil(t, c)
 
-	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{}, false, 10*time.Second, 0)
+	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{}, false, 10*time.Second, 0, 120*time.Second)
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 }
@@ -169,7 +187,7 @@ func TestBadFilters(t *testing.T) {
 		newNamespaceInformer:  NewFakeNamespaceInformer,
 		newReplicaSetInformer: NewFakeReplicaSetInformer,
 	}
-	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{Fields: []FieldFilter{{Op: selection.Exists}}}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second, 0)
+	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{Fields: []FieldFilter{{Op: selection.Exists}}}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second, 0, 120*time.Second)
 	assert.Error(t, err)
 	assert.Nil(t, c)
 }
@@ -209,7 +227,7 @@ func TestConstructorErrors(t *testing.T) {
 			newInformer:          NewFakeInformer,
 			newNamespaceInformer: NewFakeNamespaceInformer,
 		}
-		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, factory, false, 10*time.Second, 0)
+		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, factory, false, 10*time.Second, 0, 120*time.Second)
 		assert.Nil(t, c)
 		require.EqualError(t, err, "error creating k8s client")
 		assert.Equal(t, apiCfg, gotAPIConfig)
@@ -418,6 +436,43 @@ func TestPodUpdate(t *testing.T) {
 		// first argument (old pod) is not used right now
 		c.handlePodUpdate(&api_v1.Pod{}, obj)
 	})
+}
+
+func TestPodUpdateQueuesStaleContainerIDAssociation(t *testing.T) {
+	c, _ := newTestClient(t)
+	c.Rules = ExtractionRules{ContainerID: true}
+	c.Associations = []Association{{
+		Sources: []AssociationSource{{
+			From: ResourceSource,
+			Name: "container.id",
+		}},
+	}}
+	c.hasContainerIDAssociation = hasContainerIDAssociation(c.Associations)
+
+	oldID := newPodIdentifier(ResourceSource, "container.id", "old-container-id")
+	newID := newPodIdentifier(ResourceSource, "container.id", "new-container-id")
+	pod := podWithContainerID("pod-uid", "old-container-id", 0)
+
+	c.handlePodAdd(pod)
+	require.Contains(t, c.Pods, oldID)
+	require.Contains(t, c.Pods, newPodIdentifier(ResourceSource, "k8s.pod.uid", "pod-uid"))
+
+	updatedPod := podWithContainerID("pod-uid", "new-container-id", 1)
+	c.handlePodUpdate(pod, updatedPod)
+
+	require.Contains(t, c.Pods, oldID)
+	require.Contains(t, c.Pods, newID)
+	require.Len(t, c.deleteQueue, 1)
+	assert.Equal(t, oldID, c.deleteQueue[0].id)
+	assert.Equal(t, "pod-uid", c.deleteQueue[0].podUID)
+
+	c.deleteLoopProcessing(time.Hour)
+	assert.Contains(t, c.Pods, oldID)
+	assert.Contains(t, c.Pods, newID)
+
+	c.deleteLoopProcessing(0)
+	assert.NotContains(t, c.Pods, oldID)
+	assert.Contains(t, c.Pods, newID)
 }
 
 func TestNamespaceUpdate(t *testing.T) {
@@ -3645,7 +3700,7 @@ func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *o
 		newReplicaSetInformer: NewFakeReplicaSetInformer,
 	}
 
-	c, err := New(set, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, factory, false, 10*time.Second, 0)
+	c, err := New(set, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, factory, false, 10*time.Second, 0, 120*time.Second)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
 }
@@ -3693,7 +3748,7 @@ func TestWaitForMetadata(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{newInformer: tc.informerProvider}, true, 1*time.Second, 0)
+			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{newInformer: tc.informerProvider}, true, 1*time.Second, 0, 120*time.Second)
 			require.NoError(t, err)
 
 			err = c.Start()
@@ -4306,7 +4361,7 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 				newReplicaSetInformer: newTrackableInformer,
 			}
 
-			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, tt.rules, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second, 0)
+			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, tt.rules, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second, 0, 120*time.Second)
 			require.NoError(t, err)
 			wc := c.(*WatchClient)
 
@@ -4711,6 +4766,7 @@ func TestCreateRestConfigFailure(t *testing.T) {
 		false,
 		10*time.Second,
 		0,
+		120*time.Second,
 	)
 
 	// Assert that the client is nil and an error is returned
@@ -4739,6 +4795,7 @@ func TestMetadataNewForConfigFailure(t *testing.T) {
 		false,
 		10*time.Second,
 		0,
+		120*time.Second,
 	)
 	assert.Nil(t, c)
 	assert.Error(t, err)
@@ -4816,4 +4873,49 @@ func TestExtractPodAttributesClusterUIDRace(t *testing.T) {
 	}()
 
 	wg.Wait()
+}
+
+func TestPodDeleteIPMissingFromDeleteEvent(t *testing.T) {
+	c, _ := newTestClient(t)
+
+	pod := &api_v1.Pod{}
+	pod.Name = "podLeak"
+	pod.Status.PodIP = "4.4.4.4"
+	pod.UID = "uid-leak-test"
+	c.handlePodAdd(pod)
+
+	// Map should have 3 keys for this pod
+	assert.Contains(t, c.Pods, newPodIdentifier("resource_attribute", "k8s.pod.uid", "uid-leak-test"))
+	assert.Contains(t, c.Pods, newPodIdentifier("connection", "k8s.pod.ip", "4.4.4.4"))
+	assert.Contains(t, c.Pods, newPodIdentifier("resource_attribute", "k8s.pod.ip", "4.4.4.4"))
+
+	// Clear the delete queue
+	c.deleteQueue = c.deleteQueue[:0]
+
+	// Simulate delete event where PodIP is missing/empty!
+	deletePod := &api_v1.Pod{}
+	deletePod.Name = "podLeak"
+	deletePod.UID = "uid-leak-test"
+	deletePod.Status.PodIP = ""
+
+	c.handlePodDelete(deletePod)
+
+	// In the bug state, only the UID-based keys are queued for deletion, leaving the IP-based keys leaked.
+	// We expect all unique key patterns (UID, connection IP, and Pod IP) to be queued for deletion.
+	var ids []PodIdentifier
+	for _, req := range c.deleteQueue {
+		assert.Equal(t, "uid-leak-test", req.podUID)
+		ids = append(ids, req.id)
+	}
+
+	// Verify that each of the three key patterns was queued at least once
+	assert.Contains(t, ids, newPodIdentifier("resource_attribute", "k8s.pod.uid", "uid-leak-test"))
+	assert.Contains(t, ids, newPodIdentifier("connection", "k8s.pod.ip", "4.4.4.4"))
+	assert.Contains(t, ids, newPodIdentifier("resource_attribute", "k8s.pod.ip", "4.4.4.4"))
+
+	// Run the sweep logic to process all queued deletions immediately
+	c.deleteLoopProcessing(0)
+
+	// In the fixed state, all keys associated with the pod should be successfully cleaned up from the cache.
+	assert.Empty(t, c.Pods)
 }

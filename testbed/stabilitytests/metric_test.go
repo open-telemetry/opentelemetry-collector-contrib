@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/signalfxdatareceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/signalfxdatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 	scenarios "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/tests"
 )
@@ -33,8 +33,8 @@ func TestStabilityMetricsOTLP(t *testing.T) {
 func TestStabilityMetricsSignalFx(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		datasenders.NewSFxMetricDataSender(testutil.GetAvailablePort(t)),
-		datareceivers.NewSFxMetricsDataReceiver(testutil.GetAvailablePort(t)),
+		signalfxdatasender.NewSFxMetricDataSender(testutil.GetAvailablePort(t)),
+		signalfxdatareceiver.NewSFxMetricsDataReceiver(testutil.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      120,
 			ExpectedMaxRAM:      95,

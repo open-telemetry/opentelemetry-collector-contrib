@@ -109,7 +109,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSystemMemoryPageSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemMemoryUsageDataPoint(ts, 1, AttributeStateBuffered)

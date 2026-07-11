@@ -3,8 +3,8 @@ type: cardinality_guardian
 status:
   class: processor
   stability:
-    development: [metrics]
-  distributions: []
+    alpha: [metrics]
+  distributions: [contrib]
   codeowners:
     active: [atoulme, YElayyat, jmacd]
 

@@ -8,16 +8,36 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [antonblock, ishleenk17, cjksplunk]
+    active: [antonblock, ishleenk17]
     seeking_new: true
     emeritus: [djaglowski]
 
-reaggregation_enabled: true
+override_value_enabled: true
 
 resource_attributes:
+  db.system.name:
+    description: The database product of the instance. Examples include "mysql" and "mariadb".
+    enabled: false
+    type: string
+  db.system.version:
+    description: The database version of the instance. Examples include "8.0.34" and "10.11.7-MariaDB".
+    enabled: false
+    type: string
   mysql.instance.endpoint:
     description: Endpoint of the MySQL instance.
     enabled: true
+    type: string
+  service.instance.id:
+    description: A unique identifier of the MySQL instance as a UUID v5, derived from the endpoint using the OTel namespace.
+    enabled: true
+    type: string
+  service.name:
+    description: "Logical name of the service. When enabled, defaults to unknown_service:mysql."
+    enabled: false
+    type: string
+  service.namespace:
+    description: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
+    enabled: false
     type: string
 
 attributes:

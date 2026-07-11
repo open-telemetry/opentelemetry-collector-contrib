@@ -171,7 +171,9 @@ func TestParseLocalizedStrptime(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ParseLocalizedStrptime(tt.format, tt.value, tt.location, tt.language)
+			parser, err := NewStrptimeParser(tt.format)
+			require.NoError(t, err)
+			result, err := parser.ParseLocalized(tt.value, tt.location, tt.language)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected.UnixNano(), result.UnixNano())
 		})
@@ -180,7 +182,9 @@ func TestParseLocalizedStrptime(t *testing.T) {
 
 func TestParseLocalizedStrptimeInvalidType(t *testing.T) {
 	value := time.Now().UnixNano()
-	_, err := ParseLocalizedStrptime("%c", value, time.Local, "en")
+	parser, err := NewStrptimeParser("%c")
+	require.NoError(t, err)
+	_, err = parser.ParseLocalized(value, time.Local, "en")
 	require.Error(t, err)
 	require.ErrorContains(t, err, "cannot be parsed as a time")
 }
@@ -239,7 +243,7 @@ func TestParseLocalizedGotime(t *testing.T) {
 
 func TestParseLocalizedGotimeInvalidType(t *testing.T) {
 	value := time.Now().UnixNano()
-	_, err := ParseLocalizedStrptime("Mon", value, time.Local, "en")
+	_, err := ParseLocalizedGotime("Mon", value, time.Local, "en")
 	require.Error(t, err)
 	require.ErrorContains(t, err, "cannot be parsed as a time")
 }
