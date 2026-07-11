@@ -16,3 +16,5 @@ tests:
   config:
     http:
       endpoint: https://opensearch.example.com:9200
+    retry_on_failure:
+      enabled: false
