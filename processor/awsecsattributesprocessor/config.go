@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// Config defines the configuration for the awsecsattributes processor.
+// Config defines the configuration for the aws_ecs_attributes processor.
 type Config struct {
 	// Attributes is a list of regex patterns matching the attribute keys to be
 	// added to the resource. An empty list collects all available attributes.

@@ -1,4 +1,4 @@
-type: awsecsattributes
+type: aws_ecs_attributes
 
 status:
   class: processor
