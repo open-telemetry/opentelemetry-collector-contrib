@@ -24,10 +24,11 @@ import (
 type Input struct {
 	buffer []byte
 	helper.InputOperator
-	address         *net.UDPAddr
-	addAttributes   bool
-	OneLogPerPacket bool
-	AsyncConfig     *AsyncConfig
+	address                    *net.UDPAddr
+	addAttributes              bool
+	useStableNetworkAttributes bool
+	OneLogPerPacket            bool
+	AsyncConfig                *AsyncConfig
 
 	connection net.PacketConn
 	cancel     context.CancelFunc
@@ -200,19 +201,36 @@ func (i *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, dec *enc
 	}
 
 	if i.addAttributes {
-		entry.AddAttribute("net.transport", "IP.UDP")
-		if addr, ok := i.connection.LocalAddr().(*net.UDPAddr); ok {
-			ip := addr.IP.String()
-			entry.AddAttribute("net.host.ip", addr.IP.String())
-			entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
-			entry.AddAttribute("net.host.name", i.resolver.GetHostFromIP(ip))
-		}
+		if i.useStableNetworkAttributes {
+			entry.AddAttribute("network.transport", "udp")
+			if addr, ok := i.connection.LocalAddr().(*net.UDPAddr); ok {
+				ip := addr.IP.String()
+				entry.AddAttribute("network.local.address", ip)
+				entry.AddAttribute("network.local.port", strconv.FormatInt(int64(addr.Port), 10))
+				entry.AddAttribute("server.address", i.resolver.GetHostFromIP(ip))
+			}
 
-		if addr, ok := remoteAddr.(*net.UDPAddr); ok {
-			ip := addr.IP.String()
-			entry.AddAttribute("net.peer.ip", ip)
-			entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
-			entry.AddAttribute("net.peer.name", i.resolver.GetHostFromIP(ip))
+			if addr, ok := remoteAddr.(*net.UDPAddr); ok {
+				ip := addr.IP.String()
+				entry.AddAttribute("network.peer.address", ip)
+				entry.AddAttribute("network.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+				entry.AddAttribute("client.address", i.resolver.GetHostFromIP(ip))
+			}
+		} else {
+			entry.AddAttribute("net.transport", "IP.UDP")
+			if addr, ok := i.connection.LocalAddr().(*net.UDPAddr); ok {
+				ip := addr.IP.String()
+				entry.AddAttribute("net.host.ip", addr.IP.String())
+				entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
+				entry.AddAttribute("net.host.name", i.resolver.GetHostFromIP(ip))
+			}
+
+			if addr, ok := remoteAddr.(*net.UDPAddr); ok {
+				ip := addr.IP.String()
+				entry.AddAttribute("net.peer.ip", ip)
+				entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+				entry.AddAttribute("net.peer.name", i.resolver.GetHostFromIP(ip))
+			}
 		}
 	}
 
