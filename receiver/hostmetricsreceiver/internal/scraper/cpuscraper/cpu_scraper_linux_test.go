@@ -113,7 +113,16 @@ func TestCputicksEmitter(t *testing.T) {
 	scrape2 := "cpu  200 400 600 800 100 120 140 160 0 0\ncpu0 110 120 170 220 35 40 45 50 0 0\ncpu1 90 280 430 580 65 80 95 110 0 0\n"
 
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.SystemCPULogicalCount.Enabled = false
+	cfg.Metrics.SystemCPUTime.EnabledAttributes = []metadata.SystemCPUTimeMetricAttributeKey{
+		metadata.SystemCPUTimeMetricAttributeKeyCPU,
+		metadata.SystemCPUTimeMetricAttributeKeyState,
+	}
 	cfg.Metrics.SystemCPUUtilization.Enabled = true
+	cfg.Metrics.SystemCPUUtilization.EnabledAttributes = []metadata.SystemCPUUtilizationMetricAttributeKey{
+		metadata.SystemCPUUtilizationMetricAttributeKeyCPU,
+		metadata.SystemCPUUtilizationMetricAttributeKeyState,
+	}
 
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 		&Config{MetricsBuilderConfig: cfg, rootPath: root})
@@ -161,7 +170,16 @@ func TestCputicksEmitter_Utilization(t *testing.T) {
 	scrape2 := "cpu  300 75 150 600 75 75 75 150 0 0\ncpu0 300 75 150 600 75 75 75 150 0 0\n"
 
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.SystemCPULogicalCount.Enabled = false
+	cfg.Metrics.SystemCPUTime.EnabledAttributes = []metadata.SystemCPUTimeMetricAttributeKey{
+		metadata.SystemCPUTimeMetricAttributeKeyCPU,
+		metadata.SystemCPUTimeMetricAttributeKeyState,
+	}
 	cfg.Metrics.SystemCPUUtilization.Enabled = true
+	cfg.Metrics.SystemCPUUtilization.EnabledAttributes = []metadata.SystemCPUUtilizationMetricAttributeKey{
+		metadata.SystemCPUUtilizationMetricAttributeKeyCPU,
+		metadata.SystemCPUUtilizationMetricAttributeKeyState,
+	}
 
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 		&Config{MetricsBuilderConfig: cfg, rootPath: root})
@@ -292,6 +310,7 @@ func TestCputicksEmitter_ZeroDelta(t *testing.T) {
 	}
 
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.SystemCPULogicalCount.Enabled = false
 	cfg.Metrics.SystemCPUUtilization.Enabled = true
 
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
