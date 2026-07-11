@@ -22,24 +22,25 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                               metric.Meter
-	mu                                                  sync.Mutex
-	registrations                                       []metric.Registration
-	ProcessorTailSamplingCountBytesSampled              metric.Int64Counter
-	ProcessorTailSamplingCountSpansSampled              metric.Int64Counter
-	ProcessorTailSamplingCountTracesSampled             metric.Int64Counter
-	ProcessorTailSamplingEarlyReleasesFromCacheDecision metric.Int64Counter
-	ProcessorTailSamplingGlobalCountTracesSampled       metric.Int64Counter
-	ProcessorTailSamplingNewTraceIDReceived             metric.Int64Counter
-	ProcessorTailSamplingSamplingDecisionTimerLatency   metric.Int64Histogram
-	ProcessorTailSamplingSamplingLateSpanAge            metric.Int64Histogram
-	ProcessorTailSamplingSamplingPolicyEvaluationError  metric.Int64Counter
-	ProcessorTailSamplingSamplingPolicyExecutionCount   metric.Int64Counter
-	ProcessorTailSamplingSamplingPolicyExecutionTimeSum metric.Int64Counter
-	ProcessorTailSamplingSamplingTraceDroppedTooEarly   metric.Int64Counter
-	ProcessorTailSamplingSamplingTraceRemovalAge        metric.Int64Histogram
-	ProcessorTailSamplingSamplingTracesOnMemory         metric.Int64Gauge
-	ProcessorTailSamplingTracesDroppedTooLarge          metric.Int64Counter
+	meter                                                    metric.Meter
+	mu                                                       sync.Mutex
+	registrations                                            []metric.Registration
+	ProcessorTailSamplingCountBytesSampled                   metric.Int64Counter
+	ProcessorTailSamplingCountSpansSampled                   metric.Int64Counter
+	ProcessorTailSamplingCountSpansWithUnparseableTracestate metric.Int64Counter
+	ProcessorTailSamplingCountTracesSampled                  metric.Int64Counter
+	ProcessorTailSamplingEarlyReleasesFromCacheDecision      metric.Int64Counter
+	ProcessorTailSamplingGlobalCountTracesSampled            metric.Int64Counter
+	ProcessorTailSamplingNewTraceIDReceived                  metric.Int64Counter
+	ProcessorTailSamplingSamplingDecisionTimerLatency        metric.Int64Histogram
+	ProcessorTailSamplingSamplingLateSpanAge                 metric.Int64Histogram
+	ProcessorTailSamplingSamplingPolicyEvaluationError       metric.Int64Counter
+	ProcessorTailSamplingSamplingPolicyExecutionCount        metric.Int64Counter
+	ProcessorTailSamplingSamplingPolicyExecutionTimeSum      metric.Int64Counter
+	ProcessorTailSamplingSamplingTraceDroppedTooEarly        metric.Int64Counter
+	ProcessorTailSamplingSamplingTraceRemovalAge             metric.Int64Histogram
+	ProcessorTailSamplingSamplingTracesOnMemory              metric.Int64Gauge
+	ProcessorTailSamplingTracesDroppedTooLarge               metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -80,6 +81,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorTailSamplingCountSpansSampled, err = builder.meter.Int64Counter(
 		"otelcol_processor_tail_sampling_count_spans_sampled",
 		metric.WithDescription("Count of spans that were sampled or not per sampling policy [Development]"),
+		metric.WithUnit("{spans}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorTailSamplingCountSpansWithUnparseableTracestate, err = builder.meter.Int64Counter(
+		"otelcol_processor_tail_sampling_count_spans_with_unparseable_tracestate",
+		metric.WithDescription("Count of spans skipped while rewriting the effective `th` because their tracestate could not be parsed [Development]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
