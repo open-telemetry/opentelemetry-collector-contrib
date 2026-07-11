@@ -129,8 +129,14 @@ func DetectWrapperFormat(input []byte) (RecordsBatchFormat, error) {
 	// Support both LF and CRLF line endings: Azure blobs may use \r\n,
 	// in which case the byte before \n is \r (not '}').
 	idx := bytes.IndexByte(input, '\n')
-	if idx > 1 && (input[idx-1] == '}' || (input[idx-1] == '\r' && idx > 2 && input[idx-2] == '}')) {
-		return FormatNDJSON, nil
+	if idx != -1 {
+		// Isolate the line up to the newline, and strip all trailing \r characters
+		line := bytes.TrimRight(input[:idx], "\r")
+		
+		// Check if the actual text content ends with the closing bracket
+		if bytes.HasSuffix(line, []byte("}")) {
+			return FormatNDJSON, nil
+		}
 	}
 
 	// Everything else - is unsupported
