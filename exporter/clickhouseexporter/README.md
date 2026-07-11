@@ -2,7 +2,8 @@
 # ClickHouse Exporter
 | Status        |           |
 | ------------- |-----------|
-| Stability     | [alpha]: metrics   |
+| Stability     | [development]: profiles   |
+|               | [alpha]: metrics   |
 |               | [beta]: traces, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fclickhouse%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fclickhouse) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fclickhouse%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fclickhouse) |
@@ -10,6 +11,7 @@
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@hanjm](https://www.github.com/hanjm), [@Frapschen](https://www.github.com/Frapschen), [@SpencerTorres](https://www.github.com/SpencerTorres) |
 | Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
 
+[development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -27,9 +29,26 @@ This exporter supports sending OpenTelemetry data to [ClickHouse](https://clickh
 Note:
 **Batching Recommendation**
 For optimal performance, [ClickHouse recommends](https://clickhouse.com/docs/en/introduction/performance/#performance-when-inserting-data) inserting data in large batches:
-> We recommend inserting data in packets of at least 1000 rows, or no more than a single request per second. When inserting to a MergeTree table from a tab-separated dump, the insertion speed can be from 50 to 200 MB/s.
+> We recommend inserting data in packets of at least 5000 rows, or no more than a single request per second. When inserting to a MergeTree table from a tab-separated dump, the insertion speed can be from 50 to 200 MB/s.
 
-To achieve this natively, enable batching within the exporter's `sending_queue` configuration. **You do not need to add the external `batch` processor to your collector pipeline.** Relying on the exporter's internal batching is the recommended approach to avoid data-loss issues associated with the external processor.
+To achieve this natively, enable batching within the exporter's `sending_queue` configuration. You do not need to add the external `batch` processor to your collector pipeline. Relying on the exporter's internal batching is the recommended approach to avoid data-loss issues associated with the external processor.
+
+Enable it by adding a `batch` block inside `sending_queue`:
+
+```yaml
+exporters:
+  clickhouse:
+    endpoint: tcp://127.0.0.1:9000
+    sending_queue:
+      # num_consumers controls how many batches are inserted into ClickHouse
+      # concurrently.
+      num_consumers: 10
+      batch:
+        min_size: 5000      # rows per INSERT (items sizer); tune to your workload
+        flush_timeout: 5s   # flush a partial batch after this delay
+```
+
+If you are migrating from a pipeline that uses the standalone `batch` processor, remove `batch` from the pipeline's `processors` list and configure `sending_queue.batch` instead. For durability across restarts, also set `sending_queue.storage` to a [storage extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage) so queued batches survive a crash (at-least-once delivery).
 
 ## Visualization Tools
 
@@ -278,6 +297,22 @@ limit 100
 The OTLP Metrics [define two type value for one datapoint](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L358),
 clickhouse only use one value of float64 to store them.
 
+### Profiles
+
+> [!IMPORTANT]
+> Profiles support is at `development` stability. The OpenTelemetry profiling signal itself is
+> pre-GA (the OTLP profiles protocol is in `v1development`), so the schema and behavior may change
+> in a backwards-incompatible way. To send profiles through a collector pipeline you must enable the
+> `service.profilesSupport` feature gate (`--feature-gates=+service.profilesSupport`).
+>
+> **The profiles table requires ClickHouse 26.2 or newer.** It always uses `text` (full-text-search)
+> indexes and does not fall back to `bloom_filter` on older server versions. If you manage the schema
+> yourself (`create_schema: false`), you can adapt the DDL for an older version.
+
+Profiles are stored as one denormalized row per OTLP `Sample`. The interned `ProfilesDictionary`
+(strings, functions, locations, mappings, links, attributes) is resolved at write time so each row
+is self-contained and can be queried without joins.
+
 ## Performance Guide
 
 A single ClickHouse instance with 32 CPU cores and 128 GB RAM can handle around 20 TB (20 Billion) logs per day,
@@ -321,6 +356,7 @@ ClickHouse tables:
 
 - `logs_table_name` (default = otel_logs): The table name for logs.
 - `traces_table_name` (default = otel_traces): The table name for traces.
+- `profiles_table_name` (default = otel_profiles): The table name for profiles.
 - `metrics_tables`
     - `gauge`
         - `name` (default = "otel_metrics_gauge")
@@ -351,8 +387,16 @@ Processing:
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `sending_queue`
     - `enabled` (default = true)
-    - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-    - `queue_size` (default = 1000): Maximum number of batches kept in memory before dropping data.
+    - `num_consumers` (default = 10): Number of concurrent consumers that dequeue and insert data into ClickHouse. Enabling `batch` does not reduce this parallelism, only the (cheap) queue reader becomes single-threaded, while inserts still run on up to `num_consumers` workers. Ignored if `enabled` is `false`.
+    - `queue_size` (default = 1000): Maximum size of the queue, measured in `sizer` units. Data is dropped when the queue is full unless `block_on_overflow` is enabled.
+    - `sizer` (default = `requests`): How `queue_size` is measured. One of `requests`, `items`, or `bytes`.
+    - `block_on_overflow` (default = false): If `true`, waits for space when the queue is full instead of dropping data (applies backpressure to the pipeline).
+    - `storage` (default = none): Name of a [storage extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage) for a persistent, crash-safe queue. When unset, the queue is in-memory and is lost on restart.
+    - `batch` (disabled by default): Batches data inside the sending queue. Add an empty `batch: {}` to enable it with the defaults below. This replaces the standalone `batch` processor; see the batching recommendation near the top of this document.
+        - `flush_timeout` (default = 200ms): Time after which a batch is sent regardless of size.
+        - `min_size` (default = 8192): Minimum batch size before it is sent, in `batch.sizer` units.
+        - `max_size` (default = 0): Maximum batch size; `0` means no limit. When set, larger batches are split, and it must be `>= min_size`.
+        - `sizer` (default = `items`): How batch size is measured. One of `items` or `bytes` (not `requests`). If unset, inherits `sending_queue.sizer`.
 - `retry_on_failure`
     - `enabled` (default = true)
     - `initial_interval` (default = 5s): The Time to wait after the first failure before retrying; ignored if `enabled`
