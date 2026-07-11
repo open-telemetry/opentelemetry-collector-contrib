@@ -21,6 +21,11 @@ subtext: |
   to a value greater than 1 distributes traces across independent goroutines,
   each with its own storage and decision batcher. The default value of 1
   preserves the original single-loop behavior.
+  To keep aggregate behavior consistent with the configured values,
+  `num_traces`, `expected_new_traces_per_sec`, `decision_cache` sizes, and
+  per-second rate limits in policies (`rate_limiting`, `bytes_limiting`, and
+  composite `max_total_spans_per_second`) are divided evenly across shards.
+  The `sampling_traces_on_memory` metric reports the total across all shards.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

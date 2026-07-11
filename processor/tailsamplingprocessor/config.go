@@ -367,8 +367,11 @@ type Config struct {
 	// storage and decision batcher. Traces are routed to shards by trace ID,
 	// ensuring all spans for a given trace are processed by the same shard.
 	// Higher values reduce contention between trace ingestion and sampling
-	// decision evaluation under high load. NumTraces and
-	// ExpectedNewTracesPerSec are divided evenly across shards.
+	// decision evaluation under high load. NumTraces,
+	// ExpectedNewTracesPerSec, decision cache sizes, and per-second rate
+	// limits in policies (rate_limiting, bytes_limiting, and composite
+	// max_total_spans_per_second) are divided evenly across shards so
+	// aggregate behavior matches the configured values.
 	// Defaults to 1 (single event loop, original behavior).
 	NumShards uint32 `mapstructure:"num_shards"`
 }

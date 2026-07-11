@@ -68,6 +68,14 @@ The following configuration options can also be modified:
 - `drop_pending_traces_on_shutdown`: Drop pending traces on shutdown instead of making a decision with the partial data
   already ingested.
 - `maximum_trace_size_bytes`: The maximum size a trace can reach in bytes, traces larger than this size will be immediately dropped from the tail sampling processor in order to protect the system.
+- `num_shards` (default = 1): Number of parallel event loops processing traces. Traces are routed to shards
+  by trace ID, so all spans of a trace are always processed by the same shard. Values greater than 1 reduce
+  contention between trace ingestion and sampling decision evaluation under high load. To keep aggregate
+  behavior consistent with the configured values, `num_traces`, `expected_new_traces_per_sec`, `decision_cache`
+  sizes, and per-second rate limits in policies (`rate_limiting`, `bytes_limiting`, and composite
+  `max_total_spans_per_second`) are divided evenly across shards. Because each shard enforces its share of a
+  rate limit independently (with a minimum of 1 per shard), enforcement is approximate: limits smaller than
+  `num_shards` can be exceeded in aggregate.
 
 ## Sampling Strategies
 

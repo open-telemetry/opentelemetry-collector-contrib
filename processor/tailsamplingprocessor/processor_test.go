@@ -701,7 +701,7 @@ func TestSetSamplingPolicy(t *testing.T) {
 			},
 		},
 	}
-	p.(*tailSamplingSpanProcessor).SetSamplingPolicy(cfgs)
+	p.(*shardedProcessor).SetSamplingPolicy(cfgs)
 
 	controller.waitForTick()
 
@@ -1373,7 +1373,7 @@ func TestDropLargeTraces(t *testing.T) {
 	assert.Len(t, allSampledTraces, 1)
 
 	// Verify that the config can be changed without restarting the processor.
-	processor.(*tailSamplingSpanProcessor).SetMaximumTraceSizeBytes(1 << 20)
+	processor.(*shardedProcessor).SetMaximumTraceSizeBytes(1 << 20)
 	controller.waitForTick()
 
 	largeOnly := ptrace.NewTraces()
@@ -1501,9 +1501,9 @@ func TestDeleteQueueCleared(t *testing.T) {
 	allSampledTraces := nextConsumer.AllTraces()
 	assert.Len(t, allSampledTraces, 128)
 	// All traces should be flushed from the map.
-	assert.Empty(t, sp.(*tailSamplingSpanProcessor).idToTrace)
+	assert.Empty(t, shard0(sp).idToTrace)
 	// All traces should be removed from the delete queue.
-	assert.Zero(t, sp.(*tailSamplingSpanProcessor).deleteTraceQueue.Len())
+	assert.Zero(t, shard0(sp).deleteTraceQueue.Len())
 }
 
 func TestRootReceivedBatcher(t *testing.T) {

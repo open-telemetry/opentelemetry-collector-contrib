@@ -11,6 +11,7 @@ import (
 	"math"
 	"runtime"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -87,10 +88,11 @@ type tailSamplingSpanProcessor struct {
 	cfg  Config
 	host component.Host
 
-	// shardAttrOpt is a pre-built metric.MeasurementOption carrying the
-	// shard index for this instance. Defaults to shard=0 for unsharded
-	// processors; overridden per shard in newShardedTracesProcessor.
-	shardAttrOpt metric.MeasurementOption
+	// tracesOnMemory counts the traces held in memory across all shards of
+	// the same processor. It is shared so the traces_on_memory gauge reports
+	// the processor-wide total instead of per-shard values overwriting each
+	// other on the same time series.
+	tracesOnMemory *atomic.Int64
 
 	sampledHooks    []DecisionHook
 	nonSampledHooks []DecisionHook
@@ -110,10 +112,13 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		return nil, err
 	}
 
-	if cfg.NumShards > 1 {
-		return newShardedTracesProcessor(ctx, set, nextConsumer, cfg)
-	}
+	return newShardedTracesProcessor(ctx, set, nextConsumer, cfg)
+}
 
+// newShardProcessor creates a single shard: an independent event loop with
+// its own trace storage and decision batcher. Shards are created and routed
+// to by the shardedProcessor returned from newTracesProcessor.
+func newShardProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config, tracesOnMemory *atomic.Int64) (*tailSamplingSpanProcessor, error) {
 	telemetrySettings := set.TelemetrySettings
 	telemetry, err := metadata.NewTelemetryBuilder(telemetrySettings)
 	if err != nil {
@@ -151,7 +156,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
 		blockOnOverflow:    cfg.BlockOnOverflow,
 		maxTraceSizeBytes:  cfg.MaximumTraceSizeBytes,
-		shardAttrOpt:       metric.WithAttributes(attribute.Int("shard", 0)),
+		tracesOnMemory:     tracesOnMemory,
 		// Similar to the id batcher, allow a batch per CPU to be buffered before blocking ConsumeTraces.
 		workChan: make(chan []traceBatch, runtime.NumCPU()),
 		// We need to buffer one new policy command/size update so that external callers can
@@ -169,10 +174,6 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	}
 
 	return tsp, nil
-}
-
-func (*tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
 }
 
 // Start is invoked during service startup.
@@ -211,49 +212,6 @@ func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Ho
 
 	tsp.doneChan = make(chan struct{})
 	go tsp.loop()
-	return nil
-}
-
-// ConsumeTraces is required by the processor.Traces interface.
-func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	_, span := tsp.tracer.Start(ctx, "tailsampling.ConsumeTraces")
-	defer span.End()
-
-	var totalSpans, totalTraces, totalResourceSpans int64
-
-	for _, rss := range td.ResourceSpans().All() {
-		totalResourceSpans++
-		// First group all spans by trace.
-		idToSpansAndScope := groupSpansByTraceKey(rss)
-
-		// Then, create a new ptrace.ResourceSpans for each trace copying all
-		// data. Paying this cost upfront allows the inner loop of the TSP to
-		// be more efficient on its single goroutine.
-		batch := []traceBatch{}
-		for traceID, spans := range idToSpansAndScope {
-			newRSS, rootSpan := newResourceSpanFromSpanAndScopes(rss, spans)
-			batch = append(batch, traceBatch{
-				id:        traceID,
-				rootSpan:  rootSpan,
-				rss:       newRSS,
-				spanCount: int64(len(spans)),
-			})
-			totalSpans += int64(len(spans))
-			totalTraces++
-		}
-		if len(batch) > 0 {
-			tsp.workChan <- batch
-		}
-	}
-
-	if span.IsRecording() {
-		span.SetAttributes(
-			attribute.Int64("traces.count", totalTraces),
-			attribute.Int64("spans.count", totalSpans),
-			attribute.Int64("resource_spans.count", totalResourceSpans),
-		)
-	}
-
 	return nil
 }
 
@@ -729,7 +687,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	}
 
 	tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, time.Since(startTime).Milliseconds())
-	tsp.telemetry.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(len(tsp.idToTrace)), tsp.shardAttrOpt)
+	tsp.telemetry.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, tsp.tracesOnMemory.Load())
 	tsp.telemetry.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(tsp.ctx, metrics.idNotFoundOnMapCount)
 	tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
 
@@ -935,6 +893,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		}
 
 		tsp.idToTrace[id] = actualData
+		tsp.tracesOnMemory.Add(1)
 
 		newTraceIDs++
 		actualData.batchID = tsp.decisionBatcher.AddToCurrentBatch(id)
@@ -1079,6 +1038,7 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 	}
 
 	delete(tsp.idToTrace, traceID)
+	tsp.tracesOnMemory.Add(-1)
 	tsp.tailStorage.Delete(traceID)
 	if trace.deleteElement != nil {
 		tsp.deleteTraceQueue.Remove(trace.deleteElement)

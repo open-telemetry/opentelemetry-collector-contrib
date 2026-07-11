@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
@@ -43,36 +44,125 @@ func TestShardedProcessorCreation(t *testing.T) {
 	}
 }
 
-func TestShardedProcessorSingleShardFallback(t *testing.T) {
-	cfg := Config{
-		SamplingStrategy: samplingStrategyTraceComplete,
-		DecisionWait:     defaultTestDecisionWait,
-		NumTraces:        defaultNumTraces,
-		NumShards:        1,
-		PolicyCfgs:       testPolicy,
-	}
-
-	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
-	require.NoError(t, err)
-
-	_, ok := p.(*tailSamplingSpanProcessor)
-	require.True(t, ok, "expected tailSamplingSpanProcessor when NumShards <= 1")
+// shard0 returns the first (or only) shard of a processor created by
+// newTracesProcessor, for tests that inspect shard internals.
+func shard0(p processor.Traces) *tailSamplingSpanProcessor {
+	return p.(*shardedProcessor).shards[0]
 }
 
-func TestShardedProcessorZeroShardsFallback(t *testing.T) {
+func TestShardedProcessorSingleShard(t *testing.T) {
+	// NumShards of 1 and 0 (unset) walk the same code path as NumShards > 1,
+	// producing a shardedProcessor with a single shard whose config is not
+	// divided.
+	for _, numShards := range []uint32{0, 1} {
+		cfg := Config{
+			SamplingStrategy:        samplingStrategyTraceComplete,
+			DecisionWait:            defaultTestDecisionWait,
+			NumTraces:               defaultNumTraces,
+			ExpectedNewTracesPerSec: 10,
+			NumShards:               numShards,
+			PolicyCfgs:              testPolicy,
+		}
+
+		p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
+		require.NoError(t, err)
+
+		sp, ok := p.(*shardedProcessor)
+		require.True(t, ok, "expected shardedProcessor for NumShards = %d", numShards)
+		assert.Equal(t, uint32(1), sp.numShards)
+		require.Len(t, sp.shards, 1)
+		assert.Equal(t, uint64(defaultNumTraces), sp.shards[0].cfg.NumTraces)
+		assert.Equal(t, uint64(10), sp.shards[0].cfg.ExpectedNewTracesPerSec)
+	}
+}
+
+func TestShardedProcessorDisabledDecisionCacheStaysDisabled(t *testing.T) {
 	cfg := Config{
 		SamplingStrategy: samplingStrategyTraceComplete,
 		DecisionWait:     defaultTestDecisionWait,
-		NumTraces:        defaultNumTraces,
-		NumShards:        0,
+		NumTraces:        400,
+		NumShards:        4,
 		PolicyCfgs:       testPolicy,
 	}
 
 	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	require.NoError(t, err)
 
-	_, ok := p.(*tailSamplingSpanProcessor)
-	require.True(t, ok, "expected tailSamplingSpanProcessor when NumShards is 0")
+	for _, shard := range p.(*shardedProcessor).shards {
+		assert.Zero(t, shard.cfg.DecisionCache.SampledCacheSize,
+			"disabled sampled cache must not be enabled by shard division")
+		assert.Zero(t, shard.cfg.DecisionCache.NonSampledCacheSize,
+			"disabled non-sampled cache must not be enabled by shard division")
+	}
+}
+
+func TestDividePolicyRates(t *testing.T) {
+	cfgs := []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "rate", Type: RateLimiting,
+				RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 1000, BurstCapacity: 100},
+			},
+		},
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "bytes", Type: BytesLimiting,
+				BytesLimitingCfg: BytesLimitingCfg{BytesPerSecond: 4000},
+			},
+		},
+		{
+			sharedPolicyCfg: sharedPolicyCfg{Name: "and", Type: And},
+			AndCfg: AndCfg{SubPolicyCfg: []AndSubPolicyCfg{{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "and-rate", Type: RateLimiting,
+					RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 400},
+				},
+			}}},
+		},
+		{
+			sharedPolicyCfg: sharedPolicyCfg{Name: "composite", Type: Composite},
+			CompositeCfg: CompositeCfg{
+				MaxTotalSpansPerSecond: 800,
+				RateAllocation:         []RateAllocationCfg{{Policy: "sub", Percent: 50}},
+				SubPolicyCfg: []CompositeSubPolicyCfg{{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "sub", Type: RateLimiting,
+						RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 40},
+					},
+				}},
+			},
+		},
+		{
+			// Limit smaller than the shard count must not round down to 0,
+			// which would sample nothing.
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "small", Type: RateLimiting,
+				RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 2},
+			},
+		},
+	}
+
+	divided := dividePolicyRates(cfgs, 4)
+
+	assert.Equal(t, int64(250), divided[0].RateLimitingCfg.SpansPerSecond)
+	assert.Equal(t, int64(25), divided[0].RateLimitingCfg.BurstCapacity)
+	assert.Equal(t, int64(1000), divided[1].BytesLimitingCfg.BytesPerSecond)
+	assert.Equal(t, int64(0), divided[1].BytesLimitingCfg.BurstCapacity, "unset burst capacity must stay unset")
+	assert.Equal(t, int64(100), divided[2].AndCfg.SubPolicyCfg[0].RateLimitingCfg.SpansPerSecond)
+	assert.Equal(t, int64(200), divided[3].CompositeCfg.MaxTotalSpansPerSecond)
+	assert.Equal(t, int64(10), divided[3].CompositeCfg.SubPolicyCfg[0].RateLimitingCfg.SpansPerSecond)
+	assert.Equal(t, int64(50), divided[3].CompositeCfg.RateAllocation[0].Percent, "percentage allocations must not be divided")
+	assert.Equal(t, int64(1), divided[4].RateLimitingCfg.SpansPerSecond)
+
+	// The input must not be mutated: SetSamplingPolicy callers and the parent
+	// config retain the undivided values.
+	assert.Equal(t, int64(1000), cfgs[0].RateLimitingCfg.SpansPerSecond)
+	assert.Equal(t, int64(400), cfgs[2].AndCfg.SubPolicyCfg[0].RateLimitingCfg.SpansPerSecond)
+	assert.Equal(t, int64(800), cfgs[3].CompositeCfg.MaxTotalSpansPerSecond)
+	assert.Equal(t, int64(40), cfgs[3].CompositeCfg.SubPolicyCfg[0].RateLimitingCfg.SpansPerSecond)
+
+	// A single shard needs no division and returns the input unchanged.
+	assert.Equal(t, cfgs, dividePolicyRates(cfgs, 1))
 }
 
 func TestShardedProcessorStartShutdown(t *testing.T) {
