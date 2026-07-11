@@ -206,14 +206,14 @@ func (i *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, dec *enc
 			if addr, ok := i.connection.LocalAddr().(*net.UDPAddr); ok {
 				ip := addr.IP.String()
 				entry.AddAttribute("network.local.address", ip)
-				entry.AddAttribute("network.local.port", strconv.FormatInt(int64(addr.Port), 10))
+				entry.AddAttribute("server.port", strconv.FormatInt(int64(addr.Port), 10))
 				entry.AddAttribute("server.address", i.resolver.GetHostFromIP(ip))
 			}
 
 			if addr, ok := remoteAddr.(*net.UDPAddr); ok {
 				ip := addr.IP.String()
 				entry.AddAttribute("network.peer.address", ip)
-				entry.AddAttribute("network.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+				entry.AddAttribute("client.port", strconv.FormatInt(int64(addr.Port), 10))
 				entry.AddAttribute("client.address", i.resolver.GetHostFromIP(ip))
 			}
 		} else {

@@ -122,14 +122,14 @@ func udpInputAttributesTest(input []byte, expected []string, useStableNetworkAtt
 					if addr, ok := udpInput.connection.LocalAddr().(*net.UDPAddr); ok {
 						ip := addr.IP.String()
 						expectedAttributes["network.local.address"] = ip
-						expectedAttributes["network.local.port"] = strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["server.port"] = strconv.FormatInt(int64(addr.Port), 10)
 						expectedAttributes["server.address"] = udpInput.resolver.GetHostFromIP(ip)
 					}
 					// LocalAddr for conn is a client (peer) address
 					if addr, ok := conn.LocalAddr().(*net.UDPAddr); ok {
 						ip := addr.IP.String()
 						expectedAttributes["network.peer.address"] = ip
-						expectedAttributes["network.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["client.port"] = strconv.FormatInt(int64(addr.Port), 10)
 						expectedAttributes["client.address"] = udpInput.resolver.GetHostFromIP(ip)
 					}
 				} else {

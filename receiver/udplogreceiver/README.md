@@ -116,10 +116,10 @@ each log record.
 | ---                  | ---                     |
 | `net.transport`      | `network.transport`     |
 | `net.host.ip`        | `network.local.address` |
-| `net.host.port`      | `network.local.port`    |
+| `net.host.port`      | `server.port`           |
 | `net.host.name`      | `server.address`        |
 | `net.peer.ip`        | `network.peer.address`  |
-| `net.peer.port`      | `network.peer.port`     |
+| `net.peer.port`      | `client.port`           |
 | `net.peer.name`      | `client.address`        |
 
 The `net.transport` value `IP.UDP` is replaced by the `network.transport` value `udp`.
