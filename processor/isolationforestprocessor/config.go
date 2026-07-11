@@ -122,8 +122,11 @@ func (cfg *Config) Validate() error {
 		return errors.New("forest_size should not exceed 1000")
 	}
 
-	if cfg.ContaminationRate < 0.0 || cfg.ContaminationRate > 1.0 {
-		return errors.New("contamination_rate must be between 0.0 and 1.0")
+	// contamination_rate must be strictly within (0.0, 1.0). A rate of 0.0 (flag
+	// nothing) or 1.0 (flag everything) is degenerate for an isolation forest, so
+	// reject it here instead of silently substituting a default in the forest.
+	if cfg.ContaminationRate <= 0.0 || cfg.ContaminationRate >= 1.0 {
+		return errors.New("contamination_rate must be greater than 0.0 and less than 1.0")
 	}
 	if cfg.MinNodeSamples <= 0 {
 		return errors.New("min_node_samples must be positive")

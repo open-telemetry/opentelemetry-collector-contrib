@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap/zaptest"
@@ -929,6 +930,59 @@ func TestOnlineForestStatistics_EdgeCases(t *testing.T) {
 	assert.Equal(t, 0, stats.ActiveTrees, "Should report zero active trees")
 	assert.Equal(t, 0.0, stats.AnomalyRate, "Should handle zero samples gracefully")
 	assert.True(t, stats.WindowUtilization >= 0.0 && stats.WindowUtilization <= 1.0)
+}
+
+// TestRegression_TreesSplitAfterEnoughSamples is a regression test for
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46988
+// (bug 1). updateNodePath returned on the isLeaf guard before reaching the split
+// check, so every node stayed a single root leaf no matter how many samples were
+// processed. With only unsplit roots, calculatePathLength returned a near-constant
+// value and every sample received an almost identical anomaly score (~0.69).
+func TestRegression_TreesSplitAfterEnoughSamples(t *testing.T) {
+	const minNodeSamples = 5
+	// A single tree receives every sample (updateTreesIncremental updates
+	// max(1, numTrees/10) trees), making the split deterministic.
+	forest := newOnlineIsolationForest(1, 200, 8, 0.1, minNodeSamples)
+
+	// Feed clearly varied samples so the split can pick a non-constant feature.
+	for i := 0; i < 50; i++ {
+		forest.ProcessSample([]float64{float64(i), float64(i % 7)})
+	}
+
+	root := forest.trees[0].root
+	require.NotNil(t, root, "tree root should be initialized after processing samples")
+	assert.False(t, root.isLeaf, "root must split into an internal node once it exceeds minNodeSamples")
+	assert.NotNil(t, root.left, "a split root must have a left child")
+	assert.NotNil(t, root.right, "a split root must have a right child")
+}
+
+// TestRegression_ContaminationRateAffectsThreshold is a regression test for
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46988
+// (bug 2). The adaptive-threshold percentile was hardcoded to 0.9 and the
+// configured contamination_rate was ignored. The percentile must be derived as
+// (1 - contamination_rate), so a lower contamination_rate yields a higher
+// threshold (flag fewer points).
+func TestRegression_ContaminationRateAffectsThreshold(t *testing.T) {
+	// Deterministic score distribution, identical for both forests.
+	scores := make([]float64, 100)
+	for i := range scores {
+		scores[i] = float64(i) / 100.0 // 0.00 .. 0.99
+	}
+
+	thresholdFor := func(contaminationRate float64) float64 {
+		f := newOnlineIsolationForest(10, 200, 6, contaminationRate, 10)
+		f.threshold = 0.0 // neutral start so the result is driven purely by the percentile
+		f.scoreHistory = append([]float64(nil), scores...)
+		f.updateAdaptiveThreshold(0.5) // >=50 samples in history triggers a recompute
+		return f.threshold
+	}
+
+	lowContamination := thresholdFor(0.05)  // ~95th percentile
+	highContamination := thresholdFor(0.30) // ~70th percentile
+
+	assert.Greater(t, lowContamination, highContamination,
+		"lower contamination_rate must produce a higher threshold; the rate was ignored before the fix "+
+			"(low=%f high=%f)", lowContamination, highContamination)
 }
 
 // Keep existing benchmark tests
