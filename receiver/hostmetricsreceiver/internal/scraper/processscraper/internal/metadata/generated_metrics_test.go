@@ -87,7 +87,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordProcessContextSwitchesDataPoint(ts, 3, AttributeContextSwitchTypeVoluntary)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeStateSystem)
@@ -100,7 +99,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordProcessCPUUtilizationDataPoint(ts, 3, AttributeStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirectionRead)
@@ -116,14 +114,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordProcessHandlesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryUsageDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordProcessMemoryUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryVirtualDataPoint(ts, 1)

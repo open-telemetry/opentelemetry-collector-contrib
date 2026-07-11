@@ -19,6 +19,7 @@ resource_attributes:
 attributes:
 {% for attr in (ctx.groups | selectattr("id", "equalto", "metric.attributes") | first).attributes %}  {{ attr.name | safe }}:
     description: {{ attr.brief | safe }}
+    requirement_level: {{ attr.requirement_level | safe }}
     type: {{ attr.type | safe }}
 {% endfor %}
 metrics:

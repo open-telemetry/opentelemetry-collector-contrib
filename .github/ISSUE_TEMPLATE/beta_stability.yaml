@@ -20,7 +20,6 @@ body:
       - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
-      - cmd/schemagen
       - cmd/telemetrygen
       - confmap/provider/aesprovider
       - confmap/provider/googlesecretmanagerprovider
@@ -201,6 +200,7 @@ body:
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/drain
+      - processor/dynamicsampling
       - processor/filter
       - processor/genainormalizer
       - processor/geoip
@@ -302,7 +302,6 @@ body:
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
-      - receiver/jmx
       - receiver/journald
       - receiver/k8scluster
       - receiver/k8sevents

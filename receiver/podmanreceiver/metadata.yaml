@@ -1,7 +1,6 @@
 display_name: Podman Stats Receiver
 type: podman_stats
 
-reaggregation_enabled: true
 description: |
   The Podman Stats Receiver queries the Podman service API to fetch stats for all running containers
   on a configured interval.  These stats are for container resource usage of cpu, memory, network, and
@@ -47,7 +46,7 @@ metrics:
     description: "Number of bytes transferred from the disk by the container"
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     stability: development
-    unit: "{operations}"
+    unit: By
     sum:
       value_type: int
       monotonic: true
@@ -57,7 +56,7 @@ metrics:
     description: "Number of bytes transferred to the disk by the container"
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     stability: development
-    unit: "{operations}"
+    unit: By
     sum:
       value_type: int
       monotonic: true
