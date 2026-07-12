@@ -672,7 +672,7 @@ type metricMemcachedNetwork struct {
 func (m *metricMemcachedNetwork) init() {
 	m.data.SetName("memcached.network")
 	m.data.SetDescription("Bytes transferred over the network.")
-	m.data.SetUnit("by")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
