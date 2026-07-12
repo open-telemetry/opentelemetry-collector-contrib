@@ -5,12 +5,18 @@ package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -27,11 +33,15 @@ import (
 )
 
 var (
-	errNilLogsConsumer       = errors.New("missing a logs consumer")
-	errInvalidRequestMethod  = errors.New("invalid method. Valid method is POST")
-	errInvalidEncodingType   = errors.New("invalid encoding type")
-	errEmptyResponseBody     = errors.New("request body content length is zero")
-	errMissingRequiredHeader = errors.New("request was missing required header or incorrect header value")
+	errNilLogsConsumer          = errors.New("missing a logs consumer")
+	errInvalidRequestMethod     = errors.New("invalid method. Valid method is POST")
+	errInvalidEncodingType      = errors.New("invalid encoding type")
+	errEmptyResponseBody        = errors.New("request body content length is zero")
+	errMissingRequiredHeader    = errors.New("request was missing required header or incorrect header value")
+	errMissingSignatureHeader   = errors.New("missing HMAC signature header")
+	errInvalidSignaturePrefix   = errors.New("HMAC signature header has invalid prefix")
+	errInvalidSignatureEncoding = errors.New("HMAC signature hex encoding is invalid")
+	errSignatureMismatch        = errors.New("HMAC signature does not match payload")
 )
 
 const healthyResponse = `{"text": "Webhookevent receiver is healthy"}`
@@ -186,6 +196,35 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 		return
 	}
 
+	// If HMAC signature verification is configured, read the raw body for verification
+	// before any decompression, since webhook providers sign the raw payload.
+	if er.cfg.HMACSignature.Secret != "" {
+		limitedBody := io.LimitReader(r.Body, int64(er.maxRequestBodySize)+1)
+		rawBody, readErr := io.ReadAll(limitedBody)
+		_ = r.Body.Close()
+		if readErr != nil {
+			er.failBadReq(ctx, w, http.StatusBadRequest, readErr)
+			er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, readErr)
+			return
+		}
+
+		if len(rawBody) > er.maxRequestBodySize {
+			tooLargeErr := fmt.Errorf("%w: limit is %d bytes", errRequestBodyTooLarge, er.maxRequestBodySize)
+			er.failBadReq(ctx, w, http.StatusBadRequest, tooLargeErr)
+			er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, tooLargeErr)
+			return
+		}
+
+		if verifyErr := er.verifyHMACSignature(rawBody, r.Header.Get(er.cfg.HMACSignature.Header)); verifyErr != nil {
+			er.failBadReq(ctx, w, http.StatusUnauthorized, verifyErr)
+			er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, verifyErr)
+			return
+		}
+
+		// Replace the body with a reader over the raw bytes for subsequent processing
+		r.Body = io.NopCloser(bytes.NewReader(rawBody))
+	}
+
 	bodyReader := r.Body
 	// gzip encoded case
 	if encoding == "gzip" || encoding == "x-gzip" {
@@ -229,6 +268,36 @@ func (*eventReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Request, 
 	w.WriteHeader(http.StatusOK)
 
 	_, _ = w.Write([]byte(healthyResponse))
+}
+
+// verifyHMACSignature verifies the HMAC-SHA256 hex digest signature of the request body.
+// The signature header value is expected to be in the format "<prefix><hex-digest>",
+// e.g. "sha256=abc123..." (GitHub) or "v1=abc123..." (Fingerprint).
+func (er *eventReceiver) verifyHMACSignature(payload []byte, signatureHeader string) error {
+	if signatureHeader == "" {
+		return errMissingSignatureHeader
+	}
+
+	prefix := er.cfg.HMACSignature.Prefix
+	if !strings.HasPrefix(signatureHeader, prefix) {
+		return fmt.Errorf("%w: expected prefix %q", errInvalidSignaturePrefix, prefix)
+	}
+
+	hexDigest := strings.TrimPrefix(signatureHeader, prefix)
+	sigBytes, err := hex.DecodeString(hexDigest)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errInvalidSignatureEncoding, err)
+	}
+
+	mac := hmac.New(sha256.New, []byte(er.cfg.HMACSignature.Secret))
+	mac.Write(payload)
+	expectedMAC := mac.Sum(nil)
+
+	if !hmac.Equal(sigBytes, expectedMAC) {
+		return errSignatureMismatch
+	}
+
+	return nil
 }
 
 // write response on a failed/bad request. Generates a small json body based on the thrown by
