@@ -143,7 +143,7 @@ func TestEmptyScrape(t *testing.T) {
 	// Disable all metrics manually that are enabled by default
 	configureAllScraperMetricsAndEvents(cfg, false)
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.Empty(t, scrapers)
 }
 
@@ -181,8 +181,10 @@ func TestSuccessfulScrape(t *testing.T) {
 
 			configureAllScraperMetricsAndEvents(cfg, true)
 
-			scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+			scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 			assert.NotEmpty(t, scrapers)
+			// The receiver owns the shared pool; close it once the test is done.
+			t.Cleanup(func() { assert.NoError(t, provider.close()) })
 
 			for _, scraper := range scrapers {
 				err := scraper.Start(t.Context(), componenttest.NewNopHost())
@@ -242,8 +244,10 @@ func TestScrapeInvalidQuery(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetricsAndEvents(cfg, true)
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
+	// The receiver owns the shared pool; close it once the test is done.
+	t.Cleanup(func() { assert.NoError(t, provider.close()) })
 
 	for _, scraper := range scrapers {
 		err := scraper.Start(t.Context(), componenttest.NewNopHost())
@@ -274,7 +278,7 @@ func TestScrapeCacheAndDiff(t *testing.T) {
 	configureAllScraperMetricsAndEvents(cfg, false)
 
 	cfg.Events.DbServerTopQuery.Enabled = true
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
@@ -503,7 +507,7 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	cfg.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
@@ -583,7 +587,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	cfg.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
@@ -645,7 +649,7 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 	configureAllScraperMetricsAndEvents(cfg, false)
 	cfg.Events.DbServerTopQuery.Enabled = true
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
@@ -734,7 +738,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			configureAllScraperMetricsAndEvents(cfg, false)
 			cfg.Events.DbServerQuerySample.Enabled = true
 
-			scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+			scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 			assert.NotNil(t, scrapers)
 
 			scraper := scrapers[0]
@@ -811,7 +815,7 @@ func setupQuerySampleScraper(t *testing.T, logger *zap.Logger) *sqlServerScraper
 		settings.Logger = logger
 	}
 
-	scrapers := setupSQLServerLogsScrapers(settings, cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(settings, cfg)
 	assert.Len(t, scrapers, 1)
 	return scrapers[0]
 }
@@ -987,7 +991,7 @@ func TestMultiStatementProcNoDuplicateRows(t *testing.T) {
 	cfg.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
@@ -1131,7 +1135,7 @@ func TestRecordDatabaseSampleQueryUsesResourceBuilderForLogs(t *testing.T) {
 	configureAllScraperMetricsAndEvents(cfg, false)
 	cfg.Events.DbServerQuerySample.Enabled = true
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.Len(t, scrapers, 1)
 
 	scraper := scrapers[0]
@@ -1174,7 +1178,7 @@ func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) 
 	cfg.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.Len(t, scrapers, 1)
 
 	scraper := scrapers[0]
@@ -1247,7 +1251,7 @@ func TestRecordDatabaseStatusMetricsUsesResourceBuilderForMetrics(t *testing.T) 
 	configureAllScraperMetricsAndEvents(cfg, false)
 	cfg.Metrics.SqlserverCPUCount.Enabled = true
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.Len(t, scrapers, 1)
 
 	scraper := scrapers[0]

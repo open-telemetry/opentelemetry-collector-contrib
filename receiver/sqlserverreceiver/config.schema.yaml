@@ -1,4 +1,17 @@
 $defs:
+  connection_pool:
+    type: object
+    properties:
+      max_idle_time:
+        type: string
+        format: duration
+      max_lifetime:
+        type: string
+        format: duration
+      max_idle:
+        type: integer
+      max_open:
+        type: integer
   query_sample:
     type: object
     properties:
@@ -45,3 +58,4 @@ allOf:
   - $ref: ./internal/metadata.logs_builder_config
   - $ref: top_query_collection
   - $ref: query_sample
+  - $ref: connection_pool

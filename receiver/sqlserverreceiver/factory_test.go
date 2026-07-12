@@ -4,6 +4,7 @@
 package sqlserverreceiver
 
 import (
+	"database/sql"
 	"os"
 	"testing"
 	"time"
@@ -82,7 +83,7 @@ func TestFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg.(*Config))
+				scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg.(*Config))
 				require.Empty(t, scrapers)
 				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 				require.NoError(t, r.Shutdown(t.Context()))
@@ -104,11 +105,11 @@ func TestFactory(t *testing.T) {
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
 				params := receivertest.NewNopSettings(metadata.Type)
-				scrapers, err := setupScrapers(params, cfg)
+				scrapers, _, err := setupScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
 
-				sqlScrapers := setupSQLServerScrapers(params, cfg)
+				sqlScrapers, _ := setupSQLServerScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
 				databaseIOScraperFound := false
@@ -121,7 +122,7 @@ func TestFactory(t *testing.T) {
 
 				require.True(t, databaseIOScraperFound)
 				cfg.InstanceName = "instanceName"
-				sqlScrapers = setupSQLServerScrapers(params, cfg)
+				sqlScrapers, _ = setupSQLServerScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
 				databaseIOScraperFound = false
@@ -170,7 +171,7 @@ func TestFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg.(*Config))
+				scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg.(*Config))
 				require.Empty(t, scrapers)
 				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 				require.NoError(t, r.Shutdown(t.Context()))
@@ -192,20 +193,20 @@ func TestFactory(t *testing.T) {
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
 				params := receivertest.NewNopSettings(metadata.Type)
-				scrapers, err := setupLogsScrapers(params, cfg)
+				scrapers, _, err := setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.Empty(t, scrapers)
 
-				sqlScrapers := setupSQLServerLogsScrapers(params, cfg)
+				sqlScrapers, _ := setupSQLServerLogsScrapers(params, cfg)
 				require.Empty(t, sqlScrapers)
 
 				cfg.InstanceName = "instanceName"
 				cfg.Events.DbServerTopQuery.Enabled = true
-				scrapers, err = setupLogsScrapers(params, cfg)
+				scrapers, _, err = setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
 
-				sqlScrapers = setupSQLServerLogsScrapers(params, cfg)
+				sqlScrapers, _ = setupSQLServerLogsScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
 				q := getSQLServerQueryTextAndPlanQuery()
@@ -270,8 +271,11 @@ func TestScrapersShareSingleConnectionPool(t *testing.T) {
 	require.True(t, cfg.isDirectDBConnectionEnabled)
 
 	params := receivertest.NewNopSettings(metadata.Type)
-	scrapers := setupSQLServerScrapers(params, cfg)
+	scrapers, provider := setupSQLServerScrapers(params, cfg)
 	require.Greater(t, len(scrapers), 1, "expected more than one scraper to prove pool sharing")
+	require.NotNil(t, provider)
+	// The pool is owned by the receiver; close it once when the test finishes.
+	defer func() { require.NoError(t, provider.close()) }()
 
 	for _, s := range scrapers {
 		require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
@@ -283,9 +287,44 @@ func TestScrapersShareSingleConnectionPool(t *testing.T) {
 		require.Same(t, shared, s.db, "all scrapers must share the same *sql.DB pool")
 	}
 
+	// Scraper shutdown must not close the shared pool; the receiver owns it.
 	for _, s := range scrapers {
 		require.NoError(t, s.Shutdown(t.Context()))
 	}
+}
+
+// TestConnectionPoolSettings verifies the pool is sized from the scraper count
+// by default and that explicit config overrides win.
+func TestConnectionPoolSettings(t *testing.T) {
+	const dsn = "server=0.0.0.0;user id=sa;password=password;port=1433"
+
+	t.Run("default max_open derived from scraper count", func(t *testing.T) {
+		db, err := sql.Open("sqlserver", dsn)
+		require.NoError(t, err)
+		defer db.Close()
+
+		setConnectionPoolSettings(db, ConnectionPool{}, 4)
+		require.Equal(t, 4, db.Stats().MaxOpenConnections)
+	})
+
+	t.Run("explicit max_open overrides the default", func(t *testing.T) {
+		db, err := sql.Open("sqlserver", dsn)
+		require.NoError(t, err)
+		defer db.Close()
+
+		maxOpen := 12
+		setConnectionPoolSettings(db, ConnectionPool{MaxOpen: &maxOpen}, 4)
+		require.Equal(t, 12, db.Stats().MaxOpenConnections)
+	})
+
+	t.Run("scraper count is floored at one", func(t *testing.T) {
+		db, err := sql.Open("sqlserver", dsn)
+		require.NoError(t, err)
+		defer db.Close()
+
+		setConnectionPoolSettings(db, ConnectionPool{}, 0)
+		require.Equal(t, 1, db.Stats().MaxOpenConnections)
+	})
 }
 
 func TestSetupQueries(t *testing.T) {

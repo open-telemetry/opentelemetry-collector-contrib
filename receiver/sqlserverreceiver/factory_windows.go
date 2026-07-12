@@ -38,18 +38,24 @@ func createMetricsReceiver(
 	}
 
 	var opts []scraperhelper.ControllerOption
-	opts, err = setupScrapers(params, cfg)
+	var provider *dbProvider
+	opts, provider, err = setupScrapers(params, cfg)
 	if err != nil {
 		return nil, err
 	}
 	opts = append(opts, scraperhelper.AddMetricsScraper(metadata.Type, scraper))
 
-	return scraperhelper.NewMetricsController(
+	controller, err := scraperhelper.NewMetricsController(
 		&cfg.ControllerConfig,
 		params,
 		metricsConsumer,
 		opts...,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &sqlServerMetricsReceiver{Metrics: controller, provider: provider}, nil
 }
 
 // createLogsReceiver create a logs receiver based on provided config.
@@ -64,15 +70,20 @@ func createLogsReceiver(
 		return nil, errConfigNotSQLServer
 	}
 
-	opts, err := setupLogsScrapers(params, cfg)
+	opts, provider, err := setupLogsScrapers(params, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewLogsController(
+	controller, err := scraperhelper.NewLogsController(
 		&cfg.ControllerConfig,
 		params,
 		logsConsumer,
 		opts...,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &sqlServerLogsReceiver{Logs: controller, provider: provider}, nil
 }

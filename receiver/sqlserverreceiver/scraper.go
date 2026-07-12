@@ -102,6 +102,9 @@ func (s *sqlServerScraperHelper) ID() component.ID {
 }
 
 func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
+	// The connection pool is owned by the receiver and shared across all
+	// scrapers. Fetch the shared pool (opened once by the provider) rather than
+	// opening a new one here.
 	var err error
 	s.db, err = s.dbProviderFunc()
 	if err != nil {
@@ -310,9 +313,8 @@ func isThreeNumericSegments(s string) bool {
 }
 
 func (s *sqlServerScraperHelper) Shutdown(context.Context) error {
-	if s.db != nil {
-		return s.db.Close()
-	}
+	// The connection pool is owned and closed by the receiver, not the scraper,
+	// so that a single shared pool's lifecycle is not tied to any one scraper.
 	return nil
 }
 
