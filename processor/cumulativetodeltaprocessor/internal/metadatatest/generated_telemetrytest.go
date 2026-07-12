@@ -16,7 +16,7 @@ import (
 
 func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 	set := processortest.NewNopSettings(processortest.NopType)
-	set.ID = component.NewID(component.MustNewType("cumulativetodelta"))
+	set.ID = component.NewID(component.MustNewType("cumulative_to_delta"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
