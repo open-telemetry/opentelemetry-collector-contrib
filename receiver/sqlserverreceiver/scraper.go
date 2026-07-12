@@ -312,7 +312,7 @@ func isThreeNumericSegments(s string) bool {
 	return isDigits(s[:firstSep]) && isDigits(s[firstSep+1:secondSep]) && isDigits(s[secondSep+1:])
 }
 
-func (s *sqlServerScraperHelper) Shutdown(context.Context) error {
+func (*sqlServerScraperHelper) Shutdown(context.Context) error {
 	// The connection pool is owned and closed by the receiver, not the scraper,
 	// so that a single shared pool's lifecycle is not tied to any one scraper.
 	return nil

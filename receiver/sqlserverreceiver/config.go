@@ -107,8 +107,8 @@ func (cfg *Config) Validate() error {
 		return errors.New("`top_query_collection.collection_interval` must not be less than 0")
 	}
 
-	if err = cfg.validateConnectionPool(); err != nil {
-		return err
+	if poolErr := cfg.validateConnectionPool(); poolErr != nil {
+		return poolErr
 	}
 
 	cfg.isDirectDBConnectionEnabled, err = directDBConnectionEnabled(cfg)
@@ -117,16 +117,16 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) validateConnectionPool() error {
-	if cfg.ConnectionPool.MaxOpen != nil && *cfg.ConnectionPool.MaxOpen < 0 {
+	if cfg.MaxOpen != nil && *cfg.MaxOpen < 0 {
 		return errors.New("`connection_pool.max_open` must not be negative")
 	}
-	if cfg.ConnectionPool.MaxIdle != nil && *cfg.ConnectionPool.MaxIdle < 0 {
+	if cfg.MaxIdle != nil && *cfg.MaxIdle < 0 {
 		return errors.New("`connection_pool.max_idle` must not be negative")
 	}
-	if cfg.ConnectionPool.MaxLifetime != nil && *cfg.ConnectionPool.MaxLifetime < 0 {
+	if cfg.MaxLifetime != nil && *cfg.MaxLifetime < 0 {
 		return errors.New("`connection_pool.max_lifetime` must not be negative")
 	}
-	if cfg.ConnectionPool.MaxIdleTime != nil && *cfg.ConnectionPool.MaxIdleTime < 0 {
+	if cfg.MaxIdleTime != nil && *cfg.MaxIdleTime < 0 {
 		return errors.New("`connection_pool.max_idle_time` must not be negative")
 	}
 	return nil
