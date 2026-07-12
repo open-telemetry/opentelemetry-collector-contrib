@@ -94,6 +94,16 @@ to grant the user you are using `pg_monitor`. Take the example from `testdata/in
 GRANT pg_monitor TO otelu;
 ```
 
+To correlate query samples with traces, set the PostgreSQL [`application_name`](https://www.postgresql.org/docs/current/runtime-config-logging.html#GUC-APPLICATION-NAME)
+for the client connection to a valid [W3C `traceparent`](https://www.w3.org/TR/trace-context/#traceparent-header) value before running the query:
+
+```sql
+SET application_name = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+```
+
+When query sample collection observes a valid `traceparent` in `application_name`, the receiver sets the trace ID and span ID on the emitted
+`db.server.query_sample` log record. This enables correlation between the query sample and the originating trace.
+
 The following options are available:
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
 against `pg_stat_activity`.
