@@ -200,7 +200,7 @@ attributes:
     requirement_level: required
     enum: [allocated, deallocated]
   sqlserver.index.id:
-    description: The ID of the index within a table or indexed view.
+    description: The identifier of the index.
     type: int
     requirement_level: recommended
   sqlserver.lock.block.type:
@@ -222,7 +222,7 @@ attributes:
     type: int
     requirement_level: recommended
   sqlserver.object.name:
-    description: The name of the object the index belongs to.
+    description: The name of the database object.
     type: string
     requirement_level: recommended
   sqlserver.open_transaction_count:
@@ -303,7 +303,7 @@ attributes:
     type: int
     requirement_level: recommended
   sqlserver.schema.name:
-    description: The name of the schema the object belongs to.
+    description: The name of the database schema.
     type: string
     requirement_level: recommended
   sqlserver.session.duration:
@@ -676,15 +676,6 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-  sqlserver.index.avg_page_space_used:
-    enabled: false
-    description: Average percentage of available data storage space used in all pages of the index.
-    stability: development
-    unit: "%"
-    gauge:
-      value_type: double
-    attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.fragmentation:
     enabled: false
     description: Average fragmentation percentage of the index.
@@ -698,17 +689,26 @@ metrics:
     enabled: false
     description: Number of pages in the index.
     stability: development
-    unit: "{pages}"
+    unit: "{page}"
     gauge:
       value_type: int
       input_type: string
+    attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.index.page.utilization:
+    enabled: false
+    description: Average percentage of available data storage space used in all pages of the index.
+    stability: development
+    unit: "%"
+    gauge:
+      value_type: double
     attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.record.count:
     enabled: false
     description: Total number of records in the index.
     stability: development
-    unit: "{records}"
+    unit: "{record}"
     gauge:
       value_type: int
       input_type: string

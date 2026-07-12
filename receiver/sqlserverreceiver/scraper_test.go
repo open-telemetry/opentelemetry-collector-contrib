@@ -54,9 +54,9 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverErrorRate.Enabled = enabled
 	cfg.Metrics.SqlserverExtentOperationRate.Enabled = enabled
 	cfg.Metrics.SqlserverGhostRecordSkippedRate.Enabled = enabled
-	cfg.Metrics.SqlserverIndexAvgPageSpaceUsed.Enabled = enabled
 	cfg.Metrics.SqlserverIndexFragmentation.Enabled = enabled
 	cfg.Metrics.SqlserverIndexPageCount.Enabled = enabled
+	cfg.Metrics.SqlserverIndexPageUtilization.Enabled = enabled
 	cfg.Metrics.SqlserverIndexRecordCount.Enabled = enabled
 	cfg.Metrics.SqlserverIndexSearchRate.Enabled = enabled
 	cfg.Metrics.SqlserverIndexSize.Enabled = enabled

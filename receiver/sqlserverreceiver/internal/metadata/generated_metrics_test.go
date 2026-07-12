@@ -72,9 +72,9 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.database.latency"] = mb.metricSqlserverDatabaseLatency.config.AggregationStrategy
 			aggMap["sqlserver.database.operations"] = mb.metricSqlserverDatabaseOperations.config.AggregationStrategy
 			aggMap["sqlserver.database.tempdb.space"] = mb.metricSqlserverDatabaseTempdbSpace.config.AggregationStrategy
-			aggMap["sqlserver.index.avg_page_space_used"] = mb.metricSqlserverIndexAvgPageSpaceUsed.config.AggregationStrategy
 			aggMap["sqlserver.index.fragmentation"] = mb.metricSqlserverIndexFragmentation.config.AggregationStrategy
 			aggMap["sqlserver.index.page.count"] = mb.metricSqlserverIndexPageCount.config.AggregationStrategy
+			aggMap["sqlserver.index.page.utilization"] = mb.metricSqlserverIndexPageUtilization.config.AggregationStrategy
 			aggMap["sqlserver.index.record.count"] = mb.metricSqlserverIndexRecordCount.config.AggregationStrategy
 			aggMap["sqlserver.index.size"] = mb.metricSqlserverIndexSize.config.AggregationStrategy
 			aggMap["sqlserver.latch.superlatch.transition.rate"] = mb.metricSqlserverLatchSuperlatchTransitionRate.config.AggregationStrategy
@@ -177,12 +177,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverGhostRecordSkippedRateDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverIndexAvgPageSpaceUsedDataPoint(ts, 1, "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
-			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverIndexAvgPageSpaceUsedDataPoint(ts, 3, "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
-			}
-
-			allMetricsCount++
 			mb.RecordSqlserverIndexFragmentationDataPoint(ts, 1, "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverIndexFragmentationDataPoint(ts, 3, "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
@@ -192,6 +186,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverIndexPageCountDataPoint(ts, "1", "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverIndexPageCountDataPoint(ts, "3", "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverIndexPageUtilizationDataPoint(ts, 1, "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverIndexPageUtilizationDataPoint(ts, 3, "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
 			}
 
 			allMetricsCount++
@@ -428,9 +428,9 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverDatabaseLatency.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseOperations.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseTempdbSpace.aggDataPoints)
-				assert.Empty(t, mb.metricSqlserverIndexAvgPageSpaceUsed.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverIndexFragmentation.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverIndexPageCount.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverIndexPageUtilization.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverIndexRecordCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverIndexSize.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverLatchSuperlatchTransitionRate.aggDataPoints)
@@ -934,61 +934,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "sqlserver.index.avg_page_space_used":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.index.avg_page_space_used"], "Found a duplicate in the metrics slice: sqlserver.index.avg_page_space_used")
-						validatedMetrics["sqlserver.index.avg_page_space_used"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Average percentage of available data storage space used in all pages of the index.", mi.Description())
-						assert.Equal(t, "%", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
-						assert.True(t, ok)
-						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
-						assert.True(t, ok)
-						assert.EqualValues(t, 18, sqlserverIndexIDAttrVal.Int())
-						sqlserverObjectNameAttrVal, ok := dp.Attributes().Get("sqlserver.object.name")
-						assert.True(t, ok)
-						assert.Equal(t, "sqlserver.object.name-val", sqlserverObjectNameAttrVal.Str())
-						sqlserverSchemaNameAttrVal, ok := dp.Attributes().Get("sqlserver.schema.name")
-						assert.True(t, ok)
-						assert.Equal(t, "sqlserver.schema.name-val", sqlserverSchemaNameAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["sqlserver.index.avg_page_space_used"], "Found a duplicate in the metrics slice: sqlserver.index.avg_page_space_used")
-						validatedMetrics["sqlserver.index.avg_page_space_used"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Average percentage of available data storage space used in all pages of the index.", mi.Description())
-						assert.Equal(t, "%", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["sqlserver.index.avg_page_space_used"] {
-						case "sum":
-							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
-						case "avg":
-							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
-						case "min":
-							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						case "max":
-							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
-						}
-						_, ok := dp.Attributes().Get("db.namespace")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("sqlserver.index.id")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("sqlserver.object.name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("sqlserver.schema.name")
-						assert.False(t, ok)
-					}
 				case "sqlserver.index.fragmentation":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["sqlserver.index.fragmentation"], "Found a duplicate in the metrics slice: sqlserver.index.fragmentation")
@@ -1051,7 +996,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Number of pages in the index.", mi.Description())
-						assert.Equal(t, "{pages}", mi.Unit())
+						assert.Equal(t, "{page}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -1075,7 +1020,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Number of pages in the index.", mi.Description())
-						assert.Equal(t, "{pages}", mi.Unit())
+						assert.Equal(t, "{page}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -1099,6 +1044,61 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("sqlserver.schema.name")
 						assert.False(t, ok)
 					}
+				case "sqlserver.index.page.utilization":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.index.page.utilization"], "Found a duplicate in the metrics slice: sqlserver.index.page.utilization")
+						validatedMetrics["sqlserver.index.page.utilization"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Average percentage of available data storage space used in all pages of the index.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
+						assert.True(t, ok)
+						assert.EqualValues(t, 18, sqlserverIndexIDAttrVal.Int())
+						sqlserverObjectNameAttrVal, ok := dp.Attributes().Get("sqlserver.object.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.object.name-val", sqlserverObjectNameAttrVal.Str())
+						sqlserverSchemaNameAttrVal, ok := dp.Attributes().Get("sqlserver.schema.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.schema.name-val", sqlserverSchemaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.index.page.utilization"], "Found a duplicate in the metrics slice: sqlserver.index.page.utilization")
+						validatedMetrics["sqlserver.index.page.utilization"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Average percentage of available data storage space used in all pages of the index.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["sqlserver.index.page.utilization"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.index.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.object.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.schema.name")
+						assert.False(t, ok)
+					}
 				case "sqlserver.index.record.count":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["sqlserver.index.record.count"], "Found a duplicate in the metrics slice: sqlserver.index.record.count")
@@ -1106,7 +1106,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Total number of records in the index.", mi.Description())
-						assert.Equal(t, "{records}", mi.Unit())
+						assert.Equal(t, "{record}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -1130,7 +1130,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Total number of records in the index.", mi.Description())
-						assert.Equal(t, "{records}", mi.Unit())
+						assert.Equal(t, "{record}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())

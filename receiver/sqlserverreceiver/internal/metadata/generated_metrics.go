@@ -706,16 +706,16 @@ var MetricsInfo = metricsInfo{
 	SqlserverGhostRecordSkippedRate: metricInfo{
 		Name: "sqlserver.ghost_record.skipped.rate",
 	},
-	SqlserverIndexAvgPageSpaceUsed: metricInfo{
-		Name:       "sqlserver.index.avg_page_space_used",
-		Attributes: []string{"db.namespace", "sqlserver.index.id", "sqlserver.object.name", "sqlserver.schema.name"},
-	},
 	SqlserverIndexFragmentation: metricInfo{
 		Name:       "sqlserver.index.fragmentation",
 		Attributes: []string{"db.namespace", "sqlserver.index.id", "sqlserver.object.name", "sqlserver.schema.name"},
 	},
 	SqlserverIndexPageCount: metricInfo{
 		Name:       "sqlserver.index.page.count",
+		Attributes: []string{"db.namespace", "sqlserver.index.id", "sqlserver.object.name", "sqlserver.schema.name"},
+	},
+	SqlserverIndexPageUtilization: metricInfo{
+		Name:       "sqlserver.index.page.utilization",
 		Attributes: []string{"db.namespace", "sqlserver.index.id", "sqlserver.object.name", "sqlserver.schema.name"},
 	},
 	SqlserverIndexRecordCount: metricInfo{
@@ -934,9 +934,9 @@ type metricsInfo struct {
 	SqlserverErrorRate                          metricInfo
 	SqlserverExtentOperationRate                metricInfo
 	SqlserverGhostRecordSkippedRate             metricInfo
-	SqlserverIndexAvgPageSpaceUsed              metricInfo
 	SqlserverIndexFragmentation                 metricInfo
 	SqlserverIndexPageCount                     metricInfo
+	SqlserverIndexPageUtilization               metricInfo
 	SqlserverIndexRecordCount                   metricInfo
 	SqlserverIndexSearchRate                    metricInfo
 	SqlserverIndexSize                          metricInfo
@@ -2288,104 +2288,6 @@ func newMetricSqlserverGhostRecordSkippedRate(cfg SqlserverGhostRecordSkippedRat
 	return m
 }
 
-type metricSqlserverIndexAvgPageSpaceUsed struct {
-	data          pmetric.Metric                             // data buffer for generated metric.
-	config        SqlserverIndexAvgPageSpaceUsedMetricConfig // metric config provided by user.
-	capacity      int                                        // max observed number of data points added to the metric.
-	aggDataPoints []float64                                  // slice containing number of aggregated datapoints at each index
-}
-
-// init fills sqlserver.index.avg_page_space_used metric with initial data.
-func (m *metricSqlserverIndexAvgPageSpaceUsed) init() {
-	m.data.SetName("sqlserver.index.avg_page_space_used")
-	m.data.SetDescription("Average percentage of available data storage space used in all pages of the index.")
-	m.data.SetUnit("%")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
-}
-
-func (m *metricSqlserverIndexAvgPageSpaceUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-
-	dp := pmetric.NewNumberDataPoint()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeyDbNamespace) {
-		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverIndexID) {
-		dp.Attributes().PutInt("sqlserver.index.id", sqlserverIndexIDAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverObjectName) {
-		dp.Attributes().PutStr("sqlserver.object.name", sqlserverObjectNameAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverSchemaName) {
-		dp.Attributes().PutStr("sqlserver.schema.name", sqlserverSchemaNameAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			}
-		}
-	}
-
-	dp.SetDoubleValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverIndexAvgPageSpaceUsed) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverIndexAvgPageSpaceUsed) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
-			}
-		}
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSqlserverIndexAvgPageSpaceUsed(cfg SqlserverIndexAvgPageSpaceUsedMetricConfig) metricSqlserverIndexAvgPageSpaceUsed {
-	m := metricSqlserverIndexAvgPageSpaceUsed{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricSqlserverIndexFragmentation struct {
 	data          pmetric.Metric                          // data buffer for generated metric.
 	config        SqlserverIndexFragmentationMetricConfig // metric config provided by user.
@@ -2495,7 +2397,7 @@ type metricSqlserverIndexPageCount struct {
 func (m *metricSqlserverIndexPageCount) init() {
 	m.data.SetName("sqlserver.index.page.count")
 	m.data.SetDescription("Number of pages in the index.")
-	m.data.SetUnit("{pages}")
+	m.data.SetUnit("{page}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -2582,6 +2484,104 @@ func newMetricSqlserverIndexPageCount(cfg SqlserverIndexPageCountMetricConfig) m
 	return m
 }
 
+type metricSqlserverIndexPageUtilization struct {
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        SqlserverIndexPageUtilizationMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []float64                                 // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.index.page.utilization metric with initial data.
+func (m *metricSqlserverIndexPageUtilization) init() {
+	m.data.SetName("sqlserver.index.page.utilization")
+	m.data.SetDescription("Average percentage of available data storage space used in all pages of the index.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverIndexPageUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexPageUtilizationMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexPageUtilizationMetricAttributeKeySqlserverIndexID) {
+		dp.Attributes().PutInt("sqlserver.index.id", sqlserverIndexIDAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexPageUtilizationMetricAttributeKeySqlserverObjectName) {
+		dp.Attributes().PutStr("sqlserver.object.name", sqlserverObjectNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexPageUtilizationMetricAttributeKeySqlserverSchemaName) {
+		dp.Attributes().PutStr("sqlserver.schema.name", sqlserverSchemaNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverIndexPageUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverIndexPageUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverIndexPageUtilization(cfg SqlserverIndexPageUtilizationMetricConfig) metricSqlserverIndexPageUtilization {
+	m := metricSqlserverIndexPageUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverIndexRecordCount struct {
 	data          pmetric.Metric                        // data buffer for generated metric.
 	config        SqlserverIndexRecordCountMetricConfig // metric config provided by user.
@@ -2593,7 +2593,7 @@ type metricSqlserverIndexRecordCount struct {
 func (m *metricSqlserverIndexRecordCount) init() {
 	m.data.SetName("sqlserver.index.record.count")
 	m.data.SetDescription("Total number of records in the index.")
-	m.data.SetUnit("{records}")
+	m.data.SetUnit("{record}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -6111,9 +6111,9 @@ type MetricsBuilder struct {
 	metricSqlserverErrorRate                          metricSqlserverErrorRate
 	metricSqlserverExtentOperationRate                metricSqlserverExtentOperationRate
 	metricSqlserverGhostRecordSkippedRate             metricSqlserverGhostRecordSkippedRate
-	metricSqlserverIndexAvgPageSpaceUsed              metricSqlserverIndexAvgPageSpaceUsed
 	metricSqlserverIndexFragmentation                 metricSqlserverIndexFragmentation
 	metricSqlserverIndexPageCount                     metricSqlserverIndexPageCount
+	metricSqlserverIndexPageUtilization               metricSqlserverIndexPageUtilization
 	metricSqlserverIndexRecordCount                   metricSqlserverIndexRecordCount
 	metricSqlserverIndexSearchRate                    metricSqlserverIndexSearchRate
 	metricSqlserverIndexSize                          metricSqlserverIndexSize
@@ -6218,9 +6218,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverErrorRate:                          newMetricSqlserverErrorRate(mbc.Metrics.SqlserverErrorRate),
 		metricSqlserverExtentOperationRate:                newMetricSqlserverExtentOperationRate(mbc.Metrics.SqlserverExtentOperationRate),
 		metricSqlserverGhostRecordSkippedRate:             newMetricSqlserverGhostRecordSkippedRate(mbc.Metrics.SqlserverGhostRecordSkippedRate),
-		metricSqlserverIndexAvgPageSpaceUsed:              newMetricSqlserverIndexAvgPageSpaceUsed(mbc.Metrics.SqlserverIndexAvgPageSpaceUsed),
 		metricSqlserverIndexFragmentation:                 newMetricSqlserverIndexFragmentation(mbc.Metrics.SqlserverIndexFragmentation),
 		metricSqlserverIndexPageCount:                     newMetricSqlserverIndexPageCount(mbc.Metrics.SqlserverIndexPageCount),
+		metricSqlserverIndexPageUtilization:               newMetricSqlserverIndexPageUtilization(mbc.Metrics.SqlserverIndexPageUtilization),
 		metricSqlserverIndexRecordCount:                   newMetricSqlserverIndexRecordCount(mbc.Metrics.SqlserverIndexRecordCount),
 		metricSqlserverIndexSearchRate:                    newMetricSqlserverIndexSearchRate(mbc.Metrics.SqlserverIndexSearchRate),
 		metricSqlserverIndexSize:                          newMetricSqlserverIndexSize(mbc.Metrics.SqlserverIndexSize),
@@ -6426,9 +6426,9 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverErrorRate.emit(ils.Metrics())
 	mb.metricSqlserverExtentOperationRate.emit(ils.Metrics())
 	mb.metricSqlserverGhostRecordSkippedRate.emit(ils.Metrics())
-	mb.metricSqlserverIndexAvgPageSpaceUsed.emit(ils.Metrics())
 	mb.metricSqlserverIndexFragmentation.emit(ils.Metrics())
 	mb.metricSqlserverIndexPageCount.emit(ils.Metrics())
+	mb.metricSqlserverIndexPageUtilization.emit(ils.Metrics())
 	mb.metricSqlserverIndexRecordCount.emit(ils.Metrics())
 	mb.metricSqlserverIndexSearchRate.emit(ils.Metrics())
 	mb.metricSqlserverIndexSize.emit(ils.Metrics())
@@ -6648,11 +6648,6 @@ func (mb *MetricsBuilder) RecordSqlserverGhostRecordSkippedRateDataPoint(ts pcom
 	mb.metricSqlserverGhostRecordSkippedRate.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordSqlserverIndexAvgPageSpaceUsedDataPoint adds a data point to sqlserver.index.avg_page_space_used metric.
-func (mb *MetricsBuilder) RecordSqlserverIndexAvgPageSpaceUsedDataPoint(ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
-	mb.metricSqlserverIndexAvgPageSpaceUsed.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, sqlserverIndexIDAttributeValue, sqlserverObjectNameAttributeValue, sqlserverSchemaNameAttributeValue)
-}
-
 // RecordSqlserverIndexFragmentationDataPoint adds a data point to sqlserver.index.fragmentation metric.
 func (mb *MetricsBuilder) RecordSqlserverIndexFragmentationDataPoint(ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
 	mb.metricSqlserverIndexFragmentation.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, sqlserverIndexIDAttributeValue, sqlserverObjectNameAttributeValue, sqlserverSchemaNameAttributeValue)
@@ -6666,6 +6661,11 @@ func (mb *MetricsBuilder) RecordSqlserverIndexPageCountDataPoint(ts pcommon.Time
 	}
 	mb.metricSqlserverIndexPageCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, sqlserverIndexIDAttributeValue, sqlserverObjectNameAttributeValue, sqlserverSchemaNameAttributeValue)
 	return nil
+}
+
+// RecordSqlserverIndexPageUtilizationDataPoint adds a data point to sqlserver.index.page.utilization metric.
+func (mb *MetricsBuilder) RecordSqlserverIndexPageUtilizationDataPoint(ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
+	mb.metricSqlserverIndexPageUtilization.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, sqlserverIndexIDAttributeValue, sqlserverObjectNameAttributeValue, sqlserverSchemaNameAttributeValue)
 }
 
 // RecordSqlserverIndexRecordCountDataPoint adds a data point to sqlserver.index.record.count metric.

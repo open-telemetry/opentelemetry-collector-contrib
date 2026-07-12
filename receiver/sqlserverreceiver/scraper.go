@@ -1362,7 +1362,7 @@ func (s *sqlServerScraperHelper) recordIndexPhysicalMetrics(ctx context.Context)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("row %d: failed to parse %s: %w", i, pageSpaceUsedKey, err))
 		} else {
-			s.mb.RecordSqlserverIndexAvgPageSpaceUsedDataPoint(now, val.(float64), row[databaseNameKey], indexID.(int64), row[objectNameKey], row[schemaNameKey])
+			s.mb.RecordSqlserverIndexPageUtilizationDataPoint(now, val.(float64), row[databaseNameKey], indexID.(int64), row[objectNameKey], row[schemaNameKey])
 		}
 
 		errs = append(errs,

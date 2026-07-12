@@ -579,57 +579,6 @@ func (ms *SqlserverGhostRecordSkippedRateMetricConfig) Unmarshal(parser *confmap
 	return nil
 }
 
-// SqlserverIndexAvgPageSpaceUsedMetricAttributeKey specifies the key of an attribute for the sqlserver.index.avg_page_space_used metric.
-type SqlserverIndexAvgPageSpaceUsedMetricAttributeKey string
-
-const (
-	SqlserverIndexAvgPageSpaceUsedMetricAttributeKeyDbNamespace         SqlserverIndexAvgPageSpaceUsedMetricAttributeKey = "db.namespace"
-	SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverIndexID    SqlserverIndexAvgPageSpaceUsedMetricAttributeKey = "sqlserver.index.id"
-	SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverObjectName SqlserverIndexAvgPageSpaceUsedMetricAttributeKey = "sqlserver.object.name"
-	SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverSchemaName SqlserverIndexAvgPageSpaceUsedMetricAttributeKey = "sqlserver.schema.name"
-)
-
-// SqlserverIndexAvgPageSpaceUsedMetricConfig provides config for the sqlserver.index.avg_page_space_used metric.
-type SqlserverIndexAvgPageSpaceUsedMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverIndexAvgPageSpaceUsedMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *SqlserverIndexAvgPageSpaceUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SqlserverIndexAvgPageSpaceUsedMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SqlserverIndexAvgPageSpaceUsedMetricAttributeKeyDbNamespace, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverIndexID, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverObjectName, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverSchemaName:
-		default:
-			return fmt.Errorf("metric sqlserver.index.avg_page_space_used doesn't have an attribute %v, valid attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
 // SqlserverIndexFragmentationMetricAttributeKey specifies the key of an attribute for the sqlserver.index.fragmentation metric.
 type SqlserverIndexFragmentationMetricAttributeKey string
 
@@ -720,6 +669,57 @@ func (ms *SqlserverIndexPageCountMetricConfig) Validate() error {
 		case SqlserverIndexPageCountMetricAttributeKeyDbNamespace, SqlserverIndexPageCountMetricAttributeKeySqlserverIndexID, SqlserverIndexPageCountMetricAttributeKeySqlserverObjectName, SqlserverIndexPageCountMetricAttributeKeySqlserverSchemaName:
 		default:
 			return fmt.Errorf("metric sqlserver.index.page.count doesn't have an attribute %v, valid attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverIndexPageUtilizationMetricAttributeKey specifies the key of an attribute for the sqlserver.index.page.utilization metric.
+type SqlserverIndexPageUtilizationMetricAttributeKey string
+
+const (
+	SqlserverIndexPageUtilizationMetricAttributeKeyDbNamespace         SqlserverIndexPageUtilizationMetricAttributeKey = "db.namespace"
+	SqlserverIndexPageUtilizationMetricAttributeKeySqlserverIndexID    SqlserverIndexPageUtilizationMetricAttributeKey = "sqlserver.index.id"
+	SqlserverIndexPageUtilizationMetricAttributeKeySqlserverObjectName SqlserverIndexPageUtilizationMetricAttributeKey = "sqlserver.object.name"
+	SqlserverIndexPageUtilizationMetricAttributeKeySqlserverSchemaName SqlserverIndexPageUtilizationMetricAttributeKey = "sqlserver.schema.name"
+)
+
+// SqlserverIndexPageUtilizationMetricConfig provides config for the sqlserver.index.page.utilization metric.
+type SqlserverIndexPageUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverIndexPageUtilizationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverIndexPageUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverIndexPageUtilizationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverIndexPageUtilizationMetricAttributeKeyDbNamespace, SqlserverIndexPageUtilizationMetricAttributeKeySqlserverIndexID, SqlserverIndexPageUtilizationMetricAttributeKeySqlserverObjectName, SqlserverIndexPageUtilizationMetricAttributeKeySqlserverSchemaName:
+		default:
+			return fmt.Errorf("metric sqlserver.index.page.utilization doesn't have an attribute %v, valid attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]", val)
 		}
 	}
 
@@ -2315,9 +2315,9 @@ type MetricsConfig struct {
 	SqlserverErrorRate                          SqlserverErrorRateMetricConfig                          `mapstructure:"sqlserver.error.rate"`
 	SqlserverExtentOperationRate                SqlserverExtentOperationRateMetricConfig                `mapstructure:"sqlserver.extent.operation.rate"`
 	SqlserverGhostRecordSkippedRate             SqlserverGhostRecordSkippedRateMetricConfig             `mapstructure:"sqlserver.ghost_record.skipped.rate"`
-	SqlserverIndexAvgPageSpaceUsed              SqlserverIndexAvgPageSpaceUsedMetricConfig              `mapstructure:"sqlserver.index.avg_page_space_used"`
 	SqlserverIndexFragmentation                 SqlserverIndexFragmentationMetricConfig                 `mapstructure:"sqlserver.index.fragmentation"`
 	SqlserverIndexPageCount                     SqlserverIndexPageCountMetricConfig                     `mapstructure:"sqlserver.index.page.count"`
+	SqlserverIndexPageUtilization               SqlserverIndexPageUtilizationMetricConfig               `mapstructure:"sqlserver.index.page.utilization"`
 	SqlserverIndexRecordCount                   SqlserverIndexRecordCountMetricConfig                   `mapstructure:"sqlserver.index.record.count"`
 	SqlserverIndexSearchRate                    SqlserverIndexSearchRateMetricConfig                    `mapstructure:"sqlserver.index.search.rate"`
 	SqlserverIndexSize                          SqlserverIndexSizeMetricConfig                          `mapstructure:"sqlserver.index.size"`
@@ -2453,11 +2453,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverGhostRecordSkippedRate: SqlserverGhostRecordSkippedRateMetricConfig{
 			Enabled: false,
 		},
-		SqlserverIndexAvgPageSpaceUsed: SqlserverIndexAvgPageSpaceUsedMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverIndexAvgPageSpaceUsedMetricAttributeKey{SqlserverIndexAvgPageSpaceUsedMetricAttributeKeyDbNamespace, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverIndexID, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverObjectName, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverSchemaName},
-		},
 		SqlserverIndexFragmentation: SqlserverIndexFragmentationMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
@@ -2467,6 +2462,11 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverIndexPageCountMetricAttributeKey{SqlserverIndexPageCountMetricAttributeKeyDbNamespace, SqlserverIndexPageCountMetricAttributeKeySqlserverIndexID, SqlserverIndexPageCountMetricAttributeKeySqlserverObjectName, SqlserverIndexPageCountMetricAttributeKeySqlserverSchemaName},
+		},
+		SqlserverIndexPageUtilization: SqlserverIndexPageUtilizationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverIndexPageUtilizationMetricAttributeKey{SqlserverIndexPageUtilizationMetricAttributeKeyDbNamespace, SqlserverIndexPageUtilizationMetricAttributeKeySqlserverIndexID, SqlserverIndexPageUtilizationMetricAttributeKeySqlserverObjectName, SqlserverIndexPageUtilizationMetricAttributeKeySqlserverSchemaName},
 		},
 		SqlserverIndexRecordCount: SqlserverIndexRecordCountMetricConfig{
 			Enabled:             false,

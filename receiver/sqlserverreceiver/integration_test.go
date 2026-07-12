@@ -98,9 +98,9 @@ func TestIndexPhysicalStatsScraper(t *testing.T) {
 	cfg := basicConfig(uint(portNumber))
 	cfg.Metrics.SqlserverIndexFragmentation.Enabled = true
 	cfg.Metrics.SqlserverIndexPageCount.Enabled = true
-	cfg.Metrics.SqlserverIndexSize.Enabled = true
-	cfg.Metrics.SqlserverIndexAvgPageSpaceUsed.Enabled = true
+	cfg.Metrics.SqlserverIndexPageUtilization.Enabled = true
 	cfg.Metrics.SqlserverIndexRecordCount.Enabled = true
+	cfg.Metrics.SqlserverIndexSize.Enabled = true
 
 	settings := receiver.Settings{
 		TelemetrySettings: component.TelemetrySettings{
