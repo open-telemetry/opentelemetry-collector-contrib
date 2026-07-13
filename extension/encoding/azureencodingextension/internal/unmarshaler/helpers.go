@@ -132,7 +132,7 @@ func DetectWrapperFormat(input []byte) (RecordsBatchFormat, error) {
 	if idx != -1 {
 		// Isolate the line up to the newline, and strip all trailing \r characters
 		line := bytes.TrimRight(input[:idx], "\r")
-		
+
 		// Check if the actual text content ends with the closing bracket
 		if bytes.HasSuffix(line, []byte("}")) {
 			return FormatNDJSON, nil
