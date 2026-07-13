@@ -631,6 +631,55 @@ func TestProcessor_UnparseableTracestateCounter(t *testing.T) {
 	)
 }
 
+func TestProcessor_DivergentRVLogsWarning(t *testing.T) {
+	// Two spans on the same trace carrying different ot=rv values is a
+	// producer bug; the processor keeps the first one for the decision and
+	// logs a warning.
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  50 * time.Millisecond,
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     10,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	core, recorded := observer.New(zap.WarnLevel)
+	set := processortest.NewNopSettings(metadata.Type)
+	set.Logger = zap.New(core)
+	p, err := newProcessor(set, cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	traceID := pcommon.TraceID([16]byte{0xCD})
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	// Two arbitrary but distinct rv values.
+	rvA, err := sampling.RValueToRandomness("aaaaaaaaaaaaaa")
+	require.NoError(t, err)
+	rvB, err := sampling.RValueToRandomness("bbbbbbbbbbbbbb")
+	require.NoError(t, err)
+
+	for i, rv := range []sampling.Randomness{rvA, rvB} {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID([8]byte{byte(i + 1)})
+		span.SetParentSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9})
+		span.SetName("op")
+		span.TraceState().FromRaw("ot=rv:" + rv.RValue())
+	}
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	assert.Eventually(t, func() bool { return sink.SpanCount() == 2 }, time.Second, 10*time.Millisecond)
+
+	warnings := recorded.FilterMessageSnippet("divergent ot=rv").All()
+	require.Len(t, warnings, 1, "expected exactly one divergent-rv warning")
+	assert.Equal(t, zap.WarnLevel, warnings[0].Level)
+}
+
 func TestProcessor_DecisionCacheDisabled(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{

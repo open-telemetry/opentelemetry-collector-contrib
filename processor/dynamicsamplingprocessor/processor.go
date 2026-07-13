@@ -500,7 +500,10 @@ func (p *dynamicSamplingProcessor) evaluate(pt *pendingTrace) (*rule, int) {
 // randomness value (preferring `ot=rv` when present, falling back to the trace
 // ID). The first `ot=rv` encountered in span iteration order wins; later
 // occurrences are ignored so the decision is stable across a trace even if
-// spans disagree.
+// spans disagree. When the accumulated trace carries multiple distinct `ot=rv`
+// values, a warning is logged: the tracestate contract requires rv to be
+// trace-level and consistent across all spans, so divergence indicates a
+// producer-side bug.
 //
 // Spans whose tracestate fails to parse are counted on
 // ProcessorDynamicSamplingIncomingTracestateUnparseable and skipped. This
@@ -510,6 +513,7 @@ func (p *dynamicSamplingProcessor) readIncomingSampling(ctx context.Context, spa
 	upstream := sampling.AlwaysSampleThreshold
 	randomness := sampling.TraceIDToRandomness(id)
 	haveRV := false
+	rvLogged := false
 	for _, rs := range spans {
 		for _, ss := range rs.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
@@ -528,10 +532,16 @@ func (p *dynamicSamplingProcessor) readIncomingSampling(ctx context.Context, spa
 						upstream = th
 					}
 				}
-				if !haveRV {
-					if rv, ok := ot.RValueRandomness(); ok {
+				if rv, ok := ot.RValueRandomness(); ok {
+					if !haveRV {
 						randomness = rv
 						haveRV = true
+					} else if !rvLogged && rv != randomness {
+						p.logger.Warn(
+							"trace has spans with divergent ot=rv values; using the first observed value for the decision",
+							zap.Stringer("traceID", id),
+						)
+						rvLogged = true
 					}
 				}
 			}
