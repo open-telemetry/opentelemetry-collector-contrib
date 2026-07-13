@@ -1,11 +1,11 @@
 SELECT
   CASE
-    WHEN query ~ '<=>'  OR query ~* 'cosine_distance'  THEN 'cosine'
-    WHEN query ~ '<->'  OR query ~* 'l2_distance'      THEN 'l2'
-    WHEN query ~ '<#>'  OR query ~* 'inner_product'    THEN 'inner_product'
-    WHEN query ~ '<\+>' OR query ~* 'l1_distance'      THEN 'l1'
-    WHEN query ~ '<~>'  OR query ~* 'hamming_distance' THEN 'hamming'
-    WHEN query ~ '<%>'  OR query ~* 'jaccard_distance' THEN 'jaccard'
+    WHEN query ~ '<=>'            OR query ~* '\mcosine_distance\M'  THEN 'cosine'
+    WHEN query ~ '(^|[^<])<->(?!>)' OR query ~* '\ml2_distance\M'    THEN 'l2'
+    WHEN query ~ '<#>'            OR query ~* '\minner_product\M'    THEN 'inner_product'
+    WHEN query ~ '<\+>' OR query ~* '\ml1_distance\M'      THEN 'l1'
+    WHEN query ~ '<~>'  OR query ~* '\mhamming_distance\M' THEN 'hamming'
+    WHEN query ~ '<%>'  OR query ~* '\mjaccard_distance\M' THEN 'jaccard'
   END AS distance_function,
   SUM(calls) AS calls,
   SUM(total_exec_time) AS total_exec_time
@@ -16,8 +16,10 @@ WHERE
   datname = current_database()
   AND query != '<insufficient privilege>'
   AND query NOT LIKE '/* otel-collector-ignore */%'
+  AND EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector')
   AND (
-    query ~ '<=>|<->|<#>|<\+>|<~>|<%>'
-    OR query ~* '(l2|cosine|l1|hamming|jaccard)_distance|inner_product'
+    query ~ '<=>|<#>|<\+>|<~>|<%>'
+    OR query ~ '(^|[^<])<->(?!>)'
+    OR query ~* '\m(l2|cosine|l1|hamming|jaccard)_distance\M|\minner_product\M'
   )
 GROUP BY distance_function;
