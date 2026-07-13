@@ -1681,7 +1681,8 @@ The `MapKeys` converter returns a new `pcommon.Map` with each key transformed by
 The first parameter is the element key (`string`). The second parameter is the element value.
 Use `_` as a parameter name to ignore unused parameters.
 
-If `keyMapper` produces duplicate keys, the later entry overwrites the earlier one in the returned map.
+If `keyMapper` produces duplicate keys, only one value is retained and which one is unspecified. 
+Keys are processed in the order they appear in the `source` map, though this is not guaranteed.
 
 If `source` is not a map, or if `keyMapper` does not return a `string`, it returns an error.
 
