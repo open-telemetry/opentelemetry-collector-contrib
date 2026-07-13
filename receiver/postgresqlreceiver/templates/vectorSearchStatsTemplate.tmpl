@@ -8,7 +8,8 @@ SELECT
     WHEN query ~ '<%>'  OR query ~* '\mjaccard_distance\M' THEN 'jaccard'
   END AS distance_function,
   SUM(calls) AS calls,
-  SUM(total_exec_time) AS total_exec_time
+  SUM(total_exec_time) AS total_exec_time,
+  SUM(rows) AS rows_returned
 FROM
   pg_stat_statements AS pg_stat_statements
   LEFT JOIN pg_database ON pg_stat_statements.dbid = pg_database.oid

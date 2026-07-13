@@ -1016,7 +1016,7 @@ func (ms *PostgresqlVectorInsertRowsMetricConfig) Unmarshal(parser *confmap.Conf
 type PostgresqlVectorSearchCountMetricAttributeKey string
 
 const (
-	PostgresqlVectorSearchCountMetricAttributeKeyDistanceFunction PostgresqlVectorSearchCountMetricAttributeKey = "distance.function"
+	PostgresqlVectorSearchCountMetricAttributeKeyPostgresqlDistanceFunctionName PostgresqlVectorSearchCountMetricAttributeKey = "postgresql.distance.function.name"
 )
 
 // PostgresqlVectorSearchCountMetricConfig provides config for the postgresql.vector.search.count metric.
@@ -1045,9 +1045,9 @@ func (ms *PostgresqlVectorSearchCountMetricConfig) Unmarshal(parser *confmap.Con
 func (ms *PostgresqlVectorSearchCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlVectorSearchCountMetricAttributeKeyDistanceFunction:
+		case PostgresqlVectorSearchCountMetricAttributeKeyPostgresqlDistanceFunctionName:
 		default:
-			return fmt.Errorf("metric postgresql.vector.search.count doesn't have an attribute %v, valid attributes: [distance.function]", val)
+			return fmt.Errorf("metric postgresql.vector.search.count doesn't have an attribute %v, valid attributes: [postgresql.distance.function.name]", val)
 		}
 	}
 
@@ -1064,7 +1064,7 @@ func (ms *PostgresqlVectorSearchCountMetricConfig) Validate() error {
 type PostgresqlVectorSearchDurationMetricAttributeKey string
 
 const (
-	PostgresqlVectorSearchDurationMetricAttributeKeyDistanceFunction PostgresqlVectorSearchDurationMetricAttributeKey = "distance.function"
+	PostgresqlVectorSearchDurationMetricAttributeKeyPostgresqlDistanceFunctionName PostgresqlVectorSearchDurationMetricAttributeKey = "postgresql.distance.function.name"
 )
 
 // PostgresqlVectorSearchDurationMetricConfig provides config for the postgresql.vector.search.duration metric.
@@ -1093,9 +1093,57 @@ func (ms *PostgresqlVectorSearchDurationMetricConfig) Unmarshal(parser *confmap.
 func (ms *PostgresqlVectorSearchDurationMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlVectorSearchDurationMetricAttributeKeyDistanceFunction:
+		case PostgresqlVectorSearchDurationMetricAttributeKeyPostgresqlDistanceFunctionName:
 		default:
-			return fmt.Errorf("metric postgresql.vector.search.duration doesn't have an attribute %v, valid attributes: [distance.function]", val)
+			return fmt.Errorf("metric postgresql.vector.search.duration doesn't have an attribute %v, valid attributes: [postgresql.distance.function.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlVectorSearchRowsReturnedMetricAttributeKey specifies the key of an attribute for the postgresql.vector.search.rows.returned metric.
+type PostgresqlVectorSearchRowsReturnedMetricAttributeKey string
+
+const (
+	PostgresqlVectorSearchRowsReturnedMetricAttributeKeyPostgresqlDistanceFunctionName PostgresqlVectorSearchRowsReturnedMetricAttributeKey = "postgresql.distance.function.name"
+)
+
+// PostgresqlVectorSearchRowsReturnedMetricConfig provides config for the postgresql.vector.search.rows.returned metric.
+type PostgresqlVectorSearchRowsReturnedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlVectorSearchRowsReturnedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlVectorSearchRowsReturnedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlVectorSearchRowsReturnedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlVectorSearchRowsReturnedMetricAttributeKeyPostgresqlDistanceFunctionName:
+		default:
+			return fmt.Errorf("metric postgresql.vector.search.rows.returned doesn't have an attribute %v, valid attributes: [postgresql.distance.function.name]", val)
 		}
 	}
 
@@ -1266,6 +1314,7 @@ type MetricsConfig struct {
 	PostgresqlVectorInsertRows         PostgresqlVectorInsertRowsMetricConfig         `mapstructure:"postgresql.vector.insert.rows"`
 	PostgresqlVectorSearchCount        PostgresqlVectorSearchCountMetricConfig        `mapstructure:"postgresql.vector.search.count"`
 	PostgresqlVectorSearchDuration     PostgresqlVectorSearchDurationMetricConfig     `mapstructure:"postgresql.vector.search.duration"`
+	PostgresqlVectorSearchRowsReturned PostgresqlVectorSearchRowsReturnedMetricConfig `mapstructure:"postgresql.vector.search.rows.returned"`
 	PostgresqlWalAge                   PostgresqlWalAgeMetricConfig                   `mapstructure:"postgresql.wal.age"`
 	PostgresqlWalDelay                 PostgresqlWalDelayMetricConfig                 `mapstructure:"postgresql.wal.delay"`
 	PostgresqlWalLag                   PostgresqlWalLagMetricConfig                   `mapstructure:"postgresql.wal.lag"`
@@ -1404,12 +1453,17 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlVectorSearchCount: PostgresqlVectorSearchCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlVectorSearchCountMetricAttributeKey{PostgresqlVectorSearchCountMetricAttributeKeyDistanceFunction},
+			EnabledAttributes:   []PostgresqlVectorSearchCountMetricAttributeKey{PostgresqlVectorSearchCountMetricAttributeKeyPostgresqlDistanceFunctionName},
 		},
 		PostgresqlVectorSearchDuration: PostgresqlVectorSearchDurationMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlVectorSearchDurationMetricAttributeKey{PostgresqlVectorSearchDurationMetricAttributeKeyDistanceFunction},
+			EnabledAttributes:   []PostgresqlVectorSearchDurationMetricAttributeKey{PostgresqlVectorSearchDurationMetricAttributeKeyPostgresqlDistanceFunctionName},
+		},
+		PostgresqlVectorSearchRowsReturned: PostgresqlVectorSearchRowsReturnedMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlVectorSearchRowsReturnedMetricAttributeKey{PostgresqlVectorSearchRowsReturnedMetricAttributeKeyPostgresqlDistanceFunctionName},
 		},
 		PostgresqlWalAge: PostgresqlWalAgeMetricConfig{
 			Enabled: true,

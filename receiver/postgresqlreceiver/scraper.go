@@ -614,10 +614,11 @@ func (p *postgreSQLScraper) collectVectorSearchStats(
 	database string,
 	errs *errsMux,
 ) {
-	// Both metrics are opt-in and derived from the same pg_stat_statements query, so skip
+	// All metrics are opt-in and derived from the same pg_stat_statements query, so skip
 	// the collection entirely unless at least one of them is enabled.
 	if !p.config.Metrics.PostgresqlVectorSearchCount.Enabled &&
-		!p.config.Metrics.PostgresqlVectorSearchDuration.Enabled {
+		!p.config.Metrics.PostgresqlVectorSearchDuration.Enabled &&
+		!p.config.Metrics.PostgresqlVectorSearchRowsReturned.Enabled {
 		return
 	}
 
@@ -629,15 +630,16 @@ func (p *postgreSQLScraper) collectVectorSearchStats(
 
 	var recorded bool
 	for _, stat := range stats {
-		distanceFunction, ok := metadata.MapAttributeDistanceFunction[stat.distanceFunction]
+		distanceFunction, ok := metadata.MapAttributePostgresqlDistanceFunctionName[stat.distanceFunction]
 		if !ok {
 			// A statement matched the vector filter but could not be classified into a known
 			// distance function; skip it rather than emitting an invalid attribute value.
-			p.logger.Debug("skipping unclassified vector distance function", zap.String("distance.function", stat.distanceFunction))
+			p.logger.Debug("skipping unclassified vector distance function", zap.String("postgresql.distance.function.name", stat.distanceFunction))
 			continue
 		}
 		p.mb.RecordPostgresqlVectorSearchCountDataPoint(now, stat.calls, distanceFunction)
 		p.mb.RecordPostgresqlVectorSearchDurationDataPoint(now, stat.totalExecTime, distanceFunction)
+		p.mb.RecordPostgresqlVectorSearchRowsReturnedDataPoint(now, stat.rowsReturned, distanceFunction)
 		recorded = true
 	}
 

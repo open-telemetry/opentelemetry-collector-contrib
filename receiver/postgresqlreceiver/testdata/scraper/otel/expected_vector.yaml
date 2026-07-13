@@ -220,14 +220,14 @@ resourceMetrics:
               dataPoints:
                 - asInt: "60"
                   attributes:
-                    - key: distance.function
+                    - key: postgresql.distance.function.name
                       value:
                         stringValue: cosine
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "61"
                   attributes:
-                    - key: distance.function
+                    - key: postgresql.distance.function.name
                       value:
                         stringValue: l2
                   startTimeUnixNano: "1000000"
@@ -241,20 +241,41 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 0.5
                   attributes:
-                    - key: distance.function
+                    - key: postgresql.distance.function.name
                       value:
                         stringValue: cosine
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asDouble: 1.5
                   attributes:
-                    - key: distance.function
+                    - key: postgresql.distance.function.name
                       value:
                         stringValue: l2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
+          - description: The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.
+            name: postgresql.vector.search.rows.returned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "600"
+                  attributes:
+                    - key: postgresql.distance.function.name
+                      value:
+                        stringValue: cosine
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "610"
+                  attributes:
+                    - key: postgresql.distance.function.name
+                      value:
+                        stringValue: l2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{rows}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest

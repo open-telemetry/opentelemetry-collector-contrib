@@ -667,6 +667,8 @@ type vectorSearchStat struct {
 	calls int64
 	// totalExecTime is the cumulative execution time in seconds.
 	totalExecTime float64
+	// rowsReturned is the cumulative number of rows returned by statements using this distance function.
+	rowsReturned int64
 }
 
 //go:embed templates/vectorSearchStatsTemplate.tmpl
@@ -685,7 +687,8 @@ func (c *postgreSQLClient) getVectorSearchStats(ctx context.Context) ([]vectorSe
 		var distanceFunction string
 		var calls int64
 		var totalExecTimeMs float64
-		if err := rows.Scan(&distanceFunction, &calls, &totalExecTimeMs); err != nil {
+		var rowsReturned int64
+		if err := rows.Scan(&distanceFunction, &calls, &totalExecTimeMs, &rowsReturned); err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
@@ -694,6 +697,7 @@ func (c *postgreSQLClient) getVectorSearchStats(ctx context.Context) ([]vectorSe
 			calls:            calls,
 			// pg_stat_statements reports total_exec_time in milliseconds; convert to seconds.
 			totalExecTime: totalExecTimeMs / 1000.0,
+			rowsReturned:  rowsReturned,
 		})
 	}
 	if err := rows.Err(); err != nil {

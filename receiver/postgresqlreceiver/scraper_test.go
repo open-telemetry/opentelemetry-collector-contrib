@@ -101,6 +101,8 @@ func TestScraperVectorMetrics(t *testing.T) {
 	cfg.Metrics.PostgresqlVectorSearchCount.Enabled = true
 	require.False(t, cfg.Metrics.PostgresqlVectorSearchDuration.Enabled)
 	cfg.Metrics.PostgresqlVectorSearchDuration.Enabled = true
+	require.False(t, cfg.Metrics.PostgresqlVectorSearchRowsReturned.Enabled)
+	cfg.Metrics.PostgresqlVectorSearchRowsReturned.Enabled = true
 	require.False(t, cfg.Metrics.PostgresqlVectorInsertRows.Enabled)
 	cfg.Metrics.PostgresqlVectorInsertRows.Enabled = true
 	require.False(t, cfg.Metrics.PostgresqlVectorInsertDuration.Enabled)
@@ -128,9 +130,9 @@ func TestGetVectorSearchStats(t *testing.T) {
 
 	c := &postgreSQLClient{client: db}
 
-	rows := sqlmock.NewRows([]string{"distance_function", "calls", "total_exec_time"}).
-		AddRow("cosine", int64(50), 8.429).
-		AddRow("l2", int64(50), 10.408)
+	rows := sqlmock.NewRows([]string{"distance_function", "calls", "total_exec_time", "rows_returned"}).
+		AddRow("cosine", int64(50), 8.429, int64(500)).
+		AddRow("l2", int64(50), 10.408, int64(510))
 	mock.ExpectQuery(vectorSearchStatsQuery).WillReturnRows(rows)
 
 	stats, err := c.getVectorSearchStats(t.Context())
@@ -141,10 +143,12 @@ func TestGetVectorSearchStats(t *testing.T) {
 	assert.Equal(t, int64(50), stats[0].calls)
 	// total_exec_time is reported in milliseconds by pg_stat_statements and converted to seconds.
 	assert.InDelta(t, 0.008429, stats[0].totalExecTime, 1e-9)
+	assert.Equal(t, int64(500), stats[0].rowsReturned)
 
 	assert.Equal(t, "l2", stats[1].distanceFunction)
 	assert.Equal(t, int64(50), stats[1].calls)
 	assert.InDelta(t, 0.010408, stats[1].totalExecTime, 1e-9)
+	assert.Equal(t, int64(510), stats[1].rowsReturned)
 
 	require.NoError(t, mock.ExpectationsWereMet())
 }
@@ -1548,11 +1552,13 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				distanceFunction: "cosine",
 				calls:            int64(index + 60),
 				totalExecTime:    float64(index) + 0.5,
+				rowsReturned:     int64(index + 600),
 			},
 			{
 				distanceFunction: "l2",
 				calls:            int64(index + 61),
 				totalExecTime:    float64(index) + 1.5,
+				rowsReturned:     int64(index + 610),
 			},
 		}
 		m.On("getVectorSearchStats", mock.Anything).Return(vectorSearchStats, nil)

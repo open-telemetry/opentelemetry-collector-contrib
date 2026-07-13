@@ -105,11 +105,6 @@ attributes:
     description: The database management system (DBMS) product as identified by the client instrumentation.
     type: string
     enum: [postgresql]
-  distance.function:
-    description: The vector distance (similarity) function used by the query, derived from the pgvector operator or distance function present in the statement text.
-    type: string
-    enum: [cosine, l2, inner_product, l1, hamming, jaccard]
-    requirement_level: recommended
   function:
     description: The name of the function.
     type: string
@@ -172,6 +167,11 @@ attributes:
       - snapshot
       - bufferpin
       - deadlock
+    requirement_level: recommended
+  postgresql.distance.function.name:
+    description: The vector distance (similarity) function used by the query, derived from the pgvector operator or distance function present in the statement text.
+    type: string
+    enum: [cosine, l2, inner_product, l1, hamming, jaccard]
     requirement_level: recommended
   postgresql.pid:
     description: Process ID of this backend.
@@ -648,7 +648,7 @@ metrics:
       This metric is derived from the `pg_stat_statements` extension, which must be installed and enabled.
       This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` extension in the scanned database.
   postgresql.vector.search.count:
-    attributes: [distance.function]
+    attributes: [postgresql.distance.function.name]
     description: The number of vector similarity search operations executed, grouped by the distance function used.
     stability: development
     enabled: false
@@ -662,13 +662,27 @@ metrics:
       This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` extension in the scanned database. The `l1`, `hamming`, and
       `jaccard` classifications additionally require pgvector 0.7.0 or later.
   postgresql.vector.search.duration:
-    attributes: [distance.function]
+    attributes: [postgresql.distance.function.name]
     description: The cumulative execution time of vector similarity searches, grouped by the distance function used.
     stability: development
     enabled: false
     unit: s
     sum:
       value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    extended_documentation: |
+      This metric is derived from the `pg_stat_statements` extension, which must be installed and enabled.
+      This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` extension in the scanned database. The `l1`, `hamming`, and
+      `jaccard` classifications additionally require pgvector 0.7.0 or later.
+  postgresql.vector.search.rows.returned:
+    attributes: [postgresql.distance.function.name]
+    description: The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.
+    stability: development
+    enabled: false
+    unit: "{rows}"
+    sum:
+      value_type: int
       monotonic: true
       aggregation_temporality: cumulative
     extended_documentation: |

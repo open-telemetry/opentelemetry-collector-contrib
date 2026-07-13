@@ -138,14 +138,15 @@ require the [pgvector](https://github.com/pgvector/pgvector) extension installed
 
 #### Search metrics
 
-Two metrics report similarity-search activity, both broken down by a `distance.function` attribute:
+Three metrics report similarity-search activity, all broken down by a `postgresql.distance.function.name` attribute:
 
 - `postgresql.vector.search.count`: the cumulative number of vector search executions.
 - `postgresql.vector.search.duration`: the cumulative execution time (in seconds) of vector searches.
+- `postgresql.vector.search.rows.returned`: the cumulative number of rows returned by vector searches.
 
 Searches are classified by inspecting the statement text for a pgvector distance operator (for example `<=>`,
 `<->`, `<#>`, `<+>`, `<~>`, `<%>`) or distance function (for example `cosine_distance`, `l2_distance`,
-`inner_product`), and the resulting `distance.function` attribute is one of `cosine`, `l2`, `inner_product`,
+`inner_product`), and the resulting `postgresql.distance.function.name` attribute is one of `cosine`, `l2`, `inner_product`,
 `l1`, `hamming`, or `jaccard`. Because the values are cumulative counters, throughput and average response time
 (ART) can be derived downstream (for example
 `rate(postgresql.vector.search.duration) / rate(postgresql.vector.search.count)`).
@@ -173,6 +174,8 @@ receivers:
       postgresql.vector.search.count:
         enabled: true
       postgresql.vector.search.duration:
+        enabled: true
+      postgresql.vector.search.rows.returned:
         enabled: true
       postgresql.vector.insert.rows:
         enabled: true

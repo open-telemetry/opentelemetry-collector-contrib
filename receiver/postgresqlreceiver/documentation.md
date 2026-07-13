@@ -421,7 +421,7 @@ This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` ext
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| distance.function | The vector distance (similarity) function used by the query, derived from the pgvector operator or distance function present in the statement text. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
+| postgresql.distance.function.name | The vector distance (similarity) function used by the query, derived from the pgvector operator or distance function present in the statement text. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
 
 ### postgresql.vector.search.duration
 
@@ -439,7 +439,25 @@ This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` ext
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| distance.function | The vector distance (similarity) function used by the query, derived from the pgvector operator or distance function present in the statement text. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
+| postgresql.distance.function.name | The vector distance (similarity) function used by the query, derived from the pgvector operator or distance function present in the statement text. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
+
+### postgresql.vector.search.rows.returned
+
+The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.
+
+This metric is derived from the `pg_stat_statements` extension, which must be installed and enabled.
+This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` extension in the scanned database. The `l1`, `hamming`, and
+`jaccard` classifications additionally require pgvector 0.7.0 or later.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {rows} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| postgresql.distance.function.name | The vector distance (similarity) function used by the query, derived from the pgvector operator or distance function present in the statement text. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
 
 ### postgresql.wal.delay
 

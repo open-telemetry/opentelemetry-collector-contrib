@@ -79,6 +79,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["postgresql.rows"] = mb.metricPostgresqlRows.config.AggregationStrategy
 			aggMap["postgresql.vector.search.count"] = mb.metricPostgresqlVectorSearchCount.config.AggregationStrategy
 			aggMap["postgresql.vector.search.duration"] = mb.metricPostgresqlVectorSearchDuration.config.AggregationStrategy
+			aggMap["postgresql.vector.search.rows.returned"] = mb.metricPostgresqlVectorSearchRowsReturned.config.AggregationStrategy
 			aggMap["postgresql.wal.delay"] = mb.metricPostgresqlWalDelay.config.AggregationStrategy
 			aggMap["postgresql.wal.lag"] = mb.metricPostgresqlWalLag.config.AggregationStrategy
 
@@ -229,15 +230,21 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlVectorInsertRowsDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordPostgresqlVectorSearchCountDataPoint(ts, 1, AttributeDistanceFunctionCosine)
+			mb.RecordPostgresqlVectorSearchCountDataPoint(ts, 1, AttributePostgresqlDistanceFunctionNameCosine)
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlVectorSearchCountDataPoint(ts, 3, AttributeDistanceFunctionL2)
+				mb.RecordPostgresqlVectorSearchCountDataPoint(ts, 3, AttributePostgresqlDistanceFunctionNameL2)
 			}
 
 			allMetricsCount++
-			mb.RecordPostgresqlVectorSearchDurationDataPoint(ts, 1, AttributeDistanceFunctionCosine)
+			mb.RecordPostgresqlVectorSearchDurationDataPoint(ts, 1, AttributePostgresqlDistanceFunctionNameCosine)
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlVectorSearchDurationDataPoint(ts, 3, AttributeDistanceFunctionL2)
+				mb.RecordPostgresqlVectorSearchDurationDataPoint(ts, 3, AttributePostgresqlDistanceFunctionNameL2)
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlVectorSearchRowsReturnedDataPoint(ts, 1, AttributePostgresqlDistanceFunctionNameCosine)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlVectorSearchRowsReturnedDataPoint(ts, 3, AttributePostgresqlDistanceFunctionNameL2)
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -278,6 +285,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricPostgresqlRows.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlVectorSearchCount.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlVectorSearchDuration.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlVectorSearchRowsReturned.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlWalDelay.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlWalLag.aggDataPoints)
 			}
@@ -1124,9 +1132,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						distanceFunctionAttrVal, ok := dp.Attributes().Get("distance.function")
+						postgresqlDistanceFunctionNameAttrVal, ok := dp.Attributes().Get("postgresql.distance.function.name")
 						assert.True(t, ok)
-						assert.Equal(t, "cosine", distanceFunctionAttrVal.Str())
+						assert.Equal(t, "cosine", postgresqlDistanceFunctionNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.vector.search.count"], "Found a duplicate in the metrics slice: postgresql.vector.search.count")
 						validatedMetrics["postgresql.vector.search.count"] = true
@@ -1150,7 +1158,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("distance.function")
+						_, ok := dp.Attributes().Get("postgresql.distance.function.name")
 						assert.False(t, ok)
 					}
 				case "postgresql.vector.search.duration":
@@ -1168,9 +1176,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						distanceFunctionAttrVal, ok := dp.Attributes().Get("distance.function")
+						postgresqlDistanceFunctionNameAttrVal, ok := dp.Attributes().Get("postgresql.distance.function.name")
 						assert.True(t, ok)
-						assert.Equal(t, "cosine", distanceFunctionAttrVal.Str())
+						assert.Equal(t, "cosine", postgresqlDistanceFunctionNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.vector.search.duration"], "Found a duplicate in the metrics slice: postgresql.vector.search.duration")
 						validatedMetrics["postgresql.vector.search.duration"] = true
@@ -1194,7 +1202,51 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("distance.function")
+						_, ok := dp.Attributes().Get("postgresql.distance.function.name")
+						assert.False(t, ok)
+					}
+				case "postgresql.vector.search.rows.returned":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.vector.search.rows.returned"], "Found a duplicate in the metrics slice: postgresql.vector.search.rows.returned")
+						validatedMetrics["postgresql.vector.search.rows.returned"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.", mi.Description())
+						assert.Equal(t, "{rows}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						postgresqlDistanceFunctionNameAttrVal, ok := dp.Attributes().Get("postgresql.distance.function.name")
+						assert.True(t, ok)
+						assert.Equal(t, "cosine", postgresqlDistanceFunctionNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.vector.search.rows.returned"], "Found a duplicate in the metrics slice: postgresql.vector.search.rows.returned")
+						validatedMetrics["postgresql.vector.search.rows.returned"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.", mi.Description())
+						assert.Equal(t, "{rows}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.vector.search.rows.returned"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("postgresql.distance.function.name")
 						assert.False(t, ok)
 					}
 				case "postgresql.wal.age":
