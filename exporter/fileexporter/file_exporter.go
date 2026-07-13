@@ -62,6 +62,7 @@ func (e *fileExporter) Start(_ context.Context, host component.Host) error {
 	if err != nil {
 		return err
 	}
+	e.marshaller = marshaller
 	export := buildExportFunc(e.conf, e.marshaller.encodingUnframed)
 
 	// Optionally ensure the output directory exists.
