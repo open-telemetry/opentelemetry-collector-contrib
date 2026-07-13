@@ -58,6 +58,9 @@ The SQL Query Receiver uses custom SQL queries to generate logs and/or metrics f
 - `queries` (required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
 - `collection_interval`(optional): The time interval between query executions. Defaults to _10s_.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+- `timeout` (optional, default = `0s`): the maximum duration a single query execution is allowed to take before it is
+  cancelled. This prevents collection from blocking indefinitely when, for example, a queried table or relation is
+  locked. A non-positive value (the default) disables the timeout.
 - `storage` (optional, default `""`): The ID of a [storage][storage_extension] extension to be used to [track processed results](#tracking-processed-results).
 - `telemetry` (optional) Defines settings for the component's own telemetry - logs, metrics or traces.
   - `telemetry.logs` (optional) Defines settings for the component's own logs.
