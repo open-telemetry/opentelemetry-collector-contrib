@@ -3,7 +3,7 @@ component: receiver/sqlserver
 note: Add 10 new opt-in metrics for cursor management, worker threads, CLR execution, Service Broker task activation, and stored procedure monitoring.
 subtext: |
   - `sqlserver.cursor.count`
-  - `sqlserver.cursor.memory`
+  - `sqlserver.cursor.memory.usage`
   - `sqlserver.cursor.plan.count`
   - `sqlserver.cursor.request.rate`
   - `sqlserver.worker.thread.count`
