@@ -83,18 +83,14 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 	}
 
 	for tag := range c.seenTags {
-		tagSeries := DefaultMetrics("metrics", "", timestamp, buildTags)
-		for i := range tagSeries {
-			tagSeries[i].Tags = append(tagSeries[i].Tags, tag)
-		}
+		allTags := append(slices.Clone(buildTags), tag)
+		tagSeries := DefaultMetrics("metrics", "", timestamp, allTags)
 		series = append(series, tagSeries...)
 	}
 
 	for k, tags := range c.seenTagSets {
-		tagSeries := WorkloadMetrics(k.metricSuffix, timestamp, buildTags)
-		for i := range tagSeries {
-			tagSeries[i].Tags = append(tagSeries[i].Tags, tags...)
-		}
+		allTags := append(slices.Clone(buildTags), tags...)
+		tagSeries := WorkloadMetrics(k.metricSuffix, timestamp, allTags)
 		series = append(series, tagSeries...)
 	}
 
