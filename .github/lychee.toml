@@ -9,6 +9,7 @@ exclude  = [
     "^https://bugs.mysql.com",
     "^https://techdocs.akamai.com",
     "^https://www.vultr.com",
+    "^https://docs.splunk.com",
     "^https://docs.honeycomb.io"
 ]
 

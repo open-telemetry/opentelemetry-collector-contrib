@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 	maxmind "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider/maxmindprovider"
@@ -57,6 +58,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		Context:    resource,
 		Attributes: defaultAttributes,
+		ErrorMode:  ottl.PropagateError,
 	}
 }
 

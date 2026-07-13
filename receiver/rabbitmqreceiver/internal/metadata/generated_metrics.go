@@ -54,7 +54,8 @@ var MetricsInfo = metricsInfo{
 		Name: "rabbitmq.message.acknowledged",
 	},
 	RabbitmqMessageCurrent: metricInfo{
-		Name: "rabbitmq.message.current",
+		Name:       "rabbitmq.message.current",
+		Attributes: []string{"message.state"},
 	},
 	RabbitmqMessageDelivered: metricInfo{
 		Name: "rabbitmq.message.delivered",
@@ -373,7 +374,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricRabbitmqConsumerCount struct {

@@ -35,9 +35,11 @@ The following settings are optional:
 
 ### Example Configuration
 
+> **Note:** The receiver type has been renamed from `flinkmetrics` to `flink_metrics`. The old name is still accepted but will log a deprecation warning.
+
 ```yaml
 receivers:
-  flinkmetrics:
+  flink_metrics:
     endpoint: http://localhost:8081
     collection_interval: 10s
 ```

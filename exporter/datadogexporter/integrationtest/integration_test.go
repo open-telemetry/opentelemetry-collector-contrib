@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"strings"
 	"sync"
@@ -265,7 +266,17 @@ func sendTraces(t *testing.T, endpoint string) {
 	time.Sleep(1 * time.Second)
 }
 
+// getGzipReader returns a reader over the gzip-decompressed reqBytes. It doubles
+// as the compression guard for the trace, APM stats, and native-client series
+// payloads: the Datadog exporter MUST gzip every signal it sends (see the
+// compression contract in the exporter's compression_test.go), so a payload that
+// arrives uncompressed fails here. gzip streams begin with the magic bytes
+// 0x1f 0x8b; asserting them explicitly makes a regression read as "payload not
+// gzip-compressed" rather than an opaque decode error.
 func getGzipReader(t *testing.T, reqBytes []byte) io.Reader {
+	t.Helper()
+	require.GreaterOrEqual(t, len(reqBytes), 2, "payload too short to be gzip-compressed")
+	assert.Equal(t, []byte{0x1f, 0x8b}, reqBytes[:2], "payload must be gzip-compressed")
 	buf := bytes.NewBuffer(reqBytes)
 	reader, err := gzip.NewReader(buf)
 	require.NoError(t, err)
@@ -442,11 +453,6 @@ func sendTracesComputeTopLevelBySpanKind(t *testing.T, endpoint string) {
 }
 
 func TestIntegrationLogs(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
-	}()
-
 	// 1. Set up mock Datadog server
 	// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
 	seriesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.MetricV2Endpoint, ReqChan: make(chan []byte)}
@@ -499,11 +505,9 @@ func TestIntegrationLogs(t *testing.T) {
 		case <-doneChannel:
 			assert.Len(t, logsData, 5)
 		case metricsBytes := <-seriesRec.ReqChan:
-			var smap seriesSlice
-			gz := getGzipReader(t, metricsBytes)
-			dec := json.NewDecoder(gz)
-			assert.NoError(t, dec.Decode(&smap))
-			for _, s := range smap.Series {
+			newSeries, err := seriesSliceFromAny(t, metricsBytes)
+			require.NoError(t, err)
+			for _, s := range newSeries {
 				if s.Metric == "otelcol_receiver_accepted_log_records" || s.Metric == "otelcol_exporter_sent_log_records" {
 					metricMap.Series = append(metricMap.Series, s)
 				}
@@ -732,11 +736,6 @@ func seriesFromAPIClient(t *testing.T, metricsBytes []byte, expectedMetrics map[
 }
 
 func TestIntegrationInternalMetrics(t *testing.T) {
-	t.Skip("flaky test http://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40056")
-	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
-	}()
 	expectedMetrics := map[string]struct{}{
 		// Datadog internal metrics on trace and stats writers
 		"datadog.otlp_translator.resources.missing_source": {},
@@ -807,19 +806,82 @@ func testIntegrationInternalMetrics(t *testing.T, expectedMetrics map[string]str
 		case <-tracesRec.ReqChan:
 			// Drain the channel, no need to look into the traces
 		case metricsBytes := <-seriesRec.ReqChan:
-			var metrics seriesSlice
-			gz := getGzipReader(t, metricsBytes)
-			dec := json.NewDecoder(gz)
-			assert.NoError(t, dec.Decode(&metrics))
-			for _, s := range metrics.Series {
-				if _, ok := expectedMetrics[s.Metric]; ok {
-					metricMap[s.Metric] = s
-				}
-			}
+			// The mock server receives two different compression formats:
+			// - gzip JSON (from the DD trace agent's internal metrics reporter, magic bytes 0x1f 0x8b)
+			// - zlib-compressed protobuf (from the serializer exporter, magic bytes 0x78 0x??)
+			newMetrics, err := seriesFromAny(t, metricsBytes, expectedMetrics)
+			require.NoError(t, err)
+			maps.Copy(metricMap, newMetrics)
 		case <-time.After(60 * time.Second):
-			t.Fatalf("did not receive expected metrics after 1m")
+			t.Fatalf("did not receive expected metrics after 1m, missing: %v", missingMetrics(metricMap, expectedMetrics))
 		}
 	}
+}
+
+// seriesFromAny decodes a metric payload from the mock Datadog server, handling both
+// gzip-compressed JSON (DD trace agent format) and zlib-compressed protobuf (serializer exporter format).
+func seriesFromAny(t *testing.T, metricsBytes []byte, expectedMetrics map[string]struct{}) (map[string]series, error) {
+	if len(metricsBytes) >= 2 && metricsBytes[0] == 0x1f && metricsBytes[1] == 0x8b {
+		// gzip magic bytes: trace agent sends gzip-compressed JSON
+		return seriesFromAPIClient(t, metricsBytes, expectedMetrics)
+	}
+	// zlib magic bytes (0x78 0x??): serializer exporter sends zlib-compressed protobuf
+	return seriesFromSerializer(metricsBytes, expectedMetrics)
+}
+
+// seriesSliceFromAny decodes all series from a metric payload, handling both
+// gzip-compressed JSON (DD trace agent format) and zlib-compressed protobuf (serializer exporter format).
+// Unlike seriesFromAny, it returns a slice so duplicate metric names across different resources are preserved.
+func seriesSliceFromAny(t *testing.T, metricsBytes []byte) ([]series, error) {
+	if len(metricsBytes) >= 2 && metricsBytes[0] == 0x1f && metricsBytes[1] == 0x8b {
+		// gzip magic bytes: trace agent sends gzip-compressed JSON
+		var smap seriesSlice
+		gz := getGzipReader(t, metricsBytes)
+		dec := json.NewDecoder(gz)
+		if err := dec.Decode(&smap); err != nil {
+			return nil, err
+		}
+		return smap.Series, nil
+	}
+	// zlib magic bytes (0x78 0x??): serializer exporter sends zlib-compressed protobuf
+	zr, err := zlib.NewReader(bytes.NewReader(metricsBytes))
+	if err != nil {
+		return nil, err
+	}
+	pl := new(gogen.MetricPayload)
+	b, err := io.ReadAll(zr)
+	if err != nil {
+		return nil, err
+	}
+	if err := pl.Unmarshal(b); err != nil {
+		return nil, err
+	}
+	var result []series
+	for _, s := range pl.GetSeries() {
+		points := make([]point, len(s.GetPoints()))
+		for i, p := range s.GetPoints() {
+			points[i] = point{
+				Timestamp: int(p.GetTimestamp()),
+				Value:     p.GetValue(),
+			}
+		}
+		result = append(result, series{
+			Metric: s.GetMetric(),
+			Points: points,
+			Tags:   s.GetTags(),
+		})
+	}
+	return result, nil
+}
+
+func missingMetrics(got map[string]series, expected map[string]struct{}) []string {
+	var missing []string
+	for k := range expected {
+		if _, ok := got[k]; !ok {
+			missing = append(missing, k)
+		}
+	}
+	return missing
 }
 
 func TestIntegrationLogsHostMetadata(t *testing.T) {

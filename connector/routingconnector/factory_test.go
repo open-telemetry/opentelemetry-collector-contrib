@@ -7,13 +7,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestConnectorCreatedWithValidConfiguration(t *testing.T) {
@@ -59,4 +62,37 @@ func TestCreationFailsWithIncorrectConsumer(t *testing.T) {
 
 	assert.ErrorIs(t, err, errUnexpectedConsumer)
 	assert.Nil(t, conn)
+}
+
+func TestDefaultErrorModeWithFeatureGate(t *testing.T) {
+	tests := []struct {
+		name               string
+		featureGateEnabled bool
+		expectedErrorMode  ottl.ErrorMode
+	}{
+		{
+			name:               "feature gate disabled",
+			featureGateEnabled: false,
+			expectedErrorMode:  ottl.PropagateError,
+		},
+		{
+			name:               "feature gate enabled",
+			featureGateEnabled: true,
+			expectedErrorMode:  ottl.IgnoreError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			previousValue := metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.ID(), tt.featureGateEnabled))
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.ID(), previousValue))
+			}()
+
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			assert.Equal(t, tt.expectedErrorMode, cfg.ErrorMode)
+		})
+	}
 }

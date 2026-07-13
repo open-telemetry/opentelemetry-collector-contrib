@@ -11,11 +11,12 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [antonblock, ishleenk17, Caleb-Hurshman]
+    active: [antonblock, ishleenk17, Caleb-Hurshman, ebrdarSplunk]
     seeking_new: true
     emeritus: [djaglowski]
 
 reaggregation_enabled: true
+override_value_enabled: true
 
 feature_gates:
   - id: postgresqlreceiver.preciselagmetrics
@@ -57,6 +58,14 @@ resource_attributes:
   service.instance.id:
     description: A unique identifier of the PostgreSQL instance in the format host:port (defaults to 'unknown:5432' in case of error in generating this value).
     enabled: true
+    type: string
+  service.name:
+    description: "Logical name of the service. When enabled, defaults to unknown_service:postgresql."
+    enabled: false
+    type: string
+  service.namespace:
+    description: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
+    enabled: false
     type: string
 
 attributes:
@@ -122,12 +131,43 @@ attributes:
   postgresql.application_name:
     description: Name of the application that is connected to this backend.
     type: string
+  postgresql.blocking.lock.mode:
+    description: The lock mode being requested by the blocked session (e.g. RowExclusiveLock, AccessExclusiveLock). Empty string when not blocked.
+    type: string
+  postgresql.blocking.lock.relation:
+    description: The name of the relation (table) being waited on. Empty string when not blocked or when lock is not on a relation.
+    type: string
+  postgresql.blocking.lock.type:
+    description: The type of lock resource being waited on (e.g. relation, transactionid, tuple). Empty string when not blocked.
+    type: string
+  postgresql.blocking.pids:
+    description: Array of PIDs of sessions blocking this session (from pg_blocking_pids). Empty array when not blocked.
+    type: string
+  postgresql.blocking.start_time:
+    description: UTC timestamp (RFC3339) when the current lock wait began, derived from pg_locks.waitstart. Empty string when not blocked.
+    type: string
+  postgresql.blocking.transaction.start_time:
+    description: UTC timestamp (RFC3339) when the current transaction started. Empty string when no active transaction.
+    type: string
+  postgresql.blocking.wait_duration:
+    description: Whole seconds this session has been waiting for a lock, measured from pg_locks.waitstart. 0 when not blocked.
+    type: int
   postgresql.calls:
     description: Number of times the statement was executed, reported in delta value.
     type: int
   postgresql.client_hostname:
     description: Host name of the connected client, as reported by a reverse DNS lookup of client_addr.
     type: string
+  postgresql.conflict.type:
+    description: The type of recovery conflict that caused a query to be canceled on a standby server.
+    type: string
+    enum:
+      - tablespace
+      - lock
+      - snapshot
+      - bufferpin
+      - deadlock
+    requirement_level: recommended
   postgresql.pid:
     description: Process ID of this backend.
     type: int
@@ -238,6 +278,13 @@ events:
       - postgresql.wait_event_type
       - postgresql.query_id
       - postgresql.total_exec_time
+      - postgresql.blocking.pids
+      - postgresql.blocking.start_time
+      - postgresql.blocking.wait_duration
+      - postgresql.blocking.lock.mode
+      - postgresql.blocking.lock.type
+      - postgresql.blocking.lock.relation
+      - postgresql.blocking.transaction.start_time
   db.server.top_query:
     enabled: false
     description: top query
@@ -435,6 +482,16 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [operation]
+  postgresql.query.conflicts:
+    enabled: false
+    description: Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.
+    stability: development
+    unit: "{query}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [postgresql.conflict.type]
   postgresql.replication.data_delay:
     attributes: [replication_client]
     description: The amount of data delayed in replication.

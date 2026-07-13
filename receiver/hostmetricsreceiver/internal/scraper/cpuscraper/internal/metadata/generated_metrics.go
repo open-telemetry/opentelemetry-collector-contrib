@@ -72,7 +72,8 @@ var MapAttributeState = map[string]AttributeState{
 
 var MetricsInfo = metricsInfo{
 	SystemCPUFrequency: metricInfo{
-		Name: "system.cpu.frequency",
+		Name:       "system.cpu.frequency",
+		Attributes: []string{"cpu.frequency"},
 	},
 	SystemCPULogicalCount: metricInfo{
 		Name: "system.cpu.logical.count",
@@ -81,10 +82,12 @@ var MetricsInfo = metricsInfo{
 		Name: "system.cpu.physical.count",
 	},
 	SystemCPUTime: metricInfo{
-		Name: "system.cpu.time",
+		Name:       "system.cpu.time",
+		Attributes: []string{"cpu", "state"},
 	},
 	SystemCPUUtilization: metricInfo{
-		Name: "system.cpu.utilization",
+		Name:       "system.cpu.utilization",
+		Attributes: []string{"cpu", "state"},
 	},
 }
 
@@ -97,7 +100,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSystemCPUFrequency struct {
@@ -117,7 +121,7 @@ func (m *metricSystemCPUFrequency) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSystemCPUFrequency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string) {
+func (m *metricSystemCPUFrequency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuFrequencyAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -125,8 +129,8 @@ func (m *metricSystemCPUFrequency) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SystemCPUFrequencyMetricAttributeKeyCpu) {
-		dp.Attributes().PutStr("cpu", cpuAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUFrequencyMetricAttributeKeyCPUFrequency) {
+		dp.Attributes().PutStr("cpu", cpuFrequencyAttributeValue)
 	}
 
 	var s string
@@ -320,7 +324,7 @@ func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SystemCPUTimeMetricAttributeKeyCpu) {
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUTimeMetricAttributeKeyCPU) {
 		dp.Attributes().PutStr("cpu", cpuAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SystemCPUTimeMetricAttributeKeyState) {
@@ -412,7 +416,7 @@ func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationMetricAttributeKeyCpu) {
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationMetricAttributeKeyCPU) {
 		dp.Attributes().PutStr("cpu", cpuAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationMetricAttributeKeyState) {
@@ -615,8 +619,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordSystemCPUFrequencyDataPoint adds a data point to system.cpu.frequency metric.
-func (mb *MetricsBuilder) RecordSystemCPUFrequencyDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string) {
-	mb.metricSystemCPUFrequency.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue)
+func (mb *MetricsBuilder) RecordSystemCPUFrequencyDataPoint(ts pcommon.Timestamp, val float64, cpuFrequencyAttributeValue string) {
+	mb.metricSystemCPUFrequency.recordDataPoint(mb.startTime, ts, val, cpuFrequencyAttributeValue)
 }
 
 // RecordSystemCPULogicalCountDataPoint adds a data point to system.cpu.logical.count metric.

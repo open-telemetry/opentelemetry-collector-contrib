@@ -27,6 +27,90 @@ import (
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
+	defaultLegacyServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	defaultLegacyServerConfig.WriteTimeout = 0
+	defaultLegacyServerConfig.ReadHeaderTimeout = 0
+	defaultLegacyServerConfig.IdleTimeout = 0
+	defaultLegacyServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+	}
+	defaultLegacyServerConfig.KeepAlivesEnabled = true
+
+	legacyConfigServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	legacyConfigServerConfig.WriteTimeout = 0
+	legacyConfigServerConfig.ReadHeaderTimeout = 0
+	legacyConfigServerConfig.IdleTimeout = 0
+	legacyConfigServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:13",
+	}
+	legacyConfigServerConfig.TLS = configoptional.Some(configtls.ServerConfig{
+		Config: configtls.Config{
+			CAFile:   "/path/to/ca",
+			CertFile: "/path/to/cert",
+			KeyFile:  "/path/to/key",
+		},
+	})
+	legacyConfigServerConfig.KeepAlivesEnabled = true
+
+	v2allLegacyServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	v2allLegacyServerConfig.WriteTimeout = 0
+	v2allLegacyServerConfig.ReadHeaderTimeout = 0
+	v2allLegacyServerConfig.IdleTimeout = 0
+	v2allLegacyServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+	}
+	v2allLegacyServerConfig.KeepAlivesEnabled = true
+
+	v2allHTTPServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	v2allHTTPServerConfig.WriteTimeout = 0
+	v2allHTTPServerConfig.ReadHeaderTimeout = 0
+	v2allHTTPServerConfig.IdleTimeout = 0
+	v2allHTTPServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+	}
+	v2allHTTPServerConfig.KeepAlivesEnabled = true
+
+	v2httpCustomizedLegacyServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	v2httpCustomizedLegacyServerConfig.WriteTimeout = 0
+	v2httpCustomizedLegacyServerConfig.ReadHeaderTimeout = 0
+	v2httpCustomizedLegacyServerConfig.IdleTimeout = 0
+	v2httpCustomizedLegacyServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+	}
+	v2httpCustomizedLegacyServerConfig.KeepAlivesEnabled = true
+
+	v2httpCustomizedHTTPServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	v2httpCustomizedHTTPServerConfig.WriteTimeout = 0
+	v2httpCustomizedHTTPServerConfig.ReadHeaderTimeout = 0
+	v2httpCustomizedHTTPServerConfig.IdleTimeout = 0
+	v2httpCustomizedHTTPServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:13",
+	}
+	v2httpCustomizedHTTPServerConfig.KeepAlivesEnabled = true
+
+	v2grpcCustomizedLegacyServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	v2grpcCustomizedLegacyServerConfig.WriteTimeout = 0
+	v2grpcCustomizedLegacyServerConfig.ReadHeaderTimeout = 0
+	v2grpcCustomizedLegacyServerConfig.IdleTimeout = 0
+	v2grpcCustomizedLegacyServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+	}
+	v2grpcCustomizedLegacyServerConfig.KeepAlivesEnabled = true
+
 	tests := []struct {
 		id          component.ID
 		expected    component.Config
@@ -36,14 +120,8 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewID(metadata.Type),
 			expected: &Config{
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
-						},
-						KeepAlivesEnabled: true,
-					},
-					Path: "/",
+					ServerConfig: defaultLegacyServerConfig,
+					Path:         "/",
 				},
 			},
 		},
@@ -51,20 +129,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "legacyconfig"),
 			expected: &Config{
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  "localhost:13",
-						},
-						TLS: configoptional.Some(configtls.ServerConfig{
-							Config: configtls.Config{
-								CAFile:   "/path/to/ca",
-								CertFile: "/path/to/cert",
-								KeyFile:  "/path/to/key",
-							},
-						}),
-						KeepAlivesEnabled: true,
-					},
+					ServerConfig: legacyConfigServerConfig,
 					CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
 						Enabled:                  false,
 						Interval:                 "5m",
@@ -87,24 +152,12 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "v2all"),
 			expected: &Config{
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
-					UseV2: true,
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
-						},
-						KeepAlivesEnabled: true,
-					},
-					Path: "/",
+					UseV2:        true,
+					ServerConfig: v2allLegacyServerConfig,
+					Path:         "/",
 				},
 				HTTPConfig: &healthcheck.HTTPConfig{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
-						},
-						KeepAlivesEnabled: true,
-					},
+					ServerConfig: v2allHTTPServerConfig,
 					Status: healthcheck.PathConfig{
 						Enabled: true,
 						Path:    "/status",
@@ -134,24 +187,12 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "v2httpcustomized"),
 			expected: &Config{
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
-					UseV2: true,
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
-						},
-						KeepAlivesEnabled: true,
-					},
-					Path: "/",
+					UseV2:        true,
+					ServerConfig: v2httpCustomizedLegacyServerConfig,
+					Path:         "/",
 				},
 				HTTPConfig: &healthcheck.HTTPConfig{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  "localhost:13",
-						},
-						KeepAlivesEnabled: true,
-					},
+					ServerConfig: v2httpCustomizedHTTPServerConfig,
 					Status: healthcheck.PathConfig{
 						Enabled: true,
 						Path:    "/health",
@@ -171,15 +212,9 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "v2grpccustomized"),
 			expected: &Config{
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
-					UseV2: true,
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
-						},
-						KeepAlivesEnabled: true,
-					},
-					Path: "/",
+					UseV2:        true,
+					ServerConfig: v2grpcCustomizedLegacyServerConfig,
+					Path:         "/",
 				},
 				GRPCConfig: &healthcheck.GRPCConfig{
 					ServerConfig: configgrpc.ServerConfig{

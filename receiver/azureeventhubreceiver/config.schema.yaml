@@ -51,6 +51,10 @@ properties:
     $ref: blob_checkpoint_store_config
   connection:
     type: string
+  encoding:
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
   event_hub:
     $ref: event_hub_config
   format:
