@@ -32,7 +32,7 @@ type Config struct {
 	RetryInterval time.Duration `mapstructure:"retry_interval"`
 
 	// Condition is an optional user-defined rule that controls which downstream
-	// errors trigger failover. When omitted, all error triggers failover.
+	// errors trigger failover. When omitted, all errors trigger failover.
 	Condition configoptional.Optional[ConditionsConfig] `mapstructure:"condition"`
 
 	// prevent unkeyed literal initialization
