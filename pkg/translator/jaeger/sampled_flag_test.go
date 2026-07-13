@@ -117,7 +117,7 @@ func TestSampledFlagRoundTrip(t *testing.T) {
 	// Jaeger (sampled) -> OTLP -> Jaeger must keep the sampled bit.
 	td, err := ProtoToTraces(newProtoBatch(model.SampledFlag))
 	require.NoError(t, err)
-	require.True(t, firstSpan(t, td).Flags()&spanFlagsSampled != 0)
+	require.NotZero(t, firstSpan(t, td).Flags()&spanFlagsSampled)
 
 	batches := ProtoFromTraces(td)
 	require.Len(t, batches, 1)
