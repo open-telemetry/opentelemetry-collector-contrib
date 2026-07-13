@@ -18,9 +18,6 @@ properties:
     description: Condition is an optional user-defined rule that controls which downstream errors trigger failover. When omitted, all error triggers failover.
     x-optional: true
     $ref: conditions_config
-  max_retries:
-    description: MaxRetry is the maximum retries per level, once this limit is hit for a level, even if the next pipeline level fails, it will not try to recover the level that exceeded the maximum retries
-    type: integer
   priority_levels:
     description: PipelinePriority is the list of pipeline level priorities in a 1 - n configuration, multiple pipelines can sit at a single priority level and will be routed in a fanout. If any pipeline at a level fails, the level is considered unhealthy
     type: array

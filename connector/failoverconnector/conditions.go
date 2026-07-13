@@ -27,10 +27,6 @@ func (c *ConditionsConfig) Validate() error {
 		return errTooManyConditions
 	}
 
-	if set == 0 {
-		return errNoConditionDefined
-	}
-
 	return nil
 }
 
@@ -45,7 +41,7 @@ type ErrorCondition struct {
 	Contains string `mapstructure:"contains"`
 }
 
-// TODO: currently no-op
+// TODO: "contains" condition is not honored yet
 func (*ErrorCondition) ShouldFailover(err error) bool {
 	return err != nil
 }
