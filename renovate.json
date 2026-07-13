@@ -10,6 +10,7 @@
   "schedule": [
     "on tuesday"
   ],
+  "minimumReleaseAge": "2 days",
   "extends": [
     "config:recommended",
     "customManagers:githubActionsVersions",

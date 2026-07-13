@@ -283,7 +283,6 @@ receiver/huaweicloudcesreceiver
 receiver/icmpcheckreceiver
 receiver/iisreceiver
 receiver/influxdbreceiver
-receiver/jmxreceiver
 receiver/journaldreceiver
 receiver/k8sclusterreceiver
 receiver/k8seventsreceiver
