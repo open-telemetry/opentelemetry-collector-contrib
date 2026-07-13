@@ -77,7 +77,7 @@ func (w *wsprocessor) handleConn(conn *websocket.Conn) {
 	for bytes := range ch {
 		_, err := conn.Write(bytes)
 		if err != nil {
-			w.telemetrySettings.Logger.Debug("websocket write error: %w", zap.Error(err))
+			w.telemetrySettings.Logger.Debug("websocket write error", zap.Error(err))
 			w.cs.closeAndRemove(idx)
 			break
 		}

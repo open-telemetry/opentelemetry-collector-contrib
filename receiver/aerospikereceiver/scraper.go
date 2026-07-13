@@ -92,7 +92,7 @@ func (r *aerospikeReceiver) start(_ context.Context, _ component.Host) error {
 	client, err := r.clientFactory()
 	if err != nil {
 		client = nil
-		r.logger.Warn("initial client creation failed: %w", err) //  .Sugar().Warnf("initial client creation failed: %w", err)
+		r.logger.Warn("initial client creation failed", zap.Error(err))
 	}
 
 	r.client = client
