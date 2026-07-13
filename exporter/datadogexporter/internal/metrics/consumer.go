@@ -22,17 +22,16 @@ import (
 var (
 	_ metrics.Consumer       = (*Consumer)(nil)
 	_ metrics.HostConsumer   = (*Consumer)(nil)
-	_ metrics.TagsConsumer   = (*Consumer)(nil)
 	_ metrics.TagSetConsumer = (*Consumer)(nil)
 )
 
 // tagSetKey namespaces a ConsumeTagSet dedup key by metricSuffix, so that two
 // different workload types can never collide in seenTagSets even if their
-// tag content happens to coincide. key is derived from tags themselves
+// tag content happens to coincide. sortedTags is derived from tags themselves
 // (sorted and joined) so that two calls with identical tags always dedup.
 type tagSetKey struct {
 	metricSuffix string
-	key          string
+	sortedTags   string
 }
 
 // Consumer implements metrics.Consumer. It records consumed metrics, sketches and
@@ -41,7 +40,6 @@ type Consumer struct {
 	ms           []datadogV2.MetricSeries
 	sl           sketches.SketchSeriesList
 	seenHosts    map[string]struct{}
-	seenTags     map[string]struct{}
 	seenTagSets  map[tagSetKey][]string // value: full "key:value" tag slice for the metric
 	gatewayUsage *attributes.GatewayUsage
 }
@@ -50,7 +48,6 @@ type Consumer struct {
 func NewConsumer(gatewayUsage *attributes.GatewayUsage) *Consumer {
 	return &Consumer{
 		seenHosts:    make(map[string]struct{}),
-		seenTags:     make(map[string]struct{}),
 		seenTagSets:  make(map[tagSetKey][]string),
 		gatewayUsage: gatewayUsage,
 	}
@@ -80,12 +77,6 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 			series = append(series, GatewayUsageGauge(timestamp, host, buildTags, c.gatewayUsage))
 		}
 		series = append(series, runningMetric...)
-	}
-
-	for tag := range c.seenTags {
-		allTags := append(slices.Clone(buildTags), tag)
-		tagSeries := DefaultMetrics("metrics", "", timestamp, allTags)
-		series = append(series, tagSeries...)
 	}
 
 	for k, tags := range c.seenTagSets {
@@ -164,17 +155,12 @@ func (c *Consumer) ConsumeHost(host string) {
 	c.seenHosts[host] = struct{}{}
 }
 
-// ConsumeTag implements the metrics.TagsConsumer interface.
-func (c *Consumer) ConsumeTag(tag string) {
-	c.seenTags[tag] = struct{}{}
-}
-
 // ConsumeTagSet implements the metrics.TagSetConsumer interface.
 func (c *Consumer) ConsumeTagSet(metricSuffix string, tags []string) {
 	sorted := slices.Clone(tags)
 	slices.Sort(sorted)
-	key := tagSetKey{metricSuffix: metricSuffix, key: strings.Join(sorted, ",")}
-	c.seenTagSets[key] = slices.Clone(tags)
+	dedupKey := tagSetKey{metricSuffix: metricSuffix, sortedTags: strings.Join(sorted, ",")}
+	c.seenTagSets[dedupKey] = sorted
 }
 
 // ConsumeExplicitBoundHistogram implements the metrics.ExplicitBoundHistogramConsumer interface.
