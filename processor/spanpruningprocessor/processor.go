@@ -20,10 +20,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
 )
 
-// spanInfo pairs a span with its ScopeSpans container for in-place edits.
+// spanInfo pairs a span with its ResourceSpans/ScopeSpans containers for
+// in-place edits and hierarchy reconstruction.
 type spanInfo struct {
-	span       ptrace.Span
-	scopeSpans ptrace.ScopeSpans
+	span          ptrace.Span
+	resourceSpans ptrace.ResourceSpans
+	scopeSpans    ptrace.ScopeSpans
 }
 
 // attributePattern caches a compiled glob used for attribute key matching.
@@ -39,6 +41,7 @@ type spanPruningProcessor struct {
 	attributePatterns           []attributePattern
 	telemetryBuilder            *metadata.TelemetryBuilder
 	enableAttributeLossAnalysis bool
+	enableBytesMetrics          bool
 }
 
 func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuilder *metadata.TelemetryBuilder) (*spanPruningProcessor, error) {
@@ -60,6 +63,7 @@ func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuild
 		attributePatterns:           patterns,
 		telemetryBuilder:            telemetryBuilder,
 		enableAttributeLossAnalysis: cfg.EnableAttributeLossAnalysis,
+		enableBytesMetrics:          cfg.EnableBytesMetrics,
 	}, nil
 }
 
@@ -97,6 +101,12 @@ func createExemplarContext(ctx context.Context, traceID pcommon.TraceID, spanID 
 func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	start := time.Now()
 
+	// Measure bytes received before processing
+	if p.enableBytesMetrics {
+		var m ptrace.ProtoMarshaler
+		p.telemetryBuilder.ProcessorSpanpruningBytesReceived.Add(ctx, int64(m.TracesSize(td)))
+	}
+
 	// Count incoming spans
 	totalSpans := int64(0)
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
@@ -109,10 +119,24 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 	// Group spans by TraceID
 	traceSpans := p.groupSpansByTraceID(td)
 
+	// Stand-in for future OTTL condition filtering: until conditions are supported
+	// in contrib, every trace is treated as matched.
+	matchedTraces := make(map[pcommon.TraceID]struct{}, len(traceSpans))
+	for traceID := range traceSpans {
+		matchedTraces[traceID] = struct{}{}
+	}
+
+	var bytesProcessedInput int64
+	if p.enableBytesMetrics {
+		// Measure matched traces before pruning so bytes_processed_input reflects
+		// pre-pruning size.
+		bytesProcessedInput = p.getBytes(matchedTraces, traceSpans)
+	}
+
 	// Process each trace independently
 	tracesProcessed := int64(0)
-	for _, spans := range traceSpans {
-		p.processTrace(ctx, spans)
+	for traceID := range matchedTraces {
+		p.processTrace(ctx, traceSpans[traceID])
 		tracesProcessed++
 	}
 
@@ -123,7 +147,58 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 			time.Since(start).Seconds())
 	}
 
+	// Measure bytes emitted after pruning to capture the reduction in trace size.
+	if p.enableBytesMetrics {
+		var m ptrace.ProtoMarshaler
+		if bytesProcessedInput > 0 {
+			p.telemetryBuilder.ProcessorSpanpruningBytesProcessedInput.Add(ctx, bytesProcessedInput)
+			// Re-group from td so getBytes sees post-prune spans (aggregated summaries, removals).
+			// We cannot use m.TracesSize(td) here: that measures the entire batch (matched and
+			// unmatched traces), which is what bytes_emitted already captures. bytes_processed_output
+			// must reflect only the matched subset after pruning — e.g. if 10 of 100 traces matched,
+			// bytes_processed_output covers those 10 post-prune, while bytes_emitted covers all 100.
+			// The two are equal only when all traces in the batch match the OTTL conditions.
+			postPruneTraceSpans := p.groupSpansByTraceID(td)
+			bytesProcessedOutput := p.getBytes(matchedTraces, postPruneTraceSpans)
+			p.telemetryBuilder.ProcessorSpanpruningBytesProcessedOutput.Add(ctx, bytesProcessedOutput)
+		}
+		p.telemetryBuilder.ProcessorSpanpruningBytesEmitted.Add(ctx, int64(m.TracesSize(td)))
+	}
+
 	return td, nil
+}
+
+// getBytes returns the serialized size of the subset of traces identified
+// by matchedTraces, preserving the original ResourceSpans/ScopeSpans hierarchy.
+func (*spanPruningProcessor) getBytes(matchedTraces map[pcommon.TraceID]struct{}, traceSpans map[pcommon.TraceID][]spanInfo) int64 {
+	filtered := ptrace.NewTraces()
+	// Track already-added ResourceSpans and ScopeSpans by their original object
+	// identity to preserve the original hierarchy (same RS/SS grouping).
+	// pdata structs hold a pointer to the underlying proto, so struct equality
+	// gives pointer identity for free.
+	rsMap := make(map[ptrace.ResourceSpans]ptrace.ResourceSpans)
+	ssMap := make(map[ptrace.ScopeSpans]ptrace.ScopeSpans)
+	for traceID := range matchedTraces {
+		for _, si := range traceSpans[traceID] {
+			filtRS, ok := rsMap[si.resourceSpans]
+			if !ok {
+				filtRS = filtered.ResourceSpans().AppendEmpty()
+				si.resourceSpans.Resource().CopyTo(filtRS.Resource())
+				filtRS.SetSchemaUrl(si.resourceSpans.SchemaUrl())
+				rsMap[si.resourceSpans] = filtRS
+			}
+			filtSS, ok := ssMap[si.scopeSpans]
+			if !ok {
+				filtSS = filtRS.ScopeSpans().AppendEmpty()
+				si.scopeSpans.Scope().CopyTo(filtSS.Scope())
+				filtSS.SetSchemaUrl(si.scopeSpans.SchemaUrl())
+				ssMap[si.scopeSpans] = filtSS
+			}
+			si.span.CopyTo(filtSS.Spans().AppendEmpty())
+		}
+	}
+	var m ptrace.ProtoMarshaler
+	return int64(m.TracesSize(filtered))
 }
 
 // groupSpansByTraceID flattens incoming data into a TraceID-indexed map so
@@ -142,8 +217,9 @@ func (*spanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pcommon.T
 				span := spans.At(k)
 				traceID := span.TraceID()
 				traceSpans[traceID] = append(traceSpans[traceID], spanInfo{
-					span:       span,
-					scopeSpans: ils,
+					span:          span,
+					resourceSpans: rs,
+					scopeSpans:    ils,
 				})
 			}
 		}

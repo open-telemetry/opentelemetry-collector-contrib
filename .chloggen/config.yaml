@@ -188,7 +188,7 @@ components:
     - processor/azuredetector
     - processor/cardinality_guardian
     - processor/coralogix
-    - processor/cumulativetodelta
+    - processor/cumulative_to_delta
     - processor/deltatocumulative
     - processor/deltatorate
     - processor/digitaloceandetector

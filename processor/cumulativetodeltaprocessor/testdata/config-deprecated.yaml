@@ -1,4 +1,4 @@
-cumulative_to_delta:
+cumulativetodelta:
   include:
     match_type: strict
     metrics:
@@ -11,9 +11,9 @@ cumulative_to_delta:
       - metric4
   max_staleness: 10s
 
-cumulative_to_delta/empty:
+cumulativetodelta/empty:
 
-cumulative_to_delta/missing_match_type:
+cumulativetodelta/missing_match_type:
   include:
     metrics:
       - metric1
@@ -23,7 +23,7 @@ cumulative_to_delta/missing_match_type:
       - metric3
       - metric4
 
-cumulative_to_delta/missing_name:
+cumulativetodelta/missing_name:
   include:
     match_type: strict
     metrics:
@@ -31,7 +31,7 @@ cumulative_to_delta/missing_name:
     match_type: strict
     metrics:
 
-cumulative_to_delta/regexp:
+cumulativetodelta/regexp:
   include:
     match_type: regexp
     metrics:
@@ -42,7 +42,7 @@ cumulative_to_delta/regexp:
       - b*
   max_staleness: 10s
 
-cumulative_to_delta/metric_type_filter:
+cumulativetodelta/metric_type_filter:
   include:
     match_type: regexp
     metrics:
@@ -57,7 +57,7 @@ cumulative_to_delta/metric_type_filter:
       - histogram
   max_staleness: 10s
 
-cumulative_to_delta/invalid_include_metric_type_filter:
+cumulativetodelta/invalid_include_metric_type_filter:
   include:
     match_type: regexp
     metrics:
@@ -72,7 +72,7 @@ cumulative_to_delta/invalid_include_metric_type_filter:
       - histogram
   max_staleness: 10s
 
-cumulative_to_delta/invalid_exclude_metric_type_filter:
+cumulativetodelta/invalid_exclude_metric_type_filter:
   include:
     match_type: regexp
     metrics:
@@ -85,11 +85,11 @@ cumulative_to_delta/invalid_exclude_metric_type_filter:
       - Invalid
   max_staleness: 10s
 
-cumulative_to_delta/auto:
+cumulativetodelta/auto:
   initial_value: auto
 
-cumulative_to_delta/keep:
+cumulativetodelta/keep:
   initial_value: keep
 
-cumulative_to_delta/drop:
+cumulativetodelta/drop:
   initial_value: drop
