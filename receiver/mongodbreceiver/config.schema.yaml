@@ -10,26 +10,20 @@ $defs:
     type: object
     properties:
       collection_interval:
-        description: CollectionInterval controls how often top_query scrapes run, independent of the receiver's main collection_interval. Setting this smaller than collection_interval has no effect since the controller only ticks at collection_interval. 0 disables the self-gate — top_query runs on every controller tick.
         type: string
         format: duration
       max_explain_each_interval:
-        description: MaxExplainEachInterval caps the number of new explain calls per scrape interval. Cache hits do not count toward this budget; only server-side explain calls do.
         type: integer
         x-customType: int64
       max_query_sample_count:
-        description: MaxQuerySampleCount bounds the number of profile documents fetched per database per scrape before ranking. TopQueryCount must be <= MaxQuerySampleCount.
         type: integer
         x-customType: int64
       query_plan_cache_size:
-        description: QueryPlanCacheSize is the maximum number of explain plans to cache. 0 means explain runs on every occurrence but results are not cached.
         type: integer
       query_plan_cache_ttl:
-        description: QueryPlanCacheTTL is the TTL for cached explain plans.
         type: string
         format: duration
       top_query_count:
-        description: TopQueryCount is the number of top queries to emit per scrape (ranked by execution time). 0 means no events are emitted (cursors still advance).
         type: integer
         x-customType: int64
 type: object
