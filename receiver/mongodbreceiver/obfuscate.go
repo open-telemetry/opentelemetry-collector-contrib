@@ -143,12 +143,22 @@ func isExplainable(op string, cmd bson.D) bool {
 	if _, skip := unexplainableOps[op]; skip {
 		return false
 	}
+	if len(cmd) == 0 {
+		return false
+	}
+	// findAndModify legitimately has "update" (or "remove") as inner clauses,
+	// which would otherwise trip the all-keys check below. MongoDB dispatches
+	// explain by the first key, so as long as the verb (findAndModify) is
+	// explainable, the nested clauses are safe.
+	if cmd[0].Key == "findAndModify" {
+		return true
+	}
 	for _, e := range cmd {
 		if _, unexplainable := unexplainableCommands[e.Key]; unexplainable {
 			return false
 		}
 	}
-	return len(cmd) > 0
+	return true
 }
 
 // prepareForExplainCleaned wraps an already-stripped command for explain.
@@ -215,10 +225,7 @@ func asSlice(v any) []any {
 }
 
 // obfuscateExplainPlan recursively walks an explain result and replaces literal
-// values in "filter", "parsedQuery", and "indexBounds" with "?". The
-// "slotBasedPlan" subtree (SBE debug output) contains constants embedded in
-// opaque, version-dependent strings; every leaf under it is replaced with "?"
-// to prevent literal leakage without relying on parsing the SBE syntax.
+// values in "filter", "parsedQuery", and "indexBounds" with "?".
 func obfuscateExplainPlan(v any) any {
 	if m := asMap(v); m != nil {
 		out := make(map[string]any, len(m))

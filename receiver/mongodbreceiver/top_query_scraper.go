@@ -24,17 +24,19 @@ import (
 // slowQueryEntry is the single shared representation of one slow query
 // execution
 type slowQueryEntry struct {
-	TS             time.Time `bson:"ts"`
-	NS             string    `bson:"ns"`
-	Op             string    `bson:"op"`
-	Millis         int64     `bson:"millis"`
-	CPUNanos       int64     `bson:"cpuNanos"`
-	ResponseLength int64     `bson:"responseLength"`
-	KeysExamined   int64     `bson:"keysExamined"`
-	DocsExamined   int64     `bson:"docsExamined"`
-	NReturned      int64     `bson:"nreturned"`
-	PlanSummary    string    `bson:"planSummary"`
-	Command        bson.D    `bson:"command"`
+	TS                 time.Time `bson:"ts"`
+	NS                 string    `bson:"ns"`
+	Op                 string    `bson:"op"`
+	Millis             int64     `bson:"millis"`
+	CPUNanos           int64     `bson:"cpuNanos"`
+	ResponseLength     int64     `bson:"responseLength"`
+	KeysExamined       int64     `bson:"keysExamined"`
+	DocsExamined       int64     `bson:"docsExamined"`
+	NReturned          int64     `bson:"nreturned"`
+	PlanSummary        string    `bson:"planSummary"`
+	Command            bson.D    `bson:"command"`
+	CursorID           int64     `bson:"cursorid"`
+	OriginatingCommand bson.D    `bson:"originatingCommand"`
 }
 
 // structuredLogLine is the JSON shape of a MongoDB structured log entry.
@@ -42,16 +44,18 @@ type structuredLogLine struct {
 	T    json.RawMessage `json:"t"`
 	Msg  string          `json:"msg"`
 	Attr struct {
-		NS             string          `json:"ns"`
-		Type           string          `json:"type"`
-		DurationMillis int64           `json:"durationMillis"`
-		CPUNanos       int64           `json:"cpuNanos"`
-		Reslen         int64           `json:"reslen"`
-		KeysExamined   int64           `json:"keysExamined"`
-		DocsExamined   int64           `json:"docsExamined"`
-		NReturned      int64           `json:"nreturned"`
-		PlanSummary    string          `json:"planSummary"`
-		Command        json.RawMessage `json:"command"`
+		NS                 string          `json:"ns"`
+		Type               string          `json:"type"`
+		DurationMillis     int64           `json:"durationMillis"`
+		CPUNanos           int64           `json:"cpuNanos"`
+		Reslen             int64           `json:"reslen"`
+		KeysExamined       int64           `json:"keysExamined"`
+		DocsExamined       int64           `json:"docsExamined"`
+		NReturned          int64           `json:"nreturned"`
+		PlanSummary        string          `json:"planSummary"`
+		Command            json.RawMessage `json:"command"`
+		Cursorid           int64           `json:"cursorid"`
+		OriginatingCommand json.RawMessage `json:"originatingCommand"`
 	} `json:"attr"`
 }
 
@@ -72,18 +76,23 @@ func topN(entries []slowQueryEntry, n int) []slowQueryEntry {
 const queryPlanSentinel = "__unexplainable__"
 
 var systemDatabases = map[string]struct{}{
-	"admin":    {},
-	"local":    {},
-	"config":   {},
-	"__system": {},
+	"admin":  {},
+	"local":  {},
+	"config": {},
 }
 
-func buildPlanCache(config *Config) *lru.LRU[string, string] {
+func buildPlanCache(config *Config, logger *zap.Logger) *lru.LRU[string, string] {
 	size := config.TopQueryCollection.QueryPlanCacheSize
+	ttl := config.TopQueryCollection.QueryPlanCacheTTL
 	if size <= 0 {
+		logger.Debug("Query plan caching disabled, not building plan cache",
+			zap.Int("query_plan_cache_size", size))
 		return nil
 	}
-	return lru.NewLRU[string, string](size, nil, config.TopQueryCollection.QueryPlanCacheTTL)
+	logger.Debug("Building query plan cache",
+		zap.Int("query_plan_cache_size", size),
+		zap.Duration("query_plan_cache_ttl", ttl))
+	return lru.NewLRU[string, string](size, nil, ttl)
 }
 
 func (s *mongodbScraper) doScrapeTopQueryLogs(ctx context.Context) (plog.Logs, error) {
@@ -122,17 +131,18 @@ func (s *mongodbScraper) doScrapeTopQueryLogs(ctx context.Context) (plog.Logs, e
 	// Determine the lower bound of the scrape window.
 	sinceTime := s.lastScrapeTime
 	if sinceTime.IsZero() {
-		lookback := s.config.TopQueryCollection.CollectionInterval
-		if lookback <= 0 {
-			lookback = defaultTopQueryCollectionInterval
-		}
-		sinceTime = serverNow.Add(-lookback)
+		sinceTime = serverNow.Add(-s.config.TopQueryCollection.CollectionInterval)
 	}
 
-	topN := s.config.TopQueryCollection.TopQueryCount
-	if topN <= 0 {
-		topN = defaultTopQueryCount
-	}
+	maxRows := s.config.TopQueryCollection.MaxQuerySampleCount
+	explainBudget := s.config.TopQueryCollection.MaxExplainEachInterval
+
+	s.logger.Debug("Collecting top query data with config",
+		zap.Int64("max_query_sample_count", maxRows),
+		zap.Int64("max_explain_each_interval", explainBudget),
+		zap.Int64("top_query_count", s.config.TopQueryCollection.TopQueryCount),
+		zap.Duration("collection_interval", s.config.TopQueryCollection.CollectionInterval),
+	)
 
 	var allEntries []slowQueryEntry
 	logFallbackDBs := make(map[string]struct{})
@@ -141,7 +151,7 @@ func (s *mongodbScraper) doScrapeTopQueryLogs(ctx context.Context) (plog.Logs, e
 		if _, skip := systemDatabases[dbName]; skip {
 			continue
 		}
-		entries, used, err := s.scrapeTopQueryFromProfiler(ctx, dbName, sinceTime, serverNow, topN)
+		entries, used, err := s.scrapeTopQueryFromProfiler(ctx, dbName, sinceTime, serverNow, maxRows)
 		if err != nil {
 			s.logger.Warn("profiler scrape failed, will attempt getLog fallback",
 				zap.String("db", dbName), zap.Error(err))
@@ -153,7 +163,7 @@ func (s *mongodbScraper) doScrapeTopQueryLogs(ctx context.Context) (plog.Logs, e
 	}
 
 	if len(logFallbackDBs) > 0 {
-		entries, err := s.scrapeTopQueryFromGetLog(ctx, logFallbackDBs, sinceTime, serverNow, topN)
+		entries, err := s.scrapeTopQueryFromGetLog(ctx, logFallbackDBs, sinceTime, serverNow, maxRows)
 		if err != nil {
 			s.logger.Warn("getLog fallback failed", zap.Error(err))
 		}
@@ -161,7 +171,7 @@ func (s *mongodbScraper) doScrapeTopQueryLogs(ctx context.Context) (plog.Logs, e
 	}
 
 	if len(allEntries) > 0 {
-		s.processTopQueryEntries(ctx, allEntries, now)
+		s.processTopQueryEntries(ctx, allEntries, now, explainBudget)
 	}
 
 	rb := s.lb.NewResourceBuilder()
@@ -176,9 +186,9 @@ func (s *mongodbScraper) doScrapeTopQueryLogs(ctx context.Context) (plog.Logs, e
 	return s.lb.Emit(), nil
 }
 
-// scrapeTopQueryFromProfiler fetches the top-N slowest ops from `system.profile`
+// scrapeTopQueryFromProfiler fetches up to maxRows slowest ops from `system.profile`
 // for a database whose ts falls in (sinceTime, upperBound].
-func (s *mongodbScraper) scrapeTopQueryFromProfiler(ctx context.Context, dbName string, sinceTime, upperBound time.Time, topN int64) ([]slowQueryEntry, bool, error) {
+func (s *mongodbScraper) scrapeTopQueryFromProfiler(ctx context.Context, dbName string, sinceTime, upperBound time.Time, maxRows int64) ([]slowQueryEntry, bool, error) {
 	level, err := s.getProfilingLevel(ctx, dbName)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to get profiling level: %w", err)
@@ -188,7 +198,7 @@ func (s *mongodbScraper) scrapeTopQueryFromProfiler(ctx context.Context, dbName 
 		return nil, false, nil
 	}
 
-	docs, err := s.client.FindProfileDocs(ctx, dbName, sinceTime, upperBound, topN)
+	docs, err := s.client.FindProfileDocs(ctx, dbName, sinceTime, upperBound, maxRows)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to fetch profile docs: %w", err)
 	}
@@ -292,27 +302,38 @@ func parseLogLine(line string) (slowQueryEntry, bool) {
 		return slowQueryEntry{}, false
 	}
 
+	var originating bson.D
+	if len(raw.Attr.OriginatingCommand) > 0 {
+		if err := bson.UnmarshalExtJSON(raw.Attr.OriginatingCommand, false, &originating); err != nil {
+			originating = nil
+		}
+	}
+
 	return slowQueryEntry{
-		TS:             t,
-		NS:             raw.Attr.NS,
-		Op:             raw.Attr.Type,
-		Millis:         raw.Attr.DurationMillis,
-		CPUNanos:       raw.Attr.CPUNanos,
-		ResponseLength: raw.Attr.Reslen,
-		KeysExamined:   raw.Attr.KeysExamined,
-		DocsExamined:   raw.Attr.DocsExamined,
-		NReturned:      raw.Attr.NReturned,
-		PlanSummary:    raw.Attr.PlanSummary,
-		Command:        cmd,
+		TS:                 t,
+		NS:                 raw.Attr.NS,
+		Op:                 raw.Attr.Type,
+		Millis:             raw.Attr.DurationMillis,
+		CPUNanos:           raw.Attr.CPUNanos,
+		ResponseLength:     raw.Attr.Reslen,
+		KeysExamined:       raw.Attr.KeysExamined,
+		DocsExamined:       raw.Attr.DocsExamined,
+		NReturned:          raw.Attr.NReturned,
+		PlanSummary:        raw.Attr.PlanSummary,
+		Command:            cmd,
+		CursorID:           raw.Attr.Cursorid,
+		OriginatingCommand: originating,
 	}, true
 }
 
-func (s *mongodbScraper) processTopQueryEntries(ctx context.Context, entries []slowQueryEntry, now pcommon.Timestamp) {
+func (s *mongodbScraper) processTopQueryEntries(ctx context.Context, entries []slowQueryEntry, now pcommon.Timestamp, explainBudget int64) {
 	ranked := topN(entries, int(s.config.TopQueryCollection.TopQueryCount))
 
 	const msPerSec = 1000.0
 	for i := range ranked {
 		e := &ranked[i]
+
+		queryTruncated, commandComment, operationName := extractCommandMetadata(e.Command, e.Op)
 
 		obfuscated, err := s.obfuscator.obfuscateCommand(cleanCommand(e.Command))
 		if err != nil {
@@ -320,11 +341,16 @@ func (s *mongodbScraper) processTopQueryEntries(ctx context.Context, entries []s
 		}
 		sig := querySignature(obfuscated)
 
-		queryPlan, queryPlanHash := s.retrieveQueryPlan(ctx, e, sig)
+		queryPlan, queryPlanHash := s.retrieveQueryPlan(ctx, e, sig, &explainBudget)
 
-		operationName := e.Op
-		if len(e.Command) > 0 {
-			operationName = e.Command[0].Key
+		cursorID := fmt.Sprintf("%v", e.CursorID)
+		originatingCommand := ""
+		if len(e.OriginatingCommand) > 0 {
+			obf, obfErr := s.obfuscator.obfuscateCommand(cleanCommand(e.OriginatingCommand))
+			if obfErr != nil {
+				s.logger.Debug("failed to obfuscate originating command", zap.Error(obfErr))
+			}
+			originatingCommand = obf
 		}
 
 		s.lb.RecordDbServerTopQueryEvent(
@@ -335,21 +361,27 @@ func (s *mongodbScraper) processTopQueryEntries(ctx context.Context, entries []s
 			operationName,
 			obfuscated,
 			metadata.AttributeDbSystemNameMongodb,
+			cursorID,
+			originatingCommand,
+			queryPlanHash,
+			queryPlan,
+			commandComment,
 			float64(e.CPUNanos)/float64(time.Second),
 			e.DocsExamined,
 			e.NReturned,
 			float64(e.Millis)/msPerSec,
-			queryPlan,
-			queryPlanHash,
 			e.KeysExamined,
 			e.PlanSummary,
 			e.ResponseLength,
 			e.Op,
+			queryTruncated,
 		)
 	}
 }
 
-func (s *mongodbScraper) retrieveQueryPlan(ctx context.Context, e *slowQueryEntry, sig string) (string, string) {
+// retrieveQueryPlan fetches (or returns cached) explain plan for the given entry.
+// remainingExplainBudget is a per-scrape counter of remaining server-side explain calls;
+func (s *mongodbScraper) retrieveQueryPlan(ctx context.Context, e *slowQueryEntry, sig string, remainingExplainBudget *int64) (string, string) {
 	if len(e.Command) == 0 {
 		return "", ""
 	}
@@ -379,6 +411,13 @@ func (s *mongodbScraper) retrieveQueryPlan(ctx context.Context, e *slowQueryEntr
 		}
 		return "", ""
 	}
+
+	if *remainingExplainBudget <= 0 {
+		s.logger.Debug("explain budget exhausted for this scrape, skipping explain",
+			zap.String("db", entryDB))
+		return "", ""
+	}
+	*remainingExplainBudget--
 
 	prepared := prepareForExplainCleaned(cmd)
 	result, err := s.client.RunCommand(ctx, entryDB, bson.D{

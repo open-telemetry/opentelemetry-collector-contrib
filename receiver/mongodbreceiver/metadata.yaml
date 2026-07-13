@@ -123,6 +123,12 @@ attributes:
   mongodb.cursor.tailable:
     description: Whether the cursor is a tailable cursor.
     type: bool
+  mongodb.explain_plan.hash:
+    description: FNV-64a hash of the obfuscated explain plan structure, identifying the execution plan shape.
+    type: string
+  mongodb.explain_plan.text:
+    description: The obfuscated query explain plan, if collection is enabled.
+    type: string
   mongodb.lsid.id:
     description: The UUID portion of the logical session identifier associated with the MongoDB operation.
     type: string
@@ -141,12 +147,6 @@ attributes:
   mongodb.operation.duration:
     description: The duration of the MongoDB operation in seconds.
     type: double
-  mongodb.operation.explain_plan:
-    description: The obfuscated query explain plan, if collection is enabled.
-    type: string
-  mongodb.operation.explain_plan_hash:
-    description: FNV-64a hash of the obfuscated explain plan structure, identifying the execution plan shape.
-    type: string
   mongodb.operation.id:
     description: Identifier of the MongoDB operation.
     type: string
@@ -262,22 +262,27 @@ events:
     enabled: false
     description: |
       Emits one event per slow query execution. The top N slowest executions per scrape window are emitted.
+      Note: when database profiling is disabled, the receiver falls back to MongoDB's diagnostic log (`getLog`), a fixed-size ring buffer (~1024 entries) that may rotate slow-query entries out before the next scrape on busy servers; enable the profiler for reliable capture.
     attributes:
       - db.collection.name
       - db.namespace
       - db.operation.name
       - db.query.text
       - db.system.name
+      - mongodb.cursor.id
+      - mongodb.cursor.originating_command
+      - mongodb.explain_plan.hash
+      - mongodb.explain_plan.text
+      - mongodb.operation.comment
       - mongodb.operation.cpu_time
       - mongodb.operation.docs_examined
       - mongodb.operation.docs_returned
       - mongodb.operation.duration
-      - mongodb.operation.explain_plan
-      - mongodb.operation.explain_plan_hash
       - mongodb.operation.keys_examined
       - mongodb.operation.plan.summary
       - mongodb.operation.response_length
       - mongodb.operation.type
+      - mongodb.query.truncated
 
 metrics:
   mongodb.active.reads:

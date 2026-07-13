@@ -83,7 +83,7 @@ type eventDbServerTopQuery struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbCollectionNameAttributeValue string, dbNamespaceAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, dbSystemNameAttributeValue string, mongodbOperationCPUTimeAttributeValue float64, mongodbOperationDocsExaminedAttributeValue int64, mongodbOperationDocsReturnedAttributeValue int64, mongodbOperationDurationAttributeValue float64, mongodbOperationExplainPlanAttributeValue string, mongodbOperationExplainPlanHashAttributeValue string, mongodbOperationKeysExaminedAttributeValue int64, mongodbOperationPlanSummaryAttributeValue string, mongodbOperationResponseLengthAttributeValue int64, mongodbOperationTypeAttributeValue string) {
+func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbCollectionNameAttributeValue string, dbNamespaceAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, dbSystemNameAttributeValue string, mongodbCursorIDAttributeValue string, mongodbCursorOriginatingCommandAttributeValue string, mongodbExplainPlanHashAttributeValue string, mongodbExplainPlanTextAttributeValue string, mongodbOperationCommentAttributeValue []any, mongodbOperationCPUTimeAttributeValue float64, mongodbOperationDocsExaminedAttributeValue int64, mongodbOperationDocsReturnedAttributeValue int64, mongodbOperationDurationAttributeValue float64, mongodbOperationKeysExaminedAttributeValue int64, mongodbOperationPlanSummaryAttributeValue string, mongodbOperationResponseLengthAttributeValue int64, mongodbOperationTypeAttributeValue string, mongodbQueryTruncatedAttributeValue bool) {
 	if !e.config.Enabled {
 		return
 	}
@@ -100,16 +100,20 @@ func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcomm
 	dp.Attributes().PutStr("db.operation.name", dbOperationNameAttributeValue)
 	dp.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
 	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	dp.Attributes().PutStr("mongodb.cursor.id", mongodbCursorIDAttributeValue)
+	dp.Attributes().PutStr("mongodb.cursor.originating_command", mongodbCursorOriginatingCommandAttributeValue)
+	dp.Attributes().PutStr("mongodb.explain_plan.hash", mongodbExplainPlanHashAttributeValue)
+	dp.Attributes().PutStr("mongodb.explain_plan.text", mongodbExplainPlanTextAttributeValue)
+	dp.Attributes().PutEmptySlice("mongodb.operation.comment").FromRaw(mongodbOperationCommentAttributeValue)
 	dp.Attributes().PutDouble("mongodb.operation.cpu_time", mongodbOperationCPUTimeAttributeValue)
 	dp.Attributes().PutInt("mongodb.operation.docs_examined", mongodbOperationDocsExaminedAttributeValue)
 	dp.Attributes().PutInt("mongodb.operation.docs_returned", mongodbOperationDocsReturnedAttributeValue)
 	dp.Attributes().PutDouble("mongodb.operation.duration", mongodbOperationDurationAttributeValue)
-	dp.Attributes().PutStr("mongodb.operation.explain_plan", mongodbOperationExplainPlanAttributeValue)
-	dp.Attributes().PutStr("mongodb.operation.explain_plan_hash", mongodbOperationExplainPlanHashAttributeValue)
 	dp.Attributes().PutInt("mongodb.operation.keys_examined", mongodbOperationKeysExaminedAttributeValue)
 	dp.Attributes().PutStr("mongodb.operation.plan.summary", mongodbOperationPlanSummaryAttributeValue)
 	dp.Attributes().PutInt("mongodb.operation.response_length", mongodbOperationResponseLengthAttributeValue)
 	dp.Attributes().PutStr("mongodb.operation.type", mongodbOperationTypeAttributeValue)
+	dp.Attributes().PutBool("mongodb.query.truncated", mongodbQueryTruncatedAttributeValue)
 
 }
 
@@ -262,6 +266,6 @@ func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, times
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.
-func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, dbCollectionNameAttributeValue string, dbNamespaceAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, dbSystemNameAttributeValue AttributeDbSystemName, mongodbOperationCPUTimeAttributeValue float64, mongodbOperationDocsExaminedAttributeValue int64, mongodbOperationDocsReturnedAttributeValue int64, mongodbOperationDurationAttributeValue float64, mongodbOperationExplainPlanAttributeValue string, mongodbOperationExplainPlanHashAttributeValue string, mongodbOperationKeysExaminedAttributeValue int64, mongodbOperationPlanSummaryAttributeValue string, mongodbOperationResponseLengthAttributeValue int64, mongodbOperationTypeAttributeValue string) {
-	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, dbCollectionNameAttributeValue, dbNamespaceAttributeValue, dbOperationNameAttributeValue, dbQueryTextAttributeValue, dbSystemNameAttributeValue.String(), mongodbOperationCPUTimeAttributeValue, mongodbOperationDocsExaminedAttributeValue, mongodbOperationDocsReturnedAttributeValue, mongodbOperationDurationAttributeValue, mongodbOperationExplainPlanAttributeValue, mongodbOperationExplainPlanHashAttributeValue, mongodbOperationKeysExaminedAttributeValue, mongodbOperationPlanSummaryAttributeValue, mongodbOperationResponseLengthAttributeValue, mongodbOperationTypeAttributeValue)
+func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, dbCollectionNameAttributeValue string, dbNamespaceAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, dbSystemNameAttributeValue AttributeDbSystemName, mongodbCursorIDAttributeValue string, mongodbCursorOriginatingCommandAttributeValue string, mongodbExplainPlanHashAttributeValue string, mongodbExplainPlanTextAttributeValue string, mongodbOperationCommentAttributeValue []any, mongodbOperationCPUTimeAttributeValue float64, mongodbOperationDocsExaminedAttributeValue int64, mongodbOperationDocsReturnedAttributeValue int64, mongodbOperationDurationAttributeValue float64, mongodbOperationKeysExaminedAttributeValue int64, mongodbOperationPlanSummaryAttributeValue string, mongodbOperationResponseLengthAttributeValue int64, mongodbOperationTypeAttributeValue string, mongodbQueryTruncatedAttributeValue bool) {
+	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, dbCollectionNameAttributeValue, dbNamespaceAttributeValue, dbOperationNameAttributeValue, dbQueryTextAttributeValue, dbSystemNameAttributeValue.String(), mongodbCursorIDAttributeValue, mongodbCursorOriginatingCommandAttributeValue, mongodbExplainPlanHashAttributeValue, mongodbExplainPlanTextAttributeValue, mongodbOperationCommentAttributeValue, mongodbOperationCPUTimeAttributeValue, mongodbOperationDocsExaminedAttributeValue, mongodbOperationDocsReturnedAttributeValue, mongodbOperationDurationAttributeValue, mongodbOperationKeysExaminedAttributeValue, mongodbOperationPlanSummaryAttributeValue, mongodbOperationResponseLengthAttributeValue, mongodbOperationTypeAttributeValue, mongodbQueryTruncatedAttributeValue)
 }

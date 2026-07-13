@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
@@ -24,7 +25,7 @@ func newTestScraper(t *testing.T, fc *fakeClient) *mongodbScraper {
 	cfg.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.QueryPlanCacheTTL = 0
 	s := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
-	s.planCache = buildPlanCache(cfg)
+	s.planCache = buildPlanCache(cfg, zap.NewNop())
 	s.client = fc
 	return s
 }
@@ -112,6 +113,20 @@ func TestIsExplainable(t *testing.T) {
 
 	// Empty command is never explainable.
 	require.False(t, isExplainable("query", bson.D{}))
+
+	// findAndModify legitimately nests "update" or "remove" clauses. MongoDB
+	// dispatches explain by the first key, so these must be treated as
+	// explainable despite the inner keys matching unexplainableCommands.
+	require.True(t, isExplainable("command", bson.D{
+		{Key: "findAndModify", Value: "users"},
+		{Key: "query", Value: bson.D{{Key: "status", Value: "pending"}}},
+		{Key: "update", Value: bson.D{{Key: "$set", Value: bson.D{{Key: "status", Value: "done"}}}}},
+	}))
+	require.True(t, isExplainable("command", bson.D{
+		{Key: "findAndModify", Value: "users"},
+		{Key: "query", Value: bson.D{{Key: "status", Value: "pending"}}},
+		{Key: "remove", Value: true},
+	}))
 }
 
 func TestCleanCommand_StripsSessionKeys(t *testing.T) {
@@ -518,7 +533,8 @@ func TestRetrieveQueryPlan_NotExplainable(t *testing.T) {
 	}
 	obfuscated, _ := s.obfuscator.obfuscateCommand(e.Command)
 	sig := querySignature(obfuscated)
-	plan, planHash := s.retrieveQueryPlan(t.Context(), e, sig)
+	budget := defaultMaxExplainEachInterval
+	plan, planHash := s.retrieveQueryPlan(t.Context(), e, sig, &budget)
 	require.Empty(t, plan)
 	require.Empty(t, planHash)
 
@@ -533,7 +549,8 @@ func TestRetrieveQueryPlan_NoCommand(t *testing.T) {
 	fc := &fakeClient{}
 	s := newTestScraper(t, fc)
 	e := &slowQueryEntry{NS: "appdb.users"}
-	plan, planHash := s.retrieveQueryPlan(t.Context(), e, "abc")
+	budget := defaultMaxExplainEachInterval
+	plan, planHash := s.retrieveQueryPlan(t.Context(), e, "abc", &budget)
 	require.Empty(t, plan)
 	require.Empty(t, planHash)
 }
@@ -554,11 +571,12 @@ func TestRetrieveQueryPlan_CachesSuccess(t *testing.T) {
 	obfuscated, _ := s.obfuscator.obfuscateCommand(e.Command)
 	sig := querySignature(obfuscated)
 
-	plan, planHash := s.retrieveQueryPlan(t.Context(), e, sig)
+	budget := defaultMaxExplainEachInterval
+	plan, planHash := s.retrieveQueryPlan(t.Context(), e, sig, &budget)
 	require.NotEmpty(t, plan)
 	require.NotEmpty(t, planHash)
 
-	plan2, planHash2 := s.retrieveQueryPlan(t.Context(), e, sig)
+	plan2, planHash2 := s.retrieveQueryPlan(t.Context(), e, sig, &budget)
 	require.Equal(t, plan, plan2)
 	require.Equal(t, planHash, planHash2)
 	fc.AssertNumberOfCalls(t, "RunCommand", 1)
@@ -586,7 +604,7 @@ func TestProcessTopQueryEntries_EmitsTopQueryEvent(t *testing.T) {
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	s.processTopQueryEntries(t.Context(), entries, now)
+	s.processTopQueryEntries(t.Context(), entries, now, defaultMaxExplainEachInterval)
 
 	rb := s.lb.NewResourceBuilder()
 	rb.SetServerAddress("localhost")
@@ -625,6 +643,85 @@ func TestProcessTopQueryEntries_EmitsTopQueryEvent(t *testing.T) {
 	require.False(t, hasMean)
 }
 
+func TestProcessTopQueryEntries_EmitsCommentAndTruncated(t *testing.T) {
+	fc := &fakeClient{}
+	s := newTestScraper(t, fc)
+
+	entries := []slowQueryEntry{
+		{
+			TS:     time.Now(),
+			NS:     "appdb.users",
+			Op:     "insert",
+			Millis: 100,
+			Command: bson.D{
+				{Key: "insert", Value: "users"},
+				{Key: "documents", Value: bson.A{bson.D{{Key: "a", Value: 1}}}},
+				{Key: "comment", Value: "app=checkout"},
+				{Key: "$truncated", Value: "..."},
+			},
+		},
+	}
+
+	s.processTopQueryEntries(t.Context(), entries, pcommon.NewTimestampFromTime(time.Now()), defaultMaxExplainEachInterval)
+
+	rb := s.lb.NewResourceBuilder()
+	rb.SetServerAddress("localhost")
+	rb.SetServerPort(27017)
+	rb.SetServiceInstanceID(generateInstanceID("localhost", 27017))
+	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
+
+	logs := s.lb.Emit()
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+	attrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+
+	v, ok := attrs.Get("mongodb.query.truncated")
+	require.True(t, ok)
+	require.True(t, v.Bool())
+
+	v, ok = attrs.Get("mongodb.operation.comment")
+	require.True(t, ok)
+	require.Equal(t, 1, v.Slice().Len())
+	require.Equal(t, "app=checkout", v.Slice().At(0).AsString())
+}
+
+func TestProcessTopQueryEntries_EmitsCursorAndOriginatingCommand(t *testing.T) {
+	fc := &fakeClient{}
+	s := newTestScraper(t, fc)
+
+	entries := []slowQueryEntry{
+		{
+			TS:                 time.Now(),
+			NS:                 "appdb.users",
+			Op:                 "getmore",
+			Millis:             100,
+			Command:            bson.D{{Key: "getMore", Value: int64(42)}, {Key: "collection", Value: "users"}},
+			CursorID:           123456789,
+			OriginatingCommand: bson.D{{Key: "find", Value: "users"}, {Key: "filter", Value: bson.D{{Key: "status", Value: "active"}}}},
+		},
+	}
+
+	s.processTopQueryEntries(t.Context(), entries, pcommon.NewTimestampFromTime(time.Now()), defaultMaxExplainEachInterval)
+
+	rb := s.lb.NewResourceBuilder()
+	rb.SetServerAddress("localhost")
+	rb.SetServerPort(27017)
+	rb.SetServiceInstanceID(generateInstanceID("localhost", 27017))
+	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
+
+	logs := s.lb.Emit()
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+	attrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+
+	v, ok := attrs.Get("mongodb.cursor.id")
+	require.True(t, ok)
+	require.Equal(t, "123456789", v.AsString())
+
+	v, ok = attrs.Get("mongodb.cursor.originating_command")
+	require.True(t, ok)
+	require.NotEmpty(t, v.AsString())
+	require.Contains(t, v.AsString(), "find")
+}
+
 func TestProcessTopQueryEntries_EmitsEventForEmptyCommand(t *testing.T) {
 	fc := &fakeClient{}
 	s := newTestScraper(t, fc)
@@ -632,9 +729,100 @@ func TestProcessTopQueryEntries_EmitsEventForEmptyCommand(t *testing.T) {
 	entries := []slowQueryEntry{
 		{NS: "appdb.users", Op: "query", Millis: 100, Command: bson.D{}},
 	}
-	s.processTopQueryEntries(t.Context(), entries, pcommon.NewTimestampFromTime(time.Now()))
+	s.processTopQueryEntries(t.Context(), entries, pcommon.NewTimestampFromTime(time.Now()), defaultMaxExplainEachInterval)
 
 	require.Equal(t, 1, s.lb.Emit().ResourceLogs().Len())
+}
+
+// --- doScrapeTopQueryLogs (end-to-end) ---
+
+func TestDoScrapeTopQueryLogs_MergesProfilerAndGetLog(t *testing.T) {
+	fc := &fakeClient{}
+
+	serverNow := time.Now().UTC()
+	fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{
+		"host":      "mongo-host:27017",
+		"localTime": bson.DateTime(serverNow.UnixMilli()),
+	}, nil)
+	fc.On("ListDatabaseNames", mock.Anything, bson.M{}, mock.Anything).Return([]string{"profiled", "unprofiled", "admin"}, nil)
+
+	// profiled DB: profiler enabled, returns 1 slow doc.
+	fc.On("RunCommand", mock.Anything, "profiled", bson.M{"profile": -1}).Return(bson.M{"was": int32(1)}, nil)
+	profilerDocs := []slowQueryEntry{
+		{
+			TS:      serverNow.Add(-5 * time.Second),
+			NS:      "profiled.orders",
+			Op:      "command",
+			Millis:  500,
+			Command: bson.D{{Key: "aggregate", Value: "orders"}, {Key: "pipeline", Value: bson.A{}}},
+		},
+	}
+	fc.On("FindProfileDocs", mock.Anything, "profiled", mock.Anything, mock.Anything, mock.Anything).Return(profilerDocs, nil)
+
+	// unprofiled DB: profiler disabled, falls back to getLog.
+	fc.On("RunCommand", mock.Anything, "unprofiled", bson.M{"profile": -1}).Return(bson.M{"was": int32(0)}, nil)
+
+	logLine := func(ns string, ms int) string {
+		raw := map[string]any{
+			"t":   map[string]any{"$date": serverNow.Add(-3 * time.Second).Format(time.RFC3339Nano)},
+			"msg": "Slow query",
+			"attr": map[string]any{
+				"ns":             ns,
+				"type":           "command",
+				"durationMillis": float64(ms),
+				"command":        map[string]any{"insert": "users", "documents": []any{map[string]any{"a": 1}}},
+			},
+		}
+		b, _ := json.Marshal(raw)
+		return string(b)
+	}
+	fc.On("GetLog", mock.Anything).Return(bson.A{logLine("unprofiled.users", 250)}, nil)
+
+	// explain call fired for the profiler entry (aggregate is explainable).
+	fc.On("RunCommand", mock.Anything, "profiled", mock.Anything).Return(bson.M{
+		"queryPlanner": bson.M{"winningPlan": bson.M{"stage": "COLLSCAN"}},
+		"ok":           float64(1),
+	}, nil)
+
+	s := newTestScraper(t, fc)
+	logs, err := s.doScrapeTopQueryLogs(t.Context())
+	require.NoError(t, err)
+
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+	sl := logs.ResourceLogs().At(0).ScopeLogs().At(0)
+	require.Equal(t, 2, sl.LogRecords().Len(), "expected one event from profiler and one from getLog")
+
+	namespaces := make(map[string]struct{}, 2)
+	for i := 0; i < sl.LogRecords().Len(); i++ {
+		v, ok := sl.LogRecords().At(i).Attributes().Get("db.namespace")
+		require.True(t, ok)
+		namespaces[v.AsString()] = struct{}{}
+	}
+	require.Contains(t, namespaces, "profiled")
+	require.Contains(t, namespaces, "unprofiled")
+
+	// admin is a system DB and must never be scraped.
+	fc.AssertNotCalled(t, "RunCommand", mock.Anything, "admin", bson.M{"profile": -1})
+
+	// Cursor advanced for the next scrape.
+	require.False(t, s.lastScrapeTime.IsZero())
+	require.False(t, s.lastTopQueryExecution.IsZero())
+}
+
+func TestDoScrapeTopQueryLogs_SelfGateSkipsCollection(t *testing.T) {
+	fc := &fakeClient{}
+	s := newTestScraper(t, fc)
+	s.config.TopQueryCollection.CollectionInterval = time.Hour
+	s.lastTopQueryExecution = time.Now()
+
+	logs, err := s.doScrapeTopQueryLogs(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 0, logs.ResourceLogs().Len())
+
+	// No client calls should have been made when the gate skips.
+	fc.AssertNotCalled(t, "ServerStatus", mock.Anything, mock.Anything)
+	fc.AssertNotCalled(t, "ListDatabaseNames", mock.Anything, mock.Anything)
+	fc.AssertNotCalled(t, "GetLog", mock.Anything)
 }
 
 // --- keysOf helper ---

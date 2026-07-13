@@ -29,7 +29,7 @@ type client interface {
 	// RunCommand accepts any BSON-serialisable command (bson.M or bson.D).
 	RunCommand(ctx context.Context, db string, command any) (bson.M, error)
 	CurrentOp(ctx context.Context) ([]bson.M, error)
-	FindProfileDocs(ctx context.Context, dbName string, sinceTime, upperBound time.Time, topN int64) ([]slowQueryEntry, error)
+	FindProfileDocs(ctx context.Context, dbName string, sinceTime, upperBound time.Time, maxRows int64) ([]slowQueryEntry, error)
 	GetLog(ctx context.Context) (bson.A, error)
 }
 
@@ -159,10 +159,8 @@ func (c *mongodbClient) CurrentOp(ctx context.Context) ([]bson.M, error) {
 
 // FindProfileDocs queries system.profile in the given database for docs whose
 // `ts` falls in (sinceTime, upperBound], sorts them by `millis` descending
-// server-side, and returns at most topN documents. Ranking is done on the
-// server via an aggregation pipeline so the receiver never needs to hold or
-// rank the full profile window in memory.
-func (c *mongodbClient) FindProfileDocs(ctx context.Context, dbName string, sinceTime, upperBound time.Time, topN int64) ([]slowQueryEntry, error) {
+// server-side, and returns at most maxRows documents.
+func (c *mongodbClient) FindProfileDocs(ctx context.Context, dbName string, sinceTime, upperBound time.Time, maxRows int64) ([]slowQueryEntry, error) {
 	coll := c.Database(dbName).Collection("system.profile")
 	pipeline := mongo.Pipeline{
 		{{Key: "$match", Value: bson.D{
@@ -172,7 +170,7 @@ func (c *mongodbClient) FindProfileDocs(ctx context.Context, dbName string, sinc
 			}},
 		}}},
 		{{Key: "$sort", Value: bson.D{{Key: "millis", Value: -1}}}},
-		{{Key: "$limit", Value: topN}},
+		{{Key: "$limit", Value: maxRows}},
 	}
 	cursor, err := coll.Aggregate(ctx, pipeline)
 	if err != nil {

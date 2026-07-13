@@ -23,8 +23,10 @@ import (
 const (
 	defaultMongoDBPort                = 27017
 	defaultMaxRowsPerQuery            = 100
+	defaultMaxQuerySampleCount        = int64(100)
+	defaultMaxExplainEachInterval     = int64(200)
 	defaultTopQueryCount              = int64(200)
-	defaultQueryPlanCacheSize         = 1000
+	defaultQueryPlanCacheSize         = 500
 	defaultQueryPlanCacheTTL          = 10 * time.Minute
 	defaultTopQueryCollectionInterval = 60 * time.Second
 )
@@ -55,10 +57,12 @@ func createDefaultConfig() component.Config {
 			MaxRowsPerQuery: defaultMaxRowsPerQuery,
 		},
 		TopQueryCollection: TopQueryCollection{
-			CollectionInterval: defaultTopQueryCollectionInterval,
-			TopQueryCount:      defaultTopQueryCount,
-			QueryPlanCacheSize: defaultQueryPlanCacheSize,
-			QueryPlanCacheTTL:  defaultQueryPlanCacheTTL,
+			CollectionInterval:     defaultTopQueryCollectionInterval,
+			MaxQuerySampleCount:    defaultMaxQuerySampleCount,
+			MaxExplainEachInterval: defaultMaxExplainEachInterval,
+			TopQueryCount:          defaultTopQueryCount,
+			QueryPlanCacheSize:     defaultQueryPlanCacheSize,
+			QueryPlanCacheTTL:      defaultQueryPlanCacheTTL,
 		},
 		ClientConfig: configtls.ClientConfig{},
 	}
@@ -113,7 +117,7 @@ func createLogsReceiver(_ context.Context, params receiver.Settings, rConf compo
 
 	if cfg.Events.DbServerTopQuery.Enabled {
 		tqms := newMongodbScraper(params, cfg)
-		tqms.planCache = buildPlanCache(cfg)
+		tqms.planCache = buildPlanCache(cfg, params.Logger)
 		tqs, err := scraper.NewLogs(
 			tqms.scrapeTopQueryLogs,
 			scraper.WithStart(tqms.start),
