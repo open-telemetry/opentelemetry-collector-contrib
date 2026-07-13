@@ -327,6 +327,29 @@ func TestConnectionPoolSettings(t *testing.T) {
 	})
 }
 
+// TestDBProviderCloseIsSafe verifies the close semantics the receiver relies on
+// when construction fails: closing is safe on a nil provider, a no-op when the
+// pool was never opened, and idempotent.
+func TestDBProviderCloseIsSafe(t *testing.T) {
+	t.Run("nil provider", func(t *testing.T) {
+		var provider *dbProvider
+		require.NoError(t, provider.close())
+	})
+
+	t.Run("never opened", func(t *testing.T) {
+		provider := newDBProvider(&Config{Server: "0.0.0.0", Username: "sa", Password: "password", Port: 1433}, 2)
+		require.NoError(t, provider.close())
+	})
+
+	t.Run("idempotent after open", func(t *testing.T) {
+		provider := newDBProvider(&Config{Server: "0.0.0.0", Username: "sa", Password: "password", Port: 1433}, 2)
+		_, err := provider.getDB()
+		require.NoError(t, err)
+		require.NoError(t, provider.close())
+		require.NoError(t, provider.close())
+	})
+}
+
 func TestSetupQueries(t *testing.T) {
 	var metadata map[string]any
 

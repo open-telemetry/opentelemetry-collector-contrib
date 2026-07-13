@@ -7,6 +7,7 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -38,7 +39,7 @@ func createMetricsReceiver(
 		opts...,
 	)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(err, provider.close())
 	}
 
 	return &sqlServerMetricsReceiver{Metrics: controller, provider: provider}, nil
@@ -68,7 +69,7 @@ func createLogsReceiver(
 		opts...,
 	)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(err, provider.close())
 	}
 
 	return &sqlServerLogsReceiver{Logs: controller, provider: provider}, nil

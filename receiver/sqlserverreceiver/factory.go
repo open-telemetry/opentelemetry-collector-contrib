@@ -177,9 +177,12 @@ func (p *dbProvider) getDB() (*sql.DB, error) {
 	return p.db, p.openErr
 }
 
-// close closes the shared pool. It is idempotent and safe to call even if the
-// pool was never opened.
+// close closes the shared pool. It is idempotent and safe to call on a nil
+// provider or when the pool was never opened.
 func (p *dbProvider) close() error {
+	if p == nil {
+		return nil
+	}
 	p.closeOnce.Do(func() {
 		if p.db != nil {
 			p.closeErr = p.db.Close()
@@ -323,7 +326,9 @@ func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.Contr
 			scraper.WithStart(sqlScraper.Start),
 			scraper.WithShutdown(sqlScraper.Shutdown))
 		if err != nil {
-			return nil, nil, err
+			// The provider owns the shared pool; close it so it is not leaked
+			// when receiver construction fails before Shutdown can run.
+			return nil, nil, errors.Join(err, provider.close())
 		}
 
 		opt := scraperhelper.AddMetricsScraper(metadata.Type, s)
@@ -345,7 +350,9 @@ func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.C
 			scraper.WithStart(sqlScraper.Start),
 			scraper.WithShutdown(sqlScraper.Shutdown))
 		if err != nil {
-			return nil, nil, err
+			// The provider owns the shared pool; close it so it is not leaked
+			// when receiver construction fails before Shutdown can run.
+			return nil, nil, errors.Join(err, provider.close())
 		}
 
 		opt := scraperhelper.AddFactoryWithConfig(
