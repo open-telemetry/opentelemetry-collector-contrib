@@ -1108,38 +1108,38 @@ DECLARE
 	 @SqlStatement AS nvarchar(max)
 	,@MajorMinorVersion AS int = CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),4) AS int) * 100 + CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),3) AS int)
 	,@HardenedLatencyCol AS nvarchar(max) = N'NULL'
-	,@EstimatedDataLossCol AS nvarchar(max) = N'NULL'
-	,@EstimatedRecoveryTimeCol AS nvarchar(max) = N'NULL'
 
 IF @MajorMinorVersion >= 1300 BEGIN
-	SET @HardenedLatencyCol = N'drs.[secondary_lag_seconds]'
-END
-
--- estimated_data_loss_seconds and estimated_recovery_time_seconds were removed in SQL Server 2022 (v16).
--- On SQL Server 2019 (v15) and earlier (>= SQL 2012, v1100) these columns exist in the DMV.
-IF @MajorMinorVersion >= 1100 AND @MajorMinorVersion < 1600 BEGIN
-	SET @EstimatedDataLossCol = N'drs.[estimated_data_loss_seconds]'
-	SET @EstimatedRecoveryTimeCol = N'drs.[estimated_recovery_time_seconds]'
+	SET @HardenedLatencyCol = N'sec.[secondary_lag_seconds]'
 END
 
 SET @SqlStatement = N'
 SELECT
-	ag.[name]                                     AS [availability_group_name]
-	,DB_NAME(drs.[database_id])                   AS [database_name]
-	,ar.[replica_server_name]                     AS [replica_name]
-	,drs.[log_send_queue_size]                    AS [log_send_queue_size]
-	,drs.[log_send_rate]                          AS [log_send_rate]
-	,drs.[redo_queue_size]                        AS [redo_queue_size]
-	,drs.[redo_rate]                              AS [redo_rate]
-	,' + @EstimatedDataLossCol + N'               AS [estimated_data_loss]
-	,' + @EstimatedRecoveryTimeCol + N'           AS [estimated_recovery_time]
-	,' + @HardenedLatencyCol + N'                 AS [hardened_latency]
-FROM sys.dm_hadr_database_replica_states AS drs WITH (NOLOCK)
+	ag.[name]                                               AS [availability_group_name]
+	,DB_NAME(sec.[database_id])                             AS [database_name]
+	,ar.[replica_server_name]                               AS [replica_name]
+	,sec.[log_send_queue_size]                              AS [log_send_queue_size]
+	,sec.[log_send_rate]                                    AS [log_send_rate]
+	,sec.[redo_queue_size]                                  AS [redo_queue_size]
+	,sec.[redo_rate]                                        AS [redo_rate]
+	,DATEDIFF(SECOND, sec.[last_commit_time], pri.[last_commit_time])
+	                                                        AS [estimated_data_loss]
+	,CASE
+		WHEN sec.[redo_rate] IS NULL OR sec.[redo_rate] = 0 THEN NULL
+		ELSE CAST(sec.[redo_queue_size] AS float) / CAST(sec.[redo_rate] AS float)
+	 END                                                    AS [estimated_recovery_time]
+	,' + @HardenedLatencyCol + N'                           AS [hardened_latency]
+FROM sys.dm_hadr_database_replica_states AS sec WITH (NOLOCK)
+LEFT JOIN sys.dm_hadr_database_replica_states AS pri WITH (NOLOCK)
+	ON  sec.[database_id]        = pri.[database_id]
+	AND sec.[group_id]           = pri.[group_id]
+	AND pri.[is_primary_replica] = 1
 INNER JOIN sys.availability_replicas AS ar WITH (NOLOCK)
-	ON drs.[replica_id] = ar.[replica_id]
+	ON sec.[replica_id] = ar.[replica_id]
 INNER JOIN sys.availability_groups AS ag WITH (NOLOCK)
-	ON ar.[group_id] = ag.[group_id]{filter_instance_name}
-ORDER BY ag.[name], ar.[replica_server_name], DB_NAME(drs.[database_id]);'
+	ON ar.[group_id] = ag.[group_id]
+WHERE sec.[is_primary_replica] = 0{filter_instance_name}
+ORDER BY ag.[name], ar.[replica_server_name], DB_NAME(sec.[database_id]);'
 
 EXEC sp_executesql @SqlStatement;
 `
