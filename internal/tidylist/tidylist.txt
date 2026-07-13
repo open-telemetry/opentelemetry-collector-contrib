@@ -220,6 +220,7 @@ processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
 processor/deltatorateprocessor
 processor/drainprocessor
+processor/dynamicsamplingprocessor
 processor/filterprocessor
 processor/genainormalizerprocessor
 processor/geoipprocessor
@@ -282,7 +283,6 @@ receiver/huaweicloudcesreceiver
 receiver/icmpcheckreceiver
 receiver/iisreceiver
 receiver/influxdbreceiver
-receiver/jmxreceiver
 receiver/journaldreceiver
 receiver/k8sclusterreceiver
 receiver/k8seventsreceiver
