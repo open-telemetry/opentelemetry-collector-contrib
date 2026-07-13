@@ -31,15 +31,6 @@ type Config struct {
 	// all levels below the current
 	RetryInterval time.Duration `mapstructure:"retry_interval"`
 
-	// RetryGap is how much time will pass between trying two separate priority levels in a single RetryInterval
-	// If the priority list has 3 levels, the RetryInterval is 5m, and the retryGap is 1m, within the 5m RetryInterval,
-	// the connector will only try one level every 1m, and will return to the stable level in the interim
-	RetryGap time.Duration `mapstructure:"retry_gap"` // **Deprecated**
-
-	// MaxRetry is the maximum retries per level, once this limit is hit for a level, even if the next pipeline level fails,
-	// it will not try to recover the level that exceeded the maximum retries
-	MaxRetries int `mapstructure:"max_retries"` // **Deprecated**
-
 	// Condition is an optional user-defined rule that controls which downstream
 	// errors trigger failover. When omitted, all error triggers failover.
 	Condition configoptional.Optional[ConditionsConfig] `mapstructure:"condition"`

@@ -28,10 +28,6 @@ properties:
       type: array
       items:
         $ref: go.opentelemetry.io/collector/pipeline.id
-  retry_gap:
-    description: RetryGap is how much time will pass between trying two separate priority levels in a single RetryInterval If the priority list has 3 levels, the RetryInterval is 5m, and the retryGap is 1m, within the 5m RetryInterval, the connector will only try one level every 1m, and will return to the stable level in the interim
-    type: string
-    format: duration
   retry_interval:
     description: RetryInterval is the frequency at which the pipeline levels will attempt to recover by going over all levels below the current
     type: string

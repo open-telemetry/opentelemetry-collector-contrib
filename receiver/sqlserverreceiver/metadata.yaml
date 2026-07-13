@@ -15,7 +15,7 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [sincejune, crobert-1, sv-splunk]
+    active: [sincejune, crobert-1, sv-splunk, ebrdarSplunk, XSAM, akshays-19, splunk-shanu]
     emeritus: [StefanKurek]
     seeking_new: true
 
