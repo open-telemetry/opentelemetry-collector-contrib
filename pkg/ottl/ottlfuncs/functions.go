@@ -39,6 +39,8 @@ func StandardConverters[K any]() map[string]ottl.Factory[K] {
 func converters[K any]() []ottl.Factory[K] {
 	return []ottl.Factory[K]{
 		// Converters
+		NewAllFactory[K](),
+		NewAnyFactory[K](),
 		NewBase64DecodeFactory[K](),
 		NewBase64EncodeFactory[K](),
 		NewBoolFactory[K](),
