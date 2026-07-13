@@ -17,7 +17,7 @@ issues: [49350]
 # Use pipe (|) for multiline entries.
 subtext: |
   Adds the following metrics, all disabled by default: `sqlserver.index.fragmentation`,
-  `sqlserver.index.page.count`, `sqlserver.index.size`, `sqlserver.index.avg_page_space_used`,
+  `sqlserver.index.page.count`, `sqlserver.index.size`, `sqlserver.index.page.utilization`,
   and `sqlserver.index.record.count`. Collecting these metrics requires the `CONNECT ANY
   DATABASE` and `VIEW ANY DEFINITION` permissions in addition to the existing direct-connection
   permissions.
