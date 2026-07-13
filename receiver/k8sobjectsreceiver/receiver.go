@@ -263,6 +263,7 @@ func (kr *k8sobjectsreceiver) stopWatches() {
 	for _, stopperChan := range kr.stopperChanList {
 		close(stopperChan)
 	}
+	kr.stopperChanList = nil
 	kr.mu.Unlock()
 	kr.wg.Wait()
 }
@@ -307,7 +308,9 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 	}
 
 	stopChan := kr.startObserver(ctx, obs, object)
+	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopChan)
+	kr.mu.Unlock()
 
 	return nil
 }
