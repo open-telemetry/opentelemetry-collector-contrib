@@ -13,11 +13,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 )
 
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
 type fileExporter struct {
 	conf       *Config
+	logger     *zap.Logger
 	marshaller *marshaller
 	writer     *fileWriter
 }
@@ -56,11 +58,11 @@ func (e *fileExporter) consumeProfiles(_ context.Context, pd pprofile.Profiles) 
 
 // Start starts the flush timer if set.
 func (e *fileExporter) Start(_ context.Context, host component.Host) error {
-	var err error
-	e.marshaller, err = newMarshaller(e.conf, host)
+	marshaller, err := newMarshaller(e.conf, host)
 	if err != nil {
 		return err
 	}
+	e.marshaller = marshaller
 	export := buildExportFunc(e.conf)
 
 	// Optionally ensure the output directory exists.
@@ -70,16 +72,20 @@ func (e *fileExporter) Start(_ context.Context, host component.Host) error {
 		if e.conf.directoryPermissionsParsed != 0 {
 			perm = os.FileMode(e.conf.directoryPermissionsParsed)
 		}
-		err = os.MkdirAll(dir, perm)
-		if err != nil {
-			return err
+		if mkdirErr := os.MkdirAll(dir, perm); mkdirErr != nil {
+			return mkdirErr
 		}
 	}
 
-	e.writer, err = newFileWriter(e.conf.Path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export, e.conf.Compression, int(e.conf.CompressionParams.Level))
+	if migrateErr := migrateLegacyBackups(e.conf.Path, e.conf.Rotation, e.logger); migrateErr != nil {
+		return migrateErr
+	}
+
+	writer, err := newFileWriter(e.conf.Path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export, e.conf.Compression, int(e.conf.CompressionParams.Level))
 	if err != nil {
 		return err
 	}
+	e.writer = writer
 	e.writer.start()
 	return nil
 }

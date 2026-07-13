@@ -53,6 +53,22 @@ func AssertEqualProcessorTailSamplingCountSpansSampled(t *testing.T, tt *compone
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualProcessorTailSamplingCountSpansWithUnparseableTracestate(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_count_spans_with_unparseable_tracestate",
+		Description: "Count of spans skipped while rewriting the effective `th` because their tracestate could not be parsed [Development]",
+		Unit:        "{spans}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_tail_sampling_count_spans_with_unparseable_tracestate")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualProcessorTailSamplingCountTracesSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_count_traces_sampled",

@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: receiver/k8s_objects
+note: Fix panic and data race in stopperChanList during leader election re-acquisition
+issues: [49601]
+change_logs: [user]
