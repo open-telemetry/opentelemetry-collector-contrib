@@ -1,6 +1,5 @@
 local/
 vendor/
-.run
 
 # Dev Container
 /.devcontainer/
