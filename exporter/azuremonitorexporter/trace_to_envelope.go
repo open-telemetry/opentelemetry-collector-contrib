@@ -59,17 +59,6 @@ func spanToEnvelopes(
 	instrumentationScope pcommon.InstrumentationScope,
 	span ptrace.Span,
 	spanEventsEnabled bool,
-	tagMappings *TagMappingsConfig,
-	logger *zap.Logger,
-) ([]*contracts.Envelope, error) {
-	return spanToEnvelopesWithHTTPSuccessConfig(resource, instrumentationScope, span, spanEventsEnabled, httpStatusCodeSuccessConfig{}, tagMappings, logger)
-}
-
-func spanToEnvelopesWithHTTPSuccessConfig(
-	resource pcommon.Resource,
-	instrumentationScope pcommon.InstrumentationScope,
-	span ptrace.Span,
-	spanEventsEnabled bool,
 	httpSuccessConfig httpStatusCodeSuccessConfig,
 	tagMappings *TagMappingsConfig,
 	logger *zap.Logger,

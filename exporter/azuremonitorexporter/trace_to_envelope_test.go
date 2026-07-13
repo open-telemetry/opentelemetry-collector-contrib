@@ -144,7 +144,7 @@ func TestHTTPServerSpanToRequestDataAttributeSet1(t *testing.T) {
 	spanAttributes.PutBool("somebool", false)
 	spanAttributes.PutDouble("somedouble", 0.1)
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRequestDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RequestData)
@@ -177,7 +177,7 @@ func TestHTTPServerSpanToRequestDataAttributeSet2(t *testing.T) {
 
 	spanAttributes.PutStr("network.peer.address", "127.0.0.1")
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRequestDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RequestData)
@@ -205,7 +205,7 @@ func TestHTTPServerSpanToRequestDataAttributeSet3(t *testing.T) {
 	spanAttributes.PutStr("client.address", "127.0.0.2")
 	spanAttributes.PutStr("network.peer.address", "127.0.0.1")
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRequestDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RequestData)
@@ -223,7 +223,7 @@ func TestHTTPServerSpanToRequestDataAttributeSet4(t *testing.T) {
 	spanAttributes.PutInt("http.response.status_code", defaultHTTPStatusCode)
 	spanAttributes.PutStr("url.full", "https://foo:81/bar?biz=baz")
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRequestDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RequestData)
@@ -251,7 +251,7 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet1(t *testing.T) {
 	spanAttributes.PutStr("url.full", "https://foo:81/bar?biz=baz")
 	spanAttributes.PutInt("http.response.status_code", 400)
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
@@ -285,7 +285,7 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet2(t *testing.T) {
 	// A specific http.route
 	spanAttributes.PutStr("http.route", "/bar/:baz_id")
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
@@ -314,7 +314,7 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet3(t *testing.T) {
 	// Removing URL Full Key to test fallback although http client span requires url.full see https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/docs/http/http-spans.md
 	spanAttributes.PutStr("url.full", "")
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
@@ -339,7 +339,7 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet4(t *testing.T) {
 	// Removing URL Full Key to test fallback although http client span requires url.full see https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/docs/http/http-spans.md
 	spanAttributes.PutStr("url.full", "")
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
@@ -417,7 +417,7 @@ func TestHTTPStatusSuccessConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			envelopes, err := spanToEnvelopesWithHTTPSuccessConfig(defaultResource, defaultInstrumentationLibrary, tt.span, true, tt.httpSuccessConfig, nil, zap.NewNop())
+			envelopes, err := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, tt.span, true, tt.httpSuccessConfig, nil, zap.NewNop())
 			assert.NoError(t, err)
 
 			data := envelopes[0].Data.(*contracts.Data).BaseData
@@ -443,7 +443,7 @@ func TestRPCServerSpanToRequestData(t *testing.T) {
 
 	spanAttributes.PutStr("network.peer.address", "127.0.0.1")
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRequestDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RequestData)
@@ -453,7 +453,7 @@ func TestRPCServerSpanToRequestData(t *testing.T) {
 	spanAttributes.PutStr("server.address", "")
 	spanAttributes.PutStr("network.peer.address", "127.0.0.1")
 
-	envelopes, _ = spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ = spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope = envelopes[0]
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RequestData)
 	defaultRPCRequestDataValidations(t, span, data, "127.0.0.1:81")
@@ -468,7 +468,7 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	spanAttributes.PutInt("client.port", 81)
 	spanAttributes.PutStr("network.peer.address", "127.0.0.1")
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
@@ -478,7 +478,7 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	spanAttributes.PutStr("client.address", "")
 	spanAttributes.PutStr("network.peer.address", "127.0.0.1")
 
-	envelopes, _ = spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ = spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope = envelopes[0]
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 	defaultRPCRemoteDependencyDataValidations(t, span, data, "127.0.0.1:81")
@@ -488,7 +488,7 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	span.Status().SetMessage("Resource exhausted")
 	spanAttributes.PutInt("rpc.grpc.status_code", 8)
 
-	envelopes, _ = spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ = spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope = envelopes[0]
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 
@@ -510,7 +510,7 @@ func TestRPCNewSemconvSpanDetection(t *testing.T) {
 	spanAttributes.PutStr("server.address", "foo")
 	spanAttributes.PutInt("server.port", 81)
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRequestDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RequestData)
@@ -527,7 +527,7 @@ func TestRPCResponseStatusCode(t *testing.T) {
 	span.Status().SetCode(ptrace.StatusCodeError)
 	spanAttributes.PutStr("rpc.response.status_code", "14")
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 
@@ -543,7 +543,7 @@ func TestDatabaseClientSpanToRemoteDependencyData(t *testing.T) {
 	spanAttributes.PutStr("client.address", "foo")
 	spanAttributes.PutInt("client.port", 81)
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelopes[0], defaultRemoteDependencyDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
@@ -556,7 +556,7 @@ func TestDatabaseClientSpanToRemoteDependencyData(t *testing.T) {
 	spanAttributes.PutStr("db.query.text", "")
 	spanAttributes.PutStr("db.query.text", defaultDBOperation)
 
-	envelopes, _ = spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ = spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope = envelopes[0]
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 	assert.Equal(t, defaultDBOperation, data.Data)
@@ -570,13 +570,13 @@ func TestMessagingConsumerSpanToRequestData(t *testing.T) {
 	spanAttributes.PutStr("server.address", "foo")
 	spanAttributes.PutInt("server.port", 81)
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRequestDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RequestData)
 	defaultMessagingRequestDataValidations(t, span, data)
 
-	envelopes, _ = spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ = spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope = envelopes[0]
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RequestData)
 
@@ -591,13 +591,13 @@ func TestMessagingProducerSpanToRequestData(t *testing.T) {
 	spanAttributes.PutStr("client.address", "foo")
 	spanAttributes.PutInt("client.port", 81)
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 	defaultMessagingRemoteDependencyDataValidations(t, span, data)
 
-	envelopes, _ = spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ = spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope = envelopes[0]
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 
@@ -612,7 +612,7 @@ func TestUnknownInternalSpanToRemoteDependencyData(t *testing.T) {
 	spanAttributes.PutStr("foo", "bar")
 	spanAttributes.PutStr("enduser.id", "4567")
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
@@ -625,7 +625,7 @@ func TestUnspecifiedSpanToInProcRemoteDependencyData(t *testing.T) {
 	span := getDefaultInternalSpan()
 	span.SetKind(ptrace.SpanKindUnspecified)
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
@@ -650,7 +650,7 @@ func TestSpanWithEventsToEnvelopes(t *testing.T) {
 
 	exceptionEvent.CopyTo(span.Events().AppendEmpty())
 
-	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, httpStatusCodeSuccessConfig{}, nil, zap.NewNop())
 
 	assert.NotNil(t, envelopes)
 	assert.Len(t, envelopes, 3)
