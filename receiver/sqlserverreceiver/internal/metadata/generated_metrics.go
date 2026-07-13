@@ -4,15 +4,14 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
-	"strconv"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"slices"
+	"strconv"
+	"time"
 )
 
 const (
@@ -668,14 +667,6 @@ var MetricsInfo = metricsInfo{
 	SqlserverAttentionRate: metricInfo{
 		Name: "sqlserver.attention.rate",
 	},
-	SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss: metricInfo{
-		Name:       "sqlserver.availability_group.database_replica.estimated_data_loss",
-		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
-	},
-	SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime: metricInfo{
-		Name:       "sqlserver.availability_group.database_replica.estimated_recovery_time",
-		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
-	},
 	SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency: metricInfo{
 		Name:       "sqlserver.availability_group.database_replica.hardened_latency",
 		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
@@ -943,89 +934,87 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	SqlserverAccessScanRate                                        metricInfo
-	SqlserverAttentionRate                                         metricInfo
-	SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss     metricInfo
-	SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime metricInfo
-	SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency       metricInfo
-	SqlserverAvailabilityGroupDatabaseReplicaLogSendRate           metricInfo
-	SqlserverAvailabilityGroupDatabaseReplicaQueueSize             metricInfo
-	SqlserverAvailabilityGroupDatabaseReplicaRedoRate              metricInfo
-	SqlserverBatchRequestRate                                      metricInfo
-	SqlserverBatchSQLCompilationRate                               metricInfo
-	SqlserverBatchSQLRecompilationRate                             metricInfo
-	SqlserverComputerUptime                                        metricInfo
-	SqlserverConnectionResetRate                                   metricInfo
-	SqlserverCPUCount                                              metricInfo
-	SqlserverDatabaseBackupOrRestoreRate                           metricInfo
-	SqlserverDatabaseCount                                         metricInfo
-	SqlserverDatabaseExecutionErrors                               metricInfo
-	SqlserverDatabaseFullScanRate                                  metricInfo
-	SqlserverDatabaseIo                                            metricInfo
-	SqlserverDatabaseLatency                                       metricInfo
-	SqlserverDatabaseOperations                                    metricInfo
-	SqlserverDatabaseTempdbSpace                                   metricInfo
-	SqlserverDatabaseTempdbVersionStoreSize                        metricInfo
-	SqlserverDeadlockRate                                          metricInfo
-	SqlserverErrorRate                                             metricInfo
-	SqlserverExtentOperationRate                                   metricInfo
-	SqlserverGhostRecordSkippedRate                                metricInfo
-	SqlserverIndexSearchRate                                       metricInfo
-	SqlserverLatchSuperlatchCount                                  metricInfo
-	SqlserverLatchSuperlatchTransitionRate                         metricInfo
-	SqlserverLatchWaitRate                                         metricInfo
-	SqlserverLatchWaitTimeAvg                                      metricInfo
-	SqlserverLatchWaitTimeTotal                                    metricInfo
-	SqlserverLockBlockCount                                        metricInfo
-	SqlserverLockEscalationRate                                    metricInfo
-	SqlserverLockMemory                                            metricInfo
-	SqlserverLockRequestRate                                       metricInfo
-	SqlserverLockTimeoutRate                                       metricInfo
-	SqlserverLockWaitCount                                         metricInfo
-	SqlserverLockWaitRate                                          metricInfo
-	SqlserverLockWaitTimeAvg                                       metricInfo
-	SqlserverLockWaitTimeTotal                                     metricInfo
-	SqlserverLoginRate                                             metricInfo
-	SqlserverLogoutRate                                            metricInfo
-	SqlserverMemoryArea                                            metricInfo
-	SqlserverMemoryCacheObjectCount                                metricInfo
-	SqlserverMemoryGrantsPendingCount                              metricInfo
-	SqlserverMemoryPageCount                                       metricInfo
-	SqlserverMemoryUsage                                           metricInfo
-	SqlserverOsWaitDuration                                        metricInfo
-	SqlserverPageAllocationRate                                    metricInfo
-	SqlserverPageBufferCacheFreeListStallsRate                     metricInfo
-	SqlserverPageBufferCacheHitRatio                               metricInfo
-	SqlserverPageCheckpointFlushRate                               metricInfo
-	SqlserverPageCompressionRate                                   metricInfo
-	SqlserverPageLazyWriteRate                                     metricInfo
-	SqlserverPageLifeExpectancy                                    metricInfo
-	SqlserverPageLookupRate                                        metricInfo
-	SqlserverPageOperationRate                                     metricInfo
-	SqlserverPageReadAheadRate                                     metricInfo
-	SqlserverPageSplitRate                                         metricInfo
-	SqlserverParameterizationRate                                  metricInfo
-	SqlserverPlanExecutionRate                                     metricInfo
-	SqlserverProcessesBlocked                                      metricInfo
-	SqlserverRecompilationRatio                                    metricInfo
-	SqlserverReplicaDataRate                                       metricInfo
-	SqlserverResourcePoolDiskOperations                            metricInfo
-	SqlserverResourcePoolDiskThrottledReadRate                     metricInfo
-	SqlserverResourcePoolDiskThrottledWriteRate                    metricInfo
-	SqlserverScanPointRevalidationRate                             metricInfo
-	SqlserverTableCount                                            metricInfo
-	SqlserverTransactionDelay                                      metricInfo
-	SqlserverTransactionMirrorWriteRate                            metricInfo
-	SqlserverTransactionRate                                       metricInfo
-	SqlserverTransactionWriteRate                                  metricInfo
-	SqlserverTransactionLogFlushDataRate                           metricInfo
-	SqlserverTransactionLogFlushRate                               metricInfo
-	SqlserverTransactionLogFlushWaitRate                           metricInfo
-	SqlserverTransactionLogGrowthCount                             metricInfo
-	SqlserverTransactionLogShrinkCount                             metricInfo
-	SqlserverTransactionLogUsage                                   metricInfo
-	SqlserverUserConnectionCount                                   metricInfo
-	SqlserverWorktableCacheHitRatio                                metricInfo
+	SqlserverAccessScanRate                                  metricInfo
+	SqlserverAttentionRate                                   metricInfo
+	SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency metricInfo
+	SqlserverAvailabilityGroupDatabaseReplicaLogSendRate     metricInfo
+	SqlserverAvailabilityGroupDatabaseReplicaQueueSize       metricInfo
+	SqlserverAvailabilityGroupDatabaseReplicaRedoRate        metricInfo
+	SqlserverBatchRequestRate                                metricInfo
+	SqlserverBatchSQLCompilationRate                         metricInfo
+	SqlserverBatchSQLRecompilationRate                       metricInfo
+	SqlserverComputerUptime                                  metricInfo
+	SqlserverConnectionResetRate                             metricInfo
+	SqlserverCPUCount                                        metricInfo
+	SqlserverDatabaseBackupOrRestoreRate                     metricInfo
+	SqlserverDatabaseCount                                   metricInfo
+	SqlserverDatabaseExecutionErrors                         metricInfo
+	SqlserverDatabaseFullScanRate                            metricInfo
+	SqlserverDatabaseIo                                      metricInfo
+	SqlserverDatabaseLatency                                 metricInfo
+	SqlserverDatabaseOperations                              metricInfo
+	SqlserverDatabaseTempdbSpace                             metricInfo
+	SqlserverDatabaseTempdbVersionStoreSize                  metricInfo
+	SqlserverDeadlockRate                                    metricInfo
+	SqlserverErrorRate                                       metricInfo
+	SqlserverExtentOperationRate                             metricInfo
+	SqlserverGhostRecordSkippedRate                          metricInfo
+	SqlserverIndexSearchRate                                 metricInfo
+	SqlserverLatchSuperlatchCount                            metricInfo
+	SqlserverLatchSuperlatchTransitionRate                   metricInfo
+	SqlserverLatchWaitRate                                   metricInfo
+	SqlserverLatchWaitTimeAvg                                metricInfo
+	SqlserverLatchWaitTimeTotal                              metricInfo
+	SqlserverLockBlockCount                                  metricInfo
+	SqlserverLockEscalationRate                              metricInfo
+	SqlserverLockMemory                                      metricInfo
+	SqlserverLockRequestRate                                 metricInfo
+	SqlserverLockTimeoutRate                                 metricInfo
+	SqlserverLockWaitCount                                   metricInfo
+	SqlserverLockWaitRate                                    metricInfo
+	SqlserverLockWaitTimeAvg                                 metricInfo
+	SqlserverLockWaitTimeTotal                               metricInfo
+	SqlserverLoginRate                                       metricInfo
+	SqlserverLogoutRate                                      metricInfo
+	SqlserverMemoryArea                                      metricInfo
+	SqlserverMemoryCacheObjectCount                          metricInfo
+	SqlserverMemoryGrantsPendingCount                        metricInfo
+	SqlserverMemoryPageCount                                 metricInfo
+	SqlserverMemoryUsage                                     metricInfo
+	SqlserverOsWaitDuration                                  metricInfo
+	SqlserverPageAllocationRate                              metricInfo
+	SqlserverPageBufferCacheFreeListStallsRate               metricInfo
+	SqlserverPageBufferCacheHitRatio                         metricInfo
+	SqlserverPageCheckpointFlushRate                         metricInfo
+	SqlserverPageCompressionRate                             metricInfo
+	SqlserverPageLazyWriteRate                               metricInfo
+	SqlserverPageLifeExpectancy                              metricInfo
+	SqlserverPageLookupRate                                  metricInfo
+	SqlserverPageOperationRate                               metricInfo
+	SqlserverPageReadAheadRate                               metricInfo
+	SqlserverPageSplitRate                                   metricInfo
+	SqlserverParameterizationRate                            metricInfo
+	SqlserverPlanExecutionRate                               metricInfo
+	SqlserverProcessesBlocked                                metricInfo
+	SqlserverRecompilationRatio                              metricInfo
+	SqlserverReplicaDataRate                                 metricInfo
+	SqlserverResourcePoolDiskOperations                      metricInfo
+	SqlserverResourcePoolDiskThrottledReadRate               metricInfo
+	SqlserverResourcePoolDiskThrottledWriteRate              metricInfo
+	SqlserverScanPointRevalidationRate                       metricInfo
+	SqlserverTableCount                                      metricInfo
+	SqlserverTransactionDelay                                metricInfo
+	SqlserverTransactionMirrorWriteRate                      metricInfo
+	SqlserverTransactionRate                                 metricInfo
+	SqlserverTransactionWriteRate                            metricInfo
+	SqlserverTransactionLogFlushDataRate                     metricInfo
+	SqlserverTransactionLogFlushRate                         metricInfo
+	SqlserverTransactionLogFlushWaitRate                     metricInfo
+	SqlserverTransactionLogGrowthCount                       metricInfo
+	SqlserverTransactionLogShrinkCount                       metricInfo
+	SqlserverTransactionLogUsage                             metricInfo
+	SqlserverUserConnectionCount                             metricInfo
+	SqlserverWorktableCacheHitRatio                          metricInfo
 }
 
 type metricInfo struct {
@@ -1127,196 +1116,6 @@ func (m *metricSqlserverAttentionRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSqlserverAttentionRate(cfg SqlserverAttentionRateMetricConfig) metricSqlserverAttentionRate {
 	m := metricSqlserverAttentionRate{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss struct {
-	data          pmetric.Metric                                                         // data buffer for generated metric.
-	config        SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricConfig // metric config provided by user.
-	capacity      int                                                                    // max observed number of data points added to the metric.
-	aggDataPoints []float64                                                              // slice containing number of aggregated datapoints at each index
-}
-
-// init fills sqlserver.availability_group.database_replica.estimated_data_loss metric with initial data.
-func (m *metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss) init() {
-	m.data.SetName("sqlserver.availability_group.database_replica.estimated_data_loss")
-	m.data.SetDescription("Estimated potential data loss if a failover occurred now, expressed as the age in seconds of the oldest unsent log record on the primary replica.")
-	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
-}
-
-func (m *metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-
-	dp := pmetric.NewNumberDataPoint()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricAttributeKeySqlserverAvailabilityGroupName) {
-		dp.Attributes().PutStr("sqlserver.availability_group.name", sqlserverAvailabilityGroupNameAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricAttributeKeyDbNamespace) {
-		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricAttributeKeySqlserverReplicaName) {
-		dp.Attributes().PutStr("sqlserver.replica.name", sqlserverReplicaNameAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			}
-		}
-	}
-
-	dp.SetDoubleValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
-			}
-		}
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss(cfg SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricConfig) metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss {
-	m := metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime struct {
-	data          pmetric.Metric                                                             // data buffer for generated metric.
-	config        SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricConfig // metric config provided by user.
-	capacity      int                                                                        // max observed number of data points added to the metric.
-	aggDataPoints []float64                                                                  // slice containing number of aggregated datapoints at each index
-}
-
-// init fills sqlserver.availability_group.database_replica.estimated_recovery_time metric with initial data.
-func (m *metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime) init() {
-	m.data.SetName("sqlserver.availability_group.database_replica.estimated_recovery_time")
-	m.data.SetDescription("Estimated time in seconds to bring the secondary database replica up to date if a failover occurred now, based on the current redo queue size.")
-	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
-}
-
-func (m *metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-
-	dp := pmetric.NewNumberDataPoint()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricAttributeKeySqlserverAvailabilityGroupName) {
-		dp.Attributes().PutStr("sqlserver.availability_group.name", sqlserverAvailabilityGroupNameAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricAttributeKeyDbNamespace) {
-		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricAttributeKeySqlserverReplicaName) {
-		dp.Attributes().PutStr("sqlserver.replica.name", sqlserverReplicaNameAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			}
-		}
-	}
-
-	dp.SetDoubleValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
-			}
-		}
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime(cfg SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricConfig) metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime {
-	m := metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -6197,96 +5996,94 @@ func newMetricSqlserverWorktableCacheHitRatio(cfg SqlserverWorktableCacheHitRati
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                                               MetricsBuilderConfig // config of the metrics builder.
-	startTime                                                            pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                                                      int                  // maximum observed number of metrics per resource.
-	metricsBuffer                                                        pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                                            component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter                                       map[string]filter.Filter
-	resourceAttributeExcludeFilter                                       map[string]filter.Filter
-	metricSqlserverAccessScanRate                                        metricSqlserverAccessScanRate
-	metricSqlserverAttentionRate                                         metricSqlserverAttentionRate
-	metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss     metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss
-	metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime
-	metricSqlserverAvailabilityGroupDatabaseReplicaHardenedLatency       metricSqlserverAvailabilityGroupDatabaseReplicaHardenedLatency
-	metricSqlserverAvailabilityGroupDatabaseReplicaLogSendRate           metricSqlserverAvailabilityGroupDatabaseReplicaLogSendRate
-	metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize             metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize
-	metricSqlserverAvailabilityGroupDatabaseReplicaRedoRate              metricSqlserverAvailabilityGroupDatabaseReplicaRedoRate
-	metricSqlserverBatchRequestRate                                      metricSqlserverBatchRequestRate
-	metricSqlserverBatchSQLCompilationRate                               metricSqlserverBatchSQLCompilationRate
-	metricSqlserverBatchSQLRecompilationRate                             metricSqlserverBatchSQLRecompilationRate
-	metricSqlserverComputerUptime                                        metricSqlserverComputerUptime
-	metricSqlserverConnectionResetRate                                   metricSqlserverConnectionResetRate
-	metricSqlserverCPUCount                                              metricSqlserverCPUCount
-	metricSqlserverDatabaseBackupOrRestoreRate                           metricSqlserverDatabaseBackupOrRestoreRate
-	metricSqlserverDatabaseCount                                         metricSqlserverDatabaseCount
-	metricSqlserverDatabaseExecutionErrors                               metricSqlserverDatabaseExecutionErrors
-	metricSqlserverDatabaseFullScanRate                                  metricSqlserverDatabaseFullScanRate
-	metricSqlserverDatabaseIo                                            metricSqlserverDatabaseIo
-	metricSqlserverDatabaseLatency                                       metricSqlserverDatabaseLatency
-	metricSqlserverDatabaseOperations                                    metricSqlserverDatabaseOperations
-	metricSqlserverDatabaseTempdbSpace                                   metricSqlserverDatabaseTempdbSpace
-	metricSqlserverDatabaseTempdbVersionStoreSize                        metricSqlserverDatabaseTempdbVersionStoreSize
-	metricSqlserverDeadlockRate                                          metricSqlserverDeadlockRate
-	metricSqlserverErrorRate                                             metricSqlserverErrorRate
-	metricSqlserverExtentOperationRate                                   metricSqlserverExtentOperationRate
-	metricSqlserverGhostRecordSkippedRate                                metricSqlserverGhostRecordSkippedRate
-	metricSqlserverIndexSearchRate                                       metricSqlserverIndexSearchRate
-	metricSqlserverLatchSuperlatchCount                                  metricSqlserverLatchSuperlatchCount
-	metricSqlserverLatchSuperlatchTransitionRate                         metricSqlserverLatchSuperlatchTransitionRate
-	metricSqlserverLatchWaitRate                                         metricSqlserverLatchWaitRate
-	metricSqlserverLatchWaitTimeAvg                                      metricSqlserverLatchWaitTimeAvg
-	metricSqlserverLatchWaitTimeTotal                                    metricSqlserverLatchWaitTimeTotal
-	metricSqlserverLockBlockCount                                        metricSqlserverLockBlockCount
-	metricSqlserverLockEscalationRate                                    metricSqlserverLockEscalationRate
-	metricSqlserverLockMemory                                            metricSqlserverLockMemory
-	metricSqlserverLockRequestRate                                       metricSqlserverLockRequestRate
-	metricSqlserverLockTimeoutRate                                       metricSqlserverLockTimeoutRate
-	metricSqlserverLockWaitCount                                         metricSqlserverLockWaitCount
-	metricSqlserverLockWaitRate                                          metricSqlserverLockWaitRate
-	metricSqlserverLockWaitTimeAvg                                       metricSqlserverLockWaitTimeAvg
-	metricSqlserverLockWaitTimeTotal                                     metricSqlserverLockWaitTimeTotal
-	metricSqlserverLoginRate                                             metricSqlserverLoginRate
-	metricSqlserverLogoutRate                                            metricSqlserverLogoutRate
-	metricSqlserverMemoryArea                                            metricSqlserverMemoryArea
-	metricSqlserverMemoryCacheObjectCount                                metricSqlserverMemoryCacheObjectCount
-	metricSqlserverMemoryGrantsPendingCount                              metricSqlserverMemoryGrantsPendingCount
-	metricSqlserverMemoryPageCount                                       metricSqlserverMemoryPageCount
-	metricSqlserverMemoryUsage                                           metricSqlserverMemoryUsage
-	metricSqlserverOsWaitDuration                                        metricSqlserverOsWaitDuration
-	metricSqlserverPageAllocationRate                                    metricSqlserverPageAllocationRate
-	metricSqlserverPageBufferCacheFreeListStallsRate                     metricSqlserverPageBufferCacheFreeListStallsRate
-	metricSqlserverPageBufferCacheHitRatio                               metricSqlserverPageBufferCacheHitRatio
-	metricSqlserverPageCheckpointFlushRate                               metricSqlserverPageCheckpointFlushRate
-	metricSqlserverPageCompressionRate                                   metricSqlserverPageCompressionRate
-	metricSqlserverPageLazyWriteRate                                     metricSqlserverPageLazyWriteRate
-	metricSqlserverPageLifeExpectancy                                    metricSqlserverPageLifeExpectancy
-	metricSqlserverPageLookupRate                                        metricSqlserverPageLookupRate
-	metricSqlserverPageOperationRate                                     metricSqlserverPageOperationRate
-	metricSqlserverPageReadAheadRate                                     metricSqlserverPageReadAheadRate
-	metricSqlserverPageSplitRate                                         metricSqlserverPageSplitRate
-	metricSqlserverParameterizationRate                                  metricSqlserverParameterizationRate
-	metricSqlserverPlanExecutionRate                                     metricSqlserverPlanExecutionRate
-	metricSqlserverProcessesBlocked                                      metricSqlserverProcessesBlocked
-	metricSqlserverRecompilationRatio                                    metricSqlserverRecompilationRatio
-	metricSqlserverReplicaDataRate                                       metricSqlserverReplicaDataRate
-	metricSqlserverResourcePoolDiskOperations                            metricSqlserverResourcePoolDiskOperations
-	metricSqlserverResourcePoolDiskThrottledReadRate                     metricSqlserverResourcePoolDiskThrottledReadRate
-	metricSqlserverResourcePoolDiskThrottledWriteRate                    metricSqlserverResourcePoolDiskThrottledWriteRate
-	metricSqlserverScanPointRevalidationRate                             metricSqlserverScanPointRevalidationRate
-	metricSqlserverTableCount                                            metricSqlserverTableCount
-	metricSqlserverTransactionDelay                                      metricSqlserverTransactionDelay
-	metricSqlserverTransactionMirrorWriteRate                            metricSqlserverTransactionMirrorWriteRate
-	metricSqlserverTransactionRate                                       metricSqlserverTransactionRate
-	metricSqlserverTransactionWriteRate                                  metricSqlserverTransactionWriteRate
-	metricSqlserverTransactionLogFlushDataRate                           metricSqlserverTransactionLogFlushDataRate
-	metricSqlserverTransactionLogFlushRate                               metricSqlserverTransactionLogFlushRate
-	metricSqlserverTransactionLogFlushWaitRate                           metricSqlserverTransactionLogFlushWaitRate
-	metricSqlserverTransactionLogGrowthCount                             metricSqlserverTransactionLogGrowthCount
-	metricSqlserverTransactionLogShrinkCount                             metricSqlserverTransactionLogShrinkCount
-	metricSqlserverTransactionLogUsage                                   metricSqlserverTransactionLogUsage
-	metricSqlserverUserConnectionCount                                   metricSqlserverUserConnectionCount
-	metricSqlserverWorktableCacheHitRatio                                metricSqlserverWorktableCacheHitRatio
+	config                                                         MetricsBuilderConfig // config of the metrics builder.
+	startTime                                                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                                                int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                                  pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                                      component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter                                 map[string]filter.Filter
+	resourceAttributeExcludeFilter                                 map[string]filter.Filter
+	metricSqlserverAccessScanRate                                  metricSqlserverAccessScanRate
+	metricSqlserverAttentionRate                                   metricSqlserverAttentionRate
+	metricSqlserverAvailabilityGroupDatabaseReplicaHardenedLatency metricSqlserverAvailabilityGroupDatabaseReplicaHardenedLatency
+	metricSqlserverAvailabilityGroupDatabaseReplicaLogSendRate     metricSqlserverAvailabilityGroupDatabaseReplicaLogSendRate
+	metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize       metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize
+	metricSqlserverAvailabilityGroupDatabaseReplicaRedoRate        metricSqlserverAvailabilityGroupDatabaseReplicaRedoRate
+	metricSqlserverBatchRequestRate                                metricSqlserverBatchRequestRate
+	metricSqlserverBatchSQLCompilationRate                         metricSqlserverBatchSQLCompilationRate
+	metricSqlserverBatchSQLRecompilationRate                       metricSqlserverBatchSQLRecompilationRate
+	metricSqlserverComputerUptime                                  metricSqlserverComputerUptime
+	metricSqlserverConnectionResetRate                             metricSqlserverConnectionResetRate
+	metricSqlserverCPUCount                                        metricSqlserverCPUCount
+	metricSqlserverDatabaseBackupOrRestoreRate                     metricSqlserverDatabaseBackupOrRestoreRate
+	metricSqlserverDatabaseCount                                   metricSqlserverDatabaseCount
+	metricSqlserverDatabaseExecutionErrors                         metricSqlserverDatabaseExecutionErrors
+	metricSqlserverDatabaseFullScanRate                            metricSqlserverDatabaseFullScanRate
+	metricSqlserverDatabaseIo                                      metricSqlserverDatabaseIo
+	metricSqlserverDatabaseLatency                                 metricSqlserverDatabaseLatency
+	metricSqlserverDatabaseOperations                              metricSqlserverDatabaseOperations
+	metricSqlserverDatabaseTempdbSpace                             metricSqlserverDatabaseTempdbSpace
+	metricSqlserverDatabaseTempdbVersionStoreSize                  metricSqlserverDatabaseTempdbVersionStoreSize
+	metricSqlserverDeadlockRate                                    metricSqlserverDeadlockRate
+	metricSqlserverErrorRate                                       metricSqlserverErrorRate
+	metricSqlserverExtentOperationRate                             metricSqlserverExtentOperationRate
+	metricSqlserverGhostRecordSkippedRate                          metricSqlserverGhostRecordSkippedRate
+	metricSqlserverIndexSearchRate                                 metricSqlserverIndexSearchRate
+	metricSqlserverLatchSuperlatchCount                            metricSqlserverLatchSuperlatchCount
+	metricSqlserverLatchSuperlatchTransitionRate                   metricSqlserverLatchSuperlatchTransitionRate
+	metricSqlserverLatchWaitRate                                   metricSqlserverLatchWaitRate
+	metricSqlserverLatchWaitTimeAvg                                metricSqlserverLatchWaitTimeAvg
+	metricSqlserverLatchWaitTimeTotal                              metricSqlserverLatchWaitTimeTotal
+	metricSqlserverLockBlockCount                                  metricSqlserverLockBlockCount
+	metricSqlserverLockEscalationRate                              metricSqlserverLockEscalationRate
+	metricSqlserverLockMemory                                      metricSqlserverLockMemory
+	metricSqlserverLockRequestRate                                 metricSqlserverLockRequestRate
+	metricSqlserverLockTimeoutRate                                 metricSqlserverLockTimeoutRate
+	metricSqlserverLockWaitCount                                   metricSqlserverLockWaitCount
+	metricSqlserverLockWaitRate                                    metricSqlserverLockWaitRate
+	metricSqlserverLockWaitTimeAvg                                 metricSqlserverLockWaitTimeAvg
+	metricSqlserverLockWaitTimeTotal                               metricSqlserverLockWaitTimeTotal
+	metricSqlserverLoginRate                                       metricSqlserverLoginRate
+	metricSqlserverLogoutRate                                      metricSqlserverLogoutRate
+	metricSqlserverMemoryArea                                      metricSqlserverMemoryArea
+	metricSqlserverMemoryCacheObjectCount                          metricSqlserverMemoryCacheObjectCount
+	metricSqlserverMemoryGrantsPendingCount                        metricSqlserverMemoryGrantsPendingCount
+	metricSqlserverMemoryPageCount                                 metricSqlserverMemoryPageCount
+	metricSqlserverMemoryUsage                                     metricSqlserverMemoryUsage
+	metricSqlserverOsWaitDuration                                  metricSqlserverOsWaitDuration
+	metricSqlserverPageAllocationRate                              metricSqlserverPageAllocationRate
+	metricSqlserverPageBufferCacheFreeListStallsRate               metricSqlserverPageBufferCacheFreeListStallsRate
+	metricSqlserverPageBufferCacheHitRatio                         metricSqlserverPageBufferCacheHitRatio
+	metricSqlserverPageCheckpointFlushRate                         metricSqlserverPageCheckpointFlushRate
+	metricSqlserverPageCompressionRate                             metricSqlserverPageCompressionRate
+	metricSqlserverPageLazyWriteRate                               metricSqlserverPageLazyWriteRate
+	metricSqlserverPageLifeExpectancy                              metricSqlserverPageLifeExpectancy
+	metricSqlserverPageLookupRate                                  metricSqlserverPageLookupRate
+	metricSqlserverPageOperationRate                               metricSqlserverPageOperationRate
+	metricSqlserverPageReadAheadRate                               metricSqlserverPageReadAheadRate
+	metricSqlserverPageSplitRate                                   metricSqlserverPageSplitRate
+	metricSqlserverParameterizationRate                            metricSqlserverParameterizationRate
+	metricSqlserverPlanExecutionRate                               metricSqlserverPlanExecutionRate
+	metricSqlserverProcessesBlocked                                metricSqlserverProcessesBlocked
+	metricSqlserverRecompilationRatio                              metricSqlserverRecompilationRatio
+	metricSqlserverReplicaDataRate                                 metricSqlserverReplicaDataRate
+	metricSqlserverResourcePoolDiskOperations                      metricSqlserverResourcePoolDiskOperations
+	metricSqlserverResourcePoolDiskThrottledReadRate               metricSqlserverResourcePoolDiskThrottledReadRate
+	metricSqlserverResourcePoolDiskThrottledWriteRate              metricSqlserverResourcePoolDiskThrottledWriteRate
+	metricSqlserverScanPointRevalidationRate                       metricSqlserverScanPointRevalidationRate
+	metricSqlserverTableCount                                      metricSqlserverTableCount
+	metricSqlserverTransactionDelay                                metricSqlserverTransactionDelay
+	metricSqlserverTransactionMirrorWriteRate                      metricSqlserverTransactionMirrorWriteRate
+	metricSqlserverTransactionRate                                 metricSqlserverTransactionRate
+	metricSqlserverTransactionWriteRate                            metricSqlserverTransactionWriteRate
+	metricSqlserverTransactionLogFlushDataRate                     metricSqlserverTransactionLogFlushDataRate
+	metricSqlserverTransactionLogFlushRate                         metricSqlserverTransactionLogFlushRate
+	metricSqlserverTransactionLogFlushWaitRate                     metricSqlserverTransactionLogFlushWaitRate
+	metricSqlserverTransactionLogGrowthCount                       metricSqlserverTransactionLogGrowthCount
+	metricSqlserverTransactionLogShrinkCount                       metricSqlserverTransactionLogShrinkCount
+	metricSqlserverTransactionLogUsage                             metricSqlserverTransactionLogUsage
+	metricSqlserverUserConnectionCount                             metricSqlserverUserConnectionCount
+	metricSqlserverWorktableCacheHitRatio                          metricSqlserverWorktableCacheHitRatio
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -6314,89 +6111,87 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		buildInfo:                     settings.BuildInfo,
 		metricSqlserverAccessScanRate: newMetricSqlserverAccessScanRate(mbc.Metrics.SqlserverAccessScanRate),
 		metricSqlserverAttentionRate:  newMetricSqlserverAttentionRate(mbc.Metrics.SqlserverAttentionRate),
-		metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss:     newMetricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss(mbc.Metrics.SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss),
-		metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime: newMetricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime(mbc.Metrics.SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime),
-		metricSqlserverAvailabilityGroupDatabaseReplicaHardenedLatency:       newMetricSqlserverAvailabilityGroupDatabaseReplicaHardenedLatency(mbc.Metrics.SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency),
-		metricSqlserverAvailabilityGroupDatabaseReplicaLogSendRate:           newMetricSqlserverAvailabilityGroupDatabaseReplicaLogSendRate(mbc.Metrics.SqlserverAvailabilityGroupDatabaseReplicaLogSendRate),
-		metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize:             newMetricSqlserverAvailabilityGroupDatabaseReplicaQueueSize(mbc.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueSize),
-		metricSqlserverAvailabilityGroupDatabaseReplicaRedoRate:              newMetricSqlserverAvailabilityGroupDatabaseReplicaRedoRate(mbc.Metrics.SqlserverAvailabilityGroupDatabaseReplicaRedoRate),
-		metricSqlserverBatchRequestRate:                                      newMetricSqlserverBatchRequestRate(mbc.Metrics.SqlserverBatchRequestRate),
-		metricSqlserverBatchSQLCompilationRate:                               newMetricSqlserverBatchSQLCompilationRate(mbc.Metrics.SqlserverBatchSQLCompilationRate),
-		metricSqlserverBatchSQLRecompilationRate:                             newMetricSqlserverBatchSQLRecompilationRate(mbc.Metrics.SqlserverBatchSQLRecompilationRate),
-		metricSqlserverComputerUptime:                                        newMetricSqlserverComputerUptime(mbc.Metrics.SqlserverComputerUptime),
-		metricSqlserverConnectionResetRate:                                   newMetricSqlserverConnectionResetRate(mbc.Metrics.SqlserverConnectionResetRate),
-		metricSqlserverCPUCount:                                              newMetricSqlserverCPUCount(mbc.Metrics.SqlserverCPUCount),
-		metricSqlserverDatabaseBackupOrRestoreRate:                           newMetricSqlserverDatabaseBackupOrRestoreRate(mbc.Metrics.SqlserverDatabaseBackupOrRestoreRate),
-		metricSqlserverDatabaseCount:                                         newMetricSqlserverDatabaseCount(mbc.Metrics.SqlserverDatabaseCount),
-		metricSqlserverDatabaseExecutionErrors:                               newMetricSqlserverDatabaseExecutionErrors(mbc.Metrics.SqlserverDatabaseExecutionErrors),
-		metricSqlserverDatabaseFullScanRate:                                  newMetricSqlserverDatabaseFullScanRate(mbc.Metrics.SqlserverDatabaseFullScanRate),
-		metricSqlserverDatabaseIo:                                            newMetricSqlserverDatabaseIo(mbc.Metrics.SqlserverDatabaseIo),
-		metricSqlserverDatabaseLatency:                                       newMetricSqlserverDatabaseLatency(mbc.Metrics.SqlserverDatabaseLatency),
-		metricSqlserverDatabaseOperations:                                    newMetricSqlserverDatabaseOperations(mbc.Metrics.SqlserverDatabaseOperations),
-		metricSqlserverDatabaseTempdbSpace:                                   newMetricSqlserverDatabaseTempdbSpace(mbc.Metrics.SqlserverDatabaseTempdbSpace),
-		metricSqlserverDatabaseTempdbVersionStoreSize:                        newMetricSqlserverDatabaseTempdbVersionStoreSize(mbc.Metrics.SqlserverDatabaseTempdbVersionStoreSize),
-		metricSqlserverDeadlockRate:                                          newMetricSqlserverDeadlockRate(mbc.Metrics.SqlserverDeadlockRate),
-		metricSqlserverErrorRate:                                             newMetricSqlserverErrorRate(mbc.Metrics.SqlserverErrorRate),
-		metricSqlserverExtentOperationRate:                                   newMetricSqlserverExtentOperationRate(mbc.Metrics.SqlserverExtentOperationRate),
-		metricSqlserverGhostRecordSkippedRate:                                newMetricSqlserverGhostRecordSkippedRate(mbc.Metrics.SqlserverGhostRecordSkippedRate),
-		metricSqlserverIndexSearchRate:                                       newMetricSqlserverIndexSearchRate(mbc.Metrics.SqlserverIndexSearchRate),
-		metricSqlserverLatchSuperlatchCount:                                  newMetricSqlserverLatchSuperlatchCount(mbc.Metrics.SqlserverLatchSuperlatchCount),
-		metricSqlserverLatchSuperlatchTransitionRate:                         newMetricSqlserverLatchSuperlatchTransitionRate(mbc.Metrics.SqlserverLatchSuperlatchTransitionRate),
-		metricSqlserverLatchWaitRate:                                         newMetricSqlserverLatchWaitRate(mbc.Metrics.SqlserverLatchWaitRate),
-		metricSqlserverLatchWaitTimeAvg:                                      newMetricSqlserverLatchWaitTimeAvg(mbc.Metrics.SqlserverLatchWaitTimeAvg),
-		metricSqlserverLatchWaitTimeTotal:                                    newMetricSqlserverLatchWaitTimeTotal(mbc.Metrics.SqlserverLatchWaitTimeTotal),
-		metricSqlserverLockBlockCount:                                        newMetricSqlserverLockBlockCount(mbc.Metrics.SqlserverLockBlockCount),
-		metricSqlserverLockEscalationRate:                                    newMetricSqlserverLockEscalationRate(mbc.Metrics.SqlserverLockEscalationRate),
-		metricSqlserverLockMemory:                                            newMetricSqlserverLockMemory(mbc.Metrics.SqlserverLockMemory),
-		metricSqlserverLockRequestRate:                                       newMetricSqlserverLockRequestRate(mbc.Metrics.SqlserverLockRequestRate),
-		metricSqlserverLockTimeoutRate:                                       newMetricSqlserverLockTimeoutRate(mbc.Metrics.SqlserverLockTimeoutRate),
-		metricSqlserverLockWaitCount:                                         newMetricSqlserverLockWaitCount(mbc.Metrics.SqlserverLockWaitCount),
-		metricSqlserverLockWaitRate:                                          newMetricSqlserverLockWaitRate(mbc.Metrics.SqlserverLockWaitRate),
-		metricSqlserverLockWaitTimeAvg:                                       newMetricSqlserverLockWaitTimeAvg(mbc.Metrics.SqlserverLockWaitTimeAvg),
-		metricSqlserverLockWaitTimeTotal:                                     newMetricSqlserverLockWaitTimeTotal(mbc.Metrics.SqlserverLockWaitTimeTotal),
-		metricSqlserverLoginRate:                                             newMetricSqlserverLoginRate(mbc.Metrics.SqlserverLoginRate),
-		metricSqlserverLogoutRate:                                            newMetricSqlserverLogoutRate(mbc.Metrics.SqlserverLogoutRate),
-		metricSqlserverMemoryArea:                                            newMetricSqlserverMemoryArea(mbc.Metrics.SqlserverMemoryArea),
-		metricSqlserverMemoryCacheObjectCount:                                newMetricSqlserverMemoryCacheObjectCount(mbc.Metrics.SqlserverMemoryCacheObjectCount),
-		metricSqlserverMemoryGrantsPendingCount:                              newMetricSqlserverMemoryGrantsPendingCount(mbc.Metrics.SqlserverMemoryGrantsPendingCount),
-		metricSqlserverMemoryPageCount:                                       newMetricSqlserverMemoryPageCount(mbc.Metrics.SqlserverMemoryPageCount),
-		metricSqlserverMemoryUsage:                                           newMetricSqlserverMemoryUsage(mbc.Metrics.SqlserverMemoryUsage),
-		metricSqlserverOsWaitDuration:                                        newMetricSqlserverOsWaitDuration(mbc.Metrics.SqlserverOsWaitDuration),
-		metricSqlserverPageAllocationRate:                                    newMetricSqlserverPageAllocationRate(mbc.Metrics.SqlserverPageAllocationRate),
-		metricSqlserverPageBufferCacheFreeListStallsRate:                     newMetricSqlserverPageBufferCacheFreeListStallsRate(mbc.Metrics.SqlserverPageBufferCacheFreeListStallsRate),
-		metricSqlserverPageBufferCacheHitRatio:                               newMetricSqlserverPageBufferCacheHitRatio(mbc.Metrics.SqlserverPageBufferCacheHitRatio),
-		metricSqlserverPageCheckpointFlushRate:                               newMetricSqlserverPageCheckpointFlushRate(mbc.Metrics.SqlserverPageCheckpointFlushRate),
-		metricSqlserverPageCompressionRate:                                   newMetricSqlserverPageCompressionRate(mbc.Metrics.SqlserverPageCompressionRate),
-		metricSqlserverPageLazyWriteRate:                                     newMetricSqlserverPageLazyWriteRate(mbc.Metrics.SqlserverPageLazyWriteRate),
-		metricSqlserverPageLifeExpectancy:                                    newMetricSqlserverPageLifeExpectancy(mbc.Metrics.SqlserverPageLifeExpectancy),
-		metricSqlserverPageLookupRate:                                        newMetricSqlserverPageLookupRate(mbc.Metrics.SqlserverPageLookupRate),
-		metricSqlserverPageOperationRate:                                     newMetricSqlserverPageOperationRate(mbc.Metrics.SqlserverPageOperationRate),
-		metricSqlserverPageReadAheadRate:                                     newMetricSqlserverPageReadAheadRate(mbc.Metrics.SqlserverPageReadAheadRate),
-		metricSqlserverPageSplitRate:                                         newMetricSqlserverPageSplitRate(mbc.Metrics.SqlserverPageSplitRate),
-		metricSqlserverParameterizationRate:                                  newMetricSqlserverParameterizationRate(mbc.Metrics.SqlserverParameterizationRate),
-		metricSqlserverPlanExecutionRate:                                     newMetricSqlserverPlanExecutionRate(mbc.Metrics.SqlserverPlanExecutionRate),
-		metricSqlserverProcessesBlocked:                                      newMetricSqlserverProcessesBlocked(mbc.Metrics.SqlserverProcessesBlocked),
-		metricSqlserverRecompilationRatio:                                    newMetricSqlserverRecompilationRatio(mbc.Metrics.SqlserverRecompilationRatio),
-		metricSqlserverReplicaDataRate:                                       newMetricSqlserverReplicaDataRate(mbc.Metrics.SqlserverReplicaDataRate),
-		metricSqlserverResourcePoolDiskOperations:                            newMetricSqlserverResourcePoolDiskOperations(mbc.Metrics.SqlserverResourcePoolDiskOperations),
-		metricSqlserverResourcePoolDiskThrottledReadRate:                     newMetricSqlserverResourcePoolDiskThrottledReadRate(mbc.Metrics.SqlserverResourcePoolDiskThrottledReadRate),
-		metricSqlserverResourcePoolDiskThrottledWriteRate:                    newMetricSqlserverResourcePoolDiskThrottledWriteRate(mbc.Metrics.SqlserverResourcePoolDiskThrottledWriteRate),
-		metricSqlserverScanPointRevalidationRate:                             newMetricSqlserverScanPointRevalidationRate(mbc.Metrics.SqlserverScanPointRevalidationRate),
-		metricSqlserverTableCount:                                            newMetricSqlserverTableCount(mbc.Metrics.SqlserverTableCount),
-		metricSqlserverTransactionDelay:                                      newMetricSqlserverTransactionDelay(mbc.Metrics.SqlserverTransactionDelay),
-		metricSqlserverTransactionMirrorWriteRate:                            newMetricSqlserverTransactionMirrorWriteRate(mbc.Metrics.SqlserverTransactionMirrorWriteRate),
-		metricSqlserverTransactionRate:                                       newMetricSqlserverTransactionRate(mbc.Metrics.SqlserverTransactionRate),
-		metricSqlserverTransactionWriteRate:                                  newMetricSqlserverTransactionWriteRate(mbc.Metrics.SqlserverTransactionWriteRate),
-		metricSqlserverTransactionLogFlushDataRate:                           newMetricSqlserverTransactionLogFlushDataRate(mbc.Metrics.SqlserverTransactionLogFlushDataRate),
-		metricSqlserverTransactionLogFlushRate:                               newMetricSqlserverTransactionLogFlushRate(mbc.Metrics.SqlserverTransactionLogFlushRate),
-		metricSqlserverTransactionLogFlushWaitRate:                           newMetricSqlserverTransactionLogFlushWaitRate(mbc.Metrics.SqlserverTransactionLogFlushWaitRate),
-		metricSqlserverTransactionLogGrowthCount:                             newMetricSqlserverTransactionLogGrowthCount(mbc.Metrics.SqlserverTransactionLogGrowthCount),
-		metricSqlserverTransactionLogShrinkCount:                             newMetricSqlserverTransactionLogShrinkCount(mbc.Metrics.SqlserverTransactionLogShrinkCount),
-		metricSqlserverTransactionLogUsage:                                   newMetricSqlserverTransactionLogUsage(mbc.Metrics.SqlserverTransactionLogUsage),
-		metricSqlserverUserConnectionCount:                                   newMetricSqlserverUserConnectionCount(mbc.Metrics.SqlserverUserConnectionCount),
-		metricSqlserverWorktableCacheHitRatio:                                newMetricSqlserverWorktableCacheHitRatio(mbc.Metrics.SqlserverWorktableCacheHitRatio),
-		resourceAttributeIncludeFilter:                                       make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:                                       make(map[string]filter.Filter),
+		metricSqlserverAvailabilityGroupDatabaseReplicaHardenedLatency: newMetricSqlserverAvailabilityGroupDatabaseReplicaHardenedLatency(mbc.Metrics.SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency),
+		metricSqlserverAvailabilityGroupDatabaseReplicaLogSendRate:     newMetricSqlserverAvailabilityGroupDatabaseReplicaLogSendRate(mbc.Metrics.SqlserverAvailabilityGroupDatabaseReplicaLogSendRate),
+		metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize:       newMetricSqlserverAvailabilityGroupDatabaseReplicaQueueSize(mbc.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueSize),
+		metricSqlserverAvailabilityGroupDatabaseReplicaRedoRate:        newMetricSqlserverAvailabilityGroupDatabaseReplicaRedoRate(mbc.Metrics.SqlserverAvailabilityGroupDatabaseReplicaRedoRate),
+		metricSqlserverBatchRequestRate:                                newMetricSqlserverBatchRequestRate(mbc.Metrics.SqlserverBatchRequestRate),
+		metricSqlserverBatchSQLCompilationRate:                         newMetricSqlserverBatchSQLCompilationRate(mbc.Metrics.SqlserverBatchSQLCompilationRate),
+		metricSqlserverBatchSQLRecompilationRate:                       newMetricSqlserverBatchSQLRecompilationRate(mbc.Metrics.SqlserverBatchSQLRecompilationRate),
+		metricSqlserverComputerUptime:                                  newMetricSqlserverComputerUptime(mbc.Metrics.SqlserverComputerUptime),
+		metricSqlserverConnectionResetRate:                             newMetricSqlserverConnectionResetRate(mbc.Metrics.SqlserverConnectionResetRate),
+		metricSqlserverCPUCount:                                        newMetricSqlserverCPUCount(mbc.Metrics.SqlserverCPUCount),
+		metricSqlserverDatabaseBackupOrRestoreRate:                     newMetricSqlserverDatabaseBackupOrRestoreRate(mbc.Metrics.SqlserverDatabaseBackupOrRestoreRate),
+		metricSqlserverDatabaseCount:                                   newMetricSqlserverDatabaseCount(mbc.Metrics.SqlserverDatabaseCount),
+		metricSqlserverDatabaseExecutionErrors:                         newMetricSqlserverDatabaseExecutionErrors(mbc.Metrics.SqlserverDatabaseExecutionErrors),
+		metricSqlserverDatabaseFullScanRate:                            newMetricSqlserverDatabaseFullScanRate(mbc.Metrics.SqlserverDatabaseFullScanRate),
+		metricSqlserverDatabaseIo:                                      newMetricSqlserverDatabaseIo(mbc.Metrics.SqlserverDatabaseIo),
+		metricSqlserverDatabaseLatency:                                 newMetricSqlserverDatabaseLatency(mbc.Metrics.SqlserverDatabaseLatency),
+		metricSqlserverDatabaseOperations:                              newMetricSqlserverDatabaseOperations(mbc.Metrics.SqlserverDatabaseOperations),
+		metricSqlserverDatabaseTempdbSpace:                             newMetricSqlserverDatabaseTempdbSpace(mbc.Metrics.SqlserverDatabaseTempdbSpace),
+		metricSqlserverDatabaseTempdbVersionStoreSize:                  newMetricSqlserverDatabaseTempdbVersionStoreSize(mbc.Metrics.SqlserverDatabaseTempdbVersionStoreSize),
+		metricSqlserverDeadlockRate:                                    newMetricSqlserverDeadlockRate(mbc.Metrics.SqlserverDeadlockRate),
+		metricSqlserverErrorRate:                                       newMetricSqlserverErrorRate(mbc.Metrics.SqlserverErrorRate),
+		metricSqlserverExtentOperationRate:                             newMetricSqlserverExtentOperationRate(mbc.Metrics.SqlserverExtentOperationRate),
+		metricSqlserverGhostRecordSkippedRate:                          newMetricSqlserverGhostRecordSkippedRate(mbc.Metrics.SqlserverGhostRecordSkippedRate),
+		metricSqlserverIndexSearchRate:                                 newMetricSqlserverIndexSearchRate(mbc.Metrics.SqlserverIndexSearchRate),
+		metricSqlserverLatchSuperlatchCount:                            newMetricSqlserverLatchSuperlatchCount(mbc.Metrics.SqlserverLatchSuperlatchCount),
+		metricSqlserverLatchSuperlatchTransitionRate:                   newMetricSqlserverLatchSuperlatchTransitionRate(mbc.Metrics.SqlserverLatchSuperlatchTransitionRate),
+		metricSqlserverLatchWaitRate:                                   newMetricSqlserverLatchWaitRate(mbc.Metrics.SqlserverLatchWaitRate),
+		metricSqlserverLatchWaitTimeAvg:                                newMetricSqlserverLatchWaitTimeAvg(mbc.Metrics.SqlserverLatchWaitTimeAvg),
+		metricSqlserverLatchWaitTimeTotal:                              newMetricSqlserverLatchWaitTimeTotal(mbc.Metrics.SqlserverLatchWaitTimeTotal),
+		metricSqlserverLockBlockCount:                                  newMetricSqlserverLockBlockCount(mbc.Metrics.SqlserverLockBlockCount),
+		metricSqlserverLockEscalationRate:                              newMetricSqlserverLockEscalationRate(mbc.Metrics.SqlserverLockEscalationRate),
+		metricSqlserverLockMemory:                                      newMetricSqlserverLockMemory(mbc.Metrics.SqlserverLockMemory),
+		metricSqlserverLockRequestRate:                                 newMetricSqlserverLockRequestRate(mbc.Metrics.SqlserverLockRequestRate),
+		metricSqlserverLockTimeoutRate:                                 newMetricSqlserverLockTimeoutRate(mbc.Metrics.SqlserverLockTimeoutRate),
+		metricSqlserverLockWaitCount:                                   newMetricSqlserverLockWaitCount(mbc.Metrics.SqlserverLockWaitCount),
+		metricSqlserverLockWaitRate:                                    newMetricSqlserverLockWaitRate(mbc.Metrics.SqlserverLockWaitRate),
+		metricSqlserverLockWaitTimeAvg:                                 newMetricSqlserverLockWaitTimeAvg(mbc.Metrics.SqlserverLockWaitTimeAvg),
+		metricSqlserverLockWaitTimeTotal:                               newMetricSqlserverLockWaitTimeTotal(mbc.Metrics.SqlserverLockWaitTimeTotal),
+		metricSqlserverLoginRate:                                       newMetricSqlserverLoginRate(mbc.Metrics.SqlserverLoginRate),
+		metricSqlserverLogoutRate:                                      newMetricSqlserverLogoutRate(mbc.Metrics.SqlserverLogoutRate),
+		metricSqlserverMemoryArea:                                      newMetricSqlserverMemoryArea(mbc.Metrics.SqlserverMemoryArea),
+		metricSqlserverMemoryCacheObjectCount:                          newMetricSqlserverMemoryCacheObjectCount(mbc.Metrics.SqlserverMemoryCacheObjectCount),
+		metricSqlserverMemoryGrantsPendingCount:                        newMetricSqlserverMemoryGrantsPendingCount(mbc.Metrics.SqlserverMemoryGrantsPendingCount),
+		metricSqlserverMemoryPageCount:                                 newMetricSqlserverMemoryPageCount(mbc.Metrics.SqlserverMemoryPageCount),
+		metricSqlserverMemoryUsage:                                     newMetricSqlserverMemoryUsage(mbc.Metrics.SqlserverMemoryUsage),
+		metricSqlserverOsWaitDuration:                                  newMetricSqlserverOsWaitDuration(mbc.Metrics.SqlserverOsWaitDuration),
+		metricSqlserverPageAllocationRate:                              newMetricSqlserverPageAllocationRate(mbc.Metrics.SqlserverPageAllocationRate),
+		metricSqlserverPageBufferCacheFreeListStallsRate:               newMetricSqlserverPageBufferCacheFreeListStallsRate(mbc.Metrics.SqlserverPageBufferCacheFreeListStallsRate),
+		metricSqlserverPageBufferCacheHitRatio:                         newMetricSqlserverPageBufferCacheHitRatio(mbc.Metrics.SqlserverPageBufferCacheHitRatio),
+		metricSqlserverPageCheckpointFlushRate:                         newMetricSqlserverPageCheckpointFlushRate(mbc.Metrics.SqlserverPageCheckpointFlushRate),
+		metricSqlserverPageCompressionRate:                             newMetricSqlserverPageCompressionRate(mbc.Metrics.SqlserverPageCompressionRate),
+		metricSqlserverPageLazyWriteRate:                               newMetricSqlserverPageLazyWriteRate(mbc.Metrics.SqlserverPageLazyWriteRate),
+		metricSqlserverPageLifeExpectancy:                              newMetricSqlserverPageLifeExpectancy(mbc.Metrics.SqlserverPageLifeExpectancy),
+		metricSqlserverPageLookupRate:                                  newMetricSqlserverPageLookupRate(mbc.Metrics.SqlserverPageLookupRate),
+		metricSqlserverPageOperationRate:                               newMetricSqlserverPageOperationRate(mbc.Metrics.SqlserverPageOperationRate),
+		metricSqlserverPageReadAheadRate:                               newMetricSqlserverPageReadAheadRate(mbc.Metrics.SqlserverPageReadAheadRate),
+		metricSqlserverPageSplitRate:                                   newMetricSqlserverPageSplitRate(mbc.Metrics.SqlserverPageSplitRate),
+		metricSqlserverParameterizationRate:                            newMetricSqlserverParameterizationRate(mbc.Metrics.SqlserverParameterizationRate),
+		metricSqlserverPlanExecutionRate:                               newMetricSqlserverPlanExecutionRate(mbc.Metrics.SqlserverPlanExecutionRate),
+		metricSqlserverProcessesBlocked:                                newMetricSqlserverProcessesBlocked(mbc.Metrics.SqlserverProcessesBlocked),
+		metricSqlserverRecompilationRatio:                              newMetricSqlserverRecompilationRatio(mbc.Metrics.SqlserverRecompilationRatio),
+		metricSqlserverReplicaDataRate:                                 newMetricSqlserverReplicaDataRate(mbc.Metrics.SqlserverReplicaDataRate),
+		metricSqlserverResourcePoolDiskOperations:                      newMetricSqlserverResourcePoolDiskOperations(mbc.Metrics.SqlserverResourcePoolDiskOperations),
+		metricSqlserverResourcePoolDiskThrottledReadRate:               newMetricSqlserverResourcePoolDiskThrottledReadRate(mbc.Metrics.SqlserverResourcePoolDiskThrottledReadRate),
+		metricSqlserverResourcePoolDiskThrottledWriteRate:              newMetricSqlserverResourcePoolDiskThrottledWriteRate(mbc.Metrics.SqlserverResourcePoolDiskThrottledWriteRate),
+		metricSqlserverScanPointRevalidationRate:                       newMetricSqlserverScanPointRevalidationRate(mbc.Metrics.SqlserverScanPointRevalidationRate),
+		metricSqlserverTableCount:                                      newMetricSqlserverTableCount(mbc.Metrics.SqlserverTableCount),
+		metricSqlserverTransactionDelay:                                newMetricSqlserverTransactionDelay(mbc.Metrics.SqlserverTransactionDelay),
+		metricSqlserverTransactionMirrorWriteRate:                      newMetricSqlserverTransactionMirrorWriteRate(mbc.Metrics.SqlserverTransactionMirrorWriteRate),
+		metricSqlserverTransactionRate:                                 newMetricSqlserverTransactionRate(mbc.Metrics.SqlserverTransactionRate),
+		metricSqlserverTransactionWriteRate:                            newMetricSqlserverTransactionWriteRate(mbc.Metrics.SqlserverTransactionWriteRate),
+		metricSqlserverTransactionLogFlushDataRate:                     newMetricSqlserverTransactionLogFlushDataRate(mbc.Metrics.SqlserverTransactionLogFlushDataRate),
+		metricSqlserverTransactionLogFlushRate:                         newMetricSqlserverTransactionLogFlushRate(mbc.Metrics.SqlserverTransactionLogFlushRate),
+		metricSqlserverTransactionLogFlushWaitRate:                     newMetricSqlserverTransactionLogFlushWaitRate(mbc.Metrics.SqlserverTransactionLogFlushWaitRate),
+		metricSqlserverTransactionLogGrowthCount:                       newMetricSqlserverTransactionLogGrowthCount(mbc.Metrics.SqlserverTransactionLogGrowthCount),
+		metricSqlserverTransactionLogShrinkCount:                       newMetricSqlserverTransactionLogShrinkCount(mbc.Metrics.SqlserverTransactionLogShrinkCount),
+		metricSqlserverTransactionLogUsage:                             newMetricSqlserverTransactionLogUsage(mbc.Metrics.SqlserverTransactionLogUsage),
+		metricSqlserverUserConnectionCount:                             newMetricSqlserverUserConnectionCount(mbc.Metrics.SqlserverUserConnectionCount),
+		metricSqlserverWorktableCacheHitRatio:                          newMetricSqlserverWorktableCacheHitRatio(mbc.Metrics.SqlserverWorktableCacheHitRatio),
+		resourceAttributeIncludeFilter:                                 make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:                                 make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.HostName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsInclude)
@@ -6523,8 +6318,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSqlserverAccessScanRate.emit(ils.Metrics())
 	mb.metricSqlserverAttentionRate.emit(ils.Metrics())
-	mb.metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss.emit(ils.Metrics())
-	mb.metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime.emit(ils.Metrics())
 	mb.metricSqlserverAvailabilityGroupDatabaseReplicaHardenedLatency.emit(ils.Metrics())
 	mb.metricSqlserverAvailabilityGroupDatabaseReplicaLogSendRate.emit(ils.Metrics())
 	mb.metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize.emit(ils.Metrics())
@@ -6643,16 +6436,6 @@ func (mb *MetricsBuilder) RecordSqlserverAccessScanRateDataPoint(ts pcommon.Time
 // RecordSqlserverAttentionRateDataPoint adds a data point to sqlserver.attention.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverAttentionRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverAttentionRate.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossDataPoint adds a data point to sqlserver.availability_group.database_replica.estimated_data_loss metric.
-func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossDataPoint(ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
-	mb.metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, dbNamespaceAttributeValue, sqlserverReplicaNameAttributeValue)
-}
-
-// RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeDataPoint adds a data point to sqlserver.availability_group.database_replica.estimated_recovery_time metric.
-func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeDataPoint(ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
-	mb.metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, dbNamespaceAttributeValue, sqlserverReplicaNameAttributeValue)
 }
 
 // RecordSqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyDataPoint adds a data point to sqlserver.availability_group.database_replica.hardened_latency metric.

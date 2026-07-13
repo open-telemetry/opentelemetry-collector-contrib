@@ -244,42 +244,6 @@ Number of SQL attentions (client cancellation interrupts) received per second.
 | ---- | ----------- | ---------- | --------- |
 | {attentions}/s | Gauge | Double | Development |
 
-### sqlserver.availability_group.database_replica.estimated_data_loss
-
-Estimated potential data loss if a failover occurred now, expressed as the age in seconds of the oldest unsent log record on the primary replica.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
-| db.namespace | The database name. | Any Str | Recommended | - |
-| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
-
-### sqlserver.availability_group.database_replica.estimated_recovery_time
-
-Estimated time in seconds to bring the secondary database replica up to date if a failover occurred now, based on the current redo queue size.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
-| db.namespace | The database name. | Any Str | Recommended | - |
-| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
-
 ### sqlserver.availability_group.database_replica.hardened_latency
 
 Time in seconds between a log record being generated on the primary replica and hardened to disk on the secondary replica.

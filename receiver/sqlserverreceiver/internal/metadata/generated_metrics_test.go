@@ -67,8 +67,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["sqlserver.availability_group.database_replica.estimated_data_loss"] = mb.metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss.config.AggregationStrategy
-			aggMap["sqlserver.availability_group.database_replica.estimated_recovery_time"] = mb.metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime.config.AggregationStrategy
 			aggMap["sqlserver.availability_group.database_replica.hardened_latency"] = mb.metricSqlserverAvailabilityGroupDatabaseReplicaHardenedLatency.config.AggregationStrategy
 			aggMap["sqlserver.availability_group.database_replica.log_send.rate"] = mb.metricSqlserverAvailabilityGroupDatabaseReplicaLogSendRate.config.AggregationStrategy
 			aggMap["sqlserver.availability_group.database_replica.queue.size"] = mb.metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize.config.AggregationStrategy
@@ -104,18 +102,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSqlserverAttentionRateDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val")
-			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2")
-			}
-
-			allMetricsCount++
-			mb.RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val")
-			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2")
-			}
 
 			allMetricsCount++
 			mb.RecordSqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val")
@@ -430,8 +416,6 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
-				assert.Empty(t, mb.metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss.aggDataPoints)
-				assert.Empty(t, mb.metricSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverAvailabilityGroupDatabaseReplicaHardenedLatency.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverAvailabilityGroupDatabaseReplicaLogSendRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize.aggDataPoints)
@@ -507,106 +491,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "sqlserver.availability_group.database_replica.estimated_data_loss":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.availability_group.database_replica.estimated_data_loss"], "Found a duplicate in the metrics slice: sqlserver.availability_group.database_replica.estimated_data_loss")
-						validatedMetrics["sqlserver.availability_group.database_replica.estimated_data_loss"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Estimated potential data loss if a failover occurred now, expressed as the age in seconds of the oldest unsent log record on the primary replica.", mi.Description())
-						assert.Equal(t, "s", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						sqlserverAvailabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
-						assert.True(t, ok)
-						assert.Equal(t, "sqlserver.availability_group.name-val", sqlserverAvailabilityGroupNameAttrVal.Str())
-						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
-						assert.True(t, ok)
-						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						sqlserverReplicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
-						assert.True(t, ok)
-						assert.Equal(t, "sqlserver.replica.name-val", sqlserverReplicaNameAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["sqlserver.availability_group.database_replica.estimated_data_loss"], "Found a duplicate in the metrics slice: sqlserver.availability_group.database_replica.estimated_data_loss")
-						validatedMetrics["sqlserver.availability_group.database_replica.estimated_data_loss"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Estimated potential data loss if a failover occurred now, expressed as the age in seconds of the oldest unsent log record on the primary replica.", mi.Description())
-						assert.Equal(t, "s", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["sqlserver.availability_group.database_replica.estimated_data_loss"] {
-						case "sum":
-							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
-						case "avg":
-							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
-						case "min":
-							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						case "max":
-							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
-						}
-						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("db.namespace")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("sqlserver.replica.name")
-						assert.False(t, ok)
-					}
-				case "sqlserver.availability_group.database_replica.estimated_recovery_time":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.availability_group.database_replica.estimated_recovery_time"], "Found a duplicate in the metrics slice: sqlserver.availability_group.database_replica.estimated_recovery_time")
-						validatedMetrics["sqlserver.availability_group.database_replica.estimated_recovery_time"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Estimated time in seconds to bring the secondary database replica up to date if a failover occurred now, based on the current redo queue size.", mi.Description())
-						assert.Equal(t, "s", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						sqlserverAvailabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
-						assert.True(t, ok)
-						assert.Equal(t, "sqlserver.availability_group.name-val", sqlserverAvailabilityGroupNameAttrVal.Str())
-						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
-						assert.True(t, ok)
-						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						sqlserverReplicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
-						assert.True(t, ok)
-						assert.Equal(t, "sqlserver.replica.name-val", sqlserverReplicaNameAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["sqlserver.availability_group.database_replica.estimated_recovery_time"], "Found a duplicate in the metrics slice: sqlserver.availability_group.database_replica.estimated_recovery_time")
-						validatedMetrics["sqlserver.availability_group.database_replica.estimated_recovery_time"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Estimated time in seconds to bring the secondary database replica up to date if a failover occurred now, based on the current redo queue size.", mi.Description())
-						assert.Equal(t, "s", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["sqlserver.availability_group.database_replica.estimated_recovery_time"] {
-						case "sum":
-							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
-						case "avg":
-							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
-						case "min":
-							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						case "max":
-							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
-						}
-						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("db.namespace")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("sqlserver.replica.name")
-						assert.False(t, ok)
-					}
 				case "sqlserver.availability_group.database_replica.hardened_latency":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["sqlserver.availability_group.database_replica.hardened_latency"], "Found a duplicate in the metrics slice: sqlserver.availability_group.database_replica.hardened_latency")

@@ -5,12 +5,6 @@ all_set:
       enabled: true
     sqlserver.attention.rate:
       enabled: true
-    sqlserver.availability_group.database_replica.estimated_data_loss:
-      enabled: true
-      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
-    sqlserver.availability_group.database_replica.estimated_recovery_time:
-      enabled: true
-      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.availability_group.database_replica.hardened_latency:
       enabled: true
       attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
@@ -220,12 +214,6 @@ reaggregate_set:
       enabled: true
     sqlserver.attention.rate:
       enabled: true
-    sqlserver.availability_group.database_replica.estimated_data_loss:
-      enabled: true
-      attributes: []
-    sqlserver.availability_group.database_replica.estimated_recovery_time:
-      enabled: true
-      attributes: []
     sqlserver.availability_group.database_replica.hardened_latency:
       enabled: true
       attributes: []
@@ -435,12 +423,6 @@ none_set:
       enabled: false
     sqlserver.attention.rate:
       enabled: false
-    sqlserver.availability_group.database_replica.estimated_data_loss:
-      enabled: false
-      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
-    sqlserver.availability_group.database_replica.estimated_recovery_time:
-      enabled: false
-      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.availability_group.database_replica.hardened_latency:
       enabled: false
       attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]

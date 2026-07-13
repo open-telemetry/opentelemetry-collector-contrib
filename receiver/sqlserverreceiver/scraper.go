@@ -353,15 +353,13 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 
 func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Context) error {
 	const (
-		agNameKey            = "availability_group_name"
-		replicaNameKey       = "replica_name"
-		logSendQueueSizeKey  = "log_send_queue_size"
-		logSendRateKey       = "log_send_rate"
-		redoQueueSizeKey     = "redo_queue_size"
-		redoRateKey          = "redo_rate"
-		estimatedDataLossKey = "estimated_data_loss"
-		estimatedRecoveryKey = "estimated_recovery_time"
-		hardenedLatencyKey   = "hardened_latency"
+		agNameKey           = "availability_group_name"
+		replicaNameKey      = "replica_name"
+		logSendQueueSizeKey = "log_send_queue_size"
+		logSendRateKey      = "log_send_rate"
+		redoQueueSizeKey    = "redo_queue_size"
+		redoRateKey         = "redo_rate"
+		hardenedLatencyKey  = "hardened_latency"
 	)
 
 	rows, err := s.client.QueryRows(ctx)
@@ -412,24 +410,6 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 		} else {
 			// DMV returns KB/s; convert to bytes/s
 			s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaRedoRateDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
-		}
-
-		if row[estimatedDataLossKey] != "" {
-			val, err = retrieveFloat(row, estimatedDataLossKey)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
-			} else {
-				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossDataPoint(now, val.(float64), agName, dbName, replicaName)
-			}
-		}
-
-		if row[estimatedRecoveryKey] != "" {
-			val, err = retrieveFloat(row, estimatedRecoveryKey)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
-			} else {
-				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeDataPoint(now, val.(float64), agName, dbName, replicaName)
-			}
 		}
 
 		// hardened_latency may be NULL on SQL Server < 2016

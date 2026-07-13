@@ -510,24 +510,6 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-  sqlserver.availability_group.database_replica.estimated_data_loss:
-    enabled: false
-    description: Estimated potential data loss if a failover occurred now, expressed as the age in seconds of the oldest unsent log record on the primary replica.
-    stability: development
-    unit: s
-    gauge:
-      value_type: double
-    attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-  sqlserver.availability_group.database_replica.estimated_recovery_time:
-    enabled: false
-    description: Estimated time in seconds to bring the secondary database replica up to date if a failover occurred now, based on the current redo queue size.
-    stability: development
-    unit: s
-    gauge:
-      value_type: double
-    attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.availability_group.database_replica.hardened_latency:
     enabled: false
     description: Time in seconds between a log record being generated on the primary replica and hardened to disk on the secondary replica.
