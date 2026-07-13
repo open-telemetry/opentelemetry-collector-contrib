@@ -189,18 +189,19 @@ func alignTimeToPeriod(t time.Time, periodSec int64) time.Time {
 // listMetrics discovers metrics via the ListMetrics API, respecting discovery config
 // (namespace, metric name, limit, and cross-account options).
 func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQuery, error) {
-	if len(s.discovery.AccountIdentifiers) > 0 {
-		var out []MetricQuery
-		for _, account := range s.discovery.AccountIdentifiers {
-			qs, err := s.discoverMetrics(ctx, account)
-			if err != nil {
-				return nil, err
-			}
-			out = append(out, qs...)
-		}
-		return out, nil
+	if len(s.discovery.AccountIdentifiers) == 0 {
+		return s.discoverMetrics(ctx, "")
 	}
-	return s.discoverMetrics(ctx, "")
+
+	var out []MetricQuery
+	for _, account := range s.discovery.AccountIdentifiers {
+		qs, err := s.discoverMetrics(ctx, account)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, qs...)
+	}
+	return out, nil
 }
 
 // discoverMetrics paginates ListMetrics for a single owning account (or, when
