@@ -91,3 +91,6 @@ prometheus_remote_write/reserved_metadata_keys:
   endpoint: "localhost:8888"
   include_metadata_keys:
     - "content-type"
+prometheus_remote_write/negative_max_batch_size_bytes:
+  endpoint: "localhost:8888"
+  max_batch_size_bytes: -1

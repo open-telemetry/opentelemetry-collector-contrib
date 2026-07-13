@@ -455,7 +455,7 @@ metrics:
   mongodb.lock.acquire.time:
     description: Cumulative wait time for the lock acquisitions.
     stability: development
-    unit: "microseconds"
+    unit: "us"
     enabled: false
     sum:
       value_type: int

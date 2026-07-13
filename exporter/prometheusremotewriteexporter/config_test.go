@@ -163,6 +163,10 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "include_metadata_keys entry \"content-type\" collides with a reserved remote write header",
 		},
 		{
+			id:           component.NewIDWithName(metadata.Type, "negative_max_batch_size_bytes"),
+			errorMessage: "max_batch_size_bytes must be greater than 0",
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "include_metadata_keys"),
 			expected: &Config{
 				MaxBatchSizeBytes:          3000000,

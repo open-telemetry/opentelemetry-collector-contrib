@@ -9,4 +9,5 @@ status:
     alpha: [extension]
   distributions: [contrib]
   codeowners:
-    active: [carsonip, jmacd, axw]
+    active: [carsonip, jmacd, lahsivjar]
+    emeritus: [axw]

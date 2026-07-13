@@ -360,7 +360,8 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `max_retries` (default=2): Number of HTTP request retries. To disable retries, set `retry::enabled` to `false` instead of setting `max_retries` to `0`.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
-  - `retry_on_status` (default=[429]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it defaults to `[429]`.
+  - `retry_on_status` (default=[429]): Status codes that trigger request level retries. To avoid duplicates, it defaults to `[429]`.
+  - `retry_on_document_status` (default=same as `retry_on_status`): Status codes that trigger document level retries for failed documents in successful bulk HTTP responses. Set to `[]` to disable document level retries by status code while keeping request level retries configured through `retry_on_status`.
 - `sending_queue`: Configures the queueing and batching behaviour. Below are the defaults (which may vary from standard defaults), for full configuration check the [`exporterhelper` docs][exporterhelper].
   - `enabled` (default=true): Enable queueing and batching behaviour.
   - `num_consumers` (default=10): Number of consumers that dequeue batches.

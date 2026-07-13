@@ -67,7 +67,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.search.rate
-            unit: “{searches}/s”
+            unit: '{searches}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -803,7 +803,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.page.buffer_cache.free_list.stalls.rate
-            unit: “{stalls}/s”
+            unit: '{stalls}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -879,7 +879,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.page.lookup.rate
-            unit: “{lookups}/s”
+            unit: '{lookups}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1031,7 +1031,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.transaction.mirror_write.rate
-            unit: “{transactions}/s”
+            unit: '{transactions}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1104,7 +1104,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.backup_or_restore.rate
-            unit: “{backups_or_restores}/s”
+            unit: '{backups_or_restores}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1140,7 +1140,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.backup_or_restore.rate
-            unit: “{backups_or_restores}/s”
+            unit: '{backups_or_restores}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1176,7 +1176,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.backup_or_restore.rate
-            unit: “{backups_or_restores}/s”
+            unit: '{backups_or_restores}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1212,7 +1212,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.backup_or_restore.rate
-            unit: “{backups_or_restores}/s”
+            unit: '{backups_or_restores}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1248,7 +1248,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.backup_or_restore.rate
-            unit: “{backups_or_restores}/s”
+            unit: '{backups_or_restores}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1284,7 +1284,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.backup_or_restore.rate
-            unit: “{backups_or_restores}/s”
+            unit: '{backups_or_restores}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1320,7 +1320,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.backup_or_restore.rate
-            unit: “{backups_or_restores}/s”
+            unit: '{backups_or_restores}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1356,7 +1356,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.backup_or_restore.rate
-            unit: “{backups_or_restores}/s”
+            unit: '{backups_or_restores}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1392,7 +1392,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.execution.errors
-            unit: “{errors}”
+            unit: '{errors}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1436,7 +1436,7 @@ resourceMetrics:
                         stringValue: temporary
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: “{tables}”
+            unit: '{tables}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1472,7 +1472,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.login.rate
-            unit: “{logins}/s”
+            unit: '{logins}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1508,7 +1508,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.logout.rate
-            unit: “{logouts}/s”
+            unit: '{logouts}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1958,7 +1958,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.deadlock.rate
-            unit: “{deadlocks}/s”
+            unit: '{deadlocks}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -2112,7 +2112,7 @@ resourceMetrics:
                 - asDouble: 24944
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: KB
+            unit: kBy
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -2453,7 +2453,7 @@ resourceMetrics:
                 - asDouble: 234720
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: KB
+            unit: kBy
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -2762,7 +2762,7 @@ resourceMetrics:
                         stringValue: free
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: “KB”
+            unit: kBy
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -2798,7 +2798,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.tempdb.version_store.size
-            unit: “KB”
+            unit: kBy
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
