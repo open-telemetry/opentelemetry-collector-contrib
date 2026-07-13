@@ -470,11 +470,11 @@ Examples:
 
 ### truncate_all
 
-`truncate_all(target, limit, Optional[utf8_safe])`
+`truncate_all(target, limit, Optional[utf8_safe], Optional[truncation_marker])`
 
 The `truncate_all` function truncates all string values in a `pcommon.Map` so that none are longer than the limit.
 
-`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer representing the maximum number of bytes. `utf8_safe` is an optional boolean (default: `true`) that enables UTF-8 aware truncation.
+`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer representing the maximum number of bytes. `utf8_safe` is an optional boolean (default: `true`) that enables UTF-8 aware truncation. `truncation_marker` is an optional string (default: `""`) that is appended to values that are truncated.
 
 The map will be mutated such that the number of bytes in all string values is less than or equal to the limit. Non-string values are ignored.
 
@@ -482,10 +482,14 @@ This function treats input as valid UTF-8. Truncation is done only at UTF-8 char
 
 When `utf8_safe` is set to `false`, truncation is applied at the byte limit only. Multi-byte UTF-8 characters may be split and the result can be invalid UTF-8. This mode is faster but should only be used when preserving valid UTF-8 is not required.
 
+`truncation_marker` is a string that will be appended to any value that has been truncated. The marker counts against the `limit` so the result (including the marker) never exceeds it. If the length of `truncation_marker` is larger than `limit`, `truncate_all` will return an error.
+
 Examples:
 
 - `truncate_all(log.attributes, 100)`
 - `truncate_all(resource.attributes, 50, false)`
+- `truncate_all(resource.attributes, 50, false, "(...)")`
+- `truncate_all(log.attributes, 100, truncation_marker = "(truncated)")` 
 
 ## Converters
 
@@ -513,6 +517,7 @@ Available Converters:
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
 - [Filter](#filter)
+- [Find](#find)
 - [FNV](#fnv)
 - [Format](#format)
 - [FormatTime](#formattime)
@@ -1095,6 +1100,52 @@ Filter a map by key:
 Store the filtered result:
 
 - `set(log.attributes["prod_tags"], Filter(log.attributes["tags"], (_, v) => v == "prod"))`
+
+### Find
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Find(source, predicate, Optional[mapper])`
+
+The `Find` converter returns the value of the first element in `source` for which `predicate` evaluates to `true`. 
+If no element matches, it returns `nil`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`predicate` is a lambda expression with exactly two parameters and a boolean result. 
+The first parameter is the element index when searching a slice (`int64`), or the element 
+key when searching a map (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+`mapper` is an optional lambda expression with exactly two parameters. When provided, 
+it transforms the matched element before returning it. The first parameter is the found element 
+index or key, and the second parameter is the element value. When omitted, the matched value 
+is returned as-is.
+
+If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
+
+Examples:
+
+Find a slice element by value:
+
+- `Find(log.attributes["tags"], (_, v) => v == "prod")`
+
+Find a map element by key:
+
+- `Find(log.attributes, (k, _) => k == "http.method")`
+
+Find a map element key instead of value:
+
+- `Find(log.attributes, (_, v) => v == "prod", (k, _) => k)`
+
+Transform the found element:
+
+- `Find(log.attributes, (_, v) => v == "prod", (_, v) => String(v))`
+
+Store the found value:
+
+- `set(log.attributes["first_prod"], Find(log.attributes["tags"], (_, v) => v == "prod"))`
 
 ### FNV
 
