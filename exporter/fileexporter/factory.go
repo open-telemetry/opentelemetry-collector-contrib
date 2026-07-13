@@ -157,7 +157,8 @@ func getOrCreateFileExporter(cfg component.Config, logger *zap.Logger) FileExpor
 func newFileExporter(conf *Config, logger *zap.Logger) FileExporter {
 	if conf.GroupBy == nil || !conf.GroupBy.Enabled {
 		return &fileExporter{
-			conf: conf,
+			conf:   conf,
+			logger: logger,
 		}
 	}
 
