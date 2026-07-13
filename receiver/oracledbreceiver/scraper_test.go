@@ -196,6 +196,14 @@ var queryResponses = map[string][]metricRow{
 		{"METRIC_NAME": "Physical Write Total IO Requests Per Sec", "VALUE": "17.0"},
 		{"METRIC_NAME": "Physical Writes Per Sec", "VALUE": "64.0"},
 		{"METRIC_NAME": "Redo Generated Per Sec", "VALUE": "2048.0"},
+		{"METRIC_NAME": "Enqueue Deadlocks Per Sec", "VALUE": "0.05"},
+		{"METRIC_NAME": "Enqueue Timeouts Per Sec", "VALUE": "0.50"},
+		{"METRIC_NAME": "Executions Per Sec", "VALUE": "1500.50"},
+		{"METRIC_NAME": "Hard Parse Count Per Sec", "VALUE": "3.75"},
+		{"METRIC_NAME": "Logons Per Sec", "VALUE": "1.20"},
+		{"METRIC_NAME": "Open Cursors Per Sec", "VALUE": "42.10"},
+		{"METRIC_NAME": "User Commits Per Sec", "VALUE": "85.60"},
+		{"METRIC_NAME": "User Rollbacks Per Sec", "VALUE": "2.40"},
 	},
 }
 
@@ -1473,6 +1481,13 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			cfg.Metrics.OracledbPhysicalIoTransferredRate.Enabled = true
 			cfg.Metrics.OracledbPhysicalOperationsRate.Enabled = true
 			cfg.Metrics.OracledbRedoSizeRate.Enabled = true
+			cfg.Metrics.OracledbCursorOpenRate.Enabled = true
+			cfg.Metrics.OracledbEnqueueDeadlocksRate.Enabled = true
+			cfg.Metrics.OracledbEnqueueTimeoutsRate.Enabled = true
+			cfg.Metrics.OracledbExecutionsRate.Enabled = true
+			cfg.Metrics.OracledbHardParsesRate.Enabled = true
+			cfg.Metrics.OracledbLogonsRate.Enabled = true
+			cfg.Metrics.OracledbTransactionsRate.Enabled = true
 
 			scrpr := oracleScraper{
 				logger: zap.NewNop(),
@@ -1554,6 +1569,32 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			assert.InDelta(t, 17.0, dirMap["oracledb.physical_io.requests.rate"]["write"], floatDelta)
 			assert.InDelta(t, 128.0, dirMap["oracledb.physical_operations.rate"]["read"], floatDelta)
 			assert.InDelta(t, 64.0, dirMap["oracledb.physical_operations.rate"]["write"], floatDelta)
+
+			// V$SYSMETRIC workload rates.
+			assert.InDelta(t, 1500.50, metricMap["oracledb.executions.rate"], floatDelta)
+			assert.InDelta(t, 3.75, metricMap["oracledb.hard_parses.rate"], floatDelta)
+			assert.InDelta(t, 42.10, metricMap["oracledb.cursor.open.rate"], floatDelta)
+			assert.InDelta(t, 1.20, metricMap["oracledb.logons.rate"], floatDelta)
+			assert.InDelta(t, 0.50, metricMap["oracledb.enqueue.timeouts.rate"], floatDelta)
+			assert.InDelta(t, 0.05, metricMap["oracledb.enqueue.deadlocks.rate"], floatDelta)
+
+			// oracledb.transactions.rate carries commit and rollback data points.
+			txnRates := make(map[string]float64)
+			for i := 0; i < metrics.Len(); i++ {
+				metric := metrics.At(i)
+				if metric.Name() != "oracledb.transactions.rate" {
+					continue
+				}
+				dps := metric.Gauge().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dp := dps.At(j)
+					txnType, ok := dp.Attributes().Get("oracledb.transaction.type")
+					require.True(t, ok)
+					txnRates[txnType.Str()] = dp.DoubleValue()
+				}
+			}
+			assert.InDelta(t, 85.60, txnRates["commit"], floatDelta)
+			assert.InDelta(t, 2.40, txnRates["rollback"], floatDelta)
 		})
 	}
 }
