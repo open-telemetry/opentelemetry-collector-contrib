@@ -246,13 +246,13 @@ Number of SQL attentions (client cancellation interrupts) received per second.
 
 ### sqlserver.clr.execution.time
 
-Cumulative time spent executing in the CLR. Sourced from the SQLServer:CLR performance counter object. Only non-zero when CLR integration is enabled and CLR code has been executed.
+Total time spent executing in the CLR. Only non-zero when CLR integration is enabled and CLR code has been executed.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ms | Sum | Int | Cumulative | true | Development |
+| s | Sum | Double | Cumulative | true | Development |
 
 ### sqlserver.computer.uptime
 
@@ -282,7 +282,7 @@ Number of CPUs.
 
 ### sqlserver.cursor.count
 
-Number of cursors by state (active or cached).
+Number of cursors by state.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -296,7 +296,7 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | cursor.state | The state of the cursor. | Str: ``active``, ``cached`` | Recommended | - |
 
-### sqlserver.cursor.memory
+### sqlserver.cursor.memory.usage
 
 Memory used by cursors.
 
@@ -904,7 +904,7 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.stored_procedure.invocation.rate
 
-Rate of Service Broker activated stored procedure invocations per second. Sourced from the SQLServer:Broker Activation performance counter object.
+Rate of Service Broker activated stored procedure invocations per second.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -929,7 +929,7 @@ The number of tables.
 
 ### sqlserver.task.count
 
-Number of Service Broker activation tasks by state (running or limit_reached). Sourced from the SQLServer:Broker Activation performance counter object.
+Number of Service Broker activation tasks by state.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -945,7 +945,7 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.task.rate
 
-Rate of Service Broker activation tasks by type (started or aborted) per second. Sourced from the SQLServer:Broker Activation performance counter object.
+Rate of Service Broker activation tasks by type per second.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 

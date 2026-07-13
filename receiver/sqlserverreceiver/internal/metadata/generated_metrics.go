@@ -4,15 +4,14 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
-	"strconv"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"slices"
+	"strconv"
+	"time"
 )
 
 const (
@@ -801,8 +800,8 @@ var MetricsInfo = metricsInfo{
 		Name:       "sqlserver.cursor.count",
 		Attributes: []string{"cursor.state"},
 	},
-	SqlserverCursorMemory: metricInfo{
-		Name: "sqlserver.cursor.memory",
+	SqlserverCursorMemoryUsage: metricInfo{
+		Name: "sqlserver.cursor.memory.usage",
 	},
 	SqlserverCursorPlanCount: metricInfo{
 		Name: "sqlserver.cursor.plan.count",
@@ -1072,7 +1071,7 @@ type metricsInfo struct {
 	SqlserverConnectionResetRate                metricInfo
 	SqlserverCPUCount                           metricInfo
 	SqlserverCursorCount                        metricInfo
-	SqlserverCursorMemory                       metricInfo
+	SqlserverCursorMemoryUsage                  metricInfo
 	SqlserverCursorPlanCount                    metricInfo
 	SqlserverCursorRequestRate                  metricInfo
 	SqlserverDatabaseBackupOrRestoreRate        metricInfo
@@ -1417,21 +1416,21 @@ type metricSqlserverClrExecutionTime struct {
 // init fills sqlserver.clr.execution.time metric with initial data.
 func (m *metricSqlserverClrExecutionTime) init() {
 	m.data.SetName("sqlserver.clr.execution.time")
-	m.data.SetDescription("Cumulative time spent executing in the CLR. Sourced from the SQLServer:CLR performance counter object. Only non-zero when CLR integration is enabled and CLR code has been executed.")
-	m.data.SetUnit("ms")
+	m.data.SetDescription("Total time spent executing in the CLR. Only non-zero when CLR integration is enabled and CLR code has been executed.")
+	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricSqlserverClrExecutionTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSqlserverClrExecutionTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1620,7 +1619,7 @@ type metricSqlserverCursorCount struct {
 // init fills sqlserver.cursor.count metric with initial data.
 func (m *metricSqlserverCursorCount) init() {
 	m.data.SetName("sqlserver.cursor.count")
-	m.data.SetDescription("Number of cursors by state (active or cached).")
+	m.data.SetDescription("Number of cursors by state.")
 	m.data.SetUnit("{cursor}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1699,21 +1698,21 @@ func newMetricSqlserverCursorCount(cfg SqlserverCursorCountMetricConfig) metricS
 	return m
 }
 
-type metricSqlserverCursorMemory struct {
-	data     pmetric.Metric                    // data buffer for generated metric.
-	config   SqlserverCursorMemoryMetricConfig // metric config provided by user.
-	capacity int                               // max observed number of data points added to the metric.
+type metricSqlserverCursorMemoryUsage struct {
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   SqlserverCursorMemoryUsageMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
-// init fills sqlserver.cursor.memory metric with initial data.
-func (m *metricSqlserverCursorMemory) init() {
-	m.data.SetName("sqlserver.cursor.memory")
+// init fills sqlserver.cursor.memory.usage metric with initial data.
+func (m *metricSqlserverCursorMemoryUsage) init() {
+	m.data.SetName("sqlserver.cursor.memory.usage")
 	m.data.SetDescription("Memory used by cursors.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricSqlserverCursorMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSqlserverCursorMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1724,14 +1723,14 @@ func (m *metricSqlserverCursorMemory) recordDataPoint(start pcommon.Timestamp, t
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverCursorMemory) updateCapacity() {
+func (m *metricSqlserverCursorMemoryUsage) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverCursorMemory) emit(metrics pmetric.MetricSlice) {
+func (m *metricSqlserverCursorMemoryUsage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1739,8 +1738,8 @@ func (m *metricSqlserverCursorMemory) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSqlserverCursorMemory(cfg SqlserverCursorMemoryMetricConfig) metricSqlserverCursorMemory {
-	m := metricSqlserverCursorMemory{config: cfg}
+func newMetricSqlserverCursorMemoryUsage(cfg SqlserverCursorMemoryUsageMetricConfig) metricSqlserverCursorMemoryUsage {
+	m := metricSqlserverCursorMemoryUsage{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5344,7 +5343,7 @@ type metricSqlserverStoredProcedureInvocationRate struct {
 // init fills sqlserver.stored_procedure.invocation.rate metric with initial data.
 func (m *metricSqlserverStoredProcedureInvocationRate) init() {
 	m.data.SetName("sqlserver.stored_procedure.invocation.rate")
-	m.data.SetDescription("Rate of Service Broker activated stored procedure invocations per second. Sourced from the SQLServer:Broker Activation performance counter object.")
+	m.data.SetDescription("Rate of Service Broker activated stored procedure invocations per second.")
 	m.data.SetUnit("{invocation}/s")
 	m.data.SetEmptyGauge()
 }
@@ -5489,7 +5488,7 @@ type metricSqlserverTaskCount struct {
 // init fills sqlserver.task.count metric with initial data.
 func (m *metricSqlserverTaskCount) init() {
 	m.data.SetName("sqlserver.task.count")
-	m.data.SetDescription("Number of Service Broker activation tasks by state (running or limit_reached). Sourced from the SQLServer:Broker Activation performance counter object.")
+	m.data.SetDescription("Number of Service Broker activation tasks by state.")
 	m.data.SetUnit("{task}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -5578,7 +5577,7 @@ type metricSqlserverTaskRate struct {
 // init fills sqlserver.task.rate metric with initial data.
 func (m *metricSqlserverTaskRate) init() {
 	m.data.SetName("sqlserver.task.rate")
-	m.data.SetDescription("Rate of Service Broker activation tasks by type (started or aborted) per second. Sourced from the SQLServer:Broker Activation performance counter object.")
+	m.data.SetDescription("Rate of Service Broker activation tasks by type per second.")
 	m.data.SetUnit("{task}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -6461,7 +6460,7 @@ type MetricsBuilder struct {
 	metricSqlserverConnectionResetRate                metricSqlserverConnectionResetRate
 	metricSqlserverCPUCount                           metricSqlserverCPUCount
 	metricSqlserverCursorCount                        metricSqlserverCursorCount
-	metricSqlserverCursorMemory                       metricSqlserverCursorMemory
+	metricSqlserverCursorMemoryUsage                  metricSqlserverCursorMemoryUsage
 	metricSqlserverCursorPlanCount                    metricSqlserverCursorPlanCount
 	metricSqlserverCursorRequestRate                  metricSqlserverCursorRequestRate
 	metricSqlserverDatabaseBackupOrRestoreRate        metricSqlserverDatabaseBackupOrRestoreRate
@@ -6573,7 +6572,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverConnectionResetRate:                newMetricSqlserverConnectionResetRate(mbc.Metrics.SqlserverConnectionResetRate),
 		metricSqlserverCPUCount:                           newMetricSqlserverCPUCount(mbc.Metrics.SqlserverCPUCount),
 		metricSqlserverCursorCount:                        newMetricSqlserverCursorCount(mbc.Metrics.SqlserverCursorCount),
-		metricSqlserverCursorMemory:                       newMetricSqlserverCursorMemory(mbc.Metrics.SqlserverCursorMemory),
+		metricSqlserverCursorMemoryUsage:                  newMetricSqlserverCursorMemoryUsage(mbc.Metrics.SqlserverCursorMemoryUsage),
 		metricSqlserverCursorPlanCount:                    newMetricSqlserverCursorPlanCount(mbc.Metrics.SqlserverCursorPlanCount),
 		metricSqlserverCursorRequestRate:                  newMetricSqlserverCursorRequestRate(mbc.Metrics.SqlserverCursorRequestRate),
 		metricSqlserverDatabaseBackupOrRestoreRate:        newMetricSqlserverDatabaseBackupOrRestoreRate(mbc.Metrics.SqlserverDatabaseBackupOrRestoreRate),
@@ -6786,7 +6785,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverConnectionResetRate.emit(ils.Metrics())
 	mb.metricSqlserverCPUCount.emit(ils.Metrics())
 	mb.metricSqlserverCursorCount.emit(ils.Metrics())
-	mb.metricSqlserverCursorMemory.emit(ils.Metrics())
+	mb.metricSqlserverCursorMemoryUsage.emit(ils.Metrics())
 	mb.metricSqlserverCursorPlanCount.emit(ils.Metrics())
 	mb.metricSqlserverCursorRequestRate.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseBackupOrRestoreRate.emit(ils.Metrics())
@@ -6920,7 +6919,7 @@ func (mb *MetricsBuilder) RecordSqlserverBatchSQLRecompilationRateDataPoint(ts p
 }
 
 // RecordSqlserverClrExecutionTimeDataPoint adds a data point to sqlserver.clr.execution.time metric.
-func (mb *MetricsBuilder) RecordSqlserverClrExecutionTimeDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordSqlserverClrExecutionTimeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverClrExecutionTime.recordDataPoint(mb.startTime, ts, val)
 }
 
@@ -6954,9 +6953,9 @@ func (mb *MetricsBuilder) RecordSqlserverCursorCountDataPoint(ts pcommon.Timesta
 	mb.metricSqlserverCursorCount.recordDataPoint(mb.startTime, ts, val, cursorStateAttributeValue.String())
 }
 
-// RecordSqlserverCursorMemoryDataPoint adds a data point to sqlserver.cursor.memory metric.
-func (mb *MetricsBuilder) RecordSqlserverCursorMemoryDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSqlserverCursorMemory.recordDataPoint(mb.startTime, ts, val)
+// RecordSqlserverCursorMemoryUsageDataPoint adds a data point to sqlserver.cursor.memory.usage metric.
+func (mb *MetricsBuilder) RecordSqlserverCursorMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSqlserverCursorMemoryUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSqlserverCursorPlanCountDataPoint adds a data point to sqlserver.cursor.plan.count metric.

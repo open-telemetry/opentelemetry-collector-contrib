@@ -271,7 +271,7 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverClrExecutionTime.Enabled ||
 		metrics.SqlserverConnectionResetRate.Enabled ||
 		metrics.SqlserverCursorCount.Enabled ||
-		metrics.SqlserverCursorMemory.Enabled ||
+		metrics.SqlserverCursorMemoryUsage.Enabled ||
 		metrics.SqlserverCursorPlanCount.Enabled ||
 		metrics.SqlserverCursorRequestRate.Enabled ||
 		metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled ||

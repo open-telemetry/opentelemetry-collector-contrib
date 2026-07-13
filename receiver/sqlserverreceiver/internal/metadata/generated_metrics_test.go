@@ -132,7 +132,7 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverCursorMemoryDataPoint(ts, 1)
+			mb.RecordSqlserverCursorMemoryUsageDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSqlserverCursorPlanCountDataPoint(ts, 1)
@@ -555,15 +555,15 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["sqlserver.clr.execution.time"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Cumulative time spent executing in the CLR. Sourced from the SQLServer:CLR performance counter object. Only non-zero when CLR integration is enabled and CLR code has been executed.", mi.Description())
-					assert.Equal(t, "ms", mi.Unit())
+					assert.Equal(t, "Total time spent executing in the CLR. Only non-zero when CLR integration is enabled and CLR code has been executed.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.computer.uptime":
 					assert.False(t, validatedMetrics["sqlserver.computer.uptime"], "Found a duplicate in the metrics slice: sqlserver.computer.uptime")
 					validatedMetrics["sqlserver.computer.uptime"] = true
@@ -606,7 +606,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.cursor.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of cursors by state (active or cached).", mi.Description())
+						assert.Equal(t, "Number of cursors by state.", mi.Description())
 						assert.Equal(t, "{cursor}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -621,7 +621,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.cursor.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of cursors by state (active or cached).", mi.Description())
+						assert.Equal(t, "Number of cursors by state.", mi.Description())
 						assert.Equal(t, "{cursor}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -640,9 +640,9 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("cursor.state")
 						assert.False(t, ok)
 					}
-				case "sqlserver.cursor.memory":
-					assert.False(t, validatedMetrics["sqlserver.cursor.memory"], "Found a duplicate in the metrics slice: sqlserver.cursor.memory")
-					validatedMetrics["sqlserver.cursor.memory"] = true
+				case "sqlserver.cursor.memory.usage":
+					assert.False(t, validatedMetrics["sqlserver.cursor.memory.usage"], "Found a duplicate in the metrics slice: sqlserver.cursor.memory.usage")
+					validatedMetrics["sqlserver.cursor.memory.usage"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Memory used by cursors.", mi.Description())
@@ -1899,7 +1899,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["sqlserver.stored_procedure.invocation.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Rate of Service Broker activated stored procedure invocations per second. Sourced from the SQLServer:Broker Activation performance counter object.", mi.Description())
+					assert.Equal(t, "Rate of Service Broker activated stored procedure invocations per second.", mi.Description())
 					assert.Equal(t, "{invocation}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1961,7 +1961,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.task.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of Service Broker activation tasks by state (running or limit_reached). Sourced from the SQLServer:Broker Activation performance counter object.", mi.Description())
+						assert.Equal(t, "Number of Service Broker activation tasks by state.", mi.Description())
 						assert.Equal(t, "{task}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -1976,7 +1976,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.task.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of Service Broker activation tasks by state (running or limit_reached). Sourced from the SQLServer:Broker Activation performance counter object.", mi.Description())
+						assert.Equal(t, "Number of Service Broker activation tasks by state.", mi.Description())
 						assert.Equal(t, "{task}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -2001,7 +2001,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.task.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Rate of Service Broker activation tasks by type (started or aborted) per second. Sourced from the SQLServer:Broker Activation performance counter object.", mi.Description())
+						assert.Equal(t, "Rate of Service Broker activation tasks by type per second.", mi.Description())
 						assert.Equal(t, "{task}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -2016,7 +2016,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.task.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Rate of Service Broker activation tasks by type (started or aborted) per second. Sourced from the SQLServer:Broker Activation performance counter object.", mi.Description())
+						assert.Equal(t, "Rate of Service Broker activation tasks by type per second.", mi.Description())
 						assert.Equal(t, "{task}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())

@@ -238,13 +238,13 @@ func (ms *SqlserverCursorCountMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverCursorMemoryMetricConfig provides config for the sqlserver.cursor.memory metric.
-type SqlserverCursorMemoryMetricConfig struct {
+// SqlserverCursorMemoryUsageMetricConfig provides config for the sqlserver.cursor.memory.usage metric.
+type SqlserverCursorMemoryUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SqlserverCursorMemoryMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverCursorMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2389,7 +2389,7 @@ type MetricsConfig struct {
 	SqlserverConnectionResetRate                SqlserverConnectionResetRateMetricConfig                `mapstructure:"sqlserver.connection.reset.rate"`
 	SqlserverCPUCount                           SqlserverCPUCountMetricConfig                           `mapstructure:"sqlserver.cpu.count"`
 	SqlserverCursorCount                        SqlserverCursorCountMetricConfig                        `mapstructure:"sqlserver.cursor.count"`
-	SqlserverCursorMemory                       SqlserverCursorMemoryMetricConfig                       `mapstructure:"sqlserver.cursor.memory"`
+	SqlserverCursorMemoryUsage                  SqlserverCursorMemoryUsageMetricConfig                  `mapstructure:"sqlserver.cursor.memory.usage"`
 	SqlserverCursorPlanCount                    SqlserverCursorPlanCountMetricConfig                    `mapstructure:"sqlserver.cursor.plan.count"`
 	SqlserverCursorRequestRate                  SqlserverCursorRequestRateMetricConfig                  `mapstructure:"sqlserver.cursor.request.rate"`
 	SqlserverDatabaseBackupOrRestoreRate        SqlserverDatabaseBackupOrRestoreRateMetricConfig        `mapstructure:"sqlserver.database.backup_or_restore.rate"`
@@ -2502,7 +2502,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverCursorCountMetricAttributeKey{SqlserverCursorCountMetricAttributeKeyCursorState},
 		},
-		SqlserverCursorMemory: SqlserverCursorMemoryMetricConfig{
+		SqlserverCursorMemoryUsage: SqlserverCursorMemoryUsageMetricConfig{
 			Enabled: false,
 		},
 		SqlserverCursorPlanCount: SqlserverCursorPlanCountMetricConfig{

@@ -545,13 +545,13 @@ metrics:
       value_type: double
   sqlserver.clr.execution.time:
     enabled: false
-    description: Cumulative time spent executing in the CLR. Sourced from the SQLServer:CLR performance counter object. Only non-zero when CLR integration is enabled and CLR code has been executed.
+    description: Total time spent executing in the CLR. Only non-zero when CLR integration is enabled and CLR code has been executed.
     stability: development
-    unit: "ms"
+    unit: "s"
     sum:
       monotonic: true
       aggregation_temporality: cumulative
-      value_type: int
+      value_type: double
     attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.computer.uptime:
@@ -581,14 +581,14 @@ metrics:
       input_type: string
   sqlserver.cursor.count:
     enabled: false
-    description: Number of cursors by state (active or cached).
+    description: Number of cursors by state.
     stability: development
     unit: "{cursor}"
     gauge:
       value_type: int
     attributes: [cursor.state]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
-  sqlserver.cursor.memory:
+  sqlserver.cursor.memory.usage:
     enabled: false
     description: Memory used by cursors.
     stability: development
@@ -1120,7 +1120,7 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.stored_procedure.invocation.rate:
     enabled: false
-    description: Rate of Service Broker activated stored procedure invocations per second. Sourced from the SQLServer:Broker Activation performance counter object.
+    description: Rate of Service Broker activated stored procedure invocations per second.
     stability: development
     unit: "{invocation}/s"
     gauge:
@@ -1139,7 +1139,7 @@ metrics:
     attributes: [table.state, table.status]
   sqlserver.task.count:
     enabled: false
-    description: Number of Service Broker activation tasks by state (running or limit_reached). Sourced from the SQLServer:Broker Activation performance counter object.
+    description: Number of Service Broker activation tasks by state.
     stability: development
     unit: "{task}"
     gauge:
@@ -1148,7 +1148,7 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.task.rate:
     enabled: false
-    description: Rate of Service Broker activation tasks by type (started or aborted) per second. Sourced from the SQLServer:Broker Activation performance counter object.
+    description: Rate of Service Broker activation tasks by type per second.
     stability: development
     unit: "{task}/s"
     gauge:

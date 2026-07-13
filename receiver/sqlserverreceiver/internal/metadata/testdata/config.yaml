@@ -22,7 +22,7 @@ all_set:
     sqlserver.cursor.count:
       enabled: true
       attributes: ["cursor.state"]
-    sqlserver.cursor.memory:
+    sqlserver.cursor.memory.usage:
       enabled: true
     sqlserver.cursor.plan.count:
       enabled: true
@@ -244,7 +244,7 @@ reaggregate_set:
     sqlserver.cursor.count:
       enabled: true
       attributes: []
-    sqlserver.cursor.memory:
+    sqlserver.cursor.memory.usage:
       enabled: true
     sqlserver.cursor.plan.count:
       enabled: true
@@ -466,7 +466,7 @@ none_set:
     sqlserver.cursor.count:
       enabled: false
       attributes: ["cursor.state"]
-    sqlserver.cursor.memory:
+    sqlserver.cursor.memory.usage:
       enabled: false
     sqlserver.cursor.plan.count:
       enabled: false
