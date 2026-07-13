@@ -129,20 +129,14 @@ func (*indexResolver) calculateTimeSuffix(timeFormat string, timestamp time.Time
 	return ""
 }
 
-// safeIndexSegmentPattern matches a placeholder value that is safe to splice
-// into an index name. It is stricter than OpenSearch's own naming rules
-// (lowercase letters, digits, and `_`, `.`, `-`), which is enough to reject
-// the documented forbidden characters (space, `,`, `:`, `"`, `*`, `+`, `/`,
-// `\`, `|`, `?`, `#`, `>`, `<`).
-var safeIndexSegmentPattern = regexp.MustCompile(`^[a-z0-9_.-]+$`)
-
 // isSafeIndexSegment reports whether an attribute value can be substituted into
-// an index name. A leading dot would target system indices (e.g. `.kibana`).
-// OpenSearch already rejects a standalone `..` name, so rejecting any `..`
-// sequence here is defense-in-depth rather than a load-bearing check. Both are
-// rejected even though their individual characters are otherwise allowed.
+// an index name. It rejects only values that would target a different index than
+// intended: empty values, a leading dot (system indices, e.g. `.kibana`), and any
+// `..` sequence. Values that are invalid to OpenSearch (uppercase, spaces,
+// forbidden characters) are left to OpenSearch to reject at index time so the
+// failure stays visible rather than silently rerouting to the fallback index.
 func isSafeIndexSegment(val string) bool {
-	return safeIndexSegmentPattern.MatchString(val) &&
+	return val != "" &&
 		!strings.HasPrefix(val, ".") &&
 		!strings.Contains(val, "..")
 }

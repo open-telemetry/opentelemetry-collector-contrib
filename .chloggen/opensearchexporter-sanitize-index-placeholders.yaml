@@ -7,7 +7,7 @@ change_type: bug_fix
 component: exporter/opensearch
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Validate attribute values substituted into dynamic index names so they cannot redirect writes to system indices or other indices via path traversal.
+note: Reject attribute values substituted into dynamic index names when they would redirect writes to a system index or another index via a `.` prefix or `..` segment.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49225]
@@ -16,10 +16,11 @@ issues: [49225]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Values substituted into a `%{placeholder}` index name are now restricted to `[a-z0-9_.-]` and may
-  not start with `.` or contain `..`. A value that fails the check is skipped in favor of the next
-  attribute in the precedence order and then the configured fallback, matching the existing
-  missing-key behavior.
+  A value substituted into a `%{placeholder}` index name that is empty, starts with `.`, or contains
+  `..` is skipped in favor of the next attribute in the precedence order and then the configured
+  fallback, matching the existing missing-key behavior. Values that are merely invalid to OpenSearch
+  (for example uppercase) are still substituted as-is and rejected by OpenSearch at index time, so that
+  failure remains visible rather than being silently rerouted to the fallback index.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
