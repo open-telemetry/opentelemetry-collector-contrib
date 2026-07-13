@@ -71,6 +71,136 @@
   },
   {
     "computer_name": "abcde",
+    "counter": "Range Scans/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "120"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Probe Scans/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "37"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "FreeSpace Scans/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "5"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Pages Allocated/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "812"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Page Deallocations/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "401"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Mixed page allocations/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "12"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Pages Compressed/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "60"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Page Compression Attempts/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "75"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Extents Allocated/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "30"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Extent Deallocations/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "11"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Skipped Ghosted Records/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "8"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Scan Point Revalidations/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "4"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Worktables From Cache Ratio",
+    "counter_type": "537003264",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "97.5"
+  },
+  {
+    "computer_name": "abcde",
     "counter": "Bytes Received from Replica/sec",
     "counter_type": "272696576",
     "instance": "Total",
@@ -3208,5 +3338,85 @@
     "object": "SQLServer:Plan Cache",
     "sql_instance": "d26d40521426",
     "value": "50"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Connection Reset/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:General Statistics",
+    "sql_instance": "d26d40521426",
+    "value": "12"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Lock Memory (KB)",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "10288"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Lock Blocks",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "0"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Lock Blocks Allocated",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "5000"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Lock Owner Blocks",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "0"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Lock Owner Blocks Allocated",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "5000"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Lock Requests/sec",
+    "counter_type": "272696576",
+    "instance": "Total",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Locks",
+    "sql_instance": "d26d40521426",
+    "value": "12345"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Lock Wait Time (ms)",
+    "counter_type": "272696576",
+    "instance": "Total",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Locks",
+    "sql_instance": "d26d40521426",
+    "value": "271"
   }
 ]

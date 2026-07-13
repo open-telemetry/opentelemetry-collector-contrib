@@ -18,7 +18,7 @@ This is the estimated error bound on the frequency.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ppm | Gauge | Double | Development |
+| [ppm] | Gauge | Double | Development |
 
 ### ntp.time.correction
 
@@ -26,7 +26,7 @@ The number of seconds difference between the system's clock and the reference cl
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| seconds | Gauge | Double | Development |
+| s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -40,7 +40,7 @@ The estimated local offset on the last clock update
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| seconds | Gauge | Double | Development |
+| s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -66,7 +66,7 @@ It is expressed in ppm (parts per million). For example, a value of 1 ppm would 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ppm | Gauge | Double | Development |
+| [ppm] | Gauge | Double | Development |
 
 #### Attributes
 
@@ -90,7 +90,7 @@ the long term average of the offset value
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| seconds | Gauge | Double | Development |
+| s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -104,7 +104,7 @@ This is the total of the network path delays to the stratum-1 system from which 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| seconds | Gauge | Double | Development |
+| s | Gauge | Double | Development |
 
 #### Attributes
 

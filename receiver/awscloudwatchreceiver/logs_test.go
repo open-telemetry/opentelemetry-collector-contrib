@@ -899,6 +899,71 @@ func TestPollForLogsSetsCheckpointNoData(t *testing.T) {
 	require.Equal(t, expectedTimestamp.UnixMilli(), requiredTime.UnixMilli())
 }
 
+func TestPollForLogsEmptyPaginatedPagePreservesCheckpoint(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.PollInterval = 1 * time.Second
+	cfg.Logs.Groups = GroupConfig{
+		NamedConfigs: map[string]StreamConfig{
+			testLogGroupName: {
+				Names: []*string{&testLogStreamName},
+			},
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+	mc := mockClient{}
+
+	lastEventTime := time.Date(2020, 1, 1, 0, 0, 30, 0, time.UTC)
+	startTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+	endTime := time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC)
+	expectedNextStartTime := lastEventTime.Add(1 * time.Millisecond)
+
+	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(
+		func(input *cloudwatchlogs.FilterLogEventsInput) bool {
+			return input.NextToken == nil
+		},
+	), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
+		Events: []types.FilteredLogEvent{
+			{
+				EventId:       aws.String("event1"),
+				LogStreamName: aws.String("stream1"),
+				Message:       aws.String("test message"),
+				Timestamp:     aws.Int64(lastEventTime.UnixMilli()),
+			},
+		},
+		NextToken: aws.String("next-page-token"),
+	}, nil).Once()
+
+	// Paginated follow-up returns empty events despite the prior NextToken.
+	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(
+		func(input *cloudwatchlogs.FilterLogEventsInput) bool {
+			return input.NextToken != nil && *input.NextToken == "next-page-token"
+		},
+	), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
+		Events:    []types.FilteredLogEvent{},
+		NextToken: nil,
+	}, nil).Once()
+
+	logsRcvr.client = &mc
+	gotNextStartTime, err := logsRcvr.pollForLogs(
+		t.Context(),
+		&streamNames{group: testLogGroupName, names: []*string{&testLogStreamName}},
+		startTime,
+		endTime,
+	)
+	require.NoError(t, err)
+
+	require.Equal(t, expectedNextStartTime.UnixMilli(), gotNextStartTime.UnixMilli(),
+		"empty paginated page must not overwrite the last-seen event timestamp")
+	mc.AssertExpectations(t)
+}
+
 func TestPollSetsGroupNextStartTimes(t *testing.T) {
 	logGroup1 := "log-group-1"
 	logGroup2 := "log-group-2"
