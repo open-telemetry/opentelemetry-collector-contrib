@@ -195,6 +195,9 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	movedFile, err := os.OpenFile(newFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	require.NoError(t, err)
 	filetest.WriteString(t, movedFile, "testlog2\n")
+	// Close our write handle before the poll. On Windows os.OpenFile does not set
+	// FILE_SHARE_DELETE, so leaving it open would block temp dir cleanup.
+	require.NoError(t, movedFile.Close())
 	operator.poll(t.Context())
 
 	sink.ExpectToken(t, []byte("testlog2"))
@@ -235,6 +238,9 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	newFile, err := os.OpenFile(orginalName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	require.NoError(t, err)
 	filetest.WriteString(t, newFile, "testlog3\n")
+	// Close our write handle so it does not block temp dir cleanup on Windows,
+	// where os.OpenFile does not set FILE_SHARE_DELETE.
+	require.NoError(t, newFile.Close())
 
 	sink.ExpectTokens(t, []byte("testlog2"), []byte("testlog3"))
 
