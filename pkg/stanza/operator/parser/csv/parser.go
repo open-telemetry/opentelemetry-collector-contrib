@@ -4,6 +4,7 @@ package csv // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -27,8 +28,50 @@ type Parser struct {
 
 type parseFunc func(any) (any, error)
 
+// ProcessBatch will parse a batch of entries for csv, without splitting the batch.
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.TransformerOperator.ProcessBatchWith(ctx, entries, p.Process)
+	// Static parse function
+	if p.parse != nil {
+		return p.ProcessBatchWith(ctx, entries, p.parse)
+	}
+
+	// Dynamically generate a parse function per entry based on its header
+	// attribute, while still writing the processed entries as a single batch.
+	processedEntries := make([]*entry.Entry, 0, len(entries))
+	write := func(_ context.Context, ent *entry.Entry) error {
+		processedEntries = append(processedEntries, ent)
+		return nil
+	}
+	var errs []error
+	for _, e := range entries {
+		skip, err := p.Skip(ctx, e)
+		if err != nil {
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, e, err, write))
+			continue
+		}
+		if skip {
+			_ = write(ctx, e)
+			continue
+		}
+
+		// Return the error directly to mirror the behavior of Process.
+		parse, err := p.parseFuncFromHeaderAttribute(e)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		if err = p.ParseWith(ctx, e, parse, write); err != nil {
+			if !errors.Is(err, helper.ErrEntryHandled) {
+				errs = append(errs, err)
+			}
+			continue
+		}
+		_ = write(ctx, e)
+	}
+
+	errs = append(errs, p.WriteBatch(ctx, processedEntries))
+	return errors.Join(errs...)
 }
 
 // Process will parse an entry for csv.
@@ -39,19 +82,28 @@ func (p *Parser) Process(ctx context.Context, e *entry.Entry) error {
 	}
 
 	// Dynamically generate the parse function based on a header attribute
+	parse, err := p.parseFuncFromHeaderAttribute(e)
+	if err != nil {
+		return err
+	}
+	return p.ProcessWith(ctx, e, parse)
+}
+
+// parseFuncFromHeaderAttribute dynamically generates a parse function based on
+// the header attribute of the given entry.
+func (p *Parser) parseFuncFromHeaderAttribute(e *entry.Entry) (parseFunc, error) {
 	h, ok := e.Attributes[p.headerAttribute]
 	if !ok {
 		p.Logger().Error("read dynamic header attribute", zap.String("attribute", p.headerAttribute))
-		return fmt.Errorf("failed to read dynamic header attribute %s", p.headerAttribute)
+		return nil, fmt.Errorf("failed to read dynamic header attribute %s", p.headerAttribute)
 	}
 	headerString, ok := h.(string)
 	if !ok {
 		p.Logger().Error("header must be string", zap.String("type", fmt.Sprintf("%T", h)))
-		return fmt.Errorf("header is expected to be a string but is %T", h)
+		return nil, fmt.Errorf("header is expected to be a string but is %T", h)
 	}
 	headers := strings.Split(headerString, string([]rune{p.headerDelimiter}))
-	parse := generateParseFunc(headers, p.fieldDelimiter, p.lazyQuotes, p.ignoreQuotes)
-	return p.ProcessWith(ctx, e, parse)
+	return generateParseFunc(headers, p.fieldDelimiter, p.lazyQuotes, p.ignoreQuotes), nil
 }
 
 // generateParseFunc returns a parse function for a given header, allowing

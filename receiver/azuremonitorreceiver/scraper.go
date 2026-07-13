@@ -630,6 +630,7 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 			)
 			logFields := []zap.Field{
 				zap.Any("metrics", metricsByGrain.metrics[start:end]),
+				zap.String("metrics_namespace", compositeKey.namespace),
 				zap.String("dimensions", compositeKey.dimensions),
 				zap.String("aggregations", compositeKey.aggregations),
 				zap.String("timegrain", compositeKey.timeGrain),

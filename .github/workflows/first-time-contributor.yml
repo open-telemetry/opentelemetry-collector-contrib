@@ -11,7 +11,7 @@ jobs:
   welcome_first_contributor:
     permissions:
       pull-requests: write # required by the workflow to post the welcome comment
-    uses: open-telemetry/shared-workflows/.github/workflows/first-time-pr.yml@2192ef0cade1b727dafcc3ebba58713281059653 # v0.1.0
+    uses: open-telemetry/shared-workflows/.github/workflows/first-time-pr.yml@a4036f5b7201b7f6dc609cc7200d0648a254413b # v0.1.1
     with:
       label: 'first-time contributor'
       custom_message: |
@@ -30,7 +30,7 @@ jobs:
       - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: otelbot-token
         with:
-          app-id: ${{ vars.OTELBOT_APP_ID }}
+          client-id: ${{ vars.OTELBOT_CLIENT_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
           permission-pull-requests: write
 
