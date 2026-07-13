@@ -18,6 +18,8 @@ type ConditionsConfig struct {
 	ErrorCond *ErrorCondition `mapstructure:"error"`
 }
 
+// We allow setting `error.contains` but `contains` is not honored yet
+// And all errors trigger failover
 func (c *ConditionsConfig) Validate() error {
 	set := 0
 	if c.ErrorCond != nil {
@@ -25,6 +27,10 @@ func (c *ConditionsConfig) Validate() error {
 	}
 	if set > 1 {
 		return errTooManyConditions
+	}
+
+	if set == 0 {
+		return errNoConditionDefined
 	}
 
 	return nil
@@ -41,8 +47,8 @@ type ErrorCondition struct {
 	Contains string `mapstructure:"contains"`
 }
 
-// TODO: "contains" condition is not honored yet
-func (*ErrorCondition) ShouldFailover(err error) bool {
+// TODO: "contains" condition is not honored yet and all error trigger failover
+func (e *ErrorCondition) ShouldFailover(err error) bool {
 	return err != nil
 }
 
