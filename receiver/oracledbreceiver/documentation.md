@@ -271,6 +271,14 @@ Number of changes that were part of an update or delete operation made to blocks
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {change} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.buffer_cache.block.changes.rate
+
+Rate of changes applied to blocks in the buffer cache.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {change}/s | Gauge | Double | Development |
+
 ### oracledb.buffer_cache.block.gets
 
 Number of current-mode block gets satisfied from the buffer cache. Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested regardless of where they are satisfied.
@@ -493,6 +501,14 @@ Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idl
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+### oracledb.io.requests.rate
+
+Rate of I/O requests issued by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {request}/s | Gauge | Double | Development |
+
 ### oracledb.io.single_block.read.latency
 
 Average latency of a synchronous single-block read.
@@ -500,6 +516,14 @@ Average latency of a synchronous single-block read.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Double | Development |
+
+### oracledb.io.throughput.rate
+
+Rate of I/O bytes transferred by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
 
 ### oracledb.jvm.memory.committed
 
@@ -560,6 +584,14 @@ Cumulative time spent on transaction lock activity.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.session.type | Class of session the activity is attributed to. | Str: ``background``, ``foreground`` | Recommended | - |
+
+### oracledb.logical_reads.rate
+
+Rate of logical reads performed by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {read}/s | Gauge | Double | Development |
 
 ### oracledb.logons
 
@@ -694,6 +726,20 @@ Number of physical I/O requests issued to storage. Sourced from v$sysstat names 
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 | disk.io.block_size | Multi-block vs single-block (all) I/O request grouping. | Str: ``all``, ``multi`` | Recommended | - |
 
+### oracledb.physical_io.requests.rate
+
+Rate of physical I/O requests issued to storage.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {request}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+
 ### oracledb.physical_io.transferred
 
 Total physical I/O bytes transferred between Oracle and storage. Sums across all data files. Sourced from v$sysstat names physical read/write bytes (disk.io.type=buffered) and physical read/write total bytes (disk.io.type=total).
@@ -708,6 +754,34 @@ Total physical I/O bytes transferred between Oracle and storage. Sums across all
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 | disk.io.type | Whether the I/O bytes are buffered (cache-mediated) or total (raw transfer count). | Str: ``buffered``, ``total`` | Recommended | - |
+
+### oracledb.physical_io.transferred.rate
+
+Rate of physical I/O bytes transferred between Oracle and storage.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+
+### oracledb.physical_operations.rate
+
+Rate of physical read and write operations performed by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {operation}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 
 ### oracledb.physical_read_io_requests
 
@@ -836,6 +910,14 @@ Amount of redo generated.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
+
+### oracledb.redo.size.rate
+
+Rate of redo bytes generated by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
 
 ### oracledb.redo.time
 

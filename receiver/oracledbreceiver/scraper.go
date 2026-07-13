@@ -62,6 +62,19 @@ const (
 	sysmetricResponseTimePerTxn     = "Response Time Per Txn"
 	sysmetricSingleBlockReadLatency = "Average Synchronous Single-Block Read Latency"
 
+	// V$SYSMETRIC I/O rates (group_id=2, ~60s interval)
+	sysmetricDBBlockChangesPerSec               = "DB Block Changes Per Sec"
+	sysmetricIOMegabytesPerSecond               = "I/O Megabytes per Second"
+	sysmetricIORequestsPerSecond                = "I/O Requests per Second"
+	sysmetricLogicalReadsPerSec                 = "Logical Reads Per Sec"
+	sysmetricPhysicalReadTotalBytesPerSec       = "Physical Read Total Bytes Per Sec"
+	sysmetricPhysicalReadTotalIORequestsPerSec  = "Physical Read Total IO Requests Per Sec"
+	sysmetricPhysicalReadsPerSec                = "Physical Reads Per Sec"
+	sysmetricPhysicalWriteTotalBytesPerSec      = "Physical Write Total Bytes Per Sec"
+	sysmetricPhysicalWriteTotalIORequestsPerSec = "Physical Write Total IO Requests Per Sec"
+	sysmetricPhysicalWritesPerSec               = "Physical Writes Per Sec"
+	sysmetricRedoGeneratedPerSec                = "Redo Generated Per Sec" // #nosec G101 -- Oracle V$SYSMETRIC metric name, not a credential
+
 	consistentGets                 = "consistent gets"
 	cpuTime                        = "CPU used by this session"
 	dbBlockGets                    = "db block gets"
@@ -1244,7 +1257,15 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 		s.metricsBuilderConfig.Metrics.OracledbIoSingleBlockReadLatency.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPgaCacheUtilization.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSessionAverage.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbTransactionResponseTime.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbTransactionResponseTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockChangesRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbIoRequestsRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbIoThroughputRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbLogicalReadsRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequestsRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferredRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalOperationsRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoSizeRate.Enabled
 	if !anySysmetricEnabled {
 		return
 	}
@@ -1341,6 +1362,52 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 		case sysmetricSingleBlockReadLatency:
 			if s.metricsBuilderConfig.Metrics.OracledbIoSingleBlockReadLatency.Enabled {
 				s.mb.RecordOracledbIoSingleBlockReadLatencyDataPoint(now, val/1000)
+			}
+		// V$SYSMETRIC I/O rates
+		case sysmetricDBBlockChangesPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockChangesRate.Enabled {
+				s.mb.RecordOracledbBufferCacheBlockChangesRateDataPoint(now, val)
+			}
+		case sysmetricIOMegabytesPerSecond:
+			if s.metricsBuilderConfig.Metrics.OracledbIoThroughputRate.Enabled {
+				// Oracle reports this rate in megabytes/sec; convert to bytes/sec.
+				s.mb.RecordOracledbIoThroughputRateDataPoint(now, val*1048576)
+			}
+		case sysmetricIORequestsPerSecond:
+			if s.metricsBuilderConfig.Metrics.OracledbIoRequestsRate.Enabled {
+				s.mb.RecordOracledbIoRequestsRateDataPoint(now, val)
+			}
+		case sysmetricLogicalReadsPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbLogicalReadsRate.Enabled {
+				s.mb.RecordOracledbLogicalReadsRateDataPoint(now, val)
+			}
+		case sysmetricPhysicalReadTotalBytesPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferredRate.Enabled {
+				s.mb.RecordOracledbPhysicalIoTransferredRateDataPoint(now, val, metadata.AttributeDiskIoDirectionRead)
+			}
+		case sysmetricPhysicalReadTotalIORequestsPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequestsRate.Enabled {
+				s.mb.RecordOracledbPhysicalIoRequestsRateDataPoint(now, val, metadata.AttributeDiskIoDirectionRead)
+			}
+		case sysmetricPhysicalReadsPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbPhysicalOperationsRate.Enabled {
+				s.mb.RecordOracledbPhysicalOperationsRateDataPoint(now, val, metadata.AttributeDiskIoDirectionRead)
+			}
+		case sysmetricPhysicalWriteTotalBytesPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferredRate.Enabled {
+				s.mb.RecordOracledbPhysicalIoTransferredRateDataPoint(now, val, metadata.AttributeDiskIoDirectionWrite)
+			}
+		case sysmetricPhysicalWriteTotalIORequestsPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequestsRate.Enabled {
+				s.mb.RecordOracledbPhysicalIoRequestsRateDataPoint(now, val, metadata.AttributeDiskIoDirectionWrite)
+			}
+		case sysmetricPhysicalWritesPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbPhysicalOperationsRate.Enabled {
+				s.mb.RecordOracledbPhysicalOperationsRateDataPoint(now, val, metadata.AttributeDiskIoDirectionWrite)
+			}
+		case sysmetricRedoGeneratedPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbRedoSizeRate.Enabled {
+				s.mb.RecordOracledbRedoSizeRateDataPoint(now, val)
 			}
 		}
 	}
