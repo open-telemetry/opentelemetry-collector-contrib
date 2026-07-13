@@ -263,6 +263,39 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
+        - key: service.instance.id
+          value:
+            stringValue: PRAKSURY-M-7HKV:5432
+    scopeMetrics:
+      - metrics:
+          - description: The cumulative execution time of statements that insert vectors into pgvector tables.
+            name: postgresql.vector.insert.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 2.5
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of vectors inserted into pgvector tables.
+            name: postgresql.vector.insert.rows
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "70"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{vectors}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: postgresql.database.name
+          value:
+            stringValue: otel
         - key: postgresql.table.name
           value:
             stringValue: public.table1

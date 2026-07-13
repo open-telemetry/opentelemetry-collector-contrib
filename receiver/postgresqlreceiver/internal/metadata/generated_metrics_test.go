@@ -223,6 +223,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlTupUpdatedDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordPostgresqlVectorInsertDurationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordPostgresqlVectorInsertRowsDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordPostgresqlVectorSearchCountDataPoint(ts, 1, AttributeDistanceFunctionCosine)
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlVectorSearchCountDataPoint(ts, 3, AttributeDistanceFunctionL2)
@@ -1068,6 +1074,34 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Number of rows updated by queries in the database.", mi.Description())
 					assert.Equal(t, "{tup_updated}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "postgresql.vector.insert.duration":
+					assert.False(t, validatedMetrics["postgresql.vector.insert.duration"], "Found a duplicate in the metrics slice: postgresql.vector.insert.duration")
+					validatedMetrics["postgresql.vector.insert.duration"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The cumulative execution time of statements that insert vectors into pgvector tables.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "postgresql.vector.insert.rows":
+					assert.False(t, validatedMetrics["postgresql.vector.insert.rows"], "Found a duplicate in the metrics slice: postgresql.vector.insert.rows")
+					validatedMetrics["postgresql.vector.insert.rows"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of vectors inserted into pgvector tables.", mi.Description())
+					assert.Equal(t, "{vectors}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)

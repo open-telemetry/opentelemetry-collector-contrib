@@ -623,6 +623,30 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+  postgresql.vector.insert.duration:
+    description: The cumulative execution time of statements that insert vectors into pgvector tables.
+    stability: development
+    enabled: false
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    extended_documentation: |
+      This metric is derived from the `pg_stat_statements` extension, which must be installed and enabled.
+      This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` extension in the scanned database.
+  postgresql.vector.insert.rows:
+    description: The number of vectors inserted into pgvector tables.
+    stability: development
+    enabled: false
+    unit: "{vectors}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    extended_documentation: |
+      This metric is derived from the `pg_stat_statements` extension, which must be installed and enabled.
+      This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` extension in the scanned database.
   postgresql.vector.search.count:
     attributes: [distance.function]
     description: The number of vector similarity search operations executed, grouped by the distance function used.

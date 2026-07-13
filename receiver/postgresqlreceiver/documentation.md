@@ -383,6 +383,28 @@ Number of rows updated by queries in the database.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {tup_updated} | Sum | Int | Cumulative | true | Development |
 
+### postgresql.vector.insert.duration
+
+The cumulative execution time of statements that insert vectors into pgvector tables.
+
+This metric is derived from the `pg_stat_statements` extension, which must be installed and enabled.
+This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` extension in the scanned database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+### postgresql.vector.insert.rows
+
+The number of vectors inserted into pgvector tables.
+
+This metric is derived from the `pg_stat_statements` extension, which must be installed and enabled.
+This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` extension in the scanned database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {vectors} | Sum | Int | Cumulative | true | Development |
+
 ### postgresql.vector.search.count
 
 The number of vector similarity search operations executed, grouped by the distance function used.

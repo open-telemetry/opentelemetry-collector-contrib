@@ -3,13 +3,14 @@
 package metadata
 
 import (
+	"slices"
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"slices"
-	"time"
 )
 
 const (
@@ -460,6 +461,12 @@ var MetricsInfo = metricsInfo{
 	PostgresqlTupUpdated: metricInfo{
 		Name: "postgresql.tup_updated",
 	},
+	PostgresqlVectorInsertDuration: metricInfo{
+		Name: "postgresql.vector.insert.duration",
+	},
+	PostgresqlVectorInsertRows: metricInfo{
+		Name: "postgresql.vector.insert.rows",
+	},
 	PostgresqlVectorSearchCount: metricInfo{
 		Name:       "postgresql.vector.search.count",
 		Attributes: []string{"distance.function"},
@@ -516,6 +523,8 @@ type metricsInfo struct {
 	PostgresqlTupInserted              metricInfo
 	PostgresqlTupReturned              metricInfo
 	PostgresqlTupUpdated               metricInfo
+	PostgresqlVectorInsertDuration     metricInfo
+	PostgresqlVectorInsertRows         metricInfo
 	PostgresqlVectorSearchCount        metricInfo
 	PostgresqlVectorSearchDuration     metricInfo
 	PostgresqlWalAge                   metricInfo
@@ -2684,6 +2693,110 @@ func newMetricPostgresqlTupUpdated(cfg PostgresqlTupUpdatedMetricConfig) metricP
 	return m
 }
 
+type metricPostgresqlVectorInsertDuration struct {
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   PostgresqlVectorInsertDurationMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.vector.insert.duration metric with initial data.
+func (m *metricPostgresqlVectorInsertDuration) init() {
+	m.data.SetName("postgresql.vector.insert.duration")
+	m.data.SetDescription("The cumulative execution time of statements that insert vectors into pgvector tables.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlVectorInsertDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlVectorInsertDuration) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlVectorInsertDuration) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlVectorInsertDuration(cfg PostgresqlVectorInsertDurationMetricConfig) metricPostgresqlVectorInsertDuration {
+	m := metricPostgresqlVectorInsertDuration{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlVectorInsertRows struct {
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   PostgresqlVectorInsertRowsMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.vector.insert.rows metric with initial data.
+func (m *metricPostgresqlVectorInsertRows) init() {
+	m.data.SetName("postgresql.vector.insert.rows")
+	m.data.SetDescription("The number of vectors inserted into pgvector tables.")
+	m.data.SetUnit("{vectors}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlVectorInsertRows) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlVectorInsertRows) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlVectorInsertRows) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlVectorInsertRows(cfg PostgresqlVectorInsertRowsMetricConfig) metricPostgresqlVectorInsertRows {
+	m := metricPostgresqlVectorInsertRows{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricPostgresqlVectorSearchCount struct {
 	data          pmetric.Metric                          // data buffer for generated metric.
 	config        PostgresqlVectorSearchCountMetricConfig // metric config provided by user.
@@ -3144,6 +3257,8 @@ type MetricsBuilder struct {
 	metricPostgresqlTupInserted              metricPostgresqlTupInserted
 	metricPostgresqlTupReturned              metricPostgresqlTupReturned
 	metricPostgresqlTupUpdated               metricPostgresqlTupUpdated
+	metricPostgresqlVectorInsertDuration     metricPostgresqlVectorInsertDuration
+	metricPostgresqlVectorInsertRows         metricPostgresqlVectorInsertRows
 	metricPostgresqlVectorSearchCount        metricPostgresqlVectorSearchCount
 	metricPostgresqlVectorSearchDuration     metricPostgresqlVectorSearchDuration
 	metricPostgresqlWalAge                   metricPostgresqlWalAge
@@ -3208,6 +3323,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricPostgresqlTupInserted:              newMetricPostgresqlTupInserted(mbc.Metrics.PostgresqlTupInserted),
 		metricPostgresqlTupReturned:              newMetricPostgresqlTupReturned(mbc.Metrics.PostgresqlTupReturned),
 		metricPostgresqlTupUpdated:               newMetricPostgresqlTupUpdated(mbc.Metrics.PostgresqlTupUpdated),
+		metricPostgresqlVectorInsertDuration:     newMetricPostgresqlVectorInsertDuration(mbc.Metrics.PostgresqlVectorInsertDuration),
+		metricPostgresqlVectorInsertRows:         newMetricPostgresqlVectorInsertRows(mbc.Metrics.PostgresqlVectorInsertRows),
 		metricPostgresqlVectorSearchCount:        newMetricPostgresqlVectorSearchCount(mbc.Metrics.PostgresqlVectorSearchCount),
 		metricPostgresqlVectorSearchDuration:     newMetricPostgresqlVectorSearchDuration(mbc.Metrics.PostgresqlVectorSearchDuration),
 		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(mbc.Metrics.PostgresqlWalAge),
@@ -3361,6 +3478,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlTupInserted.emit(ils.Metrics())
 	mb.metricPostgresqlTupReturned.emit(ils.Metrics())
 	mb.metricPostgresqlTupUpdated.emit(ils.Metrics())
+	mb.metricPostgresqlVectorInsertDuration.emit(ils.Metrics())
+	mb.metricPostgresqlVectorInsertRows.emit(ils.Metrics())
 	mb.metricPostgresqlVectorSearchCount.emit(ils.Metrics())
 	mb.metricPostgresqlVectorSearchDuration.emit(ils.Metrics())
 	mb.metricPostgresqlWalAge.emit(ils.Metrics())
@@ -3565,6 +3684,16 @@ func (mb *MetricsBuilder) RecordPostgresqlTupReturnedDataPoint(ts pcommon.Timest
 // RecordPostgresqlTupUpdatedDataPoint adds a data point to postgresql.tup_updated metric.
 func (mb *MetricsBuilder) RecordPostgresqlTupUpdatedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlTupUpdated.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlVectorInsertDurationDataPoint adds a data point to postgresql.vector.insert.duration metric.
+func (mb *MetricsBuilder) RecordPostgresqlVectorInsertDurationDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricPostgresqlVectorInsertDuration.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlVectorInsertRowsDataPoint adds a data point to postgresql.vector.insert.rows metric.
+func (mb *MetricsBuilder) RecordPostgresqlVectorInsertRowsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlVectorInsertRows.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPostgresqlVectorSearchCountDataPoint adds a data point to postgresql.vector.search.count metric.

@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/postgresql
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add opt-in pgvector similarity-search metrics.
+note: Add opt-in pgvector metrics.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [0]
@@ -19,6 +19,8 @@ subtext: |
   Adds the following metrics, all disabled by default:
   `postgresql.vector.search.count`
   `postgresql.vector.search.duration`
+  `postgresql.vector.insert.rows`
+  `postgresql.vector.insert.duration`
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

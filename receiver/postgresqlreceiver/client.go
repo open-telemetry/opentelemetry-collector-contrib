@@ -66,6 +66,7 @@ type client interface {
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
 	getFunctionStats(ctx context.Context, database string) (map[functionIdentifer]functionStat, error)
 	getVectorSearchStats(ctx context.Context) ([]vectorSearchStat, error)
+	getVectorInsertStats(ctx context.Context) ([]vectorInsertStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 	getVersion(ctx context.Context) (string, error)
 	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error)
@@ -691,6 +692,45 @@ func (c *postgreSQLClient) getVectorSearchStats(ctx context.Context) ([]vectorSe
 		stats = append(stats, vectorSearchStat{
 			distanceFunction: distanceFunction,
 			calls:            calls,
+			// pg_stat_statements reports total_exec_time in milliseconds; convert to seconds.
+			totalExecTime: totalExecTimeMs / 1000.0,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+	return stats, errs
+}
+
+// vectorInsertStat holds the aggregated pgvector insert statistics.
+type vectorInsertStat struct {
+	// rows is the cumulative number of vectors inserted into pgvector tables.
+	rows int64
+	// totalExecTime is the cumulative execution time in seconds.
+	totalExecTime float64
+}
+
+//go:embed templates/vectorInsertStatsTemplate.tmpl
+var vectorInsertStatsQuery string
+
+func (c *postgreSQLClient) getVectorInsertStats(ctx context.Context) ([]vectorInsertStat, error) {
+	rows, err := c.client.QueryContext(ctx, vectorInsertStatsQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []vectorInsertStat
+	var errs error
+	for rows.Next() {
+		var insertedRows int64
+		var totalExecTimeMs float64
+		if err := rows.Scan(&insertedRows, &totalExecTimeMs); err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		stats = append(stats, vectorInsertStat{
+			rows: insertedRows,
 			// pg_stat_statements reports total_exec_time in milliseconds; convert to seconds.
 			totalExecTime: totalExecTimeMs / 1000.0,
 		})

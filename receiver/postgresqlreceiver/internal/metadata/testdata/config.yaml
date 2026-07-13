@@ -79,6 +79,10 @@ all_set:
       enabled: true
     postgresql.tup_updated:
       enabled: true
+    postgresql.vector.insert.duration:
+      enabled: true
+    postgresql.vector.insert.rows:
+      enabled: true
     postgresql.vector.search.count:
       enabled: true
       attributes: ["distance.function"]
@@ -193,6 +197,10 @@ reaggregate_set:
       enabled: true
     postgresql.tup_updated:
       enabled: true
+    postgresql.vector.insert.duration:
+      enabled: true
+    postgresql.vector.insert.rows:
+      enabled: true
     postgresql.vector.search.count:
       enabled: true
       attributes: []
@@ -306,6 +314,10 @@ none_set:
     postgresql.tup_returned:
       enabled: false
     postgresql.tup_updated:
+      enabled: false
+    postgresql.vector.insert.duration:
+      enabled: false
+    postgresql.vector.insert.rows:
       enabled: false
     postgresql.vector.search.count:
       enabled: false

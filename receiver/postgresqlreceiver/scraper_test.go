@@ -88,7 +88,7 @@ func TestScraper(t *testing.T) {
 	runTest(false, "expected.yaml")
 }
 
-func TestScraperVectorSearchStats(t *testing.T) {
+func TestScraperVectorMetrics(t *testing.T) {
 	factory := new(mockClientFactory)
 	factory.initMocks([]string{"otel"})
 
@@ -96,11 +96,15 @@ func TestScraperVectorSearchStats(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"}
-	// Opt in to the two pgvector metrics; everything else stays at defaults.
+	// Opt in to all pgvector metrics; everything else stays at defaults.
 	require.False(t, cfg.Metrics.PostgresqlVectorSearchCount.Enabled)
 	cfg.Metrics.PostgresqlVectorSearchCount.Enabled = true
 	require.False(t, cfg.Metrics.PostgresqlVectorSearchDuration.Enabled)
 	cfg.Metrics.PostgresqlVectorSearchDuration.Enabled = true
+	require.False(t, cfg.Metrics.PostgresqlVectorInsertRows.Enabled)
+	cfg.Metrics.PostgresqlVectorInsertRows.Enabled = true
+	require.False(t, cfg.Metrics.PostgresqlVectorInsertDuration.Enabled)
+	cfg.Metrics.PostgresqlVectorInsertDuration.Enabled = true
 
 	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 
@@ -141,6 +145,28 @@ func TestGetVectorSearchStats(t *testing.T) {
 	assert.Equal(t, "l2", stats[1].distanceFunction)
 	assert.Equal(t, int64(50), stats[1].calls)
 	assert.InDelta(t, 0.010408, stats[1].totalExecTime, 1e-9)
+
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetVectorInsertStats(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	c := &postgreSQLClient{client: db}
+
+	rows := sqlmock.NewRows([]string{"rows", "total_exec_time"}).
+		AddRow(int64(1234), 56.789)
+	mock.ExpectQuery(vectorInsertStatsQuery).WillReturnRows(rows)
+
+	stats, err := c.getVectorInsertStats(t.Context())
+	require.NoError(t, err)
+	require.Len(t, stats, 1)
+
+	assert.Equal(t, int64(1234), stats[0].rows)
+	// total_exec_time is reported in milliseconds by pg_stat_statements and converted to seconds.
+	assert.InDelta(t, 0.056789, stats[0].totalExecTime, 1e-9)
 
 	require.NoError(t, mock.ExpectationsWereMet())
 }
@@ -1249,6 +1275,11 @@ func (m *mockClient) getVectorSearchStats(ctx context.Context) ([]vectorSearchSt
 	return args.Get(0).([]vectorSearchStat), args.Error(1)
 }
 
+func (m *mockClient) getVectorInsertStats(ctx context.Context) ([]vectorInsertStat, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]vectorInsertStat), args.Error(1)
+}
+
 func (m *mockClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
 	args := m.Called(ctx)
 	return args.Get(0).(*bgStat), args.Error(1)
@@ -1525,6 +1556,14 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 			},
 		}
 		m.On("getVectorSearchStats", mock.Anything).Return(vectorSearchStats, nil)
+
+		vectorInsertStats := []vectorInsertStat{
+			{
+				rows:          int64(index + 70),
+				totalExecTime: float64(index) + 2.5,
+			},
+		}
+		m.On("getVectorInsertStats", mock.Anything).Return(vectorInsertStats, nil)
 	}
 }
 

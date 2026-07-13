@@ -167,6 +167,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		p.collectIndexes(ctx, now, dbClient, database, &errs)
 		p.collectFunctions(ctx, now, dbClient, database, &errs)
 		p.collectVectorSearchStats(ctx, now, dbClient, database, &errs)
+		p.collectVectorInsertStats(ctx, now, dbClient, database, &errs)
 	}
 
 	p.mb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
@@ -637,6 +638,39 @@ func (p *postgreSQLScraper) collectVectorSearchStats(
 		}
 		p.mb.RecordPostgresqlVectorSearchCountDataPoint(now, stat.calls, distanceFunction)
 		p.mb.RecordPostgresqlVectorSearchDurationDataPoint(now, stat.totalExecTime, distanceFunction)
+		recorded = true
+	}
+
+	if recorded {
+		rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), database, "", "", "")
+		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+}
+
+func (p *postgreSQLScraper) collectVectorInsertStats(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	database string,
+	errs *errsMux,
+) {
+	// Both metrics are opt-in and derived from the same pg_stat_statements query, so skip
+	// the collection entirely unless at least one of them is enabled.
+	if !p.config.Metrics.PostgresqlVectorInsertRows.Enabled &&
+		!p.config.Metrics.PostgresqlVectorInsertDuration.Enabled {
+		return
+	}
+
+	stats, err := client.getVectorInsertStats(ctx)
+	if err != nil {
+		errs.addPartial(err)
+		return
+	}
+
+	var recorded bool
+	for _, stat := range stats {
+		p.mb.RecordPostgresqlVectorInsertRowsDataPoint(now, stat.rows)
+		p.mb.RecordPostgresqlVectorInsertDurationDataPoint(now, stat.totalExecTime)
 		recorded = true
 	}
 

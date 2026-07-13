@@ -38,3 +38,7 @@ INSERT INTO fp_cols SELECT g, 0, 0, 0 FROM generate_series(1, 5) g;
 -- NOT be classified as l2 vector searches.
 CREATE TABLE docs (id serial PRIMARY KEY, body text);
 INSERT INTO docs (body) SELECT 'sample ' || g FROM generate_series(1, 20) g;
+
+-- Trap: table whose name is a prefix of the vector table "items" but has no vector
+-- column. Inserts here must NOT be counted as vector inserts.
+CREATE TABLE items_archive (id serial PRIMARY KEY, note text);

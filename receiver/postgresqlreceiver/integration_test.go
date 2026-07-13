@@ -439,3 +439,56 @@ func TestVectorSearchExtensionGateIntegration(t *testing.T) {
 	}
 	assert.Empty(t, stats, "extension gate should suppress vector metrics when pgvector is not installed")
 }
+
+// TestVectorInsertStatsIntegration validates that inserts into pgvector tables are
+// counted (no false negatives) while inserts into non-vector tables (including a
+// table whose name is a prefix of a vector table) and non-insert statements over
+// vector tables are excluded (no false positives).
+func TestVectorInsertStatsIntegration(t *testing.T) {
+	db, cleanup := startPostgresContainerForVector(t, pgvectorTestImage, "03-init-vector.sql")
+	defer cleanup()
+	ctx := t.Context()
+
+	// Reset so the init-time seed inserts do not affect the deterministic counts below.
+	if _, err := db.ExecContext(ctx, "SELECT pg_stat_statements_reset()"); err != nil {
+		t.Fatalf("failed to reset pg_stat_statements: %v", err)
+	}
+
+	// Inserts into the vector table "items". SUM(rows) must be 6: three single-row
+	// inserts plus one three-row insert.
+	vectorInserts := []string{
+		"INSERT INTO items (embedding) VALUES ('[0.1,0.2,0.3]')",
+		"INSERT INTO items (embedding) VALUES ('[0.2,0.3,0.4]')",
+		"INSERT INTO items (embedding) VALUES ('[0.9,0.8,0.7]')",
+		"INSERT INTO items (embedding) VALUES ('[0.1,0.1,0.1]'), ('[0.2,0.2,0.2]'), ('[0.3,0.3,0.3]')",
+	}
+	// Statements that MUST NOT be counted:
+	//   - inserts into non-vector tables (docs, fp_cols)
+	//   - insert into items_archive (name is a prefix of the vector table "items")
+	//   - a SELECT and an UPDATE over the vector table (not inserts)
+	nonInserts := []string{
+		"INSERT INTO docs (body) VALUES ('hello')",
+		"INSERT INTO fp_cols (id) VALUES (99)",
+		"INSERT INTO items_archive (note) VALUES ('archived')",
+		"SELECT id FROM items ORDER BY embedding <-> '[0.1,0.2,0.3]' LIMIT 1",
+		"UPDATE items SET embedding = '[0.5,0.5,0.5]' WHERE id = 1",
+	}
+	for _, q := range append(append([]string{}, vectorInserts...), nonInserts...) {
+		if _, err := db.ExecContext(ctx, q); err != nil {
+			t.Fatalf("failed to execute workload query %q: %v", q, err)
+		}
+	}
+
+	stats, err := (&postgreSQLClient{client: db}).getVectorInsertStats(ctx)
+	if err != nil {
+		t.Fatalf("getVectorInsertStats failed: %v", err)
+	}
+
+	if len(stats) != 1 {
+		t.Fatalf("expected exactly one aggregated insert-stats row, got %d", len(stats))
+	}
+	// No false negatives and no false positives: exactly the six rows inserted into the
+	// vector table are counted.
+	assert.Equal(t, int64(6), stats[0].rows)
+	assert.True(t, stats[0].totalExecTime > 0, "expected positive cumulative insert duration")
+}

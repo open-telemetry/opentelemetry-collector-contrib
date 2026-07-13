@@ -972,6 +972,46 @@ func (ms *PostgresqlTupUpdatedMetricConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
+// PostgresqlVectorInsertDurationMetricConfig provides config for the postgresql.vector.insert.duration metric.
+type PostgresqlVectorInsertDurationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlVectorInsertDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlVectorInsertRowsMetricConfig provides config for the postgresql.vector.insert.rows metric.
+type PostgresqlVectorInsertRowsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlVectorInsertRowsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // PostgresqlVectorSearchCountMetricAttributeKey specifies the key of an attribute for the postgresql.vector.search.count metric.
 type PostgresqlVectorSearchCountMetricAttributeKey string
 
@@ -1222,6 +1262,8 @@ type MetricsConfig struct {
 	PostgresqlTupInserted              PostgresqlTupInsertedMetricConfig              `mapstructure:"postgresql.tup_inserted"`
 	PostgresqlTupReturned              PostgresqlTupReturnedMetricConfig              `mapstructure:"postgresql.tup_returned"`
 	PostgresqlTupUpdated               PostgresqlTupUpdatedMetricConfig               `mapstructure:"postgresql.tup_updated"`
+	PostgresqlVectorInsertDuration     PostgresqlVectorInsertDurationMetricConfig     `mapstructure:"postgresql.vector.insert.duration"`
+	PostgresqlVectorInsertRows         PostgresqlVectorInsertRowsMetricConfig         `mapstructure:"postgresql.vector.insert.rows"`
 	PostgresqlVectorSearchCount        PostgresqlVectorSearchCountMetricConfig        `mapstructure:"postgresql.vector.search.count"`
 	PostgresqlVectorSearchDuration     PostgresqlVectorSearchDurationMetricConfig     `mapstructure:"postgresql.vector.search.duration"`
 	PostgresqlWalAge                   PostgresqlWalAgeMetricConfig                   `mapstructure:"postgresql.wal.age"`
@@ -1351,6 +1393,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		PostgresqlTupUpdated: PostgresqlTupUpdatedMetricConfig{
+			Enabled: false,
+		},
+		PostgresqlVectorInsertDuration: PostgresqlVectorInsertDurationMetricConfig{
+			Enabled: false,
+		},
+		PostgresqlVectorInsertRows: PostgresqlVectorInsertRowsMetricConfig{
 			Enabled: false,
 		},
 		PostgresqlVectorSearchCount: PostgresqlVectorSearchCountMetricConfig{
