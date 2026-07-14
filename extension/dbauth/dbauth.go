@@ -10,7 +10,8 @@
 // A provider is a Collector extension that also implements Provider. It is
 // declared in the extensions block and referenced by a consuming component
 // through configdbauth.Config; the component resolves it from the host extension
-// map at Start.
+// map at Start, mirroring how config/configauth resolves an authenticator
+// extension.
 package dbauth // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 
 import (
@@ -46,13 +47,11 @@ type Credential struct {
 }
 
 // Request carries the per-connection inputs a consumer supplies on every
-// GetCredential call. Provider-wide configuration (such as an AWS region or a
-// role to assume) belongs in the provider extension's own config, and a consumer
-// may additionally pass a per-consumer override of that config as extensionArgs
-// (see Provider.GetCredential); only the connection-specific values that the
-// consumer already knows travel in the Request, so an operator never repeats the
-// endpoint or username they configured on the component. A provider ignores the
-// fields it does not need.
+// GetCredential call. Provider-wide configuration (such as an AWS region) belongs
+// in the provider extension's own config; only the connection-specific values that
+// the consumer already knows travel in the Request, so an operator never repeats
+// the endpoint or username they configured on the component. A provider ignores
+// the fields it does not need.
 type Request struct {
 	// Endpoint is the connection endpoint, in host:port form, the credential is
 	// for. A token-minting provider uses it as a mint input (e.g. the RDS endpoint
@@ -75,20 +74,7 @@ type Provider interface {
 	// GetCredential returns the credential valid at the time of the call for the
 	// given request.
 	//
-	// extensionArgs is a per-consumer override of the provider extension's own
-	// config, sourced from the inline body of the consumer's db_auth block (the
-	// value nested under the provider's component ID). A provider merges these
-	// values over its configured defaults for this call only, then validates the
-	// result. Because the keys are the provider's own config keys, an unrecognized
-	// key is an operator error (typically a typo) that a provider should reject
-	// rather than silently ignore — surfacing the mistake instead of quietly
-	// dropping the intended override. It is nil or empty when the consumer supplies
-	// no override, in which case the provider uses its configured defaults. Because
-	// the merge is per call, a provider must not mutate its own config from
-	// extensionArgs.
-	//
 	// It must honor context cancellation and be safe for concurrent use — a
-	// connection pool may call it from many goroutines, potentially with different
-	// extensionArgs.
-	GetCredential(ctx context.Context, req Request, extensionArgs map[string]any) (*Credential, error)
+	// connection pool may call it from many goroutines.
+	GetCredential(ctx context.Context, req Request) (*Credential, error)
 }
