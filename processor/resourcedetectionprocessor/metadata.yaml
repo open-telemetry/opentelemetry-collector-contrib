@@ -12,6 +12,84 @@ status:
     active: [Aneurysm9, dashpole]
     seeking_new: true
 
+attributes:
+  detector:
+    description: The resource detector that produced the result.
+    type: string
+    enum:
+      - akamai
+      - aks
+      - alibaba_ecs
+      - azure
+      - consul
+      - digitalocean
+      - docker
+      - dynatrace
+      - ec2
+      - ecs
+      - eks
+      - elastic_beanstalk
+      - env
+      - gcp
+      - heroku
+      - hetzner
+      - ibmcloud_classic
+      - ibmcloud_vpc
+      - k8s_api
+      - k8snode
+      - kubeadm
+      - lambda
+      - nova
+      - openshift
+      - oraclecloud
+      - scaleway
+      - system
+      - tencent_cvm
+      - upcloud
+      - vultr
+  error.type:
+    description: The type of error that caused detection to fail. Absent on success.
+    type: string
+  outcome:
+    description: Whether the detection operation succeeded or failed.
+    type: string
+    enum:
+      - success
+      - failure
+
+telemetry:
+  metrics:
+    resourcedetection.attributes.detected:
+      prefix: otelcol.
+      enabled: true
+      description: Number of resource attributes in the currently detected resource.
+      stability: development
+      unit: "{attribute}"
+      sum:
+        value_type: int
+        monotonic: false
+        async: true
+    resourcedetection.detector.duration:
+      prefix: otelcol.
+      enabled: true
+      description: Time taken by an individual detector to run, including backoff between retries.
+      stability: development
+      unit: s
+      attributes: [detector, outcome]
+      histogram:
+        value_type: double
+        bucket_boundaries: [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10, 30]
+    resourcedetection.detector.results:
+      prefix: otelcol.
+      enabled: true
+      description: Number of resource detection results, by detector and outcome. On failure, error.type carries the error class.
+      stability: development
+      unit: "{detection}"
+      attributes: [detector, outcome, error.type]
+      sum:
+        value_type: int
+        monotonic: true
+
 tests:
   goleak:
     ignore:

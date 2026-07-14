@@ -1028,6 +1028,10 @@ go test -bench=. -benchmem
 
 For the latest benchmark results, see the [GitHub Actions workflow runs](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml).
 
+## Internal Telemetry
+
+The processor emits internal telemetry to observe resource detection. For the complete list of metrics and their attributes, see the [Internal Telemetry documentation](./documentation.md#internal-telemetry).
+
 ## Ordering
 
 Note that if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.platform` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
