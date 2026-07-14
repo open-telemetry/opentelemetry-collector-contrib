@@ -610,7 +610,7 @@ func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Time
 	indexStats, err := s.client.IndexStats(ctx, databaseName, collectionName)
 	if err != nil {
 		var srvErr mongo.ServerError
-		// ignore error $indexStats is not supported on views
+		// ignore the error, $indexStats is not supported on views
 		if errors.As(err, &srvErr) && srvErr.HasErrorCode(40602) {
 			s.logger.Debug("skipping unsupported index stats for view",
 				zap.String("database", databaseName), zap.String("view", collectionName))
