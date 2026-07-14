@@ -667,10 +667,10 @@ func TestDomainSettingsCompressionMerge(t *testing.T) {
 		{
 			name: "domain_settings_compression_applied_to_signals",
 			config: map[string]any{
-				"domain":            "coralogix.com",
-				"private_key":       "test-key",
-				"application_name":  "test-app",
-				"subsystem_name":    "test-sub",
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
 				"domain_settings": map[string]any{
 					"compression": "zstd",
 				},
