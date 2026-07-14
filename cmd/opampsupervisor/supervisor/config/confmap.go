@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -36,19 +35,6 @@ const ClearResourceAttributesKey = "__opampsupervisor_clear_resource_attributes_
 // ErrConfigFileNotFound marks required config sources that point to missing files.
 var ErrConfigFileNotFound = errors.New("config file not found")
 
-func normalizeConfigURI(uri string) string {
-	if configURISchemeRegexp.MatchString(uri) {
-		return uri
-	}
-
-	absPath, err := filepath.Abs(uri)
-	if err != nil {
-		return uri
-	}
-
-	return absPath
-}
-
 func resolverSettings(uris []string) confmap.ResolverSettings {
 	return confmap.ResolverSettings{
 		URIs:               uris,
@@ -72,12 +58,7 @@ func ResolveURI(uri string) (*confmap.Conf, error) {
 
 // ResolveURIs resolves a list of config URIs into a single merged Conf.
 func ResolveURIs(uris []string) (*confmap.Conf, error) {
-	normalizedURIs := make([]string, len(uris))
-	for i, uri := range uris {
-		normalizedURIs[i] = normalizeConfigURI(uri)
-	}
-
-	resolver, err := confmap.NewResolver(resolverSettings(normalizedURIs))
+	resolver, err := confmap.NewResolver(resolverSettings(uris))
 	if err != nil {
 		return nil, err
 	}
@@ -108,8 +89,7 @@ func retrieveURIForProvider(uri string) (string, string) {
 
 // RetrieveURIAsConf retrieves a URI as a confmap.Conf without resolving embedded ${...} values.
 func RetrieveURIAsConf(uri string, logger *zap.Logger) (*confmap.Conf, error) {
-	normalizedURI := normalizeConfigURI(uri)
-	retrieveURI, scheme := retrieveURIForProvider(normalizedURI)
+	retrieveURI, scheme := retrieveURIForProvider(uri)
 	if logger == nil {
 		logger = zap.NewNop()
 	}

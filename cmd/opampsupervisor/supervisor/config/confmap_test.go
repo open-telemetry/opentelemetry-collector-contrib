@@ -126,8 +126,12 @@ func TestResolveURIs_ExpandsEnvByDefaultScheme(t *testing.T) {
 
 	configPath := filepath.Join(t.TempDir(), "supervisor.yaml")
 	require.NoError(t, os.WriteFile(configPath, []byte("server:\n  endpoint: ${"+envVar+"}\n"), 0o600))
+	workingDir, err := os.Getwd()
+	require.NoError(t, err)
+	relativeConfigPath, err := filepath.Rel(workingDir, configPath)
+	require.NoError(t, err)
 
-	conf, err := ResolveURI(configPath)
+	conf, err := ResolveURI(relativeConfigPath)
 	require.NoError(t, err)
 	require.Equal(t, envValue, conf.Get("server::endpoint"))
 }
