@@ -343,15 +343,16 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 	scope := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 	scope.Scope().SetName(metadata.ScopeName)
 	scopeLogs := scope.LogRecords()
-	for logsConfigIndex, logsConfig := range queryReceiver.query.Logs {
+	for _, logsConfig := range queryReceiver.query.Logs {
 		for _, row := range rows {
 			logRecord := scopeLogs.AppendEmpty()
 			errs = append(errs, rowToLog(row, logsConfig, logRecord))
 			logRecord.SetObservedTimestamp(observedAt)
-			if logsConfigIndex == 0 {
-				errs = append(errs, queryReceiver.storeTrackingValue(ctx, row))
-			}
 		}
+	}
+
+	if len(rows) > 0 {
+		errs = append(errs, queryReceiver.storeTrackingValue(ctx, rows[len(rows)-1]))
 	}
 	return logs, errors.Join(errs...)
 }

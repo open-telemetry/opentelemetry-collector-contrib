@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -386,4 +387,66 @@ func TestLogsReceiver_Timeout(t *testing.T) {
 			return false
 		}
 	}, time.Second, 5*time.Millisecond, "expected a recoverable error status caused by the query timeout")
+}
+
+func TestLogsQueryReceiver_StoragePersistence(t *testing.T) {
+	fakeClient := &sqlquery.FakeDBClient{
+		StringMaps: [][]sqlquery.StringMap{
+			{{"col1": "42", "id": "1"}, {"col1": "63", "id": "2"}, {"col1": "84", "id": "3"}},
+		},
+	}
+	mockStorage := &mockStorageClient{
+		data: make(map[string][]byte),
+	}
+	queryReceiver := logsQueryReceiver{
+		id:     "my-query",
+		client: fakeClient,
+		query: sqlquery.Query{
+			TrackingColumn: "id",
+			Logs: []sqlquery.LogsCfg{
+				{
+					BodyColumn: "col1",
+				},
+			},
+		},
+		storageClient:           mockStorage,
+		trackingValueStorageKey: "my-query.trackingValue",
+	}
+
+	logs, err := queryReceiver.collect(t.Context())
+	assert.NoError(t, err)
+	assert.NotNil(t, logs)
+	assert.Equal(t, 3, logs.LogRecordCount())
+
+	// Set should have been called exactly once (for the last row "3")
+	assert.Equal(t, 1, mockStorage.setCalls)
+	assert.Equal(t, "3", string(mockStorage.data["my-query.trackingValue"]))
+}
+
+type mockStorageClient struct {
+	storage.Client
+	data     map[string][]byte
+	setCalls int
+}
+
+func (m *mockStorageClient) Get(ctx context.Context, key string) ([]byte, error) {
+	return m.data[key], nil
+}
+
+func (m *mockStorageClient) Set(ctx context.Context, key string, val []byte) error {
+	m.setCalls++
+	if m.data == nil {
+		m.data = make(map[string][]byte)
+	}
+	m.data[key] = val
+	return nil
+}
+
+func (m *mockStorageClient) Delete(ctx context.Context, key string) error {
+	delete(m.data, key)
+	return nil
+}
+
+func (m *mockStorageClient) Close(ctx context.Context) error {
+	return nil
 }
