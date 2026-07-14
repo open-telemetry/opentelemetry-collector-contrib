@@ -774,6 +774,28 @@ Total number of rows returned by full-table scans.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {row} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.sga.limit
+
+Maximum size of the System Global Area (SGA).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### oracledb.sga.usage
+
+Size of each component of the System Global Area (SGA).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.sga.component.name | Name of the SGA component. | Str: ``buffer_cache``, ``data_transfer_cache``, ``fixed_sga``, ``in_memory_area``, ``java_pool``, ``large_pool``, ``redo_buffers``, ``shared_io_pool``, ``shared_pool``, ``streams_pool`` | Recommended | - |
+
 ### oracledb.shared_pool.utilization
 
 Fraction of the shared pool that is currently free, as computed by Oracle V$SYSMETRIC (% Free/Total). Low values indicate shared pool pressure.
@@ -856,6 +878,30 @@ Fraction of allocated database storage that is used.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
+
+### oracledb.system.cpu.count
+
+Number of CPUs or processors available to the Oracle server, as reported by the operating system.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cpu} | Gauge | Int | Development |
+
+### oracledb.system.memory.limit
+
+Total number of bytes of physical memory on the host running the Oracle server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### oracledb.system.process.count
+
+Current number of processes that are either running or in the ready state, waiting to be selected by the operating-system scheduler to run.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {process} | Gauge | Double | Development |
 
 ## Default Events
 
@@ -942,6 +988,7 @@ Per-session wait event statistics from v$session_event.
 | oracledb.wait_class | The category of wait events a query or session is currently experiencing in Oracle Database. | Any Str | - |
 | oracledb.wait.count | Total number of waits for the wait event across all sessions. | Any Int | - |
 | oracledb.wait.duration | Total time waited in seconds for the wait event. | Any Double | - |
+| db.namespace | The database name. | Any Str | - |
 
 ### db.server.top_query
 
