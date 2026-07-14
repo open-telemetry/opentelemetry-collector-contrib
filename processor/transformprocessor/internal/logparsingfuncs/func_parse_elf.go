@@ -154,6 +154,12 @@ func parseELFMessage(input string, logger *zap.Logger) (pcommon.Map, error) {
 				m.PutStr("elf."+field, "-")
 			}
 		}
+		if len(values) > len(currentFields) {
+			logger.Warn("ELF data line has more values than fields; dropping extra values",
+				zap.Int("field_count", len(currentFields)),
+				zap.Int("value_count", len(values)),
+			)
+		}
 	}
 
 	if !hasVersion {
@@ -172,11 +178,11 @@ func parseELFMessage(input string, logger *zap.Logger) (pcommon.Map, error) {
 // the key and trimmed value. Returns an error for lines without a colon separator.
 func parseELFDirective(line string) (string, string, error) {
 	body := line[1:] // strip leading '#'
-	idx := strings.Index(body, ":")
-	if idx == -1 {
+	key, value, found := strings.Cut(body, ":")
+	if !found {
 		return "", "", fmt.Errorf("directive %q has no colon separator", line)
 	}
-	return strings.TrimSpace(body[:idx]), strings.TrimSpace(body[idx+1:]), nil
+	return strings.TrimSpace(key), strings.TrimSpace(value), nil
 }
 
 // parseELFDataLine splits a single ELF data line into tokens, honoring double-quoted

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
@@ -18,10 +19,11 @@ import (
 
 func Test_parseELF(t *testing.T) {
 	tests := []struct {
-		name     string
-		target   ottl.StringGetter[*ottllog.TransformContext]
-		expected map[string]any
-		wantErr  bool
+		name        string
+		target      ottl.StringGetter[*ottllog.TransformContext]
+		expected    map[string]any
+		errContains string
+		wantWarns   []string
 	}{
 		{
 			name: "basic W3C ELF block",
@@ -80,6 +82,10 @@ func Test_parseELF(t *testing.T) {
 				"elf.entries": []any{
 					map[string]any{"elf.a": "val1", "elf.b": "val2", "elf.c": "-", "elf.d": "-"},
 				},
+			},
+			wantWarns: []string{
+				"ELF data line has fewer values than fields; substituting '-'",
+				"ELF data line has fewer values than fields; substituting '-'",
 			},
 		},
 		{
@@ -179,7 +185,7 @@ func Test_parseELF(t *testing.T) {
 					return "", nil
 				},
 			},
-			wantErr: true,
+			errContains: "cannot parse empty ELF message",
 		},
 		{
 			name: "missing #Version directive",
@@ -188,7 +194,7 @@ func Test_parseELF(t *testing.T) {
 					return "#Fields: time\n00:00:01", nil
 				},
 			},
-			wantErr: true,
+			errContains: "missing #Version directive",
 		},
 		{
 			name: "data line before #Fields directive",
@@ -197,7 +203,7 @@ func Test_parseELF(t *testing.T) {
 					return "#Version: 1.0\n00:00:01 GET /foo", nil
 				},
 			},
-			wantErr: true,
+			errContains: "data entry found before #Fields directive",
 		},
 		{
 			name: "unterminated quoted value",
@@ -206,7 +212,7 @@ func Test_parseELF(t *testing.T) {
 					return "#Version: 1.0\n#Fields: method uri\nGET \"/unterminated", nil
 				},
 			},
-			wantErr: true,
+			errContains: "unterminated quoted value in data line",
 		},
 		{
 			name: "malformed #Fields directive",
@@ -216,7 +222,7 @@ func Test_parseELF(t *testing.T) {
 					return "#Version: 1.0\n#Fields\n00:00:01", nil
 				},
 			},
-			wantErr: true,
+			errContains: "malformed #Fields directive",
 		},
 		{
 			name: "malformed lowercase #fields directive",
@@ -226,7 +232,7 @@ func Test_parseELF(t *testing.T) {
 					return "#Version: 1.0\n#fields\n00:00:01", nil
 				},
 			},
-			wantErr: true,
+			errContains: "malformed #Fields directive",
 		},
 		{
 			name: "tab-separated data line",
@@ -272,18 +278,28 @@ func Test_parseELF(t *testing.T) {
 					map[string]any{"elf.a": "val1", "elf.b": "val2"},
 				},
 			},
+			wantWarns: []string{
+				"ELF data line has more values than fields; dropping extra values",
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := parseELF(tt.target, zap.NewNop())
+			core, observedLogs := observer.New(zap.WarnLevel)
+			exprFunc := parseELF(tt.target, zap.New(core))
 			result, err := exprFunc(t.Context(), &ottllog.TransformContext{})
-			if tt.wantErr {
-				require.Error(t, err)
+			if tt.errContains != "" {
+				require.ErrorContains(t, err, tt.errContains)
 				return
 			}
 			require.NoError(t, err)
+
+			var gotWarns []string
+			for _, entry := range observedLogs.All() {
+				gotWarns = append(gotWarns, entry.Message)
+			}
+			assert.Equal(t, tt.wantWarns, gotWarns)
 
 			m, ok := result.(pcommon.Map)
 			require.True(t, ok, "result must be pcommon.Map")
@@ -326,10 +342,10 @@ func assertELFMapEqual(t *testing.T, expected map[string]any, actual pcommon.Map
 
 func Test_parseELFDataLine(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		expected []string
-		wantErr  bool
+		name        string
+		input       string
+		expected    []string
+		errContains string
 	}{
 		{
 			name:     "simple tokens",
@@ -372,17 +388,17 @@ func Test_parseELFDataLine(t *testing.T) {
 			expected: []string{"GET", "/foo.html", "200"},
 		},
 		{
-			name:    "unterminated quoted value",
-			input:   `GET "/unterminated`,
-			wantErr: true,
+			name:        "unterminated quoted value",
+			input:       `GET "/unterminated`,
+			errContains: "unterminated quoted value in data line",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := parseELFDataLine(tt.input)
-			if tt.wantErr {
-				require.Error(t, err)
+			if tt.errContains != "" {
+				require.ErrorContains(t, err, tt.errContains)
 				return
 			}
 			require.NoError(t, err)
@@ -393,11 +409,11 @@ func Test_parseELFDataLine(t *testing.T) {
 
 func Test_parseELFDirective(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     string
-		wantKey   string
-		wantValue string
-		wantErr   bool
+		name        string
+		input       string
+		wantKey     string
+		wantValue   string
+		errContains string
 	}{
 		{
 			name:      "version directive",
@@ -418,17 +434,17 @@ func Test_parseELFDirective(t *testing.T) {
 			wantValue: "IIS/6.0: Logging",
 		},
 		{
-			name:    "no colon separator",
-			input:   "#Remark",
-			wantErr: true,
+			name:        "no colon separator",
+			input:       "#Remark",
+			errContains: "has no colon separator",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			key, value, err := parseELFDirective(tt.input)
-			if tt.wantErr {
-				require.Error(t, err)
+			if tt.errContains != "" {
+				require.ErrorContains(t, err, tt.errContains)
 				return
 			}
 			require.NoError(t, err)
