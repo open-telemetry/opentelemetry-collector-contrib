@@ -745,7 +745,7 @@ tests:
   config:
     timeout: 1ms
     top_query_collection:
-      query_plan_cache_ttl: 0s
+      query_plan_cache_ttl: 1s
   goleak:
     ignore:
       any:

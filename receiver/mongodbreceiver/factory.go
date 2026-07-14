@@ -23,9 +23,9 @@ import (
 const (
 	defaultMongoDBPort                = 27017
 	defaultMaxRowsPerQuery            = 100
-	defaultMaxQuerySampleCount        = int64(100)
-	defaultMaxExplainEachInterval     = int64(200)
-	defaultTopQueryCount              = int64(200)
+	defaultMaxQuerySampleCount        = int64(1000)
+	defaultMaxExplainEachInterval     = int64(250)
+	defaultTopQueryCount              = int64(500)
 	defaultQueryPlanCacheSize         = 500
 	defaultQueryPlanCacheTTL          = 10 * time.Minute
 	defaultTopQueryCollectionInterval = 60 * time.Second
