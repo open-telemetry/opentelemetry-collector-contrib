@@ -9,7 +9,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.80.2
 	github.com/DataDog/datadog-api-client-go/v2 v2.62.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.33.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.34.0
 	github.com/aws/aws-sdk-go-v2 v1.42.1
 	github.com/aws/aws-sdk-go-v2/config v1.32.29
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.30
