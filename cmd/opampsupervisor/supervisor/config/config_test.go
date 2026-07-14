@@ -881,13 +881,21 @@ func writeFeatureGateValidateStub(t *testing.T) string {
 		path := filepath.Join(tempDir, "validate-stub.bat")
 		script := []string{
 			"@echo off",
-			"if not \"%1\"==\"validate\" exit /b 1",
-			"if not \"%2\"==\"--config\" exit /b 1",
-			"if not \"%4\"==\"" + featureGateArg + "\" exit /b 1",
+			"echo validate-stub cwd=[%CD%] 1>&2",
+			"echo validate-stub temp=[%TEMP%] 1>&2",
+			"echo validate-stub script=[%~f0] 1>&2",
+			"echo validate-stub args=[%*] 1>&2",
+			"echo validate-stub config=[%~f3] 1>&2",
+			"if exist \"%3\" echo validate-stub config-exists=yes 1>&2",
+			"if not exist \"%3\" echo validate-stub config-exists=no 1>&2",
+			"if not \"%1\"==\"validate\" exit /b 11",
+			"if not \"%2\"==\"--config\" exit /b 12",
+			"if not \"%4\"==\"" + featureGateArg + "\" exit /b 13",
+			"if not exist \"%3\" exit /b 14",
 			"findstr /C:\"profiles:\" \"%3\" >nul",
-			"if errorlevel 1 exit /b 1",
+			"if errorlevel 1 exit /b 15",
 			"findstr /C:\"processors:\" \"%3\" >nul",
-			"if not errorlevel 1 exit /b 1",
+			"if not errorlevel 1 exit /b 16",
 			"exit /b 0",
 		}
 		require.NoError(t, os.WriteFile(path, []byte(strings.Join(script, "\r\n")+"\r\n"), 0o600))
