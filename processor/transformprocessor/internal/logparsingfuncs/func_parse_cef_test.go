@@ -648,11 +648,22 @@ func Test_parseCEFExtensions(t *testing.T) {
 			input:    "this is not a valid extension",
 			expected: map[string]any{},
 		},
+		{
+			name:  "keys starting with digit or underscore",
+			input: "2fa=enabled _internal=true src=10.0.0.1",
+			expected: map[string]any{
+				"2fa":       "enabled",
+				"_internal": "true",
+				"src":       "10.0.0.1",
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, parseCEFExtensions(tt.input))
+			dest := pcommon.NewMap()
+			parseCEFExtensions(tt.input, dest)
+			assert.Equal(t, tt.expected, dest.AsRaw())
 		})
 	}
 }

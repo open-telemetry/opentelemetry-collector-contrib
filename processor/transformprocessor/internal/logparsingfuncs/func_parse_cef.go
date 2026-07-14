@@ -58,10 +58,10 @@ type cefHeader struct {
 	severity           string
 }
 
-// cefExtensionKeyRegex finds extension key=value boundaries. Per the CEF spec, key
-// names are alphanumeric (plus underscore) and are separated from preceding
+// cefExtensionKeyRegex finds extension key=value boundaries. Keys
+// must start with an alphnumeric character or underscore; keys are separated from preceding
 // key=value pairs by a single space.
-var cefExtensionKeyRegex = regexp.MustCompile(`(?:^| )([A-Za-z][A-Za-z0-9_]*)=`)
+var cefExtensionKeyRegex = regexp.MustCompile(`(?:^| )([A-Za-z0-9_]+)=`)
 
 func parseCEFMessage(message string) (pcommon.Map, error) {
 	cefStart := strings.Index(message, "CEF:")
@@ -92,12 +92,12 @@ func parseCEFMessage(message string) (pcommon.Map, error) {
 		severity:           unescapeCEFHeader(fields[6]),
 	}
 
-	var extensions map[string]any
-	if len(fields) == 8 && fields[7] != "" {
-		extensions = parseCEFExtensions(fields[7])
+	var extension string
+	if len(fields) == 8 {
+		extension = fields[7]
 	}
 
-	return buildCEFResult(header, extensions)
+	return buildCEFResult(header, extension), nil
 }
 
 // splitCEFHeader splits a CEF message on unescaped pipes. The first seven
@@ -198,15 +198,12 @@ func unescapeCEFValue(s string) string {
 	return b.String()
 }
 
-// parseCEFExtensions parses the extension portion of a CEF message into a map
-// of key/value pairs. Values may contain spaces; the parser uses the position
-// of the next `key=` token as the end of the current value.
-func parseCEFExtensions(extension string) map[string]any {
-	result := make(map[string]any)
+// parseCEFExtensions parses the extension portion of a CEF message directly
+// into dest as key/value pairs. Values may contain spaces; the parser uses the
+// position of the next `key=` token as the end of the current value.
+func parseCEFExtensions(extension string, dest pcommon.Map) {
 	matches := cefExtensionKeyRegex.FindAllStringSubmatchIndex(extension, -1)
-	if len(matches) == 0 {
-		return result
-	}
+	dest.EnsureCapacity(len(matches))
 
 	for i, m := range matches {
 		key := extension[m[2]:m[3]]
@@ -216,12 +213,11 @@ func parseCEFExtensions(extension string) map[string]any {
 			valueEnd = matches[i+1][0]
 		}
 		value := strings.TrimRight(extension[valueStart:valueEnd], " ")
-		result[key] = unescapeCEFValue(value)
+		dest.PutStr(key, unescapeCEFValue(value))
 	}
-	return result
 }
 
-func buildCEFResult(header cefHeader, extensions map[string]any) (pcommon.Map, error) {
+func buildCEFResult(header cefHeader, extension string) pcommon.Map {
 	result := pcommon.NewMap()
 
 	result.PutStr("cef.version", header.version)
@@ -233,11 +229,9 @@ func buildCEFResult(header cefHeader, extensions map[string]any) (pcommon.Map, e
 	result.PutStr("cef.severity", header.severity)
 
 	extensionsMap := result.PutEmptyMap("cef.extensions")
-	if extensions != nil {
-		if err := extensionsMap.FromRaw(extensions); err != nil {
-			return pcommon.Map{}, fmt.Errorf("failed to convert extensions: %w", err)
-		}
+	if extension != "" {
+		parseCEFExtensions(extension, extensionsMap)
 	}
 
-	return result, nil
+	return result
 }
