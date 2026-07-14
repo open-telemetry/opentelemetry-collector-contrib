@@ -108,8 +108,9 @@ func TestIndexPhysicalStatsScraper(t *testing.T) {
 		},
 	}
 
-	scrapers := setupSQLServerScrapers(settings, cfg)
+	scrapers, provider := setupSQLServerScrapers(settings, cfg)
 	require.NotEmpty(t, scrapers)
+	require.NotNil(t, provider)
 
 	// Find the index physical stats scraper
 	var indexScraper *sqlServerScraperHelper
@@ -121,7 +122,11 @@ func TestIndexPhysicalStatsScraper(t *testing.T) {
 	}
 	require.NotNil(t, indexScraper, "index physical stats scraper not found")
 	require.NoError(t, indexScraper.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() { assert.NoError(t, indexScraper.Shutdown(t.Context())) }()
+	defer func() {
+		assert.NoError(t, indexScraper.Shutdown(t.Context()))
+		// The receiver owns the shared pool; close it here in the test.
+		assert.NoError(t, provider.close())
+	}()
 
 	actualMetrics, err := indexScraper.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
