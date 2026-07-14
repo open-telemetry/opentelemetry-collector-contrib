@@ -145,9 +145,11 @@ func TestDividePolicyRates(t *testing.T) {
 	divided := dividePolicyRates(cfgs, 4)
 
 	assert.Equal(t, int64(250), divided[0].RateLimitingCfg.SpansPerSecond)
-	assert.Equal(t, int64(25), divided[0].RateLimitingCfg.BurstCapacity)
+	assert.Equal(t, int64(100), divided[0].RateLimitingCfg.BurstCapacity,
+		"explicit burst capacity must not be divided: it caps the size of a single admissible trace")
 	assert.Equal(t, int64(1000), divided[1].BytesLimitingCfg.BytesPerSecond)
-	assert.Equal(t, int64(0), divided[1].BytesLimitingCfg.BurstCapacity, "unset burst capacity must stay unset")
+	assert.Equal(t, int64(8000), divided[1].BytesLimitingCfg.BurstCapacity,
+		"unset burst capacity must be pinned to 2x the configured rate, not default to 2x the divided rate")
 	assert.Equal(t, int64(100), divided[2].AndCfg.SubPolicyCfg[0].RateLimitingCfg.SpansPerSecond)
 	assert.Equal(t, int64(200), divided[3].CompositeCfg.MaxTotalSpansPerSecond)
 	assert.Equal(t, int64(10), divided[3].CompositeCfg.SubPolicyCfg[0].RateLimitingCfg.SpansPerSecond)
@@ -157,6 +159,7 @@ func TestDividePolicyRates(t *testing.T) {
 	// The input must not be mutated: SetSamplingPolicy callers and the parent
 	// config retain the undivided values.
 	assert.Equal(t, int64(1000), cfgs[0].RateLimitingCfg.SpansPerSecond)
+	assert.Equal(t, int64(0), cfgs[1].BytesLimitingCfg.BurstCapacity)
 	assert.Equal(t, int64(400), cfgs[2].AndCfg.SubPolicyCfg[0].RateLimitingCfg.SpansPerSecond)
 	assert.Equal(t, int64(800), cfgs[3].CompositeCfg.MaxTotalSpansPerSecond)
 	assert.Equal(t, int64(40), cfgs[3].CompositeCfg.SubPolicyCfg[0].RateLimitingCfg.SpansPerSecond)

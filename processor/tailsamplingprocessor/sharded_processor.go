@@ -130,10 +130,20 @@ func divideAndSubPolicyRates(subs []AndSubPolicyCfg, numShards uint32) []AndSubP
 }
 
 func divideSharedPolicyRates(cfg *sharedPolicyCfg, numShards uint32) {
+	// Burst capacity is intentionally not divided: besides absorbing short
+	// spikes, it caps the size of a single trace that can pass the limiter,
+	// and a trace is always evaluated whole on one shard. An unset burst
+	// capacity defaults to 2x the per-shard (divided) rate, so pin it to 2x
+	// the configured rate first to keep the largest admissible trace
+	// independent of num_shards.
+	if cfg.RateLimitingCfg.BurstCapacity <= 0 && cfg.RateLimitingCfg.SpansPerSecond > 0 {
+		cfg.RateLimitingCfg.BurstCapacity = 2 * cfg.RateLimitingCfg.SpansPerSecond
+	}
+	if cfg.BytesLimitingCfg.BurstCapacity <= 0 && cfg.BytesLimitingCfg.BytesPerSecond > 0 {
+		cfg.BytesLimitingCfg.BurstCapacity = 2 * cfg.BytesLimitingCfg.BytesPerSecond
+	}
 	cfg.RateLimitingCfg.SpansPerSecond = divideRate(cfg.RateLimitingCfg.SpansPerSecond, numShards)
-	cfg.RateLimitingCfg.BurstCapacity = divideRate(cfg.RateLimitingCfg.BurstCapacity, numShards)
 	cfg.BytesLimitingCfg.BytesPerSecond = divideRate(cfg.BytesLimitingCfg.BytesPerSecond, numShards)
-	cfg.BytesLimitingCfg.BurstCapacity = divideRate(cfg.BytesLimitingCfg.BurstCapacity, numShards)
 }
 
 // divideRate splits a positive limit across numShards, keeping a minimum of

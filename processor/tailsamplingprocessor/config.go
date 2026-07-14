@@ -375,7 +375,9 @@ type Config struct {
 	// ExpectedNewTracesPerSec, decision cache sizes, and per-second rate
 	// limits in policies (rate_limiting, bytes_limiting, and composite
 	// max_total_spans_per_second) are divided evenly across shards so
-	// aggregate behavior matches the configured values. Must not exceed 256,
+	// aggregate behavior matches the configured values. Limiter burst
+	// capacities are not divided so single large traces stay admissible
+	// regardless of the shard count. Must not exceed 256,
 	// and values greater than 1 are not supported with tail_storage.
 	// Defaults to 1 (single event loop, original behavior).
 	NumShards uint32 `mapstructure:"num_shards"`

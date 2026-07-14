@@ -74,7 +74,9 @@ The following configuration options can also be modified:
   load. To keep aggregate behavior consistent with the configured values, `num_traces`,
   `expected_new_traces_per_sec`, `decision_cache` sizes, and per-second rate limits in policies
   (`rate_limiting`, `bytes_limiting`, and composite `max_total_spans_per_second`) are divided evenly across
-  shards. Because each shard enforces its share of a limit independently (with a minimum of 1 per shard),
+  shards. `burst_capacity` is not divided, because it also caps the size of a single trace that can pass a
+  limiter and each trace is evaluated whole on one shard; this means the aggregate burst allowance scales with
+  `num_shards`. Because each shard enforces its share of a limit independently (with a minimum of 1 per shard),
   enforcement is approximate: limits smaller than `num_shards` can be exceeded in aggregate, and a shard can
   reach its share of `num_traces` before the aggregate does. Values greater than 1 are not supported together
   with `tail_storage`.

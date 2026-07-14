@@ -25,6 +25,8 @@ subtext: |
   `num_traces`, `expected_new_traces_per_sec`, `decision_cache` sizes, and
   per-second rate limits in policies (`rate_limiting`, `bytes_limiting`, and
   composite `max_total_spans_per_second`) are divided evenly across shards.
+  Limiter `burst_capacity` is not divided so that single large traces remain
+  admissible regardless of the shard count.
   The `sampling_traces_on_memory` metric reports the total across all shards.
 
 # If your change doesn't affect end users or the exported elements of any package,
