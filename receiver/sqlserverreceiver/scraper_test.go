@@ -54,7 +54,12 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverErrorRate.Enabled = enabled
 	cfg.Metrics.SqlserverExtentOperationRate.Enabled = enabled
 	cfg.Metrics.SqlserverGhostRecordSkippedRate.Enabled = enabled
+	cfg.Metrics.SqlserverIndexFragmentation.Enabled = enabled
+	cfg.Metrics.SqlserverIndexPageCount.Enabled = enabled
+	cfg.Metrics.SqlserverIndexPageUtilization.Enabled = enabled
+	cfg.Metrics.SqlserverIndexRecordCount.Enabled = enabled
 	cfg.Metrics.SqlserverIndexSearchRate.Enabled = enabled
+	cfg.Metrics.SqlserverIndexSize.Enabled = enabled
 	cfg.Metrics.SqlserverLatchSuperlatchCount.Enabled = enabled
 	cfg.Metrics.SqlserverLatchSuperlatchTransitionRate.Enabled = enabled
 	cfg.Metrics.SqlserverLatchWaitRate.Enabled = enabled
@@ -212,6 +217,8 @@ func TestSuccessfulScrape(t *testing.T) {
 					expectedFile = filepath.Join("testdata", "expectedProperties")
 				case getSQLServerWaitStatsQuery(scraper.config.InstanceName):
 					expectedFile = filepath.Join("testdata", "expectedWaitStats")
+				case getSQLServerIndexPhysicalStatsQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics")
 				}
 				expectedFile += fileSuffix
 
@@ -447,6 +454,8 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("propertyQueryData.txt")
 	case getSQLServerWaitStatsQuery(mc.instanceName):
 		queryResults, err = readFile("waitStatsQueryData.txt")
+	case getSQLServerIndexPhysicalStatsQuery(mc.instanceName):
+		queryResults, err = readFile("indexPhysicalQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
