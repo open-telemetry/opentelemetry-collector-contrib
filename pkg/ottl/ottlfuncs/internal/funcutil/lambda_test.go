@@ -113,3 +113,80 @@ func TestEvaluateLambdaActivation_typeError(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "lambda expression must return a value of type string")
 }
+
+func TestSetLambdaArgs_normalizesBoundArguments(t *testing.T) {
+	expr := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+		k := resolveBinding("k")
+		v := resolveBinding("v")
+		return k.(string) + v.(string), nil
+	})
+	lb := activateTestLambda(t, expr, 2)
+
+	err := SetLambdaArgs[any](lb, pcommon.NewValueStr("a"), pcommon.NewValueStr("b"))
+	require.NoError(t, err)
+
+	got, err := EvaluateLambdaActivation[any, string](nil, lb)
+	require.NoError(t, err)
+	assert.Equal(t, "ab", got)
+}
+
+func TestSetLambdaArgs_tooManyArgumentsPanics(t *testing.T) {
+	expr := ottl.NewTestingLambdaExpression[any]([]string{"a", "b"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		return nil, nil
+	})
+	lb := activateTestLambda(t, expr, 2)
+
+	assert.Panics(t, func() {
+		_ = SetLambdaArgs[any](lb, "one", "two", "three")
+	})
+}
+
+func TestEvaluateFunction(t *testing.T) {
+	expr := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+		k := resolveBinding("k")
+		v := resolveBinding("v")
+		return k.(int64) + v.(int64), nil
+	})
+	lb := activateTestLambda(t, expr, 2)
+
+	got, err := EvaluateFunction[any, int64](nil, lb, int64(1), int64(2))
+	require.NoError(t, err)
+	assert.Equal(t, int64(3), got)
+}
+
+func TestEvaluateFunction_withUnboundArgument(t *testing.T) {
+	expr := ottl.NewTestingLambdaExpression[any]([]string{"k", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+		acc := resolveBinding("k")
+		v := resolveBinding("v")
+		return acc.(string) + v.(string), nil
+	})
+	lb := activateTestLambda(t, expr, 3)
+
+	got, err := EvaluateFunction[any, string](nil, lb, "seed", "ignored", "suffix")
+	require.NoError(t, err)
+	assert.Equal(t, "seedsuffix", got)
+}
+
+func TestEvaluateFunction_normalizesArguments(t *testing.T) {
+	expr := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+		k := resolveBinding("k")
+		v := resolveBinding("v")
+		return k.(int64) + v.(int64), nil
+	})
+	lb := activateTestLambda(t, expr, 2)
+
+	got, err := EvaluateFunction[any, int64](nil, lb, pcommon.NewValueInt(1), pcommon.NewValueInt(2))
+	require.NoError(t, err)
+	assert.Equal(t, int64(3), got)
+}
+
+func TestEvaluateFunction_evalError(t *testing.T) {
+	expr := ottl.NewTestingLambdaExpression[any]([]string{"a"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		return nil, errors.New("eval failed")
+	})
+	lb := activateTestLambda(t, expr, 1)
+
+	_, err := EvaluateFunction[any, bool](nil, lb, "x")
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "eval failed")
+}

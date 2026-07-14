@@ -62,13 +62,17 @@ func newSourceNormalizer(src Source) sourceNormalizer {
 
 // genaiNormalizerProcessor normalizes span attributes for each configured source.
 type genaiNormalizerProcessor struct {
-	sources []sourceNormalizer
+	sources            []sourceNormalizer
+	overwriteSchemaURL bool
 }
 
 // newGenaiNormalizerProcessor builds a processor from a validated Config.
 // Sources are applied in the order specified in the configuration.
 func newGenaiNormalizerProcessor(cfg *Config) *genaiNormalizerProcessor {
-	p := &genaiNormalizerProcessor{sources: make([]sourceNormalizer, 0, len(cfg.Sources))}
+	p := &genaiNormalizerProcessor{
+		sources:            make([]sourceNormalizer, 0, len(cfg.Sources)),
+		overwriteSchemaURL: cfg.OverwriteSchemaURL,
+	}
 	for _, src := range cfg.Sources {
 		p.sources = append(p.sources, newSourceNormalizer(src))
 	}
@@ -89,7 +93,7 @@ func (p *genaiNormalizerProcessor) processTraces(_ context.Context, td ptrace.Tr
 					scopeWrote = p.sources[s].normalizeAttributes(attrs) || scopeWrote
 				}
 			}
-			if scopeWrote && ss.SchemaUrl() == "" {
+			if scopeWrote && (ss.SchemaUrl() == "" || p.overwriteSchemaURL) {
 				ss.SetSchemaUrl(otelsemconv.SchemaURL)
 			}
 		}
