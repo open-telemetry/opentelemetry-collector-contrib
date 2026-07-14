@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"sync"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -202,22 +203,28 @@ func (i *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, dec *enc
 
 	if i.addAttributes {
 		if metadata.StanzaUseStableNetworkAttributesFeatureGate.IsEnabled() {
-			entry.AddAttribute("network.transport", "udp")
+			entry.AddAttribute(string(semconv.NetworkTransportKey), "udp")
 
 			if addr, ok := i.connection.LocalAddr().(*net.UDPAddr); ok {
-				entry.AddAttribute("network.local.address", addr.IP.String())
 				entry.AddAttribute(
-					"network.local.port",
-					strconv.FormatInt(int64(addr.Port), 10),
+					string(semconv.NetworkLocalAddressKey),
+					addr.IP.String(),
+				)
+				entry.AddAttribute(
+					string(semconv.NetworkLocalPortKey),
+					strconv.Itoa(addr.Port),
 				)
 			}
 
 			if addr, ok := remoteAddr.(*net.UDPAddr); ok {
 				ip := addr.IP.String()
-				entry.AddAttribute("network.peer.address", ip)
 				entry.AddAttribute(
-					"network.peer.port",
-					strconv.FormatInt(int64(addr.Port), 10),
+					string(semconv.NetworkPeerAddressKey),
+					ip,
+				)
+				entry.AddAttribute(
+					string(semconv.NetworkPeerPortKey),
+					strconv.Itoa(addr.Port),
 				)
 			}
 		} else {
