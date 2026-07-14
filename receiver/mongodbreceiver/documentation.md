@@ -615,7 +615,7 @@ Note: when database profiling is disabled, the receiver falls back to MongoDB's 
 | mongodb.explain_plan.hash | FNV-64a hash of the obfuscated explain plan structure, identifying the execution plan shape. | Any Str | - |
 | mongodb.explain_plan.text | The obfuscated query explain plan, if collection is enabled. | Any Str | - |
 | mongodb.operation.comment | The comments attached to the MongoDB command. String comments are reported as-is; array comments are expanded into multiple entries; non-string values are reported as MongoDB Extended JSON. | Any Slice | - |
-| mongodb.operation.cpu_time | CPU time in seconds for this query execution. | Any Double | - |
+| mongodb.operation.cpu.time | CPU time in seconds for this query execution. | Any Double | - |
 | mongodb.operation.docs_examined | Number of documents examined by this query execution. | Any Int | - |
 | mongodb.operation.docs_returned | Number of documents returned by this query execution. | Any Int | - |
 | mongodb.operation.duration | The duration of the MongoDB operation in seconds. | Any Double | - |

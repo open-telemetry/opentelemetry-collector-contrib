@@ -135,7 +135,7 @@ attributes:
   mongodb.operation.comment:
     description: The comments attached to the MongoDB command. String comments are reported as-is; array comments are expanded into multiple entries; non-string values are reported as MongoDB Extended JSON.
     type: slice
-  mongodb.operation.cpu_time:
+  mongodb.operation.cpu.time:
     description: CPU time in seconds for this query execution.
     type: double
   mongodb.operation.docs_examined:
@@ -274,7 +274,7 @@ events:
       - mongodb.explain_plan.hash
       - mongodb.explain_plan.text
       - mongodb.operation.comment
-      - mongodb.operation.cpu_time
+      - mongodb.operation.cpu.time
       - mongodb.operation.docs_examined
       - mongodb.operation.docs_returned
       - mongodb.operation.duration

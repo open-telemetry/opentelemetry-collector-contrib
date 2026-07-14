@@ -4,7 +4,6 @@ package metadata
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -105,7 +104,7 @@ func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcomm
 	dp.Attributes().PutStr("mongodb.explain_plan.hash", mongodbExplainPlanHashAttributeValue)
 	dp.Attributes().PutStr("mongodb.explain_plan.text", mongodbExplainPlanTextAttributeValue)
 	dp.Attributes().PutEmptySlice("mongodb.operation.comment").FromRaw(mongodbOperationCommentAttributeValue)
-	dp.Attributes().PutDouble("mongodb.operation.cpu_time", mongodbOperationCPUTimeAttributeValue)
+	dp.Attributes().PutDouble("mongodb.operation.cpu.time", mongodbOperationCPUTimeAttributeValue)
 	dp.Attributes().PutInt("mongodb.operation.docs_examined", mongodbOperationDocsExaminedAttributeValue)
 	dp.Attributes().PutInt("mongodb.operation.docs_returned", mongodbOperationDocsReturnedAttributeValue)
 	dp.Attributes().PutDouble("mongodb.operation.duration", mongodbOperationDurationAttributeValue)

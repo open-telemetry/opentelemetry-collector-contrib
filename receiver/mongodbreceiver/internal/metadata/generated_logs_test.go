@@ -4,9 +4,6 @@ package metadata
 
 import (
 	"context"
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -14,6 +11,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"testing"
+	"time"
 )
 
 type eventsTestDataSet int
@@ -296,7 +295,7 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("mongodb.operation.comment")
 					assert.True(t, ok)
 					assert.Equal(t, []any{"mongodb.operation.comment-item1", "mongodb.operation.comment-item2"}, attrVal.Slice().AsRaw())
-					attrVal, ok = lr.Attributes().Get("mongodb.operation.cpu_time")
+					attrVal, ok = lr.Attributes().Get("mongodb.operation.cpu.time")
 					assert.True(t, ok)
 					assert.Equal(t, 26.100000, attrVal.Double())
 					attrVal, ok = lr.Attributes().Get("mongodb.operation.docs_examined")
