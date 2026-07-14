@@ -81,19 +81,23 @@ var MetricsInfo = metricsInfo{
 		Name: "riak.memory.limit",
 	},
 	RiakNodeOperationCount: metricInfo{
-		Name: "riak.node.operation.count",
+		Name:       "riak.node.operation.count",
+		Attributes: []string{"request"},
 	},
 	RiakNodeOperationTimeMean: metricInfo{
-		Name: "riak.node.operation.time.mean",
+		Name:       "riak.node.operation.time.mean",
+		Attributes: []string{"request"},
 	},
 	RiakNodeReadRepairCount: metricInfo{
 		Name: "riak.node.read_repair.count",
 	},
 	RiakVnodeIndexOperationCount: metricInfo{
-		Name: "riak.vnode.index.operation.count",
+		Name:       "riak.vnode.index.operation.count",
+		Attributes: []string{"operation"},
 	},
 	RiakVnodeOperationCount: metricInfo{
-		Name: "riak.vnode.operation.count",
+		Name:       "riak.vnode.operation.count",
+		Attributes: []string{"request"},
 	},
 }
 
@@ -107,7 +111,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricRiakMemoryLimit struct {

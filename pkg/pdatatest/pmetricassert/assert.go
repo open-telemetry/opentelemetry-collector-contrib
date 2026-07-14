@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -24,10 +25,7 @@ func AssertMetrics(expectedPath string, actual pmetric.Metrics) error {
 	if err != nil {
 		return err
 	}
-	actualDoc, err := normalize(actual, writeOptions{includeValues: true})
-	if err != nil {
-		return err
-	}
+	actualDoc := normalize(actual, writeOptions{includeValues: true})
 	return compareDocuments(expected, actualDoc)
 }
 
@@ -159,6 +157,10 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 				valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
 			}
 		}
+
+		if err := compareDatapointValues(edp, actual[idx]); err != nil {
+			valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
+		}
 	}
 	for i, adp := range actual {
 		if !matched[i] {
@@ -177,6 +179,53 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 	}
 	for _, k := range unexpected {
 		errs = append(errs, fmt.Errorf("unexpected datapoint with attributes %s", k))
+	}
+	return errors.Join(errs...)
+}
+
+func compareDatapointValues(expected, actual datapointAssertion) error {
+	var errs []error
+	if expected.Count != nil {
+		if actual.Count == nil {
+			errs = append(errs, errors.New("missing expected count"))
+		} else if *expected.Count != *actual.Count {
+			errs = append(errs, fmt.Errorf("count mismatch: expected %v, got %v", *expected.Count, *actual.Count))
+		}
+	}
+	if expected.Sum != nil {
+		if actual.Sum == nil {
+			errs = append(errs, errors.New("missing expected sum"))
+		} else if *expected.Sum != *actual.Sum {
+			errs = append(errs, fmt.Errorf("sum mismatch: expected %v, got %v", *expected.Sum, *actual.Sum))
+		}
+	}
+	if expected.Min != nil {
+		if actual.Min == nil {
+			errs = append(errs, errors.New("missing expected min"))
+		} else if *expected.Min != *actual.Min {
+			errs = append(errs, fmt.Errorf("min mismatch: expected %v, got %v", *expected.Min, *actual.Min))
+		}
+	}
+	if expected.Max != nil {
+		if actual.Max == nil {
+			errs = append(errs, errors.New("missing expected max"))
+		} else if *expected.Max != *actual.Max {
+			errs = append(errs, fmt.Errorf("max mismatch: expected %v, got %v", *expected.Max, *actual.Max))
+		}
+	}
+	if expected.ExplicitBounds != nil {
+		if actual.ExplicitBounds == nil {
+			errs = append(errs, errors.New("missing expected explicit_bounds"))
+		} else if !slices.Equal(expected.ExplicitBounds, actual.ExplicitBounds) {
+			errs = append(errs, fmt.Errorf("explicit_bounds mismatch: expected %v, got %v", expected.ExplicitBounds, actual.ExplicitBounds))
+		}
+	}
+	if expected.BucketCounts != nil {
+		if actual.BucketCounts == nil {
+			errs = append(errs, errors.New("missing expected bucket_counts"))
+		} else if !slices.Equal(expected.BucketCounts, actual.BucketCounts) {
+			errs = append(errs, fmt.Errorf("bucket_counts mismatch: expected %v, got %v", expected.BucketCounts, actual.BucketCounts))
+		}
 	}
 	return errors.Join(errs...)
 }

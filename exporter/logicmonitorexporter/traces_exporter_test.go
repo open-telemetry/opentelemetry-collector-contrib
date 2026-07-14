@@ -21,11 +21,15 @@ import (
 
 func Test_NewTracesExporter(t *testing.T) {
 	t.Run("should create Traces exporter", func(t *testing.T) {
+		clientConfig := confighttp.NewDefaultClientConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		clientConfig.MaxIdleConns = 0
+		clientConfig.IdleConnTimeout = 0
+		clientConfig.ForceAttemptHTTP2 = false
+		clientConfig.Endpoint = "http://example.logicmonitor.com/rest"
 		config := &Config{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: "http://example.logicmonitor.com/rest",
-			},
-			APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
+			ClientConfig: clientConfig,
+			APIToken:     APIToken{AccessID: "testid", AccessKey: "testkey"},
 		}
 		set := exportertest.NewNopSettings(metadata.Type)
 		exp := newTracesExporter(t.Context(), config, set)
@@ -45,11 +49,15 @@ func TestPushTraceData(t *testing.T) {
 
 	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = ts.URL
 	config := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: ts.URL,
-		},
-		APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
+		ClientConfig: clientConfig,
+		APIToken:     APIToken{AccessID: "testid", AccessKey: "testkey"},
 	}
 	ctx := t.Context()
 	exp, err := f.CreateTraces(ctx, params, config)

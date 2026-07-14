@@ -1,6 +1,5 @@
 display_name: MongoDB Receiver
 type: mongodb
-reaggregation_enabled: true
 
 description: |
   This receiver fetches stats from a MongoDB instance using the 
@@ -10,6 +9,7 @@ description: |
 status:
   class: receiver
   stability:
+    development: [logs]
     beta: [metrics]
   distributions: [contrib]
   codeowners:
@@ -31,6 +31,13 @@ resource_attributes:
     type: string
 
 attributes:
+  client.address:
+    description: Hostname or address of the client.
+    type: string
+    requirement_level: recommended
+  client.port:
+    description: TCP port used by the client.
+    type: int
   collection:
     description: The name of a collection.
     type: string
@@ -44,10 +51,23 @@ attributes:
       - active
       - available
       - current
+  db.collection.name:
+    description: The MongoDB collection being accessed within the database stated in db.namespace.
+    type: string
   db.namespace:
     description: The name of a database.
     type: string
     requirement_level: recommended
+  db.operation.name:
+    description: The name of the MongoDB command being executed (e.g. find, aggregate, insert).
+    type: string
+  db.query.text:
+    description: The obfuscated MongoDB command statement.
+    type: string
+  db.system.name:
+    description: The database management system (DBMS) product as identified by the client instrumentation.
+    type: string
+    enum: [ mongodb ]
   lock_mode:
     description: The mode of Lock which denotes the degree of access
     type: string
@@ -79,6 +99,77 @@ attributes:
     enum:
       - resident
       - virtual
+  mongodb.client.app.name:
+    description: The identifier of the client application which ran the operation, as set by the driver's `appName` connection option.
+    type: string
+  mongodb.cursor.await_data:
+    description: Whether the tailable cursor waits for new data instead of returning immediately.
+    type: bool
+  mongodb.cursor.id:
+    description: The identifier of the cursor.
+    type: string
+  mongodb.cursor.no_timeout:
+    description: Whether the cursor is configured not to time out when idle.
+    type: bool
+  mongodb.cursor.originating_command:
+    description: The obfuscated command that originally created the cursor.
+    type: string
+  mongodb.cursor.returned_batches:
+    description: The cumulative number of batches returned by the cursor.
+    type: int
+  mongodb.cursor.returned_documents:
+    description: The cumulative number of documents returned by the cursor.
+    type: int
+  mongodb.cursor.tailable:
+    description: Whether the cursor is a tailable cursor.
+    type: bool
+  mongodb.lsid.id:
+    description: The UUID portion of the logical session identifier associated with the MongoDB operation.
+    type: string
+  mongodb.operation.comment:
+    description: The comments attached to the MongoDB command. String comments are reported as-is; array comments are expanded into multiple entries; non-string values are reported as MongoDB Extended JSON.
+    type: slice
+  mongodb.operation.duration:
+    description: The duration of the MongoDB operation in seconds.
+    type: double
+  mongodb.operation.id:
+    description: Identifier of the MongoDB operation.
+    type: string
+  mongodb.operation.plan.summary:
+    description: Summary of the execution plan for the MongoDB operation.
+    type: string
+  mongodb.operation.prepared_read_conflict.count:
+    description: The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort.
+    type: int
+  mongodb.operation.state:
+    description: Simplified state of the MongoDB operation.
+    type: string
+    enum:
+      - active
+      - waiting
+  mongodb.operation.type:
+    description: The raw MongoDB operation type from `$currentOp.op` (e.g. query, insert, update, remove, getmore, command).
+    type: string
+  mongodb.operation.wait.details:
+    description: Details about what the MongoDB operation is waiting on.
+    type: string
+  mongodb.operation.wait.type:
+    description: |
+      The set of wait conditions the MongoDB operation is currently blocked on. Possible values: `lock` (from `waitingForLock`), `flow_control` (from `waitingForFlowControl`), and `latch` (when `waitingForLatch` is a non-empty document). An empty slice indicates the operation is not waiting on any of these conditions.
+    type: slice
+  mongodb.operation.write_conflict.count:
+    description: The number of times the MongoDB operation conflicted with another write operation on the same document.
+    type: int
+  mongodb.operation.yield.count:
+    description: The number of times the MongoDB operation yielded to allow other operations to complete.
+    type: int
+  mongodb.query.framework:
+    description: |
+      The MongoDB query execution engine that processed this operation. Only present for operations that flow through the query subsystem (reads, read-modify-writes, and getMore continuations); absent for pure inserts, index management, and administrative commands. Known values include `classic` and `sbe`.
+    type: string
+  mongodb.query.truncated:
+    description: Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output.
+    type: bool
   operation:
     description: The MongoDB operation being counted.
     type: string
@@ -106,6 +197,45 @@ attributes:
     enum:
       - hit
       - miss
+  user.name:
+    description: Name of the user associated with the operation.
+    type: string
+
+events:
+  db.server.query_sample:
+    description: query sample
+    enabled: false
+    attributes:
+      - client.address
+      - client.port
+      - db.system.name
+      - db.namespace
+      - db.collection.name
+      - db.operation.name
+      - db.query.text
+      - mongodb.query.truncated
+      - user.name
+      - mongodb.client.app.name
+      - mongodb.cursor.await_data
+      - mongodb.cursor.id
+      - mongodb.cursor.no_timeout
+      - mongodb.cursor.originating_command
+      - mongodb.cursor.returned_batches
+      - mongodb.cursor.returned_documents
+      - mongodb.cursor.tailable
+      - mongodb.lsid.id
+      - mongodb.operation.id
+      - mongodb.operation.plan.summary
+      - mongodb.query.framework
+      - mongodb.operation.state
+      - mongodb.operation.type
+      - mongodb.operation.comment
+      - mongodb.operation.duration
+      - mongodb.operation.prepared_read_conflict.count
+      - mongodb.operation.write_conflict.count
+      - mongodb.operation.yield.count
+      - mongodb.operation.wait.type
+      - mongodb.operation.wait.details
 
 metrics:
   mongodb.active.reads:
@@ -325,7 +455,7 @@ metrics:
   mongodb.lock.acquire.time:
     description: Cumulative wait time for the lock acquisitions.
     stability: development
-    unit: "microseconds"
+    unit: "us"
     enabled: false
     sum:
       value_type: int

@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
@@ -47,10 +48,11 @@ func createDefaultConfig() component.Config {
 }
 
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 

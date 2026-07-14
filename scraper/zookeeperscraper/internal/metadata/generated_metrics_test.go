@@ -77,73 +77,57 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperConnectionActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperDataTreeEphemeralNodeCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperDataTreeSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperFileDescriptorLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperFileDescriptorOpenDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperFollowerCountDataPoint(ts, 1, AttributeStateSynced)
 			if tt.name == "reaggregate_set" {
 				mb.RecordZookeeperFollowerCountDataPoint(ts, 3, AttributeStateUnsynced)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperFsyncExceededThresholdCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperLatencyAvgDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperLatencyMaxDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperLatencyMinDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperPacketCountDataPoint(ts, 1, AttributeDirectionReceived)
 			if tt.name == "reaggregate_set" {
 				mb.RecordZookeeperPacketCountDataPoint(ts, 3, AttributeDirectionSent)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperRequestActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperRuokDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperSyncPendingDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperWatchCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperZnodeCountDataPoint(ts, 1)
