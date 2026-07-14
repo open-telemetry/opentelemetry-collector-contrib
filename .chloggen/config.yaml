@@ -188,7 +188,7 @@ components:
     - processor/azuredetector
     - processor/cardinality_guardian
     - processor/coralogix
-    - processor/cumulativetodelta
+    - processor/cumulative_to_delta
     - processor/deltatocumulative
     - processor/deltatorate
     - processor/digitaloceandetector
@@ -282,7 +282,6 @@ components:
     - receiver/iis
     - receiver/influxdb
     - receiver/jaeger
-    - receiver/jmx
     - receiver/journald
     - receiver/k8s_cluster
     - receiver/k8s_events

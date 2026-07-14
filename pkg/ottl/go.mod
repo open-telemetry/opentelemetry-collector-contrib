@@ -29,7 +29,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
-	golang.org/x/text v0.39.0
+	golang.org/x/text v0.40.0
 	google.golang.org/grpc v1.82.0
 )
 
