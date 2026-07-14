@@ -645,7 +645,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, clrExecution)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverClrExecutionTimeDataPoint(now, float64(val.(int64))/1000.0)
+				s.mb.RecordSqlserverClrExecutionTimeDataPoint(now, float64(val.(int64))/1_000_000.0)
 			}
 		case connectionMemory:
 			val, err := retrieveInt(row, valueKey)
