@@ -13,59 +13,55 @@ implement the interface without taking on this package's confmap dependency
 
 ## How a provider is declared and selected
 
-A `dbauth` provider is a Collector **extension** that also implements
+A credential provider is a Collector **extension** that also implements
 `dbauth.Provider`. It is declared once (and listed in `service.extensions`) with
-its provider-wide defaults, then each component references it **by component ID**
-inside its `db_auth` block — the single key of the block is the provider's
-component ID, and its inline value overrides that provider's defaults for this
-component only:
+its provider-wide configuration, then each component references it **by component
+ID** inside its `db_auth` block — the value of the block is the provider's
+component ID:
 
 ```yaml
 extensions:
-  aws_iam:                       # declared once, with provider-wide defaults
+  aws_iam:                       # declared once, with provider-wide config
     region: us-east-2
+  aws_iam/west:                  # a second instance for a different region
+    region: us-west-2
 
 receivers:
   postgresql/this:
     endpoint: this-db:5432
     username: monitor
-    db_auth:
-      aws_iam:                   # reference the extension by ID
-        region: us-east-1        # override a default for this receiver only
+    db_auth: aws_iam             # reference the extension by ID
   postgresql/another:
     endpoint: another-db:5432
     username: reader
-    db_auth:
-      aws_iam:                   # no override: use the extension's defaults
+    db_auth: aws_iam/west        # reference a differently-configured instance
 
 service:
-  extensions: [aws_iam]
+  extensions: [aws_iam, aws_iam/west]
 ```
 
-The extension holds the provider-wide defaults (here, the AWS region). A
-component that needs a different value overrides just that field inline under the
-provider ID; a component with no override writes `aws_iam: {}` (or `aws_iam:`)
-and inherits the defaults unchanged. The override is merged over the extension's
-config **per call**, so the shared extension config is never mutated and
-components that differ only by a field need not each declare a named instance.
+The extension holds all provider-wide configuration (here, the AWS region). To
+vary that configuration across components, declare multiple extension instances
+(`aws_iam`, `aws_iam/west`) and point each component at the one it needs. There
+is no inline override in the `db_auth` block — the value is only a reference.
 
 The **per-connection** inputs a provider needs — the endpoint to connect to, the
 database user — are *not* configured on the extension or repeated in the
-`db_auth` block. The consuming component (like a database receiver) already
-knows them (its own `endpoint` and `username`) and passes them to the provider 
-with each `GetCredential` call as a `dbauth.Request`.
-So one declared extension serves many
+`db_auth` block. The consuming component already knows them (its own
+`endpoint` and `username`) and passes them to the provider with each
+`GetCredential` call as a `dbauth.Request`. So one declared extension serves many
 components that differ only by endpoint/user, with no per-database extension
 instance and nothing repeated.
 
 This means:
 
-- A provider is **declared once** (one extension in the collector build); any
-  receiver can reference it by ID, with no per-receiver provider list to maintain,
-  and new providers require no receiver code changes.
-- Databases that share provider defaults reference one extension; a database that
-  needs a different provider-wide value overrides that field inline under the
-  provider ID, with no separate named instance required.
+- A provider is **declared once per configuration** (one extension instance in
+  the collector build); any receiver can reference it by ID, with no per-receiver
+  provider list to maintain, and new providers require no receiver code changes.
+- Databases that share provider config reference one instance; a database that
+  needs a different provider-wide value references a separate declared instance.
+- Resolution mirrors `config/configauth`: the component finds the provider in
+  `host.GetExtensions()` at `Start()`, not via an `init()` registry.
 
 ## The credential and the request
 
@@ -74,7 +70,7 @@ The provider interface, `Credential`, and `Request` are defined in
 
 ```go
 type Provider interface {
-    GetCredential(ctx context.Context, req Request, extensionArgs map[string]any) (*Credential, error)
+    GetCredential(ctx context.Context, req Request) (*Credential, error)
 }
 
 type Request struct {
@@ -91,17 +87,8 @@ type Credential struct {
 
 `Request` carries the per-connection inputs the consumer supplies on every call;
 a provider uses the fields it needs (AWS IAM mints a token scoped to `Endpoint`
-for `Username`) and ignores the rest. Provider-wide configuration (region, a role
-to assume) lives on the extension's own config, not in the request.
-
-`extensionArgs` is the inline value the consumer wrote under the provider's ID in
-its `db_auth` block — a per-consumer override of the provider's own config. The
-provider merges it over its configured defaults for that call only and validates
-the result; because the keys are the provider's own config keys, an unrecognized
-key (typically a typo) is rejected rather than silently ignored, so a mistyped
-override surfaces as an error instead of quietly leaving the default in place. It
-is nil or empty when the consumer supplies no override. Because the merge is per
-call, a provider must not mutate its own config from `extensionArgs`.
+for `Username`) and ignores the rest. Provider-wide configuration (such as the
+AWS region) lives on the extension's own config, not in the request.
 
 The `Credential` carries credential *material* and nothing about *how* to apply
 it — the consuming component decides where the secret goes (for a SQL driver,

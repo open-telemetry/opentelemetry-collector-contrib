@@ -8,13 +8,22 @@
 // a credential provider that supplies a username/secret at connection-open time,
 // with support for credentials that expire.
 //
-// A consuming component embeds Config under a "db_auth" key. The single key
-// inside the block is the provider extension's component ID, and its value is an
-// inline override of that extension's own config:
+// A consuming component embeds Config under a "db_auth" key. The value is the
+// component ID of a provider extension declared in the extensions block:
 //
-//	db_auth:
-//	  aws_iam:
-//	    region: us-east-1
+//	db_auth: aws_iam
+//
+// A named instance selects a specific declared extension:
+//
+//	db_auth: aws_iam/primary
+//
+// The named extension must be declared in the extensions block and implement
+// dbauth.Provider; all provider-wide configuration (region, ...) lives on the
+// extension's own config. To vary that configuration per consumer, declare
+// multiple extension instances and reference the one you want. At Start the
+// component calls Config.GetProvider with the host extension map to resolve the
+// dbauth.Provider, mirroring how config/configauth resolves an authenticator
+// extension via Config.GetServerAuthenticator.
 package configdbauth // import "github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
 
 import (
@@ -27,88 +36,62 @@ import (
 )
 
 var (
-	errNoCredentials     = errors.New("db_auth: no credential provider configured")
-	errMultipleProviders = errors.New("db_auth: exactly one provider may be configured")
-	errNoExtension       = errors.New("db_auth: requested credential provider is not present")
-	errNotProvider       = errors.New("db_auth: requested extension is not a credential provider")
+	errNoCredentials = errors.New("db_auth: no credential provider configured")
+	errNoExtension   = errors.New("db_auth: requested credential provider is not present")
+	errNotProvider   = errors.New("db_auth: requested extension is not a credential provider")
 )
 
 // Config wires a connection-oriented component to a credential provider
-// extension. A component embeds it under a "db_auth" key; the single key inside
-// the block is the provider extension's component ID and its value is an inline
-// override of that extension's config:
+// extension. A component embeds it under a "db_auth" key whose value is the
+// provider extension's component ID:
 //
-//	db_auth:
-//	  aws_iam:
-//	    region: us-east-1
+//	db_auth: aws_iam
 //
 // The named extension must be declared in the extensions block and implement
-// dbauth.Provider.
+// dbauth.Provider. GetProvider resolves it from the host extension map.
 type Config struct {
-	// ProviderConfigs holds the inline provider override, keyed by the provider
-	// extension's component ID.
-	ProviderConfigs map[string]any `mapstructure:",remain"`
+	// ProviderID is the component ID of the credential provider extension. It is
+	// populated from the scalar db_auth value (e.g. "aws_iam", or a named instance
+	// "aws_iam/primary") via UnmarshalText, not from a mapstructure key, so it is
+	// tagged "-" to be skipped by mapstructure decode and config-struct validation.
+	ProviderID component.ID `mapstructure:"-"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+// UnmarshalText lets the db_auth block decode from a scalar component ID (e.g.
+// "aws_iam"). confmap's text-unmarshaler decode hook invokes this whenever the
+// db_auth value is a string, exactly as it does for a bare component.ID field.
+func (c *Config) UnmarshalText(text []byte) error {
+	return c.ProviderID.UnmarshalText(text)
 }
 
 // IsEmpty reports whether no provider is configured. A component treats an empty
 // Config as "db_auth not in use" and falls back to its existing static credential
 // fields — the framework is opt-in.
 func (c Config) IsEmpty() bool {
-	return len(c.ProviderConfigs) == 0
-}
-
-// Validate fails when more than one provider is configured. Zero is allowed
-// (opt-out); the unknown-provider and not-a-provider cases are reported by
-// GetProvider, which is the only place the host extension map is known.
-func (c Config) Validate() error {
-	if len(c.ProviderConfigs) > 1 {
-		return fmt.Errorf("%w, got %d", errMultipleProviders, len(c.ProviderConfigs))
-	}
-	return nil
+	return c.ProviderID == component.ID{}
 }
 
 // GetProvider resolves the configured credential provider from the host extension
-// map (component.Host.GetExtensions()) and returns it along with the inline
-// override (extensionArgs) the consumer supplied under the provider's ID.
+// map (component.Host.GetExtensions()). It is called from a consuming component's
+// Start, mirroring configauth.Config.GetServerAuthenticator.
 //
-// The returned extensionArgs is the raw value nested under the provider ID key
-// (nil when the key has no body).
-func (c Config) GetProvider(extensions map[component.ID]component.Component) (dbauth.Provider, map[string]any, error) {
-	if err := c.Validate(); err != nil {
-		return nil, nil, err
-	}
+// It returns an error when no provider is configured, when the named extension is
+// not present, or when the named extension does not implement dbauth.Provider.
+func (c Config) GetProvider(extensions map[component.ID]component.Component) (dbauth.Provider, error) {
 	if c.IsEmpty() {
-		return nil, nil, errNoCredentials
+		return nil, errNoCredentials
 	}
 
-	key, args := c.single()
-	var id component.ID
-	if err := id.UnmarshalText([]byte(key)); err != nil {
-		return nil, nil, fmt.Errorf("db_auth: invalid provider id %q: %w", key, err)
-	}
-
-	ext, found := extensions[id]
+	ext, found := extensions[c.ProviderID]
 	if !found {
-		return nil, nil, fmt.Errorf("%w: %q", errNoExtension, id)
+		return nil, fmt.Errorf("%w: %q", errNoExtension, c.ProviderID)
 	}
 	provider, ok := ext.(dbauth.Provider)
 	if !ok {
-		return nil, nil, fmt.Errorf("%w: %q", errNotProvider, id)
+		return nil, fmt.Errorf("%w: %q", errNotProvider, c.ProviderID)
 	}
-	return provider, args, nil
-}
-
-// single returns the sole configured provider ID key and its inline override as a
-// string map. Callers must ensure exactly one key is set (Validate + non-empty).
-// The override is nil when the key has no value (e.g. "aws_iam:" with no body),
-// meaning the provider uses its configured defaults unchanged.
-func (c Config) single() (string, map[string]any) {
-	for k, v := range c.ProviderConfigs {
-		sub, _ := v.(map[string]any)
-		return k, sub
-	}
-	return "", nil
+	return provider, nil
 }
