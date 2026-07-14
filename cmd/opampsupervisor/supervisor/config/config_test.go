@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -856,6 +857,57 @@ func TestOpAMPServer_OpaqueHeaders(t *testing.T) {
 			require.Equal(t, tc.expected, actual)
 		})
 	}
+}
+
+func TestAgent_validateFallbackConfigsWithColBinUsesAgentArguments(t *testing.T) {
+	validateStub := writeFeatureGateValidateStub(t)
+	profilesConfigPath := filepath.Join("..", "..", "testdata", "collector", "profiles_pipeline.yaml")
+	agent := Agent{
+		Executable:             validateStub,
+		Arguments:              []string{"--feature-gates=+service.profilesSupport"},
+		StartupFallbackConfigs: []string{profilesConfigPath},
+	}
+
+	require.NoError(t, agent.validateFallbackConfigsWithColBin())
+}
+
+func writeFeatureGateValidateStub(t *testing.T) string {
+	t.Helper()
+
+	const featureGateArg = "--feature-gates=+service.profilesSupport"
+
+	tempDir := t.TempDir()
+	if runtime.GOOS == "windows" {
+		path := filepath.Join(tempDir, "validate-stub.bat")
+		script := []string{
+			"@echo off",
+			"if not \"%1\"==\"validate\" exit /b 1",
+			"if not \"%2\"==\"--config\" exit /b 1",
+			"if not \"%4\"==\"" + featureGateArg + "\" exit /b 1",
+			"findstr /C:\"profiles:\" \"%3\" >nul",
+			"if errorlevel 1 exit /b 1",
+			"findstr /C:\"processors:\" \"%3\" >nul",
+			"if not errorlevel 1 exit /b 1",
+			"exit /b 0",
+		}
+		require.NoError(t, os.WriteFile(path, []byte(strings.Join(script, "\r\n")+"\r\n"), 0o600))
+		return path
+	}
+
+	path := filepath.Join(tempDir, "validate-stub.sh")
+	script := []string{
+		"#!/bin/sh",
+		"[ \"$1\" = 'validate' ] || exit 1",
+		"[ \"$2\" = '--config' ] || exit 1",
+		"[ \"$4\" = '" + featureGateArg + "' ] || exit 1",
+		"grep -q 'profiles:' \"$3\" || exit 1",
+		"grep -q 'processors:' \"$3\" && exit 1",
+		"exit 0",
+	}
+	require.NoError(t, os.WriteFile(path, []byte(strings.Join(script, "\n")+"\n"), 0o600))
+	require.NoError(t, os.Chmod(path, 0o700))
+
+	return path
 }
 
 func TestCapabilities_SupportedCapabilities(t *testing.T) {
