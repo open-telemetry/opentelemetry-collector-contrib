@@ -824,40 +824,40 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			// Transactions, Locks & Recovery
 			case gcCurrentBlockReceiveTime:
-				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				value, err := strconv.ParseFloat(row[colValue], 64)
 				if err != nil {
-					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", gcCurrentBlockReceiveTime, row["VALUE"], err))
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", gcCurrentBlockReceiveTime, row[colValue], err))
 				} else {
 					s.mb.RecordOracledbGcCurrentBlockTimeDataPoint(now, value/100, metadata.AttributeNetworkIoDirectionReceive)
 				}
 			case recoveryBlocksRead:
-				if err := s.mb.RecordOracledbRecoveryBlocksDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbRecoveryBlocksDataPoint(now, row[colValue]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case smonInstanceRecoveryPosts:
-				if err := s.mb.RecordOracledbSmonPostsDataPoint(now, row["VALUE"], metadata.AttributeOracledbSmonTypeInstance); err != nil {
+				if err := s.mb.RecordOracledbSmonPostsDataPoint(now, row[colValue], metadata.AttributeOracledbSmonTypeInstance); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case smonTxnRecoveryPosts:
-				if err := s.mb.RecordOracledbSmonPostsDataPoint(now, row["VALUE"], metadata.AttributeOracledbSmonTypeTransaction); err != nil {
+				if err := s.mb.RecordOracledbSmonPostsDataPoint(now, row[colValue], metadata.AttributeOracledbSmonTypeTransaction); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case transactionLockBackgroundTime:
-				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				value, err := strconv.ParseFloat(row[colValue], 64)
 				if err != nil {
-					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", transactionLockBackgroundTime, row["VALUE"], err))
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", transactionLockBackgroundTime, row[colValue], err))
 				} else {
 					s.mb.RecordOracledbLockTimeDataPoint(now, value/100, metadata.AttributeOracledbSessionTypeBackground)
 				}
 			case transactionLockForegroundTime:
-				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				value, err := strconv.ParseFloat(row[colValue], 64)
 				if err != nil {
-					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", transactionLockForegroundTime, row["VALUE"], err))
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", transactionLockForegroundTime, row[colValue], err))
 				} else {
 					s.mb.RecordOracledbLockTimeDataPoint(now, value/100, metadata.AttributeOracledbSessionTypeForeground)
 				}
 			case transactionRollbacks:
-				if err := s.mb.RecordOracledbTransactionRollbacksDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbTransactionRollbacksDataPoint(now, row[colValue]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			}

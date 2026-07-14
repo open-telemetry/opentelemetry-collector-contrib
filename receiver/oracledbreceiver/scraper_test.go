@@ -400,7 +400,6 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 	}
 }
 
-// scrapeWithConfig starts a scraper over the shared fake responses and returns one scrape.
 func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.Metrics.OracledbGcCurrentBlockTime.Enabled = true
@@ -466,6 +465,7 @@ func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 	assert.Equal(t, 5, seen)
 }
 
+// scrapeWithConfig starts a scraper over the shared fake responses and returns one scrape.
 func scrapeWithConfig(t *testing.T, cfg metadata.MetricsBuilderConfig) pmetric.Metrics {
 	t.Helper()
 	scrpr := oracleScraper{
