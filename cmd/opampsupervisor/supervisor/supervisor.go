@@ -1309,7 +1309,7 @@ func remoteConfigDeclaresResourceAttributes(body []byte) bool {
 	if err != nil {
 		return false
 	}
-	return conf.Get("service::telemetry::resource::attributes") != nil
+	return conf.IsSet("service::telemetry::resource::attributes")
 }
 
 func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
