@@ -32,7 +32,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.156.1-0.20260709230849-fe96e04e8916
 	go.opentelemetry.io/collector/service v0.156.1-0.20260709230849-fe96e04e8916
 	go.uber.org/zap v1.28.0
-	golang.org/x/sync v0.21.0
+	golang.org/x/sync v0.22.0
 )
 
 require (
