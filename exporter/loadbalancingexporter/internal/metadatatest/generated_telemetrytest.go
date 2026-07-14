@@ -97,3 +97,19 @@ func AssertEqualLoadbalancerNumResolutions(t *testing.T, tt *componenttest.Telem
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
+
+func AssertEqualLoadbalancerRandomnessTracestateUnparseable(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_loadbalancer_randomness_tracestate_unparseable",
+		Description: "Number of spans whose W3C tracestate failed to parse during randomness routing, falling back to trace ID randomness. [Development]",
+		Unit:        "{spans}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_loadbalancer_randomness_tracestate_unparseable")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}

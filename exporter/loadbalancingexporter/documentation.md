@@ -76,3 +76,13 @@ Number of times the resolver has triggered new resolutions.
 | ---- | ----------- | ------ | ------------------- |
 | success | Whether an outcome was successful | Any Bool | - |
 | resolver | Resolver used | Str: ``aws``, ``dns``, ``k8s``, ``static`` | - |
+
+### otelcol_loadbalancer_randomness_tracestate_unparseable
+
+Number of spans whose W3C tracestate failed to parse during randomness routing, falling back to trace ID randomness.
+
+Only produced when routing_key is "randomness".
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {spans} | Sum | Int | true | Development |

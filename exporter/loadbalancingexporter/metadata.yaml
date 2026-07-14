@@ -76,6 +76,16 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    loadbalancer_randomness_tracestate_unparseable:
+      enabled: true
+      stability: development
+      description: Number of spans whose W3C tracestate failed to parse during randomness routing, falling back to trace ID randomness.
+      extended_documentation: Only produced when routing_key is "randomness".
+      optional: true
+      unit: "{spans}"
+      sum:
+        value_type: int
+        monotonic: true
 
 tests:
   config:

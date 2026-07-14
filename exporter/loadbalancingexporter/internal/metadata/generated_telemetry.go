@@ -6,9 +6,10 @@ import (
 	"errors"
 	"sync"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -22,14 +23,15 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                         metric.Meter
-	mu                            sync.Mutex
-	registrations                 []metric.Registration
-	LoadbalancerBackendLatency    metric.Int64Histogram
-	LoadbalancerBackendOutcome    metric.Int64Counter
-	LoadbalancerNumBackendUpdates metric.Int64Counter
-	LoadbalancerNumBackends       metric.Int64Gauge
-	LoadbalancerNumResolutions    metric.Int64Counter
+	meter                                       metric.Meter
+	mu                                          sync.Mutex
+	registrations                               []metric.Registration
+	LoadbalancerBackendLatency                  metric.Int64Histogram
+	LoadbalancerBackendOutcome                  metric.Int64Counter
+	LoadbalancerNumBackendUpdates               metric.Int64Counter
+	LoadbalancerNumBackends                     metric.Int64Gauge
+	LoadbalancerNumResolutions                  metric.Int64Counter
+	LoadbalancerRandomnessTracestateUnparseable metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -90,6 +92,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_loadbalancer_num_resolutions",
 		metric.WithDescription("Number of times the resolver has triggered new resolutions. [Development]"),
 		metric.WithUnit("{resolutions}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.LoadbalancerRandomnessTracestateUnparseable, err = builder.meter.Int64Counter(
+		"otelcol_loadbalancer_randomness_tracestate_unparseable",
+		metric.WithDescription("Number of spans whose W3C tracestate failed to parse during randomness routing, falling back to trace ID randomness. [Development]"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
