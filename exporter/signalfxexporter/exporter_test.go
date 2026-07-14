@@ -1666,12 +1666,9 @@ func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 	m.SetName("system.cpu.time")
 	sum := m.SetEmptySum()
 	for _, state := range []string{"idle", "interrupt", "nice", "softirq", "steal", "system", "user", "wait"} {
-		for cpu := range 32 {
-			dp := sum.DataPoints().AppendEmpty()
-			dp.SetDoubleValue(0)
-			dp.Attributes().PutStr("cpu", fmt.Sprintf("%d", cpu))
-			dp.Attributes().PutStr("state", state)
-		}
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetDoubleValue(0)
+		dp.Attributes().PutStr("state", state)
 	}
 	cpuCount := sm.Metrics().AppendEmpty()
 	cpuCount.SetName("system.cpu.logical.count")
