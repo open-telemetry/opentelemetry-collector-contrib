@@ -667,3 +667,28 @@ func Test_parseCEFExtensions(t *testing.T) {
 		})
 	}
 }
+
+// benchCEFMessage is a representative firewall traffic event: a syslog header
+// followed by a CEF message with 18 extension keys, including escaped
+// characters in header and extension values.
+const benchCEFMessage = `<134>Feb 14 19:04:54 fw01 CEF:0|Palo Alto Networks|PAN-OS \| Gateway|10.2.3|end|TRAFFIC|3|` +
+	`rt=Feb 14 2026 19:04:54 src=10.1.1.15 spt=54321 dst=203.0.113.9 dpt=443 proto=TCP act=allow app=ssl ` +
+	`in=1234 out=5678 cs1=trusted cs1Label=SourceZone cs2=untrusted cs2Label=DestinationZone ` +
+	`deviceExternalId=0011223344 msg=Traffic session ended request=https://example.com/path?q\=1 ` +
+	`requestClientApplication=Mozilla/5.0 (Windows NT 10.0)`
+
+func BenchmarkParseCEF(b *testing.B) {
+	ctx := b.Context()
+	b.ReportAllocs()
+
+	exprFunc := parseCEF(ottl.StandardStringGetter[*ottllog.TransformContext]{
+		Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+			return benchCEFMessage, nil
+		},
+	})
+
+	for b.Loop() {
+		_, err := exprFunc(ctx, &ottllog.TransformContext{})
+		require.NoError(b, err)
+	}
+}

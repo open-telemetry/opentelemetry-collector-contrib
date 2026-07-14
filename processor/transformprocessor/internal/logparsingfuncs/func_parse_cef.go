@@ -59,7 +59,7 @@ type cefHeader struct {
 }
 
 // cefExtensionKeyRegex finds extension key=value boundaries. Keys
-// must start with an alphnumeric character or underscore; keys are separated from preceding
+// must start with an alphanumeric character or underscore; keys are separated from preceding
 // key=value pairs by a single space.
 var cefExtensionKeyRegex = regexp.MustCompile(`(?:^| )([A-Za-z0-9_]+)=`)
 
