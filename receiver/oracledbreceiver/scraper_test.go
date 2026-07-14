@@ -158,7 +158,7 @@ var queryResponses = map[string][]metricRow{
 		{"METRIC_NAME": "Parse Failure Count Per Sec", "VALUE": "0.25"},
 		{"METRIC_NAME": "Execute Without Parse Ratio", "VALUE": "75.30"},
 		{"METRIC_NAME": "Average Active Sessions", "VALUE": "2.50"},
-		{"METRIC_NAME": "Average Synchronous Single-Block Read Latency", "VALUE": "0.85"},
+		{"METRIC_NAME": "Average Synchronous Single-Block Read Latency", "VALUE": "8.50"},
 		{"METRIC_NAME": "Response Time Per Txn", "VALUE": "12.34"},
 		{"METRIC_NAME": "Cursor Cache Hit Ratio", "VALUE": "96.40"},
 		{"METRIC_NAME": "PGA Cache Hit %", "VALUE": "92.10"},
@@ -1267,7 +1267,7 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			assert.InDelta(t, 75.30, metricMap["oracledb.execution.utilization"], floatDelta)
 			assert.InDelta(t, 2.50, metricMap["oracledb.session.average"], floatDelta)
 			// 0.85 ms -> 0.00085 s
-			assert.InDelta(t, 0.00085, metricMap["oracledb.io.single_block.read.latency"], floatDelta)
+			assert.InDelta(t, 0.0085, metricMap["oracledb.io.single_block.read.latency"], floatDelta)
 			// 12.34 cs -> 0.1234 s
 			assert.InDelta(t, 0.1234, metricMap["oracledb.transaction.response.time"], floatDelta)
 			assert.InDelta(t, 96.40, metricMap["oracledb.cursor.cache.utilization"], floatDelta)
