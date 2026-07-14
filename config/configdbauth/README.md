@@ -66,7 +66,7 @@ This means:
 ## The credential and the request
 
 The provider interface, `Credential`, and `Request` are defined in
-[`extension/dbauth`](../../../extension/dbauth):
+[`extension/dbauth`](../../extension/dbauth):
 
 ```go
 type Provider interface {

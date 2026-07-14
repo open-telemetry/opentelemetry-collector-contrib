@@ -28,7 +28,7 @@ func (f *fakeProvider) GetCredential(_ context.Context, req Request) (*Credentia
 
 func TestProvider_FakeSatisfiesInterface(t *testing.T) {
 	var p Provider = &fakeProvider{cred: &Credential{Secret: "tok"}}
-	got, err := p.GetCredential(context.Background(), Request{Endpoint: "db:5432", Username: "monitor"})
+	got, err := p.GetCredential(t.Context(), Request{Endpoint: "db:5432", Username: "monitor"})
 	require.NoError(t, err)
 	assert.Equal(t, "tok", got.Secret)
 }
@@ -36,7 +36,7 @@ func TestProvider_FakeSatisfiesInterface(t *testing.T) {
 func TestProvider_RequestThreadedToProvider(t *testing.T) {
 	f := &fakeProvider{cred: &Credential{Secret: "tok"}}
 	var p Provider = f
-	_, err := p.GetCredential(context.Background(), Request{Endpoint: "db:5432", Username: "monitor"})
+	_, err := p.GetCredential(t.Context(), Request{Endpoint: "db:5432", Username: "monitor"})
 	require.NoError(t, err)
 	require.True(t, f.gotCall)
 	assert.Equal(t, Request{Endpoint: "db:5432", Username: "monitor"}, f.gotReq,
@@ -49,16 +49,18 @@ func TestCredential_UsernameNilVsEmpty(t *testing.T) {
 	withNil := &Credential{Username: nil}
 
 	require.NotNil(t, withEmpty.Username, "pointer to empty string is not nil")
-	assert.Equal(t, "", *withEmpty.Username)
+	assert.Empty(t, *withEmpty.Username)
 	assert.Nil(t, withNil.Username, "nil means: use the consumer's configured username")
 }
 
 func TestCredential_NotAfterNilVsSet(t *testing.T) {
 	noExpiry := &Credential{Secret: "static"}
+	assert.Equal(t, "static", noExpiry.Secret)
 	assert.Nil(t, noExpiry.NotAfter, "nil NotAfter means no expiry applies")
 
 	exp := time.Unix(1000, 0)
 	withExpiry := &Credential{Secret: "token", NotAfter: &exp}
+	assert.Equal(t, "token", withExpiry.Secret)
 	require.NotNil(t, withExpiry.NotAfter)
 	assert.Equal(t, exp, *withExpiry.NotAfter)
 }
