@@ -412,6 +412,7 @@ events:
       - oracledb.wait_class
       - oracledb.wait.count
       - oracledb.wait.duration
+      - db.namespace
   db.server.top_query:
     enabled: false
     description: Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).

@@ -221,6 +221,122 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.index.fragmentation:
+        description: "SqlserverIndexFragmentationMetricConfig provides config for the sqlserver.index.fragmentation metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "db.namespace"
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
+      sqlserver.index.page.count:
+        description: "SqlserverIndexPageCountMetricConfig provides config for the sqlserver.index.page.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "db.namespace"
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
+      sqlserver.index.page.utilization:
+        description: "SqlserverIndexPageUtilizationMetricConfig provides config for the sqlserver.index.page.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "db.namespace"
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
+      sqlserver.index.record.count:
+        description: "SqlserverIndexRecordCountMetricConfig provides config for the sqlserver.index.record.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "db.namespace"
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
       sqlserver.index.search.rate:
         description: "SqlserverIndexSearchRateMetricConfig provides config for the sqlserver.index.search.rate metric."
         type: object
@@ -228,6 +344,35 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.index.size:
+        description: "SqlserverIndexSizeMetricConfig provides config for the sqlserver.index.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "db.namespace"
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
       sqlserver.latch.superlatch.count:
         description: "SqlserverLatchSuperlatchCountMetricConfig provides config for the sqlserver.latch.superlatch.count metric."
         type: object
