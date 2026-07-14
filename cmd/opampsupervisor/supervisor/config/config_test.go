@@ -885,6 +885,8 @@ func writeFeatureGateValidateStub(t *testing.T) string {
 			"echo validate-stub temp=[%TEMP%] 1>&2",
 			"echo validate-stub script=[%~f0] 1>&2",
 			"echo validate-stub args=[%*] 1>&2",
+			"echo validate-stub arg4=[%4] 1>&2",
+			"echo validate-stub arg4-unquoted=[%~4] 1>&2",
 			"echo validate-stub config=[%~f3] 1>&2",
 			"if exist \"%3\" echo validate-stub config-exists=yes 1>&2",
 			"if not exist \"%3\" echo validate-stub config-exists=no 1>&2",
