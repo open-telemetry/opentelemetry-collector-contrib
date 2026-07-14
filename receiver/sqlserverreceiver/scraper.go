@@ -367,7 +367,7 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return fmt.Errorf("sqlServerScraperHelper: %w", err)
 		}
-		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+		s.logger.Debug("problems encountered getting metric rows", zap.Error(err))
 	}
 
 	var errs []error
