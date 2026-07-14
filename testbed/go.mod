@@ -87,24 +87,24 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.6.0 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.204 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.80.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.80.4 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.205 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.81.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.81.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.82.0-devel.0.20260617134427-74e6d071eaae // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.82.0-devel.0.20260617134427-74e6d071eaae // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.80.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.80.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/template v0.80.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.80.4 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.81.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.81.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/template v0.81.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.81.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/log v0.80.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/stats v0.80.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.80.4 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/log v0.81.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/stats v0.81.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.81.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.80.4 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.81.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.80.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.80.4 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.81.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.81.0 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.62.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.9.0 // indirect
 	github.com/DataDog/go-sqllexer v0.2.2 // indirect
@@ -422,6 +422,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
+	go.uber.org/mock v0.6.0 // indirect
 	go.uber.org/zap/exp v0.3.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
