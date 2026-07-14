@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"gopkg.in/yaml.v3"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -214,6 +215,37 @@ func compareMetricsMaps(t *testing.T, expected, actual map[string]pmetric.Metric
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 		))
 	}
+}
+
+func expectedMetricsByEndpoint(t *testing.T, md pmetric.Metrics, routingKey string, routingAttrs []string, ring *hashRing, endpoints ...string) map[string]pmetric.Metrics {
+	expected := make(map[string]pmetric.Metrics, len(endpoints))
+	for _, endpoint := range endpoints {
+		expected[endpoint] = pmetric.NewMetrics()
+	}
+
+	var batches map[string]pmetric.Metrics
+	switch routingKey {
+	case svcRoutingStr:
+		var errs []error
+		batches, errs = splitMetricsByResourceServiceName(md)
+		require.Empty(t, errs)
+	case resourceRoutingStr:
+		batches = splitMetricsByResourceID(md)
+	case metricNameRoutingStr:
+		batches = splitMetricsByMetricName(md)
+	case streamIDRoutingStr:
+		batches = splitMetricsByStreamID(md)
+	case attrRoutingStr:
+		batches = splitMetricsByAttributes(md, routingAttrs)
+	default:
+		t.Fatalf("unexpected routing key %q", routingKey)
+	}
+
+	for routingID, batch := range batches {
+		endpoint := ring.endpointFor([]byte(routingID))
+		metrics.Merge(expected[endpoint], batch)
+	}
+	return expected
 }
 
 func TestSplitMetricsByResourceServiceName(t *testing.T) {
@@ -691,7 +723,16 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 			err = p.ConsumeMetrics(t.Context(), input)
 			require.NoError(t, err)
 
-			expectedOutput := loadMetricsMap(t, filepath.Join(dir, "output.yaml"))
+			expectedOutput := expectedMetricsByEndpoint(
+				t,
+				input,
+				tc.routingKey,
+				tc.routingAttributes,
+				lb.ring,
+				"endpoint-1",
+				"endpoint-2",
+				"endpoint-3",
+			)
 
 			actualOutput := map[string]pmetric.Metrics{}
 
@@ -877,7 +918,18 @@ func TestBatchWithTwoMetrics(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
-	assert.Len(t, sink.AllMetrics(), 2)
+	merged := pmetric.NewMetrics()
+	for _, output := range sink.AllMetrics() {
+		metrics.Merge(merged, output)
+	}
+	require.NoError(t, pmetrictest.CompareMetrics(
+		td,
+		merged,
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	))
 }
 
 func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
