@@ -879,6 +879,30 @@ Fraction of allocated database storage that is used.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
+### oracledb.system.cpu.count
+
+Number of CPUs or processors available to the Oracle server, as reported by the operating system.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cpu} | Gauge | Int | Development |
+
+### oracledb.system.memory.limit
+
+Total number of bytes of physical memory on the host running the Oracle server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### oracledb.system.process.count
+
+Current number of processes that are either running or in the ready state, waiting to be selected by the operating-system scheduler to run.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {process} | Gauge | Double | Development |
+
 ## Default Events
 
 The following events are emitted by default. Each of them can be disabled by applying the following configuration:
