@@ -79,6 +79,18 @@ func TestQueryContents(t *testing.T) {
 			getQuery:                 getSQLServerWorkerThreadsQuery,
 			expectedQueryValFilename: "workerThreadsQueryWithInstanceName.txt",
 		},
+		{
+			name:                     "Test index physical stats query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerIndexPhysicalStatsQuery,
+			expectedQueryValFilename: "indexPhysicalQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test index physical stats query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerIndexPhysicalStatsQuery,
+			expectedQueryValFilename: "indexPhysicalQueryWithInstanceName.txt",
+		},
 	}
 
 	for _, tt := range queryTests {

@@ -86,6 +86,10 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerWorkerThreadsQuery(cfg.InstanceName))
 	}
 
+	if isIndexPhysicalStatsQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName))
+	}
+
 	return queries
 }
 
@@ -344,4 +348,16 @@ func isWorkerThreadsQueryEnabled(metrics *metadata.MetricsConfig) bool {
 
 	return metrics.SqlserverWorkerRequestCount.Enabled ||
 		metrics.SqlserverWorkerThreadCount.Enabled
+}
+
+func isIndexPhysicalStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverIndexFragmentation.Enabled ||
+		metrics.SqlserverIndexPageCount.Enabled ||
+		metrics.SqlserverIndexPageUtilization.Enabled ||
+		metrics.SqlserverIndexRecordCount.Enabled ||
+		metrics.SqlserverIndexSize.Enabled
 }
