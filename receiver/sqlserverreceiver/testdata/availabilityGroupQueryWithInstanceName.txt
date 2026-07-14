@@ -27,7 +27,7 @@ INNER JOIN sys.availability_replicas AS ar WITH (NOLOCK)
 INNER JOIN sys.availability_groups AS ag WITH (NOLOCK)
 	ON ar.[group_id] = ag.[group_id]
 WHERE sec.[is_primary_replica] = 0
-WHERE @@SERVERNAME = 'instanceName'
+	AND @@SERVERNAME = 'instanceName'
 ORDER BY ag.[name], ar.[replica_server_name], DB_NAME(sec.[database_id]);'
 
 EXEC sp_executesql @SqlStatement;

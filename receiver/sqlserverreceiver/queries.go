@@ -1136,7 +1136,7 @@ EXEC sp_executesql @SqlStatement;
 
 func getSQLServerAvailabilityGroupQuery(instanceName string) string {
 	if instanceName != "" {
-		whereClause := fmt.Sprintf("\nWHERE @@SERVERNAME = ''%s''", instanceName)
+		whereClause := fmt.Sprintf("\n\tAND @@SERVERNAME = ''%s''", instanceName)
 		r := strings.NewReplacer("{filter_instance_name}", whereClause)
 		return r.Replace(sqlServerAvailabilityGroupQuery)
 	}
