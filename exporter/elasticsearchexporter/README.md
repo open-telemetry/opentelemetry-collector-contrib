@@ -171,6 +171,8 @@ behaviours, which may be configured through the following settings:
 - `mapping`:
   - `mode` (DEPRECATED): The mapping mode if supplied via config file is ignored. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. If not specified via these methods, the default mapping mode is `otel`.
   - `allowed_modes` (defaults to all mapping modes): A list of allowed mapping modes.
+    If `otel` is included in the list, it is used as the default mapping mode.
+    Otherwise, the first entry in the list is used as the default.
 
 The mapping mode can be controlled via the client metadata key `X-Elastic-Mapping-Mode`,
 e.g. via HTTP headers, gRPC metadata.
@@ -282,6 +284,13 @@ This mode may be used for compatibility with existing dashboards that work with 
 | Metrics   | :white_check_mark: |
 | Profiles  | :no_entry_sign:    |
 
+In ECS mapping mode, span events are extracted as separate ECS-formatted log documents following
+the APM data stream convention:
+
+- Span events named `exception` with `exception.type` or `exception.message` present are routed
+  to `logs-apm.error-<namespace>`.
+- All other span events are routed to `logs-apm.app.<service_name>-<namespace>`.
+
 #### Bodymap mapping mode
 
 > [!WARNING]
@@ -351,7 +360,8 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `max_retries` (default=2): Number of HTTP request retries. To disable retries, set `retry::enabled` to `false` instead of setting `max_retries` to `0`.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
-  - `retry_on_status` (default=[429]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it defaults to `[429]`.
+  - `retry_on_status` (default=[429]): Status codes that trigger request level retries. To avoid duplicates, it defaults to `[429]`.
+  - `retry_on_document_status` (default=same as `retry_on_status`): Status codes that trigger document level retries for failed documents in successful bulk HTTP responses. Set to `[]` to disable document level retries by status code while keeping request level retries configured through `retry_on_status`.
 - `sending_queue`: Configures the queueing and batching behaviour. Below are the defaults (which may vary from standard defaults), for full configuration check the [`exporterhelper` docs][exporterhelper].
   - `enabled` (default=true): Enable queueing and batching behaviour.
   - `num_consumers` (default=10): Number of consumers that dequeue batches.
@@ -442,6 +452,19 @@ The index template must define dynamic templates whose names match the values se
 
 - **OTel**: Each metric is written under the `metrics` object; the bulk action maps full field names (e.g. `metrics.my_metric`) to one of the OTel template names above based on metric type (histogram, summary, gauge, or counter) and value type.
 - **ECS**: Each metric is written as a top-level field `metric.<name>`; the bulk action maps that field name to one of the ECS/APM template names (`histogram_metrics`, `summary_metrics`, or `double_metrics` for gauges and counters).
+
+### Bulk Response Filter Path
+
+The Elasticsearch bulk API accepts a [filter_path](https://www.elastic.co/docs/reference/elasticsearch/rest-apis/common-options#common-options-response-filtering) parameter.  This can be used to reduce the response returned by Elasticsearch.  The exporter uses a default `filter_path` that is set by the [go-docappender](https://github.com/elastic/go-docappender).  The default is currently `items.*._index,items.*.status,items.*.failure_store,items.*.error.type,items.*.error.reason` and is defined by the `DefaultFilterPath` in the [go-docappnder](https://github.com/elastic/go-docappender) package.
+
+If you want to change the `filter_path` you may do so by setting `bulk_response_filter_path` to the desired string in the configuration.
+
+
+> [!NOTE]
+> If `items.*._index.items` is not in the BulkResponseFilterPath than for any failed documents, the exporter will not be able to log the index to which the document was being written to.
+
+> [!NOTE]
+> If `items.*._index.items` is not in the BulkResponseFilterPath than the exporter will log rejection of duplicates to ".profiling-stackframes" which were previously suppressed.
 
 ## Exporting profiles
 

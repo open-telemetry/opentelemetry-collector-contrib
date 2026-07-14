@@ -1,5 +1,5 @@
-resourcedetection:
-resourcedetection/openshift:
+resource_detection:
+resource_detection/openshift:
   detectors: [openshift]
   timeout: 2s
   override: false
@@ -9,17 +9,17 @@ resourcedetection/openshift:
     tls:
       insecure: true
 
-resourcedetection/aks:
+resource_detection/aks:
   detectors: [env, aks]
   timeout: 2s
   override: false
 
-resourcedetection/gcp:
+resource_detection/gcp:
   detectors: [env, gcp]
   timeout: 2s
   override: false
 
-resourcedetection/ec2:
+resource_detection/ec2:
   detectors: [env, ec2]
   timeout: 2s
   override: false
@@ -28,52 +28,52 @@ resourcedetection/ec2:
       - ^tag1$
       - ^tag2$
 
-resourcedetection/ecs:
+resource_detection/ecs:
   detectors: [env, ecs]
   timeout: 2s
   override: false
 
-resourcedetection/lambda:
+resource_detection/lambda:
   detectors: [env, lambda]
   timeout: 2s
   override: false
 
-resourcedetection/system:
+resource_detection/system:
   detectors: [env, system]
   timeout: 2s
   override: false
   system:
     hostname_sources: [os]
 
-resourcedetection/docker:
+resource_detection/docker:
   detectors: [env, docker]
   timeout: 2s
   override: false
 
-resourcedetection/azure:
+resource_detection/azure:
   detectors: [env, azure]
   timeout: 2s
   override: false
 
-resourcedetection/heroku:
+resource_detection/heroku:
   detectors: [env, heroku]
   timeout: 2s
   override: false
 
-resourcedetection/refresh:
+resource_detection/refresh:
   detectors: [system]
   timeout: 2s
   override: false
   refresh_interval: 5s
 
-resourcedetection/invalid:
+resource_detection/invalid:
   detectors: [env, system]
   timeout: 2s
   override: false
   system:
     hostname_sources: [invalid_source]
 
-resourcedetection/resourceattributes:
+resource_detection/resourceattributes:
   detectors: [system, ec2]
   timeout: 2s
   override: false

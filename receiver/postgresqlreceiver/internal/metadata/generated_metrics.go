@@ -162,6 +162,44 @@ var MapAttributeOperation = map[string]AttributeOperation{
 	"hot_upd": AttributeOperationHotUpd,
 }
 
+// AttributePostgresqlConflictType specifies the value postgresql.conflict.type attribute.
+type AttributePostgresqlConflictType int
+
+const (
+	_ AttributePostgresqlConflictType = iota
+	AttributePostgresqlConflictTypeTablespace
+	AttributePostgresqlConflictTypeLock
+	AttributePostgresqlConflictTypeSnapshot
+	AttributePostgresqlConflictTypeBufferpin
+	AttributePostgresqlConflictTypeDeadlock
+)
+
+// String returns the string representation of the AttributePostgresqlConflictType.
+func (av AttributePostgresqlConflictType) String() string {
+	switch av {
+	case AttributePostgresqlConflictTypeTablespace:
+		return "tablespace"
+	case AttributePostgresqlConflictTypeLock:
+		return "lock"
+	case AttributePostgresqlConflictTypeSnapshot:
+		return "snapshot"
+	case AttributePostgresqlConflictTypeBufferpin:
+		return "bufferpin"
+	case AttributePostgresqlConflictTypeDeadlock:
+		return "deadlock"
+	}
+	return ""
+}
+
+// MapAttributePostgresqlConflictType is a helper map of string to AttributePostgresqlConflictType attribute value.
+var MapAttributePostgresqlConflictType = map[string]AttributePostgresqlConflictType{
+	"tablespace": AttributePostgresqlConflictTypeTablespace,
+	"lock":       AttributePostgresqlConflictTypeLock,
+	"snapshot":   AttributePostgresqlConflictTypeSnapshot,
+	"bufferpin":  AttributePostgresqlConflictTypeBufferpin,
+	"deadlock":   AttributePostgresqlConflictTypeDeadlock,
+}
+
 // AttributeSource specifies the value source attribute.
 type AttributeSource int
 
@@ -276,13 +314,16 @@ var MetricsInfo = metricsInfo{
 		Name: "postgresql.bgwriter.buffers.allocated",
 	},
 	PostgresqlBgwriterBuffersWrites: metricInfo{
-		Name: "postgresql.bgwriter.buffers.writes",
+		Name:       "postgresql.bgwriter.buffers.writes",
+		Attributes: []string{"bg_buffer_source"},
 	},
 	PostgresqlBgwriterCheckpointCount: metricInfo{
-		Name: "postgresql.bgwriter.checkpoint.count",
+		Name:       "postgresql.bgwriter.checkpoint.count",
+		Attributes: []string{"bg_checkpoint_type"},
 	},
 	PostgresqlBgwriterDuration: metricInfo{
-		Name: "postgresql.bgwriter.duration",
+		Name:       "postgresql.bgwriter.duration",
+		Attributes: []string{"bg_duration_type"},
 	},
 	PostgresqlBgwriterMaxwritten: metricInfo{
 		Name: "postgresql.bgwriter.maxwritten",
@@ -294,7 +335,8 @@ var MetricsInfo = metricsInfo{
 		Name: "postgresql.blks_read",
 	},
 	PostgresqlBlocksRead: metricInfo{
-		Name: "postgresql.blocks_read",
+		Name:       "postgresql.blocks_read",
+		Attributes: []string{"source"},
 	},
 	PostgresqlCommits: metricInfo{
 		Name: "postgresql.commits",
@@ -306,7 +348,8 @@ var MetricsInfo = metricsInfo{
 		Name: "postgresql.database.count",
 	},
 	PostgresqlDatabaseLocks: metricInfo{
-		Name: "postgresql.database.locks",
+		Name:       "postgresql.database.locks",
+		Attributes: []string{"relation", "mode", "lock_type"},
 	},
 	PostgresqlDbSize: metricInfo{
 		Name: "postgresql.db_size",
@@ -315,7 +358,8 @@ var MetricsInfo = metricsInfo{
 		Name: "postgresql.deadlocks",
 	},
 	PostgresqlFunctionCalls: metricInfo{
-		Name: "postgresql.function.calls",
+		Name:       "postgresql.function.calls",
+		Attributes: []string{"function"},
 	},
 	PostgresqlIndexScans: metricInfo{
 		Name: "postgresql.index.scans",
@@ -324,16 +368,23 @@ var MetricsInfo = metricsInfo{
 		Name: "postgresql.index.size",
 	},
 	PostgresqlOperations: metricInfo{
-		Name: "postgresql.operations",
+		Name:       "postgresql.operations",
+		Attributes: []string{"operation"},
+	},
+	PostgresqlQueryConflicts: metricInfo{
+		Name:       "postgresql.query.conflicts",
+		Attributes: []string{"postgresql.conflict.type"},
 	},
 	PostgresqlReplicationDataDelay: metricInfo{
-		Name: "postgresql.replication.data_delay",
+		Name:       "postgresql.replication.data_delay",
+		Attributes: []string{"replication_client"},
 	},
 	PostgresqlRollbacks: metricInfo{
 		Name: "postgresql.rollbacks",
 	},
 	PostgresqlRows: metricInfo{
-		Name: "postgresql.rows",
+		Name:       "postgresql.rows",
+		Attributes: []string{"state"},
 	},
 	PostgresqlSequentialScans: metricInfo{
 		Name: "postgresql.sequential_scans",
@@ -372,10 +423,12 @@ var MetricsInfo = metricsInfo{
 		Name: "postgresql.wal.age",
 	},
 	PostgresqlWalDelay: metricInfo{
-		Name: "postgresql.wal.delay",
+		Name:       "postgresql.wal.delay",
+		Attributes: []string{"wal_operation_lag", "replication_client"},
 	},
 	PostgresqlWalLag: metricInfo{
-		Name: "postgresql.wal.lag",
+		Name:       "postgresql.wal.lag",
+		Attributes: []string{"wal_operation_lag", "replication_client"},
 	},
 }
 
@@ -399,6 +452,7 @@ type metricsInfo struct {
 	PostgresqlIndexScans               metricInfo
 	PostgresqlIndexSize                metricInfo
 	PostgresqlOperations               metricInfo
+	PostgresqlQueryConflicts           metricInfo
 	PostgresqlReplicationDataDelay     metricInfo
 	PostgresqlRollbacks                metricInfo
 	PostgresqlRows                     metricInfo
@@ -419,7 +473,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricPostgresqlBackends struct {
@@ -1683,6 +1738,97 @@ func newMetricPostgresqlOperations(cfg PostgresqlOperationsMetricConfig) metricP
 	return m
 }
 
+type metricPostgresqlQueryConflicts struct {
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        PostgresqlQueryConflictsMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
+}
+
+// init fills postgresql.query.conflicts metric with initial data.
+func (m *metricPostgresqlQueryConflicts) init() {
+	m.data.SetName("postgresql.query.conflicts")
+	m.data.SetDescription("Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.")
+	m.data.SetUnit("{query}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricPostgresqlQueryConflicts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, postgresqlConflictTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType) {
+		dp.Attributes().PutStr("postgresql.conflict.type", postgresqlConflictTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlQueryConflicts) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlQueryConflicts) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlQueryConflicts(cfg PostgresqlQueryConflictsMetricConfig) metricPostgresqlQueryConflicts {
+	m := metricPostgresqlQueryConflicts{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricPostgresqlReplicationDataDelay struct {
 	data          pmetric.Metric                             // data buffer for generated metric.
 	config        PostgresqlReplicationDataDelayMetricConfig // metric config provided by user.
@@ -2750,6 +2896,7 @@ type MetricsBuilder struct {
 	metricPostgresqlIndexScans               metricPostgresqlIndexScans
 	metricPostgresqlIndexSize                metricPostgresqlIndexSize
 	metricPostgresqlOperations               metricPostgresqlOperations
+	metricPostgresqlQueryConflicts           metricPostgresqlQueryConflicts
 	metricPostgresqlReplicationDataDelay     metricPostgresqlReplicationDataDelay
 	metricPostgresqlRollbacks                metricPostgresqlRollbacks
 	metricPostgresqlRows                     metricPostgresqlRows
@@ -2811,6 +2958,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(mbc.Metrics.PostgresqlIndexScans),
 		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(mbc.Metrics.PostgresqlIndexSize),
 		metricPostgresqlOperations:               newMetricPostgresqlOperations(mbc.Metrics.PostgresqlOperations),
+		metricPostgresqlQueryConflicts:           newMetricPostgresqlQueryConflicts(mbc.Metrics.PostgresqlQueryConflicts),
 		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(mbc.Metrics.PostgresqlReplicationDataDelay),
 		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(mbc.Metrics.PostgresqlRollbacks),
 		metricPostgresqlRows:                     newMetricPostgresqlRows(mbc.Metrics.PostgresqlRows),
@@ -2860,6 +3008,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.ServiceInstanceID.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["service.instance.id"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceInstanceID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServiceName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["service.name"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServiceName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["service.name"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServiceNamespace.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["service.namespace"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceNamespace.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServiceNamespace.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["service.namespace"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceNamespace.MetricsExclude)
 	}
 
 	for _, op := range options {
@@ -2949,6 +3109,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlIndexScans.emit(ils.Metrics())
 	mb.metricPostgresqlIndexSize.emit(ils.Metrics())
 	mb.metricPostgresqlOperations.emit(ils.Metrics())
+	mb.metricPostgresqlQueryConflicts.emit(ils.Metrics())
 	mb.metricPostgresqlReplicationDataDelay.emit(ils.Metrics())
 	mb.metricPostgresqlRollbacks.emit(ils.Metrics())
 	mb.metricPostgresqlRows.emit(ils.Metrics())
@@ -3090,6 +3251,11 @@ func (mb *MetricsBuilder) RecordPostgresqlIndexSizeDataPoint(ts pcommon.Timestam
 // RecordPostgresqlOperationsDataPoint adds a data point to postgresql.operations metric.
 func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
 	mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
+}
+
+// RecordPostgresqlQueryConflictsDataPoint adds a data point to postgresql.query.conflicts metric.
+func (mb *MetricsBuilder) RecordPostgresqlQueryConflictsDataPoint(ts pcommon.Timestamp, val int64, postgresqlConflictTypeAttributeValue AttributePostgresqlConflictType) {
+	mb.metricPostgresqlQueryConflicts.recordDataPoint(mb.startTime, ts, val, postgresqlConflictTypeAttributeValue.String())
 }
 
 // RecordPostgresqlReplicationDataDelayDataPoint adds a data point to postgresql.replication.data_delay metric.

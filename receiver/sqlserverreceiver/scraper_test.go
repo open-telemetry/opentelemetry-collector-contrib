@@ -36,9 +36,11 @@ import (
 func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	// Some of these metrics are enabled by default, but it's still helpful to include
 	// in the case of using a config that may have previously disabled a metric.
+	cfg.Metrics.SqlserverAccessScanRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchRequestRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchSQLCompilationRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = enabled
+	cfg.Metrics.SqlserverConnectionResetRate.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseCount.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseExecutionErrors.Enabled = enabled
@@ -49,16 +51,39 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
 	cfg.Metrics.SqlserverDeadlockRate.Enabled = enabled
+	cfg.Metrics.SqlserverErrorRate.Enabled = enabled
+	cfg.Metrics.SqlserverExtentOperationRate.Enabled = enabled
+	cfg.Metrics.SqlserverGhostRecordSkippedRate.Enabled = enabled
+	cfg.Metrics.SqlserverIndexFragmentation.Enabled = enabled
+	cfg.Metrics.SqlserverIndexPageCount.Enabled = enabled
+	cfg.Metrics.SqlserverIndexPageUtilization.Enabled = enabled
+	cfg.Metrics.SqlserverIndexRecordCount.Enabled = enabled
 	cfg.Metrics.SqlserverIndexSearchRate.Enabled = enabled
+	cfg.Metrics.SqlserverIndexSize.Enabled = enabled
+	cfg.Metrics.SqlserverLatchSuperlatchCount.Enabled = enabled
+	cfg.Metrics.SqlserverLatchSuperlatchTransitionRate.Enabled = enabled
+	cfg.Metrics.SqlserverLatchWaitRate.Enabled = enabled
+	cfg.Metrics.SqlserverLatchWaitTimeAvg.Enabled = enabled
+	cfg.Metrics.SqlserverLatchWaitTimeTotal.Enabled = enabled
+	cfg.Metrics.SqlserverLockBlockCount.Enabled = enabled
+	cfg.Metrics.SqlserverLockEscalationRate.Enabled = enabled
+	cfg.Metrics.SqlserverLockMemory.Enabled = enabled
+	cfg.Metrics.SqlserverLockRequestRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockTimeoutRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitCount.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitTimeAvg.Enabled = enabled
+	cfg.Metrics.SqlserverLockWaitTimeTotal.Enabled = enabled
 	cfg.Metrics.SqlserverLoginRate.Enabled = enabled
 	cfg.Metrics.SqlserverLogoutRate.Enabled = enabled
+	cfg.Metrics.SqlserverMemoryArea.Enabled = enabled
+	cfg.Metrics.SqlserverMemoryCacheObjectCount.Enabled = enabled
 	cfg.Metrics.SqlserverMemoryGrantsPendingCount.Enabled = enabled
+	cfg.Metrics.SqlserverMemoryPageCount.Enabled = enabled
 	cfg.Metrics.SqlserverMemoryUsage.Enabled = enabled
 	cfg.Metrics.SqlserverOsWaitDuration.Enabled = enabled
+	cfg.Metrics.SqlserverPageAllocationRate.Enabled = enabled
+	cfg.Metrics.SqlserverPageCompressionRate.Enabled = enabled
 	cfg.Metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled = enabled
 	cfg.Metrics.SqlserverPageBufferCacheHitRatio.Enabled = enabled
 	cfg.Metrics.SqlserverPageCheckpointFlushRate.Enabled = enabled
@@ -66,12 +91,18 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverPageLifeExpectancy.Enabled = enabled
 	cfg.Metrics.SqlserverPageLookupRate.Enabled = enabled
 	cfg.Metrics.SqlserverPageOperationRate.Enabled = enabled
+	cfg.Metrics.SqlserverPageReadAheadRate.Enabled = enabled
 	cfg.Metrics.SqlserverPageSplitRate.Enabled = enabled
 	cfg.Metrics.SqlserverProcessesBlocked.Enabled = enabled
 	cfg.Metrics.SqlserverReplicaDataRate.Enabled = enabled
 	cfg.Metrics.SqlserverResourcePoolDiskOperations.Enabled = enabled
 	cfg.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = enabled
 	cfg.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = enabled
+	cfg.Metrics.SqlserverScanPointRevalidationRate.Enabled = enabled
+	cfg.Metrics.SqlserverAttentionRate.Enabled = enabled
+	cfg.Metrics.SqlserverParameterizationRate.Enabled = enabled
+	cfg.Metrics.SqlserverPlanExecutionRate.Enabled = enabled
+	cfg.Metrics.SqlserverRecompilationRatio.Enabled = enabled
 	cfg.Metrics.SqlserverTableCount.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionDelay.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionLogFlushDataRate.Enabled = enabled
@@ -84,6 +115,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverTransactionRate.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
 	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
+	cfg.Metrics.SqlserverWorktableCacheHitRatio.Enabled = enabled
 
 	cfg.Events.DbServerTopQuery.Enabled = enabled
 	cfg.Events.DbServerQuerySample.Enabled = enabled
@@ -98,6 +130,8 @@ func enableSQLServerResourceAttributesForTests(resourceAttributes *metadata.Reso
 	resourceAttributes.SqlserverInstanceName.Enabled = true
 	resourceAttributes.ServerAddress.Enabled = true
 	resourceAttributes.ServerPort.Enabled = true
+	resourceAttributes.ServiceName.Enabled = true
+	resourceAttributes.ServiceNamespace.Enabled = true
 }
 
 func TestEmptyScrape(t *testing.T) {
@@ -144,6 +178,10 @@ func TestSuccessfulScrape(t *testing.T) {
 			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
+			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
+			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceNamespace.Enabled = true
+			cfg.LogsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
+			cfg.LogsBuilderConfig.ResourceAttributes.ServiceNamespace.Enabled = true
 			assert.NoError(t, cfg.Validate())
 
 			configureAllScraperMetricsAndEvents(cfg, true)
@@ -179,6 +217,8 @@ func TestSuccessfulScrape(t *testing.T) {
 					expectedFile = filepath.Join("testdata", "expectedProperties")
 				case getSQLServerWaitStatsQuery(scraper.config.InstanceName):
 					expectedFile = filepath.Join("testdata", "expectedWaitStats")
+				case getSQLServerIndexPhysicalStatsQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics")
 				}
 				expectedFile += fileSuffix
 
@@ -414,6 +454,8 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("propertyQueryData.txt")
 	case getSQLServerWaitStatsQuery(mc.instanceName):
 		queryResults, err = readFile("waitStatsQueryData.txt")
+	case getSQLServerIndexPhysicalStatsQuery(mc.instanceName):
+		queryResults, err = readFile("indexPhysicalQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
@@ -818,6 +860,9 @@ func buildQuerySampleRow(sessionID, blockingSessionID, command, statement string
 		"query_plan_hash":             "0x140210F64B788CB9",
 		"context_info":                "",
 		"username":                    "sa",
+		"client_app_name":             "SSMS",
+		"session_start_time":          "2025-02-12T15:00:00.000+08:00",
+		"session_duration":            "720456",
 		"procedure_id":                "0",
 		"procedure_name":              "",
 		"blocking_start_time":         "",

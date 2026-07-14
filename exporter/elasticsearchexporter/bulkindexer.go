@@ -99,12 +99,13 @@ func bulkIndexerConfig(client elastictransport.Interface, config *Config, requir
 		Client:                  client,
 		MaxDocumentRetries:      maxDocRetries,
 		Pipeline:                config.Pipeline,
-		RetryOnDocumentStatus:   config.Retry.RetryOnStatus,
+		RetryOnDocumentStatus:   config.Retry.RetryOnDocumentStatus,
 		RequireDataStream:       requireDataStream,
 		CompressionLevel:        compressionLevel,
 		PopulateFailedDocsInput: config.LogFailedDocsInput,
 		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.IncludeSourceOnError),
 		QueryParams:             getQueryParamsFromEndpoint(config, logger),
+		FilterPath:              config.BulkResponseFilterPath,
 	}
 }
 

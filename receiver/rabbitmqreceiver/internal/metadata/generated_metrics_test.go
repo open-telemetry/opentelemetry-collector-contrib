@@ -67,7 +67,7 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["RabbitmqMessageCurrent"] = mb.metricRabbitmqMessageCurrent.config.AggregationStrategy
+			aggMap["rabbitmq.message.current"] = mb.metricRabbitmqMessageCurrent.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -76,30 +76,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqConsumerCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessageAcknowledgedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessageCurrentDataPoint(ts, 1, AttributeMessageStateReady)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRabbitmqMessageCurrentDataPoint(ts, 3, AttributeMessageStateUnacknowledged)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessageDeliveredDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessageDroppedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessagePublishedDataPoint(ts, 1)

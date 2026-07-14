@@ -6,7 +6,6 @@ This receiver queries the Elasticsearch [node stats](https://www.elastic.co/guid
 [index stats](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-stats.html) endpoints in order
 to scrape metrics from a running Elasticsearch cluster.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

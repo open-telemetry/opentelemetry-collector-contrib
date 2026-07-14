@@ -23,6 +23,26 @@ import (
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
+	defaultServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	defaultServerConfig.WriteTimeout = 0
+	defaultServerConfig.ReadHeaderTimeout = 0
+	defaultServerConfig.IdleTimeout = 0
+	defaultServerConfig.KeepAlivesEnabled = false
+	defaultServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  "localhost:5778",
+		Transport: confignet.TransportTypeTCP,
+	}
+	namedServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	namedServerConfig.WriteTimeout = 0
+	namedServerConfig.ReadHeaderTimeout = 0
+	namedServerConfig.IdleTimeout = 0
+	namedServerConfig.KeepAlivesEnabled = false
+	namedServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  "localhost:5778",
+		Transport: confignet.TransportTypeTCP,
+	}
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -30,10 +50,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(metadata.Type),
 			expected: &Config{
-				HTTPServerConfig: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{
-					Endpoint:  "localhost:5778",
-					Transport: confignet.TransportTypeTCP,
-				}},
+				HTTPServerConfig: &defaultServerConfig,
 				GRPCServerConfig: &configgrpc.ServerConfig{NetAddr: confignet.AddrConfig{
 					Endpoint:  "localhost:14250",
 					Transport: confignet.TransportTypeTCP,
@@ -48,10 +65,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
-				HTTPServerConfig: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{
-					Endpoint:  "localhost:5778",
-					Transport: confignet.TransportTypeTCP,
-				}},
+				HTTPServerConfig: &namedServerConfig,
 				GRPCServerConfig: &configgrpc.ServerConfig{NetAddr: confignet.AddrConfig{
 					Endpoint:  "localhost:14250",
 					Transport: confignet.TransportTypeTCP,

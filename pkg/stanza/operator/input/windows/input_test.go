@@ -244,12 +244,9 @@ func TestInputRead_RPCInvalidBound(t *testing.T) {
 	input.maxReads = 100
 	input.currentMaxReads = 100
 
-	// Set up subscription with valid handle and enough info to reopen
+	// Set up subscription with valid handle
 	input.subscription = Subscription{
-		handle:        42, // Dummy handle
-		startAt:       "beginning",
-		sessionHandle: 0,
-		channel:       "test-channel",
+		handle: 42, // Dummy handle
 	}
 
 	// Call the method under test
@@ -266,6 +263,91 @@ func TestInputRead_RPCInvalidBound(t *testing.T) {
 	// Verify that a warning log was generated
 	require.Equal(t, 1, logs.Len())
 	assert.Contains(t, logs.All()[0].Message, "Encountered RPC_S_INVALID_BOUND")
+}
+
+// TestInputReadWithRetry_UsesInputBookmarkForRecovery verifies that on RPC_S_INVALID_BOUND the
+// Input's own bookmark handle — not any internal subscription state — is forwarded to
+// evtSubscribe when reopening the subscription.
+func TestInputReadWithRetry_UsesInputBookmarkForRecovery(t *testing.T) {
+	originalEvtNext := evtNext
+	originalEvtClose := evtClose
+	originalEvtSubscribe := evtSubscribe
+	defer func() {
+		evtNext = originalEvtNext
+		evtClose = originalEvtClose
+		evtSubscribe = originalEvtSubscribe
+	}()
+
+	const bookmarkHandle uintptr = 99
+
+	var capturedBookmark uintptr
+	evtClose = func(_ uintptr) error { return nil }
+	evtSubscribe = func(_ uintptr, _ windows.Handle, _, _ *uint16, bookmark, _, _ uintptr, _ uint32) (uintptr, error) {
+		capturedBookmark = bookmark
+		return 42, nil
+	}
+
+	var nextCalls int
+	evtNext = func(_ uintptr, _ uint32, _ *uintptr, _, _ uint32, _ *uint32) error {
+		nextCalls++
+		if nextCalls == 1 {
+			return windows.RPC_S_INVALID_BOUND
+		}
+		return nil
+	}
+
+	input := newTestInput()
+	input.maxReads = 100
+	input.currentMaxReads = 100
+	input.bookmark = Bookmark{handle: bookmarkHandle}
+	input.subscription = Subscription{handle: 42}
+	defer input.subscription.Close()
+
+	_, err := input.readWithRetry(100)
+	require.NoError(t, err)
+
+	assert.Equal(t, bookmarkHandle, capturedBookmark, "evtSubscribe should receive the Input's bookmark handle")
+	assert.Equal(t, 50, input.currentMaxReads, "batch size should be halved after RPC_S_INVALID_BOUND")
+}
+
+// TestInputReadWithRetry_RecursiveBatchReduction verifies that repeated RPC_S_INVALID_BOUND
+// errors cause the batch size to keep halving until a read succeeds.
+func TestInputReadWithRetry_RecursiveBatchReduction(t *testing.T) {
+	originalEvtNext := evtNext
+	originalEvtClose := evtClose
+	originalEvtSubscribe := evtSubscribe
+	defer func() {
+		evtNext = originalEvtNext
+		evtClose = originalEvtClose
+		evtSubscribe = originalEvtSubscribe
+	}()
+
+	evtClose = func(_ uintptr) error { return nil }
+	evtSubscribe = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
+		return 42, nil
+	}
+
+	var nextCalls int
+	evtNext = func(_ uintptr, _ uint32, _ *uintptr, _, _ uint32, _ *uint32) error {
+		nextCalls++
+		if nextCalls < 4 {
+			return windows.RPC_S_INVALID_BOUND
+		}
+		return nil
+	}
+
+	input := newTestInput()
+	input.maxReads = 100
+	input.currentMaxReads = 100
+	input.subscription = Subscription{handle: 42}
+	defer input.subscription.Close()
+
+	_, err := input.readWithRetry(100)
+	require.NoError(t, err)
+
+	// 100 → 50 → 25 → 12
+	assert.Equal(t, 12, input.currentMaxReads)
+	assert.Equal(t, 4, nextCalls)
 }
 
 // TestInputIncludeLogRecordOriginal tests that the log.record.original attribute is added when include_log_record_original is true
@@ -484,10 +566,7 @@ func TestInputRead_Batching(t *testing.T) {
 	input.maxEventsPerPollCycle = 999
 
 	input.subscription = Subscription{
-		handle:        42,
-		startAt:       "beginning",
-		sessionHandle: 0,
-		channel:       "test-channel",
+		handle: 42,
 	}
 
 	input.read(t.Context())

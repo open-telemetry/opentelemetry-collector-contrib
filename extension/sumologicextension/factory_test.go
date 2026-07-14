@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension"
 
@@ -23,7 +24,13 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	homePath, err := os.UserHomeDir()
 	require.NoError(t, err)
 	defaultCredsPath := path.Join(homePath, credentials.DefaultCollectorDataDirectory)
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
 	assert.Equal(t, &Config{
+		ClientConfig:                  clientConfig,
 		HeartBeatInterval:             DefaultHeartbeatInterval,
 		APIBaseURL:                    DefaultAPIBaseURL,
 		CollectorCredentialsDirectory: defaultCredsPath,

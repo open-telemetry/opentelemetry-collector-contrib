@@ -86,7 +86,7 @@ Bytes transferred over the network.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| by | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 

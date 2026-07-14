@@ -4,6 +4,8 @@
 package bearertokenauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"crypto/subtle"
 	"errors"
@@ -118,12 +120,23 @@ func (b *bearerTokenAuth) updateAuthorizationValues() {
 	if b.tokenResolver == nil {
 		return
 	}
+
 	tokenData := b.tokenResolver.Value()
-	tokens := strings.Split(tokenData, "\n")
-	for i, token := range tokens {
-		tokens[i] = strings.TrimSpace(token)
+	var validTokens []string
+	scanner := bufio.NewScanner(bytes.NewReader([]byte(tokenData)))
+	for scanner.Scan() {
+		line := scanner.Text()
+		// Split by whitespace (spaces, tabs, etc.)
+		// strings.Fields handles leading/trailing whitespace and multiple spaces automatically.
+		parts := strings.Fields(line)
+
+		// If the line has at least one part, the first part is the token.
+		// Everything else is treated as a comment/ignored.
+		if len(parts) > 0 {
+			validTokens = append(validTokens, parts[0])
+		}
 	}
-	b.setAuthorizationValues(tokens)
+	b.setAuthorizationValues(validTokens)
 }
 
 func (b *bearerTokenAuth) setAuthorizationValues(tokens []string) {

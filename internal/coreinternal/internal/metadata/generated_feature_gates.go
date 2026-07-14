@@ -6,6 +6,38 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var InternalCoreinternalGoldendatasetDontEmitV0DatabaseConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"internal.coreinternal.goldendataset.DontEmitV0DatabaseConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv v1.28.0 attribute db.system."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45299"),
+	featuregate.WithRegisterFromVersion("v0.154.0"),
+)
+
+var InternalCoreinternalGoldendatasetDontEmitV0FaaSConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"internal.coreinternal.goldendataset.DontEmitV0FaaSConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv FaaS attributes like faas.execution."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293"),
+	featuregate.WithRegisterFromVersion("v0.155.0"),
+)
+
+var InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"internal.coreinternal.goldendataset.DontEmitV0HTTPConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv HTTP attributes like http.user_agent and http.client_ip."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293"),
+	featuregate.WithRegisterFromVersion("v0.154.0"),
+)
+
+var InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"internal.coreinternal.goldendataset.DontEmitV0MessagingConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv v1.16.0 attribute messaging.destination."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45077"),
+	featuregate.WithRegisterFromVersion("v0.155.0"),
+)
+
 var InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.DontEmitV0NetworkConventions",
 	featuregate.StageBeta,
@@ -20,6 +52,38 @@ var InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate = featu
 	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv RPC attributes rpc.service and peer.service."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548"),
 	featuregate.WithRegisterFromVersion("v0.148.0"),
+)
+
+var InternalCoreinternalGoldendatasetEmitV1DatabaseConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"internal.coreinternal.goldendataset.EmitV1DatabaseConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with db.system.name (semconv v1.40.0) instead of the deprecated db.system (semconv v1.28.0)."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45299"),
+	featuregate.WithRegisterFromVersion("v0.154.0"),
+)
+
+var InternalCoreinternalGoldendatasetEmitV1FaaSConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"internal.coreinternal.goldendataset.EmitV1FaaSConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with faas.invocation_id (semconv v1.40.0) alongside legacy faas.execution to support migration."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293"),
+	featuregate.WithRegisterFromVersion("v0.155.0"),
+)
+
+var InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"internal.coreinternal.goldendataset.EmitV1HTTPConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with user_agent.original and client.address (semconv v1.40.0) alongside legacy http.user_agent and http.client_ip to support migration."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293"),
+	featuregate.WithRegisterFromVersion("v0.154.0"),
+)
+
+var InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"internal.coreinternal.goldendataset.EmitV1MessagingConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with messaging.destination.name (semconv v1.40.0) alongside legacy messaging.destination to support migration."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45077"),
+	featuregate.WithRegisterFromVersion("v0.155.0"),
 )
 
 var InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(

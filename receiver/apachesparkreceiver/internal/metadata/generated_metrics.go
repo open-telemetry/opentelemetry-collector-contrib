@@ -293,7 +293,8 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.driver.block_manager.disk.usage",
 	},
 	SparkDriverBlockManagerMemoryUsage: metricInfo{
-		Name: "spark.driver.block_manager.memory.usage",
+		Name:       "spark.driver.block_manager.memory.usage",
+		Attributes: []string{"location", "state"},
 	},
 	SparkDriverCodeGeneratorCompilationAverageTime: metricInfo{
 		Name: "spark.driver.code_generator.compilation.average_time",
@@ -326,28 +327,35 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.driver.dag_scheduler.job.count",
 	},
 	SparkDriverDagSchedulerStageCount: metricInfo{
-		Name: "spark.driver.dag_scheduler.stage.count",
+		Name:       "spark.driver.dag_scheduler.stage.count",
+		Attributes: []string{"scheduler_status"},
 	},
 	SparkDriverDagSchedulerStageFailed: metricInfo{
 		Name: "spark.driver.dag_scheduler.stage.failed",
 	},
 	SparkDriverExecutorGcOperations: metricInfo{
-		Name: "spark.driver.executor.gc.operations",
+		Name:       "spark.driver.executor.gc.operations",
+		Attributes: []string{"gc_type"},
 	},
 	SparkDriverExecutorGcTime: metricInfo{
-		Name: "spark.driver.executor.gc.time",
+		Name:       "spark.driver.executor.gc.time",
+		Attributes: []string{"gc_type"},
 	},
 	SparkDriverExecutorMemoryExecution: metricInfo{
-		Name: "spark.driver.executor.memory.execution",
+		Name:       "spark.driver.executor.memory.execution",
+		Attributes: []string{"location"},
 	},
 	SparkDriverExecutorMemoryJvm: metricInfo{
-		Name: "spark.driver.executor.memory.jvm",
+		Name:       "spark.driver.executor.memory.jvm",
+		Attributes: []string{"location"},
 	},
 	SparkDriverExecutorMemoryPool: metricInfo{
-		Name: "spark.driver.executor.memory.pool",
+		Name:       "spark.driver.executor.memory.pool",
+		Attributes: []string{"pool_memory_type"},
 	},
 	SparkDriverExecutorMemoryStorage: metricInfo{
-		Name: "spark.driver.executor.memory.storage",
+		Name:       "spark.driver.executor.memory.storage",
+		Attributes: []string{"location"},
 	},
 	SparkDriverHiveExternalCatalogFileCacheHits: metricInfo{
 		Name: "spark.driver.hive_external_catalog.file_cache_hits",
@@ -392,10 +400,12 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.executor.memory.usage",
 	},
 	SparkExecutorShuffleIoSize: metricInfo{
-		Name: "spark.executor.shuffle.io.size",
+		Name:       "spark.executor.shuffle.io.size",
+		Attributes: []string{"direction"},
 	},
 	SparkExecutorStorageMemoryUsage: metricInfo{
-		Name: "spark.executor.storage_memory.usage",
+		Name:       "spark.executor.storage_memory.usage",
+		Attributes: []string{"location", "state"},
 	},
 	SparkExecutorTaskActive: metricInfo{
 		Name: "spark.executor.task.active",
@@ -404,7 +414,8 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.executor.task.limit",
 	},
 	SparkExecutorTaskResult: metricInfo{
-		Name: "spark.executor.task.result",
+		Name:       "spark.executor.task.result",
+		Attributes: []string{"executor_task_result"},
 	},
 	SparkExecutorTime: metricInfo{
 		Name: "spark.executor.time",
@@ -413,13 +424,15 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.job.stage.active",
 	},
 	SparkJobStageResult: metricInfo{
-		Name: "spark.job.stage.result",
+		Name:       "spark.job.stage.result",
+		Attributes: []string{"job_result"},
 	},
 	SparkJobTaskActive: metricInfo{
 		Name: "spark.job.task.active",
 	},
 	SparkJobTaskResult: metricInfo{
-		Name: "spark.job.task.result",
+		Name:       "spark.job.task.result",
+		Attributes: []string{"job_result"},
 	},
 	SparkStageDiskSpilled: metricInfo{
 		Name: "spark.stage.disk.spilled",
@@ -431,10 +444,12 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.stage.executor.run_time",
 	},
 	SparkStageIoRecords: metricInfo{
-		Name: "spark.stage.io.records",
+		Name:       "spark.stage.io.records",
+		Attributes: []string{"direction"},
 	},
 	SparkStageIoSize: metricInfo{
-		Name: "spark.stage.io.size",
+		Name:       "spark.stage.io.size",
+		Attributes: []string{"direction"},
 	},
 	SparkStageJvmGcTime: metricInfo{
 		Name: "spark.stage.jvm_gc_time",
@@ -446,7 +461,8 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.stage.memory.spilled",
 	},
 	SparkStageShuffleBlocksFetched: metricInfo{
-		Name: "spark.stage.shuffle.blocks_fetched",
+		Name:       "spark.stage.shuffle.blocks_fetched",
+		Attributes: []string{"source"},
 	},
 	SparkStageShuffleFetchWaitTime: metricInfo{
 		Name: "spark.stage.shuffle.fetch_wait_time",
@@ -455,10 +471,12 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.stage.shuffle.io.disk",
 	},
 	SparkStageShuffleIoReadSize: metricInfo{
-		Name: "spark.stage.shuffle.io.read.size",
+		Name:       "spark.stage.shuffle.io.read.size",
+		Attributes: []string{"source"},
 	},
 	SparkStageShuffleIoRecords: metricInfo{
-		Name: "spark.stage.shuffle.io.records",
+		Name:       "spark.stage.shuffle.io.records",
+		Attributes: []string{"direction"},
 	},
 	SparkStageShuffleIoWriteSize: metricInfo{
 		Name: "spark.stage.shuffle.io.write.size",
@@ -467,13 +485,15 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.stage.shuffle.write_time",
 	},
 	SparkStageStatus: metricInfo{
-		Name: "spark.stage.status",
+		Name:       "spark.stage.status",
+		Attributes: []string{"stage_active", "stage_complete", "stage_pending", "stage_failed"},
 	},
 	SparkStageTaskActive: metricInfo{
 		Name: "spark.stage.task.active",
 	},
 	SparkStageTaskResult: metricInfo{
-		Name: "spark.stage.task.result",
+		Name:       "spark.stage.task.result",
+		Attributes: []string{"stage_task_result"},
 	},
 	SparkStageTaskResultSize: metricInfo{
 		Name: "spark.stage.task.result_size",
@@ -547,7 +567,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSparkDriverBlockManagerDiskUsage struct {
@@ -560,7 +581,7 @@ type metricSparkDriverBlockManagerDiskUsage struct {
 func (m *metricSparkDriverBlockManagerDiskUsage) init() {
 	m.data.SetName("spark.driver.block_manager.disk.usage")
 	m.data.SetDescription("Disk space used by the BlockManager.")
-	m.data.SetUnit("mb")
+	m.data.SetUnit("MBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -613,7 +634,7 @@ type metricSparkDriverBlockManagerMemoryUsage struct {
 func (m *metricSparkDriverBlockManagerMemoryUsage) init() {
 	m.data.SetName("spark.driver.block_manager.memory.usage")
 	m.data.SetDescription("Memory usage for the driver's BlockManager.")
-	m.data.SetUnit("mb")
+	m.data.SetUnit("MBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -808,7 +829,7 @@ type metricSparkDriverCodeGeneratorGeneratedClassAverageSize struct {
 func (m *metricSparkDriverCodeGeneratorGeneratedClassAverageSize) init() {
 	m.data.SetName("spark.driver.code_generator.generated_class.average_size")
 	m.data.SetDescription("Average class size of the classes generated by the CodeGenerator.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -910,7 +931,7 @@ type metricSparkDriverCodeGeneratorGeneratedMethodAverageSize struct {
 func (m *metricSparkDriverCodeGeneratorGeneratedMethodAverageSize) init() {
 	m.data.SetName("spark.driver.code_generator.generated_method.average_size")
 	m.data.SetDescription("Average method size of the classes generated by the CodeGenerator.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -1012,7 +1033,7 @@ type metricSparkDriverCodeGeneratorSourceCodeAverageSize struct {
 func (m *metricSparkDriverCodeGeneratorSourceCodeAverageSize) init() {
 	m.data.SetName("spark.driver.code_generator.source_code.average_size")
 	m.data.SetDescription("Average size of the source code generated by a CodeGenerator code generation operation.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -1544,7 +1565,7 @@ type metricSparkDriverExecutorMemoryExecution struct {
 func (m *metricSparkDriverExecutorMemoryExecution) init() {
 	m.data.SetName("spark.driver.executor.memory.execution")
 	m.data.SetDescription("Amount of execution memory currently used by the driver.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1635,7 +1656,7 @@ type metricSparkDriverExecutorMemoryJvm struct {
 func (m *metricSparkDriverExecutorMemoryJvm) init() {
 	m.data.SetName("spark.driver.executor.memory.jvm")
 	m.data.SetDescription("Amount of memory used by the driver's JVM.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1726,7 +1747,7 @@ type metricSparkDriverExecutorMemoryPool struct {
 func (m *metricSparkDriverExecutorMemoryPool) init() {
 	m.data.SetName("spark.driver.executor.memory.pool")
 	m.data.SetDescription("Amount of pool memory currently used by the driver.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1817,7 +1838,7 @@ type metricSparkDriverExecutorMemoryStorage struct {
 func (m *metricSparkDriverExecutorMemoryStorage) init() {
 	m.data.SetName("spark.driver.executor.memory.storage")
 	m.data.SetDescription("Amount of storage memory currently used by the driver.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -2425,7 +2446,7 @@ type metricSparkExecutorDiskUsage struct {
 func (m *metricSparkExecutorDiskUsage) init() {
 	m.data.SetName("spark.executor.disk.usage")
 	m.data.SetDescription("Disk space used by this executor for RDD storage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -2529,7 +2550,7 @@ type metricSparkExecutorInputSize struct {
 func (m *metricSparkExecutorInputSize) init() {
 	m.data.SetName("spark.executor.input_size")
 	m.data.SetDescription("Amount of data input for this executor.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -2581,7 +2602,7 @@ type metricSparkExecutorMemoryUsage struct {
 func (m *metricSparkExecutorMemoryUsage) init() {
 	m.data.SetName("spark.executor.memory.usage")
 	m.data.SetDescription("Storage memory used by this executor.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -2634,7 +2655,7 @@ type metricSparkExecutorShuffleIoSize struct {
 func (m *metricSparkExecutorShuffleIoSize) init() {
 	m.data.SetName("spark.executor.shuffle.io.size")
 	m.data.SetDescription("Amount of data written and read during shuffle operations for this executor.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -2725,7 +2746,7 @@ type metricSparkExecutorStorageMemoryUsage struct {
 func (m *metricSparkExecutorStorageMemoryUsage) init() {
 	m.data.SetName("spark.executor.storage_memory.usage")
 	m.data.SetDescription("The executor's storage memory usage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3351,7 +3372,7 @@ type metricSparkStageDiskSpilled struct {
 func (m *metricSparkStageDiskSpilled) init() {
 	m.data.SetName("spark.stage.disk.spilled")
 	m.data.SetDescription("The amount of disk space used for storing portions of overly large data chunks that couldn't fit in memory in this stage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3599,7 +3620,7 @@ type metricSparkStageIoSize struct {
 func (m *metricSparkStageIoSize) init() {
 	m.data.SetName("spark.stage.io.size")
 	m.data.SetDescription("Amount of data written and read at this stage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3741,7 +3762,7 @@ type metricSparkStageMemoryPeak struct {
 func (m *metricSparkStageMemoryPeak) init() {
 	m.data.SetName("spark.stage.memory.peak")
 	m.data.SetDescription("Peak memory used by internal data structures created during shuffles, aggregations and joins in this stage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3793,7 +3814,7 @@ type metricSparkStageMemorySpilled struct {
 func (m *metricSparkStageMemorySpilled) init() {
 	m.data.SetName("spark.stage.memory.spilled")
 	m.data.SetDescription("The amount of memory moved to disk due to size constraints (spilled) in this stage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3988,7 +4009,7 @@ type metricSparkStageShuffleIoDisk struct {
 func (m *metricSparkStageShuffleIoDisk) init() {
 	m.data.SetName("spark.stage.shuffle.io.disk")
 	m.data.SetDescription("Amount of data read to disk in shuffle operations (sometimes required for large blocks, as opposed to the default behavior of reading into memory).")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -4041,7 +4062,7 @@ type metricSparkStageShuffleIoReadSize struct {
 func (m *metricSparkStageShuffleIoReadSize) init() {
 	m.data.SetName("spark.stage.shuffle.io.read.size")
 	m.data.SetDescription("Amount of data read in shuffle operations in this stage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -4222,7 +4243,7 @@ type metricSparkStageShuffleIoWriteSize struct {
 func (m *metricSparkStageShuffleIoWriteSize) init() {
 	m.data.SetName("spark.stage.shuffle.io.write.size")
 	m.data.SetDescription("Amount of data written in shuffle operations in this stage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -4569,7 +4590,7 @@ type metricSparkStageTaskResultSize struct {
 func (m *metricSparkStageTaskResultSize) init() {
 	m.data.SetName("spark.stage.task.result_size")
 	m.data.SetDescription("The amount of data transmitted back to the driver by all the tasks in this stage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

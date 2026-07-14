@@ -1,0 +1,13 @@
+change_type: bug_fix
+
+component: receiver/podman_stats
+
+note: Report `container.blockio.io_service_bytes_recursive.read`/`.write` with unit `By` instead of `{operations}`
+
+issues: [49580]
+
+subtext: |
+  These metrics record byte counts (from `stats.BlockInput`/`BlockOutput`) and
+  describe themselves as bytes, but declared the operation-count unit
+  `{operations}`. This aligns them with the equivalent dockerstats receiver
+  metric and with podman's own other byte-valued metrics.

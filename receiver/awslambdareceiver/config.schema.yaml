@@ -11,6 +11,8 @@ $defs:
         type: array
         items:
           $ref: s_3_encoding
+    allOf:
+      - $ref: ./internal.aws_options
   s_3_encoding:
     description: S3Encoding defines one entry in the S3 multi-encoding routing table.
     type: object
@@ -29,6 +31,13 @@ type: object
 properties:
   cloudwatch:
     description: CloudWatch defines configuration for the CloudWatch Logs Lambda trigger.
+    type: object
+    properties:
+      encoding:
+        description: Encoding defines the encoding to decode incoming Lambda invocation data.
+        type: string
+  custom:
+    description: Custom defines configurations for custom trigger
     type: object
     properties:
       encoding:

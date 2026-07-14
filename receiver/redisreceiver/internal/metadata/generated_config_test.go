@@ -444,6 +444,126 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestRedisClusterStateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisClusterState
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisClusterStateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.cluster.state doesn't have an attribute invalid, valid attributes: [cluster_state]")
+
+	cfg = DefaultMetricsConfig().RedisClusterState
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisCmdCallsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisCmdCalls
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisCmdCallsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.cmd.calls doesn't have an attribute invalid, valid attributes: [cmd]")
+
+	cfg = DefaultMetricsConfig().RedisCmdCalls
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisCmdLatencyMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisCmdLatency
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisCmdLatencyMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.cmd.latency doesn't have an attribute invalid, valid attributes: [cmd, percentile]")
+
+	cfg = DefaultMetricsConfig().RedisCmdLatency
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisCmdUsecMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisCmdUsec
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisCmdUsecMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.cmd.usec doesn't have an attribute invalid, valid attributes: [cmd]")
+
+	cfg = DefaultMetricsConfig().RedisCmdUsec
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisCPUTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisCPUTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisCPUTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.cpu.time doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().RedisCPUTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisDbAvgTTLMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisDbAvgTTL
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisDbAvgTTLMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.db.avg_ttl doesn't have an attribute invalid, valid attributes: [db]")
+
+	cfg = DefaultMetricsConfig().RedisDbAvgTTL
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisDbExpiresMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisDbExpires
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisDbExpiresMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.db.expires doesn't have an attribute invalid, valid attributes: [db]")
+
+	cfg = DefaultMetricsConfig().RedisDbExpires
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisDbKeysMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisDbKeys
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisDbKeysMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.db.keys doesn't have an attribute invalid, valid attributes: [db]")
+
+	cfg = DefaultMetricsConfig().RedisDbKeys
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisModeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisMode
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisModeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.mode doesn't have an attribute invalid, valid attributes: [mode]")
+
+	cfg = DefaultMetricsConfig().RedisMode
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisRoleMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisRole
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisRoleMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.role doesn't have an attribute invalid, valid attributes: [role]")
+
+	cfg = DefaultMetricsConfig().RedisRole
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

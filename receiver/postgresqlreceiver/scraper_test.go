@@ -4,6 +4,7 @@
 package postgresqlreceiver
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"database/sql/driver"
@@ -14,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -67,6 +69,7 @@ func TestScraper(t *testing.T) {
 		cfg.Metrics.PostgresqlBlksRead.Enabled = true
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
+		cfg.Metrics.PostgresqlQueryConflicts.Enabled = true
 
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 
@@ -121,6 +124,8 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlQueryConflicts.Enabled)
+		cfg.Metrics.PostgresqlQueryConflicts.Enabled = true
 
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 		actualMetrics, err := scraper.scrape(t.Context())
@@ -146,6 +151,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlBlksRead.Enabled = false
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = false
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = false
+		cfg.Metrics.PostgresqlQueryConflicts.Enabled = false
 
 		scraper = newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 		actualMetrics, err = scraper.scrape(t.Context())
@@ -260,7 +266,6 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		expectedFile := filepath.Join("testdata", "scraper", "multiple", file)
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
-		fmt.Println(actualMetrics.ResourceMetrics())
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
@@ -359,6 +364,8 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlQueryConflicts.Enabled)
+		cfg.Metrics.PostgresqlQueryConflicts.Enabled = true
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
 
 		actualMetrics, err := scraper.scrape(t.Context())
@@ -423,6 +430,13 @@ var querySampleColumns = []string{
 	querySampleColumnState,
 	querySampleColumnQuery,
 	querySampleColumnDurationMilliseconds,
+	querySampleColumnBlockingPIDs,
+	querySampleColumnBlockingStartTime,
+	querySampleColumnBlockingWaitDuration,
+	querySampleColumnBlockingLockMode,
+	querySampleColumnBlockingLockType,
+	querySampleColumnBlockingLockRelation,
+	querySampleColumnBlockingTxnStartTime,
 }
 
 func newQuerySampleRows(t *testing.T, values map[string]any) *sqlmock.Rows {
@@ -475,6 +489,7 @@ func TestScrapeQuerySample(t *testing.T) {
 		querySampleColumnState:                "idle",
 		querySampleColumnQuery:                "select * from pg_stat_activity where id = 32",
 		querySampleColumnDurationMilliseconds: "1.2",
+		querySampleColumnBlockingPIDs:         "{}",
 	}))
 	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
 	assert.NoError(t, err)
@@ -525,6 +540,7 @@ func TestScrapeQuerySampleWithTraceparent(t *testing.T) {
 		querySampleColumnState:                "idle",
 		querySampleColumnQuery:                "select * from pg_stat_activity where id = 32",
 		querySampleColumnDurationMilliseconds: "1.2",
+		querySampleColumnBlockingPIDs:         "{}",
 	}))
 	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
 	require.NoError(t, err)
@@ -542,6 +558,270 @@ func TestScrapeQuerySampleWithTraceparent(t *testing.T) {
 	applicationName, ok := lr.Attributes().Get("postgresql.application_name")
 	require.True(t, ok)
 	require.Equal(t, traceparent, applicationName.Str())
+}
+
+func TestQuerySampleTemplateRendering(t *testing.T) {
+	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
+
+	tests := []struct {
+		name   string
+		params map[string]any
+	}{
+		{
+			name: "renders with standard parameters",
+			params: map[string]any{
+				"limit":                int64(50),
+				"newestQueryTimestamp": 999999.555,
+			},
+		},
+		{
+			name: "renders with zero timestamp",
+			params: map[string]any{
+				"limit":                int64(10),
+				"newestQueryTimestamp": float64(0),
+			},
+		},
+	}
+
+	requiredClauses := []string{
+		"pid != pg_backend_pid()",
+		"query_start IS NOT NULL",
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			buf := bytes.Buffer{}
+			err := tmpl.Execute(&buf, tc.params)
+			require.NoError(t, err)
+
+			rendered := buf.String()
+			for _, clause := range requiredClauses {
+				assert.Contains(t, rendered, clause, "rendered SQL should contain %q", clause)
+			}
+
+			assert.Contains(t, rendered, fmt.Sprintf("LIMIT %v;", tc.params["limit"]))
+			assert.Contains(t, rendered, fmt.Sprintf("TO_TIMESTAMP(%v)", tc.params["newestQueryTimestamp"]))
+		})
+	}
+}
+
+func TestScrapeQuerySampleNoResults(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.Events.DbServerQuerySample.Enabled = true
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{db: db}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper.newestQueryTimestamp = 123440.111
+
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(sqlmock.NewRows(querySampleColumns))
+
+	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
+	assert.NoError(t, err)
+
+	totalRecords := 0
+	for i := 0; i < actualLogs.ResourceLogs().Len(); i++ {
+		rl := actualLogs.ResourceLogs().At(i)
+		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+			totalRecords += rl.ScopeLogs().At(j).LogRecords().Len()
+		}
+	}
+	assert.Equal(t, 0, totalRecords)
+}
+
+func TestScrapeQuerySampleMultipleRows(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.Events.DbServerQuerySample.Enabled = true
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{db: db}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper.newestQueryTimestamp = 123440.111
+
+	row1 := map[string]any{
+		querySampleColumnDatname:              "postgres",
+		querySampleColumnUsename:              "user1",
+		querySampleColumnClientAddr:           "10.0.0.1",
+		querySampleColumnClientHostname:       "host1",
+		querySampleColumnClientPort:           "5432",
+		querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
+		querySampleColumnQueryID:              "111",
+		querySampleColumnPID:                  "1001",
+		querySampleColumnApplicationName:      "app1",
+		querySampleColumnQueryStartTimestamp:  "123445.123",
+		querySampleColumnState:                "active",
+		querySampleColumnQuery:                "SELECT * FROM orders WHERE status = 'pending'",
+		querySampleColumnDurationMilliseconds: "5.3",
+	}
+	row2 := map[string]any{
+		querySampleColumnDatname:              "postgres",
+		querySampleColumnUsename:              "user2",
+		querySampleColumnClientAddr:           "10.0.0.2",
+		querySampleColumnClientHostname:       "host2",
+		querySampleColumnClientPort:           "5433",
+		querySampleColumnQueryStart:           "2025-02-12T16:38:00.000+08:00",
+		querySampleColumnQueryID:              "222",
+		querySampleColumnPID:                  "1002",
+		querySampleColumnApplicationName:      "app2",
+		querySampleColumnQueryStartTimestamp:  "123450.000",
+		querySampleColumnState:                "idle",
+		querySampleColumnQuery:                "UPDATE users SET last_login = now() WHERE id = 42",
+		querySampleColumnDurationMilliseconds: "12.7",
+	}
+
+	rows := sqlmock.NewRows(querySampleColumns)
+	for _, rowData := range []map[string]any{row1, row2} {
+		rowValues := make([]driver.Value, len(querySampleColumns))
+		for i, col := range querySampleColumns {
+			if v, ok := rowData[col]; ok {
+				rowValues[i] = v
+				continue
+			}
+			rowValues[i] = ""
+		}
+		rows.AddRow(rowValues...)
+	}
+
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(rows)
+
+	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
+	assert.NoError(t, err)
+
+	require.Equal(t, 1, actualLogs.ResourceLogs().Len())
+	rl := actualLogs.ResourceLogs().At(0)
+	require.Equal(t, 1, rl.ScopeLogs().Len())
+	sl := rl.ScopeLogs().At(0)
+	assert.Equal(t, 2, sl.LogRecords().Len())
+}
+
+func TestScrapeQuerySampleBlockedSession(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.Events.DbServerQuerySample.Enabled = true
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{db: db}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper.newestQueryTimestamp = 123440.111
+
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+		querySampleColumnDatname:              "postgres",
+		querySampleColumnUsename:              "otelu",
+		querySampleColumnClientAddr:           "11.4.5.14",
+		querySampleColumnClientHostname:       "otel",
+		querySampleColumnClientPort:           "114514",
+		querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
+		querySampleColumnQueryID:              "999",
+		querySampleColumnPID:                  "2500",
+		querySampleColumnApplicationName:      "app",
+		querySampleColumnQueryStartTimestamp:  "123445.123",
+		querySampleColumnState:                "active",
+		querySampleColumnQuery:                "update orders set status = ? where id = ?",
+		querySampleColumnDurationMilliseconds: "42.0",
+		querySampleColumnBlockingPIDs:         "{3001}",
+		querySampleColumnBlockingStartTime:    "2025-02-12T16:37:50Z",
+		querySampleColumnBlockingWaitDuration: "42",
+		querySampleColumnBlockingLockMode:     "AccessExclusiveLock",
+		querySampleColumnBlockingLockType:     "relation",
+		querySampleColumnBlockingLockRelation: "orders",
+		querySampleColumnBlockingTxnStartTime: "2025-02-12T16:37:49Z",
+	}))
+
+	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
+	require.NoError(t, err)
+	require.Equal(t, 1, actualLogs.ResourceLogs().Len())
+	lr := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	attrs := lr.Attributes().AsRaw()
+	assert.Equal(t, "{3001}", attrs["postgresql.blocking.pids"])
+	assert.Equal(t, "2025-02-12T16:37:50Z", attrs["postgresql.blocking.start_time"])
+	assert.Equal(t, int64(42), attrs["postgresql.blocking.wait_duration"])
+	assert.Equal(t, "AccessExclusiveLock", attrs["postgresql.blocking.lock.mode"])
+	assert.Equal(t, "relation", attrs["postgresql.blocking.lock.type"])
+	assert.Equal(t, "orders", attrs["postgresql.blocking.lock.relation"])
+	assert.Equal(t, "2025-02-12T16:37:49Z", attrs["postgresql.blocking.transaction.start_time"])
+}
+
+func TestScrapeQuerySampleMultiBlocker(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.Events.DbServerQuerySample.Enabled = true
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{db: db}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper.newestQueryTimestamp = 123440.111
+
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+		querySampleColumnDatname:              "postgres",
+		querySampleColumnUsename:              "otelu",
+		querySampleColumnClientAddr:           "11.4.5.14",
+		querySampleColumnClientHostname:       "otel",
+		querySampleColumnClientPort:           "5432",
+		querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
+		querySampleColumnQueryID:              "888",
+		querySampleColumnPID:                  "2600",
+		querySampleColumnApplicationName:      "app",
+		querySampleColumnQueryStartTimestamp:  "123445.123",
+		querySampleColumnState:                "active",
+		querySampleColumnQuery:                "update orders set status = ? where id = ?",
+		querySampleColumnDurationMilliseconds: "10.0",
+		querySampleColumnBlockingPIDs:         "{3001,3002}",
+		querySampleColumnBlockingStartTime:    "2025-02-12T16:37:50Z",
+		querySampleColumnBlockingWaitDuration: "10",
+		querySampleColumnBlockingLockMode:     "RowExclusiveLock",
+		querySampleColumnBlockingLockType:     "relation",
+		querySampleColumnBlockingLockRelation: "orders",
+		querySampleColumnBlockingTxnStartTime: "2025-02-12T16:37:49Z",
+	}))
+
+	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
+	require.NoError(t, err)
+	require.Equal(t, 1, actualLogs.ResourceLogs().Len())
+	lr := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	attrs := lr.Attributes().AsRaw()
+	assert.Equal(t, "{3001,3002}", attrs["postgresql.blocking.pids"])
+	assert.Equal(t, "2025-02-12T16:37:50Z", attrs["postgresql.blocking.start_time"])
+	assert.Equal(t, int64(10), attrs["postgresql.blocking.wait_duration"])
+	assert.Equal(t, "RowExclusiveLock", attrs["postgresql.blocking.lock.mode"])
+	assert.Equal(t, "relation", attrs["postgresql.blocking.lock.type"])
+	assert.Equal(t, "orders", attrs["postgresql.blocking.lock.relation"])
+	assert.Equal(t, "2025-02-12T16:37:49Z", attrs["postgresql.blocking.transaction.start_time"])
 }
 
 //go:embed testdata/scraper/top-query/expectedSql.sql
@@ -592,7 +872,7 @@ func TestScrapeTopQueries(t *testing.T) {
 	var expectedValuesBuilder strings.Builder
 	for k, v := range expectedReturnedValue {
 		expectedRows = append(expectedRows, k)
-		expectedValuesBuilder.WriteString(fmt.Sprintf("%s,", v))
+		fmt.Fprintf(&expectedValuesBuilder, "%s,", v)
 	}
 	expectedValues := expectedValuesBuilder.String()
 
@@ -867,6 +1147,11 @@ func (m *mockClient) getDatabaseStats(_ context.Context, databases []string) (ma
 	return args.Get(0).(map[databaseName]databaseStats), args.Error(1)
 }
 
+func (m *mockClient) getDatabaseConflicts(_ context.Context, databases []string) (map[databaseName]databaseConflictStats, error) {
+	args := m.Called(databases)
+	return args.Get(0).(map[databaseName]databaseConflictStats), args.Error(1)
+}
+
 func (m *mockClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
 	args := m.Called(ctx)
 	return args.Get(0).([]databaseLocks), args.Error(1)
@@ -961,6 +1246,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		m.On("listDatabases").Return(databases, nil)
 
 		dbStats := map[databaseName]databaseStats{}
+		dbConflictStats := map[databaseName]databaseConflictStats{}
 		dbSize := map[databaseName]int64{}
 		backends := map[databaseName]int64{}
 
@@ -979,11 +1265,19 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				blksRead:             int64(idx + 11),
 				tempIo:               int64(idx + 12),
 			}
+			dbConflictStats[databaseName(db)] = databaseConflictStats{
+				conflTablespace: int64(idx + 13),
+				conflLock:       int64(idx + 14),
+				conflSnapshot:   int64(idx + 15),
+				conflBufferpin:  int64(idx + 16),
+				conflDeadlock:   int64(idx + 17),
+			}
 			dbSize[databaseName(db)] = int64(idx + 4)
 			backends[databaseName(db)] = int64(idx + 3)
 		}
 
 		m.On("getDatabaseStats", databases).Return(dbStats, nil)
+		m.On("getDatabaseConflicts", databases).Return(dbConflictStats, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
 		m.On("getBackends", databases).Return(backends, nil)
 		m.On("getBGWriterStats", mock.Anything).Return(&bgStat{

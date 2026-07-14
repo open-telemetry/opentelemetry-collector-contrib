@@ -12,12 +12,30 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxdatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
+
+func Test_MarshalLogObject_IncludesDataPoint(t *testing.T) {
+	numberDataPoint := createNumberDataPointTelemetry(pmetric.NumberDataPointValueTypeDouble)
+	ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), numberDataPoint)
+	defer ctx.Close()
+
+	encoder := zapcore.NewMapObjectEncoder()
+	require.NoError(t, ctx.MarshalLogObject(encoder))
+
+	datapoint, ok := encoder.Fields["datapoint"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, float64(1.1), datapoint["value_double"])
+
+	attributes, ok := datapoint["attributes"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "val", attributes["str"])
+}
 
 func Test_newPathGetSetter_Cache(t *testing.T) {
 	newCache := pcommon.NewMap()

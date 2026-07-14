@@ -43,7 +43,7 @@ receivers:
         endpoint: ":4317"
 
 processors:
-  resourcedetection:
+  resource_detection:
     detectors:
       - system
     system:
@@ -59,6 +59,6 @@ service:
   pipelines:
     logs:
       receivers: [ otlp ]
-      processors: [ resourcedetection ]
+      processors: [ resource_detection ]
       exporters: [ mezmo ]
 ```

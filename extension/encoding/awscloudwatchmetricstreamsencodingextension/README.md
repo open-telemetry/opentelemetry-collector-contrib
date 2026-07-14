@@ -3,7 +3,6 @@
 
 This extension unmarshalls metrics encoded in formats produced by [Amazon CloudWatch Metric Streams](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Metric-Streams.html).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]  |

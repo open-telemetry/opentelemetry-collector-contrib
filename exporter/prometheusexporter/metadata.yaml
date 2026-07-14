@@ -14,9 +14,10 @@ status:
 feature_gates:
   - id: exporter.prometheusexporter.DisableAddMetricSuffixes
     description: When enabled, the deprecated add_metric_suffixes configuration option is ignored and translation_strategy is always used
-    stage: alpha
+    stage: beta
     from_version: "v0.132.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-specification/pull/4533
+    skip_strict_validation: true
 
 tests:
   config:

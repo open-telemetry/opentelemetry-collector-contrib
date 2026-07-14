@@ -3,7 +3,6 @@
 
 The Kubernetes Attributes Processor allows adding k8s metadata to resource attributes for spans, metrics and logs.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: profiles   |
@@ -12,8 +11,8 @@ The Kubernetes Attributes Processor allows adding k8s metadata to resource attri
 | Warnings      | [Memory consumption, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fk8sattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fk8sattributes) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_k8sattributes)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_k8sattributes&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark), [@odubajDT](https://www.github.com/odubajDT) |
-| Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark), [@odubajDT](https://www.github.com/odubajDT) |
+| Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick), [@fatsheep9146](https://www.github.com/fatsheep9146) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -69,7 +68,7 @@ The following attributes are added by default:
   - k8s.pod.name
   - k8s.pod.uid
   - k8s.pod.start_time
-  - k8s.deployment.name (requires watching Deployment resources unless `deployment_name_from_replicaset` is enabled)
+  - k8s.deployment.name (derived from the ReplicaSet name by default. Set the deprecated `deployment_name_from_replicaset` option to `false` to use the ReplicaSet informer for deployment name lookup.)
   - k8s.node.name
 
 These attributes are also available for the use within association rules by default.
@@ -90,10 +89,11 @@ are then also available for the use within association rules. Available attribut
   - k8s.statefulset.uid
   - k8s.statefulset.name
   - k8s.cronjob.uid
-  - k8s.cronjob.name
+  - k8s.cronjob.name (by default uses a Job-name heuristic when only the name is needed; the Job informer is used when `k8s.cronjob.uid` is enabled and/or labels or annotations are extracted with `from: job`)
   - k8s.job.uid
   - k8s.job.name
   - k8s.node.name
+  - k8s.node.uid
   - k8s.cluster.uid
   - [service.namespace](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicenamespace-should-be-calculated)
   - [service.name](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicename-should-be-calculated)
@@ -226,6 +226,20 @@ wait_for_metadata: true
 wait_for_metadata_timeout: 10s
 ```
 
+## Informer Cache Resync Period
+
+Reprocessing the informer cache periodically (resyncing) enqueues all cached K8s objects back into event handlers. In large clusters (e.g., 100K pods), this causes significant CPU spikes, memory churn, and garbage collection overhead.
+Because resource state modifications are already pushed immediately via Kubernetes watch events, a resync period is almost entirely unnecessary.
+
+- `watch_sync_period` (`default: 5m`): The resync period for K8s informers. You may set this to `0s` to disable resyncing completely (recommended for large clusters).
+
+## Pod Deletion Grace Period
+
+After receiving a pod deletion event, the processor can keep the pod's metadata in its lookup cache for a short period before eviction. This grace window ensures that delayed spans, metrics, or logs that belong to the deleted pod can still be correctly enriched.
+
+- `pod_delete_grace_period` (`default: 120s`): The grace period to wait before deleting a pod's metadata from the lookup cache after a deletion event.
+
+
 ## Extracting attributes from pod labels and annotations
 
 The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments, statefulsets, daemonsets, jobs and nodes.
@@ -233,7 +247,7 @@ The config for associating the data passing through the processor (spans, metric
 This config represents a list of annotations/labels that are extracted from pods/namespaces/deployments/statefulsets/daemonsets/jobs/nodes and added to spans, metrics and logs.
 Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
 key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
-The "from" field has only three possible values "pod", "namespace", "deployment", "statefulset", "daemonset", "job" and "node" and defaults to "pod" if none is specified.
+The "from" field has the following possible values: "pod", "namespace", "deployment", "statefulset", "daemonset", "job" and "node" and defaults to "pod" if none is specified.
 
 By default, extracting metadata from `Deployments`, `StatefulSets`, `DaemonSets` and `Jobs` is disabled. Enabling extraction of these metadata comes with an extra memory consumption cost.
 
@@ -269,9 +283,9 @@ The processor can be configured to set the
 [recommended resource attributes](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/):
 
 - `otel_annotations` will translate `resource.opentelemetry.io/foo` to the `foo` resource attribute, etc.
-- `deployment_name_from_replicaset` allows extracting deployment name from replicaset name by trimming pod template hash. This will disable watching for replicaset resources, which can be useful in environments with limited RBAC permissions as the processor will not need `get`, `watch`, and `list` permissions for `deployments`. It also reduces memory consumption of the processor.
+- `deployment_name_from_replicaset` is deprecated and will be removed in future releases. Deployment names are derived from ReplicaSet names by default by trimming the pod-template-hash suffix. Set this option to `false` only to force ReplicaSet informer lookup for deployment names. If `k8s.deployment.uid` is included in the `extract metadata` section, or deployment labels or annotations are being extracted (i.e. any `extract.labels` or `extract.annotations` rule with `from: deployment`), then the Deployment/ReplicaSet informers are started and this setting is ignored.
 
-  **Important:** When `deployment_name_from_replicaset: true` is set, you **must still include** `k8s.deployment.name` (or `service.name`) in the `extract.metadata` section for the deployment name to be extracted. The processor derives the deployment name from the ReplicaSet's naming convention without requiring direct access to Deployment resources, but the extraction rules must be enabled.
+  **Important:** You **must still include** `k8s.deployment.name` (or `service.name`) in the `extract.metadata` section for the deployment name to be extracted. The processor derives the deployment name from the ReplicaSet's naming convention without requiring direct access to Deployment resources, but the extraction rules must be enabled.
 
   Take the following ownerReference of a pod managed by deployment for example:
 
@@ -287,15 +301,15 @@ The processor can be configured to set the
 
 The Extracted deployment name is: `opentelemetry-collector`.
 
-> Please note, if your pods are managed by a replicaset but not by a deployment the `k8s.deployment.name` will be set incorrectly. For example, if the replicaset is named `opentelemetry-collector-6c45f8d6f6`, the feature will still set the deployment name of the pod to  `opentelemetry-collector` because it skips watching for the deployment and has no context if the pod is managed by a deployment or a replicaset.
-Another edge case to be aware of is when the deployment name is long. Kubernetes may truncate it in the ReplicaSet name to ensure there is enough space for the pod template hash suffix, so the full name fits within the DNS subdomain limit (253 characters). In such cases, the extracted k8s.deployment.name will be the truncated form, not the original full deployment name.
+**Note:** When deployment names are derived from ReplicaSet names, in rare cases where deployment names are between 247 and 253 characters, Kubernetes may truncate the name in the ReplicaSet to fit the pod template hash suffix within the DNS subdomain limit (253 chars), causing the extracted `k8s.deployment.name` to be slightly truncated. If this affects your workloads, you can set `deployment_name_from_replicaset: false` or enable the `k8s.deployment.uid` attribute for accurate retrieval from the Kubernetes API, but at an extra cost in memory.
+
+Also note that for **CronJob names (`k8s.cronjob.name`)** a similar pattern applies, but it uses the **Job** informer (not ReplicaSet) and there is **no** `deployment_name_from_replicaset`-style flag. With only `k8s.cronjob.name` in `extract.metadata`, the processor derives the CronJob name from the Job's name using a heuristic (8-digit time suffix aligned with pod creation time) and does **not** start a Job informer. The Job informer is started when `k8s.cronjob.uid` is enabled, or when labels or annotations are extracted with `from: job`, in which case the CronJob name can be resolved from the API when available. That reduces RBAC needs and memory use when you only need the CronJob name (no `jobs` watch for that attribute alone).
 
 Example:
 
 ```yaml
   extract:
     otel_annotations: true
-    deployment_name_from_replicaset: true
     metadata:
       - service.namespace
       - service.name
@@ -317,7 +331,7 @@ k8s_attributes:
     metadata:
       - k8s.pod.name
       - k8s.pod.uid
-      - k8s.deployment.name  # Requires watching Deployment resources. To avoid this, use deployment_name_from_replicaset instead.
+      - k8s.deployment.name  # Derived from the ReplicaSet name by default.
       - k8s.namespace.name
       - k8s.node.name
       - k8s.pod.start_time
@@ -459,11 +473,9 @@ processors:
         - k8s.namespace.name
         - k8s.pod.name
         - k8s.pod.uid
-        - k8s.deployment.name  # Required to enable deployment name extraction
-        # Note: deployment_name_from_replicaset extracts the name from the ReplicaSet
-        # without watching Deployment resources, but k8s.deployment.name must still be listed
-      # Use deployment name extraction without watching replicasets
-      deployment_name_from_replicaset: true
+        # Deployment names are derived from ReplicaSet names by default, but
+        # k8s.deployment.name must still be listed to enable extraction.
+        - k8s.deployment.name
 ```
 
 ### Example 5: Multi-Container Pod Support
@@ -497,7 +509,13 @@ processors:
 
 ## Cluster-scoped RBAC
 
-If you'd like to set up the k8sattributesprocessor to receive telemetry from across namespaces, it will need `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.name` (which is enabled by default) or `k8s.deployment.uid` the processor also needs `get`, `watch` and `list` permissions for `replicasets` resources (unless `deployment_name_from_replicaset` is enabled). When using `k8s.node.uid` or extracting metadata from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources. When using `k8s.cronjob.uid` the processor also needs `get`, `watch` and `list` permissions for `jobs` resources.
+If you'd like to set up the k8sattributesprocessor to receive telemetry from across namespaces, it will need `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.uid`, when using `k8s.deployment.name` with the deprecated `deployment_name_from_replicaset: false`, or when extracting labels or annotations with `from: deployment`, the processor needs `get`, `watch` and `list` permissions for `replicasets` resources.
+
+When using `k8s.node.uid` or extracting metadata from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources.
+
+With only `k8s.cronjob.name` (and no `k8s.cronjob.uid`, and no label or annotation extraction with `from: job`), the processor does not need `get`, `watch` and `list` permissions for `jobs` resources.
+
+When using `k8s.cronjob.uid`, or when extracting labels or annotations with `from: job`, the processor also needs `get`, `watch` and `list` permissions for `jobs` resources.
 
 Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods, nodes, and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
 
@@ -547,7 +565,7 @@ k8s_attributes:
   filter:
     namespace: <WORKLOAD_NAMESPACE>
 ```
-With the namespace filter set, the processor will only look up pods and replicasets (if `deployment_name_from_replicaset` is not enabled) in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
+With the namespace filter set, the processor will only look up pods and replicasets (when ReplicaSet lookup is needed, such as `deployment_name_from_replicaset: false`, `k8s.deployment.uid`, or deployment label/annotation extraction) in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
 
 Please note, when extracting the workload related attributes, these workloads need to be present in the `Role` with the correct permissions. For example, an extraction of `k8s.deployment.label.*` attributes, `deployments` need to be present in `Role`.
 
@@ -673,13 +691,19 @@ k8s_attributes:
   # Default: "serviceAccount"
   auth_type: "serviceAccount"
   
-  # Path to kubeconfig file (only used when auth_type is "kubeConfig")
-  # Default: ""
-  kube_config_path: "~/.kube/config"
-  
   # Kubernetes API server context (only used when auth_type is "kubeConfig")
   # Default: ""
   context: ""
+  
+  # Maximum number of queries per second to the Kubernetes API
+  # Uses client-go's default if unset. Increase if you see client-side throttling warnings.
+  # Default: 5
+  kube_api_qps: 5
+  
+  # Maximum burst of requests to the Kubernetes API
+  # Uses client-go's default if unset. Increase if you see client-side throttling warnings.
+  # Default: 10
+  kube_api_burst: 10
   
   # Passthrough mode - only annotates resources with pod IP without extracting metadata
   # Useful for agents that don't need K8s API access
@@ -695,6 +719,14 @@ k8s_attributes:
   # Only applies when wait_for_metadata is true
   # Default: 10s
   wait_for_metadata_timeout: 10s
+  
+  # Informer resync period. Setting this to 0s disables resyncing completely.
+  # Default: 5m
+  watch_sync_period: 5m
+  
+  # Grace period to wait before removing deleted pods from the cache.
+  # Default: 120s
+  pod_delete_grace_period: 120s
   
   # Extract configuration - defines what metadata to extract
   extract:
@@ -782,11 +814,11 @@ k8s_attributes:
     # Default: false
     otel_annotations: true
     
-    # Extract deployment name from replicaset name (disables replicaset watching)
-    # Reduces memory usage and RBAC requirements
+    # Deprecated. Deployment names are derived from ReplicaSet names by default.
+    # Set to false only to force ReplicaSet informer lookup.
     # See [Configuring recommended resource attributes](#configuring-recommended-resource-attributes) section for more details
-    # Default: false
-    deployment_name_from_replicaset: false
+    # Default: true
+    deployment_name_from_replicaset: true
   
   # Filter configuration - restrict which pods to monitor
   filter:
@@ -861,11 +893,14 @@ k8s_attributes:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `auth_type` | string | `serviceAccount` | Authentication method for K8s API: `none`, `serviceAccount`, or `kubeConfig` |
-| `kube_config_path` | string | `""` | Path to kubeconfig file (only when `auth_type: kubeConfig`) |
 | `context` | string | `""` | K8s context to use (only when `auth_type: kubeConfig`) |
+| `kube_api_qps` | float32 | `5` | Max queries per second to K8s API. Increase if you see client-side throttling warnings |
+| `kube_api_burst` | int | `10` | Max burst of requests to K8s API. Increase if you see client-side throttling warnings |
 | `passthrough` | bool | `false` | Only add pod IP without extracting metadata (no K8s API calls) |
 | `wait_for_metadata` | bool | `false` | Block collector startup until metadata is synced |
 | `wait_for_metadata_timeout` | duration | `10s` | Max wait time for metadata sync on startup |
+| `watch_sync_period` | duration | `5m` | Resync period for K8s informers (`0s` disables resync completely) |
+| `pod_delete_grace_period` | duration | `120s` | Grace period to wait before deleting pod metadata from the cache on deletion |
 
 #### Extract Options
 
@@ -875,7 +910,7 @@ k8s_attributes:
 | `annotations` | []FieldExtractConfig | `[]` | Pod/namespace/node annotations to extract |
 | `labels` | []FieldExtractConfig | `[]` | Pod/namespace/node labels to extract |
 | `otel_annotations` | bool | `false` | Extract OpenTelemetry resource attributes from pod annotations with prefix `resource.opentelemetry.io/` |
-| `deployment_name_from_replicaset` | bool | `false` | Extract deployment name from replicaset name (disables replicaset watching) |
+| `deployment_name_from_replicaset` | bool | `true` | Deprecated; will be removed in future releases. When `true`, ReplicaSet informer is not run for deployment names only, relying on a heuristic instead.|
 
 **Default metadata fields:**
 - `k8s.namespace.name`
@@ -989,7 +1024,7 @@ The processor maintains an in-memory cache of K8s metadata for all pods it monit
 **Optimization strategies:**
 1. **Use node filtering** in agent deployments: `filter.node_from_env_var: KUBE_NODE_NAME`
 2. **Limit metadata extraction**: Only extract fields you need
-3. **Use `deployment_name_from_replicaset: true`**: Reduces memory by not caching replicaset data
+3. **Rely on the default deployment-name heuristic**: Reduces memory by not caching replicaset data
 4. **Filter by namespace**: Limits scope when monitoring specific applications
 5. **Avoid extracting workload metadata** unless necessary (deployment, statefulset, etc.)
 
@@ -1036,32 +1071,6 @@ The processor is **stateless** and requires no special shutdown procedures:
 
 **No persistent storage required** - all metadata is refreshed from K8s API on startup.
 
-### Performance Benchmarks
-
-Based on testing with 1000 pods using the default configuration:
-
-```yaml
-processors:
-  k8s_attributes:
-    extract:
-      metadata:
-        - k8s.namespace.name
-        - k8s.pod.name
-        - k8s.pod.uid
-        - k8s.pod.start_time
-        - k8s.deployment.name
-        - k8s.node.name
-```
-
-| Signal Type | Throughput | Latency | Memory | CPU |
-|-------------|------------|---------|--------|-----|
-| Traces | 50k spans/sec | <1ms added | 800 MB | 400m |
-| Metrics | 100k metrics/sec | <0.5ms added | 750 MB | 350m |
-| Logs | 75k logs/sec | <0.7ms added | 850 MB | 380m |
-| Profiles | 10k profiles/sec | <2ms added | 700 MB | 300m |
-
-*Results may vary based on metadata extraction configuration and cluster size.*
-
 ## Timestamp Format
 
 By default, the `k8s.pod.start_time` uses [Time.MarshalText()](https://pkg.go.dev/time#Time.MarshalText) to format the
@@ -1097,7 +1106,7 @@ Feature gates can be enabled using the `--feature-gates` flag:
 
 ## Semantic Conventions Compatibility
 
-The processor is moving towards the latest [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/registry/attributes/k8s/)
+The processor is compatible with the latest `stable` [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/registry/attributes/k8s/)
 through the following feature gates:
 - `processor.k8sattributes.DontEmitV0K8sConventions`
 - `processor.k8sattributes.EmitV1K8sConventions`
@@ -1114,7 +1123,7 @@ The breaking changes between the 2 schemas are the following:
 - `k8s.namespace.annotations.<key>` -> `k8s.namespace.annotation.<key>`
 
 All attributes emitted through the `processor.k8sattributes.EmitV1K8sConventions` feature gate
-are currently in `beta` stability and are actively moving towards `stable` stability.
+are currently in `stable` stability.
 
 ## Available Benchmarks
 
