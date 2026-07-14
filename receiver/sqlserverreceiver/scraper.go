@@ -399,7 +399,7 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 			} else {
 				// DMV returns KB/s; convert to bytes/s
-				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaLogSendRateDataPoint(now, val.(int64)*1024, agName, replicaName)
+				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueRateDataPoint(now, val.(int64)*1024, agName, replicaName, metadata.AttributeSqlserverAvailabilityGroupQueueTypeLogSend)
 			}
 		}
 
@@ -419,7 +419,7 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 			} else {
 				// DMV returns KB/s; convert to bytes/s
-				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaRedoRateDataPoint(now, val.(int64)*1024, agName, replicaName)
+				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueRateDataPoint(now, val.(int64)*1024, agName, replicaName, metadata.AttributeSqlserverAvailabilityGroupQueueTypeRedo)
 			}
 		}
 

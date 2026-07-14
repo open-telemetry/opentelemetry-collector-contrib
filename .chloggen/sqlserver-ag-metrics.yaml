@@ -1,13 +1,9 @@
 change_type: enhancement
 component: receiver/sqlserver
-note: Add Always On Availability Group database replica metrics sourced from sys.dm_hadr_database_replica_states.
+note: Add opt-in metrics for monitoring SQL Server Always On Availability Group database replicas.
 issues: [49633]
 subtext: |
-  Adds 4 new opt-in metrics for monitoring SQL Server Always On Availability Groups:
-  - `sqlserver.availability_group.database_replica.hardened_latency` (s, SQL Server 2016+)
-  - `sqlserver.availability_group.database_replica.queue.size` (By) — log_send and redo queue sizes via `sqlserver.availability_group.queue.type` attribute
-  - `sqlserver.availability_group.database_replica.log_send.rate` (By/s)
-  - `sqlserver.availability_group.database_replica.redo.rate` (By/s)
-  Each metric includes `sqlserver.availability_group.name`, `db.namespace`, and `sqlserver.replica.name` attributes.
-  Requires direct connection to SQL Server with Always On Availability Groups enabled.
+  - `sqlserver.availability_group.database_replica.hardened_latency`
+  - `sqlserver.availability_group.database_replica.queue.size`
+  - `sqlserver.availability_group.database_replica.queue.rate`
 change_logs: [user]

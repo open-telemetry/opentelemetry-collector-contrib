@@ -261,9 +261,9 @@ This metric is only available when the receiver is configured to directly connec
 | sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
-### sqlserver.availability_group.database_replica.log_send.rate
+### sqlserver.availability_group.database_replica.queue.rate
 
-Rate at which log data is being sent from the primary database replica to the secondary replica.
+Rate at which log data is being processed in the availability group queue.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
 
@@ -277,6 +277,7 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+| sqlserver.availability_group.queue.type | The type of availability group queue. | Str: ``log_send``, ``redo`` | Recommended | - |
 
 ### sqlserver.availability_group.database_replica.queue.size
 
@@ -295,23 +296,6 @@ This metric is only available when the receiver is configured to directly connec
 | sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 | sqlserver.availability_group.queue.type | The type of availability group queue. | Str: ``log_send``, ``redo`` | Recommended | - |
-
-### sqlserver.availability_group.database_replica.redo.rate
-
-Rate at which log data is being redone on the secondary database replica.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By/s | Gauge | Int | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
-| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
 ### sqlserver.computer.uptime
 

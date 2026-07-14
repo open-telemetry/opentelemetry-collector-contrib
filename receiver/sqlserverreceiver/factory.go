@@ -259,8 +259,7 @@ func isAvailabilityGroupQueryEnabled(metrics *metadata.MetricsConfig) bool {
 
 	return metrics.SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency.Enabled ||
 		metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueSize.Enabled ||
-		metrics.SqlserverAvailabilityGroupDatabaseReplicaLogSendRate.Enabled ||
-		metrics.SqlserverAvailabilityGroupDatabaseReplicaRedoRate.Enabled
+		metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueRate.Enabled
 }
 
 func isDatabaseIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
