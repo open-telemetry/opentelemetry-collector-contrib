@@ -36,22 +36,22 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency: SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeySqlserverReplicaName},
 					},
 					SqlserverAvailabilityGroupDatabaseReplicaLogSendRate: SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeySqlserverReplicaName},
 					},
 					SqlserverAvailabilityGroupDatabaseReplicaQueueSize: SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupQueueType},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupQueueType},
 					},
 					SqlserverAvailabilityGroupDatabaseReplicaRedoRate: SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeySqlserverReplicaName},
 					},
 					SqlserverBatchRequestRate: SqlserverBatchRequestRateMetricConfig{
 						Enabled: true,
@@ -364,22 +364,22 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency: SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeySqlserverReplicaName},
 					},
 					SqlserverAvailabilityGroupDatabaseReplicaLogSendRate: SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeySqlserverReplicaName},
 					},
 					SqlserverAvailabilityGroupDatabaseReplicaQueueSize: SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupQueueType},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupQueueType},
 					},
 					SqlserverAvailabilityGroupDatabaseReplicaRedoRate: SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeySqlserverReplicaName},
 					},
 					SqlserverBatchRequestRate: SqlserverBatchRequestRateMetricConfig{
 						Enabled: false,
@@ -694,7 +694,7 @@ func TestSqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricsConfig_V
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.database_replica.hardened_latency doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.database_replica.hardened_latency doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, sqlserver.replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency
 	cfg.AggregationStrategy = "invalid"
@@ -706,7 +706,7 @@ func TestSqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricsConfig_Valid
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.database_replica.log_send.rate doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.database_replica.log_send.rate doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, sqlserver.replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaLogSendRate
 	cfg.AggregationStrategy = "invalid"
@@ -718,7 +718,7 @@ func TestSqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricsConfig_Validat
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.database_replica.queue.size doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.availability_group.queue.type]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.database_replica.queue.size doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, sqlserver.replica.name, sqlserver.availability_group.queue.type]")
 
 	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaQueueSize
 	cfg.AggregationStrategy = "invalid"
@@ -730,7 +730,7 @@ func TestSqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricsConfig_Validate
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.database_replica.redo.rate doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.database_replica.redo.rate doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, sqlserver.replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaRedoRate
 	cfg.AggregationStrategy = "invalid"

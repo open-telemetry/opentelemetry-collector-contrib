@@ -529,7 +529,7 @@ metrics:
     unit: s
     gauge:
       value_type: double
-    attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]
+    attributes: [sqlserver.availability_group.name, sqlserver.replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.availability_group.database_replica.log_send.rate:
     enabled: false
@@ -538,7 +538,7 @@ metrics:
     unit: By/s
     gauge:
       value_type: int
-    attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]
+    attributes: [sqlserver.availability_group.name, sqlserver.replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.availability_group.database_replica.queue.size:
     enabled: false
@@ -547,7 +547,7 @@ metrics:
     unit: By
     gauge:
       value_type: int
-    attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.availability_group.queue.type]
+    attributes: [sqlserver.availability_group.name, sqlserver.replica.name, sqlserver.availability_group.queue.type]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.availability_group.database_replica.redo.rate:
     enabled: false
@@ -556,7 +556,7 @@ metrics:
     unit: By/s
     gauge:
       value_type: int
-    attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]
+    attributes: [sqlserver.availability_group.name, sqlserver.replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.batch.request.rate:
     enabled: true

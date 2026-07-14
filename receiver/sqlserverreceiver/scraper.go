@@ -377,19 +377,19 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 	var val any
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 
 		agName := row[agNameKey]
 		replicaName := row[replicaNameKey]
-		dbName := row[databaseNameKey]
 
-		// log_send columns are from the primary replica via LEFT JOIN — may be NULL if primary row unavailable
+		// log_send columns are from the secondary replica — may be NULL if unavailable
 		if row[logSendQueueSizeKey] != "" {
 			val, err = retrieveInt(row, logSendQueueSizeKey)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 			} else {
 				// DMV returns KB; convert to bytes
-				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName, metadata.AttributeSqlserverAvailabilityGroupQueueTypeLogSend)
+				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueSizeDataPoint(now, val.(int64)*1024, agName, replicaName, metadata.AttributeSqlserverAvailabilityGroupQueueTypeLogSend)
 			}
 		}
 
@@ -399,7 +399,7 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 			} else {
 				// DMV returns KB/s; convert to bytes/s
-				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaLogSendRateDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
+				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaLogSendRateDataPoint(now, val.(int64)*1024, agName, replicaName)
 			}
 		}
 
@@ -409,7 +409,7 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 			} else {
 				// DMV returns KB; convert to bytes
-				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName, metadata.AttributeSqlserverAvailabilityGroupQueueTypeRedo)
+				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueSizeDataPoint(now, val.(int64)*1024, agName, replicaName, metadata.AttributeSqlserverAvailabilityGroupQueueTypeRedo)
 			}
 		}
 
@@ -419,7 +419,7 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 			} else {
 				// DMV returns KB/s; convert to bytes/s
-				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaRedoRateDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
+				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaRedoRateDataPoint(now, val.(int64)*1024, agName, replicaName)
 			}
 		}
 
@@ -429,7 +429,7 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 			if err != nil {
 				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 			} else {
-				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyDataPoint(now, val.(float64), agName, dbName, replicaName)
+				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyDataPoint(now, val.(float64), agName, replicaName)
 			}
 		}
 
