@@ -874,26 +874,22 @@ func TestAgent_validateFallbackConfigsWithColBinUsesAgentArguments(t *testing.T)
 func writeFeatureGateValidateStub(t *testing.T) string {
 	t.Helper()
 
-	const featureGateArg = "--feature-gates=+service.profilesSupport"
+	const (
+		featureGateName  = "--feature-gates"
+		featureGateValue = "+service.profilesSupport"
+		featureGateArg   = featureGateName + "=" + featureGateValue
+	)
 
 	tempDir := t.TempDir()
 	if runtime.GOOS == "windows" {
 		path := filepath.Join(tempDir, "validate-stub.bat")
 		script := []string{
 			"@echo off",
-			"echo validate-stub cwd=[%CD%] 1>&2",
-			"echo validate-stub temp=[%TEMP%] 1>&2",
-			"echo validate-stub script=[%~f0] 1>&2",
-			"echo validate-stub args=[%*] 1>&2",
-			"echo validate-stub arg4=[%4] 1>&2",
-			"echo validate-stub arg4-unquoted=[%~4] 1>&2",
-			"echo validate-stub config=[%~f3] 1>&2",
-			"if exist \"%3\" echo validate-stub config-exists=yes 1>&2",
-			"if not exist \"%3\" echo validate-stub config-exists=no 1>&2",
 			"if not \"%1\"==\"validate\" exit /b 11",
 			"if not \"%2\"==\"--config\" exit /b 12",
-			"if not \"%4\"==\"" + featureGateArg + "\" exit /b 13",
-			"if not exist \"%3\" exit /b 14",
+			// cmd.exe uses "=" as a delimiter when assigning batch parameters.
+			"if not \"%4\"==\"" + featureGateName + "\" exit /b 13",
+			"if not \"%5\"==\"" + featureGateValue + "\" exit /b 14",
 			"findstr /C:\"profiles:\" \"%3\" >nul",
 			"if errorlevel 1 exit /b 15",
 			"findstr /C:\"processors:\" \"%3\" >nul",
