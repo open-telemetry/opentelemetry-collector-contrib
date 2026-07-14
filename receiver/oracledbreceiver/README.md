@@ -10,7 +10,7 @@ This receiver periodically queries an Oracle Database host to collect metrics.
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Foracledb%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Foracledb) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Foracledb%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Foracledb) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_oracledb)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_oracledb&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@crobert-1](https://www.github.com/crobert-1), [@atoulme](https://www.github.com/atoulme) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@crobert-1](https://www.github.com/crobert-1), [@atoulme](https://www.github.com/atoulme), [@ebrdarSplunk](https://www.github.com/ebrdarSplunk), [@XSAM](https://www.github.com/XSAM), [@akshays-19](https://www.github.com/akshays-19), [@sv-splunk](https://www.github.com/sv-splunk), [@splunk-shanu](https://www.github.com/splunk-shanu) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -101,6 +101,7 @@ GRANT SELECT ON V_$RESOURCE_LIMIT TO <username>;
 GRANT SELECT ON DBA_TABLESPACES TO <username>;
 GRANT SELECT ON DBA_DATA_FILES TO <username>;
 GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO <username>;
+GRANT SELECT ON V_$SGAINFO TO <username>;
 ```
 
 ### Events collection

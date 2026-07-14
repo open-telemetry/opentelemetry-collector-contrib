@@ -1,4 +1,17 @@
 $defs:
+  hmac_signature:
+    description: 'HMACSignature defines configuration for HMAC hex digest signature verification. This is compatible with webhook signature schemes used by GitHub (X-Hub-Signature-256: sha256=<hex>) and Fingerprint (fpjs-event-signature: v1=<hex>).'
+    type: object
+    properties:
+      header:
+        description: Header is the HTTP header name containing the signature (e.g. "X-Hub-Signature-256").
+        type: string
+      prefix:
+        description: Prefix is the prefix before the hex digest in the header value (e.g. "sha256=" or "v1=").
+        type: string
+      secret:
+        description: Secret is the shared secret used to compute the HMAC.
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
   required_header:
     type: object
     properties:
@@ -15,6 +28,8 @@ properties:
     type: string
   health_path:
     type: string
+  hmac_signature:
+    $ref: hmac_signature
   path:
     type: string
   read_timeout:

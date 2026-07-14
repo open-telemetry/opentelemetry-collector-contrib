@@ -137,7 +137,7 @@ extension/storage/dbstorage/                                     @open-telemetry
 extension/storage/filestorage/                                   @open-telemetry/collector-contrib-approvers @swiatekm @VihasMakwana
 extension/storage/redisstorageextension/                         @open-telemetry/collector-contrib-approvers @atoulme
 extension/sumologicextension/                                    @open-telemetry/collector-contrib-approvers @rnishtala-sumo @pankaj101A @jagan2221
-extension/tailstorage/pebbletailstorageextension/                @open-telemetry/collector-contrib-approvers @carsonip @jmacd @axw
+extension/tailstorage/pebbletailstorageextension/                @open-telemetry/collector-contrib-approvers @carsonip @jmacd @lahsivjar
 internal/aws/                                                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 internal/collectd/                                               @open-telemetry/collector-contrib-approvers @atoulme
 internal/common/                                                 @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
@@ -305,7 +305,6 @@ receiver/icmpcheckreceiver/                                      @open-telemetry
 receiver/iisreceiver/                                            @open-telemetry/collector-contrib-approvers @ishleenk17 @Mrod1598 @pjanotti
 receiver/influxdbreceiver/                                       @open-telemetry/collector-contrib-approvers @jacobmarble
 receiver/jaegerreceiver/                                         @open-telemetry/collector-contrib-approvers @yurishkuro
-receiver/jmxreceiver/                                            @open-telemetry/collector-contrib-approvers @atoulme @rogercoll
 receiver/journaldreceiver/                                       @open-telemetry/collector-contrib-approvers @belimawr @namco1992
 receiver/k8sclusterreceiver/                                     @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @povilasv @ChrsMark
 receiver/k8seventsreceiver/                                      @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @ChrsMark
@@ -325,7 +324,7 @@ receiver/netflowreceiver/                                        @open-telemetry
 receiver/nginxreceiver/                                          @open-telemetry/collector-contrib-approvers @colelaven @ishleenk17
 receiver/nsxtreceiver/                                           @open-telemetry/collector-contrib-approvers @dashpole @schmikei
 receiver/ntpreceiver/                                            @open-telemetry/collector-contrib-approvers @atoulme @paulojmdias
-receiver/oracledbreceiver/                                       @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1 @atoulme
+receiver/oracledbreceiver/                                       @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1 @atoulme @ebrdarSplunk @XSAM @akshays-19 @sv-splunk @splunk-shanu
 receiver/osqueryreceiver/                                        @open-telemetry/collector-contrib-approvers @smithclay
 receiver/otelarrowreceiver/                                      @open-telemetry/collector-contrib-approvers @jmacd @JakeDern
 receiver/otlpjsonfilereceiver/                                   @open-telemetry/collector-contrib-approvers @atoulme
@@ -351,7 +350,7 @@ receiver/solacereceiver/                                         @open-telemetry
 receiver/splunkenterprisereceiver/                               @open-telemetry/collector-contrib-approvers @shalper2 @MovieStoreGuy @greatestusername
 receiver/splunkhecreceiver/                                      @open-telemetry/collector-contrib-approvers @atoulme
 receiver/sqlqueryreceiver/                                       @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1
-receiver/sqlserverreceiver/                                      @open-telemetry/collector-contrib-approvers @sincejune @crobert-1 @sv-splunk
+receiver/sqlserverreceiver/                                      @open-telemetry/collector-contrib-approvers @sincejune @crobert-1 @sv-splunk @ebrdarSplunk @XSAM @akshays-19 @splunk-shanu
 receiver/sshcheckreceiver/                                       @open-telemetry/collector-contrib-approvers @ishaish103
 receiver/statsdreceiver/                                         @open-telemetry/collector-contrib-approvers @jmacd @dmitryax
 receiver/stefreceiver/                                           @open-telemetry/collector-contrib-approvers @tigrannajaryan @MovieStoreGuy @dmitryax @atoulme @pjanotti @crobert-1
