@@ -463,6 +463,425 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestSaphanaAlertCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaAlertCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaAlertCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.alert.count doesn't have an attribute invalid, valid attributes: [rating]")
+
+	cfg = DefaultMetricsConfig().SaphanaAlertCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaColumnMemoryUsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaColumnMemoryUsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaColumnMemoryUsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.column.memory.used doesn't have an attribute invalid, valid attributes: [type, subtype]")
+
+	cfg = DefaultMetricsConfig().SaphanaColumnMemoryUsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaComponentMemoryUsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaComponentMemoryUsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaComponentMemoryUsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.component.memory.used doesn't have an attribute invalid, valid attributes: [component]")
+
+	cfg = DefaultMetricsConfig().SaphanaComponentMemoryUsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaConnectionCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaConnectionCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaConnectionCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.connection.count doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().SaphanaConnectionCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaCPUUsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaCPUUsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaCPUUsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.cpu.used doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().SaphanaCPUUsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaDiskSizeCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaDiskSizeCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaDiskSizeCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.disk.size.current doesn't have an attribute invalid, valid attributes: [path, usage_type, state]")
+
+	cfg = DefaultMetricsConfig().SaphanaDiskSizeCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaHostMemoryCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaHostMemoryCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaHostMemoryCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.host.memory.current doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().SaphanaHostMemoryCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaHostSwapCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaHostSwapCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaHostSwapCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.host.swap.current doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().SaphanaHostSwapCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaInstanceMemoryCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaInstanceMemoryCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaInstanceMemoryCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.instance.memory.current doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().SaphanaInstanceMemoryCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaNetworkRequestCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaNetworkRequestCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaNetworkRequestCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.network.request.count doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().SaphanaNetworkRequestCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaNetworkRequestFinishedCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaNetworkRequestFinishedCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaNetworkRequestFinishedCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.network.request.finished.count doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().SaphanaNetworkRequestFinishedCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaReplicationAverageTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaReplicationAverageTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaReplicationAverageTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.replication.average_time doesn't have an attribute invalid, valid attributes: [primary, secondary, port, mode]")
+
+	cfg = DefaultMetricsConfig().SaphanaReplicationAverageTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaReplicationBacklogSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaReplicationBacklogSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaReplicationBacklogSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.replication.backlog.size doesn't have an attribute invalid, valid attributes: [primary, secondary, port, mode]")
+
+	cfg = DefaultMetricsConfig().SaphanaReplicationBacklogSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaReplicationBacklogTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaReplicationBacklogTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaReplicationBacklogTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.replication.backlog.time doesn't have an attribute invalid, valid attributes: [primary, secondary, port, mode]")
+
+	cfg = DefaultMetricsConfig().SaphanaReplicationBacklogTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaRowStoreMemoryUsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaRowStoreMemoryUsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaRowStoreMemoryUsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.row_store.memory.used doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().SaphanaRowStoreMemoryUsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaSchemaMemoryUsedCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaSchemaMemoryUsedCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaSchemaMemoryUsedCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.schema.memory.used.current doesn't have an attribute invalid, valid attributes: [schema, type]")
+
+	cfg = DefaultMetricsConfig().SaphanaSchemaMemoryUsedCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaSchemaMemoryUsedMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaSchemaMemoryUsedMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaSchemaMemoryUsedMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.schema.memory.used.max doesn't have an attribute invalid, valid attributes: [schema]")
+
+	cfg = DefaultMetricsConfig().SaphanaSchemaMemoryUsedMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaSchemaOperationCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaSchemaOperationCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaSchemaOperationCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.schema.operation.count doesn't have an attribute invalid, valid attributes: [schema, type]")
+
+	cfg = DefaultMetricsConfig().SaphanaSchemaOperationCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaSchemaRecordCompressedCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaSchemaRecordCompressedCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaSchemaRecordCompressedCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.schema.record.compressed.count doesn't have an attribute invalid, valid attributes: [schema]")
+
+	cfg = DefaultMetricsConfig().SaphanaSchemaRecordCompressedCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaSchemaRecordCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaSchemaRecordCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaSchemaRecordCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.schema.record.count doesn't have an attribute invalid, valid attributes: [schema, type]")
+
+	cfg = DefaultMetricsConfig().SaphanaSchemaRecordCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceCodeSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceCodeSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceCodeSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.code_size doesn't have an attribute invalid, valid attributes: [service]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceCodeSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.count doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceMemoryCompactorsAllocatedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceMemoryCompactorsAllocated
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceMemoryCompactorsAllocatedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.memory.compactors.allocated doesn't have an attribute invalid, valid attributes: [service]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceMemoryCompactorsAllocated
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceMemoryCompactorsFreeableMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceMemoryCompactorsFreeable
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceMemoryCompactorsFreeableMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.memory.compactors.freeable doesn't have an attribute invalid, valid attributes: [service]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceMemoryCompactorsFreeable
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceMemoryEffectiveLimitMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceMemoryEffectiveLimit
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceMemoryEffectiveLimitMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.memory.effective_limit doesn't have an attribute invalid, valid attributes: [service]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceMemoryEffectiveLimit
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceMemoryHeapCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceMemoryHeapCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceMemoryHeapCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.memory.heap.current doesn't have an attribute invalid, valid attributes: [service, state]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceMemoryHeapCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceMemoryLimitMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceMemoryLimit
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceMemoryLimitMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.memory.limit doesn't have an attribute invalid, valid attributes: [service]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceMemoryLimit
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceMemorySharedCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceMemorySharedCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceMemorySharedCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.memory.shared.current doesn't have an attribute invalid, valid attributes: [service, state]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceMemorySharedCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceMemoryUsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceMemoryUsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceMemoryUsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.memory.used doesn't have an attribute invalid, valid attributes: [service, type]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceMemoryUsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceStackSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceStackSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceStackSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.stack_size doesn't have an attribute invalid, valid attributes: [service]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceStackSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceThreadCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceThreadCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceThreadCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.thread.count doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceThreadCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaTransactionCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaTransactionCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaTransactionCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.transaction.count doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().SaphanaTransactionCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaVolumeOperationCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaVolumeOperationCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaVolumeOperationCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.volume.operation.count doesn't have an attribute invalid, valid attributes: [path, usage_type, type]")
+
+	cfg = DefaultMetricsConfig().SaphanaVolumeOperationCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaVolumeOperationSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaVolumeOperationSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaVolumeOperationSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.volume.operation.size doesn't have an attribute invalid, valid attributes: [path, usage_type, type]")
+
+	cfg = DefaultMetricsConfig().SaphanaVolumeOperationSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaVolumeOperationTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaVolumeOperationTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaVolumeOperationTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.volume.operation.time doesn't have an attribute invalid, valid attributes: [path, usage_type, type]")
+
+	cfg = DefaultMetricsConfig().SaphanaVolumeOperationTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

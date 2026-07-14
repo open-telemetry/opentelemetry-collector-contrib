@@ -172,7 +172,16 @@ func (receiver *logsReceiver) collect() {
 	resultsChannel := make(chan collectResult, len(receiver.queryReceivers))
 	for _, queryReceiver := range receiver.queryReceivers {
 		go func(queryReceiver *logsQueryReceiver) {
-			logs, err := queryReceiver.collect(context.Background())
+			ctx := context.Background()
+			// Bound the query execution with the configured timeout so that a
+			// locked table or otherwise slow query does not block collection
+			// indefinitely. A non-positive timeout means no deadline.
+			if receiver.config.Timeout > 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, receiver.config.Timeout)
+				defer cancel()
+			}
+			logs, err := queryReceiver.collect(ctx)
 			if err != nil {
 				receiver.settings.Logger.Error("error collecting logs", zap.Error(err), zap.String("query", queryReceiver.ID()))
 			}

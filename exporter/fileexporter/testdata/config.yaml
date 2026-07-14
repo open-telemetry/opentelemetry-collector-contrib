@@ -36,6 +36,13 @@ file/format_error:
   path: ./filename.log
   format: text
 
+file/zstd_with_level:
+  path: ./filename
+  format: proto
+  compression: zstd
+  compression_params:
+    level: 6
+
 file/compression_error:
   path: ./filename.log
   compression: gzip

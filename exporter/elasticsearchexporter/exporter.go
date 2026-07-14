@@ -460,14 +460,15 @@ func (e *elasticsearchExporter) pushSpanEvent(
 	if ctrl.noindex {
 		return nil
 	}
-	index, err := router.routeSpanEvent(ec.resource, ec.scope, spanEvent.Attributes())
+	routerIndex, err := router.routeSpanEvent(ec.resource, ec.scope, spanEvent.Attributes())
 	if err != nil {
 		return err
 	}
 
 	buf := e.bufferPool.NewPooledBuffer()
 	docID := ctrl.docID
-	if err := encoder.encodeSpanEvent(ec, span, spanEvent, index, buf.Buffer); err != nil || buf.Buffer.Len() == 0 {
+	index, err := encoder.encodeSpanEvent(ec, span, spanEvent, routerIndex, buf.Buffer)
+	if err != nil || buf.Buffer.Len() == 0 {
 		buf.Recycle()
 		return err
 	}

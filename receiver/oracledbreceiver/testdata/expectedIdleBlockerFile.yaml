@@ -24,6 +24,9 @@ resourceLogs:
                   stringValue: DBA_USER
               - key: db.namespace
                 value:
+                  stringValue: ORCLPDB1
+              - key: oracle.db.service
+                value:
                   stringValue: ORCL
               - key: client.address
                 value:

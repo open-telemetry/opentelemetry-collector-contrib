@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"go.opentelemetry.io/collector/featuregate"
 
@@ -52,8 +53,8 @@ func runInteractive() error {
 		return fmt.Errorf("failed to start supervisor: %w", err)
 	}
 
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
+	interrupt := make(chan os.Signal, 2)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 	<-interrupt
 	supervisor.Shutdown()
 

@@ -3,14 +3,13 @@
 package metadata
 
 import (
-	"slices"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
 	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
+	"slices"
+	"time"
 )
 
 const (
@@ -70,13 +69,16 @@ var MapAttributeProtocol = map[string]AttributeProtocol{
 
 var MetricsInfo = metricsInfo{
 	SystemNetworkBandwidthLimit: metricInfo{
-		Name: "system.network.bandwidth.limit",
+		Name:       "system.network.bandwidth.limit",
+		Attributes: []string{"device"},
 	},
 	SystemNetworkBandwidthUtilization: metricInfo{
-		Name: "system.network.bandwidth.utilization",
+		Name:       "system.network.bandwidth.utilization",
+		Attributes: []string{"device"},
 	},
 	SystemNetworkConnections: metricInfo{
-		Name: "system.network.connections",
+		Name:       "system.network.connections",
+		Attributes: []string{"protocol", "state"},
 	},
 	SystemNetworkConntrackCount: metricInfo{
 		Name: "system.network.conntrack.count",
@@ -85,16 +87,20 @@ var MetricsInfo = metricsInfo{
 		Name: "system.network.conntrack.max",
 	},
 	SystemNetworkDropped: metricInfo{
-		Name: "system.network.dropped",
+		Name:       "system.network.dropped",
+		Attributes: []string{"device", "direction"},
 	},
 	SystemNetworkErrors: metricInfo{
-		Name: "system.network.errors",
+		Name:       "system.network.errors",
+		Attributes: []string{"device", "direction"},
 	},
 	SystemNetworkIo: metricInfo{
-		Name: "system.network.io",
+		Name:       "system.network.io",
+		Attributes: []string{"device", "direction"},
 	},
 	SystemNetworkPackets: metricInfo{
-		Name: "system.network.packets",
+		Name:       "system.network.packets",
+		Attributes: []string{"device", "direction"},
 	},
 }
 
@@ -111,7 +117,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSystemNetworkBandwidthLimit struct {

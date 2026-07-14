@@ -210,16 +210,16 @@ func (m *MockS3Provider) EXPECT() *MockS3ProviderMockRecorder {
 }
 
 // GetService mocks base method.
-func (m *MockS3Provider) GetService(ctx context.Context) (S3Service, error) {
+func (m *MockS3Provider) GetService(ctx context.Context, staticCreds AWSOptions) (S3Service, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetService", ctx)
+	ret := m.ctrl.Call(m, "GetService", ctx, staticCreds)
 	ret0, _ := ret[0].(S3Service)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetService indicates an expected call of GetService.
-func (mr *MockS3ProviderMockRecorder) GetService(ctx any) *gomock.Call {
+func (mr *MockS3ProviderMockRecorder) GetService(ctx, staticCreds any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetService", reflect.TypeOf((*MockS3Provider)(nil).GetService), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetService", reflect.TypeOf((*MockS3Provider)(nil).GetService), ctx, staticCreds)
 }

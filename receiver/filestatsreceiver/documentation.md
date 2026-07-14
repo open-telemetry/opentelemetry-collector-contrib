@@ -54,6 +54,12 @@ The number of files matched
 | ---- | ----------- | ---------- | --------- |
 | {file} | Gauge | Int | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| file.include | The glob pattern configured via the `include` option that produced this count. | Any Str | Opt-In | - |
+
 ### file.ctime
 
 Elapsed time since the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.
@@ -70,7 +76,7 @@ Elapsed time since the last change of the file or folder, in seconds since Epoch
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| file.name | The name of the file | Any Str | true | - |
-| file.path | The absolute path of the file | Any Str | false | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| file.name | The name of the file | Any Str | true | - | - |
+| file.path | The absolute path of the file | Any Str | false | - | - |

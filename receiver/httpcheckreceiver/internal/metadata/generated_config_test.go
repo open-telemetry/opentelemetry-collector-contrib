@@ -165,6 +165,149 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestHttpcheckClientConnectionDurationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HttpcheckClientConnectionDuration
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HttpcheckClientConnectionDurationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric httpcheck.client.connection.duration doesn't have an attribute invalid, valid attributes: [http.url, network.transport]")
+
+	cfg = DefaultMetricsConfig().HttpcheckClientConnectionDuration
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestHttpcheckClientRequestDurationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HttpcheckClientRequestDuration
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HttpcheckClientRequestDurationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric httpcheck.client.request.duration doesn't have an attribute invalid, valid attributes: [http.url]")
+
+	cfg = DefaultMetricsConfig().HttpcheckClientRequestDuration
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestHttpcheckDNSLookupDurationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HttpcheckDNSLookupDuration
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HttpcheckDNSLookupDurationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric httpcheck.dns.lookup.duration doesn't have an attribute invalid, valid attributes: [http.url]")
+
+	cfg = DefaultMetricsConfig().HttpcheckDNSLookupDuration
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestHttpcheckDurationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HttpcheckDuration
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HttpcheckDurationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric httpcheck.duration doesn't have an attribute invalid, valid attributes: [http.url]")
+
+	cfg = DefaultMetricsConfig().HttpcheckDuration
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestHttpcheckErrorMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HttpcheckError
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HttpcheckErrorMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric httpcheck.error doesn't have an attribute invalid, valid attributes: [http.url, error.message]")
+
+	cfg = DefaultMetricsConfig().HttpcheckError
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestHttpcheckResponseDurationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HttpcheckResponseDuration
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HttpcheckResponseDurationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric httpcheck.response.duration doesn't have an attribute invalid, valid attributes: [http.url]")
+
+	cfg = DefaultMetricsConfig().HttpcheckResponseDuration
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestHttpcheckResponseSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HttpcheckResponseSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HttpcheckResponseSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric httpcheck.response.size doesn't have an attribute invalid, valid attributes: [http.url]")
+
+	cfg = DefaultMetricsConfig().HttpcheckResponseSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestHttpcheckStatusMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HttpcheckStatus
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HttpcheckStatusMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric httpcheck.status doesn't have an attribute invalid, valid attributes: [http.url, http.status_code, http.method, http.status_class]")
+
+	cfg = DefaultMetricsConfig().HttpcheckStatus
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestHttpcheckTLSCertRemainingMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HttpcheckTLSCertRemaining
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HttpcheckTLSCertRemainingMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric httpcheck.tls.cert_remaining doesn't have an attribute invalid, valid attributes: [http.url, http.tls.issuer, http.tls.cn, http.tls.san]")
+
+	cfg = DefaultMetricsConfig().HttpcheckTLSCertRemaining
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestHttpcheckTLSHandshakeDurationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HttpcheckTLSHandshakeDuration
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HttpcheckTLSHandshakeDurationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric httpcheck.tls.handshake.duration doesn't have an attribute invalid, valid attributes: [http.url]")
+
+	cfg = DefaultMetricsConfig().HttpcheckTLSHandshakeDuration
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestHttpcheckValidationFailedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HttpcheckValidationFailed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HttpcheckValidationFailedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric httpcheck.validation.failed doesn't have an attribute invalid, valid attributes: [http.url, validation.type]")
+
+	cfg = DefaultMetricsConfig().HttpcheckValidationFailed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestHttpcheckValidationPassedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HttpcheckValidationPassed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HttpcheckValidationPassedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric httpcheck.validation.passed doesn't have an attribute invalid, valid attributes: [http.url, validation.type]")
+
+	cfg = DefaultMetricsConfig().HttpcheckValidationPassed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
