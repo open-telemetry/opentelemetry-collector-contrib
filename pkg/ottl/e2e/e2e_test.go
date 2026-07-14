@@ -933,6 +933,30 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], "pass") where IsEmpty("")`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "pass") where not IsEmpty(attributes["foo"])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], IsEmpty(attributes["things"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", false)
+			},
+		},
+		{
+			statement: `set(attributes["test"], IsEmpty(["a", "b"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", false)
+			},
+		},
+		{
 			statement: `set(attributes["test"], Len(attributes["foo"]))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutInt("test", 4)
@@ -1697,6 +1721,18 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["found_slice_mapped"], Find(attributes["primitiveValuesSlice"], (_, v) => v == "value1", (i, v) => Concat([String(i), ":", String(v)], "")))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("found_slice_mapped", "0:value1")
+			},
+		},
+		{
+			statement: `set(attributes["slice_sum"], Reduce([1, 2, 3], 0, (acc, _, v) => acc + Int(v)))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("slice_sum", 6)
+			},
+		},
+		{
+			statement: `set(attributes["labels_str"], Reduce({"env": "prod"}, "", (acc, k, v) => Concat([acc, k, "=", String(v), ";"], "")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("labels_str", "env=prod;")
 			},
 		},
 	}
