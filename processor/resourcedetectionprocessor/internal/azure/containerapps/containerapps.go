@@ -5,15 +5,14 @@ package containerapps // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	gocontribdetector "go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps"
-	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/containerapps/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 )
 
 const (
@@ -36,31 +35,11 @@ func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.D
 
 // Detect returns resource attributes when running on Azure Container Apps.
 // Returns an empty resource when not running on Azure Container Apps.
-// ErrPartialResource from the SDK is suppressed; the partial resource is returned without error.
 func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
-	sdkRes, err := gocontribdetector.NewResourceDetector().Detect(ctx)
-	if err != nil && !errors.Is(err, sdkresource.ErrPartialResource) {
-		return pcommon.NewResource(), "", err
-	}
-
-	if sdkRes.Len() == 0 {
-		return pcommon.NewResource(), "", nil
-	}
-
-	rb := metadata.NewResourceBuilder(d.resourceAttributes)
-	iter := sdkRes.Iter()
-	for iter.Next() {
-		kv := iter.Attribute()
-		switch string(kv.Key) {
-		case "cloud.provider":
-			rb.SetCloudProvider(kv.Value.AsString())
-		case "cloud.platform":
-			rb.SetCloudPlatform(kv.Value.AsString())
-		case "service.name":
-			rb.SetServiceName(kv.Value.AsString())
-		case "azure.container_app.instance.id":
-			rb.SetAzureContainerAppInstanceID(kv.Value.AsString())
-		}
-	}
-	return rb.Emit(), sdkRes.SchemaURL(), nil
+	return sdkbridge.Detect(ctx, gocontribdetector.NewResourceDetector(), map[string]bool{
+		"cloud.provider":                  d.resourceAttributes.CloudProvider.Enabled,
+		"cloud.platform":                  d.resourceAttributes.CloudPlatform.Enabled,
+		"service.name":                    d.resourceAttributes.ServiceName.Enabled,
+		"azure.container_app.instance.id": d.resourceAttributes.AzureContainerAppInstanceID.Enabled,
+	})
 }
