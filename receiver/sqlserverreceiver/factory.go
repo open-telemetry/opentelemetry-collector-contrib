@@ -83,6 +83,10 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
 	}
 
+	if isIndexPhysicalStatsQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName))
+	}
+
 	return queries
 }
 
@@ -445,4 +449,16 @@ func isWaitStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
 	}
 
 	return metrics.SqlserverOsWaitDuration.Enabled
+}
+
+func isIndexPhysicalStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverIndexFragmentation.Enabled ||
+		metrics.SqlserverIndexPageCount.Enabled ||
+		metrics.SqlserverIndexPageUtilization.Enabled ||
+		metrics.SqlserverIndexRecordCount.Enabled ||
+		metrics.SqlserverIndexSize.Enabled
 }
