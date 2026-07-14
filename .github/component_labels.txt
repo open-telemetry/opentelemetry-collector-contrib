@@ -288,7 +288,6 @@ receiver/icmpcheckreceiver receiver/icmpcheck
 receiver/iisreceiver receiver/iis
 receiver/influxdbreceiver receiver/influxdb
 receiver/jaegerreceiver receiver/jaeger
-receiver/jmxreceiver receiver/jmx
 receiver/journaldreceiver receiver/journald
 receiver/k8sclusterreceiver receiver/k8scluster
 receiver/k8seventsreceiver receiver/k8sevents

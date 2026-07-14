@@ -61,6 +61,12 @@ type Source struct {
 type Config struct {
 	_ struct{}
 
+	// OverwriteSchemaURL replaces an existing ScopeSpans schema URL with the
+	// semantic-conventions schema URL targeted by this processor when at least
+	// one normalization writes an attribute. When false (default), an existing
+	// scope schema URL is preserved.
+	OverwriteSchemaURL bool `mapstructure:"overwrite_schema_url"`
+
 	// Sources is an ordered list of sources to normalize. Each span is
 	// processed by every source in the order specified. At least one source
 	// must be specified.
