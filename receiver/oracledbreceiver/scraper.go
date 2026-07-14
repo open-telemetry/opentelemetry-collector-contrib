@@ -826,34 +826,34 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			// Session, JVM & OS resources
 			case javaCallHeapLiveSize:
-				if err := s.mb.RecordOracledbJvmMemoryLiveDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbJvmMemoryLiveDataPoint(now, row[colValue]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case javaCallHeapTotalSize:
-				if err := s.mb.RecordOracledbJvmMemoryCommittedDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbJvmMemoryCommittedDataPoint(now, row[colValue]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case javaCallHeapUsedSize:
-				if err := s.mb.RecordOracledbJvmMemoryUsedDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbJvmMemoryUsedDataPoint(now, row[colValue]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case osSwaps:
-				if err := s.mb.RecordOracledbOsSwapsDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbOsSwapsDataPoint(now, row[colValue]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case sessionNonIdleWaitCount:
-				if err := s.mb.RecordOracledbSessionWaitsDataPoint(now, row["VALUE"], metadata.AttributeOracledbSessionWaitStateNonIdle); err != nil {
+				if err := s.mb.RecordOracledbSessionWaitsDataPoint(now, row[colValue], metadata.AttributeOracledbSessionWaitStateNonIdle); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case sessionNonIdleWaitTime:
-				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				value, err := strconv.ParseFloat(row[colValue], 64)
 				if err != nil {
-					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", sessionNonIdleWaitTime, row["VALUE"], err))
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", sessionNonIdleWaitTime, row[colValue], err))
 				} else {
 					s.mb.RecordOracledbSessionWaitTimeDataPoint(now, value/100, metadata.AttributeOracledbSessionWaitStateNonIdle)
 				}
 			case sessionStoredProcedureSpace:
-				if err := s.mb.RecordOracledbSessionStoredProcedureMemoryDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbSessionStoredProcedureMemoryDataPoint(now, row[colValue]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			}
