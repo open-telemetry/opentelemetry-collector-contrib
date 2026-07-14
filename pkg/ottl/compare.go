@@ -110,39 +110,6 @@ func (*ottlValueComparator) compareBytes(a, b []byte, op compareOp) bool {
 	}
 }
 
-func (p *ottlValueComparator) comparePValues(a, b pcommon.Value, op compareOp) bool {
-	switch op {
-	case eq:
-		return a.Equal(b)
-	case ne:
-		return !a.Equal(b)
-	case lt, lte, gte, gt:
-		// Fast path: same type → compare typed values directly, avoid AsRaw() call.
-		if a.Type() == b.Type() {
-			switch a.Type() {
-			case pcommon.ValueTypeInt:
-				return comparePrimitives(a.Int(), b.Int(), op)
-			case pcommon.ValueTypeDouble:
-				return comparePrimitives(a.Double(), b.Double(), op)
-			case pcommon.ValueTypeStr:
-				return comparePrimitives(a.Str(), b.Str(), op)
-			case pcommon.ValueTypeBytes:
-				return p.compareBytes(a.Bytes().AsRaw(), b.Bytes().AsRaw(), op)
-			case pcommon.ValueTypeBool:
-				return p.compareBools(a.Bool(), b.Bool(), op)
-			// Map/Slice types will return invalidComparison since they don't support ordering.
-			case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
-				return p.invalidComparison(op)
-			}
-		}
-		// Different types: fall through to generic path.
-		// This handles cross-numeric comparisons (int vs float).
-		return p.comparePValue(a, b.AsRaw(), op)
-	default:
-		return p.invalidComparison(op)
-	}
-}
-
 func (p *ottlValueComparator) compareBool(a bool, b any, op compareOp) bool {
 	switch v := b.(type) {
 	case bool:
@@ -372,10 +339,6 @@ func (p *ottlValueComparator) comparePSlice(a pcommon.Slice, b any, op compareOp
 }
 
 func (p *ottlValueComparator) comparePValue(a pcommon.Value, b any, op compareOp) bool {
-	if v, ok := b.(pcommon.Value); ok {
-		return p.comparePValues(a, v, op)
-	}
-	// a is pcommon.Value, b is a raw type: use typed accessors for faster comparison.
 	switch a.Type() {
 	case pcommon.ValueTypeInt:
 		return p.compareInt64(a.Int(), b, op)
