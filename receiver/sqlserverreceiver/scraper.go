@@ -380,20 +380,25 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 		replicaName := row[replicaNameKey]
 		dbName := row[databaseNameKey]
 
-		val, err = retrieveInt(row, logSendQueueSizeKey)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
-		} else {
-			// DMV returns KB; convert to bytes
-			s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName, metadata.AttributeSqlserverAvailabilityGroupQueueTypeLogSend)
+		// log_send columns are from the primary replica via LEFT JOIN — may be NULL if primary row unavailable
+		if row[logSendQueueSizeKey] != "" {
+			val, err = retrieveInt(row, logSendQueueSizeKey)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+			} else {
+				// DMV returns KB; convert to bytes
+				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName, metadata.AttributeSqlserverAvailabilityGroupQueueTypeLogSend)
+			}
 		}
 
-		val, err = retrieveInt(row, logSendRateKey)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
-		} else {
-			// DMV returns KB/s; convert to bytes/s
-			s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaLogSendRateDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
+		if row[logSendRateKey] != "" {
+			val, err = retrieveInt(row, logSendRateKey)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+			} else {
+				// DMV returns KB/s; convert to bytes/s
+				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaLogSendRateDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
+			}
 		}
 
 		val, err = retrieveInt(row, redoQueueSizeKey)
