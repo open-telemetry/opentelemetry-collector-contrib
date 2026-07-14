@@ -1118,16 +1118,12 @@ SELECT
 	ag.[name]                                               AS [availability_group_name]
 	,DB_NAME(sec.[database_id])                             AS [database_name]
 	,ar.[replica_server_name]                               AS [replica_name]
-	,pri.[log_send_queue_size]                              AS [log_send_queue_size]
-	,pri.[log_send_rate]                                    AS [log_send_rate]
+	,sec.[log_send_queue_size]                              AS [log_send_queue_size]
+	,sec.[log_send_rate]                                    AS [log_send_rate]
 	,sec.[redo_queue_size]                                  AS [redo_queue_size]
 	,sec.[redo_rate]                                        AS [redo_rate]
 	,' + @HardenedLatencyCol + N'                           AS [hardened_latency]
 FROM sys.dm_hadr_database_replica_states AS sec WITH (NOLOCK)
-LEFT JOIN sys.dm_hadr_database_replica_states AS pri WITH (NOLOCK)
-	ON  sec.[database_id]        = pri.[database_id]
-	AND sec.[group_id]           = pri.[group_id]
-	AND pri.[is_primary_replica] = 1
 INNER JOIN sys.availability_replicas AS ar WITH (NOLOCK)
 	ON sec.[replica_id] = ar.[replica_id]
 INNER JOIN sys.availability_groups AS ag WITH (NOLOCK)
