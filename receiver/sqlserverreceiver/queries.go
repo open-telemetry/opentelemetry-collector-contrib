@@ -1144,6 +1144,7 @@ func getSQLServerAvailabilityGroupQuery(instanceName string) string {
 	r := strings.NewReplacer("{filter_instance_name}", "")
 	return r.Replace(sqlServerAvailabilityGroupQuery)
 }
+
 // sqlServerIndexPhysicalStatsQuery collects per-index physical stats (fragmentation, page count,
 // page density, record count) across all user databases. On on-prem/MI a cursor iterates over
 // sys.databases so that sys.indexes and sys.objects can be joined within each database context,
