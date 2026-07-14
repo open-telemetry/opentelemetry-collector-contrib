@@ -124,7 +124,16 @@ func TestResolveURIs_ExpandsEnvByDefaultScheme(t *testing.T) {
 
 	t.Setenv(envVar, envValue)
 
-	configPath := filepath.Join(t.TempDir(), "supervisor.yaml")
+	tempDir := t.TempDir()
+	// Do a chdir into a temp dir on Windows so [filepath.Rel], used under the
+	// hood by confmap, does not cross volumes when the repository and temporary
+	// directory use different drives. In the Windows CI, for some reason, the
+	// repository is being cloned on the `D:` drive, but `t.TempDir()` is on `C:`.
+	if runtime.GOOS == "windows" {
+		t.Chdir(tempDir)
+	}
+
+	configPath := filepath.Join(tempDir, "supervisor.yaml")
 	require.NoError(t, os.WriteFile(configPath, []byte("server:\n  endpoint: ${"+envVar+"}\n"), 0o600))
 	workingDir, err := os.Getwd()
 	require.NoError(t, err)
