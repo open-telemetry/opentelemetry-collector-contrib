@@ -58,8 +58,8 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 			rb.SetCloudPlatform(kv.Value.AsString())
 		case "service.name":
 			rb.SetServiceName(kv.Value.AsString())
-		case "service.instance.id":
-			rb.SetServiceInstanceID(kv.Value.AsString())
+		case "azure.container_app.instance.id":
+			rb.SetAzureContainerAppInstanceID(kv.Value.AsString())
 		}
 	}
 	return rb.Emit(), sdkRes.SchemaURL(), nil

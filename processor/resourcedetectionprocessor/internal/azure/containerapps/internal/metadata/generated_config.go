@@ -27,21 +27,21 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/azurecontainerapps resource attributes.
 type ResourceAttributesConfig struct {
-	CloudPlatform     ResourceAttributeConfig `mapstructure:"cloud.platform"`
-	CloudProvider     ResourceAttributeConfig `mapstructure:"cloud.provider"`
-	ServiceInstanceID ResourceAttributeConfig `mapstructure:"service.instance.id"`
-	ServiceName       ResourceAttributeConfig `mapstructure:"service.name"`
+	AzureContainerAppInstanceID ResourceAttributeConfig `mapstructure:"azure.container_app.instance.id"`
+	CloudPlatform               ResourceAttributeConfig `mapstructure:"cloud.platform"`
+	CloudProvider               ResourceAttributeConfig `mapstructure:"cloud.provider"`
+	ServiceName                 ResourceAttributeConfig `mapstructure:"service.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		AzureContainerAppInstanceID: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		CloudPlatform: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		CloudProvider: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ServiceInstanceID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		ServiceName: ResourceAttributeConfig{

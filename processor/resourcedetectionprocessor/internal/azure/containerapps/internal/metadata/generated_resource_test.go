@@ -13,9 +13,9 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetAzureContainerAppInstanceID("azure.container_app.instance.id-val")
 			rb.SetCloudPlatform("cloud.platform-val")
 			rb.SetCloudProvider("cloud.provider-val")
-			rb.SetServiceInstanceID("service.instance.id-val")
 			rb.SetServiceName("service.name-val")
 
 			res := rb.Emit()
@@ -32,6 +32,11 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
+			azureContainerAppInstanceIDAttrVal, ok := res.Attributes().Get("azure.container_app.instance.id")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "azure.container_app.instance.id-val", azureContainerAppInstanceIDAttrVal.Str())
+			}
 			cloudPlatformAttrVal, ok := res.Attributes().Get("cloud.platform")
 			assert.True(t, ok)
 			if ok {
@@ -41,11 +46,6 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "cloud.provider-val", cloudProviderAttrVal.Str())
-			}
-			serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
 			}
 			serviceNameAttrVal, ok := res.Attributes().Get("service.name")
 			assert.True(t, ok)

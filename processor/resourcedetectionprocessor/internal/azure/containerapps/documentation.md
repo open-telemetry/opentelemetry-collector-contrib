@@ -6,9 +6,9 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| cloud.platform | The cloud.platform | Any Str | true | - |
-| cloud.provider | The cloud.provider | Any Str | true | - |
-| service.instance.id | The name of the Azure Container App replica | Any Str | true | - |
-| service.name | The name of the Azure Container App | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| azure.container_app.instance.id | The name of the Azure Container App replica | Any Str | true | - | - |
+| cloud.platform | The cloud.platform | Any Str | true | - | - |
+| cloud.provider | The cloud.provider | Any Str | true | - | - |
+| service.name | The name of the Azure Container App | Any Str | true | - | - |

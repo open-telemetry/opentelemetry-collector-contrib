@@ -28,10 +28,10 @@ func TestDetector_Detect_ContainerApp(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	assert.Equal(t, map[string]any{
-		"cloud.provider":      "azure",
-		"cloud.platform":      "azure.container_apps",
-		"service.name":        "my-app",
-		"service.instance.id": "my-app--abc123-7d9f8c5b6-xyz",
+		"cloud.provider":                  "azure",
+		"cloud.platform":                  "azure.container_apps",
+		"service.name":                    "my-app",
+		"azure.container_app.instance.id": "my-app--abc123-7d9f8c5b6-xyz",
 	}, res.Attributes().AsRaw(), "Resource attributes returned are incorrect")
 }
 

@@ -24,19 +24,19 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				CloudPlatform:     ResourceAttributeConfig{Enabled: true},
-				CloudProvider:     ResourceAttributeConfig{Enabled: true},
-				ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
-				ServiceName:       ResourceAttributeConfig{Enabled: true},
+				AzureContainerAppInstanceID: ResourceAttributeConfig{Enabled: true},
+				CloudPlatform:               ResourceAttributeConfig{Enabled: true},
+				CloudProvider:               ResourceAttributeConfig{Enabled: true},
+				ServiceName:                 ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				CloudPlatform:     ResourceAttributeConfig{Enabled: false},
-				CloudProvider:     ResourceAttributeConfig{Enabled: false},
-				ServiceInstanceID: ResourceAttributeConfig{Enabled: false},
-				ServiceName:       ResourceAttributeConfig{Enabled: false},
+				AzureContainerAppInstanceID: ResourceAttributeConfig{Enabled: false},
+				CloudPlatform:               ResourceAttributeConfig{Enabled: false},
+				CloudProvider:               ResourceAttributeConfig{Enabled: false},
+				ServiceName:                 ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

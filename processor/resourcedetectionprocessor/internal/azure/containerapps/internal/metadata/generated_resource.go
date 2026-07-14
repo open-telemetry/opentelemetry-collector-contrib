@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetAzureContainerAppInstanceID sets provided value as "azure.container_app.instance.id" attribute.
+func (rb *ResourceBuilder) SetAzureContainerAppInstanceID(val string) {
+	if rb.config.AzureContainerAppInstanceID.Enabled {
+		rb.res.Attributes().PutStr("azure.container_app.instance.id", val)
+	}
+}
+
 // SetCloudPlatform sets provided value as "cloud.platform" attribute.
 func (rb *ResourceBuilder) SetCloudPlatform(val string) {
 	if rb.config.CloudPlatform.Enabled {
@@ -32,13 +39,6 @@ func (rb *ResourceBuilder) SetCloudPlatform(val string) {
 func (rb *ResourceBuilder) SetCloudProvider(val string) {
 	if rb.config.CloudProvider.Enabled {
 		rb.res.Attributes().PutStr("cloud.provider", val)
-	}
-}
-
-// SetServiceInstanceID sets provided value as "service.instance.id" attribute.
-func (rb *ResourceBuilder) SetServiceInstanceID(val string) {
-	if rb.config.ServiceInstanceID.Enabled {
-		rb.res.Attributes().PutStr("service.instance.id", val)
 	}
 }
 
