@@ -1942,6 +1942,74 @@ func (ms *OracledbSessionsUsageMetricConfig) Validate() error {
 	return nil
 }
 
+// OracledbSgaLimitMetricConfig provides config for the oracledb.sga.limit metric.
+type OracledbSgaLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSgaLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSgaUsageMetricAttributeKey specifies the key of an attribute for the oracledb.sga.usage metric.
+type OracledbSgaUsageMetricAttributeKey string
+
+const (
+	OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName OracledbSgaUsageMetricAttributeKey = "oracledb.sga.component.name"
+)
+
+// OracledbSgaUsageMetricConfig provides config for the oracledb.sga.usage metric.
+type OracledbSgaUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbSgaUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbSgaUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbSgaUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName:
+		default:
+			return fmt.Errorf("metric oracledb.sga.usage doesn't have an attribute %v, valid attributes: [oracledb.sga.component.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // OracledbSharedPoolUtilizationMetricConfig provides config for the oracledb.shared_pool.utilization metric.
 type OracledbSharedPoolUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2174,6 +2242,66 @@ type OracledbStorageUtilizationMetricConfig struct {
 }
 
 func (ms *OracledbStorageUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSystemCPUCountMetricConfig provides config for the oracledb.system.cpu.count metric.
+type OracledbSystemCPUCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSystemCPUCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSystemMemoryLimitMetricConfig provides config for the oracledb.system.memory.limit metric.
+type OracledbSystemMemoryLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSystemMemoryLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSystemProcessCountMetricConfig provides config for the oracledb.system.process.count metric.
+type OracledbSystemProcessCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSystemProcessCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2439,6 +2567,8 @@ type MetricsConfig struct {
 	OracledbScanTableRows                         OracledbScanTableRowsMetricConfig                         `mapstructure:"oracledb.scan.table.rows"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
+	OracledbSgaLimit                              OracledbSgaLimitMetricConfig                              `mapstructure:"oracledb.sga.limit"`
+	OracledbSgaUsage                              OracledbSgaUsageMetricConfig                              `mapstructure:"oracledb.sga.usage"`
 	OracledbSharedPoolUtilization                 OracledbSharedPoolUtilizationMetricConfig                 `mapstructure:"oracledb.shared_pool.utilization"`
 	OracledbSortOperations                        OracledbSortOperationsMetricConfig                        `mapstructure:"oracledb.sort.operations"`
 	OracledbSortRatio                             OracledbSortRatioMetricConfig                             `mapstructure:"oracledb.sort.ratio"`
@@ -2447,6 +2577,9 @@ type MetricsConfig struct {
 	OracledbSqlnetIoTransferred                   OracledbSqlnetIoTransferredMetricConfig                   `mapstructure:"oracledb.sqlnet.io.transferred"`
 	OracledbStorageUsage                          OracledbStorageUsageMetricConfig                          `mapstructure:"oracledb.storage.usage"`
 	OracledbStorageUtilization                    OracledbStorageUtilizationMetricConfig                    `mapstructure:"oracledb.storage.utilization"`
+	OracledbSystemCPUCount                        OracledbSystemCPUCountMetricConfig                        `mapstructure:"oracledb.system.cpu.count"`
+	OracledbSystemMemoryLimit                     OracledbSystemMemoryLimitMetricConfig                     `mapstructure:"oracledb.system.memory.limit"`
+	OracledbSystemProcessCount                    OracledbSystemProcessCountMetricConfig                    `mapstructure:"oracledb.system.process.count"`
 	OracledbTablespaceSizeLimit                   OracledbTablespaceSizeLimitMetricConfig                   `mapstructure:"oracledb.tablespace_size.limit"`
 	OracledbTablespaceSizeUsage                   OracledbTablespaceSizeUsageMetricConfig                   `mapstructure:"oracledb.tablespace_size.usage"`
 	OracledbTransactionsLimit                     OracledbTransactionsLimitMetricConfig                     `mapstructure:"oracledb.transactions.limit"`
@@ -2711,6 +2844,14 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus},
 		},
+		OracledbSgaLimit: OracledbSgaLimitMetricConfig{
+			Enabled: false,
+		},
+		OracledbSgaUsage: OracledbSgaUsageMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OracledbSgaUsageMetricAttributeKey{OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName},
+		},
 		OracledbSharedPoolUtilization: OracledbSharedPoolUtilizationMetricConfig{
 			Enabled: false,
 		},
@@ -2739,6 +2880,15 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		OracledbStorageUtilization: OracledbStorageUtilizationMetricConfig{
+			Enabled: false,
+		},
+		OracledbSystemCPUCount: OracledbSystemCPUCountMetricConfig{
+			Enabled: false,
+		},
+		OracledbSystemMemoryLimit: OracledbSystemMemoryLimitMetricConfig{
+			Enabled: false,
+		},
+		OracledbSystemProcessCount: OracledbSystemProcessCountMetricConfig{
 			Enabled: false,
 		},
 		OracledbTablespaceSizeLimit: OracledbTablespaceSizeLimitMetricConfig{

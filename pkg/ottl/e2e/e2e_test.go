@@ -1615,6 +1615,102 @@ func Test_e2e_converters(t *testing.T) {
 				filtered.PutStr("bar", "pass")
 			},
 		},
+		{
+			statement: `set(attributes["mapped_slice"], MapEach(attributes["primitiveValuesSlice"], (i, v) => Concat([String(i), ":", String(v)], "")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				mapped := tCtx.GetLogRecord().Attributes().PutEmptySlice("mapped_slice")
+				mapped.AppendEmpty().SetStr("0:value1")
+				mapped.AppendEmpty().SetStr("1:42")
+				mapped.AppendEmpty().SetStr("2:true")
+			},
+		},
+		{
+			statement: `set(attributes["mapped_map"], MapEach(attributes["foo"], (k, v) => Concat([k, ":", String(v)], "")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				mapped := tCtx.GetLogRecord().Attributes().PutEmptyMap("mapped_map")
+				mapped.PutStr("bar", "bar:pass")
+				mapped.PutStr("flags", "flags:pass")
+				mapped.PutStr("slice", `slice:["val"]`)
+				mapped.PutStr("nested", `nested:{"test":"pass"}`)
+			},
+		},
+		{
+			statement: `set(attributes["pdata"], MapEach(["things"], (_, v) => {"result":v}))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				mapped := tCtx.GetLogRecord().Attributes().PutEmptySlice("pdata")
+				mapped.AppendEmpty().SetEmptyMap().PutStr("result", "things")
+			},
+		},
+		{
+			statement: `set(attributes["pdata"], MapEach({"key":"val"}, (_, _) => attributes))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				orig := pcommon.NewMap()
+				tCtx.GetLogRecord().Attributes().CopyTo(orig)
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("pdata")
+				v := m.PutEmptyMap("key")
+				orig.CopyTo(v)
+			},
+		},
+		{
+			statement: `set(attributes["all_slice"], All(attributes["primitiveValuesSlice"], (_, v) => v == "value1"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("all_slice", false)
+			},
+		},
+		{
+			statement: `set(attributes["all_map"], All(attributes["foo"], (k, _) => k != "missing"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("all_map", true)
+			},
+		},
+		{
+			statement: `set(attributes["any_slice"], Any(attributes["primitiveValuesSlice"], (_, v) => v == "value1"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("any_slice", true)
+			},
+		},
+		{
+			statement: `set(attributes["any_map"], Any(attributes["foo"], (k, _) => k == "bar"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("any_map", true)
+			},
+		},
+		{
+			statement: `set(attributes["found_slice"], Find(attributes["primitiveValuesSlice"], (_, v) => v == "value1"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("found_slice", "value1")
+			},
+		},
+		{
+			statement: `set(attributes["found_map"], Find(attributes["foo"], (k, _) => k == "bar"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("found_map", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["found_map_mapped"], Find(attributes["foo"], (k, _) => k == "bar", (k, v) => Concat([k, ":", String(v)], "")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("found_map_mapped", "bar:pass")
+			},
+		},
+		{
+			statement: `set(attributes["found_slice_mapped"], Find(attributes["primitiveValuesSlice"], (_, v) => v == "value1", (i, v) => Concat([String(i), ":", String(v)], "")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("found_slice_mapped", "0:value1")
+			},
+		},
+		{
+			statement: `set(attributes["slice_sum"], Reduce([1, 2, 3], 0, (acc, _, v) => acc + Int(v)))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("slice_sum", 6)
+			},
+		},
+		{
+			statement: `set(attributes["labels_str"], Reduce({"env": "prod"}, "", (acc, k, v) => Concat([acc, k, "=", String(v), ";"], "")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("labels_str", "env=prod;")
+			},
+		},
 	}
 
 	for _, tt := range tests {

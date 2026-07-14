@@ -165,6 +165,11 @@ all_set:
     oracledb.sessions.usage:
       enabled: true
       attributes: ["session_type","session_status"]
+    oracledb.sga.limit:
+      enabled: true
+    oracledb.sga.usage:
+      enabled: true
+      attributes: ["oracledb.sga.component.name"]
     oracledb.shared_pool.utilization:
       enabled: true
     oracledb.sort.operations:
@@ -183,6 +188,12 @@ all_set:
     oracledb.storage.usage:
       enabled: true
     oracledb.storage.utilization:
+      enabled: true
+    oracledb.system.cpu.count:
+      enabled: true
+    oracledb.system.memory.limit:
+      enabled: true
+    oracledb.system.process.count:
       enabled: true
     oracledb.tablespace_size.limit:
       enabled: true
@@ -392,6 +403,11 @@ reaggregate_set:
     oracledb.sessions.usage:
       enabled: true
       attributes: []
+    oracledb.sga.limit:
+      enabled: true
+    oracledb.sga.usage:
+      enabled: true
+      attributes: []
     oracledb.shared_pool.utilization:
       enabled: true
     oracledb.sort.operations:
@@ -410,6 +426,12 @@ reaggregate_set:
     oracledb.storage.usage:
       enabled: true
     oracledb.storage.utilization:
+      enabled: true
+    oracledb.system.cpu.count:
+      enabled: true
+    oracledb.system.memory.limit:
+      enabled: true
+    oracledb.system.process.count:
       enabled: true
     oracledb.tablespace_size.limit:
       enabled: true
@@ -619,6 +641,11 @@ none_set:
     oracledb.sessions.usage:
       enabled: false
       attributes: ["session_type","session_status"]
+    oracledb.sga.limit:
+      enabled: false
+    oracledb.sga.usage:
+      enabled: false
+      attributes: ["oracledb.sga.component.name"]
     oracledb.shared_pool.utilization:
       enabled: false
     oracledb.sort.operations:
@@ -637,6 +664,12 @@ none_set:
     oracledb.storage.usage:
       enabled: false
     oracledb.storage.utilization:
+      enabled: false
+    oracledb.system.cpu.count:
+      enabled: false
+    oracledb.system.memory.limit:
+      enabled: false
+    oracledb.system.process.count:
       enabled: false
     oracledb.tablespace_size.limit:
       enabled: false

@@ -470,11 +470,11 @@ Examples:
 
 ### truncate_all
 
-`truncate_all(target, limit, Optional[utf8_safe])`
+`truncate_all(target, limit, Optional[utf8_safe], Optional[truncation_marker])`
 
 The `truncate_all` function truncates all string values in a `pcommon.Map` so that none are longer than the limit.
 
-`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer representing the maximum number of bytes. `utf8_safe` is an optional boolean (default: `true`) that enables UTF-8 aware truncation.
+`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer representing the maximum number of bytes. `utf8_safe` is an optional boolean (default: `true`) that enables UTF-8 aware truncation. `truncation_marker` is an optional string (default: `""`) that is appended to values that are truncated.
 
 The map will be mutated such that the number of bytes in all string values is less than or equal to the limit. Non-string values are ignored.
 
@@ -482,10 +482,14 @@ This function treats input as valid UTF-8. Truncation is done only at UTF-8 char
 
 When `utf8_safe` is set to `false`, truncation is applied at the byte limit only. Multi-byte UTF-8 characters may be split and the result can be invalid UTF-8. This mode is faster but should only be used when preserving valid UTF-8 is not required.
 
+`truncation_marker` is a string that will be appended to any value that has been truncated. The marker counts against the `limit` so the result (including the marker) never exceeds it. If the length of `truncation_marker` is larger than `limit`, `truncate_all` will return an error.
+
 Examples:
 
 - `truncate_all(log.attributes, 100)`
 - `truncate_all(resource.attributes, 50, false)`
+- `truncate_all(resource.attributes, 50, false, "(...)")`
+- `truncate_all(log.attributes, 100, truncation_marker = "(truncated)")` 
 
 ## Converters
 
@@ -494,6 +498,8 @@ Unlike functions, they do not modify any input telemetry and always return a val
 
 Available Converters:
 
+- [All](#all)
+- [Any](#any)
 - [Base64Decode](#base64decode-deprecated)
 - [Base64Encode](#base64encode)
 - [Bool](#bool)
@@ -511,6 +517,7 @@ Available Converters:
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
 - [Filter](#filter)
+- [Find](#find)
 - [FNV](#fnv)
 - [Format](#format)
 - [FormatTime](#formattime)
@@ -536,6 +543,7 @@ Available Converters:
 - [Len](#len)
 - [Log](#log)
 - [IsValidLuhn](#isvalidluhn)
+- [MapEach](#mapeach)
 - [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
@@ -555,6 +563,7 @@ Available Converters:
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
 - [ProfileID](#profileid)
+- [Reduce](#reduce)
 - [RemoveXML](#removexml)
 - [Second](#second)
 - [Seconds](#seconds)
@@ -593,6 +602,74 @@ Available Converters:
 - [XXH3](#xxh3)
 - [XXH128](#xxh128)
 - [Year](#year)
+
+### All
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`All(source, predicate)`
+
+The `All` converter returns `true` if `predicate` evaluates to `true` for every element in `source`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`predicate` is a lambda expression with exactly two parameters and a boolean result. 
+The first parameter is the element index when evaluating a slice (`int64`), or the element 
+key when evaluating a map (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+An empty slice or map returns `true`.
+
+If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
+
+Examples:
+
+Check that every slice element matches:
+
+- `All(log.attributes["tags"], (_, v) => v == "prod")`
+
+Check that every map key matches:
+
+- `All(log.attributes, (k, _) => HasPrefix(k, "http."))`
+
+Use in a condition:
+
+- `set(log.attributes["all_prod"], true) where All(log.attributes["tags"], (_, v) => v == "prod")`
+
+### Any
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Any(source, predicate)`
+
+The `Any` converter returns `true` if `predicate` evaluates to `true` for at least one element in `source`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`predicate` is a lambda expression with exactly two parameters and a boolean result. 
+The first parameter is the element index when evaluating a slice (`int64`), or the element 
+key when evaluating a map (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+An empty slice or map returns `false`.
+
+If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
+
+Examples:
+
+Check whether any slice element matches:
+
+- `Any(log.attributes["tags"], (_, v) => v == "prod")`
+
+Check whether any map key matches:
+
+- `Any(log.attributes, (k, _) => HasPrefix(k, "http."))`
+
+Use in a condition:
+
+- `set(log.attributes["has_prod"], true) where Any(log.attributes["tags"], (_, v) => v == "prod")`
 
 ### Base64Decode (Deprecated)
 
@@ -1024,6 +1101,52 @@ Filter a map by key:
 Store the filtered result:
 
 - `set(log.attributes["prod_tags"], Filter(log.attributes["tags"], (_, v) => v == "prod"))`
+
+### Find
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Find(source, predicate, Optional[mapper])`
+
+The `Find` converter returns the value of the first element in `source` for which `predicate` evaluates to `true`. 
+If no element matches, it returns `nil`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`predicate` is a lambda expression with exactly two parameters and a boolean result. 
+The first parameter is the element index when searching a slice (`int64`), or the element 
+key when searching a map (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+`mapper` is an optional lambda expression with exactly two parameters. When provided, 
+it transforms the matched element before returning it. The first parameter is the found element 
+index or key, and the second parameter is the element value. When omitted, the matched value 
+is returned as-is.
+
+If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
+
+Examples:
+
+Find a slice element by value:
+
+- `Find(log.attributes["tags"], (_, v) => v == "prod")`
+
+Find a map element by key:
+
+- `Find(log.attributes, (k, _) => k == "http.method")`
+
+Find a map element key instead of value:
+
+- `Find(log.attributes, (_, v) => v == "prod", (k, _) => k)`
+
+Transform the found element:
+
+- `Find(log.attributes, (_, v) => v == "prod", (_, v) => String(v))`
+
+Store the found value:
+
+- `set(log.attributes["first_prod"], Find(log.attributes["tags"], (_, v) => v == "prod"))`
 
 ### FNV
 
@@ -1562,6 +1685,38 @@ Examples:
 
 - `IsValidLuhn("17893729974")`
 
+### MapEach
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`MapEach(source, mapper)`
+
+The `MapEach` converter returns a new `pcommon.Slice` or `pcommon.Map` with each element value 
+transformed by `mapper`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`mapper` is a lambda expression with exactly two parameters. The first parameter is the element
+index when mapping a slice (`int64`), or the element key when mapping a map (`string`). The
+second parameter is the element value. Use `_` as a parameter name to ignore unused parameters.
+
+If `source` is not a slice or map, it returns an error.
+
+Examples:
+
+Mapping slice values:
+
+- `MapEach(log.attributes["counts"], (_, v) => Int(v) * 2)`
+
+Stringify map values:
+
+- `MapEach(log.attributes, (_, v) => String(v))`
+
+Store the mapped result:
+
+- `set(log.attributes["doubled"], MapEach(log.attributes["counts"], (_, v) => Int(v)))`
+
 ### MD5
 
 `MD5(value)`
@@ -2078,6 +2233,46 @@ Examples:
 
 - `ProfileID(0x00112233445566778899aabbccddeeff)`
 - `ProfileID("a389023abaa839283293ed323892389d")`
+
+### Reduce
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Reduce(source, seed, accumulator)`
+
+The `Reduce` converter folds `source` into a single value, starting from `seed` and applying `accumulator` to each element.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`seed` is the initial accumulator value.
+
+`accumulator` is a lambda expression with exactly three parameters. 
+The first parameter is the current accumulator value. 
+The second parameter is the element index when reducing a slice (`int64`), or the element 
+key when reducing a map (`string`). The third parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+An empty slice or map returns `seed` unchanged.
+
+For maps, element processing order follows map iteration and is not guaranteed to be stable. 
+This matters when `accumulator` is not commutative.
+
+If `source` is not a slice or map, it returns an error.
+
+Examples:
+
+Sum a slice of numbers:
+
+- `Reduce(log.attributes["counts"], 0, (acc, _, v) => acc + Int(v))`
+
+Build a semicolon-separated key=value string:
+
+- `Reduce(log.attributes["labels"], "", (acc, k, v) => Concat([acc, k, "=", String(v), ";"], ""))`
+
+Store the result:
+
+- `set(log.attributes["total"], Reduce(log.attributes["counts"], 0, (acc, _, v) => acc + Int(v)))`
 
 ### RemoveXML
 

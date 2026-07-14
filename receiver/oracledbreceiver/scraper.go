@@ -150,16 +150,29 @@ const (
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
 	dataDictHitRatioSQL = "SELECT (1-(SUM(getmisses)/SUM(gets))) * 100 as DATA_DICTIONARY_HIT_RATIO FROM v$rowcache WHERE getmisses + gets <> 0"
+	osStatSQL           = "SELECT STAT_NAME, VALUE FROM v$osstat WHERE STAT_NAME IN ('LOAD', 'NUM_CPUS', 'PHYSICAL_MEMORY_BYTES')"
 	recycleBinSizeSQL   = "SELECT nvl(SUM(SPACE*(SELECT value FROM v$parameter WHERE name = 'db_block_size')),0) as RECYCLE_BIN_SIZE_BYTES FROM dba_recyclebin"
+	sgaInfoSQL          = "SELECT NAME, BYTES FROM v$sgainfo"
 	storageUsageSQL     = "WITH total_bytes AS (SELECT SUM(bytes) AS total FROM dba_data_files) SELECT (total - (SELECT SUM(bytes) FROM dba_free_space)) AS USED_DB_SIZE, total AS ALLOCATED_DB_SIZE FROM total_bytes"
+
+	osStatNameLoad           = "LOAD"
+	osStatNameNumCPUs        = "NUM_CPUS"
+	osStatNamePhysicalMemory = "PHYSICAL_MEMORY_BYTES"
 
 	colAllocatedDBSize     = "ALLOCATED_DB_SIZE"
 	colDataDictHitRatio    = "DATA_DICTIONARY_HIT_RATIO"
 	colMetricName          = "METRIC_NAME"
 	colName                = "NAME"
+	colOSStatName          = "STAT_NAME"
 	colRecycleBinSizeBytes = "RECYCLE_BIN_SIZE_BYTES"
+	colSGAInfoBytes        = "BYTES"
+	colSGAInfoName         = "NAME"
 	colUsedDBSize          = "USED_DB_SIZE"
 	colValue               = "VALUE"
+
+	// sgaMaxSize is the row name routed to oracledb.sga.limit; other rows
+	// are looked up in sgaComponentNames.
+	sgaMaxSize = "Maximum SGA Size"
 
 	sqlIDAttr        = "SQL_ID"
 	childAddressAttr = "CHILD_ADDRESS"
@@ -212,6 +225,23 @@ var (
 	sessionEventQuery string
 )
 
+// sgaComponentNames maps V$SGAINFO.NAME values to the snake_case enum keys
+// declared for oracledb.sga.component.name in metadata.yaml. Rows whose name
+// is not in this map are skipped so that sum(oracledb.sga.usage) stays
+// consistent with oracledb.sga.limit.
+var sgaComponentNames = map[string]metadata.AttributeOracledbSgaComponentName{
+	"Buffer Cache Size":        metadata.AttributeOracledbSgaComponentNameBufferCache,
+	"Data Transfer Cache Size": metadata.AttributeOracledbSgaComponentNameDataTransferCache,
+	"Fixed SGA Size":           metadata.AttributeOracledbSgaComponentNameFixedSga,
+	"In-Memory Area Size":      metadata.AttributeOracledbSgaComponentNameInMemoryArea,
+	"Java Pool Size":           metadata.AttributeOracledbSgaComponentNameJavaPool,
+	"Large Pool Size":          metadata.AttributeOracledbSgaComponentNameLargePool,
+	"Redo Buffers":             metadata.AttributeOracledbSgaComponentNameRedoBuffers,
+	"Shared IO Pool Size":      metadata.AttributeOracledbSgaComponentNameSharedIoPool,
+	"Shared Pool Size":         metadata.AttributeOracledbSgaComponentNameSharedPool,
+	"Streams Pool Size":        metadata.AttributeOracledbSgaComponentNameStreamsPool,
+}
+
 type dbProviderFunc func() (*sql.DB, error)
 
 type clientProviderFunc func(*sql.DB, string, *zap.Logger) dbClient
@@ -226,7 +256,9 @@ type oracleScraper struct {
 	samplesQueryClient         dbClient
 	sessionEventClient         dbClient
 	dataDictHitRatioClient     dbClient
+	osStatClient               dbClient
 	recycleBinSizeClient       dbClient
+	sgaInfoClient              dbClient
 	storageUsageClient         dbClient
 	sysmetricClient            dbClient
 	db                         *sql.DB
@@ -320,7 +352,9 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	s.samplesQueryClient = s.clientProviderFunc(s.db, samplesQuery, s.logger)
 	s.sessionEventClient = s.clientProviderFunc(s.db, sessionEventQuery, s.logger)
 	s.dataDictHitRatioClient = s.clientProviderFunc(s.db, dataDictHitRatioSQL, s.logger)
+	s.osStatClient = s.clientProviderFunc(s.db, osStatSQL, s.logger)
 	s.recycleBinSizeClient = s.clientProviderFunc(s.db, recycleBinSizeSQL, s.logger)
+	s.sgaInfoClient = s.clientProviderFunc(s.db, sgaInfoSQL, s.logger)
 	s.storageUsageClient = s.clientProviderFunc(s.db, storageUsageSQL, s.logger)
 	s.sysmetricClient = s.clientProviderFunc(s.db, sysmetricSQL, s.logger)
 	return nil
@@ -918,7 +952,16 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	s.collectDataDictHitRatio(ctx, &scrapeErrors)
+	if s.metricsBuilderConfig.Metrics.OracledbSystemCPUCount.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSystemMemoryLimit.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSystemProcessCount.Enabled {
+		s.collectOSStat(ctx, &scrapeErrors)
+	}
 	s.collectRecycleBinSize(ctx, &scrapeErrors)
+	if s.metricsBuilderConfig.Metrics.OracledbSgaUsage.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSgaLimit.Enabled {
+		s.collectSGAInfo(ctx, &scrapeErrors)
+	}
 	s.collectStorageUsage(ctx, &scrapeErrors)
 	s.collectSysMetrics(ctx, &scrapeErrors)
 
@@ -960,6 +1003,42 @@ func (s *oracleScraper) collectDataDictHitRatio(ctx context.Context, scrapeError
 	}
 }
 
+func (s *oracleScraper) collectOSStat(ctx context.Context, scrapeErrors *[]error) {
+	now := pcommon.NewTimestampFromTime(time.Now())
+	rows, err := s.osStatClient.metricRows(ctx)
+	if err != nil {
+		*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", osStatSQL, err))
+		return
+	}
+	for _, row := range rows {
+		statName := row[colOSStatName]
+		statValue := row[colValue]
+		switch statName {
+		case osStatNameLoad:
+			val, err := strconv.ParseFloat(statValue, 64)
+			if err != nil {
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse float64 for OracledbSystemProcessCount, value was %s: %w", statValue, err))
+				continue
+			}
+			s.mb.RecordOracledbSystemProcessCountDataPoint(now, val)
+		case osStatNameNumCPUs:
+			val, err := strconv.ParseInt(statValue, 10, 64)
+			if err != nil {
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbSystemCPUCount, value was %s: %w", statValue, err))
+				continue
+			}
+			s.mb.RecordOracledbSystemCPUCountDataPoint(now, val)
+		case osStatNamePhysicalMemory:
+			val, err := strconv.ParseInt(statValue, 10, 64)
+			if err != nil {
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbSystemMemoryLimit, value was %s: %w", statValue, err))
+				continue
+			}
+			s.mb.RecordOracledbSystemMemoryLimitDataPoint(now, val)
+		}
+	}
+}
+
 func (s *oracleScraper) collectRecycleBinSize(ctx context.Context, scrapeErrors *[]error) {
 	if !s.metricsBuilderConfig.Metrics.OracledbRecycleBinLimit.Enabled {
 		return
@@ -977,6 +1056,35 @@ func (s *oracleScraper) collectRecycleBinSize(ctx context.Context, scrapeErrors 
 			continue
 		}
 		s.mb.RecordOracledbRecycleBinLimitDataPoint(now, val)
+	}
+}
+
+func (s *oracleScraper) collectSGAInfo(ctx context.Context, scrapeErrors *[]error) {
+	now := pcommon.NewTimestampFromTime(time.Now())
+	rows, err := s.sgaInfoClient.metricRows(ctx)
+	if err != nil {
+		*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", sgaInfoSQL, err))
+		return
+	}
+	for _, row := range rows {
+		name := row[colSGAInfoName]
+		isLimit := name == sgaMaxSize
+		component, isComponent := sgaComponentNames[name]
+		if !isLimit && !isComponent {
+			// Not an allocated component and not the limit row; skip without
+			// parsing so sum(oracledb.sga.usage) stays consistent with the limit.
+			continue
+		}
+		val, err := strconv.ParseInt(row[colSGAInfoBytes], 10, 64)
+		if err != nil {
+			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for SGA row %q, value was %q: %w", name, row[colSGAInfoBytes], err))
+			continue
+		}
+		if isLimit {
+			s.mb.RecordOracledbSgaLimitDataPoint(now, val)
+			continue
+		}
+		s.mb.RecordOracledbSgaUsageDataPoint(now, val, component)
 	}
 }
 
@@ -1475,7 +1583,7 @@ func (s *oracleScraper) collectSessionWaitEvents(ctx context.Context, logs plog.
 			continue
 		}
 
-		s.lb.RecordDbServerSessionWaitSampleEvent(ctx, timestamp, row[sid], row[serial], row[event], row[waitClass], totalWaitsVal, totalTimeWaitedSecsVal)
+		s.lb.RecordDbServerSessionWaitSampleEvent(ctx, timestamp, row[sid], row[serial], row[event], row[waitClass], totalWaitsVal, totalTimeWaitedSecsVal, row[dbNamespaceAttr])
 	}
 
 	s.lb.Emit(metadata.WithLogsResource(rb.Emit())).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
