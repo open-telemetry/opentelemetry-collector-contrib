@@ -154,12 +154,15 @@ type dbProvider struct {
 	pool        ConnectionPool
 	numScrapers int
 
-	openOnce  sync.Once
-	db        *sql.DB
-	openErr   error
-	closeOnce sync.Once
-	closeErr  error
+	mu       sync.Mutex
+	db       *sql.DB
+	openErr  error
+	opened   bool
+	closed   bool
+	closeErr error
 }
+
+var errDBProviderClosed = errors.New("connection pool is closed")
 
 func newDBProvider(cfg *Config, numScrapers int) *dbProvider {
 	return &dbProvider{
@@ -170,28 +173,43 @@ func newDBProvider(cfg *Config, numScrapers int) *dbProvider {
 }
 
 // getDB lazily opens and configures the shared pool, returning the same
-// *sql.DB on every call. It satisfies sqlquery.DbProviderFunc.
+// *sql.DB on every call. It satisfies sqlquery.DbProviderFunc. Once the
+// provider has been closed it refuses to open a new pool, so a pool can never
+// be created after close and leaked.
 func (p *dbProvider) getDB() (*sql.DB, error) {
-	p.openOnce.Do(func() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.closed {
+		return nil, errDBProviderClosed
+	}
+	if !p.opened {
+		p.opened = true
 		p.db, p.openErr = sql.Open("sqlserver", p.dsn)
 		if p.openErr == nil {
 			setConnectionPoolSettings(p.db, p.pool, p.numScrapers)
 		}
-	})
+	}
 	return p.db, p.openErr
 }
 
 // close closes the shared pool. It is idempotent and safe to call on a nil
-// provider or when the pool was never opened.
+// provider or when the pool was never opened. After close, getDB will not open
+// a new pool.
 func (p *dbProvider) close() error {
 	if p == nil {
 		return nil
 	}
-	p.closeOnce.Do(func() {
-		if p.db != nil {
-			p.closeErr = p.db.Close()
-		}
-	})
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.closed {
+		return p.closeErr
+	}
+	p.closed = true
+	if p.db != nil {
+		p.closeErr = p.db.Close()
+	}
 	return p.closeErr
 }
 

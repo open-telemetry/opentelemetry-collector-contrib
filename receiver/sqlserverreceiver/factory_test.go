@@ -348,6 +348,17 @@ func TestDBProviderCloseIsSafe(t *testing.T) {
 		require.NoError(t, provider.close())
 		require.NoError(t, provider.close())
 	})
+
+	t.Run("getDB after close does not open a new pool", func(t *testing.T) {
+		provider := newDBProvider(&Config{Server: "0.0.0.0", Username: "sa", Password: "password", Port: 1433}, 2)
+		// close before the pool is ever opened, as happens on construction
+		// error paths.
+		require.NoError(t, provider.close())
+
+		db, err := provider.getDB()
+		require.ErrorIs(t, err, errDBProviderClosed)
+		require.Nil(t, db, "getDB must not open a pool after close")
+	})
 }
 
 func TestSetupQueries(t *testing.T) {
