@@ -396,7 +396,7 @@ func Test_parseELFDataLine(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseELFDataLine(tt.input)
+			got, err := parseELFDataLine(tt.input, nil)
 			if tt.errContains != "" {
 				require.ErrorContains(t, err, tt.errContains)
 				return
@@ -457,4 +457,38 @@ func Test_parseELFDirective(t *testing.T) {
 func Test_NewParseELFFactory(t *testing.T) {
 	factory := NewParseELFFactory()
 	assert.Equal(t, "ParseELF", factory.Name())
+}
+
+// benchELFMessage is a representative IIS W3C extended log block: full header
+// directives followed by ten data lines of nine fields each, including a
+// quoted User-Agent value with spaces and dash placeholders.
+const benchELFMessage = "#Software: Microsoft Internet Information Services 10.0\n" +
+	"#Version: 1.0\n" +
+	"#Date: 2026-07-15 00:00:00\n" +
+	"#Fields: date time c-ip cs-username cs-method cs-uri-stem cs-uri-query sc-status cs(User-Agent)\n" +
+	"2026-07-15 00:00:01 172.224.24.114 - GET /Default.htm - 200 \"Mozilla/5.0 (Windows NT 10.0)\"\n" +
+	"2026-07-15 00:00:02 172.224.24.115 admin GET /admin/index.html q=1 200 \"Mozilla/5.0 (Macintosh)\"\n" +
+	"2026-07-15 00:00:03 172.224.24.116 - POST /api/login - 401 \"curl/8.4.0\"\n" +
+	"2026-07-15 00:00:04 172.224.24.117 - GET /images/logo.png - 304 \"Mozilla/5.0 (Windows NT 10.0)\"\n" +
+	"2026-07-15 00:00:05 172.224.24.118 svc_backup GET /reports/daily.csv date=today 200 \"PowerShell/7.4\"\n" +
+	"2026-07-15 00:00:06 172.224.24.119 - GET /Default.htm - 200 \"Mozilla/5.0 (iPhone)\"\n" +
+	"2026-07-15 00:00:07 172.224.24.120 - HEAD /health - 200 \"kube-probe/1.29\"\n" +
+	"2026-07-15 00:00:08 172.224.24.121 - GET /search q=otel+collector 200 \"Mozilla/5.0 (X11; Linux)\"\n" +
+	"2026-07-15 00:00:09 172.224.24.122 - PUT /api/items/42 - 204 \"Go-http-client/2.0\"\n" +
+	"2026-07-15 00:00:10 172.224.24.123 - GET /favicon.ico - 404 \"Mozilla/5.0 (Windows NT 10.0)\"\n"
+
+func BenchmarkParseELF(b *testing.B) {
+	ctx := b.Context()
+	b.ReportAllocs()
+
+	exprFunc := parseELF(ottl.StandardStringGetter[*ottllog.TransformContext]{
+		Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+			return benchELFMessage, nil
+		},
+	}, zap.NewNop())
+
+	for b.Loop() {
+		_, err := exprFunc(ctx, &ottllog.TransformContext{})
+		require.NoError(b, err)
+	}
 }

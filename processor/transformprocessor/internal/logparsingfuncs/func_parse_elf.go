@@ -90,7 +90,9 @@ func parseELFMessage(input string, logger *zap.Logger) (pcommon.Map, error) {
 
 	var hasVersion bool
 	var currentFields []string
+	var currentKeys []string // currentFields prefixed with "elf.", built once per #Fields
 	var lastFields []string
+	var values []string // scratch buffer reused across data lines
 
 	offset := 0
 	for {
@@ -119,6 +121,10 @@ func parseELFMessage(input string, logger *zap.Logger) (pcommon.Map, error) {
 			case strings.EqualFold(key, "fields"):
 				currentFields = strings.Fields(value)
 				lastFields = currentFields
+				currentKeys = make([]string, len(currentFields))
+				for i, f := range currentFields {
+					currentKeys[i] = "elf." + f
+				}
 			case strings.EqualFold(key, "software"):
 				result.PutStr("elf.software", value)
 			case strings.EqualFold(key, "date"):
@@ -137,21 +143,23 @@ func parseELFMessage(input string, logger *zap.Logger) (pcommon.Map, error) {
 		if len(currentFields) == 0 {
 			return pcommon.Map{}, errors.New("invalid ELF: data entry found before #Fields directive")
 		}
-		values, err := parseELFDataLine(line)
+		var err error
+		values, err = parseELFDataLine(line, values[:0])
 		if err != nil {
 			return pcommon.Map{}, fmt.Errorf("invalid ELF: %w", err)
 		}
 		m := entriesSlice.AppendEmpty().SetEmptyMap()
-		for i, field := range currentFields {
+		m.EnsureCapacity(len(currentFields))
+		for i, key := range currentKeys {
 			if i < len(values) {
-				m.PutStr("elf."+field, values[i])
+				m.PutStr(key, values[i])
 			} else {
 				logger.Warn("ELF data line has fewer values than fields; substituting '-'",
-					zap.String("field", field),
+					zap.String("field", currentFields[i]),
 					zap.Int("field_count", len(currentFields)),
 					zap.Int("value_count", len(values)),
 				)
-				m.PutStr("elf."+field, "-")
+				m.PutStr(key, "-")
 			}
 		}
 		if len(values) > len(currentFields) {
@@ -185,13 +193,13 @@ func parseELFDirective(line string) (string, string, error) {
 	return strings.TrimSpace(key), strings.TrimSpace(value), nil
 }
 
-// parseELFDataLine splits a single ELF data line into tokens, honoring double-quoted
-// strings as used by real-world ELF producers (e.g. Microsoft IIS).
+// parseELFDataLine splits a single ELF data line into tokens, appending them to
+// values (which may be reused across calls) and honoring double-quoted strings
+// as used by real-world ELF producers (e.g. Microsoft IIS).
 // Whitespace (space or tab) separates tokens; embedded double-quotes inside a quoted
 // string are represented by "" per the W3C ELF spec §2.
 // Returns an error for unterminated quoted values.
-func parseELFDataLine(line string) ([]string, error) {
-	var values []string
+func parseELFDataLine(line string, values []string) ([]string, error) {
 	i, n := 0, len(line)
 	for i < n {
 		// skip leading whitespace (space or tab)
@@ -201,36 +209,53 @@ func parseELFDataLine(line string) ([]string, error) {
 		if i >= n {
 			break
 		}
-		if line[i] == '"' {
-			i++ // skip opening '"'
-			var sb strings.Builder
-			closed := false
-			for i < n {
-				if line[i] != '"' {
-					sb.WriteByte(line[i])
-					i++
-					continue
-				}
-				if i+1 >= n || line[i+1] != '"' {
-					i++ // skip closing '"'
-					closed = true
-					break
-				}
-				// escaped double-quote: "" → "
-				sb.WriteByte('"')
-				i += 2
-			}
-			if !closed {
-				return nil, fmt.Errorf("unterminated quoted value in data line: %q", line)
-			}
-			values = append(values, sb.String())
-		} else {
+		if line[i] != '"' {
 			start := i
 			for i < n && line[i] != ' ' && line[i] != '\t' {
 				i++
 			}
 			values = append(values, line[start:i])
+			continue
 		}
+		i++ // skip opening '"'
+		// Fast path: scan for the closing quote. Values without "" escapes
+		// (the common case) are appended as substrings without copying.
+		start := i
+		for i < n && line[i] != '"' {
+			i++
+		}
+		if i >= n {
+			return nil, fmt.Errorf("unterminated quoted value in data line: %q", line)
+		}
+		if i+1 >= n || line[i+1] != '"' {
+			values = append(values, line[start:i])
+			i++ // skip closing '"'
+			continue
+		}
+		// Slow path: the value contains at least one "" escape ("" → ").
+		var sb strings.Builder
+		sb.WriteString(line[start:i])
+		sb.WriteByte('"')
+		i += 2
+		closed := false
+		for i < n {
+			if line[i] != '"' {
+				sb.WriteByte(line[i])
+				i++
+				continue
+			}
+			if i+1 >= n || line[i+1] != '"' {
+				i++ // skip closing '"'
+				closed = true
+				break
+			}
+			sb.WriteByte('"')
+			i += 2
+		}
+		if !closed {
+			return nil, fmt.Errorf("unterminated quoted value in data line: %q", line)
+		}
+		values = append(values, sb.String())
 	}
 	return values, nil
 }
