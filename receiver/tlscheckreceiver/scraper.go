@@ -87,7 +87,7 @@ func validateEndpoint(endpoint string) error {
 func validateFilepath(filePath string) error {
 	cleanPath := filepath.Clean(filePath)
 	fileInfo, err := os.Stat(cleanPath)
-	if err != nil || !filepath.IsAbs(cleanPath) {
+	if err != nil {
 		return fmt.Errorf("error accessing certificate file %s: %w", filePath, err)
 	}
 	if fileInfo.IsDir() {
