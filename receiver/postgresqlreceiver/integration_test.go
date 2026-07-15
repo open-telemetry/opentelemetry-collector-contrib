@@ -72,8 +72,7 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", pgVersion),
-				// Prepared transactions are disabled by default; 03-prepared-lock.sql
-				// needs them to hold a lock that outlives the init scripts.
+				// 03-prepared-lock.sql needs prepared transactions, which are off by default.
 				Cmd: []string{"-c", "max_prepared_transactions=10"},
 				Env: map[string]string{
 					"POSTGRES_USER":     "root",

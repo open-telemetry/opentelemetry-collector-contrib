@@ -163,8 +163,8 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		defer dbClient.Close()
 		numTables := p.collectTables(ctx, now, dbClient, database, &errs)
 
-		// Lock data points are recorded before recordDatabase so they are
-		// emitted on the same per-database resource.
+		// Must run before recordDatabase, whose emit attaches these
+		// data points to the per-database resource.
 		p.collectDatabaseLocks(ctx, now, dbClient, database, &errs)
 		p.recordDatabase(now, database, r, numTables)
 		p.collectIndexes(ctx, now, dbClient, database, &errs)

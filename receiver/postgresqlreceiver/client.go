@@ -361,11 +361,9 @@ type databaseLocks struct {
 }
 
 func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
-	// Restrict to locks on relations of the connected database so that shared
-	// catalogs (pg_locks.database = 0), which are present in every database's
-	// pg_class, are not counted once per configured database, and so that lock
-	// rows from other databases cannot join against an unrelated pg_class row
-	// with a colliding OID in the connected database.
+	// Scope to the connected database: shared catalogs (database = 0) are
+	// collected once via getSharedRelationLocks, and relation OIDs from other
+	// databases must not resolve against this database's pg_class.
 	return c.queryDatabaseLocks(ctx, `SELECT relname AS relation, mode, locktype,COUNT(*)
 	AS locks FROM pg_locks
 	JOIN pg_class ON pg_locks.relation = pg_class.oid
@@ -374,9 +372,8 @@ func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLock
 }
 
 func (c *postgreSQLClient) getSharedRelationLocks(ctx context.Context) ([]databaseLocks, error) {
-	// Locks on shared relations (pg_database, pg_authid, ...) carry database = 0
-	// and belong to no single database. Shared relations exist in every
-	// database's pg_class, so the join resolves from any connection.
+	// Shared relations (pg_database, pg_authid, ...) carry database = 0 and
+	// exist in every database's pg_class, so any connection can resolve them.
 	return c.queryDatabaseLocks(ctx, `SELECT relname AS relation, mode, locktype,COUNT(*)
 	AS locks FROM pg_locks
 	JOIN pg_class ON pg_locks.relation = pg_class.oid
