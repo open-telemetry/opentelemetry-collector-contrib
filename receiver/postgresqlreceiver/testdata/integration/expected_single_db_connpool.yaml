@@ -365,6 +365,76 @@ resourceMetrics:
                   timeUnixNano: "1706802396744882628"
               isMonotonic: true
             unit: "1"
+          - description: The number of database locks.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: relation
+                      value:
+                        stringValue: pg_class_relname_nsp_index
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                  startTimeUnixNano: "1706802337738657906"
+                  timeUnixNano: "1706802396744882628"
+                - asInt: "1"
+                  attributes:
+                    - key: relation
+                      value:
+                        stringValue: pg_class_tblspc_relfilenode_index
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                  startTimeUnixNano: "1706802337738657906"
+                  timeUnixNano: "1706802396744882628"
+                - asInt: "1"
+                  attributes:
+                    - key: relation
+                      value:
+                        stringValue: pg_locks
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                  startTimeUnixNano: "1706802337738657906"
+                  timeUnixNano: "1706802396744882628"
+                - asInt: "1"
+                  attributes:
+                    - key: relation
+                      value:
+                        stringValue: pg_class
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                  startTimeUnixNano: "1706802337738657906"
+                  timeUnixNano: "1706802396744882628"
+                - asInt: "1"
+                  attributes:
+                    - key: relation
+                      value:
+                        stringValue: pg_class_oid_index
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                  startTimeUnixNano: "1706802337738657906"
+                  timeUnixNano: "1706802396744882628"
+            name: postgresql.database.locks
+            unit: '{lock}'
           - description: The database disk usage.
             name: postgresql.db_size
             sum:
@@ -661,76 +731,6 @@ resourceMetrics:
                   startTimeUnixNano: "1706802337738657906"
                   timeUnixNano: "1706802396744882628"
             unit: '{databases}'
-          - description: The number of database locks.
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  attributes:
-                    - key: relation
-                      value:
-                        stringValue: pg_class_relname_nsp_index
-                    - key: mode
-                      value:
-                        stringValue: AccessShareLock
-                    - key: lock_type
-                      value:
-                        stringValue: relation
-                  startTimeUnixNano: "1706802337738657906"
-                  timeUnixNano: "1706802396744882628"
-                - asInt: "1"
-                  attributes:
-                    - key: relation
-                      value:
-                        stringValue: pg_class_tblspc_relfilenode_index
-                    - key: mode
-                      value:
-                        stringValue: AccessShareLock
-                    - key: lock_type
-                      value:
-                        stringValue: relation
-                  startTimeUnixNano: "1706802337738657906"
-                  timeUnixNano: "1706802396744882628"
-                - asInt: "1"
-                  attributes:
-                    - key: relation
-                      value:
-                        stringValue: pg_locks
-                    - key: mode
-                      value:
-                        stringValue: AccessShareLock
-                    - key: lock_type
-                      value:
-                        stringValue: relation
-                  startTimeUnixNano: "1706802337738657906"
-                  timeUnixNano: "1706802396744882628"
-                - asInt: "1"
-                  attributes:
-                    - key: relation
-                      value:
-                        stringValue: pg_class
-                    - key: mode
-                      value:
-                        stringValue: AccessShareLock
-                    - key: lock_type
-                      value:
-                        stringValue: relation
-                  startTimeUnixNano: "1706802337738657906"
-                  timeUnixNano: "1706802396744882628"
-                - asInt: "1"
-                  attributes:
-                    - key: relation
-                      value:
-                        stringValue: pg_class_oid_index
-                    - key: mode
-                      value:
-                        stringValue: AccessShareLock
-                    - key: lock_type
-                      value:
-                        stringValue: relation
-                  startTimeUnixNano: "1706802337738657906"
-                  timeUnixNano: "1706802396744882628"
-            name: postgresql.database.locks
-            unit: '{lock}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest

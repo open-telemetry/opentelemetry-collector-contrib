@@ -70,16 +70,26 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", pgVersion),
+				// Prepared transactions are disabled by default; 03-prepared-lock.sql
+				// needs them to hold a lock that outlives the init scripts.
+				Cmd: []string{"-c", "max_prepared_transactions=10"},
 				Env: map[string]string{
 					"POSTGRES_USER":     "root",
 					"POSTGRES_PASSWORD": "otel",
 					"POSTGRES_DB":       "otel",
 				},
-				Files: []testcontainers.ContainerFile{{
-					HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
-					ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
-					FileMode:          700,
-				}},
+				Files: []testcontainers.ContainerFile{
+					{
+						HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+						FileMode:          700,
+					},
+					{
+						HostFilePath:      filepath.Join("testdata", "integration", "03-prepared-lock.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/03-prepared-lock.sql",
+						FileMode:          700,
+					},
+				},
 				ExposedPorts: []string{postgresqlPort},
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
