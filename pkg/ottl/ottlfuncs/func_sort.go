@@ -88,7 +88,10 @@ func sort[K any](target ottl.Getter[K], order string) ottl.ExprFunc[K] {
 				strings = append(strings, strconv.FormatBool(b))
 			}
 
-			sortTypedSlice(strings, order)
+			_, err := sortTypedSlice(strings, order)
+			if err != nil {
+				return nil, err
+			}
 
 			pSBools := pcommon.NewSlice()
 			pSBools.EnsureCapacity(len(strings))
