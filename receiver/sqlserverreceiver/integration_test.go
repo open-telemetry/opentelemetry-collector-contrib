@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
@@ -44,6 +45,7 @@ func basicConfig(portNumber uint) *Config {
 			CollectionInterval:  1 * time.Millisecond,
 		},
 		isDirectDBConnectionEnabled: true,
+		MetricsBuilderConfig:        metadata.NewDefaultMetricsBuilderConfig(),
 		LogsBuilderConfig: metadata.LogsBuilderConfig{
 			Events: metadata.EventsConfig{
 				DbServerQuerySample: metadata.EventConfig{
@@ -79,6 +81,89 @@ func setupContainer() (testcontainers.Container, error) {
 			},
 		},
 	)
+}
+
+func TestIndexPhysicalStatsScraper(t *testing.T) {
+	ci, err := setupContainer()
+	require.NoError(t, err)
+	require.NoError(t, ci.Start(t.Context()))
+	defer testcontainers.CleanupContainer(t, ci)
+
+	p, err := ci.MappedPort(t.Context(), "1433")
+	require.NoError(t, err)
+
+	portNumber, err := strconv.Atoi(p.Port())
+	require.NoError(t, err)
+
+	cfg := basicConfig(uint(portNumber))
+	cfg.Metrics.SqlserverIndexFragmentation.Enabled = true
+	cfg.Metrics.SqlserverIndexPageCount.Enabled = true
+	cfg.Metrics.SqlserverIndexPageUtilization.Enabled = true
+	cfg.Metrics.SqlserverIndexRecordCount.Enabled = true
+	cfg.Metrics.SqlserverIndexSize.Enabled = true
+
+	settings := receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.Must(zap.NewProduction()),
+		},
+	}
+
+	scrapers := setupSQLServerScrapers(settings, cfg)
+	require.NotEmpty(t, scrapers)
+
+	// Find the index physical stats scraper
+	var indexScraper *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName) {
+			indexScraper = s
+			break
+		}
+	}
+	require.NotNil(t, indexScraper, "index physical stats scraper not found")
+	require.NoError(t, indexScraper.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, indexScraper.Shutdown(t.Context())) }()
+
+	actualMetrics, err := indexScraper.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	// We expect at least 2 indexes from test_indexed_table (PK clustered + nonclustered)
+	// in the mydb database
+	require.Positive(t, actualMetrics.ResourceMetrics().Len(), "expected at least one resource metric")
+
+	// Collect all data points and verify attribute presence
+	foundMyDB := false
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		resourceAttrs := rm.Resource().Attributes()
+		dbNameVal, ok := resourceAttrs.Get("sqlserver.database.name")
+		if !ok {
+			continue
+		}
+		if dbNameVal.AsString() != "mydb" {
+			continue
+		}
+		foundMyDB = true
+
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				gauge := m.Gauge()
+				for l := 0; l < gauge.DataPoints().Len(); l++ {
+					dp := gauge.DataPoints().At(l)
+					attrs := dp.Attributes()
+					_, hasIndexID := attrs.Get("sqlserver.index.id")
+					_, hasObjectName := attrs.Get("sqlserver.object.name")
+					_, hasSchemaName := attrs.Get("sqlserver.schema.name")
+					assert.True(t, hasIndexID, "metric %s missing sqlserver.index.id", m.Name())
+					assert.True(t, hasObjectName, "metric %s missing sqlserver.object.name", m.Name())
+					assert.True(t, hasSchemaName, "metric %s missing sqlserver.schema.name", m.Name())
+				}
+			}
+		}
+	}
+
+	assert.True(t, foundMyDB, "expected metrics for 'mydb' database")
 }
 
 func TestEventsScraper(t *testing.T) {
