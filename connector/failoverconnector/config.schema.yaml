@@ -1,6 +1,6 @@
 $defs:
   conditions_config:
-    description: At most only one condition can be set
+    description: It plugs in all the available implementations of `Condition`. At most only one condition can be set
     type: object
     properties:
       error:
@@ -15,7 +15,7 @@ $defs:
 type: object
 properties:
   condition:
-    description: Condition is an optional user-defined rule that controls which downstream errors trigger failover. When omitted, all error triggers failover.
+    description: Condition is an optional user-defined rule that controls which downstream errors trigger failover. When omitted, all errors trigger failover.
     x-optional: true
     $ref: conditions_config
   priority_levels:

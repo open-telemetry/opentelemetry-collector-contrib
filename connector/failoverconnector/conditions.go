@@ -13,9 +13,13 @@ var (
 	_                     Condition = (*ErrorCondition)(nil)
 )
 
-// At most only one condition can be set
+// It plugs in all the available implementations of
+// `Condition`. At most only one condition can be set
 type ConditionsConfig struct {
 	ErrorCond *ErrorCondition `mapstructure:"error"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // We allow setting `error.contains` but `contains` is not honored yet
@@ -45,10 +49,13 @@ type Condition interface {
 // ErrorCondition implements Condition
 type ErrorCondition struct {
 	Contains string `mapstructure:"contains"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // TODO: "contains" condition is not honored yet and all error trigger failover
-func (e *ErrorCondition) ShouldFailover(err error) bool {
+func (*ErrorCondition) ShouldFailover(err error) bool {
 	return err != nil
 }
 
