@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
 )
@@ -24,7 +24,7 @@ func TestMakeAPICallWithRetrySuccess(t *testing.T) {
 		return false
 	}
 
-	resp, err := MakeAPICallWithRetry(t.Context(), make(chan struct{}), logger, apiCall, isThrottlingError, backoff.NewExponentialBackOff())
+	resp, err := MakeAPICallWithRetry(t.Context(), make(chan struct{}), logger, apiCall, isThrottlingError, backoff.NewExponentialBackOff(), 0)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "success", *resp)
@@ -39,7 +39,7 @@ func TestMakeAPICallWithRetryImmediateFailure(t *testing.T) {
 		return false
 	}
 
-	resp, err := MakeAPICallWithRetry(t.Context(), make(chan struct{}), logger, apiCall, isThrottlingError, backoff.NewExponentialBackOff())
+	resp, err := MakeAPICallWithRetry(t.Context(), make(chan struct{}), logger, apiCall, isThrottlingError, backoff.NewExponentialBackOff(), 0)
 
 	assert.Error(t, err)
 	assert.Nil(t, resp)
@@ -64,7 +64,7 @@ func TestMakeAPICallWithRetryThrottlingWithSuccess(t *testing.T) {
 	backOffConfig := backoff.NewExponentialBackOff()
 	backOffConfig.InitialInterval = 10 * time.Millisecond
 
-	resp, err := MakeAPICallWithRetry(t.Context(), make(chan struct{}), logger, apiCall, isThrottlingError, backOffConfig)
+	resp, err := MakeAPICallWithRetry(t.Context(), make(chan struct{}), logger, apiCall, isThrottlingError, backOffConfig, 0)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "success", *resp)
@@ -81,9 +81,8 @@ func TestMakeAPICallWithRetryThrottlingMaxRetries(t *testing.T) {
 	}
 
 	backOffConfig := backoff.NewExponentialBackOff()
-	backOffConfig.MaxElapsedTime = 50 * time.Millisecond
 
-	resp, err := MakeAPICallWithRetry(t.Context(), make(chan struct{}), logger, apiCall, isThrottlingError, backOffConfig)
+	resp, err := MakeAPICallWithRetry(t.Context(), make(chan struct{}), logger, apiCall, isThrottlingError, backOffConfig, 50*time.Millisecond)
 
 	assert.Error(t, err)
 	assert.Nil(t, resp)
@@ -102,7 +101,7 @@ func TestMakeAPICallWithRetryContextCancellation(t *testing.T) {
 		return err.Error() == "throttling error"
 	}
 
-	resp, err := MakeAPICallWithRetry(ctx, make(chan struct{}), logger, apiCall, isThrottlingError, backoff.NewExponentialBackOff())
+	resp, err := MakeAPICallWithRetry(ctx, make(chan struct{}), logger, apiCall, isThrottlingError, backoff.NewExponentialBackOff(), 0)
 
 	assert.Error(t, err)
 	assert.Nil(t, resp)
@@ -121,7 +120,7 @@ func TestMakeAPICallWithRetryServerShutdown(t *testing.T) {
 		return err.Error() == "throttling error"
 	}
 
-	resp, err := MakeAPICallWithRetry(t.Context(), shutdownChan, logger, apiCall, isThrottlingError, backoff.NewExponentialBackOff())
+	resp, err := MakeAPICallWithRetry(t.Context(), shutdownChan, logger, apiCall, isThrottlingError, backoff.NewExponentialBackOff(), 0)
 
 	assert.Error(t, err)
 	assert.Nil(t, resp)
