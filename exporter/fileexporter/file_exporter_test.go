@@ -999,7 +999,14 @@ func TestFileExporterPermissions(t *testing.T) {
 
 			info, err := os.Stat(path)
 			require.NoError(t, err)
-			assert.Equal(t, os.FileMode(0o644), info.Mode().Perm())
+
+			expectedPath := filepath.Join(t.TempDir(), "expected_perms.tmp")
+			f, err := os.OpenFile(expectedPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o644)
+			require.NoError(t, err)
+			require.NoError(t, f.Close())
+			expectedInfo, err := os.Stat(expectedPath)
+			require.NoError(t, err)
+			assert.Equal(t, expectedInfo.Mode().Perm(), info.Mode().Perm())
 		})
 	}
 }
