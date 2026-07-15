@@ -159,6 +159,9 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		defer dbClient.Close()
 		numTables := p.collectTables(ctx, now, dbClient, database, &errs)
 
+		// Lock data points are recorded before recordDatabase so they are
+		// emitted on the same per-database resource.
+		p.collectDatabaseLocks(ctx, now, dbClient, database, &errs)
 		p.recordDatabase(now, database, r, numTables)
 		p.collectIndexes(ctx, now, dbClient, database, &errs)
 		p.collectFunctions(ctx, now, dbClient, database, &errs)
@@ -169,7 +172,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectWalAge(ctx, now, listClient, &errs)
 	p.collectReplicationStats(ctx, now, listClient, &errs)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
-	p.collectDatabaseLocks(ctx, now, listClient, &errs)
+	p.collectSharedRelationLocks(ctx, now, listClient, &errs)
 
 	rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), "", "", "", "")
 	return p.mb.Emit(metadata.WithResource(rb.Emit())), errs.combine()
@@ -587,16 +590,34 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 func (p *postgreSQLScraper) collectDatabaseLocks(
 	ctx context.Context,
 	now pcommon.Timestamp,
-	client client,
+	dbClient client,
+	database string,
 	errs *errsMux,
 ) {
-	dbLocks, err := client.getDatabaseLocks(ctx)
+	dbLocks, err := dbClient.getDatabaseLocks(ctx)
 	if err != nil {
-		p.logger.Error("Errors encountered while fetching database locks", zap.Error(err))
+		p.logger.Error("Errors encountered while fetching database locks", zap.String("database", database), zap.Error(err))
 		errs.addPartial(err)
 		return
 	}
 	for _, dbLock := range dbLocks {
+		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType)
+	}
+}
+
+func (p *postgreSQLScraper) collectSharedRelationLocks(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	errs *errsMux,
+) {
+	sharedLocks, err := client.getSharedRelationLocks(ctx)
+	if err != nil {
+		p.logger.Error("Errors encountered while fetching shared relation locks", zap.Error(err))
+		errs.addPartial(err)
+		return
+	}
+	for _, dbLock := range sharedLocks {
 		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType)
 	}
 }

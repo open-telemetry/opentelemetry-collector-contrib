@@ -54,6 +54,7 @@ type client interface {
 	Close() error
 	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
 	getDatabaseLocks(ctx context.Context) ([]databaseLocks, error)
+	getSharedRelationLocks(ctx context.Context) ([]databaseLocks, error)
 	getBGWriterStats(ctx context.Context) (*bgStat, error)
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
@@ -311,11 +312,30 @@ type databaseLocks struct {
 }
 
 func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
-	query := `SELECT relname AS relation, mode, locktype,COUNT(pid)
+	// Restrict to locks on relations of the connected database so that shared
+	// catalogs (pg_locks.database = 0), which are present in every database's
+	// pg_class, are not counted once per configured database, and so that lock
+	// rows from other databases cannot join against an unrelated pg_class row
+	// with a colliding OID in the connected database.
+	return c.queryDatabaseLocks(ctx, `SELECT relname AS relation, mode, locktype,COUNT(*)
 	AS locks FROM pg_locks
 	JOIN pg_class ON pg_locks.relation = pg_class.oid
-	GROUP BY relname, mode, locktype;`
+	WHERE pg_locks.database = (SELECT oid FROM pg_database WHERE datname = current_database())
+	GROUP BY relname, mode, locktype;`)
+}
 
+func (c *postgreSQLClient) getSharedRelationLocks(ctx context.Context) ([]databaseLocks, error) {
+	// Locks on shared relations (pg_database, pg_authid, ...) carry database = 0
+	// and belong to no single database. Shared relations exist in every
+	// database's pg_class, so the join resolves from any connection.
+	return c.queryDatabaseLocks(ctx, `SELECT relname AS relation, mode, locktype,COUNT(*)
+	AS locks FROM pg_locks
+	JOIN pg_class ON pg_locks.relation = pg_class.oid
+	WHERE pg_locks.database = 0 AND pg_class.relisshared
+	GROUP BY relname, mode, locktype;`)
+}
+
+func (c *postgreSQLClient) queryDatabaseLocks(ctx context.Context, query string) ([]databaseLocks, error) {
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("unable to query pg_locks and pg_locks.relation: %w", err)
