@@ -333,6 +333,14 @@ Number of times a consistent read was requested for a block from the buffer cach
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {gets} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.cpu.usage.rate
+
+CPU consumption rate, in CPU-seconds used per second.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
 ### oracledb.cursor.cache.hits
 
 Total count of session cursor cache hits, where an existing cached cursor is reused to avoid a soft parse.
@@ -348,6 +356,14 @@ Number of cursors currently held in the session cursor cache.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {cursor} | Gauge | Int | Development |
+
+### oracledb.cursor.cache.utilization
+
+Percentage of cursor executions that reused a cursor in the session cursor cache.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
 
 ### oracledb.cursor.open
 
@@ -447,6 +463,14 @@ Fraction of executions that did not require a parse, as computed by Oracle V$SYS
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.parse.type | Type of parse operation (e.g., soft). | Str: ``soft`` | Recommended | - |
 
+### oracledb.host.cpu.usage.rate
+
+Host CPU consumption rate across all cores, in CPU-seconds used per second.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
 ### oracledb.host.cpu.utilization
 
 Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idle+Busy)).
@@ -454,6 +478,14 @@ Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idl
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+### oracledb.io.single_block.read.latency
+
+Average latency of a synchronous single-block read.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
 
 ### oracledb.library_cache.utilization
 
@@ -566,6 +598,14 @@ Rate of parse operations per second broken down by result, as computed by Oracle
 ### oracledb.parse.utilization
 
 Fraction of parse calls that were soft parses, as computed by Oracle V$SYSMETRIC (% SoftParses/TotalParses). High values indicate good cursor reuse.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
+
+### oracledb.pga.cache.utilization
+
+Percentage of PGA work-area memory requests satisfied without spilling to temporary disk.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -774,6 +814,20 @@ Total number of rows returned by full-table scans.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {row} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.session.average
+
+Average number of sessions over the metric interval.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {session} | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| session_status | Session status | Any Str | Recommended | - |
+
 ### oracledb.sga.limit
 
 Maximum size of the System Global Area (SGA).
@@ -902,6 +956,14 @@ Current number of processes that are either running or in the ready state, waiti
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {process} | Gauge | Double | Development |
+
+### oracledb.transaction.response.time
+
+Average response time per transaction.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
 
 ## Default Events
 
