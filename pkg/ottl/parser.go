@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 )
 
@@ -373,7 +372,6 @@ type StatementSequence[K any] struct {
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
 	tracer            trace.Tracer
-	tracing           bool
 }
 
 // StatementSequenceOption is an option for a StatementSequence
@@ -398,12 +396,8 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 	for _, op := range options {
 		op(&s)
 	}
-	switch tp := telemetrySettings.TracerProvider.(type) {
-	case nil, noop.TracerProvider:
-		// do nothing - tracer remains nil, tracing stays false
-	default:
+	if tp := telemetrySettings.TracerProvider; tp != nil {
 		s.tracer = tp.Tracer("ottl")
-		s.tracing = true
 	}
 	return s
 }
@@ -413,7 +407,7 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
-	if s.tracing {
+	if s.tracer != nil && trace.SpanFromContext(ctx).IsRecording() {
 		return s.executeWithTracing(ctx, tCtx)
 	}
 	return s.executeWithoutTracing(ctx, tCtx)

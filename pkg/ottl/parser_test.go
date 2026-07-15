@@ -2928,7 +2928,11 @@ func TestStatementSequence_Execute_Tracing(t *testing.T) {
 			)
 
 			seq := NewStatementSequence(tt.statements(set), set, tt.options...)
-			err := seq.Execute(t.Context(), nil)
+
+			ctx, parentSpan := set.TracerProvider.Tracer("test").Start(t.Context(), "parent")
+			defer parentSpan.End()
+
+			err := seq.Execute(ctx, nil)
 
 			if tt.expectError {
 				assert.Error(t, err)
