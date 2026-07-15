@@ -2546,7 +2546,7 @@ Examples:
 
 ```Split(target, delimiter)```
 
-The `Split` Converter separates a string by the delimiter, and returns an array of substrings.
+The `Split` Converter separates a string by the delimiter, and returns an `pcommon.Slice` of substrings.
 
 `target` is a string. `delimiter` is a string.
 
