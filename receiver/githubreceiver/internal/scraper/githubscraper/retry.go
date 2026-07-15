@@ -141,8 +141,8 @@ func (rt *retryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 			rt.logger.Debug("failed to close response body", zap.Error(closeErr))
 		}
 
-		if err = rt.wait(req.Context(), delay); err != nil {
-			return nil, err
+		if waitErr := rt.wait(req.Context(), delay); waitErr != nil {
+			return nil, waitErr
 		}
 
 		// Reset request body for retry (genqlient uses bytes.NewReader which
