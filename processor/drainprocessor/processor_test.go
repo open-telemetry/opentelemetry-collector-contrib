@@ -247,6 +247,166 @@ func TestWarmupMinClustersSuppress(t *testing.T) {
 	assert.True(t, ok, "record should be annotated once threshold is reached")
 }
 
+// paramsAttr returns the configured params attribute as a slice of strings,
+// or nil if absent.
+func paramsAttr(t *testing.T, ld plog.Logs, key string) []string {
+	t.Helper()
+	v, ok := getFirstRecord(ld).Attributes().Get(key)
+	if !ok {
+		return nil
+	}
+	require.Equal(t, pcommon.ValueTypeSlice, v.Type(), "params attribute must be a slice")
+	out := make([]string, 0, v.Slice().Len())
+	for i := 0; i < v.Slice().Len(); i++ {
+		out = append(out, v.Slice().At(i).Str())
+	}
+	return out
+}
+
+// TestExtractParametersDisabledByDefault verifies that with default config no
+// params attribute is written.
+func TestExtractParametersDisabledByDefault(t *testing.T) {
+	p := newTestProcessor(t, createDefaultConfig().(*Config))
+	out, err := p.processLogs(t.Context(), makeLogRecord("connected to host 10.0.0.1 on port 443"))
+	require.NoError(t, err)
+	_, ok := getFirstRecord(out).Attributes().Get("log.record.template.params")
+	assert.False(t, ok, "params attribute must not be set when extract_parameters is false")
+}
+
+// TestExtractParametersFromAbstractedTemplate verifies that once a template has
+// abstracted (contains <*>), the variable body tokens are emitted positionally.
+func TestExtractParametersFromAbstractedTemplate(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ExtractParameters = true
+	p := newTestProcessor(t, cfg)
+
+	lines := []string{
+		"connected to host 10.0.0.1 on port 443",
+		"connected to host 192.168.1.1 on port 8080",
+		"connected to host 172.16.0.1 on port 80",
+	}
+	var lastOut plog.Logs
+	for _, line := range lines {
+		var err error
+		lastOut, err = p.processLogs(t.Context(), makeLogRecord(line))
+		require.NoError(t, err)
+	}
+
+	tmpl := templateAttr(t, lastOut)
+	require.Contains(t, tmpl, "<*>")
+	params := paramsAttr(t, lastOut, "log.record.template.params")
+	assert.Equal(t, []string{"172.16.0.1", "80"}, params, "params should be the body tokens at <*> positions in order")
+}
+
+// TestExtractParametersLiteralTemplate verifies that when the template has no
+// <*> positions, the params attribute is not written.
+func TestExtractParametersLiteralTemplate(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ExtractParameters = true
+	p := newTestProcessor(t, cfg)
+
+	// A single line gets a fully-literal template (no abstraction yet).
+	out, err := p.processLogs(t.Context(), makeLogRecord("disk write error on device sda"))
+	require.NoError(t, err)
+	tmpl := templateAttr(t, out)
+	assert.NotContains(t, tmpl, "<*>", "single line should yield a literal template")
+	_, ok := getFirstRecord(out).Attributes().Get("log.record.template.params")
+	assert.False(t, ok, "literal-only template should not set params attribute")
+}
+
+// TestExtractParametersCustomAttributeName verifies that params_attribute
+// overrides the default attribute key.
+func TestExtractParametersCustomAttributeName(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ExtractParameters = true
+	cfg.ParamsAttribute = "my.params"
+	p := newTestProcessor(t, cfg)
+
+	for _, line := range []string{
+		"connected to host 10.0.0.1 on port 443",
+		"connected to host 192.168.1.1 on port 8080",
+	} {
+		_, err := p.processLogs(t.Context(), makeLogRecord(line))
+		require.NoError(t, err)
+	}
+	out, err := p.processLogs(t.Context(), makeLogRecord("connected to host 172.16.0.1 on port 80"))
+	require.NoError(t, err)
+
+	_, ok := getFirstRecord(out).Attributes().Get("my.params")
+	assert.True(t, ok, "custom params_attribute key must be used")
+	_, ok = getFirstRecord(out).Attributes().Get("log.record.template.params")
+	assert.False(t, ok, "default key must not be used when custom is configured")
+}
+
+// TestExtractParametersSuppressedDuringWarmup verifies that params are not
+// written while warmup is in effect, mirroring template suppression.
+func TestExtractParametersSuppressedDuringWarmup(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ExtractParameters = true
+	cfg.WarmupMinClusters = 5
+	p := newTestProcessor(t, cfg)
+
+	out, err := p.processLogs(t.Context(), makeLogRecord("connected to host 10.0.0.1 on port 443"))
+	require.NoError(t, err)
+	_, hasTmpl := getFirstRecord(out).Attributes().Get("log.record.template")
+	require.False(t, hasTmpl, "template suppressed during warmup")
+	_, hasParams := getFirstRecord(out).Attributes().Get("log.record.template.params")
+	assert.False(t, hasParams, "params must not be written while warmup gate is active")
+}
+
+// TestExtractParametersWithExtraDelimiters verifies that body tokenisation
+// honors ExtraDelimiters, keeping the tokeniser in sync with drain.
+func TestExtractParametersWithExtraDelimiters(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ExtractParameters = true
+	cfg.ExtraDelimiters = []string{":"}
+	p := newTestProcessor(t, cfg)
+
+	// With ":" as a delimiter, "host:NAME" tokenises as ["host", "NAME"], so
+	// the second token varies across records and abstracts to <*>. The first
+	// three tokens are identical to keep drain's prefix tree routing them to
+	// the same leaf node.
+	for _, line := range []string{
+		"connected to host:alpha on port 443",
+		"connected to host:beta on port 443",
+		"connected to host:gamma on port 443",
+	} {
+		_, err := p.processLogs(t.Context(), makeLogRecord(line))
+		require.NoError(t, err)
+	}
+	out, err := p.processLogs(t.Context(), makeLogRecord("connected to host:delta on port 443"))
+	require.NoError(t, err)
+
+	tmpl := templateAttr(t, out)
+	require.Contains(t, tmpl, "<*>", "expected abstraction with extra delimiters configured")
+	params := paramsAttr(t, out, "log.record.template.params")
+	// The varying token is the host name; with ":" as a delimiter it lands in
+	// its own token position.
+	assert.Equal(t, []string{"delta"}, params)
+}
+
+// TestExtractParametersFromBodyField verifies extraction works when BodyField
+// pulls the message out of a structured map body.
+func TestExtractParametersFromBodyField(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ExtractParameters = true
+	cfg.BodyField = "message"
+	p := newTestProcessor(t, cfg)
+
+	for _, msg := range []string{
+		"connected to host 10.0.0.1 on port 443",
+		"connected to host 192.168.1.1 on port 8080",
+	} {
+		_, err := p.processLogs(t.Context(), makeMapBodyLogRecord("message", msg))
+		require.NoError(t, err)
+	}
+	out, err := p.processLogs(t.Context(), makeMapBodyLogRecord("message", "connected to host 172.16.0.1 on port 80"))
+	require.NoError(t, err)
+
+	params := paramsAttr(t, out, "log.record.template.params")
+	assert.Equal(t, []string{"172.16.0.1", "80"}, params)
+}
+
 // TestWarmupMinClustersZeroDisabled verifies that warmup_min_clusters=0
 // annotates from the first record (default behavior).
 func TestWarmupMinClustersZeroDisabled(t *testing.T) {

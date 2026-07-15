@@ -1,5 +1,0 @@
-change_type: enhancement
-component: receiver/oracledb
-note: Add SQL comment extraction support. Users can now configure `allowed_comment_keys` to extract key-value pairs from leading SQL block comments and include them as the `db.query.comment_tags` telemetry attribute.
-issues: [48338]
-change_logs: [user]

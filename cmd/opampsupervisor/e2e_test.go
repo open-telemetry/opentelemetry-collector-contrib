@@ -1589,6 +1589,7 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 func TestSupervisorForwardsUpdatedAgentDescriptionFromCollector(t *testing.T) {
 	const updatedServiceName = "updated-agent-description-e2e"
 	const updatedServiceVersion = "updated-version-e2e"
+	const updatedResourceAttributeValue = "updated-resource-value"
 
 	var agentDescription atomic.Value
 	server := newOpAMPServer(
@@ -1604,7 +1605,10 @@ func TestSupervisorForwardsUpdatedAgentDescriptionFromCollector(t *testing.T) {
 			},
 		})
 
-	s, _ := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
+	s, _ := newSupervisor(t, "agent_description", map[string]string{
+		"url":                         server.addr,
+		"include_resource_attributes": "true",
+	})
 
 	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
@@ -1627,7 +1631,8 @@ service:
     resource:
       service.name: %s
       service.version: %s
-`, updatedServiceName, updatedServiceVersion))
+      test.resource.attr: %s
+`, updatedServiceName, updatedServiceVersion, updatedResourceAttributeValue))
 	updatedConfigHash := sha256.Sum256(updatedConfig)
 
 	server.sendToSupervisor(&protobufs.ServerToAgent{
@@ -1652,6 +1657,7 @@ service:
 		assert.Equal(c, updatedServiceVersion, identifyingAttributes["service.version"])
 		assert.Equal(c, "my-client-id", identifyingAttributes["client.id"])
 		assert.Equal(c, "prod", nonIdentifyingAttributes["env"])
+		assert.Equal(c, updatedResourceAttributeValue, nonIdentifyingAttributes["test.resource.attr"])
 	}, 10*time.Second, 250*time.Millisecond)
 }
 
@@ -2663,6 +2669,65 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestSupervisorReportsCollectorLogTailOnRemoteConfigCrash(t *testing.T) {
+	var healthReport atomic.Value
+	var remoteConfigStatus atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.Health != nil {
+					healthReport.Store(message.Health)
+				}
+				if message.RemoteConfigStatus != nil {
+					remoteConfigStatus.Store(message.RemoteConfigStatus)
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	storageDir := t.TempDir()
+	s, _ := newSupervisor(t, "basic", map[string]string{
+		"url":                             server.addr,
+		"storage_dir":                     storageDir,
+		"collector_crash_log_snippet_kib": "4",
+	})
+	require.NoError(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	badCfg, badHash := createBadCollectorConf(t)
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: badCfg.Bytes()},
+				},
+			},
+			ConfigHash: badHash,
+		},
+	})
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		health, ok := healthReport.Load().(*protobufs.ComponentHealth)
+		require.True(c, ok)
+		assert.False(c, health.Healthy)
+		assert.Contains(c, health.LastError, "Collector log tail:")
+		assert.Contains(c, health.LastError, "failed to get config")
+	}, 15*time.Second, 100*time.Millisecond, "Supervisor did not report Collector log tail in health error")
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		require.True(c, ok)
+		assert.Equal(c, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, status.Status)
+		assert.Contains(c, status.ErrorMessage, "Collector log tail:")
+		assert.Contains(c, status.ErrorMessage, "failed to get config")
+	}, 15*time.Second, 100*time.Millisecond, "Supervisor did not report Collector log tail in remote config status")
 }
 
 func TestSupervisorOpAmpServerPort(t *testing.T) {

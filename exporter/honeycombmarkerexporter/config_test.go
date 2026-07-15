@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -25,6 +26,12 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -32,8 +39,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				APIKey: "test-apikey",
-				APIURL: "https://api.honeycomb.io",
+				ClientConfig: clientConfig,
+				APIKey:       "test-apikey",
+				APIURL:       "https://api.honeycomb.io",
 				Markers: []Marker{
 					{
 						Type: "fooType",
@@ -49,6 +57,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "all_fields"),
 			expected: &Config{
+				ClientConfig: clientConfig,
 				QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
 					NumConsumers: 10,
 					QueueSize:    1000,
@@ -87,8 +96,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "path_context_log"),
 			expected: &Config{
-				APIKey: "test-apikey",
-				APIURL: "https://api.honeycomb.io",
+				ClientConfig: clientConfig,
+				APIKey:       "test-apikey",
+				APIURL:       "https://api.honeycomb.io",
 				Markers: []Marker{
 					{
 						Type: "fooType",
@@ -105,8 +115,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "path_context_mixed"),
 			expected: &Config{
-				APIKey: "test-apikey",
-				APIURL: "https://api.honeycomb.io",
+				ClientConfig: clientConfig,
+				APIKey:       "test-apikey",
+				APIURL:       "https://api.honeycomb.io",
 				Markers: []Marker{
 					{
 						Type: "fooType",
