@@ -584,7 +584,12 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			path: &pathtest.Path[*testContext]{
 				N: "bucket_counts",
 			},
-			orig:   []uint64{1, 1},
+			orig: func() pcommon.UInt64Slice {
+				ps := pcommon.NewUInt64Slice()
+				ps.Append(1)
+				ps.Append(1)
+				return ps
+			}(),
 			newVal: []uint64{1, 2},
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.BucketCounts().FromRaw([]uint64{1, 2})
@@ -595,7 +600,12 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			path: &pathtest.Path[*testContext]{
 				N: "explicit_bounds",
 			},
-			orig:   []float64{1, 2},
+			orig: func() pcommon.Float64Slice {
+				ps := pcommon.NewFloat64Slice()
+				ps.Append(1)
+				ps.Append(2)
+				return ps
+			}(),
 			newVal: []float64{1, 2, 3},
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.ExplicitBounds().FromRaw([]float64{1, 2, 3})
@@ -1121,7 +1131,12 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					N: "bucket_counts",
 				},
 			},
-			orig:   []uint64{1, 1},
+			orig: func() pcommon.UInt64Slice {
+				ps := pcommon.NewUInt64Slice()
+				ps.Append(1)
+				ps.Append(1)
+				return ps
+			}(),
 			newVal: []uint64{0, 1, 2},
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Positive().BucketCounts().FromRaw([]uint64{0, 1, 2})
@@ -1160,7 +1175,12 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					N: "bucket_counts",
 				},
 			},
-			orig:   []uint64{1, 1},
+			orig: func() pcommon.UInt64Slice {
+				ps := pcommon.NewUInt64Slice()
+				ps.Append(1)
+				ps.Append(1)
+				return ps
+			}(),
 			newVal: []uint64{0, 1, 2},
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Negative().BucketCounts().FromRaw([]uint64{0, 1, 2})

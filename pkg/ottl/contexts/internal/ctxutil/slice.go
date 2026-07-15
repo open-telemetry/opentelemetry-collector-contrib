@@ -161,6 +161,7 @@ func SetCommonTypedSliceValues[V any](s CommonTypedSlice[V], val any) error {
 	return nil
 }
 
+// GetCommonIntSliceValues is Depricated. The standard OTTL type for integer slices has changed to pcommon.Int64Slice.
 // GetCommonIntSliceValues converts a pdata typed slice of [constraints.Integer] into
 // []int64, which is the standard OTTL type for integer slices.
 func GetCommonIntSliceValues[V constraints.Integer](val CommonTypedSlice[V]) []int64 {

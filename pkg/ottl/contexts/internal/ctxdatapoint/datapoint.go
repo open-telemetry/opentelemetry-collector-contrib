@@ -485,7 +485,7 @@ func accessExplicitBounds[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			if histogramDataPoint, ok := tCtx.GetDataPoint().(pmetric.HistogramDataPoint); ok {
-				return histogramDataPoint.ExplicitBounds().AsRaw(), nil
+				return histogramDataPoint.ExplicitBounds(), nil
 			}
 			return nil, nil
 		},
@@ -503,7 +503,7 @@ func accessBucketCounts[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			if histogramDataPoint, ok := tCtx.GetDataPoint().(pmetric.HistogramDataPoint); ok {
-				return histogramDataPoint.BucketCounts().AsRaw(), nil
+				return histogramDataPoint.BucketCounts(), nil
 			}
 			return nil, nil
 		},
@@ -613,7 +613,7 @@ func accessPositiveBucketCounts[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			if expoHistogramDataPoint, ok := tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint); ok {
-				return expoHistogramDataPoint.Positive().BucketCounts().AsRaw(), nil
+				return expoHistogramDataPoint.Positive().BucketCounts(), nil
 			}
 			return nil, nil
 		},
@@ -677,7 +677,7 @@ func accessNegativeBucketCounts[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			if expoHistogramDataPoint, ok := tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint); ok {
-				return expoHistogramDataPoint.Negative().BucketCounts().AsRaw(), nil
+				return expoHistogramDataPoint.Negative().BucketCounts(), nil
 			}
 			return nil, nil
 		},
