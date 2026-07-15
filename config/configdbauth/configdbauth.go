@@ -8,7 +8,7 @@
 // a credential provider that supplies a username/secret at connection-open time,
 // with support for credentials that expire.
 //
-// A consuming component embeds Config under a "db_auth" key. The value is the
+// A consuming component holds an ID under a "db_auth" key. The value is the
 // component ID of a provider extension declared in the extensions block:
 //
 //	db_auth: aws_iam
@@ -21,12 +21,13 @@
 // dbauth.Provider; all provider-wide configuration (region, ...) lives on the
 // extension's own config. To vary that configuration per consumer, declare
 // multiple extension instances and reference the one you want. At Start the
-// component calls Config.GetProvider with the host extension map to resolve the
+// component calls ID.GetProvider with the host extension map to resolve the
 // dbauth.Provider, mirroring how config/configauth resolves an authenticator
 // extension via Config.GetServerAuthenticator.
 package configdbauth // import "github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 
@@ -41,37 +42,33 @@ var (
 	errNotProvider   = errors.New("db_auth: requested extension is not a credential provider")
 )
 
-// Config wires a connection-oriented component to a credential provider
-// extension. A component embeds it under a "db_auth" key whose value is the
-// provider extension's component ID:
+// ID is the component ID of a credential provider extension. A consuming
+// component holds it under a "db_auth" key whose value is a scalar component ID:
 //
 //	db_auth: aws_iam
 //
 // The named extension must be declared in the extensions block and implement
-// dbauth.Provider. GetProvider resolves it from the host extension map.
-type Config struct {
-	// ProviderID is the component ID of the credential provider extension. It is
-	// populated from the scalar db_auth value (e.g. "aws_iam", or a named instance
-	// "aws_iam/primary") via UnmarshalText, not from a mapstructure key, so it is
-	// tagged "-" to be skipped by mapstructure decode and config-struct validation.
-	ProviderID component.ID `mapstructure:"-"`
+// dbauth.Provider. GetProvider resolves it from the host extension map. There
+// are no nested fields — all provider-wide configuration lives on the
+// extension's own config — so this is a defined type over component.ID rather
+// than a struct, mirroring config/configstorage.ID.
+type ID component.ID
 
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
+var (
+	_ encoding.TextMarshaler   = ID{}
+	_ encoding.TextUnmarshaler = (*ID)(nil)
+)
 
-// UnmarshalText lets the db_auth block decode from a scalar component ID (e.g.
-// "aws_iam"). confmap's text-unmarshaler decode hook invokes this whenever the
-// db_auth value is a string, exactly as it does for a bare component.ID field.
-func (c *Config) UnmarshalText(text []byte) error {
-	return c.ProviderID.UnmarshalText(text)
+// ComponentID returns the underlying component.ID.
+func (id ID) ComponentID() component.ID {
+	return component.ID(id)
 }
 
 // IsEmpty reports whether no provider is configured. A component treats an empty
-// Config as "db_auth not in use" and falls back to its existing static credential
+// ID as "db_auth not in use" and falls back to its existing static credential
 // fields — the framework is opt-in.
-func (c Config) IsEmpty() bool {
-	return c.ProviderID == component.ID{}
+func (id ID) IsEmpty() bool {
+	return component.ID(id) == component.ID{}
 }
 
 // GetProvider resolves the configured credential provider from the host extension
@@ -80,18 +77,32 @@ func (c Config) IsEmpty() bool {
 //
 // It returns an error when no provider is configured, when the named extension is
 // not present, or when the named extension does not implement dbauth.Provider.
-func (c Config) GetProvider(extensions map[component.ID]component.Component) (dbauth.Provider, error) {
-	if c.IsEmpty() {
+func (id ID) GetProvider(extensions map[component.ID]component.Component) (dbauth.Provider, error) {
+	if id.IsEmpty() {
 		return nil, errNoCredentials
 	}
 
-	ext, found := extensions[c.ProviderID]
+	cid := component.ID(id)
+	ext, found := extensions[cid]
 	if !found {
-		return nil, fmt.Errorf("%w: %q", errNoExtension, c.ProviderID)
+		return nil, fmt.Errorf("%w: %q", errNoExtension, cid)
 	}
 	provider, ok := ext.(dbauth.Provider)
 	if !ok {
-		return nil, fmt.Errorf("%w: %q", errNotProvider, c.ProviderID)
+		return nil, fmt.Errorf("%w: %q", errNotProvider, cid)
 	}
 	return provider, nil
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (id ID) MarshalText() ([]byte, error) {
+	return component.ID(id).MarshalText()
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler. It lets the db_auth block
+// decode from a scalar component ID (e.g. "aws_iam"): confmap's text-unmarshaler
+// decode hook invokes this whenever the db_auth value is a string, exactly as it
+// does for a bare component.ID field.
+func (id *ID) UnmarshalText(text []byte) error {
+	return (*component.ID)(id).UnmarshalText(text)
 }

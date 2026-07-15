@@ -41,47 +41,52 @@ func extMap(id component.ID, ext component.Component) map[component.ID]component
 	return map[component.ID]component.Component{id: ext}
 }
 
-// providerConfig builds a Config referencing the given provider component ID.
-func providerConfig(id string) Config {
-	var cfg Config
-	if err := cfg.UnmarshalText([]byte(id)); err != nil {
+// providerID builds an ID referencing the given provider component ID.
+func providerID(id string) ID {
+	var pid ID
+	if err := pid.UnmarshalText([]byte(id)); err != nil {
 		panic(err)
 	}
-	return cfg
+	return pid
 }
 
-func TestConfig_IsEmpty(t *testing.T) {
-	assert.True(t, Config{}.IsEmpty())
-	assert.False(t, providerConfig("aws_iam").IsEmpty())
+func TestID_IsEmpty(t *testing.T) {
+	assert.True(t, ID{}.IsEmpty())
+	assert.False(t, providerID("aws_iam").IsEmpty())
 }
 
-func TestConfig_UnmarshalScalarID(t *testing.T) {
+func TestID_UnmarshalScalarID(t *testing.T) {
 	// The db_auth value is a scalar component ID; confmap's text-unmarshaler decode
 	// hook invokes UnmarshalText on the string, exactly as it does for a bare
 	// component.ID field. Exercising UnmarshalText directly proves that wiring
 	// without pulling confmap into this dependency-light module.
-	var cfg Config
-	require.NoError(t, cfg.UnmarshalText([]byte("aws_iam")))
-	assert.Equal(t, component.MustNewID("aws_iam"), cfg.ProviderID)
+	var id ID
+	require.NoError(t, id.UnmarshalText([]byte("aws_iam")))
+	assert.Equal(t, component.MustNewID("aws_iam"), id.ComponentID())
 }
 
-func TestConfig_UnmarshalNamedInstance(t *testing.T) {
-	var cfg Config
-	require.NoError(t, cfg.UnmarshalText([]byte("aws_iam/primary")))
-	assert.Equal(t, component.MustNewIDWithName("aws_iam", "primary"), cfg.ProviderID)
+func TestID_UnmarshalNamedInstance(t *testing.T) {
+	var id ID
+	require.NoError(t, id.UnmarshalText([]byte("aws_iam/primary")))
+	assert.Equal(t, component.MustNewIDWithName("aws_iam", "primary"), id.ComponentID())
 }
 
-func TestConfig_UnmarshalInvalidID(t *testing.T) {
-	var cfg Config
-	require.Error(t, cfg.UnmarshalText([]byte("Not A Valid ID")))
+func TestID_MarshalText(t *testing.T) {
+	got, err := providerID("aws_iam/primary").MarshalText()
+	require.NoError(t, err)
+	assert.Equal(t, "aws_iam/primary", string(got))
 }
 
-func TestConfig_GetProvider_MatchesExtensionByID(t *testing.T) {
+func TestID_UnmarshalInvalidID(t *testing.T) {
+	var id ID
+	require.Error(t, id.UnmarshalText([]byte("Not A Valid ID")))
+}
+
+func TestID_GetProvider_MatchesExtensionByID(t *testing.T) {
 	id := component.MustNewID("aws_iam")
 	f := &fakeProvider{cred: &dbauth.Credential{Secret: "tok"}}
 
-	cfg := providerConfig("aws_iam")
-	p, err := cfg.GetProvider(extMap(id, f))
+	p, err := providerID("aws_iam").GetProvider(extMap(id, f))
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
@@ -89,32 +94,29 @@ func TestConfig_GetProvider_MatchesExtensionByID(t *testing.T) {
 	assert.Same(t, f, p)
 }
 
-func TestConfig_GetProvider_EmptyErrors(t *testing.T) {
-	_, err := Config{}.GetProvider(extMap(component.MustNewID("aws_iam"), &fakeProvider{}))
+func TestID_GetProvider_EmptyErrors(t *testing.T) {
+	_, err := ID{}.GetProvider(extMap(component.MustNewID("aws_iam"), &fakeProvider{}))
 	require.ErrorIs(t, err, errNoCredentials)
 }
 
-func TestConfig_GetProvider_NoMatchingExtension(t *testing.T) {
-	cfg := providerConfig("vault")
-	_, err := cfg.GetProvider(extMap(component.MustNewID("aws_iam"), &fakeProvider{}))
+func TestID_GetProvider_NoMatchingExtension(t *testing.T) {
+	_, err := providerID("vault").GetProvider(extMap(component.MustNewID("aws_iam"), &fakeProvider{}))
 	require.ErrorIs(t, err, errNoExtension)
 }
 
-func TestConfig_GetProvider_ExtensionNotAProvider(t *testing.T) {
+func TestID_GetProvider_ExtensionNotAProvider(t *testing.T) {
 	id := component.MustNewID("aws_iam")
-	cfg := providerConfig("aws_iam")
-	_, err := cfg.GetProvider(extMap(id, notAProvider{}))
+	_, err := providerID("aws_iam").GetProvider(extMap(id, notAProvider{}))
 	require.ErrorIs(t, err, errNotProvider)
 }
 
-func TestConfig_GetProvider_NamedInstance(t *testing.T) {
+func TestID_GetProvider_NamedInstance(t *testing.T) {
 	// A provider extension may be declared with a name (aws_iam/primary); the
 	// consumer references it by the full ID.
 	id := component.MustNewIDWithName("aws_iam", "primary")
 	f := &fakeProvider{cred: &dbauth.Credential{Secret: "tok"}}
 
-	cfg := providerConfig("aws_iam/primary")
-	p, err := cfg.GetProvider(extMap(id, f))
+	p, err := providerID("aws_iam/primary").GetProvider(extMap(id, f))
 	require.NoError(t, err)
 	assert.Same(t, f, p)
 }

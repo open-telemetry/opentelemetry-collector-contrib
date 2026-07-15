@@ -9,7 +9,7 @@
 //
 // A provider is a Collector extension that also implements Provider. It is
 // declared in the extensions block and referenced by a consuming component
-// through configdbauth.Config; the component resolves it from the host extension
+// through configdbauth.ID; the component resolves it from the host extension
 // map at Start, mirroring how config/configauth resolves an authenticator
 // extension.
 package dbauth // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
