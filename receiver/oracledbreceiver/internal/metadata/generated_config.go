@@ -266,6 +266,26 @@ func (ms *OracledbConsistentGetsMetricConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
+// OracledbCPUUsageRateMetricConfig provides config for the oracledb.cpu.usage.rate metric.
+type OracledbCPUUsageRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbCPUUsageRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbCPUTimeMetricConfig provides config for the oracledb.cpu_time metric.
 type OracledbCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -313,6 +333,26 @@ type OracledbCursorCacheSizeMetricConfig struct {
 }
 
 func (ms *OracledbCursorCacheSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbCursorCacheUtilizationMetricConfig provides config for the oracledb.cursor.cache.utilization metric.
+type OracledbCursorCacheUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbCursorCacheUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -858,6 +898,26 @@ func (ms *OracledbHardParsesMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
+// OracledbHostCPUUsageRateMetricConfig provides config for the oracledb.host.cpu.usage.rate metric.
+type OracledbHostCPUUsageRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbHostCPUUsageRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbHostCPUUtilizationMetricConfig provides config for the oracledb.host.cpu.utilization metric.
 type OracledbHostCPUUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -865,6 +925,26 @@ type OracledbHostCPUUtilizationMetricConfig struct {
 }
 
 func (ms *OracledbHostCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbIoSingleBlockReadLatencyMetricConfig provides config for the oracledb.io.single_block.read.latency metric.
+type OracledbIoSingleBlockReadLatencyMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbIoSingleBlockReadLatencyMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1269,6 +1349,26 @@ type OracledbParseCallsMetricConfig struct {
 }
 
 func (ms *OracledbParseCallsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbPgaCacheUtilizationMetricConfig provides config for the oracledb.pga.cache.utilization metric.
+type OracledbPgaCacheUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbPgaCacheUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1989,6 +2089,54 @@ func (ms *OracledbScanTableRowsMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
+// OracledbSessionAverageMetricAttributeKey specifies the key of an attribute for the oracledb.session.average metric.
+type OracledbSessionAverageMetricAttributeKey string
+
+const (
+	OracledbSessionAverageMetricAttributeKeySessionStatus OracledbSessionAverageMetricAttributeKey = "session_status"
+)
+
+// OracledbSessionAverageMetricConfig provides config for the oracledb.session.average metric.
+type OracledbSessionAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbSessionAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbSessionAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbSessionAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbSessionAverageMetricAttributeKeySessionStatus:
+		default:
+			return fmt.Errorf("metric oracledb.session.average doesn't have an attribute %v, valid attributes: [session_status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // OracledbSessionsLimitMetricConfig provides config for the oracledb.sessions.limit metric.
 type OracledbSessionsLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2575,6 +2723,26 @@ func (ms *OracledbTablespaceSizeUsageMetricConfig) Validate() error {
 	return nil
 }
 
+// OracledbTransactionResponseTimeMetricConfig provides config for the oracledb.transaction.response.time metric.
+type OracledbTransactionResponseTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbTransactionResponseTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbTransactionRollbacksMetricConfig provides config for the oracledb.transaction.rollbacks metric.
 type OracledbTransactionRollbacksMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2687,9 +2855,11 @@ type MetricsConfig struct {
 	OracledbCheckpointBuffers                     OracledbCheckpointBuffersMetricConfig                     `mapstructure:"oracledb.checkpoint.buffers"`
 	OracledbCheckpointCompleted                   OracledbCheckpointCompletedMetricConfig                   `mapstructure:"oracledb.checkpoint.completed"`
 	OracledbConsistentGets                        OracledbConsistentGetsMetricConfig                        `mapstructure:"oracledb.consistent_gets"`
+	OracledbCPUUsageRate                          OracledbCPUUsageRateMetricConfig                          `mapstructure:"oracledb.cpu.usage.rate"`
 	OracledbCPUTime                               OracledbCPUTimeMetricConfig                               `mapstructure:"oracledb.cpu_time"`
 	OracledbCursorCacheHits                       OracledbCursorCacheHitsMetricConfig                       `mapstructure:"oracledb.cursor.cache.hits"`
 	OracledbCursorCacheSize                       OracledbCursorCacheSizeMetricConfig                       `mapstructure:"oracledb.cursor.cache.size"`
+	OracledbCursorCacheUtilization                OracledbCursorCacheUtilizationMetricConfig                `mapstructure:"oracledb.cursor.cache.utilization"`
 	OracledbCursorOpen                            OracledbCursorOpenMetricConfig                            `mapstructure:"oracledb.cursor.open"`
 	OracledbDataDictionaryHitRatio                OracledbDataDictionaryHitRatioMetricConfig                `mapstructure:"oracledb.data_dictionary.hit_ratio"`
 	OracledbDatabaseCPUUtilization                OracledbDatabaseCPUUtilizationMetricConfig                `mapstructure:"oracledb.database.cpu.utilization"`
@@ -2711,7 +2881,9 @@ type MetricsConfig struct {
 	OracledbExecutions                            OracledbExecutionsMetricConfig                            `mapstructure:"oracledb.executions"`
 	OracledbGcCurrentBlockTime                    OracledbGcCurrentBlockTimeMetricConfig                    `mapstructure:"oracledb.gc.current_block.time"`
 	OracledbHardParses                            OracledbHardParsesMetricConfig                            `mapstructure:"oracledb.hard_parses"`
+	OracledbHostCPUUsageRate                      OracledbHostCPUUsageRateMetricConfig                      `mapstructure:"oracledb.host.cpu.usage.rate"`
 	OracledbHostCPUUtilization                    OracledbHostCPUUtilizationMetricConfig                    `mapstructure:"oracledb.host.cpu.utilization"`
+	OracledbIoSingleBlockReadLatency              OracledbIoSingleBlockReadLatencyMetricConfig              `mapstructure:"oracledb.io.single_block.read.latency"`
 	OracledbLibraryCacheUtilization               OracledbLibraryCacheUtilizationMetricConfig               `mapstructure:"oracledb.library_cache.utilization"`
 	OracledbLobOperations                         OracledbLobOperationsMetricConfig                         `mapstructure:"oracledb.lob.operations"`
 	OracledbLockTime                              OracledbLockTimeMetricConfig                              `mapstructure:"oracledb.lock.time"`
@@ -2728,6 +2900,7 @@ type MetricsConfig struct {
 	OracledbParseRate                             OracledbParseRateMetricConfig                             `mapstructure:"oracledb.parse.rate"`
 	OracledbParseUtilization                      OracledbParseUtilizationMetricConfig                      `mapstructure:"oracledb.parse.utilization"`
 	OracledbParseCalls                            OracledbParseCallsMetricConfig                            `mapstructure:"oracledb.parse_calls"`
+	OracledbPgaCacheUtilization                   OracledbPgaCacheUtilizationMetricConfig                   `mapstructure:"oracledb.pga.cache.utilization"`
 	OracledbPgaMemory                             OracledbPgaMemoryMetricConfig                             `mapstructure:"oracledb.pga_memory"`
 	OracledbPhysicalIoCacheWrites                 OracledbPhysicalIoCacheWritesMetricConfig                 `mapstructure:"oracledb.physical_io.cache_writes"`
 	OracledbPhysicalIoRequests                    OracledbPhysicalIoRequestsMetricConfig                    `mapstructure:"oracledb.physical_io.requests"`
@@ -2752,6 +2925,7 @@ type MetricsConfig struct {
 	OracledbRedoAllocationUtilization             OracledbRedoAllocationUtilizationMetricConfig             `mapstructure:"oracledb.redo_allocation.utilization"`
 	OracledbScanCount                             OracledbScanCountMetricConfig                             `mapstructure:"oracledb.scan.count"`
 	OracledbScanTableRows                         OracledbScanTableRowsMetricConfig                         `mapstructure:"oracledb.scan.table.rows"`
+	OracledbSessionAverage                        OracledbSessionAverageMetricConfig                        `mapstructure:"oracledb.session.average"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
 	OracledbSgaLimit                              OracledbSgaLimitMetricConfig                              `mapstructure:"oracledb.sga.limit"`
@@ -2770,6 +2944,7 @@ type MetricsConfig struct {
 	OracledbSystemProcessCount                    OracledbSystemProcessCountMetricConfig                    `mapstructure:"oracledb.system.process.count"`
 	OracledbTablespaceSizeLimit                   OracledbTablespaceSizeLimitMetricConfig                   `mapstructure:"oracledb.tablespace_size.limit"`
 	OracledbTablespaceSizeUsage                   OracledbTablespaceSizeUsageMetricConfig                   `mapstructure:"oracledb.tablespace_size.usage"`
+	OracledbTransactionResponseTime               OracledbTransactionResponseTimeMetricConfig               `mapstructure:"oracledb.transaction.response.time"`
 	OracledbTransactionRollbacks                  OracledbTransactionRollbacksMetricConfig                  `mapstructure:"oracledb.transaction.rollbacks"`
 	OracledbTransactionsLimit                     OracledbTransactionsLimitMetricConfig                     `mapstructure:"oracledb.transactions.limit"`
 	OracledbTransactionsUsage                     OracledbTransactionsUsageMetricConfig                     `mapstructure:"oracledb.transactions.usage"`
@@ -2813,6 +2988,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbConsistentGets: OracledbConsistentGetsMetricConfig{
 			Enabled: false,
 		},
+		OracledbCPUUsageRate: OracledbCPUUsageRateMetricConfig{
+			Enabled: false,
+		},
 		OracledbCPUTime: OracledbCPUTimeMetricConfig{
 			Enabled: true,
 		},
@@ -2820,6 +2998,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		OracledbCursorCacheSize: OracledbCursorCacheSizeMetricConfig{
+			Enabled: false,
+		},
+		OracledbCursorCacheUtilization: OracledbCursorCacheUtilizationMetricConfig{
 			Enabled: false,
 		},
 		OracledbCursorOpen: OracledbCursorOpenMetricConfig{
@@ -2893,7 +3074,13 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbHardParses: OracledbHardParsesMetricConfig{
 			Enabled: true,
 		},
+		OracledbHostCPUUsageRate: OracledbHostCPUUsageRateMetricConfig{
+			Enabled: false,
+		},
 		OracledbHostCPUUtilization: OracledbHostCPUUtilizationMetricConfig{
+			Enabled: false,
+		},
+		OracledbIoSingleBlockReadLatency: OracledbIoSingleBlockReadLatencyMetricConfig{
 			Enabled: false,
 		},
 		OracledbLibraryCacheUtilization: OracledbLibraryCacheUtilizationMetricConfig{
@@ -2949,6 +3136,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		OracledbParseCalls: OracledbParseCallsMetricConfig{
 			Enabled: true,
+		},
+		OracledbPgaCacheUtilization: OracledbPgaCacheUtilizationMetricConfig{
+			Enabled: false,
 		},
 		OracledbPgaMemory: OracledbPgaMemoryMetricConfig{
 			Enabled: true,
@@ -3038,6 +3228,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbScanTableRows: OracledbScanTableRowsMetricConfig{
 			Enabled: false,
 		},
+		OracledbSessionAverage: OracledbSessionAverageMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OracledbSessionAverageMetricAttributeKey{OracledbSessionAverageMetricAttributeKeySessionStatus},
+		},
 		OracledbSessionsLimit: OracledbSessionsLimitMetricConfig{
 			Enabled: true,
 		},
@@ -3107,6 +3302,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []OracledbTablespaceSizeUsageMetricAttributeKey{OracledbTablespaceSizeUsageMetricAttributeKeyTablespaceName},
+		},
+		OracledbTransactionResponseTime: OracledbTransactionResponseTimeMetricConfig{
+			Enabled: false,
 		},
 		OracledbTransactionRollbacks: OracledbTransactionRollbacksMetricConfig{
 			Enabled: false,
