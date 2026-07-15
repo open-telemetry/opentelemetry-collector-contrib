@@ -115,7 +115,7 @@ func (e EntityEvent) ID() pcommon.Map {
 
 // SetEntityState makes this an EntityStateDetails event.
 func (e EntityEvent) SetEntityState() EntityStateDetails {
-	e.setEventName()
+	e.setEventName(semconvEventEntityEventState, legacySemconvEventEntityEventState)
 	return e.EntityStateDetails()
 }
 
@@ -126,7 +126,7 @@ func (e EntityEvent) EntityStateDetails() EntityStateDetails {
 
 // SetEntityDelete makes this an EntityDeleteDetails event.
 func (e EntityEvent) SetEntityDelete() EntityDeleteDetails {
-	e.setEventName()
+	e.setEventName(semconvEventEntityEventDelete, legacySemconvEventEntityEventDelete)
 	return e.EntityDeleteDetails()
 }
 
@@ -175,11 +175,11 @@ func (e EntityEvent) EventType() EventType {
 	}
 }
 
-func (e EntityEvent) setEventName() {
+func (e EntityEvent) setEventName(eventName, legacyEventName string) {
 	if useEntityEventsSpecification() {
-		e.orig.SetEventName(semconvEventEntityEventState)
+		e.orig.SetEventName(eventName)
 	} else {
-		e.orig.Attributes().PutStr(legacySemconvOtelEntityEventName, legacySemconvEventEntityEventState)
+		e.orig.Attributes().PutStr(legacySemconvOtelEntityEventName, legacyEventName)
 	}
 }
 

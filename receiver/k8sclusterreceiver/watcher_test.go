@@ -418,15 +418,14 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step4, step5)
 
-	// Event 5 should contain the pod deletion payload.
+	// Event 5 should indicate pod deletion.
 	lr = logsConsumer.AllLogs()[4].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	deleteAttrs := lr.Attributes().AsRaw()
-	delete(deleteAttrs, "otel.entity.event.type")
 	expected = map[string]any{
-		"otel.entity.type": "k8s.pod",
-		"otel.entity.id":   map[string]any{"k8s.pod.uid": "pod0"},
+		"otel.entity.event.type": "entity_delete",
+		"otel.entity.type":       "k8s.pod",
+		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
 	}
-	assert.Equal(t, expected, deleteAttrs)
+	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step5, step6)
 }
 
@@ -467,6 +466,7 @@ func TestSyncMetadataAndEmitEntityEventsWithEntityEventsSpecificationFeatureGate
 		"entity.type": "k8s.pod",
 		"entity.id":   map[string]any{"k8s.pod.uid": "pod0"},
 	}
+	assert.Equal(t, "entity.delete", lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
 }
@@ -508,15 +508,14 @@ func TestSyncMetadataAndEmitEntityEventsForPV(t *testing.T) {
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
 
-	// Event 2: deletion payload for the PV
+	// Event 2: entity_delete for the PV
 	lr = logsConsumer.AllLogs()[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	deleteAttrs := lr.Attributes().AsRaw()
-	delete(deleteAttrs, "otel.entity.event.type")
 	expected = map[string]any{
-		"otel.entity.type": "k8s.persistentvolume",
-		"otel.entity.id":   map[string]any{"k8s.persistentvolume.uid": "test-pv-1-uid"},
+		"otel.entity.event.type": "entity_delete",
+		"otel.entity.type":       "k8s.persistentvolume",
+		"otel.entity.id":         map[string]any{"k8s.persistentvolume.uid": "test-pv-1-uid"},
 	}
-	assert.Equal(t, expected, deleteAttrs)
+	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
 }
 
@@ -559,15 +558,14 @@ func TestSyncMetadataAndEmitEntityEventsForPVC(t *testing.T) {
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
 
-	// Event 2: deletion payload for the PVC
+	// Event 2: entity_delete for the PVC
 	lr = logsConsumer.AllLogs()[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	deleteAttrs := lr.Attributes().AsRaw()
-	delete(deleteAttrs, "otel.entity.event.type")
 	expected = map[string]any{
-		"otel.entity.type": "k8s.persistentvolumeclaim",
-		"otel.entity.id":   map[string]any{"k8s.persistentvolumeclaim.uid": "test-pvc-1-uid"},
+		"otel.entity.event.type": "entity_delete",
+		"otel.entity.type":       "k8s.persistentvolumeclaim",
+		"otel.entity.id":         map[string]any{"k8s.persistentvolumeclaim.uid": "test-pvc-1-uid"},
 	}
-	assert.Equal(t, expected, deleteAttrs)
+	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
 }
 

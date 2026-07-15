@@ -63,6 +63,7 @@ func Test_Entity_Delete(t *testing.T) {
 
 	actual := slice.At(0)
 
+	assert.Equal(t, EventTypeDelete, actual.EventType())
 	assert.Equal(t, "k8s.node", event.EntityDeleteDetails().EntityType())
 	assert.Equal(t, "terminated", event.EntityDeleteDetails().DeletionReason())
 	v, ok := actual.ID().Get("k8s.node.uid")
@@ -130,6 +131,7 @@ func Test_EntityEventsSlice_ConvertAndMoveToLogs(t *testing.T) {
 	)
 
 	// Check the second event.
+	assert.Equal(t, semconvEventEntityEventDelete, records.At(1).EventName())
 	attrs = records.At(1).Attributes().AsRaw()
 	assert.Equal(
 		t, map[string]any{
@@ -180,15 +182,16 @@ func Test_EntityEventsSlice_ConvertAndMoveToLogs_LegacyFeatureGate(t *testing.T)
 
 	assert.Empty(t, records.At(1).EventName())
 	attrs = records.At(1).Attributes().AsRaw()
-	delete(attrs, legacySemconvOtelEntityEventName)
 	assert.Equal(
 		t, map[string]any{
-			legacySemconvOtelEntityType: "k8s.node",
-			legacySemconvOtelEntityID:   map[string]any{"k8s.node.uid": "abc"},
+			legacySemconvOtelEntityEventName: legacySemconvEventEntityEventDelete,
+			legacySemconvOtelEntityType:      "k8s.node",
+			legacySemconvOtelEntityID:        map[string]any{"k8s.node.uid": "abc"},
 		}, attrs,
 	)
 
 	actual = NewEntityEventsSliceFromLogs(records).At(1)
+	assert.Equal(t, EventTypeDelete, actual.EventType())
 	assert.Equal(t, "k8s.node", actual.EntityDeleteDetails().EntityType())
 }
 
@@ -220,6 +223,10 @@ func Test_EntityEventType_LegacyFeatureGate(t *testing.T) {
 	lr.SetEventName("")
 	lr.Attributes().PutStr(legacySemconvOtelEntityEventName, "invalidtype")
 	assert.Equal(t, EventTypeNone, e.EventType())
+}
+
+func Test_EntityEventsSpecificationGate_DefaultDisabled(t *testing.T) {
+	assert.False(t, metadata.PkgExperimentalmetricmetadataUseEntityEventsSpecificationFeatureGate.IsEnabled())
 }
 
 func Test_EntityStateDetails_EntityType_StrictFeatureGate(t *testing.T) {

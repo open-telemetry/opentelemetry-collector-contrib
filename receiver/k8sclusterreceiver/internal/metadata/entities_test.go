@@ -16,10 +16,9 @@ import (
 
 func Test_GetEntityEvents(t *testing.T) {
 	tests := []struct {
-		name         string
-		old, new     map[metadataPkg.ResourceID]*KubernetesMetadata
-		events       metadataPkg.EntityEventsSlice
-		stateIndexes map[int]struct{}
+		name     string
+		old, new map[metadataPkg.ResourceID]*KubernetesMetadata
+		events   metadataPkg.EntityEventsSlice
 	}{
 		{
 			name: "new entity",
@@ -42,7 +41,6 @@ func Test_GetEntityEvents(t *testing.T) {
 				_ = state.Attributes().FromRaw(map[string]any{"label1": "value1"})
 				return out
 			}(),
-			stateIndexes: map[int]struct{}{0: {}},
 		},
 		{
 			name: "deleted entity",
@@ -99,7 +97,6 @@ func Test_GetEntityEvents(t *testing.T) {
 				_ = state.Attributes().FromRaw(map[string]any{"label1": "value1", "label2": "foo", "new": "bar"})
 				return out
 			}(),
-			stateIndexes: map[int]struct{}{0: {}},
 		},
 		{
 			name: "unchanged entity",
@@ -140,7 +137,6 @@ func Test_GetEntityEvents(t *testing.T) {
 				)
 				return out
 			}(),
-			stateIndexes: map[int]struct{}{0: {}},
 		},
 		{
 			name: "new and deleted entity",
@@ -178,7 +174,6 @@ func Test_GetEntityEvents(t *testing.T) {
 				_ = state.Attributes().FromRaw(map[string]any{"label2": "value2"})
 				return out
 			}(),
-			stateIndexes: map[int]struct{}{1: {}},
 		},
 	}
 	for _, tt := range tests {
@@ -201,7 +196,7 @@ func Test_GetEntityEvents(t *testing.T) {
 				assert.Equal(t, timestamp, actual.Timestamp())
 				assert.Equal(t, expected.EventType(), actual.EventType())
 				assert.Equal(t, expected.ID().AsRaw(), actual.ID().AsRaw())
-				if _, ok := tt.stateIndexes[i]; ok {
+				if expected.EventType() == metadataPkg.EventTypeState {
 					estate := expected.EntityStateDetails()
 					astate := actual.EntityStateDetails()
 					assert.Equal(t, estate.EntityType(), astate.EntityType())
