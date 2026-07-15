@@ -127,7 +127,12 @@ var queryResponses = map[string][]metricRow{
 	},
 	tablespaceUsageSQL:  {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
 	dataDictHitRatioSQL: {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
-	recycleBinSizeSQL:   {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
+	osStatSQL: {
+		{"STAT_NAME": "NUM_CPUS", "VALUE": "8"},
+		{"STAT_NAME": "LOAD", "VALUE": "1.5"},
+		{"STAT_NAME": "PHYSICAL_MEMORY_BYTES", "VALUE": "17179869184"},
+	},
+	recycleBinSizeSQL: {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
 	sgaInfoSQL: {
 		{"NAME": "Fixed SGA Size", "BYTES": "9292416"},
 		{"NAME": "Redo Buffers", "BYTES": "14598144"},
@@ -157,6 +162,13 @@ var queryResponses = map[string][]metricRow{
 		{"METRIC_NAME": "Redo Allocation Hit Ratio", "VALUE": "97.80"},
 		{"METRIC_NAME": "Parse Failure Count Per Sec", "VALUE": "0.25"},
 		{"METRIC_NAME": "Execute Without Parse Ratio", "VALUE": "75.30"},
+		{"METRIC_NAME": "Average Active Sessions", "VALUE": "2.50"},
+		{"METRIC_NAME": "Average Synchronous Single-Block Read Latency", "VALUE": "8.50"},
+		{"METRIC_NAME": "Response Time Per Txn", "VALUE": "12.34"},
+		{"METRIC_NAME": "Cursor Cache Hit Ratio", "VALUE": "96.40"},
+		{"METRIC_NAME": "PGA Cache Hit %", "VALUE": "92.10"},
+		{"METRIC_NAME": "CPU Usage Per Sec", "VALUE": "150.00"},
+		{"METRIC_NAME": "Host CPU Usage Per Sec", "VALUE": "320.00"},
 	},
 }
 
@@ -387,6 +399,110 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 				assert.InDelta(t, 13107200.0, metricMap["oracledb.recycle_bin.limit"], floatDelta)
 				assert.InDelta(t, 5368709120.0, metricMap["oracledb.storage.usage"], floatDelta)
 				assert.InDelta(t, 0.5, metricMap["oracledb.storage.utilization"], floatDelta)
+			}
+		})
+	}
+}
+
+func TestScraper_ScrapeOSStat(t *testing.T) {
+	const floatDelta = 0.01
+
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid os stat metrics",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{
+					Responses: [][]metricRow{
+						queryResponses[s],
+					},
+				}
+			},
+		},
+		{
+			name: "bad NUM_CPUS value",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == osStatSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{{"STAT_NAME": "NUM_CPUS", "VALUE": "bad"}},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+			errWanted: `failed to parse int64 for OracledbSystemCPUCount, value was bad`,
+		},
+		{
+			name: "bad LOAD value",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == osStatSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{{"STAT_NAME": "LOAD", "VALUE": "bad"}},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+			errWanted: `failed to parse float64 for OracledbSystemProcessCount, value was bad`,
+		},
+		{
+			name: "bad PHYSICAL_MEMORY_BYTES value",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == osStatSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{{"STAT_NAME": "PHYSICAL_MEMORY_BYTES", "VALUE": "bad"}},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+			errWanted: `failed to parse int64 for OracledbSystemMemoryLimit, value was bad`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
+			cfg.Metrics.OracledbSystemCPUCount.Enabled = true
+			cfg.Metrics.OracledbSystemMemoryLimit.Enabled = true
+			cfg.Metrics.OracledbSystemProcessCount.Enabled = true
+
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc:   test.dbclientFn,
+				id:                   component.ID{},
+				metricsBuilderConfig: cfg,
+			}
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(t.Context()))
+			}()
+			require.NoError(t, err)
+			m, err := scrpr.scrape(t.Context())
+			if test.errWanted != "" {
+				require.True(t, scrapererror.IsPartialScrapeError(err))
+				require.Contains(t, err.Error(), test.errWanted)
+			} else {
+				require.NoError(t, err)
+				metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+				for i := 0; i < metrics.Len(); i++ {
+					metric := metrics.At(i)
+					if metric.Type() != pmetric.MetricTypeGauge || metric.Gauge().DataPoints().Len() == 0 {
+						continue
+					}
+					dp := metric.Gauge().DataPoints().At(0)
+					switch metric.Name() {
+					case "oracledb.system.cpu.count":
+						assert.Equal(t, int64(8), dp.IntValue())
+					case "oracledb.system.memory.limit":
+						assert.Equal(t, int64(17179869184), dp.IntValue())
+					case "oracledb.system.process.count":
+						assert.InDelta(t, 1.5, dp.DoubleValue(), floatDelta)
+					}
+				}
 			}
 		})
 	}
@@ -873,23 +989,27 @@ var sessionEventQueryResponses = map[string][]metricRow{
 	sessionEventQuery: {
 		{
 			"SID": "100", "SERIAL#": "12345", "EVENT": "db file sequential read", "WAIT_CLASS": "User I/O",
-			"TOTAL_WAITS": "1500", "TOTAL_TIME_WAITED_SECS": "25.5",
+			"TOTAL_WAITS": "1500", "TOTAL_TIME_WAITED_SECS": "25.5", "DB_NAMESPACE": "ORCL",
 		},
 		{
 			"SID": "101", "SERIAL#": "12346", "EVENT": "log file sync", "WAIT_CLASS": "Commit",
-			"TOTAL_WAITS": "800", "TOTAL_TIME_WAITED_SECS": "12.3",
+			"TOTAL_WAITS": "800", "TOTAL_TIME_WAITED_SECS": "12.3", "DB_NAMESPACE": "ORCL",
+		},
+		{
+			"SID": "102", "SERIAL#": "12347", "EVENT": "buffer busy waits", "WAIT_CLASS": "Concurrency",
+			"TOTAL_WAITS": "50", "TOTAL_TIME_WAITED_SECS": "1.5",
 		},
 	},
 	"invalidSessionEventQuery": {
 		{
 			"SID": "100", "SERIAL#": "12345", "EVENT": "db file sequential read", "WAIT_CLASS": "User I/O",
-			"TOTAL_WAITS": "invalid", "TOTAL_TIME_WAITED_SECS": "25.5",
+			"TOTAL_WAITS": "invalid", "TOTAL_TIME_WAITED_SECS": "25.5", "DB_NAMESPACE": "ORCL",
 		},
 	},
 	"invalidTimeSessionEventQuery": {
 		{
 			"SID": "100", "SERIAL#": "12345", "EVENT": "db file sequential read", "WAIT_CLASS": "User I/O",
-			"TOTAL_WAITS": "1500", "TOTAL_TIME_WAITED_SECS": "invalid",
+			"TOTAL_WAITS": "1500", "TOTAL_TIME_WAITED_SECS": "invalid", "DB_NAMESPACE": "ORCL",
 		},
 	},
 }
@@ -1197,6 +1317,13 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			cfg.Metrics.OracledbRedoAllocationUtilization.Enabled = true
 			cfg.Metrics.OracledbParseRate.Enabled = true
 			cfg.Metrics.OracledbExecutionUtilization.Enabled = true
+			cfg.Metrics.OracledbCPUUsageRate.Enabled = true
+			cfg.Metrics.OracledbCursorCacheUtilization.Enabled = true
+			cfg.Metrics.OracledbHostCPUUsageRate.Enabled = true
+			cfg.Metrics.OracledbIoSingleBlockReadLatency.Enabled = true
+			cfg.Metrics.OracledbPgaCacheUtilization.Enabled = true
+			cfg.Metrics.OracledbSessionAverage.Enabled = true
+			cfg.Metrics.OracledbTransactionResponseTime.Enabled = true
 
 			scrpr := oracleScraper{
 				logger: zap.NewNop(),
@@ -1226,10 +1353,16 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 
 			metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			metricMap := make(map[string]float64)
+			intMetricMap := make(map[string]int64)
 			for i := 0; i < metrics.Len(); i++ {
 				metric := metrics.At(i)
 				if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
-					metricMap[metric.Name()] = metric.Gauge().DataPoints().At(0).DoubleValue()
+					dp := metric.Gauge().DataPoints().At(0)
+					if dp.ValueType() == pmetric.NumberDataPointValueTypeInt {
+						intMetricMap[metric.Name()] = dp.IntValue()
+					} else {
+						metricMap[metric.Name()] = dp.DoubleValue()
+					}
 				}
 			}
 
@@ -1245,6 +1378,17 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			assert.InDelta(t, 97.80, metricMap["oracledb.redo_allocation.utilization"], floatDelta)
 			assert.InDelta(t, 0.25, metricMap["oracledb.parse.rate"], floatDelta)
 			assert.InDelta(t, 75.30, metricMap["oracledb.execution.utilization"], floatDelta)
+			assert.InDelta(t, 2.50, metricMap["oracledb.session.average"], floatDelta)
+			// 0.85 ms -> 0.00085 s
+			assert.InDelta(t, 0.0085, metricMap["oracledb.io.single_block.read.latency"], floatDelta)
+			// 12.34 cs -> 0.1234 s
+			assert.InDelta(t, 0.1234, metricMap["oracledb.transaction.response.time"], floatDelta)
+			assert.InDelta(t, 96.40, metricMap["oracledb.cursor.cache.utilization"], floatDelta)
+			assert.InDelta(t, 92.10, metricMap["oracledb.pga.cache.utilization"], floatDelta)
+			// 150 cs/s -> 1.5 CPU cores
+			assert.InDelta(t, 1.50, metricMap["oracledb.cpu.usage.rate"], floatDelta)
+			// 320 cs/s -> 3.2 CPU cores
+			assert.InDelta(t, 3.20, metricMap["oracledb.host.cpu.usage.rate"], floatDelta)
 		})
 	}
 }
