@@ -191,6 +191,7 @@ func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInte
 			MaxAge:      rotation.MaxDays,
 			MaxBackups:  rotation.MaxBackups,
 			LocalTime:   rotation.LocalTime,
+			FileMode:    0o644,
 			Compression: "none", // ensure compression is handled by the collector
 		}
 	}
