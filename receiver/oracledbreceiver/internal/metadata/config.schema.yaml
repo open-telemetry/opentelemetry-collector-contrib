@@ -262,6 +262,13 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.gc.current_block.time:
+        description: "OracledbGcCurrentBlockTimeMetricConfig provides config for the oracledb.gc.current_block.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.hard_parses:
         description: "OracledbHardParsesMetricConfig provides config for the oracledb.hard_parses metric."
         type: object
@@ -306,6 +313,13 @@ $defs:
                 - "disk.io.direction"
             default:
               - "disk.io.direction"
+      oracledb.lock.time:
+        description: "OracledbLockTimeMetricConfig provides config for the oracledb.lock.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.logical_reads:
         description: "OracledbLogicalReadsMetricConfig provides config for the oracledb.logical_reads metric."
         type: object
@@ -517,6 +531,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.recovery.blocks:
+        description: "OracledbRecoveryBlocksMetricConfig provides config for the oracledb.recovery.blocks metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.recycle_bin.limit:
         description: "OracledbRecycleBinLimitMetricConfig provides config for the oracledb.recycle_bin.limit metric."
         type: object
@@ -637,6 +658,13 @@ $defs:
             default:
               - "session_type"
               - "session_status"
+      oracledb.smon.posts:
+        description: "OracledbSmonPostsMetricConfig provides config for the oracledb.smon.posts metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.sort.operations:
         description: "OracledbSortOperationsMetricConfig provides config for the oracledb.sort.operations metric."
         type: object
@@ -754,6 +782,13 @@ $defs:
               - "tablespace_name"
       oracledb.transaction.response.time:
         description: "OracledbTransactionResponseTimeMetricConfig provides config for the oracledb.transaction.response.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.transaction.rollbacks:
+        description: "OracledbTransactionRollbacksMetricConfig provides config for the oracledb.transaction.rollbacks metric."
         type: object
         properties:
           enabled:

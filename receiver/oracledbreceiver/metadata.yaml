@@ -96,7 +96,7 @@ attributes:
     type: string
     enum: [buffered, total]
   network.io.direction:
-    description: Direction of the SQL*Net network transfer.
+    description: Direction of the network transfer.
     type: string
     enum: [receive, transmit]
   network.peer.address:
@@ -291,9 +291,9 @@ attributes:
     description: "The timestamp when the session logged on, in ISO 8601 format (UTC)."
     type: string
   oracledb.session.type:
-    description: Class of session the database time is attributed to.
+    description: Class of session the activity is attributed to.
     type: string
-    enum: [foreground]
+    enum: [background, foreground]
   oracledb.sga.component.name:
     description: Name of the SGA component.
     type: string
@@ -312,6 +312,10 @@ attributes:
   oracledb.sid:
     description: ID of the Oracle Server session.
     type: string
+  oracledb.smon.type:
+    description: Type of recovery SMON was posted to perform.
+    type: string
+    enum: [instance, transaction]
   oracledb.sort.type:
     description: Type of sort operation (e.g., memory, disk).
     type: string
@@ -758,6 +762,17 @@ metrics:
       value_type: int
       input_type: string
     unit: "{executions}"
+  oracledb.gc.current_block.time:
+    attributes:
+      - network.io.direction
+    description: Cumulative time spent transferring current blocks between instances over RAC cache fusion.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
   oracledb.hard_parses:
     description: Number of hard parses
     enabled: true
@@ -807,6 +822,17 @@ metrics:
       input_type: string
     unit: "{operation}"
     attributes: [disk.io.direction]
+  oracledb.lock.time:
+    attributes:
+      - oracledb.session.type
+    description: Cumulative time spent on transaction lock activity.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
   oracledb.logical_reads:
     description: Number of logical reads
     enabled: true
@@ -1066,6 +1092,16 @@ metrics:
       value_type: int
       input_type: string
     unit: "{queries}"
+  oracledb.recovery.blocks:
+    description: Number of blocks read during instance or media recovery.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{block}"
   oracledb.recycle_bin.limit:
     description: Total size of the recycle bin.
     enabled: false
@@ -1215,6 +1251,18 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.smon.posts:
+    attributes:
+      - oracledb.smon.type
+    description: Number of times SMON was posted to perform recovery.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{post}"
   oracledb.sort.operations:
     description: Total count of sort operations.
     enabled: false
@@ -1323,6 +1371,16 @@ metrics:
     gauge:
       value_type: double
     unit: s
+  oracledb.transaction.rollbacks:
+    description: Total number of transactions rolled back.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{rollback}"
   oracledb.transactions.limit:
     description: Maximum limit of active transactions, -1 if unlimited.
     enabled: true
