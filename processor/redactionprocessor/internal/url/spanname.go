@@ -8,10 +8,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	// v1.25.0 is retained for the HTTP attributes removed in v1.40.0
-	// (http.scheme, http.target, http.method, http.url). The processor reads
-	// incoming spans and must still match telemetry emitted with the older
-	// HTTP conventions.
 	semconv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
 	semconv140 "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
@@ -74,14 +70,11 @@ func shouldSanitizeSpan(span ptrace.Span) bool {
 }
 
 var httpAttributeKeys = []string{
-	// Current (v1.40.0) HTTP conventions.
 	string(semconv140.HTTPRouteKey),
 	string(semconv140.HTTPRequestMethodKey),
 	string(semconv140.HTTPRequestMethodOriginalKey),
 	string(semconv140.HTTPResponseStatusCodeKey),
 	string(semconv140.URLFullKey),
-	// Legacy (v1.25.0) HTTP conventions, removed in v1.40.0 but still matched
-	// so spans emitted with the older conventions are sanitized.
 	string(semconv125.HTTPSchemeKey),
 	string(semconv125.HTTPTargetKey),
 	string(semconv125.HTTPMethodKey),

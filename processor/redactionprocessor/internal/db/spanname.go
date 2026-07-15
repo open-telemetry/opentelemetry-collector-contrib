@@ -8,9 +8,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	// v1.28.0 is retained for DBSystemKey ("db.system"), which was removed in
-	// v1.40.0 (renamed to db.system.name). The processor reads incoming spans and
-	// must still match telemetry emitted with the older convention.
 	semconv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
 	semconv140 "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
