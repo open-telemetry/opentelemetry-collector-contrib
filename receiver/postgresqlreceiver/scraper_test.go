@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tj/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -1028,6 +1029,11 @@ func (m *mockClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, err
 	return args.Get(0).([]databaseLocks), args.Error(1)
 }
 
+func (m *mockClient) getSharedRelationLocks(ctx context.Context) ([]databaseLocks, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]databaseLocks), args.Error(1)
+}
+
 func (m *mockClient) getBackends(_ context.Context, databases []string) (map[databaseName]int64, error) {
 	args := m.Called(databases)
 	return args.Get(0).(map[databaseName]int64), args.Error(1)
@@ -1156,34 +1162,14 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		}, nil)
 		m.On("getMaxConnections", mock.Anything).Return(int64(100), nil)
 		m.On("getLatestWalAgeSeconds", mock.Anything).Return(int64(3600), nil)
-		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
+		m.On("getSharedRelationLocks", mock.Anything).Return([]databaseLocks{
 			{
-				relation: "pg_locks",
+				relation: "pg_database",
 				mode:     "AccessShareLock",
 				lockType: "relation",
-				locks:    3600,
-			},
-			{
-				relation: "pg_class",
-				mode:     "AccessShareLock",
-				lockType: "relation",
-				locks:    5600,
+				locks:    2,
 			},
 		}, nil)
-		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
-			{
-				relation: "abd_table",
-				mode:     "ExplicitLock",
-				lockType: "relation",
-				locks:    1600,
-			},
-			{
-				relation: "pg_class",
-				mode:     "AccessShareLock",
-				lockType: "relation",
-				locks:    5600,
-			},
-		}, errors.New("some error"))
 		m.On("getReplicationStats", mock.Anything).Return([]replicationStats{
 			{
 				clientAddr:   "unix",
@@ -1311,7 +1297,44 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 			},
 		}
 		m.On("getFunctionStats", mock.Anything, database).Return(functionStats, nil)
+
+		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
+			{
+				relation: "pg_locks",
+				mode:     "AccessShareLock",
+				lockType: "relation",
+				locks:    int64(index + 3600),
+			},
+			{
+				relation: "pg_class",
+				mode:     "AccessShareLock",
+				lockType: "relation",
+				locks:    int64(index + 5600),
+			},
+		}, nil)
 	}
+}
+
+func TestCollectDatabaseLocksError(t *testing.T) {
+	c := new(mockClient)
+	c.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks(nil), errors.New("some error"))
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	var errs errsMux
+	scraper.collectDatabaseLocks(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, "otel", &errs)
+	require.Error(t, errs.combine())
+}
+
+func TestCollectSharedRelationLocksError(t *testing.T) {
+	c := new(mockClient)
+	c.On("getSharedRelationLocks", mock.Anything).Return([]databaseLocks(nil), errors.New("some error"))
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	var errs errsMux
+	scraper.collectSharedRelationLocks(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, &errs)
+	require.Error(t, errs.combine())
 }
 
 func TestGetInstanceId(t *testing.T) {
