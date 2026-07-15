@@ -23,11 +23,15 @@ all_set:
       enabled: true
     oracledb.consistent_gets:
       enabled: true
+    oracledb.cpu.usage.rate:
+      enabled: true
     oracledb.cpu_time:
       enabled: true
     oracledb.cursor.cache.hits:
       enabled: true
     oracledb.cursor.cache.size:
+      enabled: true
+    oracledb.cursor.cache.utilization:
       enabled: true
     oracledb.cursor.open:
       enabled: true
@@ -72,7 +76,11 @@ all_set:
       enabled: true
     oracledb.hard_parses:
       enabled: true
+    oracledb.host.cpu.usage.rate:
+      enabled: true
     oracledb.host.cpu.utilization:
+      enabled: true
+    oracledb.io.single_block.read.latency:
       enabled: true
     oracledb.jvm.memory.committed:
       enabled: true
@@ -113,6 +121,8 @@ all_set:
     oracledb.parse.utilization:
       enabled: true
     oracledb.parse_calls:
+      enabled: true
+    oracledb.pga.cache.utilization:
       enabled: true
     oracledb.pga_memory:
       enabled: true
@@ -168,6 +178,9 @@ all_set:
       attributes: ["oracledb.scan.type","oracledb.scan.mode"]
     oracledb.scan.table.rows:
       enabled: true
+    oracledb.session.average:
+      enabled: true
+      attributes: ["session_status"]
     oracledb.session.stored_procedure.memory:
       enabled: true
     oracledb.session.wait.time:
@@ -217,6 +230,8 @@ all_set:
     oracledb.tablespace_size.usage:
       enabled: true
       attributes: ["tablespace_name"]
+    oracledb.transaction.response.time:
+      enabled: true
     oracledb.transactions.limit:
       enabled: true
     oracledb.transactions.usage:
@@ -277,11 +292,15 @@ reaggregate_set:
       enabled: true
     oracledb.consistent_gets:
       enabled: true
+    oracledb.cpu.usage.rate:
+      enabled: true
     oracledb.cpu_time:
       enabled: true
     oracledb.cursor.cache.hits:
       enabled: true
     oracledb.cursor.cache.size:
+      enabled: true
+    oracledb.cursor.cache.utilization:
       enabled: true
     oracledb.cursor.open:
       enabled: true
@@ -326,7 +345,11 @@ reaggregate_set:
       enabled: true
     oracledb.hard_parses:
       enabled: true
+    oracledb.host.cpu.usage.rate:
+      enabled: true
     oracledb.host.cpu.utilization:
+      enabled: true
+    oracledb.io.single_block.read.latency:
       enabled: true
     oracledb.jvm.memory.committed:
       enabled: true
@@ -367,6 +390,8 @@ reaggregate_set:
     oracledb.parse.utilization:
       enabled: true
     oracledb.parse_calls:
+      enabled: true
+    oracledb.pga.cache.utilization:
       enabled: true
     oracledb.pga_memory:
       enabled: true
@@ -422,6 +447,9 @@ reaggregate_set:
       attributes: []
     oracledb.scan.table.rows:
       enabled: true
+    oracledb.session.average:
+      enabled: true
+      attributes: []
     oracledb.session.stored_procedure.memory:
       enabled: true
     oracledb.session.wait.time:
@@ -471,6 +499,8 @@ reaggregate_set:
     oracledb.tablespace_size.usage:
       enabled: true
       attributes: []
+    oracledb.transaction.response.time:
+      enabled: true
     oracledb.transactions.limit:
       enabled: true
     oracledb.transactions.usage:
@@ -531,11 +561,15 @@ none_set:
       enabled: false
     oracledb.consistent_gets:
       enabled: false
+    oracledb.cpu.usage.rate:
+      enabled: false
     oracledb.cpu_time:
       enabled: false
     oracledb.cursor.cache.hits:
       enabled: false
     oracledb.cursor.cache.size:
+      enabled: false
+    oracledb.cursor.cache.utilization:
       enabled: false
     oracledb.cursor.open:
       enabled: false
@@ -580,7 +614,11 @@ none_set:
       enabled: false
     oracledb.hard_parses:
       enabled: false
+    oracledb.host.cpu.usage.rate:
+      enabled: false
     oracledb.host.cpu.utilization:
+      enabled: false
+    oracledb.io.single_block.read.latency:
       enabled: false
     oracledb.jvm.memory.committed:
       enabled: false
@@ -621,6 +659,8 @@ none_set:
     oracledb.parse.utilization:
       enabled: false
     oracledb.parse_calls:
+      enabled: false
+    oracledb.pga.cache.utilization:
       enabled: false
     oracledb.pga_memory:
       enabled: false
@@ -676,6 +716,9 @@ none_set:
       attributes: ["oracledb.scan.type","oracledb.scan.mode"]
     oracledb.scan.table.rows:
       enabled: false
+    oracledb.session.average:
+      enabled: false
+      attributes: ["session_status"]
     oracledb.session.stored_procedure.memory:
       enabled: false
     oracledb.session.wait.time:
@@ -725,6 +768,8 @@ none_set:
     oracledb.tablespace_size.usage:
       enabled: false
       attributes: ["tablespace_name"]
+    oracledb.transaction.response.time:
+      enabled: false
     oracledb.transactions.limit:
       enabled: false
     oracledb.transactions.usage:
