@@ -75,13 +75,13 @@ func sort[K any](target ottl.Getter[K], order string) ottl.ExprFunc[K] {
 			return sortSlice(slice, order)
 		case []string:
 			dup := makeCopy(v)
-			return sortTypedSlice(dup, order), nil
+			return sortTypedSlice(dup, order)
 		case []int64:
 			dup := makeCopy(v)
-			return sortTypedSlice(dup, order), nil
+			return sortTypedSlice(dup, order)
 		case []float64:
 			dup := makeCopy(v)
-			return sortTypedSlice(dup, order), nil
+			return sortTypedSlice(dup, order)
 		case []bool:
 			var strings []string
 			for _, b := range v {
@@ -90,12 +90,14 @@ func sort[K any](target ottl.Getter[K], order string) ottl.ExprFunc[K] {
 
 			sortTypedSlice(strings, order)
 
-			bools := make([]bool, len(strings))
-			for i, s := range strings {
+			pSBools := pcommon.NewSlice()
+			pSBools.EnsureCapacity(len(strings))
+
+			for _, s := range strings {
 				boolValue, _ := strconv.ParseBool(s)
-				bools[i] = boolValue
+				pSBools.AppendEmpty().SetBool(boolValue)
 			}
-			return bools, nil
+			return pSBools, nil
 		default:
 			return nil, fmt.Errorf("sort with unsupported type: '%T'. Target is not a list", v)
 		}
@@ -109,7 +111,7 @@ func sort[K any](target ottl.Getter[K], order string) ottl.ExprFunc[K] {
 //   - order: The sort order. "asc" for ascending, "desc" for descending
 //
 // Returns:
-//   - A sorted slice as []any or the original pcommon.Slice
+//   - A sorted slice the original pcommon.Slice
 //   - An error if an unsupported type is encountered
 func sortSlice(slice pcommon.Slice, order string) (any, error) {
 	length := slice.Len()
@@ -127,7 +129,7 @@ func sortSlice(slice pcommon.Slice, order string) (any, error) {
 		arr := makeConvertedCopy(slice, func(idx int) int64 {
 			return slice.At(idx).Int()
 		})
-		return sortConvertedSlice(arr, order), nil
+		return sortConvertedSlice(arr, order)
 	case pcommon.ValueTypeDouble:
 		arr := makeConvertedCopy(slice, func(idx int) float64 {
 			s := slice.At(idx)
@@ -137,12 +139,12 @@ func sortSlice(slice pcommon.Slice, order string) (any, error) {
 
 			return s.Double()
 		})
-		return sortConvertedSlice(arr, order), nil
+		return sortConvertedSlice(arr, order)
 	case pcommon.ValueTypeStr:
 		arr := makeConvertedCopy(slice, func(idx int) string {
 			return slice.At(idx).AsString()
 		})
-		return sortConvertedSlice(arr, order), nil
+		return sortConvertedSlice(arr, order)
 	default:
 		return nil, fmt.Errorf("sort with unsupported type: '%T'", commonType)
 	}
@@ -204,9 +206,9 @@ func makeCopy[T targetType](src []T) []T {
 	return dup
 }
 
-func sortTypedSlice[T targetType](arr []T, order string) []T {
+func sortTypedSlice[T targetType](arr []T, order string) (pcommon.Slice, error) {
 	if len(arr) == 0 {
-		return arr
+		return pcommon.Slice{}, nil
 	}
 
 	slices.SortFunc(arr, func(a, b T) int {
@@ -216,7 +218,15 @@ func sortTypedSlice[T targetType](arr []T, order string) []T {
 		return cmp.Compare(a, b)
 	})
 
-	return arr
+	pSlice := pcommon.NewSlice()
+	pSlice.EnsureCapacity(len(arr))
+	for _, val := range arr {
+		err := pSlice.AppendEmpty().FromRaw(val)
+		if err != nil {
+			return pcommon.Slice{}, fmt.Errorf("failed to sort slice: %w", err)
+		}
+	}
+	return pSlice, nil
 }
 
 type convertedValue[T targetType] struct {
@@ -241,7 +251,7 @@ func makeConvertedCopy[T targetType](slice pcommon.Slice, converter func(idx int
 	return out
 }
 
-func sortConvertedSlice[T targetType](cvs []convertedValue[T], order string) []any {
+func sortConvertedSlice[T targetType](cvs []convertedValue[T], order string) (pcommon.Slice, error) {
 	slices.SortFunc(cvs, func(a, b convertedValue[T]) int {
 		if order == sortDesc {
 			return cmp.Compare(b.value, a.value)
@@ -249,10 +259,15 @@ func sortConvertedSlice[T targetType](cvs []convertedValue[T], order string) []a
 		return cmp.Compare(a.value, b.value)
 	})
 
-	out := make([]any, 0, len(cvs))
+	out := pcommon.NewSlice()
+	out.EnsureCapacity(len(cvs))
+
 	for _, cv := range cvs {
-		out = append(out, cv.originalValue)
+		err := out.AppendEmpty().FromRaw(cv.originalValue)
+		if err != nil {
+			return pcommon.Slice{}, fmt.Errorf("failed to convert value: '%w'", err)
+		}
 	}
 
-	return out
+	return out, nil
 }
