@@ -964,6 +964,46 @@ func TestCreateDirectoryOption(t *testing.T) {
 	})
 }
 
+func TestFileExporterPermissions(t *testing.T) {
+	tests := []struct {
+		name     string
+		rotation *Rotation
+	}{
+		{
+			name:     "without rotation",
+			rotation: nil,
+		},
+		{
+			name: "with rotation",
+			rotation: &Rotation{
+				MaxMegabytes: 1,
+				MaxBackups:   defaultMaxBackups,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := tempFileName(t)
+			fe := &fileExporter{
+				conf: &Config{
+					Path:       path,
+					FormatType: formatTypeJSON,
+					Rotation:   tt.rotation,
+				},
+			}
+
+			require.NoError(t, fe.Start(t.Context(), componenttest.NewNopHost()))
+			require.NoError(t, fe.consumeLogs(t.Context(), testdata.GenerateLogsTwoLogRecordsSameResource()))
+			require.NoError(t, fe.Shutdown(t.Context()))
+
+			info, err := os.Stat(path)
+			require.NoError(t, err)
+			assert.Equal(t, os.FileMode(0o644), info.Mode().Perm())
+		})
+	}
+}
+
 func TestFileAppendLogsExporter(t *testing.T) {
 	type args struct {
 		conf        *Config
