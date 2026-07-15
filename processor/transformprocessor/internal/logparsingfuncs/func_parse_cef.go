@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -58,10 +57,42 @@ type cefHeader struct {
 	severity           string
 }
 
-// cefExtensionKeyRegex finds extension key=value boundaries. Keys
-// must start with an alphanumeric character or underscore; keys are separated from preceding
-// key=value pairs by a single space.
-var cefExtensionKeyRegex = regexp.MustCompile(`(?:^| )([A-Za-z0-9_]+)=`)
+// isCEFKeyChar reports whether c may appear in a CEF extension key. Keys
+// consist of ASCII alphanumerics and underscores.
+func isCEFKeyChar(c byte) bool {
+	return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_'
+}
+
+// cefKeyLen returns the length of the CEF extension key starting at extension[i]
+// followed by an `=`, or 0 if no valid key begins at that position. A key is a
+// run of key characters terminated by an `=`.
+func cefKeyLen(extension string, i int) int {
+	j := i
+	for j < len(extension) && isCEFKeyChar(extension[j]) {
+		j++
+	}
+	if j > i && j < len(extension) && extension[j] == '=' {
+		return j - i
+	}
+	return 0
+}
+
+// countCEFExtensionKeys counts the number of `key=` tokens in the extension so
+// the destination map can be sized once up front.
+func countCEFExtensionKeys(extension string) int {
+	count := 0
+	for i := 0; i < len(extension); {
+		if i == 0 || extension[i-1] == ' ' {
+			if keyLen := cefKeyLen(extension, i); keyLen > 0 {
+				count++
+				i += keyLen + 1
+				continue
+			}
+		}
+		i++
+	}
+	return count
+}
 
 func parseCEFMessage(message string) (pcommon.Map, error) {
 	cefStart := strings.Index(message, "CEF:")
@@ -199,20 +230,35 @@ func unescapeCEFValue(s string) string {
 }
 
 // parseCEFExtensions parses the extension portion of a CEF message directly
-// into dest as key/value pairs. Values may contain spaces; the parser uses the
-// position of the next `key=` token as the end of the current value.
+// into dest as key/value pairs. Keys are runs of alphanumerics and underscores
+// preceded by the start of the string or a space. Values may contain spaces and
+// extend until the next `key=` token or the end of the string.
 func parseCEFExtensions(extension string, dest pcommon.Map) {
-	matches := cefExtensionKeyRegex.FindAllStringSubmatchIndex(extension, -1)
-	dest.EnsureCapacity(len(matches))
+	dest.EnsureCapacity(countCEFExtensionKeys(extension))
 
-	for i, m := range matches {
-		key := extension[m[2]:m[3]]
-		valueStart := m[1]
-		valueEnd := len(extension)
-		if i+1 < len(matches) {
-			valueEnd = matches[i+1][0]
+	haveKey := false
+	var key string
+	var valueStart int
+
+	for i := 0; i < len(extension); {
+		if i == 0 || extension[i-1] == ' ' {
+			if keyLen := cefKeyLen(extension, i); keyLen > 0 {
+				if haveKey {
+					value := strings.TrimRight(extension[valueStart:i], " ")
+					dest.PutStr(key, unescapeCEFValue(value))
+				}
+				key = extension[i : i+keyLen]
+				valueStart = i + keyLen + 1
+				haveKey = true
+				i = valueStart
+				continue
+			}
 		}
-		value := strings.TrimRight(extension[valueStart:valueEnd], " ")
+		i++
+	}
+
+	if haveKey {
+		value := strings.TrimRight(extension[valueStart:], " ")
 		dest.PutStr(key, unescapeCEFValue(value))
 	}
 }
