@@ -4,7 +4,7 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: processor/awsecsattributes
+component: processor/aws_ecs_attributes
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Rename the component identifier from `awsecsattributes` to `aws_ecs_attributes` to follow the component naming guidelines.
