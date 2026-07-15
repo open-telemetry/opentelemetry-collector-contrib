@@ -13,7 +13,7 @@ import (
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 )
 
-// Detect calls sdkDetector.Detect and copies the returned attributes to a pcommon.Resource. 
+// Detect calls sdkDetector.Detect and copies the returned attributes to a pcommon.Resource.
 // Only attributes whose key appears in enabledAttrs with a true value are included. Returns an empty
 // resource when the detector determines the process is not running on the
 // target platform.
