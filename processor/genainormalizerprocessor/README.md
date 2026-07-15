@@ -27,6 +27,7 @@ Any other `name` is a [user-defined source](#user-defined-sources): the entry's 
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
+| `overwrite_schema_url` | bool | `false` | When `true`, replace an existing scope schema URL after normalization writes an attribute. |
 | `sources` | list of [source](#source) | _required_ | Ordered list of sources to normalize. At least one must be specified. Each span is processed by every source in the order given. |
 
 ### Source
@@ -56,7 +57,7 @@ The following are not modified:
 
 ### Schema URL
 
-When a mapping fires on a span, the enclosing `ScopeSpans.schema_url` is set to the OTel semantic-conventions version this processor targets (`https://opentelemetry.io/schemas/1.40.0`). An existing `schema_url` is overwritten. `ResourceSpans.schema_url` is never modified.
+When a normalization writes an attribute on a span, the enclosing `ScopeSpans.schema_url` is set to the OTel semantic-conventions version this processor targets (`https://opentelemetry.io/schemas/1.40.0`) if the scope does not already have a schema URL. By default, an existing `schema_url` is preserved because the scope may contain other attributes that still follow the original semantic conventions. Set `overwrite_schema_url: true` when the whole scope has already been normalized and the existing value should be replaced. A scope with no normalization writes is unchanged. `ResourceSpans.schema_url` is never modified.
 
 ### Type handling
 
@@ -79,6 +80,16 @@ Default configuration:
 ```yaml
 processors:
   gen_ai_normalizer:
+    sources:
+      - name: openinference
+```
+
+Overwrite an existing scope schema URL after normalization writes an attribute:
+
+```yaml
+processors:
+  gen_ai_normalizer:
+    overwrite_schema_url: true
     sources:
       - name: openinference
 ```
@@ -216,7 +227,7 @@ Roles are constrained to the GenAI semconv enum: `system`, `user`, `assistant`, 
 
 ##### GenAI semconv part types not produced
 
-The following part types are defined in the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-input-messages.json) and [output messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-output-messages.json) but are not emitted by this processor:
+The following part types are defined in the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/model/gen-ai/gen-ai-input-messages.json) and [output messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/model/gen-ai/gen-ai-output-messages.json) but are not emitted by this processor:
 
 | Part type | Applies to | Reason not produced |
 |-----------|------------|---------------------|
@@ -232,7 +243,7 @@ The following part types are defined in the [GenAI input messages schema](https:
 
 ##### Output format
 
-Messages are serialized as a JSON array of objects. Input messages (`gen_ai.input.messages`) follow the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-input-messages.json); output messages (`gen_ai.output.messages`) follow the [GenAI output messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-output-messages.json).
+Messages are serialized as a JSON array of objects. Input messages (`gen_ai.input.messages`) follow the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/model/gen-ai/gen-ai-input-messages.json); output messages (`gen_ai.output.messages`) follow the [GenAI output messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/model/gen-ai/gen-ai-output-messages.json).
 
 Example `gen_ai.input.messages`:
 
