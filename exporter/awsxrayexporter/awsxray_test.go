@@ -4,6 +4,7 @@
 package awsxrayexporter
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
@@ -12,6 +13,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
+	"github.com/aws/aws-sdk-go-v2/service/xray"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -22,9 +27,34 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry/telemetrytest"
 )
+
+type mockXRayClient struct {
+	putTraceSegmentsCalls int
+	lastPutTraceSegments  *xray.PutTraceSegmentsInput
+}
+
+var _ awsxray.XRayClient = (*mockXRayClient)(nil)
+
+func (m *mockXRayClient) PutTraceSegments(_ context.Context, params *xray.PutTraceSegmentsInput, _ ...func(*xray.Options)) (*xray.PutTraceSegmentsOutput, error) {
+	m.putTraceSegmentsCalls++
+	m.lastPutTraceSegments = params
+
+	return nil, &awshttp.ResponseError{
+		ResponseError: &smithyhttp.ResponseError{
+			Response: &smithyhttp.Response{
+				Response: &http.Response{StatusCode: http.StatusBadRequest},
+			},
+		},
+	}
+}
+
+func (*mockXRayClient) PutTelemetryRecords(context.Context, *xray.PutTelemetryRecordsInput, ...func(*xray.Options)) (*xray.PutTelemetryRecordsOutput, error) {
+	return nil, nil
+}
 
 func TestTraceExport(t *testing.T) {
 	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
@@ -83,8 +113,8 @@ func TestTelemetryEnabled(t *testing.T) {
 
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
-	cfg.Endpoint = ts.URL
-	traceExporter, err := newTracesExporter(t.Context(), cfg, set, registry)
+	client := &mockXRayClient{}
+	traceExporter, err := newTracesExporterWithClient(t.Context(), cfg, set, registry, aws.Config{}, client)
 	assert.NoError(t, err)
 	ctx := t.Context()
 	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
@@ -95,6 +125,9 @@ func TestTelemetryEnabled(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualValues(t, 1, sink.StartCount.Load())
 	assert.EqualValues(t, 1, sink.StopCount.Load())
+	assert.Equal(t, 1, client.putTraceSegmentsCalls)
+	require.NotNil(t, client.lastPutTraceSegments)
+	require.NotEmpty(t, client.lastPutTraceSegments.TraceSegmentDocuments)
 	assert.True(t, sink.HasRecording())
 	got := sink.Rotate()
 	assert.True(t, *got.BackendConnectionErrors.HTTPCode4XXCount == 1 || *got.BackendConnectionErrors.OtherCount == 1)

@@ -66,6 +66,9 @@ properties:
   password:
     description: Password is the authentication password.
     $ref: go.opentelemetry.io/collector/config/configopaque.string
+  profiles_table_name:
+    description: ProfilesTableName is the table name for profiles. default is `otel_profiles`.
+    type: string
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config

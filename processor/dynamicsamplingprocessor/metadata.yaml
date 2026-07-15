@@ -1,0 +1,66 @@
+type: dynamic_sampling
+display_name: Dynamic Sampling Processor
+description: |
+  The Dynamic Sampling Processor performs adaptive trace sampling using first-match
+  rules-based routing to dynamic samplers. Each sampler produces a known sample rate
+  which is encoded as `ot=th` in W3C TraceState for correct downstream metric weighting.
+
+status:
+  class: processor
+  stability:
+    development: [traces]
+  distributions: []
+  codeowners:
+    active: [MikeGoldsmith, VinozzZ, jmacd]
+
+tests:
+  config:
+
+telemetry:
+  metrics:
+    processor_dynamic_sampling_decision_sample_rate:
+      enabled: true
+      description: Distribution of effective sample rates produced per rule. Useful for detecting adaptive samplers settling at unexpected rates.
+      unit: "{rate}"
+      histogram:
+        value_type: int
+      stability: development
+    processor_dynamic_sampling_decision_triggers:
+      enabled: true
+      description: Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout).
+      unit: "{decisions}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_dynamic_sampling_traces_active:
+      enabled: true
+      description: Number of traces currently in the accumulation buffer awaiting a decision.
+      unit: "{traces}"
+      gauge:
+        value_type: int
+      stability: development
+    processor_dynamic_sampling_traces_dropped:
+      enabled: true
+      description: Number of traces that were dropped, labelled by the rule that selected them.
+      unit: "{traces}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_dynamic_sampling_traces_evicted:
+      enabled: true
+      description: Number of traces evicted from the buffer before a decision could be made.
+      unit: "{traces}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_dynamic_sampling_traces_sampled:
+      enabled: true
+      description: Number of traces that were sampled, labelled by the rule that selected them.
+      unit: "{traces}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development

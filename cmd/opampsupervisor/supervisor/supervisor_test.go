@@ -328,6 +328,191 @@ service:
 	}
 }
 
+func newCollectorCrashLogTestSupervisor(t *testing.T, passthroughLogs bool) *Supervisor {
+	cfg := config.DefaultSupervisor()
+	cfg.Storage.Directory = t.TempDir()
+	cfg.Agent.PassthroughLogs = passthroughLogs
+	cfg.Agent.CollectorCrashLogSnippetKiB = 4
+	return &Supervisor{
+		config:            cfg,
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+}
+
+func TestCollectorCrashLogSnippet(t *testing.T) {
+	s := newCollectorCrashLogTestSupervisor(t, false)
+
+	require.Empty(t, s.collectorCrashLogSnippet())
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	logContent := "collector failed to start"
+	require.NoError(t, os.WriteFile(logPath, []byte(logContent+"\n"), 0o600))
+
+	require.Equal(t, logContent, s.collectorCrashLogSnippet())
+}
+
+func TestCollectorCrashLogSnippetDisabled(t *testing.T) {
+	s := newCollectorCrashLogTestSupervisor(t, false)
+	s.config.Agent.CollectorCrashLogSnippetKiB = 0
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	require.NoError(t, os.WriteFile(logPath, []byte("collector failed to start\n"), 0o600))
+
+	require.Empty(t, s.collectorCrashLogSnippet())
+}
+
+func TestCollectorCrashLogSnippetReturnsRawTail(t *testing.T) {
+	s := newCollectorCrashLogTestSupervisor(t, false)
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	logContent := "INFO collector starting\nlevel=error msg=\"boom\" component=receiver\nDEBUG tear down"
+	require.NoError(t, os.WriteFile(logPath, []byte(logContent), 0o600))
+
+	require.Equal(t, logContent, s.collectorCrashLogSnippet())
+}
+
+func TestCollectorCrashLogSnippetDropsInvalidUTF8(t *testing.T) {
+	s := newCollectorCrashLogTestSupervisor(t, false)
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	require.NoError(t, os.WriteFile(logPath, []byte{'o', 'k', 0xff, '\n'}, 0o600))
+
+	require.Equal(t, "ok", s.collectorCrashLogSnippet())
+}
+
+func TestAppendCollectorCrashDetails(t *testing.T) {
+	t.Run("no snippet", func(t *testing.T) {
+		s := newCollectorCrashLogTestSupervisor(t, false)
+		const base = "collector crashed"
+		require.Equal(t, base, s.appendCollectorCrashDetails(base))
+	})
+
+	t.Run("with snippet", func(t *testing.T) {
+		s := newCollectorCrashLogTestSupervisor(t, false)
+		logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+		require.NoError(t, os.WriteFile(logPath, []byte("oops\nstacktrace"), 0o600))
+
+		msg := s.appendCollectorCrashDetails("collector crashed")
+		require.Contains(t, msg, "Collector log tail:")
+		require.Contains(t, msg, "oops\nstacktrace")
+	})
+}
+
+func TestReadFileTailDropsPartialLine(t *testing.T) {
+	logPath := filepath.Join(t.TempDir(), "agent.log")
+	require.NoError(t, os.WriteFile(logPath, []byte("first\nsecond\n"), 0o600))
+
+	data, err := readFileTail(logPath, 8)
+	require.NoError(t, err)
+	require.Equal(t, "second\n", string(data))
+}
+
+func TestCollectorCrashLogSnippetPassthroughLogs(t *testing.T) {
+	s := newCollectorCrashLogTestSupervisor(t, true)
+
+	s.appendPassthroughLogLine(`{"level":"error","msg":"boom"}`)
+	s.appendPassthroughLogLine("panic: boom")
+
+	require.Equal(t, "{\"level\":\"error\",\"msg\":\"boom\"}\npanic: boom", s.collectorCrashLogSnippet())
+}
+
+func TestCollectorCrashLogSnippetPassthroughLogsWithLiveCommander(t *testing.T) {
+	s := newCollectorCrashLogTestSupervisor(t, true)
+
+	cmdr, err := commander.NewCommander(
+		zap.NewNop(),
+		filepath.Join(s.config.Storage.Directory, agentLogFileName),
+		s.config.Agent,
+	)
+	require.NoError(t, err)
+	s.commander = cmdr
+	cmdr.SetPassthroughLogHook(s.appendPassthroughLogLine)
+
+	s.appendPassthroughLogLine(`{"level":"error","msg":"boom"}`)
+	s.appendPassthroughLogLine("panic: boom")
+
+	require.Equal(t, "{\"level\":\"error\",\"msg\":\"boom\"}\npanic: boom", s.collectorCrashLogSnippet())
+}
+
+func TestCollectorCrashLogSnippetPassthroughLogsClearedBetweenStarts(t *testing.T) {
+	s := newCollectorCrashLogTestSupervisor(t, true)
+
+	s.appendPassthroughLogLine(`{"level":"error","msg":"previous run"}`)
+	require.Contains(t, s.appendCollectorCrashDetails("collector crashed"), "previous run")
+
+	s.resetPassthroughLogBuffer()
+	require.Equal(t, "collector crashed", s.appendCollectorCrashDetails("collector crashed"))
+}
+
+func TestHandleRestartCommandClearsPassthroughLogs(t *testing.T) {
+	cmdr, err := commander.NewCommander(
+		zap.NewNop(),
+		filepath.Join(t.TempDir(), agentLogFileName),
+		config.Agent{
+			Executable:      os.Args[0],
+			PassthroughLogs: true,
+			Env: map[string]string{
+				supervisorRestartHelperEnv: "sleep",
+			},
+		},
+	)
+	require.NoError(t, err)
+
+	s := &Supervisor{
+		runCtx:            t.Context(),
+		commander:         cmdr,
+		config:            config.Supervisor{Agent: config.Agent{PassthroughLogs: true, CollectorCrashLogSnippetKiB: 4}},
+		telemetrySettings: newNopTelemetrySettings(),
+		agentReadyChan:    make(chan struct{}, 1),
+	}
+	cmdr.SetPassthroughLogHook(s.appendPassthroughLogLine)
+
+	s.appendPassthroughLogLine(`{"level":"error","msg":"previous run"}`)
+	require.NoError(t, cmdr.Start(t.Context()))
+	t.Cleanup(func() {
+		require.NoError(t, cmdr.Stop(t.Context()))
+	})
+
+	require.NoError(t, s.handleRestartCommand())
+	require.Equal(t, "collector crashed", s.appendCollectorCrashDetails("collector crashed"))
+}
+
+func TestHandleRestartCommandClearsPassthroughShutdownLogsBeforeRestart(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows because the helper uses os.Interrupt")
+	}
+
+	cmdr, err := commander.NewCommander(
+		zap.NewNop(),
+		filepath.Join(t.TempDir(), agentLogFileName),
+		config.Agent{
+			Executable:      os.Args[0],
+			PassthroughLogs: true,
+			Env: map[string]string{
+				supervisorRestartHelperEnv: "emit-on-interrupt",
+			},
+		},
+	)
+	require.NoError(t, err)
+
+	s := &Supervisor{
+		runCtx:            t.Context(),
+		commander:         cmdr,
+		config:            config.Supervisor{Agent: config.Agent{PassthroughLogs: true, CollectorCrashLogSnippetKiB: 4}},
+		telemetrySettings: newNopTelemetrySettings(),
+		agentReadyChan:    make(chan struct{}, 1),
+	}
+	cmdr.SetPassthroughLogHook(s.appendPassthroughLogLine)
+
+	require.NoError(t, cmdr.Start(t.Context()))
+	t.Cleanup(func() {
+		require.NoError(t, cmdr.Stop(t.Context()))
+	})
+
+	require.NoError(t, s.handleRestartCommand())
+	require.Equal(t, "collector crashed", s.appendCollectorCrashDetails("collector crashed"))
+}
+
 func TestComposeAgentConfigFilesBranches(t *testing.T) {
 	t.Run("ignores unreadable and invalid local configs", func(t *testing.T) {
 		validCfg := filepath.Join(t.TempDir(), "valid.yaml")
@@ -2521,7 +2706,7 @@ func newComposeMergedConfigTestSupervisor(t *testing.T, executablePath string, v
 
 	require.NoError(t, s.createTemplates())
 
-	cmdr, err := commander.NewCommander(zap.NewNop(), s.config.Storage.Directory, s.config.Agent)
+	cmdr, err := commander.NewCommander(zap.NewNop(), filepath.Join(s.config.Storage.Directory, agentLogFileName), s.config.Agent)
 	require.NoError(t, err)
 	s.commander = cmdr
 
