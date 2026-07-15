@@ -16,8 +16,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/v2"
 	"github.com/huandu/go-clone"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -630,6 +630,7 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 			)
 			logFields := []zap.Field{
 				zap.Any("metrics", metricsByGrain.metrics[start:end]),
+				zap.String("metrics_namespace", compositeKey.namespace),
 				zap.String("dimensions", compositeKey.dimensions),
 				zap.String("aggregations", compositeKey.aggregations),
 				zap.String("timegrain", compositeKey.timeGrain),

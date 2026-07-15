@@ -51,15 +51,16 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	// "All Samples for a Profile SHOULD have the same shape."
 	for profileIdx := range numProfiles {
 		prof := pprofiles.At(profileIdx)
-		if prof.Samples().Len() == 0 {
+		samples := prof.Samples()
+		if samples.Len() == 0 {
 			continue
 		}
-		firstShape, err := sampleShapeOf(prof.Samples().At(0))
+		firstShape, err := sampleShapeOf(samples.At(0))
 		if err != nil {
 			return nil, fmt.Errorf("profile %d, sample 0: %w", profileIdx, err)
 		}
-		for sampleIdx := 1; sampleIdx < prof.Samples().Len(); sampleIdx++ {
-			shape, err := sampleShapeOf(prof.Samples().At(sampleIdx))
+		for sampleIdx := 1; sampleIdx < samples.Len(); sampleIdx++ {
+			shape, err := sampleShapeOf(samples.At(sampleIdx))
 			if err != nil {
 				return nil, fmt.Errorf("profile %d, sample %d: %w", profileIdx, sampleIdx, err)
 			}
@@ -98,6 +99,7 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	var attrErr error
 
 	// Convert profiles samples into pprof samples.
+	valuesByProfile := make([][]int64, numProfiles)
 	for sampleIdx, s := range p.Samples().All() {
 		si := s.StackIndex()
 		stack := src.Dictionary().StackTable().At(int(si))
@@ -107,7 +109,6 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		// Profiles uses the first profile as default. Therefore, swap first and last.
 		// All profiles must produce the same number of observations for a given sample.
 		var obsCount int
-		valuesByProfile := make([][]int64, numProfiles)
 		for i := range numProfiles {
 			// Swap first and last: first OTel profile becomes last pprof sample type
 			var mappedIdx int
@@ -120,7 +121,11 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 				mappedIdx = i
 			}
 			otlpSample := pprofiles.At(mappedIdx).Samples().At(sampleIdx)
-			vals, err := sampleToPprofValues(otlpSample)
+			shape, err := sampleShapeOf(otlpSample)
+			if err != nil {
+				return nil, err
+			}
+			vals, err := sampleToPprofValues(otlpSample, shape)
 			if err != nil {
 				return nil, err
 			}
@@ -134,7 +139,7 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 
 		// Build the shared location list once; all expanded pprof samples for
 		// this OTLP sample reference the same stack.
-		var locations []*profile.Location
+		locations := make([]*profile.Location, 0, stack.LocationIndices().Len())
 		for _, li := range stack.LocationIndices().All() {
 			loc := src.Dictionary().LocationTable().At(int(li))
 			var locMapping *profile.Mapping
@@ -176,9 +181,12 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		// OTLP sample into multiple pprof samples (one per timestamp); shape 2
 		// always produces exactly one.
 		for obsIdx := range obsCount {
-			pprofSample := profile.Sample{Location: locations}
+			pprofSample := profile.Sample{
+				Location: locations,
+				Value:    make([]int64, numProfiles),
+			}
 			for profIdx := range numProfiles {
-				pprofSample.Value = append(pprofSample.Value, valuesByProfile[profIdx][obsIdx])
+				pprofSample.Value[profIdx] = valuesByProfile[profIdx][obsIdx]
 			}
 			dst.Sample = append(dst.Sample, &pprofSample)
 		}
@@ -289,21 +297,18 @@ func sampleShapeOf(s pprofile.Sample) (sampleShape, error) {
 // The caller emits one pprof Sample per returned element, all sharing the same
 // location list. This matches the pprof proto convention where aggregation is
 // done by summing samples that share the same stack, not by pre-collapsing.
-func sampleToPprofValues(s pprofile.Sample) ([]int64, error) {
-	shape, err := sampleShapeOf(s)
-	if err != nil {
-		return nil, err
-	}
+func sampleToPprofValues(s pprofile.Sample, shape sampleShape) ([]int64, error) {
 	switch shape {
 	case timestampsOnly:
 		return []int64{int64(s.TimestampsUnixNano().Len())}, nil
 	case singleAggregate:
 		return []int64{s.Values().At(0)}, nil
 	case perObservation:
-		nValues := s.Values().Len()
+		sv := s.Values()
+		nValues := sv.Len()
 		vals := make([]int64, nValues)
 		for i := range nValues {
-			vals[i] = s.Values().At(i)
+			vals[i] = sv.At(i)
 		}
 		return vals, nil
 	default:

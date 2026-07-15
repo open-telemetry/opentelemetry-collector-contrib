@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -97,6 +98,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []PostgresqlOperationsMetricAttributeKey{PostgresqlOperationsMetricAttributeKeyOperation},
 					},
+					PostgresqlQueryConflicts: PostgresqlQueryConflictsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlQueryConflictsMetricAttributeKey{PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType},
+					},
 					PostgresqlReplicationDataDelay: PostgresqlReplicationDataDelayMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
@@ -158,11 +164,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: true},
-					PostgresqlIndexName:    ResourceAttributeConfig{Enabled: true},
-					PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: true},
-					PostgresqlTableName:    ResourceAttributeConfig{Enabled: true},
-					ServiceInstanceID:      ResourceAttributeConfig{Enabled: true},
+					PostgresqlDatabaseName: PostgresqlDatabaseNameResourceAttributeConfig{Enabled: true},
+					PostgresqlIndexName:    PostgresqlIndexNameResourceAttributeConfig{Enabled: true},
+					PostgresqlSchemaName:   PostgresqlSchemaNameResourceAttributeConfig{Enabled: true},
+					PostgresqlTableName:    PostgresqlTableNameResourceAttributeConfig{Enabled: true},
+					ServiceInstanceID:      ServiceInstanceIDResourceAttributeConfig{Enabled: true},
+					ServiceName:            ServiceNameResourceAttributeConfig{Enabled: true},
+					ServiceNamespace:       ServiceNamespaceResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -241,6 +249,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []PostgresqlOperationsMetricAttributeKey{PostgresqlOperationsMetricAttributeKeyOperation},
 					},
+					PostgresqlQueryConflicts: PostgresqlQueryConflictsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlQueryConflictsMetricAttributeKey{PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType},
+					},
 					PostgresqlReplicationDataDelay: PostgresqlReplicationDataDelayMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
@@ -302,11 +315,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: false},
-					PostgresqlIndexName:    ResourceAttributeConfig{Enabled: false},
-					PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: false},
-					PostgresqlTableName:    ResourceAttributeConfig{Enabled: false},
-					ServiceInstanceID:      ResourceAttributeConfig{Enabled: false},
+					PostgresqlDatabaseName: PostgresqlDatabaseNameResourceAttributeConfig{Enabled: false},
+					PostgresqlIndexName:    PostgresqlIndexNameResourceAttributeConfig{Enabled: false},
+					PostgresqlSchemaName:   PostgresqlSchemaNameResourceAttributeConfig{Enabled: false},
+					PostgresqlTableName:    PostgresqlTableNameResourceAttributeConfig{Enabled: false},
+					ServiceInstanceID:      ServiceInstanceIDResourceAttributeConfig{Enabled: false},
+					ServiceName:            ServiceNameResourceAttributeConfig{Enabled: false},
+					ServiceNamespace:       ServiceNamespaceResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -314,7 +329,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(PostgresqlBackendsMetricConfig{}, PostgresqlBgwriterBuffersAllocatedMetricConfig{}, PostgresqlBgwriterBuffersWritesMetricConfig{}, PostgresqlBgwriterCheckpointCountMetricConfig{}, PostgresqlBgwriterDurationMetricConfig{}, PostgresqlBgwriterMaxwrittenMetricConfig{}, PostgresqlBlksHitMetricConfig{}, PostgresqlBlksReadMetricConfig{}, PostgresqlBlocksReadMetricConfig{}, PostgresqlCommitsMetricConfig{}, PostgresqlConnectionMaxMetricConfig{}, PostgresqlDatabaseCountMetricConfig{}, PostgresqlDatabaseLocksMetricConfig{}, PostgresqlDbSizeMetricConfig{}, PostgresqlDeadlocksMetricConfig{}, PostgresqlFunctionCallsMetricConfig{}, PostgresqlIndexScansMetricConfig{}, PostgresqlIndexSizeMetricConfig{}, PostgresqlOperationsMetricConfig{}, PostgresqlReplicationDataDelayMetricConfig{}, PostgresqlRollbacksMetricConfig{}, PostgresqlRowsMetricConfig{}, PostgresqlSequentialScansMetricConfig{}, PostgresqlTableCountMetricConfig{}, PostgresqlTableSizeMetricConfig{}, PostgresqlTableVacuumCountMetricConfig{}, PostgresqlTempIoMetricConfig{}, PostgresqlTempFilesMetricConfig{}, PostgresqlTupDeletedMetricConfig{}, PostgresqlTupFetchedMetricConfig{}, PostgresqlTupInsertedMetricConfig{}, PostgresqlTupReturnedMetricConfig{}, PostgresqlTupUpdatedMetricConfig{}, PostgresqlWalAgeMetricConfig{}, PostgresqlWalDelayMetricConfig{}, PostgresqlWalLagMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(PostgresqlBackendsMetricConfig{}, PostgresqlBgwriterBuffersAllocatedMetricConfig{}, PostgresqlBgwriterBuffersWritesMetricConfig{}, PostgresqlBgwriterCheckpointCountMetricConfig{}, PostgresqlBgwriterDurationMetricConfig{}, PostgresqlBgwriterMaxwrittenMetricConfig{}, PostgresqlBlksHitMetricConfig{}, PostgresqlBlksReadMetricConfig{}, PostgresqlBlocksReadMetricConfig{}, PostgresqlCommitsMetricConfig{}, PostgresqlConnectionMaxMetricConfig{}, PostgresqlDatabaseCountMetricConfig{}, PostgresqlDatabaseLocksMetricConfig{}, PostgresqlDbSizeMetricConfig{}, PostgresqlDeadlocksMetricConfig{}, PostgresqlFunctionCallsMetricConfig{}, PostgresqlIndexScansMetricConfig{}, PostgresqlIndexSizeMetricConfig{}, PostgresqlOperationsMetricConfig{}, PostgresqlQueryConflictsMetricConfig{}, PostgresqlReplicationDataDelayMetricConfig{}, PostgresqlRollbacksMetricConfig{}, PostgresqlRowsMetricConfig{}, PostgresqlSequentialScansMetricConfig{}, PostgresqlTableCountMetricConfig{}, PostgresqlTableSizeMetricConfig{}, PostgresqlTableVacuumCountMetricConfig{}, PostgresqlTempIoMetricConfig{}, PostgresqlTempFilesMetricConfig{}, PostgresqlTupDeletedMetricConfig{}, PostgresqlTupFetchedMetricConfig{}, PostgresqlTupInsertedMetricConfig{}, PostgresqlTupReturnedMetricConfig{}, PostgresqlTupUpdatedMetricConfig{}, PostgresqlWalAgeMetricConfig{}, PostgresqlWalDelayMetricConfig{}, PostgresqlWalLagMetricConfig{}, PostgresqlDatabaseNameResourceAttributeConfig{}, PostgresqlIndexNameResourceAttributeConfig{}, PostgresqlSchemaNameResourceAttributeConfig{}, PostgresqlTableNameResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -404,6 +419,18 @@ func TestPostgresqlOperationsMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
+func TestPostgresqlQueryConflictsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlQueryConflicts
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlQueryConflictsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.query.conflicts doesn't have an attribute invalid, valid attributes: [postgresql.conflict.type]")
+
+	cfg = DefaultMetricsConfig().PostgresqlQueryConflicts
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func TestPostgresqlReplicationDataDelayMetricsConfig_Validate(t *testing.T) {
 	cfg := DefaultMetricsConfig().PostgresqlReplicationDataDelay
 	require.NoError(t, cfg.Validate())
@@ -484,31 +511,46 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: true},
-				PostgresqlIndexName:    ResourceAttributeConfig{Enabled: true},
-				PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: true},
-				PostgresqlTableName:    ResourceAttributeConfig{Enabled: true},
-				ServiceInstanceID:      ResourceAttributeConfig{Enabled: true},
+				PostgresqlDatabaseName: PostgresqlDatabaseNameResourceAttributeConfig{Enabled: true},
+				PostgresqlIndexName:    PostgresqlIndexNameResourceAttributeConfig{Enabled: true},
+				PostgresqlSchemaName:   PostgresqlSchemaNameResourceAttributeConfig{Enabled: true},
+				PostgresqlTableName:    PostgresqlTableNameResourceAttributeConfig{Enabled: true},
+				ServiceInstanceID:      ServiceInstanceIDResourceAttributeConfig{Enabled: true},
+				ServiceName:            ServiceNameResourceAttributeConfig{Enabled: true},
+				ServiceNamespace:       ServiceNamespaceResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: false},
-				PostgresqlIndexName:    ResourceAttributeConfig{Enabled: false},
-				PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: false},
-				PostgresqlTableName:    ResourceAttributeConfig{Enabled: false},
-				ServiceInstanceID:      ResourceAttributeConfig{Enabled: false},
+				PostgresqlDatabaseName: PostgresqlDatabaseNameResourceAttributeConfig{Enabled: false},
+				PostgresqlIndexName:    PostgresqlIndexNameResourceAttributeConfig{Enabled: false},
+				PostgresqlSchemaName:   PostgresqlSchemaNameResourceAttributeConfig{Enabled: false},
+				PostgresqlTableName:    PostgresqlTableNameResourceAttributeConfig{Enabled: false},
+				ServiceInstanceID:      ServiceInstanceIDResourceAttributeConfig{Enabled: false},
+				ServiceName:            ServiceNameResourceAttributeConfig{Enabled: false},
+				ServiceNamespace:       ServiceNamespaceResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(PostgresqlDatabaseNameResourceAttributeConfig{}, PostgresqlIndexNameResourceAttributeConfig{}, PostgresqlSchemaNameResourceAttributeConfig{}, PostgresqlTableNameResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+
+func TestResourceAttributesOverrideConfig(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	assert.NotNil(t, cfg.PostgresqlDatabaseName.OverrideValue, "override_value should be set for postgresql.database.name")
+	assert.NotNil(t, cfg.PostgresqlIndexName.OverrideValue, "override_value should be set for postgresql.index.name")
+	assert.NotNil(t, cfg.PostgresqlSchemaName.OverrideValue, "override_value should be set for postgresql.schema.name")
+	assert.NotNil(t, cfg.PostgresqlTableName.OverrideValue, "override_value should be set for postgresql.table.name")
+	assert.NotNil(t, cfg.ServiceInstanceID.OverrideValue, "override_value should be set for service.instance.id")
+	assert.NotNil(t, cfg.ServiceName.OverrideValue, "override_value should be set for service.name")
+	assert.NotNil(t, cfg.ServiceNamespace.OverrideValue, "override_value should be set for service.namespace")
 }
 
 func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {

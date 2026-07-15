@@ -48,11 +48,12 @@ func TestScrape_UseMemAvailable(t *testing.T) {
 	scraper.recordMemoryUtilizationMetric(pcommon.NewTimestampFromTime(time.Now()), memInfo)
 	legacyMd := scraper.mb.Emit()
 
-	// Used memory calculation based on MemAvailable is greater than "Total
-	// - Free - Buffers - Cache" as it takes into account the amount of
-	// Cached memory that is not freeable.
-	assert.Greater(t, memUsedMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).IntValue(), legacyMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).IntValue(), "system.memory.usage for the used state should be greater when computed using memAvailable")
-	assert.Greater(t, memUsedMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).DoubleValue(), legacyMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).DoubleValue(), "system.memory.utilization for the used state should be greater when computed using memAvailable")
+	// The MemAvailable-based and legacy (Total - Free - Buffers - Cached) formulas
+	// produce different "used" values. MemAvailable accounts for reclaimable slab
+	// memory, so the direction of the difference depends on system state.
+	// We only assert that toggling the feature gate produces a different value.
+	assert.NotEqual(t, memUsedMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).IntValue(), legacyMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).IntValue(), "system.memory.usage should differ between MemAvailable and legacy formulas")
+	assert.NotEqual(t, memUsedMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).DoubleValue(), legacyMd.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).DoubleValue(), "system.memory.utilization should differ between MemAvailable and legacy formulas")
 }
 
 func TestScrape_SharedMemory(t *testing.T) {
