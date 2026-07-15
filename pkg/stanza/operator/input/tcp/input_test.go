@@ -464,6 +464,93 @@ func BenchmarkTCPInput(b *testing.B) {
 	close(done)
 }
 
+// TestTCPInput_PartialLineDiscardedOnShutdown verifies that a partial log line
+// that is still in flight when the operator is stopped is discarded rather than
+// emitted as a truncated (but seemingly complete) entry.
+func TestTCPInput_PartialLineDiscardedOnShutdown(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.ListenAddress = ":0"
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.Operator{}
+	tcpInput := op.(*Input)
+	tcpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+	entryChan := make(chan *entry.Entry, 1)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		entryChan <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = tcpInput.Start(testutil.NewUnscopedMockPersister())
+	require.NoError(t, err)
+
+	conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// Send a line without a terminating newline, simulating a sender that is
+	// mid-transmission. Give the operator time to read it into the scanner
+	// buffer so that the shutdown triggers the EOF flush path.
+	_, err = conn.Write([]byte("hello wor"))
+	require.NoError(t, err)
+	time.Sleep(100 * time.Millisecond)
+
+	// Graceful shutdown while the partial line is buffered.
+	require.NoError(t, tcpInput.Stop())
+
+	select {
+	case e := <-entryChan:
+		t.Fatalf("expected no entry to be emitted on shutdown, got: %q", e.Body)
+	case <-time.After(100 * time.Millisecond):
+	}
+}
+
+// TestTCPInput_FinalLineFlushedOnClientClose verifies that a final log line
+// without a trailing newline is still emitted when the client closes the
+// connection cleanly (as opposed to being dropped during shutdown).
+func TestTCPInput_FinalLineFlushedOnClientClose(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.ListenAddress = ":0"
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.Operator{}
+	tcpInput := op.(*Input)
+	tcpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+	entryChan := make(chan *entry.Entry, 1)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		entryChan <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = tcpInput.Start(testutil.NewUnscopedMockPersister())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, tcpInput.Stop())
+	}()
+
+	conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
+	require.NoError(t, err)
+
+	_, err = conn.Write([]byte("hello world"))
+	require.NoError(t, err)
+	// Close cleanly from the client side; the final unterminated line should be
+	// flushed as a complete entry.
+	require.NoError(t, conn.Close())
+
+	select {
+	case e := <-entryChan:
+		require.Equal(t, "hello world", e.Body)
+	case <-time.After(time.Second):
+		require.FailNow(t, "Timed out waiting for final line to be flushed")
+	}
+}
+
 func TestTCPInput_OneLogPerPacket_PartialReadError(t *testing.T) {
 	cfg := NewConfigWithID("test_id")
 	cfg.ListenAddress = ":0"
