@@ -6,11 +6,16 @@ all_set:
     apache.connections:
       enabled: true
       attributes: ["apache.connection.state"]
+    apache.connections.async:
+      enabled: true
+      attributes: ["connection_state"]
     apache.cpu.load:
       enabled: true
     apache.cpu.time:
       enabled: true
-      attributes: ["apache.process.level","cpu.mode"]
+      attributes: ["level","mode"]
+    apache.current_connections:
+      enabled: true
     apache.load.1:
       enabled: true
     apache.load.15:
@@ -21,6 +26,11 @@ all_set:
       enabled: true
     apache.request.time:
       enabled: true
+    apache.requests:
+      enabled: true
+    apache.scoreboard:
+      enabled: true
+      attributes: ["state"]
     apache.traffic:
       enabled: true
     apache.uptime:
@@ -29,9 +39,12 @@ all_set:
       enabled: true
     apache.worker.idle:
       enabled: true
-    apache.workers:
+    apache.worker.status:
       enabled: true
       attributes: ["apache.worker.state"]
+    apache.workers:
+      enabled: true
+      attributes: ["state"]
   resource_attributes:
     apache.server.name:
       enabled: true
@@ -44,11 +57,16 @@ reaggregate_set:
     apache.connections:
       enabled: true
       attributes: []
+    apache.connections.async:
+      enabled: true
+      attributes: []
     apache.cpu.load:
       enabled: true
     apache.cpu.time:
       enabled: true
       attributes: []
+    apache.current_connections:
+      enabled: true
     apache.load.1:
       enabled: true
     apache.load.15:
@@ -59,6 +77,11 @@ reaggregate_set:
       enabled: true
     apache.request.time:
       enabled: true
+    apache.requests:
+      enabled: true
+    apache.scoreboard:
+      enabled: true
+      attributes: []
     apache.traffic:
       enabled: true
     apache.uptime:
@@ -67,6 +90,9 @@ reaggregate_set:
       enabled: true
     apache.worker.idle:
       enabled: true
+    apache.worker.status:
+      enabled: true
+      attributes: []
     apache.workers:
       enabled: true
       attributes: []
@@ -82,11 +108,16 @@ none_set:
     apache.connections:
       enabled: false
       attributes: ["apache.connection.state"]
+    apache.connections.async:
+      enabled: false
+      attributes: ["connection_state"]
     apache.cpu.load:
       enabled: false
     apache.cpu.time:
       enabled: false
-      attributes: ["apache.process.level","cpu.mode"]
+      attributes: ["level","mode"]
+    apache.current_connections:
+      enabled: false
     apache.load.1:
       enabled: false
     apache.load.15:
@@ -97,6 +128,11 @@ none_set:
       enabled: false
     apache.request.time:
       enabled: false
+    apache.requests:
+      enabled: false
+    apache.scoreboard:
+      enabled: false
+      attributes: ["state"]
     apache.traffic:
       enabled: false
     apache.uptime:
@@ -105,9 +141,12 @@ none_set:
       enabled: false
     apache.worker.idle:
       enabled: false
-    apache.workers:
+    apache.worker.status:
       enabled: false
       attributes: ["apache.worker.state"]
+    apache.workers:
+      enabled: false
+      attributes: ["state"]
   resource_attributes:
     apache.server.name:
       enabled: false

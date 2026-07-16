@@ -23,8 +23,33 @@ resource_attributes:
     type: string
     enabled: true
 
+# Feature gates controlling the migration to the new, consistent metric and attribute
+# names. See the migration guide linked from the component README for details.
+# Default behavior (both gates disabled) emits the original names only.
+feature_gates:
+  - id: receiver.apache.disableOldFormatMetrics
+    stage: alpha
+    description: >-
+      When enabled, the receiver no longer emits the original metric and attribute names
+      (e.g. apache.requests, apache.scoreboard, and the mode/level/state attributes).
+      Requires receiver.apache.enableNewFormatMetrics to also be enabled.
+    from_version: v0.157.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47327
+    skip_strict_validation: true
+  - id: receiver.apache.enableNewFormatMetrics
+    stage: alpha
+    description: >-
+      When enabled, the receiver emits the new, consistently named metrics and attributes
+      (e.g. apache.request.count, apache.worker.status, cpu.mode) alongside the original ones.
+      See the migration guide linked from the component README for the full mapping.
+    from_version: v0.157.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47327
+    skip_strict_validation: true
+
+# Attributes marked (new) are emitted when receiver.apache.enableNewFormatMetrics is enabled.
+# All others are the original attributes, emitted by default.
 attributes:
-  apache.connection.state:
+  apache.connection.state: # (new)
     description: The asynchronous connection state reported by Apache's server-status.
     type: string
     requirement_level: recommended
@@ -32,14 +57,7 @@ attributes:
       - writing
       - keepalive
       - closing
-  apache.process.level:
-    description: Level of processes.
-    type: string
-    requirement_level: recommended
-    enum:
-      - self
-      - children
-  apache.worker.state:
+  apache.worker.state: # (new)
     description: The state of a worker.
     type: string
     requirement_level: recommended
@@ -56,16 +74,62 @@ attributes:
       - finishing
       - idle_cleanup
       - unknown
-  cpu.mode:
+  connection_state:
+    description: The asynchronous connection state reported by Apache's server-status.
+    type: string
+    requirement_level: recommended
+    enum:
+      - writing
+      - keepalive
+      - closing
+  cpu_level:
+    name_override: level
+    description: Level of processes.
+    type: string
+    requirement_level: recommended
+    enum:
+      - self
+      - children
+  cpu_mode:
+    name_override: mode
     description: Mode of processes.
     type: string
     requirement_level: recommended
     enum:
       - system
       - user
+  scoreboard_state:
+    name_override: state
+    description: The state of a connection.
+    type: string
+    requirement_level: recommended
+    enum:
+      - open
+      - waiting
+      - starting
+      - reading
+      - sending
+      - keepalive
+      - dnslookup
+      - closing
+      - logging
+      - finishing
+      - idle_cleanup
+      - unknown
+  workers_state:
+    name_override: state
+    description: The state of workers.
+    type: string
+    requirement_level: recommended
+    enum:
+      - busy
+      - idle
 
+# Metrics marked (new) are emitted when receiver.apache.enableNewFormatMetrics is enabled.
+# Metrics marked (old) are emitted by default and suppressed by receiver.apache.disableOldFormatMetrics.
+# Unmarked metrics are always emitted.
 metrics:
-  apache.connection.active:
+  apache.connection.active: # (new)
     enabled: true
     stability: development
     description: The number of active connections currently attached to the HTTP server.
@@ -76,7 +140,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: []
-  apache.connections:
+  apache.connections: # (new)
     enabled: true
     stability: development
     description: The number of connections in different asynchronous states reported by Apache's server-status.
@@ -85,6 +149,15 @@ metrics:
       value_type: int
       input_type: string
     attributes: [apache.connection.state]
+  apache.connections.async: # (old)
+    enabled: true
+    stability: development
+    description: The number of connections in different asynchronous states reported by Apache's server-status.
+    unit: "{connections}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [connection_state]
   apache.cpu.load:
     enabled: true
     stability: development
@@ -104,7 +177,18 @@ metrics:
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [apache.process.level, cpu.mode]
+    attributes: [cpu_level, cpu_mode]
+  apache.current_connections: # (old)
+    enabled: true
+    stability: development
+    description: The number of active connections currently attached to the HTTP server.
+    unit: "{connections}"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: []
   apache.load.1:
     enabled: true
     stability: development
@@ -132,7 +216,7 @@ metrics:
       value_type: double
       input_type: string
     attributes: []
-  apache.request.count:
+  apache.request.count: # (new)
     enabled: true
     stability: development
     description: The number of requests serviced by the HTTP server.
@@ -154,6 +238,31 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: []
+  apache.requests: # (old)
+    enabled: true
+    stability: development
+    description: The number of requests serviced by the HTTP server per second.
+    unit: "{requests}"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
+  apache.scoreboard: # (old)
+    enabled: true
+    stability: development
+    description: The number of workers in each state.
+    extended_documentation: >-
+      The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION)
+      is an encoded representation of the state of all the server's workers.
+      This metric decodes the scoreboard and presents a count of workers in each state.
+    unit: "{workers}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [scoreboard_state]
   apache.traffic:
     enabled: true
     stability: development
@@ -175,7 +284,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: []
-  apache.worker.active:
+  apache.worker.active: # (new)
     enabled: true
     stability: development
     description: The number of busy workers currently attached to the HTTP server.
@@ -186,7 +295,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: []
-  apache.worker.idle:
+  apache.worker.idle: # (new)
     enabled: true
     stability: development
     description: The number of idle workers currently attached to the HTTP server.
@@ -197,7 +306,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: []
-  apache.workers:
+  apache.worker.status: # (new)
     enabled: true
     stability: development
     description: The number of workers in each state.
@@ -211,3 +320,14 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [apache.worker.state]
+  apache.workers: # (old)
+    enabled: true
+    stability: development
+    description: The number of workers currently attached to the HTTP server.
+    unit: "{workers}"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [workers_state]

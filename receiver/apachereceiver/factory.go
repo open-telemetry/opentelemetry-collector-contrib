@@ -5,6 +5,7 @@ package apachereceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"time"
 
@@ -74,6 +75,12 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
+
+	if metadata.ReceiverApacheDisableOldFormatMetricsFeatureGate.IsEnabled() &&
+		!metadata.ReceiverApacheEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		return nil, errors.New("the receiver.apache.disableOldFormatMetrics feature gate requires receiver.apache.enableNewFormatMetrics to also be enabled")
+	}
+
 	serverName, port, err := parseResourceAttributes(cfg.Endpoint)
 	if err != nil {
 		return nil, err
