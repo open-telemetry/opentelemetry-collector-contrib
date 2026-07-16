@@ -125,39 +125,46 @@ const (
 	sqlnetBytesSentToClient          = "bytes sent via SQL*Net to client"
 	sqlnetBytesSentToDBLink          = "bytes sent via SQL*Net to dblink"
 
-	dbTimeStat                   = "DB time"
-	enqueueConversionsStat       = "enqueue conversions"
-	enqueueReleasesStat          = "enqueue releases"
-	enqueueRequestsStat          = "enqueue requests"
-	enqueueTimeoutsStat          = "enqueue timeouts"
-	enqueueWaitsStat             = "enqueue waits"
-	indexFastFullScansDirectStat = "index fast full scans (direct read)"
-	indexFastFullScansFullStat   = "index fast full scans (full)"
-	indexFastFullScansRowidStat  = "index fast full scans (rowid ranges)"
-	javaCallHeapLiveSize         = "java call heap live size"
-	javaCallHeapTotalSize        = "java call heap total size"
-	javaCallHeapUsedSize         = "java call heap used size"
-	lobReadsStat                 = "lob reads"
-	lobWritesStat                = "lob writes"
-	openedCursorsCurrentStat     = "opened cursors current"
-	osSwaps                      = "OS Swaps"
-	parseTimeCPUStat             = "parse time cpu"
-	parseTimeElapsedStat         = "parse time elapsed"
-	recursiveCallsStat           = "recursive calls"
-	recursiveCPUUsageStat        = "recursive cpu usage"
-	sessionCursorCacheCountStat  = "session cursor cache count"
-	sessionCursorCacheHitsStat   = "session cursor cache hits"
-	sessionNonIdleWaitCount      = "non-idle wait count"
-	sessionNonIdleWaitTime       = "non-idle wait time"
-	sessionStoredProcedureSpace  = "session stored procedure space"
-	sortsDiskStat                = "sorts (disk)"
-	sortsMemoryStat              = "sorts (memory)"
-	sortsRowsStat                = "sorts (rows)"
-	tableScanRowsGottenStat      = "table scan rows gotten"
-	tableScansDirectReadStat     = "table scans (direct read)"
-	tableScansLongTablesStat     = "table scans (long tables)"
-	tableScansRowidRangesStat    = "table scans (rowid ranges)"
-	userCallsStat                = "user calls"
+	dbTimeStat                    = "DB time"
+	enqueueConversionsStat        = "enqueue conversions"
+	enqueueReleasesStat           = "enqueue releases"
+	enqueueRequestsStat           = "enqueue requests"
+	enqueueTimeoutsStat           = "enqueue timeouts"
+	enqueueWaitsStat              = "enqueue waits"
+	gcCurrentBlockReceiveTime     = "gc current block receive time"
+	indexFastFullScansDirectStat  = "index fast full scans (direct read)"
+	indexFastFullScansFullStat    = "index fast full scans (full)"
+	indexFastFullScansRowidStat   = "index fast full scans (rowid ranges)"
+	javaCallHeapLiveSize          = "java call heap live size"
+	javaCallHeapTotalSize         = "java call heap total size"
+	javaCallHeapUsedSize          = "java call heap used size"
+	lobReadsStat                  = "lob reads"
+	lobWritesStat                 = "lob writes"
+	openedCursorsCurrentStat      = "opened cursors current"
+	osSwaps                       = "OS Swaps"
+	parseTimeCPUStat              = "parse time cpu"
+	parseTimeElapsedStat          = "parse time elapsed"
+	recoveryBlocksRead            = "recovery blocks read"
+	recursiveCallsStat            = "recursive calls"
+	recursiveCPUUsageStat         = "recursive cpu usage"
+	sessionCursorCacheCountStat   = "session cursor cache count"
+	sessionCursorCacheHitsStat    = "session cursor cache hits"
+	sessionNonIdleWaitCount       = "non-idle wait count"
+	sessionNonIdleWaitTime        = "non-idle wait time"
+	sessionStoredProcedureSpace   = "session stored procedure space"
+	smonInstanceRecoveryPosts     = "SMON posted for instance recovery"
+	smonTxnRecoveryPosts          = "SMON posted for txn recovery for other instances"
+	sortsDiskStat                 = "sorts (disk)"
+	sortsMemoryStat               = "sorts (memory)"
+	sortsRowsStat                 = "sorts (rows)"
+	tableScanRowsGottenStat       = "table scan rows gotten"
+	tableScansDirectReadStat      = "table scans (direct read)"
+	tableScansLongTablesStat      = "table scans (long tables)"
+	tableScansRowidRangesStat     = "table scans (rowid ranges)"
+	transactionLockBackgroundTime = "transaction lock background get time"
+	transactionLockForegroundTime = "transaction lock foreground wait time"
+	transactionRollbacks          = "transaction rollbacks"
+	userCallsStat                 = "user calls"
 
 	sessionCountSQL         = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
 	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
@@ -420,20 +427,25 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbCursorOpen.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbDbTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbGcCurrentBlockTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryCommitted.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryLive.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryUsed.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbLobOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbLockTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbOsSwaps.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbParseCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbParseElapsedTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRecoveryBlocks.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbScanCount.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbScanTableRows.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSessionStoredProcedureMemory.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSessionWaitTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSessionWaits.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSmonPosts.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSortOperations.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSortRows.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTransactionRollbacks.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockChanges.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockGets.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbBufferInspected.Enabled ||
@@ -871,6 +883,44 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case sessionStoredProcedureSpace:
 				if err := s.mb.RecordOracledbSessionStoredProcedureMemoryDataPoint(now, row[colValue]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			// Transactions, Locks & Recovery
+			case gcCurrentBlockReceiveTime:
+				value, err := strconv.ParseFloat(row[colValue], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", gcCurrentBlockReceiveTime, row[colValue], err))
+				} else {
+					s.mb.RecordOracledbGcCurrentBlockTimeDataPoint(now, value/100, metadata.AttributeNetworkIoDirectionReceive)
+				}
+			case recoveryBlocksRead:
+				if err := s.mb.RecordOracledbRecoveryBlocksDataPoint(now, row[colValue]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case smonInstanceRecoveryPosts:
+				if err := s.mb.RecordOracledbSmonPostsDataPoint(now, row[colValue], metadata.AttributeOracledbSmonTypeInstance); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case smonTxnRecoveryPosts:
+				if err := s.mb.RecordOracledbSmonPostsDataPoint(now, row[colValue], metadata.AttributeOracledbSmonTypeTransaction); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case transactionLockBackgroundTime:
+				value, err := strconv.ParseFloat(row[colValue], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", transactionLockBackgroundTime, row[colValue], err))
+				} else {
+					s.mb.RecordOracledbLockTimeDataPoint(now, value/100, metadata.AttributeOracledbSessionTypeBackground)
+				}
+			case transactionLockForegroundTime:
+				value, err := strconv.ParseFloat(row[colValue], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", transactionLockForegroundTime, row[colValue], err))
+				} else {
+					s.mb.RecordOracledbLockTimeDataPoint(now, value/100, metadata.AttributeOracledbSessionTypeForeground)
+				}
+			case transactionRollbacks:
+				if err := s.mb.RecordOracledbTransactionRollbacksDataPoint(now, row[colValue]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			}

@@ -545,6 +545,7 @@ Available Converters:
 - [Log](#log)
 - [IsValidLuhn](#isvalidluhn)
 - [MapEach](#mapeach)
+- [MapKeys](#mapkeys)
 - [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
@@ -1743,6 +1744,40 @@ Stringify map values:
 Store the mapped result:
 
 - `set(log.attributes["doubled"], MapEach(log.attributes["counts"], (_, v) => Int(v)))`
+
+### MapKeys
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`MapKeys(source, keyMapper)`
+
+The `MapKeys` converter returns a new `pcommon.Map` with each key transformed by `keyMapper`. Values are unchanged.
+
+`source` is a path expression or another getter that resolves to a map.
+
+`keyMapper` is a lambda expression with exactly two parameters that returns a `string`.
+The first parameter is the element key (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+If `keyMapper` produces duplicate keys, only one value is retained and which one is unspecified. 
+Keys are processed in the order they appear in the `source` map, though this is not guaranteed.
+
+If `source` is not a map, or if `keyMapper` does not return a `string`, it returns an error.
+
+Examples:
+
+Prefix map keys:
+
+- `MapKeys(log.attributes, (k, _) => Concat(["http.", k], ""))`
+
+Derive keys from key and value:
+
+- `MapKeys(log.attributes, (k, v) => Concat([k, ":", String(v)], ""))`
+
+Store the result:
+
+- `set(log.attributes["prefixed"], MapKeys(log.attributes, (k, _) => Concat(["http.", k], "")))`
 
 ### MD5
 
