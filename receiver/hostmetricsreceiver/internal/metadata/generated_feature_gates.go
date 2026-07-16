@@ -14,6 +14,14 @@ var HostmetricsProcessBootTimeCacheFeatureGate = featuregate.GlobalRegistry().Mu
 	featuregate.WithRegisterFromVersion("v0.98.0"),
 )
 
+var ReceiverHostmetricsreceiverUseCPUTicksFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.hostmetricsreceiver.UseCPUTicks",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Use raw uint64 CPU tick counts from /proc/stat instead of gopsutil for improved precision in CPU time and utilization metrics."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46177"),
+	featuregate.WithRegisterFromVersion("v0.152.0"),
+)
+
 var ReceiverHostmetricsreceiverUseLinuxMemAvailableFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.hostmetricsreceiver.UseLinuxMemAvailable",
 	featuregate.StageBeta,
