@@ -31,14 +31,6 @@ attributes:
     requirement_level: recommended
 
 metrics:
-  system.network.bandwidth.limit:
-    enabled: false
-    description: The total network bandwidth available for transmission and reception.
-    unit: "By/s"
-    stability: development
-    gauge:
-      value_type: double
-    attributes: [device]
   system.network.bandwidth.utilization:
     enabled: false
     description: The network bandwidth utilization as a fraction of the total bandwidth.

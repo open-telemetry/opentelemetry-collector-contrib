@@ -20,10 +20,9 @@ type LinkInfo struct {
 }
 
 type Utilization struct {
-	Device              string
-	LimitBytesPerSecond float64
-	Utilization         float64
-	HasUtilization      bool
+	Device         string
+	Utilization    float64
+	HasUtilization bool
 }
 
 type sample struct {
@@ -75,10 +74,7 @@ func (c *NetworkUtilizationCalculator) Calculate(
 			continue
 		}
 
-		result := Utilization{
-			Device:              io.Name,
-			LimitBytesPerSecond: capacityBitsPerSecond / bitsPerByte,
-		}
+		result := Utilization{Device: io.Name}
 
 		previous, ok := c.previous[io.Name]
 		if !ok || now <= previous.timestamp ||

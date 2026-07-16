@@ -221,7 +221,6 @@ func TestScrape(t *testing.T) {
 func TestScrapeNetworkBandwidthMetrics(t *testing.T) {
 	cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 	cfg.Metrics.SystemNetworkConnections.Enabled = false
-	cfg.Metrics.SystemNetworkBandwidthLimit.Enabled = true
 	cfg.Metrics.SystemNetworkBandwidthUtilization.Enabled = true
 
 	scraper, err := newNetworkScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), cfg)
@@ -266,18 +265,10 @@ func TestScrapeNetworkBandwidthMetrics(t *testing.T) {
 
 	md, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
-	limitMetric := requireMetric(t, md, "system.network.bandwidth.limit")
-	require.Equal(t, 1, limitMetric.Gauge().DataPoints().Len())
-	assert.Equal(t, 25_000_000.0, limitMetric.Gauge().DataPoints().At(0).DoubleValue())
 	requireMetricAbsent(t, md, "system.network.bandwidth.utilization")
 
 	md, err = scraper.scrape(t.Context())
 	require.NoError(t, err)
-
-	limitMetric = requireMetric(t, md, "system.network.bandwidth.limit")
-	require.Equal(t, 1, limitMetric.Gauge().DataPoints().Len())
-	assert.Equal(t, "eth0", limitMetric.Gauge().DataPoints().At(0).Attributes().AsRaw()["device"])
-	assert.Equal(t, 25_000_000.0, limitMetric.Gauge().DataPoints().At(0).DoubleValue())
 
 	utilizationMetric := requireMetric(t, md, "system.network.bandwidth.utilization")
 	require.Equal(t, 2, utilizationMetric.Gauge().DataPoints().Len())

@@ -97,20 +97,6 @@ metrics:
     enabled: true
 ```
 
-### system.network.bandwidth.limit
-
-The total network bandwidth available for transmission and reception.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By/s | Gauge | Double | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| device | Name of the network interface. | Any Str | Recommended | - |
-
 ### system.network.bandwidth.utilization
 
 The network bandwidth utilization as a fraction of the total bandwidth.

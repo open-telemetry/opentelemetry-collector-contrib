@@ -142,7 +142,7 @@ func (s *networkScraper) recordNetworkCounterMetrics(ctx context.Context) error 
 }
 
 func (s *networkScraper) recordNetworkBandwidthMetrics(ctx context.Context, now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) error {
-	if !s.config.Metrics.SystemNetworkBandwidthLimit.Enabled && !s.config.Metrics.SystemNetworkBandwidthUtilization.Enabled {
+	if !s.config.Metrics.SystemNetworkBandwidthUtilization.Enabled {
 		return nil
 	}
 
@@ -154,9 +154,6 @@ func (s *networkScraper) recordNetworkBandwidthMetrics(ctx context.Context, now 
 	}
 
 	for _, utilization := range utilizations {
-		if s.config.Metrics.SystemNetworkBandwidthLimit.Enabled {
-			s.mb.RecordSystemNetworkBandwidthLimitDataPoint(now, utilization.LimitBytesPerSecond, utilization.Device)
-		}
 		if s.config.Metrics.SystemNetworkBandwidthUtilization.Enabled && utilization.HasUtilization {
 			s.mb.RecordSystemNetworkBandwidthUtilizationDataPoint(now, utilization.Utilization, utilization.Device)
 		}
