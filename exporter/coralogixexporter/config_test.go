@@ -658,11 +658,15 @@ func TestDomainSettingsCompressionMerge(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name                   string
-		config                 map[string]any
-		wantLogsCompression    configcompression.Type
-		wantMetricsCompression configcompression.Type
-		wantTracesCompression  configcompression.Type
+		name                      string
+		config                    map[string]any
+		wantLogsCompression       configcompression.Type
+		wantMetricsCompression    configcompression.Type
+		wantTracesCompression     configcompression.Type
+		wantProfilesCompression   configcompression.Type
+		wantLogsAcceptEncoding    string
+		wantMetricsAcceptEncoding string
+		wantTracesAcceptEncoding  string
 	}{
 		{
 			name: "domain_settings_compression_applied_to_signals",
@@ -675,9 +679,13 @@ func TestDomainSettingsCompressionMerge(t *testing.T) {
 					"compression": "zstd",
 				},
 			},
-			wantLogsCompression:    configcompression.TypeZstd,
-			wantMetricsCompression: configcompression.TypeZstd,
-			wantTracesCompression:  configcompression.TypeZstd,
+			wantLogsCompression:       configcompression.TypeZstd,
+			wantMetricsCompression:    configcompression.TypeZstd,
+			wantTracesCompression:     configcompression.TypeZstd,
+			wantProfilesCompression:   configcompression.TypeZstd,
+			wantLogsAcceptEncoding:    gzip.Name,
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  gzip.Name,
 		},
 		{
 			name: "signal_compression_overrides_domain_settings",
@@ -693,9 +701,13 @@ func TestDomainSettingsCompressionMerge(t *testing.T) {
 					"compression": "snappy",
 				},
 			},
-			wantLogsCompression:    configcompression.TypeSnappy,
-			wantMetricsCompression: configcompression.TypeZstd,
-			wantTracesCompression:  configcompression.TypeZstd,
+			wantLogsCompression:       configcompression.TypeSnappy,
+			wantMetricsCompression:    configcompression.TypeZstd,
+			wantTracesCompression:     configcompression.TypeZstd,
+			wantProfilesCompression:   configcompression.TypeZstd,
+			wantLogsAcceptEncoding:    gzip.Name,
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  gzip.Name,
 		},
 		{
 			name: "default_gzip_when_compression_not_set",
@@ -705,9 +717,76 @@ func TestDomainSettingsCompressionMerge(t *testing.T) {
 				"application_name": "test-app",
 				"subsystem_name":   "test-sub",
 			},
-			wantLogsCompression:    configcompression.TypeGzip,
-			wantMetricsCompression: configcompression.TypeGzip,
-			wantTracesCompression:  configcompression.TypeGzip,
+			wantLogsCompression:       configcompression.TypeGzip,
+			wantMetricsCompression:    configcompression.TypeGzip,
+			wantTracesCompression:     configcompression.TypeGzip,
+			wantProfilesCompression:   configcompression.TypeGzip,
+			wantLogsAcceptEncoding:    gzip.Name,
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  gzip.Name,
+		},
+		{
+			name: "domain_settings_accept_encoding_applied_to_signals",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+				"domain_settings": map[string]any{
+					"accept_encoding": "snappy",
+				},
+			},
+			wantLogsCompression:       configcompression.TypeGzip,
+			wantMetricsCompression:    configcompression.TypeGzip,
+			wantTracesCompression:     configcompression.TypeGzip,
+			wantProfilesCompression:   configcompression.TypeGzip,
+			wantLogsAcceptEncoding:    "snappy",
+			wantMetricsAcceptEncoding: "snappy",
+			wantTracesAcceptEncoding:  "snappy",
+		},
+		{
+			name: "signal_accept_encoding_overrides_domain_settings",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+				"domain_settings": map[string]any{
+					"accept_encoding": "snappy",
+				},
+				"metrics": map[string]any{
+					"accept_encoding": gzip.Name,
+				},
+			},
+			wantLogsCompression:       configcompression.TypeGzip,
+			wantMetricsCompression:    configcompression.TypeGzip,
+			wantTracesCompression:     configcompression.TypeGzip,
+			wantProfilesCompression:   configcompression.TypeGzip,
+			wantLogsAcceptEncoding:    "snappy",
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  "snappy",
+		},
+		{
+			name: "profiles_compression_from_domain_settings",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+				"domain_settings": map[string]any{
+					"compression": "zstd",
+				},
+				"profiles": map[string]any{
+					"compression": "snappy",
+				},
+			},
+			wantLogsCompression:       configcompression.TypeZstd,
+			wantMetricsCompression:    configcompression.TypeZstd,
+			wantTracesCompression:     configcompression.TypeZstd,
+			wantProfilesCompression:   configcompression.TypeSnappy,
+			wantLogsAcceptEncoding:    gzip.Name,
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  gzip.Name,
 		},
 	}
 
@@ -720,6 +799,10 @@ func TestDomainSettingsCompressionMerge(t *testing.T) {
 			assert.Equal(t, tt.wantLogsCompression, cfg.Logs.Compression)
 			assert.Equal(t, tt.wantMetricsCompression, cfg.Metrics.Compression)
 			assert.Equal(t, tt.wantTracesCompression, cfg.Traces.Compression)
+			assert.Equal(t, tt.wantProfilesCompression, cfg.Profiles.Compression)
+			assert.Equal(t, tt.wantLogsAcceptEncoding, cfg.Logs.AcceptEncoding)
+			assert.Equal(t, tt.wantMetricsAcceptEncoding, cfg.Metrics.AcceptEncoding)
+			assert.Equal(t, tt.wantTracesAcceptEncoding, cfg.Traces.AcceptEncoding)
 		})
 	}
 }
