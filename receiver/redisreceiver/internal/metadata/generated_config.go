@@ -1784,7 +1784,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RedisPubsubChannelStatus: RedisPubsubChannelStatusMetricConfig{
-			Enabled:             true,
+			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []RedisPubsubChannelStatusMetricAttributeKey{RedisPubsubChannelStatusMetricAttributeKeyRedisPubsubChannelState},
 		},
@@ -1792,7 +1792,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		RedisPubsubPatternStatus: RedisPubsubPatternStatusMetricConfig{
-			Enabled:             true,
+			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []RedisPubsubPatternStatusMetricAttributeKey{RedisPubsubPatternStatusMetricAttributeKeyRedisPubsubPatternState},
 		},

@@ -246,7 +246,7 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisNetOutputDataPoint(ts, 1)
-			defaultMetricsCount++
+
 			allMetricsCount++
 			mb.RecordRedisPubsubChannelStatusDataPoint(ts, 1, AttributeRedisPubsubChannelStateActive)
 			if tt.name == "reaggregate_set" {
@@ -255,7 +255,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordRedisPubsubConnectionCountDataPoint(ts, 1)
-			defaultMetricsCount++
+
 			allMetricsCount++
 			mb.RecordRedisPubsubPatternStatusDataPoint(ts, 1, AttributeRedisPubsubPatternStateActive)
 			if tt.name == "reaggregate_set" {

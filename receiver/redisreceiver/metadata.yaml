@@ -505,7 +505,7 @@ metrics:
       aggregation_temporality: cumulative
 
   redis.pubsub.channel.status:
-    enabled: true
+    enabled: false
     description: Number of pub/sub channels
     stability: development
     unit: "{channel}"
@@ -526,7 +526,7 @@ metrics:
       aggregation_temporality: cumulative
 
   redis.pubsub.pattern.status:
-    enabled: true
+    enabled: false
     description: Number of pub/sub patterns
     stability: development
     unit: "{pattern}"
