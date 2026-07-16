@@ -532,6 +532,7 @@ Available Converters:
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
+- [IsEmpty](#isempty)
 - [IsInCIDR](#isincidr)
 - [IsInt](#isint)
 - [IsRootSpan](#isrootspan)
@@ -544,6 +545,7 @@ Available Converters:
 - [Log](#log)
 - [IsValidLuhn](#isvalidluhn)
 - [MapEach](#mapeach)
+- [MapKeys](#mapkeys)
 - [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
@@ -563,6 +565,7 @@ Available Converters:
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
 - [ProfileID](#profileid)
+- [Reduce](#reduce)
 - [RemoveXML](#removexml)
 - [Second](#second)
 - [Seconds](#seconds)
@@ -1492,6 +1495,32 @@ Examples:
 
 - `IsDouble(log.attributes["maybe a double"])`
 
+### IsEmpty
+
+`IsEmpty(value)`
+
+The `IsEmpty` Converter returns `true` if the given `value` is considered empty.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+Specifically, it will return `true` if the provided `value` is one of the following:
+
+1. `nil`.
+2. An empty `pcommon.Value` (`pcommon.ValueTypeEmpty`).
+3. A `pcommon.Map` or native map with no entries.
+4. A `pcommon.Slice` or native slice (including `[]byte`) with no elements.
+5. Any other value equal to its type's zero value (for example, `""`, `0`, `false`, or an unset all-zero `pcommon.TraceID`/`pcommon.SpanID`).
+
+Otherwise, it will return `false`.
+
+Examples:
+
+- `IsEmpty(log.body)`
+
+- `IsEmpty(resource.attributes["maybe empty"])`
+
+- `IsEmpty("")`
+
 ### IsInCIDR
 
 `IsInCIDR(target, networks[])`
@@ -1715,6 +1744,40 @@ Stringify map values:
 Store the mapped result:
 
 - `set(log.attributes["doubled"], MapEach(log.attributes["counts"], (_, v) => Int(v)))`
+
+### MapKeys
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`MapKeys(source, keyMapper)`
+
+The `MapKeys` converter returns a new `pcommon.Map` with each key transformed by `keyMapper`. Values are unchanged.
+
+`source` is a path expression or another getter that resolves to a map.
+
+`keyMapper` is a lambda expression with exactly two parameters that returns a `string`.
+The first parameter is the element key (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+If `keyMapper` produces duplicate keys, only one value is retained and which one is unspecified. 
+Keys are processed in the order they appear in the `source` map, though this is not guaranteed.
+
+If `source` is not a map, or if `keyMapper` does not return a `string`, it returns an error.
+
+Examples:
+
+Prefix map keys:
+
+- `MapKeys(log.attributes, (k, _) => Concat(["http.", k], ""))`
+
+Derive keys from key and value:
+
+- `MapKeys(log.attributes, (k, v) => Concat([k, ":", String(v)], ""))`
+
+Store the result:
+
+- `set(log.attributes["prefixed"], MapKeys(log.attributes, (k, _) => Concat(["http.", k], "")))`
 
 ### MD5
 
@@ -2232,6 +2295,46 @@ Examples:
 
 - `ProfileID(0x00112233445566778899aabbccddeeff)`
 - `ProfileID("a389023abaa839283293ed323892389d")`
+
+### Reduce
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Reduce(source, seed, accumulator)`
+
+The `Reduce` converter folds `source` into a single value, starting from `seed` and applying `accumulator` to each element.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`seed` is the initial accumulator value.
+
+`accumulator` is a lambda expression with exactly three parameters. 
+The first parameter is the current accumulator value. 
+The second parameter is the element index when reducing a slice (`int64`), or the element 
+key when reducing a map (`string`). The third parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+An empty slice or map returns `seed` unchanged.
+
+For maps, element processing order follows map iteration and is not guaranteed to be stable. 
+This matters when `accumulator` is not commutative.
+
+If `source` is not a slice or map, it returns an error.
+
+Examples:
+
+Sum a slice of numbers:
+
+- `Reduce(log.attributes["counts"], 0, (acc, _, v) => acc + Int(v))`
+
+Build a semicolon-separated key=value string:
+
+- `Reduce(log.attributes["labels"], "", (acc, k, v) => Concat([acc, k, "=", String(v), ";"], ""))`
+
+Store the result:
+
+- `set(log.attributes["total"], Reduce(log.attributes["counts"], 0, (acc, _, v) => acc + Int(v)))`
 
 ### RemoveXML
 
