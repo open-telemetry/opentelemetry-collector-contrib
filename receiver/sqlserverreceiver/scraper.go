@@ -418,13 +418,13 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 			}
 		}
 
-		// hardened_latency may be NULL on SQL Server < 2016
+		// secondary_lag_seconds is NULL on SQL Server < 2016
 		if row[hardenedLatencyKey] != "" {
 			val, err = retrieveFloat(row, hardenedLatencyKey)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 			} else {
-				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyDataPoint(now, val.(float64), agName, replicaName)
+				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaSecondaryLagDataPoint(now, val.(float64), agName, replicaName)
 			}
 		}
 

@@ -117,7 +117,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
 	cfg.Metrics.SqlserverWorktableCacheHitRatio.Enabled = enabled
 
-	cfg.Metrics.SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency.Enabled = enabled
+	cfg.Metrics.SqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.Enabled = enabled
 	cfg.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueSize.Enabled = enabled
 	cfg.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueRate.Enabled = enabled
 	cfg.Events.DbServerTopQuery.Enabled = enabled

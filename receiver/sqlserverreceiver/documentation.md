@@ -244,23 +244,6 @@ Number of SQL attentions (client cancellation interrupts) received per second.
 | ---- | ----------- | ---------- | --------- |
 | {attentions}/s | Gauge | Double | Development |
 
-### sqlserver.availability_group.database_replica.hardened_latency
-
-Time between a log record being generated on the primary replica and hardened to disk on the secondary replica.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
-| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
-
 ### sqlserver.availability_group.database_replica.queue.rate
 
 Rate at which log data is being sent or redone on a database replica, broken down by queue type (log_send for primary-to-secondary transmission, redo for applying log records on the secondary).
@@ -296,6 +279,23 @@ This metric is only available when the receiver is configured to directly connec
 | sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 | sqlserver.availability_group.queue.type | The type of availability group queue. | Str: ``log_send``, ``redo`` | Recommended | - |
+
+### sqlserver.availability_group.database_replica.secondary_lag
+
+Number of seconds the secondary replica is lagging behind the primary replica, measured as the time between the most recent hardened log block on the primary and on the secondary.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled. Sourced from secondary_lag_seconds in sys.dm_hadr_database_replica_states (SQL Server 2016+).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
 ### sqlserver.computer.uptime
 
