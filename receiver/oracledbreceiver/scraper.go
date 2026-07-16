@@ -135,9 +135,13 @@ const (
 	indexFastFullScansDirectStat  = "index fast full scans (direct read)"
 	indexFastFullScansFullStat    = "index fast full scans (full)"
 	indexFastFullScansRowidStat   = "index fast full scans (rowid ranges)"
+	javaCallHeapLiveSize          = "java call heap live size"
+	javaCallHeapTotalSize         = "java call heap total size"
+	javaCallHeapUsedSize          = "java call heap used size"
 	lobReadsStat                  = "lob reads"
 	lobWritesStat                 = "lob writes"
 	openedCursorsCurrentStat      = "opened cursors current"
+	osSwaps                       = "OS Swaps"
 	parseTimeCPUStat              = "parse time cpu"
 	parseTimeElapsedStat          = "parse time elapsed"
 	recoveryBlocksRead            = "recovery blocks read"
@@ -145,6 +149,9 @@ const (
 	recursiveCPUUsageStat         = "recursive cpu usage"
 	sessionCursorCacheCountStat   = "session cursor cache count"
 	sessionCursorCacheHitsStat    = "session cursor cache hits"
+	sessionNonIdleWaitCount       = "non-idle wait count"
+	sessionNonIdleWaitTime        = "non-idle wait time"
+	sessionStoredProcedureSpace   = "session stored procedure space"
 	smonInstanceRecoveryPosts     = "SMON posted for instance recovery"
 	smonTxnRecoveryPosts          = "SMON posted for txn recovery for other instances"
 	sortsDiskStat                 = "sorts (disk)"
@@ -421,13 +428,20 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbDbTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueOperations.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbGcCurrentBlockTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryCommitted.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryLive.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryUsed.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbLobOperations.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbLockTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbOsSwaps.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbParseCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbParseElapsedTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRecoveryBlocks.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbScanCount.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbScanTableRows.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSessionStoredProcedureMemory.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSessionWaitTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSessionWaits.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSmonPosts.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSortOperations.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSortRows.Enabled ||
@@ -837,6 +851,38 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case redoWrites:
 				if err := s.mb.RecordOracledbRedoOperationsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			// Session, JVM & OS resources
+			case javaCallHeapLiveSize:
+				if err := s.mb.RecordOracledbJvmMemoryLiveDataPoint(now, row[colValue]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case javaCallHeapTotalSize:
+				if err := s.mb.RecordOracledbJvmMemoryCommittedDataPoint(now, row[colValue]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case javaCallHeapUsedSize:
+				if err := s.mb.RecordOracledbJvmMemoryUsedDataPoint(now, row[colValue]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case osSwaps:
+				if err := s.mb.RecordOracledbOsSwapsDataPoint(now, row[colValue]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sessionNonIdleWaitCount:
+				if err := s.mb.RecordOracledbSessionWaitsDataPoint(now, row[colValue], metadata.AttributeOracledbSessionWaitStateNonIdle); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sessionNonIdleWaitTime:
+				value, err := strconv.ParseFloat(row[colValue], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", sessionNonIdleWaitTime, row[colValue], err))
+				} else {
+					s.mb.RecordOracledbSessionWaitTimeDataPoint(now, value/100, metadata.AttributeOracledbSessionWaitStateNonIdle)
+				}
+			case sessionStoredProcedureSpace:
+				if err := s.mb.RecordOracledbSessionStoredProcedureMemoryDataPoint(now, row[colValue]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			// Transactions, Locks & Recovery
