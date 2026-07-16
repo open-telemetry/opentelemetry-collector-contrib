@@ -103,6 +103,10 @@ be found at [Docker Detector Resource Attributes](./internal/docker/documentatio
 You need to mount the Docker socket (`/var/run/docker.sock` on Linux) to contact the Docker daemon.
 Docker detection does not work on macOS.
 
+If `container.name` or `container.image.name` is enabled, the detector inspects the current container
+by using the container hostname as the Docker container name or ID. This can fail when the container
+hostname is changed, for example when running with `network_mode: host`.
+
 Example:
 
 ```yaml
@@ -201,12 +205,7 @@ The list of the populated resource attributes can be found at [GCP Detector Reso
     * cloud.availability_zone (only for zonal GKE clusters; e.g. "us-central1-c")
     * k8s.cluster.name
     * host.id (instance id)
-    * host.name (instance name; only when workload identity is disabled)
-
-One known issue is when GKE workload identity is enabled, the GCE metadata endpoints won't be available, thus the GKE resource detector won't be
-able to determine `host.name`. In that case, users are encouraged to set `host.name` from either:
-- `node.name` through the downward API with the `env` detector
-- obtaining the Kubernetes node name from the Kubernetes API (with `k8s.io/client-go`)
+    * host.name (instance name; availability with workload identity depends on GKE version)
 
 #### Google Cloud Run Services Metadata
 
@@ -228,6 +227,16 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * faas.name (service name)
     * gcp.cloud_run.job.execution ("my-service-ajg89")
     * gcp.cloud_run.job.task_index ("0")
+
+#### Cloud Run Worker Pools Metadata
+
+    * cloud.provider ("gcp")
+    * cloud.platform ("gcp_cloud_run")
+    * cloud.account.id (project id)
+    * cloud.region (e.g. "us-central1")
+    * faas.instance (instance id)
+    * faas.name (worker pool name)
+    * faas.version (worker pool revision)
 
 #### Google Cloud Functions Metadata
 
@@ -1018,6 +1027,10 @@ go test -bench=. -benchmem
 ```
 
 For the latest benchmark results, see the [GitHub Actions workflow runs](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml).
+
+## Internal Telemetry
+
+The processor emits internal telemetry to observe resource detection. For the complete list of metrics and their attributes, see the [Internal Telemetry documentation](./documentation.md#internal-telemetry).
 
 ## Ordering
 

@@ -9,6 +9,8 @@ import (
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -29,6 +31,43 @@ func TestZipkinEndpointFromTagsPrefersV1ServicePeerName(t *testing.T) {
 	assert.Equal(t, "v1-peer", endpoint.ServiceName)
 	assert.True(t, redundantKeys["service.peer.name"])
 	assert.False(t, redundantKeys["peer.service"])
+}
+
+func TestResourceToZipkinEndpointServiceNameAndAttributeMapCloudResourceConventionsMigration(t *testing.T) {
+	cases := []struct {
+		name       string
+		emitV1     bool
+		dontEmitV0 bool
+		expectsV0  bool
+		expectsV1  bool
+	}{
+		{name: "v0 only", emitV1: false, dontEmitV0: false, expectsV0: true, expectsV1: false},
+		{name: "double publish", emitV1: true, dontEmitV0: false, expectsV0: true, expectsV1: true},
+		{name: "v1 only", emitV1: true, dontEmitV0: true, expectsV0: false, expectsV1: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1CloudResourceConventions", tc.emitV1)
+			assert.NoError(t, err)
+			err = featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0CloudResourceConventions", tc.dontEmitV0)
+			assert.NoError(t, err)
+			t.Cleanup(func() {
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0CloudResourceConventions", false))
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1CloudResourceConventions", false))
+			})
+
+			resource := pcommon.NewResource()
+			resource.Attributes().PutStr("faas.id", "my-faas")
+
+			_, zTags := resourceToZipkinEndpointServiceNameAndAttributeMap(resource)
+
+			_, hasV0 := zTags["faas.id"]
+			_, hasV1 := zTags["cloud.resource_id"]
+			assert.Equal(t, tc.expectsV0, hasV0)
+			assert.Equal(t, tc.expectsV1, hasV1)
+		})
+	}
 }
 
 func TestInternalTracesToZipkinSpans(t *testing.T) {
@@ -124,10 +163,32 @@ func TestExtractScopeTags(t *testing.T) {
 				"otel.library.version": "v1.2.3",
 			},
 		},
+		{
+			name: "with attributes and name/version (v1)",
+			scopeCfg: func(il pcommon.InstrumentationScope) {
+				il.SetName("otel-lib")
+				il.SetVersion("v1.2.3")
+				il.Attributes().PutStr("custom.key", "custom.val")
+			},
+			res: map[string]string{
+				"custom.key":         "custom.val",
+				"otel.scope.name":    "otel-lib",
+				"otel.scope.version": "v1.2.3",
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.name == "with attributes and name/version (v1)" {
+				require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0ScopeConventions", true))
+				require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1ScopeConventions", true))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0ScopeConventions", false))
+					require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1ScopeConventions", false))
+				}()
+			}
+
 			il := pcommon.NewInstrumentationScope()
 			tt.scopeCfg(il)
 

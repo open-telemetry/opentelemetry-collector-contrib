@@ -31,7 +31,7 @@ components:
         - pprof
     processor:
         - attributes
-        - cumulativetodelta
+        - cumulative_to_delta
         - deltatocumulative
         - deltatorate
         - drain

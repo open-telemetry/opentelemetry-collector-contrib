@@ -27,8 +27,15 @@ type TelemetryBuilder struct {
 	registrations                                    []metric.Registration
 	ProcessorSpanpruningAggregationGroupSize         metric.Int64Histogram
 	ProcessorSpanpruningAggregationsCreated          metric.Int64Counter
+	ProcessorSpanpruningBytesEmitted                 metric.Int64Counter
+	ProcessorSpanpruningBytesProcessedInput          metric.Int64Counter
+	ProcessorSpanpruningBytesProcessedOutput         metric.Int64Counter
+	ProcessorSpanpruningBytesReceived                metric.Int64Counter
 	ProcessorSpanpruningLeafAttributeDiversityLoss   metric.Int64Histogram
 	ProcessorSpanpruningLeafAttributeLoss            metric.Int64Histogram
+	ProcessorSpanpruningOutliersCorrelationsDetected metric.Int64Counter
+	ProcessorSpanpruningOutliersDetected             metric.Int64Counter
+	ProcessorSpanpruningOutliersPreserved            metric.Int64Counter
 	ProcessorSpanpruningParentAttributeDiversityLoss metric.Int64Histogram
 	ProcessorSpanpruningParentAttributeLoss          metric.Int64Histogram
 	ProcessorSpanpruningProcessingDuration           metric.Float64Histogram
@@ -78,6 +85,30 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningBytesEmitted, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_bytes_emitted",
+		metric.WithDescription("Total bytes of serialized traces emitted after pruning [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningBytesProcessedInput, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_bytes_processed_input",
+		metric.WithDescription("Total bytes of traces that matched pruning conditions (entire trace when any span matches), measured before pruning [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningBytesProcessedOutput, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_bytes_processed_output",
+		metric.WithDescription("Total bytes of traces that matched pruning conditions (entire trace when any span matches), measured after pruning [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningBytesReceived, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_bytes_received",
+		metric.WithDescription("Total bytes of serialized traces received before pruning [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessorSpanpruningLeafAttributeDiversityLoss, err = builder.meter.Int64Histogram(
 		"otelcol_processor_spanpruning_leaf_attribute_diversity_loss",
 		metric.WithDescription("Attribute values lost due to diversity per leaf aggregation [Development]"),
@@ -90,6 +121,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithDescription("Attribute keys lost due to absence per leaf aggregation [Development]"),
 		metric.WithUnit("{keys}"),
 		metric.WithExplicitBucketBoundaries([]float64{0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20}...),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningOutliersCorrelationsDetected, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_outliers_correlations_detected",
+		metric.WithDescription("Groups where outliers had correlated attributes [Development]"),
+		metric.WithUnit("{groups}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningOutliersDetected, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_outliers_detected",
+		metric.WithDescription("Spans identified as outliers by analysis [Development]"),
+		metric.WithUnit("{spans}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningOutliersPreserved, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_outliers_preserved",
+		metric.WithDescription("Outlier spans kept (excluded from aggregation) [Development]"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorSpanpruningParentAttributeDiversityLoss, err = builder.meter.Int64Histogram(

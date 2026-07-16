@@ -74,19 +74,24 @@ var MapAttributeNetworkPacketType = map[string]AttributeNetworkPacketType{
 
 var MetricsInfo = metricsInfo{
 	SystemNetworkErrors: metricInfo{
-		Name: "system.network.errors",
+		Name:       "system.network.errors",
+		Attributes: []string{"network.io.direction", "network.interface.description", "network.interface.mac", "network.interface.name", "network.interface.speed"},
 	},
 	SystemNetworkInterfaceStatus: metricInfo{
-		Name: "system.network.interface.status",
+		Name:       "system.network.interface.status",
+		Attributes: []string{"network.interface.description", "network.interface.mac", "network.interface.name", "network.interface.speed"},
 	},
 	SystemNetworkIo: metricInfo{
-		Name: "system.network.io",
+		Name:       "system.network.io",
+		Attributes: []string{"network.io.direction", "network.interface.description", "network.interface.mac", "network.interface.name", "network.interface.speed"},
 	},
 	SystemNetworkPacketCount: metricInfo{
-		Name: "system.network.packet.count",
+		Name:       "system.network.packet.count",
+		Attributes: []string{"network.packet.type", "network.interface.description", "network.interface.mac", "network.interface.name", "network.interface.speed"},
 	},
 	SystemNetworkPacketDropped: metricInfo{
-		Name: "system.network.packet.dropped",
+		Name:       "system.network.packet.dropped",
+		Attributes: []string{"network.io.direction", "network.interface.description", "network.interface.mac", "network.interface.name", "network.interface.speed"},
 	},
 }
 
@@ -99,7 +104,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSystemNetworkErrors struct {

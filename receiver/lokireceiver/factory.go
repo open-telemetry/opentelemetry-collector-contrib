@@ -32,6 +32,16 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpServerConfig.WriteTimeout = 0
+	httpServerConfig.ReadHeaderTimeout = 0
+	httpServerConfig.IdleTimeout = 0
+	httpServerConfig.KeepAlivesEnabled = false
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  defaultHTTPEndpoint,
+	}
 	return &Config{
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
@@ -40,12 +50,7 @@ func createDefaultConfig() component.Config {
 					Transport: confignet.TransportTypeTCP,
 				},
 			},
-			HTTP: &confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-					Endpoint:  defaultHTTPEndpoint,
-				},
-			},
+			HTTP: &httpServerConfig,
 		},
 	}
 }

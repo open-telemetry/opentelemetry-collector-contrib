@@ -79,64 +79,51 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheConnectionsAsyncDataPoint(ts, "1", AttributeConnectionStateWriting)
 			if tt.name == "reaggregate_set" {
 				mb.RecordApacheConnectionsAsyncDataPoint(ts, "3", AttributeConnectionStateKeepalive)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheCPULoadDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheCPUTimeDataPoint(ts, "1", AttributeCPULevelSelf, AttributeCPUModeSystem)
 			if tt.name == "reaggregate_set" {
 				mb.RecordApacheCPUTimeDataPoint(ts, "3", AttributeCPULevelChildren, AttributeCPUModeUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheCurrentConnectionsDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheLoad1DataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheLoad15DataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheLoad5DataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheRequestTimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheRequestsDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheScoreboardDataPoint(ts, 1, AttributeScoreboardStateOpen)
 			if tt.name == "reaggregate_set" {
 				mb.RecordApacheScoreboardDataPoint(ts, 3, AttributeScoreboardStateWaiting)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheTrafficDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheUptimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheWorkersDataPoint(ts, "1", AttributeWorkersStateBusy)

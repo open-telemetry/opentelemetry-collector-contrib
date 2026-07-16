@@ -12,6 +12,9 @@ properties:
   context:
     description: 'Context section allows specifying the source type to look for the IP. Available options: resource or record.'
     $ref: context_id
+  error_mode:
+    description: 'ErrorMode determines how the processor reacts to errors that occur while looking up geolocation data for an IP address. The supported values are `ignore`, `silent`, and `propagate`. - `ignore`: errors are logged and processing continues. - `silent`: errors are not logged and processing continues. - `propagate`: errors are logged and returned, halting processing. The default value is `propagate` to preserve existing behavior.'
+    $ref: /pkg/ottl.error_mode
   providers:
     description: Map of GeoIP provider configurations, keyed by provider type.
     type: object

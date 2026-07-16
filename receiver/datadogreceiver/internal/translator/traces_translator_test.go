@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	vmsgp "github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -144,6 +145,50 @@ func TestTracePayloadV07Unmarshalling(t *testing.T) {
 	assert.Equal(t, "my-service", value, "service.name attribute value incorrect")
 	assert.Equal(t, "my-name", span.GetName())
 	assert.Equal(t, "my-resource", span.GetResource())
+}
+
+// TestTraceNativeLinksAndEventsRoundTrip verifies that the msgpack v0.7 decoder populates the native
+// span_links/span_events proto fields from the wire and that they translate into OTel span links and
+// events end-to-end (HandleTracesPayload -> ToTraces).
+func TestTraceNativeLinksAndEventsRoundTrip(t *testing.T) {
+	payload := pb.TracerPayload{
+		Chunks: []*pb.TraceChunk{{Spans: []*pb.Span{{
+			Service: "svc", Name: "op", Resource: "res", TraceID: 1, SpanID: 2,
+			SpanLinks: []*pb.SpanLink{{
+				TraceID: 0x1d99f09757cf199d, TraceIDHigh: 0xf233b7e1421e8bde,
+				SpanID: 0x5ab19b8ebe922796, Tracestate: "dd=s:1", Flags: 1,
+				Attributes: map[string]string{"link.reason": "batch"},
+			}},
+			SpanEvents: []*pb.SpanEvent{{
+				TimeUnixNano: 111, Name: "exception",
+				Attributes: map[string]*pb.AttributeAnyValue{
+					"exception.message": {Type: pb.AttributeAnyValue_STRING_VALUE, StringValue: "boom"},
+				},
+			}},
+		}}}},
+	}
+	var buf []byte
+	bytez, err := payload.MarshalMsg(buf)
+	require.NoError(t, err)
+	req, _ := http.NewRequest(http.MethodPost, "/v0.7/traces", io.NopCloser(bytes.NewReader(bytez)))
+
+	tracerPayloads, err := HandleTracesPayload(req)
+	require.NoError(t, err)
+	require.Len(t, tracerPayloads, 1)
+
+	traces, err := ToTraces(zap.NewNop(), tracerPayloads[0], req, nil)
+	require.NoError(t, err)
+	span := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+
+	require.Equal(t, 1, span.Links().Len())
+	assert.Equal(t, "f233b7e1421e8bde1d99f09757cf199d", span.Links().At(0).TraceID().String())
+	assert.Equal(t, "5ab19b8ebe922796", span.Links().At(0).SpanID().String())
+
+	require.Equal(t, 1, span.Events().Len())
+	assert.Equal(t, "exception", span.Events().At(0).Name())
+	msg, ok := span.Events().At(0).Attributes().Get("exception.message")
+	require.True(t, ok)
+	assert.Equal(t, "boom", msg.Str())
 }
 
 func BenchmarkTranslatorv05(b *testing.B) {
@@ -1032,4 +1077,159 @@ func TestToTracesServerAddress(t *testing.T) {
 			}
 		})
 	}
+}
+
+// translateSingleSpan runs a single Datadog span through ToTraces and returns the resulting OTel span.
+func translateSingleSpan(t *testing.T, span *pb.Span) ptrace.Span {
+	t.Helper()
+	span.Service = "svc"
+	span.Name = "op"
+	payload := &pb.TracerPayload{Chunks: []*pb.TraceChunk{{Spans: []*pb.Span{span}}}}
+	traces, err := ToTraces(zap.NewNop(), payload, &http.Request{Header: http.Header{}}, nil)
+	require.NoError(t, err)
+	require.Equal(t, 1, traces.SpanCount())
+	return traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+}
+
+func TestSetSpanLinks(t *testing.T) {
+	// A 128-bit linked trace id split as Datadog stores it, so it can be reassembled either from the
+	// native trace_id_high field or from the decimal _dd.span_links meta form.
+	const (
+		linkLow      = uint64(0x1d99f09757cf199d) // 2133000431340558749
+		linkHigh     = uint64(0xf233b7e1421e8bde) // 17452495159095626718
+		linkSpan     = uint64(0x5ab19b8ebe922796) // 6535175571676211094
+		wantTraceID  = "f233b7e1421e8bde1d99f09757cf199d"
+		wantSpanID   = "5ab19b8ebe922796"
+		decimalLinks = `[{"trace_id":2133000431340558749,"trace_id_high":17452495159095626718,"span_id":6535175571676211094,"attributes":{"link.reason":"batch"},"tracestate":"dd=s:1","flags":1}]`
+		hexLinks     = `[{"trace_id":"f233b7e1421e8bde1d99f09757cf199d","span_id":"5ab19b8ebe922796","tracestate":"dd=s:1","attributes":{"link.reason":"batch"}}]`
+	)
+
+	assertLink := func(t *testing.T, span ptrace.Span, wantFlags uint32) {
+		require.Equal(t, 1, span.Links().Len())
+		link := span.Links().At(0)
+		assert.Equal(t, wantTraceID, link.TraceID().String())
+		assert.Equal(t, wantSpanID, link.SpanID().String())
+		assert.Equal(t, "dd=s:1", link.TraceState().AsRaw())
+		assert.Equal(t, wantFlags, link.Flags())
+		attr, ok := link.Attributes().Get("link.reason")
+		require.True(t, ok)
+		assert.Equal(t, "batch", attr.Str())
+		// The meta form must never surface as a raw span attribute.
+		_, leaked := span.Attributes().Get("_dd.span_links")
+		assert.False(t, leaked, "_dd.span_links leaked as a span attribute")
+	}
+
+	t.Run("native span_links", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1,
+			SpanLinks: []*pb.SpanLink{{
+				TraceID: linkLow, TraceIDHigh: linkHigh, SpanID: linkSpan,
+				Tracestate: "dd=s:1", Flags: 1,
+				Attributes: map[string]string{"link.reason": "batch"},
+			}},
+			// Native links take precedence over a meta copy; the meta copy must not add a duplicate.
+			Meta: map[string]string{"_dd.span_links": `[{"trace_id":42,"span_id":42}]`},
+		})
+		assertLink(t, span, 1)
+	})
+
+	t.Run("meta _dd.span_links decimal (dd-trace)", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1,
+			Meta: map[string]string{"_dd.span_links": decimalLinks},
+		})
+		assertLink(t, span, 1)
+	})
+
+	t.Run("meta _dd.span_links hex (agent OTLP)", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1,
+			Meta: map[string]string{"_dd.span_links": hexLinks},
+		})
+		assertLink(t, span, 0)
+	})
+}
+
+func TestSetSpanEvents(t *testing.T) {
+	assertEvents := func(t *testing.T, span ptrace.Span) {
+		require.Equal(t, 2, span.Events().Len())
+
+		custom := span.Events().At(0)
+		assert.Equal(t, "custom.checkpoint", custom.Name())
+		assert.Equal(t, pcommon.Timestamp(111), custom.Timestamp())
+		stage, ok := custom.Attributes().Get("stage")
+		require.True(t, ok)
+		assert.Equal(t, "validate", stage.Str())
+		ok2, ok := custom.Attributes().Get("ok")
+		require.True(t, ok)
+		assert.True(t, ok2.Bool())
+
+		exc := span.Events().At(1)
+		assert.Equal(t, "exception", exc.Name())
+		msg, ok := exc.Attributes().Get("exception.message")
+		require.True(t, ok)
+		assert.Equal(t, "connection refused", msg.Str())
+
+		// Event meta keys must never surface as raw span attributes.
+		_, leaked := span.Attributes().Get("events")
+		assert.False(t, leaked, "events leaked as a span attribute")
+		_, leaked = span.Attributes().Get("_dd.span_events.has_exception")
+		assert.False(t, leaked)
+	}
+
+	t.Run("native span_events", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1,
+			SpanEvents: []*pb.SpanEvent{
+				{TimeUnixNano: 111, Name: "custom.checkpoint", Attributes: map[string]*pb.AttributeAnyValue{
+					"stage": {Type: pb.AttributeAnyValue_STRING_VALUE, StringValue: "validate"},
+					"ok":    {Type: pb.AttributeAnyValue_BOOL_VALUE, BoolValue: true},
+				}},
+				{TimeUnixNano: 222, Name: "exception", Attributes: map[string]*pb.AttributeAnyValue{
+					"exception.message": {Type: pb.AttributeAnyValue_STRING_VALUE, StringValue: "connection refused"},
+				}},
+			},
+			// Native events take precedence over the meta copy.
+			Meta: map[string]string{"events": `[{"name":"ignored"}]`, "_dd.span_events.has_exception": "true"},
+		})
+		assertEvents(t, span)
+	})
+
+	t.Run("meta events fallback", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1,
+			Meta: map[string]string{
+				"events":                        `[{"name":"custom.checkpoint","time_unix_nano":111,"attributes":{"stage":"validate","ok":true}},{"name":"exception","time_unix_nano":222,"attributes":{"exception.message":"connection refused"}}]`,
+				"_dd.span_events.has_exception": "true",
+			},
+		})
+		assertEvents(t, span)
+	})
+
+	t.Run("native span_events typed attributes", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1,
+			SpanEvents: []*pb.SpanEvent{{TimeUnixNano: 1, Name: "typed", Attributes: map[string]*pb.AttributeAnyValue{
+				"i": {Type: pb.AttributeAnyValue_INT_VALUE, IntValue: 7},
+				"d": {Type: pb.AttributeAnyValue_DOUBLE_VALUE, DoubleValue: 2.5},
+				"arr": {Type: pb.AttributeAnyValue_ARRAY_VALUE, ArrayValue: &pb.AttributeArray{Values: []*pb.AttributeArrayValue{
+					{Type: pb.AttributeArrayValue_STRING_VALUE, StringValue: "a"},
+					{Type: pb.AttributeArrayValue_STRING_VALUE, StringValue: "b"},
+				}}},
+			}}},
+		})
+		require.Equal(t, 1, span.Events().Len())
+		attrs := span.Events().At(0).Attributes()
+		i, ok := attrs.Get("i")
+		require.True(t, ok)
+		assert.Equal(t, int64(7), i.Int())
+		d, ok := attrs.Get("d")
+		require.True(t, ok)
+		assert.Equal(t, 2.5, d.Double())
+		arr, ok := attrs.Get("arr")
+		require.True(t, ok)
+		require.Equal(t, 2, arr.Slice().Len())
+		assert.Equal(t, "a", arr.Slice().At(0).Str())
+		assert.Equal(t, "b", arr.Slice().At(1).Str())
+	})
 }

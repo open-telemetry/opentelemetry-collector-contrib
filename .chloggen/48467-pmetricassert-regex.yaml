@@ -1,5 +1,0 @@
-change_type: enhancement
-component: pkg/pdatatest
-note: Add `/regex` attribute matcher support to `pmetricassert`
-issues: [48467]
-change_logs: [api]

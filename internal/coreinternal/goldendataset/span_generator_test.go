@@ -125,3 +125,71 @@ func TestMessagingV1DestinationNameAttribute(t *testing.T) {
 		assert.Equal(t, "time.us.east.atlanta", value.AsString())
 	}
 }
+
+func TestGenerateMessagingProducerSpanFeatureGates(t *testing.T) {
+	testCases := []struct {
+		name         string
+		dontEmitV0   bool
+		emitV1       bool
+		expectedKeys []string
+		absentKeys   []string
+	}{
+		{
+			name:         "default_v0_only",
+			dontEmitV0:   false,
+			emitV1:       false,
+			expectedKeys: []string{"messaging.destination"},
+			absentKeys:   []string{"messaging.destination.name"},
+		},
+		{
+			name:         "double_publish",
+			dontEmitV0:   false,
+			emitV1:       true,
+			expectedKeys: []string{"messaging.destination", "messaging.destination.name"},
+			absentKeys:   []string{},
+		},
+		{
+			name:         "v1_only",
+			dontEmitV0:   true,
+			emitV1:       true,
+			expectedKeys: []string{"messaging.destination.name"},
+			absentKeys:   []string{"messaging.destination"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.ID(), tc.dontEmitV0))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.ID(), tc.emitV1))
+
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.ID(), false))
+			})
+
+			random := rand.Reader
+			traceID := generateTraceID(random)
+			spanInputs := &PICTSpanInputs{
+				Parent:     SpanParentRoot,
+				Tracestate: TraceStateEmpty,
+				Kind:       SpanKindProducer,
+				Attributes: SpanAttrMessagingProducer,
+				Events:     SpanChildCountEmpty,
+				Links:      SpanChildCountEmpty,
+				Status:     SpanStatusOk,
+			}
+			span := ptrace.NewSpan()
+			fillSpan(traceID, pcommon.SpanID([8]byte{}), "/gotest-parent", spanInputs, random, span)
+
+			attrs := span.Attributes()
+			for _, k := range tc.expectedKeys {
+				_, ok := attrs.Get(k)
+				assert.True(t, ok, "Expected attribute %s to be present", k)
+			}
+			for _, k := range tc.absentKeys {
+				_, ok := attrs.Get(k)
+				assert.False(t, ok, "Expected attribute %s to be absent", k)
+			}
+		})
+	}
+}
