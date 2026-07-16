@@ -127,7 +127,6 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 
 	sp := rp.ScopeProfiles().AppendEmpty()
 	sp.SetSchemaUrl(semconv.SchemaURL)
-
 	// Use a dedicated pprofile.Profile for each sample type.
 	// By convention, pprof uses the last sample type as default, while OTel Profiles
 	// uses the first profile as default. Therefore, swap first and last.

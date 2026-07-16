@@ -22,6 +22,14 @@ Number of trace decisions made, labelled by which event triggered the decision (
 | ---- | ----------- | ---------- | --------- | --------- |
 | {decisions} | Sum | Int | true | Development |
 
+### otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable
+
+Number of spans whose incoming W3C tracestate could not be parsed when applying the sampling threshold.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {spans} | Sum | Int | true | Development |
+
 ### otelcol_processor_dynamic_sampling_ottl_eval_errors
 
 Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to.

@@ -9,7 +9,7 @@ require (
 	github.com/goccy/go-json v0.10.6
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/jpillora/backoff v1.0.0
-	github.com/leodido/go-syslog/v4 v4.5.0
+	github.com/leodido/go-syslog/v4 v4.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.156.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.156.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.156.0
@@ -35,8 +35,8 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0
-	golang.org/x/sys v0.46.0
-	golang.org/x/text v0.39.0
+	golang.org/x/sys v0.47.0
+	golang.org/x/text v0.40.0
 	gonum.org/v1/gonum v0.17.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
