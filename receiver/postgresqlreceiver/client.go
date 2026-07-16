@@ -27,7 +27,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
 const querySampleTraceContextKey = "_otel_trace_context"
@@ -812,49 +811,7 @@ type replicationStats struct {
 	writeLag     float64
 }
 
-func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([]replicationStats, error) {
-	query := `SELECT
-	coalesce(cast(client_addr as varchar), 'unix') AS client_addr,
-	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,
-	extract('epoch' from coalesce(write_lag, '-1 seconds'))::integer,
-	extract('epoch' from coalesce(flush_lag, '-1 seconds'))::integer,
-	extract('epoch' from coalesce(replay_lag, '-1 seconds'))::integer
-	FROM pg_stat_replication;
-	`
-	rows, err := c.client.QueryContext(ctx, query)
-	if err != nil {
-		return nil, fmt.Errorf("unable to query pg_stat_replication: %w", err)
-	}
-	defer rows.Close()
-	var rs []replicationStats
-	var errors error
-	for rows.Next() {
-		var client string
-		var replicationBytes int64
-		var writeLagInt, flushLagInt, replayLagInt int64
-		err = rows.Scan(&client, &replicationBytes,
-			&writeLagInt, &flushLagInt, &replayLagInt)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
-		}
-		rs = append(rs, replicationStats{
-			clientAddr:   client,
-			pendingBytes: replicationBytes,
-			replayLagInt: replayLagInt,
-			writeLagInt:  writeLagInt,
-			flushLagInt:  flushLagInt,
-		})
-	}
-
-	return rs, errors
-}
-
 func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
-	if !metadata.PostgresqlreceiverPreciselagmetricsFeatureGate.IsEnabled() {
-		return c.getDeprecatedReplicationStats(ctx)
-	}
-
 	query := `SELECT
 	coalesce(cast(client_addr as varchar), 'unix') AS client_addr,
 	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,

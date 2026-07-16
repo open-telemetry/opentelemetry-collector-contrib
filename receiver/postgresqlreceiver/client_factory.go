@@ -16,34 +16,6 @@ type postgreSQLClientFactory interface {
 	close() error
 }
 
-// defaultClientFactory creates one PG connection per call
-type defaultClientFactory struct {
-	baseConfig postgreSQLConfig
-}
-
-func newDefaultClientFactory(cfg *Config) *defaultClientFactory {
-	return &defaultClientFactory{
-		baseConfig: postgreSQLConfig{
-			username: cfg.Username,
-			password: string(cfg.Password),
-			address:  cfg.AddrConfig,
-			tls:      cfg.ClientConfig,
-		},
-	}
-}
-
-func (d *defaultClientFactory) getClient(database string) (client, error) {
-	db, err := getDB(d.baseConfig, database)
-	if err != nil {
-		return nil, err
-	}
-	return &postgreSQLClient{client: db, closeFn: db.Close}, nil
-}
-
-func (*defaultClientFactory) close() error {
-	return nil
-}
-
 // poolClientFactory creates one PG connection per database, keeping a pool of connections
 type poolClientFactory struct {
 	sync.Mutex
