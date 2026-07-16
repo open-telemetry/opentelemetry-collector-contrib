@@ -4,15 +4,14 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
-	"strconv"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"slices"
+	"strconv"
+	"time"
 )
 
 const (
@@ -1155,7 +1154,7 @@ type metricSqlserverAvailabilityGroupDatabaseReplicaHardenedLatency struct {
 // init fills sqlserver.availability_group.database_replica.hardened_latency metric with initial data.
 func (m *metricSqlserverAvailabilityGroupDatabaseReplicaHardenedLatency) init() {
 	m.data.SetName("sqlserver.availability_group.database_replica.hardened_latency")
-	m.data.SetDescription("Time in seconds between a log record being generated on the primary replica and hardened to disk on the secondary replica.")
+	m.data.SetDescription("Time between a log record being generated on the primary replica and hardened to disk on the secondary replica.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1247,7 +1246,7 @@ type metricSqlserverAvailabilityGroupDatabaseReplicaQueueRate struct {
 // init fills sqlserver.availability_group.database_replica.queue.rate metric with initial data.
 func (m *metricSqlserverAvailabilityGroupDatabaseReplicaQueueRate) init() {
 	m.data.SetName("sqlserver.availability_group.database_replica.queue.rate")
-	m.data.SetDescription("Rate at which log data is being processed in the availability group queue.")
+	m.data.SetDescription("Rate at which log data is being sent or redone on a database replica, broken down by queue type (log_send for primary-to-secondary transmission, redo for applying log records on the secondary).")
 	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1342,7 +1341,7 @@ type metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize struct {
 // init fills sqlserver.availability_group.database_replica.queue.size metric with initial data.
 func (m *metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize) init() {
 	m.data.SetName("sqlserver.availability_group.database_replica.queue.size")
-	m.data.SetDescription("Amount of log data in the availability group queue that has not yet been processed.")
+	m.data.SetDescription("Amount of log data waiting to be processed on a database replica, broken down by queue type (log_send for data not yet sent to the secondary, redo for data received but not yet applied).")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

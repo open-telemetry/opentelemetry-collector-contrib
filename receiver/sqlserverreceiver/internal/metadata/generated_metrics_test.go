@@ -529,7 +529,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.availability_group.database_replica.hardened_latency"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Time in seconds between a log record being generated on the primary replica and hardened to disk on the secondary replica.", mi.Description())
+						assert.Equal(t, "Time between a log record being generated on the primary replica and hardened to disk on the secondary replica.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -547,7 +547,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.availability_group.database_replica.hardened_latency"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Time in seconds between a log record being generated on the primary replica and hardened to disk on the secondary replica.", mi.Description())
+						assert.Equal(t, "Time between a log record being generated on the primary replica and hardened to disk on the secondary replica.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -574,7 +574,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.availability_group.database_replica.queue.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Rate at which log data is being processed in the availability group queue.", mi.Description())
+						assert.Equal(t, "Rate at which log data is being sent or redone on a database replica, broken down by queue type (log_send for primary-to-secondary transmission, redo for applying log records on the secondary).", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -595,7 +595,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.availability_group.database_replica.queue.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Rate at which log data is being processed in the availability group queue.", mi.Description())
+						assert.Equal(t, "Rate at which log data is being sent or redone on a database replica, broken down by queue type (log_send for primary-to-secondary transmission, redo for applying log records on the secondary).", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -624,7 +624,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.availability_group.database_replica.queue.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Amount of log data in the availability group queue that has not yet been processed.", mi.Description())
+						assert.Equal(t, "Amount of log data waiting to be processed on a database replica, broken down by queue type (log_send for data not yet sent to the secondary, redo for data received but not yet applied).", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -645,7 +645,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.availability_group.database_replica.queue.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Amount of log data in the availability group queue that has not yet been processed.", mi.Description())
+						assert.Equal(t, "Amount of log data waiting to be processed on a database replica, broken down by queue type (log_send for data not yet sent to the secondary, redo for data received but not yet applied).", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())

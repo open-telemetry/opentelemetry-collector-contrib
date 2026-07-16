@@ -246,7 +246,7 @@ Number of SQL attentions (client cancellation interrupts) received per second.
 
 ### sqlserver.availability_group.database_replica.hardened_latency
 
-Time in seconds between a log record being generated on the primary replica and hardened to disk on the secondary replica.
+Time between a log record being generated on the primary replica and hardened to disk on the secondary replica.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
 
@@ -263,7 +263,7 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.availability_group.database_replica.queue.rate
 
-Rate at which log data is being processed in the availability group queue.
+Rate at which log data is being sent or redone on a database replica, broken down by queue type (log_send for primary-to-secondary transmission, redo for applying log records on the secondary).
 
 This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
 
@@ -281,7 +281,7 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.availability_group.database_replica.queue.size
 
-Amount of log data in the availability group queue that has not yet been processed.
+Amount of log data waiting to be processed on a database replica, broken down by queue type (log_send for data not yet sent to the secondary, redo for data received but not yet applied).
 
 This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
 
