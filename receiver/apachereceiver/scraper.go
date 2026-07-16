@@ -239,7 +239,7 @@ func (r *apacheScraper) applyCPUTimeNewFormat(md pmetric.Metrics) {
 				dps := m.Sum().DataPoints()
 				// Snapshot the original count because new-format points may be appended.
 				original := dps.Len()
-				for d := 0; d < original; d++ {
+				for d := range original {
 					dp := dps.At(d)
 					level, hasLevel := dp.Attributes().Get(cpuTimeOldLevelKey)
 					mode, hasMode := dp.Attributes().Get(cpuTimeOldModeKey)
