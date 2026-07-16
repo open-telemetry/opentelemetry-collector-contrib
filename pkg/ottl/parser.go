@@ -50,10 +50,20 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	return result, condition, nil
 }
 
+// String returns the original statement text used to create the Statement.
+func (s *Statement[K]) String() string {
+	return s.origText
+}
+
 // Condition holds a top level Condition. A Condition is a boolean expression to match telemetry.
 type Condition[K any] struct {
 	condition boolExpr[K]
 	origText  string
+}
+
+// String returns the original condition text used to create the Condition.
+func (c *Condition[K]) String() string {
+	return c.origText
 }
 
 // Eval returns true if the condition was met for the given TransformContext and false otherwise.
@@ -517,6 +527,11 @@ type ValueExpression[K any] struct {
 // Eval evaluates the given expression and returns the value the expression resolves to.
 func (e *ValueExpression[K]) Eval(ctx context.Context, tCtx K) (any, error) {
 	return e.getter.Get(ctx, tCtx)
+}
+
+// String returns the original OTTL expression used to create the ValueExpression.
+func (e *ValueExpression[K]) String() string {
+	return e.origText
 }
 
 // ParseValueExpressions parses string expressions into a ValueExpression slice ready for execution.

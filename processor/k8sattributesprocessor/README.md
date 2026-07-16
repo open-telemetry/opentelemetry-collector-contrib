@@ -1106,7 +1106,7 @@ Feature gates can be enabled using the `--feature-gates` flag:
 
 ## Semantic Conventions Compatibility
 
-The processor is moving towards the latest [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/registry/attributes/k8s/)
+The processor is compatible with the latest `stable` [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/registry/attributes/k8s/)
 through the following feature gates:
 - `processor.k8sattributes.DontEmitV0K8sConventions`
 - `processor.k8sattributes.EmitV1K8sConventions`
@@ -1123,7 +1123,7 @@ The breaking changes between the 2 schemas are the following:
 - `k8s.namespace.annotations.<key>` -> `k8s.namespace.annotation.<key>`
 
 All attributes emitted through the `processor.k8sattributes.EmitV1K8sConventions` feature gate
-are currently in `release_candidate` stability and are actively moving towards `stable` stability.
+are currently in `stable` stability.
 
 ## Available Benchmarks
 

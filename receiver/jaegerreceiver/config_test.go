@@ -27,6 +27,50 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
+	customnameThriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	customnameThriftHTTPServerConfig.WriteTimeout = 0
+	customnameThriftHTTPServerConfig.ReadHeaderTimeout = 0
+	customnameThriftHTTPServerConfig.IdleTimeout = 0
+	customnameThriftHTTPServerConfig.KeepAlivesEnabled = false
+	customnameThriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  ":3456",
+		Transport: confignet.TransportTypeTCP,
+	}
+
+	defaultsThriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	defaultsThriftHTTPServerConfig.WriteTimeout = 0
+	defaultsThriftHTTPServerConfig.ReadHeaderTimeout = 0
+	defaultsThriftHTTPServerConfig.IdleTimeout = 0
+	defaultsThriftHTTPServerConfig.KeepAlivesEnabled = false
+	defaultsThriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  "localhost:14268",
+		Transport: confignet.TransportTypeTCP,
+	}
+
+	mixedThriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	mixedThriftHTTPServerConfig.WriteTimeout = 0
+	mixedThriftHTTPServerConfig.ReadHeaderTimeout = 0
+	mixedThriftHTTPServerConfig.IdleTimeout = 0
+	mixedThriftHTTPServerConfig.KeepAlivesEnabled = false
+	mixedThriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  defaultHTTPEndpoint,
+		Transport: confignet.TransportTypeTCP,
+	}
+
+	tlsThriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	tlsThriftHTTPServerConfig.WriteTimeout = 0
+	tlsThriftHTTPServerConfig.ReadHeaderTimeout = 0
+	tlsThriftHTTPServerConfig.IdleTimeout = 0
+	tlsThriftHTTPServerConfig.KeepAlivesEnabled = false
+	tlsThriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  ":3456",
+		Transport: confignet.TransportTypeTCP,
+	}
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -41,12 +85,7 @@ func TestLoadConfig(t *testing.T) {
 							Transport: confignet.TransportTypeTCP,
 						},
 					}),
-					ThriftHTTP: configoptional.Some(confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Endpoint:  ":3456",
-							Transport: confignet.TransportTypeTCP,
-						},
-					}),
+					ThriftHTTP: configoptional.Some(customnameThriftHTTPServerConfig),
 					ThriftCompactUDP: configoptional.Some(ProtocolUDP{
 						Endpoint: "0.0.0.0:456",
 						ServerConfigUDP: ServerConfigUDP{
@@ -78,12 +117,7 @@ func TestLoadConfig(t *testing.T) {
 							Transport: confignet.TransportTypeTCP,
 						},
 					}),
-					ThriftHTTP: configoptional.Some(confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Endpoint:  "localhost:14268",
-							Transport: confignet.TransportTypeTCP,
-						},
-					}),
+					ThriftHTTP: configoptional.Some(defaultsThriftHTTPServerConfig),
 					ThriftCompactUDP: configoptional.Some(ProtocolUDP{
 						Endpoint:        "localhost:6831",
 						ServerConfigUDP: defaultServerConfigUDP(),
@@ -111,12 +145,7 @@ func TestLoadConfig(t *testing.T) {
 					}),
 
 					// defaults for ThriftHTTP and ThriftBinaryUDP
-					ThriftHTTP: configoptional.Default(confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Endpoint:  defaultHTTPEndpoint,
-							Transport: confignet.TransportTypeTCP,
-						},
-					}),
+					ThriftHTTP: configoptional.Default(mixedThriftHTTPServerConfig),
 					ThriftBinaryUDP: configoptional.Default(ProtocolUDP{
 						Endpoint:        defaultThriftBinaryEndpoint,
 						ServerConfigUDP: defaultServerConfigUDP(),
@@ -140,12 +169,7 @@ func TestLoadConfig(t *testing.T) {
 							},
 						}),
 					}),
-					ThriftHTTP: configoptional.Some(confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Endpoint:  ":3456",
-							Transport: confignet.TransportTypeTCP,
-						},
-					}),
+					ThriftHTTP: configoptional.Some(tlsThriftHTTPServerConfig),
 
 					// defaults for ThriftBinaryUDP and ThriftCompactUDP
 					ThriftBinaryUDP: configoptional.Default(ProtocolUDP{
@@ -211,12 +235,17 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "thrift-http-no-port",
 			apply: func(cfg *Config) {
-				cfg.ThriftHTTP = configoptional.Some(confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Endpoint:  "localhost:",
-						Transport: confignet.TransportTypeTCP,
-					},
-				})
+				thriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
+				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+				thriftHTTPServerConfig.WriteTimeout = 0
+				thriftHTTPServerConfig.ReadHeaderTimeout = 0
+				thriftHTTPServerConfig.IdleTimeout = 0
+				thriftHTTPServerConfig.KeepAlivesEnabled = false
+				thriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
+					Endpoint:  "localhost:",
+					Transport: confignet.TransportTypeTCP,
+				}
+				cfg.ThriftHTTP = configoptional.Some(thriftHTTPServerConfig)
 			},
 			err: "receiver creation with no port number for Thrift HTTP must fail",
 		},

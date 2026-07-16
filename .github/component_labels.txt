@@ -184,6 +184,7 @@ processor/cumulativetodeltaprocessor processor/cumulativetodelta
 processor/deltatocumulativeprocessor processor/deltatocumulative
 processor/deltatorateprocessor processor/deltatorate
 processor/drainprocessor processor/drain
+processor/dynamicsamplingprocessor processor/dynamicsampling
 processor/filterprocessor processor/filter
 processor/genainormalizerprocessor processor/genainormalizer
 processor/geoipprocessor processor/geoip
@@ -285,7 +286,6 @@ receiver/icmpcheckreceiver receiver/icmpcheck
 receiver/iisreceiver receiver/iis
 receiver/influxdbreceiver receiver/influxdb
 receiver/jaegerreceiver receiver/jaeger
-receiver/jmxreceiver receiver/jmx
 receiver/journaldreceiver receiver/journald
 receiver/k8sclusterreceiver receiver/k8scluster
 receiver/k8seventsreceiver receiver/k8sevents
