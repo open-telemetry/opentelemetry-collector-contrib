@@ -42,6 +42,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
+// rawConfigMapKey is the key under which the raw (unexpanded) configuration is
+// reported in the OpAMP effective config map when reports_raw_config is enabled.
+// The fully expanded effective configuration continues to be reported under the
+// "" (empty) key for backward compatibility.
+const rawConfigMapKey = "raw"
+
 type statusAggregator interface {
 	Subscribe(scope status.Scope, verbosity status.Verbosity) (<-chan *status.AggregateStatus, status.UnsubscribeFunc)
 	RecordStatus(source *componentstatus.InstanceID, event *componentstatus.Event)
@@ -65,6 +71,10 @@ type opampAgent struct {
 
 	eclk            sync.RWMutex
 	effectiveConfig *confmap.Conf
+	// rawConfig holds the unexpanded configuration reported alongside the
+	// effective config when Capabilities.ReportsRawConfig is enabled. It is nil
+	// when raw config reporting is disabled or unavailable.
+	rawConfig *confmap.Conf
 
 	// lifetimeCtx is canceled on Stop of the component
 	lifetimeCtx       context.Context
@@ -92,7 +102,7 @@ type opampAgent struct {
 var (
 	_ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
 	_ extensioncapabilities.Dependent              = (*opampAgent)(nil)
-	_ extensioncapabilities.ConfigWatcher          = (*opampAgent)(nil)
+	_ extensioncapabilities.ConfigSnapshotWatcher  = (*opampAgent)(nil)
 	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
 	_ componentstatus.Watcher                      = (*opampAgent)(nil)
 
@@ -231,12 +241,21 @@ func (o *opampAgent) Dependencies() []component.ID {
 	return []component.ID{authID}
 }
 
-func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
-	if o.capabilities.ReportsEffectiveConfig {
-		o.updateEffectiveConfig(conf)
-		return o.opampClient.UpdateEffectiveConfig(ctx)
+// NotifyConfigSnapshot implements the extensioncapabilities.ConfigSnapshotWatcher
+// interface. It records the Collector's effective configuration and, when
+// reports_raw_config is enabled, the raw (unexpanded) configuration, then pushes
+// the effective config update to the OpAMP server.
+func (o *opampAgent) NotifyConfigSnapshot(ctx context.Context, configSnapshot extensioncapabilities.ConfigSnapshot) error {
+	if !o.capabilities.ReportsEffectiveConfig {
+		return nil
 	}
-	return nil
+
+	var rawConfig *confmap.Conf
+	if o.capabilities.ReportsRawConfig {
+		rawConfig = configSnapshot.Unexpanded()
+	}
+	o.updateEffectiveConfig(configSnapshot.Effective(), rawConfig)
+	return o.opampClient.UpdateEffectiveConfig(ctx)
 }
 
 func (o *opampAgent) Register(capability string, opts ...opampcustommessages.CustomCapabilityRegisterOption) (opampcustommessages.CustomCapabilityHandler, error) {
@@ -275,11 +294,12 @@ func (o *opampAgent) ComponentStatusChanged(
 	o.componentStatusCh <- &eventSourcePair{source: source, event: event}
 }
 
-func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
+func (o *opampAgent) updateEffectiveConfig(effective, raw *confmap.Conf) {
 	o.eclk.Lock()
 	defer o.eclk.Unlock()
 
-	o.effectiveConfig = conf
+	o.effectiveConfig = effective
+	o.rawConfig = raw
 }
 
 func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
@@ -437,21 +457,37 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 		return nil
 	}
 
-	m := o.effectiveConfig.ToStringMap()
-	conf, err := yaml.Marshal(m)
+	conf, err := yaml.Marshal(o.effectiveConfig.ToStringMap())
 	if err != nil {
-		o.logger.Error("cannot unmarshal effectiveConfig", zap.Any("conf", o.effectiveConfig), zap.Error(err))
+		o.logger.Error("cannot marshal effective config", zap.Any("conf", o.effectiveConfig), zap.Error(err))
 		return nil
+	}
+
+	configMap := map[string]*protobufs.AgentConfigFile{
+		"": {
+			Body:        conf,
+			ContentType: "text/yaml",
+		},
+	}
+
+	// When enabled, additionally report the raw (unexpanded) config under a
+	// distinct key. A failure to marshal the raw config must not drop the
+	// effective config reported under the "" key.
+	if o.capabilities.ReportsRawConfig && o.rawConfig != nil {
+		rawConf, err := yaml.Marshal(o.rawConfig.ToStringMap())
+		if err != nil {
+			o.logger.Error("cannot marshal raw config", zap.Any("conf", o.rawConfig), zap.Error(err))
+		} else {
+			configMap[rawConfigMapKey] = &protobufs.AgentConfigFile{
+				Body:        rawConf,
+				ContentType: "text/yaml",
+			}
+		}
 	}
 
 	return &protobufs.EffectiveConfig{
 		ConfigMap: &protobufs.AgentConfigMap{
-			ConfigMap: map[string]*protobufs.AgentConfigFile{
-				"": {
-					Body:        conf,
-					ContentType: "text/yaml",
-				},
-			},
+			ConfigMap: configMap,
 		},
 	}
 }

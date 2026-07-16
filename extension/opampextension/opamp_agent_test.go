@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
@@ -224,13 +225,105 @@ func TestComposeEffectiveConfig(t *testing.T) {
 	expected, err := os.ReadFile(ecFileName)
 	assert.NoError(t, err)
 
-	o.updateEffectiveConfig(cm)
+	o.updateEffectiveConfig(cm, nil)
 	ec = o.composeEffectiveConfig()
 	assert.NotNil(t, ec)
 	assert.YAMLEq(t, string(expected), string(ec.ConfigMap.ConfigMap[""].Body))
 	assert.Equal(t, "text/yaml", ec.ConfigMap.ConfigMap[""].ContentType)
+	// With raw config reporting disabled, only the effective config is reported.
+	assert.NotContains(t, ec.ConfigMap.ConfigMap, rawConfigMapKey)
 
 	assert.NoError(t, o.Shutdown(t.Context()))
+}
+
+func TestComposeEffectiveConfigWithRawConfig(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Capabilities.ReportsRawConfig = true
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
+	o, err := newOpampAgent(cfg, set)
+	require.NoError(t, err)
+
+	effectiveFile := filepath.Join("testdata", "effective.yaml")
+	effectiveConf, err := confmaptest.LoadConf(effectiveFile)
+	require.NoError(t, err)
+	effectiveBytes, err := os.ReadFile(effectiveFile)
+	require.NoError(t, err)
+
+	rawFile := filepath.Join("testdata", "raw.yaml")
+	rawConf, err := confmaptest.LoadConf(rawFile)
+	require.NoError(t, err)
+	rawBytes, err := os.ReadFile(rawFile)
+	require.NoError(t, err)
+
+	// Raw reporting is enabled but no raw config has been captured yet: only the
+	// effective config is reported, under the "" key.
+	o.updateEffectiveConfig(effectiveConf, nil)
+	ec := o.composeEffectiveConfig()
+	require.NotNil(t, ec)
+	assert.YAMLEq(t, string(effectiveBytes), string(ec.ConfigMap.ConfigMap[""].Body))
+	assert.NotContains(t, ec.ConfigMap.ConfigMap, rawConfigMapKey)
+
+	// With a raw config captured, both keys are reported. The "" key keeps the
+	// effective (expanded) config unchanged; the "raw" key carries the
+	// unexpanded config verbatim, including the unexpanded ${env:...} reference.
+	o.updateEffectiveConfig(effectiveConf, rawConf)
+	ec = o.composeEffectiveConfig()
+	require.NotNil(t, ec)
+	require.Contains(t, ec.ConfigMap.ConfigMap, "")
+	require.Contains(t, ec.ConfigMap.ConfigMap, rawConfigMapKey)
+	assert.YAMLEq(t, string(effectiveBytes), string(ec.ConfigMap.ConfigMap[""].Body))
+	assert.YAMLEq(t, string(rawBytes), string(ec.ConfigMap.ConfigMap[rawConfigMapKey].Body))
+	assert.Equal(t, "text/yaml", ec.ConfigMap.ConfigMap[rawConfigMapKey].ContentType)
+	assert.Contains(t, string(ec.ConfigMap.ConfigMap[rawConfigMapKey].Body), "${env:OTLP_ENDPOINT}")
+
+	assert.NoError(t, o.Shutdown(t.Context()))
+}
+
+func TestNotifyConfigSnapshot(t *testing.T) {
+	effectiveFile := filepath.Join("testdata", "effective.yaml")
+	effectiveConf, err := confmaptest.LoadConf(effectiveFile)
+	require.NoError(t, err)
+	effectiveBytes, err := os.ReadFile(effectiveFile)
+	require.NoError(t, err)
+	rawConf, err := confmaptest.LoadConf(filepath.Join("testdata", "raw.yaml"))
+	require.NoError(t, err)
+	snapshot := extensioncapabilities.NewConfigSnapshot(effectiveConf, rawConf)
+
+	tests := []struct {
+		name         string
+		reportsRaw   bool
+		expectRawKey bool
+	}{
+		{name: "raw disabled", reportsRaw: false, expectRawKey: false},
+		{name: "raw enabled", reportsRaw: true, expectRawKey: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Capabilities.ReportsRawConfig = tt.reportsRaw
+			set := extensiontest.NewNopSettings(extensiontest.NopType)
+			o, err := newOpampAgent(cfg, set)
+			require.NoError(t, err)
+			o.opampClient = mockOpAMPClient{}
+
+			require.NoError(t, o.NotifyConfigSnapshot(t.Context(), snapshot))
+
+			ec := o.composeEffectiveConfig()
+			require.NotNil(t, ec)
+			// The effective config under "" is always present and unchanged,
+			// regardless of whether raw config reporting is enabled.
+			require.Contains(t, ec.ConfigMap.ConfigMap, "")
+			assert.YAMLEq(t, string(effectiveBytes), string(ec.ConfigMap.ConfigMap[""].Body))
+			if tt.expectRawKey {
+				assert.Contains(t, ec.ConfigMap.ConfigMap, rawConfigMapKey)
+			} else {
+				assert.NotContains(t, ec.ConfigMap.ConfigMap, rawConfigMapKey)
+			}
+
+			assert.NoError(t, o.Shutdown(t.Context()))
+		})
+	}
 }
 
 func TestShutdown(t *testing.T) {

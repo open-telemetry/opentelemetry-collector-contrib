@@ -69,6 +69,21 @@ type Capabilities struct {
 	ReportsAvailableComponents bool `mapstructure:"reports_available_components"`
 	// AcceptsRestartCommand enables the OpAMP AcceptsRestartCommand Capability (default: false)
 	AcceptsRestartCommand bool `mapstructure:"accepts_restart_command"`
+	// ReportsRawConfig additionally reports the raw, unexpanded Collector
+	// configuration (before environment variable and other provider references
+	// are expanded) alongside the effective configuration. (default: false)
+	//
+	// The raw configuration is reported under the "raw" key of the OpAMP
+	// effective config map; the fully expanded effective configuration is left
+	// unchanged under the "" (empty) key. Requires reports_effective_config.
+	//
+	// WARNING: the raw configuration can expose secrets that are hardcoded
+	// directly in the configuration files. Secrets sourced from providers (for
+	// example ${env:TOKEN}) are redacted, but literal secrets written into the
+	// configuration are not. Only enable this if you trust the OpAMP server with
+	// the full contents of your configuration files. It is disabled by default
+	// for this reason.
+	ReportsRawConfig bool `mapstructure:"reports_raw_config"`
 }
 
 func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
@@ -226,6 +241,10 @@ func (cfg *Config) Validate() error {
 		if err := cfg.Server.HTTP.Validate(); err != nil {
 			return err
 		}
+	}
+
+	if cfg.Capabilities.ReportsRawConfig && !cfg.Capabilities.ReportsEffectiveConfig {
+		return errors.New("reports_raw_config requires reports_effective_config to be enabled")
 	}
 
 	if cfg.InstanceUID != "" {

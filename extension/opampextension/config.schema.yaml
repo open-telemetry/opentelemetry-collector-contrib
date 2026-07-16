@@ -25,6 +25,9 @@ $defs:
       reports_health:
         description: 'ReportsHealth enables the OpAMP ReportsHealth Capability. (default: true)'
         type: boolean
+      reports_raw_config:
+        description: 'ReportsRawConfig additionally reports the raw, unexpanded Collector configuration (before environment variable and other provider references are expanded) alongside the effective configuration. (default: false) The raw configuration is reported under the "raw" key of the OpAMP effective config map; the fully expanded effective configuration is left unchanged under the "" (empty) key. Requires reports_effective_config. WARNING: the raw configuration can expose secrets that are hardcoded directly in the configuration files. Secrets sourced from providers (for example ${env:TOKEN}) are redacted, but literal secrets written into the configuration are not. Only enable this if you trust the OpAMP server with the full contents of your configuration files. It is disabled by default for this reason.'
+        type: boolean
   op_amp_server:
     description: OpAMPServer contains the OpAMP transport configuration.
     type: object
