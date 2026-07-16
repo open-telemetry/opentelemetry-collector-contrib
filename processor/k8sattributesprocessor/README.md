@@ -95,10 +95,10 @@ are then also available for the use within association rules. Available attribut
   - k8s.node.name
   - k8s.node.uid
   - k8s.cluster.uid
-  - [service.namespace](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md#how-servicenamespace-should-be-calculated)
-  - [service.name](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md#how-servicename-should-be-calculated)
-  - [service.version](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md#how-serviceversion-should-be-calculated)(cannot be used for source rules in the pod_association when it's calculated based on container's image tag/digest)
-  - [service.instance.id](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md#how-serviceinstanceid-should-be-calculated)(cannot be used for source rules in the pod_association)
+  - [service.namespace](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicenamespace-should-be-calculated)
+  - [service.name](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicename-should-be-calculated)
+  - [service.version](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceversion-should-be-calculated)(cannot be used for source rules in the pod_association when it's calculated based on container's image tag/digest)
+  - [service.instance.id](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceinstanceid-should-be-calculated)(cannot be used for source rules in the pod_association)
   - Any tags extracted from the pod labels and annotations, as described in [extracting attributes from pod labels and annotations](#extracting-attributes-from-pod-labels-and-annotations)
 
 Not all the attributes are guaranteed to be added. Only attribute names from `metadata` should be used for
@@ -302,7 +302,7 @@ extract:
 ## Configuring recommended resource attributes
 
 The processor can be configured to set the
-[recommended resource attributes](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md):
+[recommended resource attributes](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/):
 
 - `otel_annotations` will translate `resource.opentelemetry.io/foo` to the `foo` resource attribute, etc.
 - `deployment_name_from_replicaset` is deprecated and will be removed in future releases. Deployment names are derived from ReplicaSet names by default by trimming the pod-template-hash suffix. Set this option to `false` only to force ReplicaSet informer lookup for deployment names. If `k8s.deployment.uid` is included in the `extract metadata` section, or deployment labels or annotations are being extracted (i.e. any `extract.labels` or `extract.annotations` rule with `from: deployment`), then the Deployment/ReplicaSet informers are started and this setting is ignored.
