@@ -670,8 +670,8 @@ Uptime of the node.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| rabbitmq.node.name | The name of the RabbitMQ node. | Any Str | true | - |
-| rabbitmq.queue.name | The name of the RabbitMQ queue. | Any Str | true | - |
-| rabbitmq.vhost.name | The name of the RabbitMQ vHost. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| rabbitmq.node.name | The name of the RabbitMQ node. | Any Str | true | - | - |
+| rabbitmq.queue.name | The name of the RabbitMQ queue. | Any Str | true | - | - |
+| rabbitmq.vhost.name | The name of the RabbitMQ vHost. | Any Str | true | - | - |

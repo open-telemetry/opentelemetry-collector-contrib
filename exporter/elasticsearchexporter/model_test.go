@@ -1603,6 +1603,7 @@ func TestECSSpanEventEncoder(t *testing.T) {
 	tests := []struct {
 		name          string
 		resourceAttrs func(pcommon.Map)
+		scopeAttrs    func(pcommon.Map) // nil = no scope attrs
 		spanSpanID    [8]byte
 		spanAttrs     func(pcommon.Map) // nil = no extra span attrs
 		eventName     string
@@ -1652,7 +1653,9 @@ func TestECSSpanEventEncoder(t *testing.T) {
 				assert.Equal(t, "at com.example.Foo.bar(Foo.java:42)", gjson.Get(body, "error.stack_trace").String())
 				assert.Equal(t, "abcdef1234567890abcdef1234567890", gjson.Get(body, "error.id").String())
 				assert.Equal(t, "abcdef1234567890", gjson.Get(body, "error.grouping_key").String())
-				assert.Equal(t, "null pointer", gjson.Get(body, "error.grouping_name").String())
+				// error.grouping_name is a scripted field in the logs-apm.error index template and
+				// cannot be indexed directly; the conversion map skips it.
+				assert.False(t, gjson.Get(body, "error.grouping_name").Exists())
 				assert.Equal(t, txnID, gjson.Get(body, "parent.id").String())
 				assert.Equal(t, txnID, gjson.Get(body, "span.id").String())
 				assert.Equal(t, txnID, gjson.Get(body, "transaction.id").String())
@@ -1766,6 +1769,53 @@ func TestECSSpanEventEncoder(t *testing.T) {
 				assert.False(t, gjson.Get(body, "error").Exists())
 			},
 		},
+		{
+			name: "exception_namespace_from_scope_attrs",
+			resourceAttrs: func(m pcommon.Map) {
+				m.PutStr("service.name", "my-service")
+			},
+			scopeAttrs: func(m pcommon.Map) {
+				m.PutStr("data_stream.namespace", "production")
+			},
+			spanSpanID: [8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08},
+			spanAttrs: func(m pcommon.Map) {
+				m.PutStr("transaction.id", txnID)
+			},
+			eventName: "exception",
+			eventAttrs: func(m pcommon.Map) {
+				m.PutStr("exception.type", "java.lang.NullPointerException")
+				m.PutStr("exception.message", "null pointer")
+			},
+			wantDataset:   "apm.error",
+			wantNamespace: "production",
+			checkBody: func(t *testing.T, body string) {
+				assert.Equal(t, "production", gjson.Get(body, "data_stream.namespace").String())
+				assert.Equal(t, "java.lang.NullPointerException", gjson.Get(body, "error.exception.type").String())
+			},
+		},
+		{
+			name: "non_exception_namespace_from_scope_attrs",
+			resourceAttrs: func(m pcommon.Map) {
+				m.PutStr("service.name", "my-service")
+			},
+			scopeAttrs: func(m pcommon.Map) {
+				m.PutStr("data_stream.namespace", "production")
+			},
+			spanSpanID: [8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08},
+			spanAttrs: func(m pcommon.Map) {
+				m.PutStr("transaction.id", txnID)
+			},
+			eventName: "http.server.request",
+			eventAttrs: func(m pcommon.Map) {
+				m.PutInt("timestamp.us", 1000000)
+			},
+			wantDataset:   "apm.app.my_service",
+			wantNamespace: "production",
+			checkBody: func(t *testing.T, body string) {
+				assert.Equal(t, "production", gjson.Get(body, "data_stream.namespace").String())
+				assert.Equal(t, "http.server.request", gjson.Get(body, "message").String())
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -1776,6 +1826,9 @@ func TestECSSpanEventEncoder(t *testing.T) {
 			tc.resourceAttrs(resource.Attributes())
 
 			scope := pcommon.NewInstrumentationScope()
+			if tc.scopeAttrs != nil {
+				tc.scopeAttrs(scope.Attributes())
+			}
 
 			span := ptrace.NewSpan()
 			span.SetTraceID(commonTraceID)

@@ -4874,3 +4874,48 @@ func TestExtractPodAttributesClusterUIDRace(t *testing.T) {
 
 	wg.Wait()
 }
+
+func TestPodDeleteIPMissingFromDeleteEvent(t *testing.T) {
+	c, _ := newTestClient(t)
+
+	pod := &api_v1.Pod{}
+	pod.Name = "podLeak"
+	pod.Status.PodIP = "4.4.4.4"
+	pod.UID = "uid-leak-test"
+	c.handlePodAdd(pod)
+
+	// Map should have 3 keys for this pod
+	assert.Contains(t, c.Pods, newPodIdentifier("resource_attribute", "k8s.pod.uid", "uid-leak-test"))
+	assert.Contains(t, c.Pods, newPodIdentifier("connection", "k8s.pod.ip", "4.4.4.4"))
+	assert.Contains(t, c.Pods, newPodIdentifier("resource_attribute", "k8s.pod.ip", "4.4.4.4"))
+
+	// Clear the delete queue
+	c.deleteQueue = c.deleteQueue[:0]
+
+	// Simulate delete event where PodIP is missing/empty!
+	deletePod := &api_v1.Pod{}
+	deletePod.Name = "podLeak"
+	deletePod.UID = "uid-leak-test"
+	deletePod.Status.PodIP = ""
+
+	c.handlePodDelete(deletePod)
+
+	// In the bug state, only the UID-based keys are queued for deletion, leaving the IP-based keys leaked.
+	// We expect all unique key patterns (UID, connection IP, and Pod IP) to be queued for deletion.
+	var ids []PodIdentifier
+	for _, req := range c.deleteQueue {
+		assert.Equal(t, "uid-leak-test", req.podUID)
+		ids = append(ids, req.id)
+	}
+
+	// Verify that each of the three key patterns was queued at least once
+	assert.Contains(t, ids, newPodIdentifier("resource_attribute", "k8s.pod.uid", "uid-leak-test"))
+	assert.Contains(t, ids, newPodIdentifier("connection", "k8s.pod.ip", "4.4.4.4"))
+	assert.Contains(t, ids, newPodIdentifier("resource_attribute", "k8s.pod.ip", "4.4.4.4"))
+
+	// Run the sweep logic to process all queued deletions immediately
+	c.deleteLoopProcessing(0)
+
+	// In the fixed state, all keys associated with the pod should be successfully cleaned up from the cache.
+	assert.Empty(t, c.Pods)
+}

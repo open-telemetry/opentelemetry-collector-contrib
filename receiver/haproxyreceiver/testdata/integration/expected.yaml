@@ -21,7 +21,7 @@ resourceMetrics:
                   startTimeUnixNano: "1691479578831831000"
                   timeUnixNano: "1691479579855985000"
               isMonotonic: true
-            unit: by
+            unit: By
           - description: Bytes out. Corresponds to HAProxy's `bout` metric.
             name: haproxy.bytes.output
             sum:
@@ -31,7 +31,7 @@ resourceMetrics:
                   startTimeUnixNano: "1691479578831831000"
                   timeUnixNano: "1691479579855985000"
               isMonotonic: true
-            unit: by
+            unit: By
           - description: Number of connections over the last elapsed second (frontend). Corresponds to HAProxy's `conn_rate` metric.
             gauge:
               dataPoints:
