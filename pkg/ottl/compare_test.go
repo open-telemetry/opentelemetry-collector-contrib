@@ -179,6 +179,10 @@ func Test_comparison(t *testing.T) {
 
 		// pcommon.Value vs pcommon.Value (cross-type)
 		{"pvalue int vs pvalue float", pcommon.NewValueInt(1), pcommon.NewValueDouble(2), []bool{false, true, true, true, false, false}},
+		{"pvalue int vs pvalue float equal", pcommon.NewValueInt(0), pcommon.NewValueDouble(0), []bool{true, false, false, true, true, false}},
+		{"pvalue int vs pvalue float lt", pcommon.NewValueInt(1), pcommon.NewValueDouble(1.5), []bool{false, true, true, true, false, false}},
+		{"pvalue int vs pvalue float gt", pcommon.NewValueInt(2), pcommon.NewValueDouble(1.5), []bool{false, true, false, false, true, true}},
+		{"pvalue float vs pvalue int equal", pcommon.NewValueDouble(1), pcommon.NewValueInt(1), []bool{true, false, false, true, true, false}},
 		{"pvalue int vs pvalue string", pcommon.NewValueInt(1), pcommon.NewValueStr("1"), []bool{false, true, false, false, false, false}},
 		{"pvalue string vs pvalue int", pcommon.NewValueStr("1"), pcommon.NewValueInt(1), []bool{false, true, false, false, false, false}},
 
@@ -222,6 +226,15 @@ func Test_comparison(t *testing.T) {
 		{"pcommon.Slice vs pvalue slice same", psl1, pvSlice1, []bool{true, false, false, false, false, false}},
 		{"nil vs pvalue empty", nil, pcommon.NewValueEmpty(), []bool{true, false, false, true, true, false}},
 		{"nil vs pvalue int", nil, pcommon.NewValueInt(1), []bool{false, true, false, false, false, false}},
+
+		// pcommon.Value type mismatches (invalidComparison via compareX functions)
+		{"compareBool pvalue type mismatch", true, pcommon.NewValueInt(1), []bool{false, true, false, false, false, false}},
+		{"compareByte pvalue type mismatch", ba, pcommon.NewValueInt(1), []bool{false, true, false, false, false, false}},
+		{"compareFloat64 pvalue type mismatch", f64a, pcommon.NewValueStr("1"), []bool{false, true, false, false, false, false}},
+		{"compareMap pvalue type mismatch", m1, pcommon.NewValueInt(1), []bool{false, true, false, false, false, false}},
+		{"comparePMap pvalue type mismatch", pm1, pcommon.NewValueInt(1), []bool{false, true, false, false, false, false}},
+		{"compareSlice pvalue type mismatch", sl1, pcommon.NewValueInt(1), []bool{false, true, false, false, false, false}},
+		{"comparePSlice pvalue type mismatch", psl1, pcommon.NewValueInt(1), []bool{false, true, false, false, false, false}},
 	}
 	ops := []compareOp{eq, ne, lt, lte, gte, gt}
 	comp := NewValueComparator()

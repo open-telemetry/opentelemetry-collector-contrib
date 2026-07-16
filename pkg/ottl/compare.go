@@ -339,6 +339,7 @@ func (p *ottlValueComparator) comparePSlice(a pcommon.Slice, b any, op compareOp
 }
 
 func (p *ottlValueComparator) comparePValue(a pcommon.Value, b any, op compareOp) bool {
+	//exhaustive:enforce
 	switch a.Type() {
 	case pcommon.ValueTypeInt:
 		return p.compareInt64(a.Int(), b, op)
@@ -356,9 +357,8 @@ func (p *ottlValueComparator) comparePValue(a pcommon.Value, b any, op compareOp
 		return p.comparePSlice(a.Slice(), b, op)
 	case pcommon.ValueTypeEmpty:
 		return p.compare(b, nil, op)
-	default:
-		return p.invalidComparison(op)
 	}
+	return p.invalidComparison(op)
 }
 
 // a and b are the return values from a Getter; we try to compare them
