@@ -409,7 +409,7 @@ Total wall-clock time spent in database calls.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.session.type | Class of session the database time is attributed to. | Str: ``foreground`` | Recommended | - |
+| oracledb.session.type | Class of session the activity is attributed to. | Str: ``background``, ``foreground`` | Recommended | - |
 
 ### oracledb.db_block_gets
 
@@ -463,6 +463,20 @@ Fraction of executions that did not require a parse, as computed by Oracle V$SYS
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.parse.type | Type of parse operation (e.g., soft). | Str: ``soft`` | Recommended | - |
 
+### oracledb.gc.current_block.time
+
+Cumulative time spent transferring current blocks between instances over RAC cache fusion.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| network.io.direction | Direction of the network transfer. | Str: ``receive``, ``transmit`` | Recommended | - |
+
 ### oracledb.host.cpu.usage.rate
 
 Host CPU consumption rate across all cores, in CPU-seconds used per second.
@@ -508,6 +522,20 @@ Total count of LOB (large object) I/O operations.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+
+### oracledb.lock.time
+
+Cumulative time spent on transaction lock activity.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.session.type | Class of session the activity is attributed to. | Str: ``background``, ``foreground`` | Recommended | - |
 
 ### oracledb.logons
 
@@ -697,6 +725,14 @@ Number of SELECT statements executed in parallel
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {queries} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.recovery.blocks
+
+Number of blocks read during instance or media recovery.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {block} | Sum | Int | Cumulative | true | Development |
+
 ### oracledb.recycle_bin.limit
 
 Total size of the recycle bin.
@@ -858,6 +894,20 @@ Fraction of the shared pool that is currently free, as computed by Oracle V$SYSM
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+### oracledb.smon.posts
+
+Number of times SMON was posted to perform recovery.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {post} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.smon.type | Type of recovery SMON was posted to perform. | Str: ``instance``, ``transaction`` | Recommended | - |
+
 ### oracledb.sort.operations
 
 Total count of sort operations.
@@ -914,7 +964,7 @@ Bytes transferred via SQL*Net between Oracle and clients/dblinks. Sourced from v
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| network.io.direction | Direction of the SQL*Net network transfer. | Str: ``receive``, ``transmit`` | Recommended | - |
+| network.io.direction | Direction of the network transfer. | Str: ``receive``, ``transmit`` | Recommended | - |
 | destination.type | Type of the SQL*Net destination endpoint (client application or remote database link). | Str: ``client``, ``dblink`` | Recommended | - |
 
 ### oracledb.storage.usage
@@ -964,6 +1014,14 @@ Average response time per transaction.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Double | Development |
+
+### oracledb.transaction.rollbacks
+
+Total number of transactions rolled back.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {rollback} | Sum | Int | Cumulative | true | Development |
 
 ## Default Events
 

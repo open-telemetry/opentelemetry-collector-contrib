@@ -75,6 +75,14 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
 		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
+		// Transactions, Locks & Recovery v$sysstat rows
+		{"NAME": transactionRollbacks, "VALUE": "4521"},
+		{"NAME": transactionLockBackgroundTime, "VALUE": "350"},  // cs -> 3.5 s
+		{"NAME": transactionLockForegroundTime, "VALUE": "1200"}, // cs -> 12 s
+		{"NAME": recoveryBlocksRead, "VALUE": "8800"},
+		{"NAME": smonInstanceRecoveryPosts, "VALUE": "12"},
+		{"NAME": smonTxnRecoveryPosts, "VALUE": "7"},
+		{"NAME": gcCurrentBlockReceiveTime, "VALUE": "640"}, // cs -> 6.4 s
 		// Workload analysis v$sysstat rows
 		{"NAME": tableScansDirectReadStat, "VALUE": "100"},
 		{"NAME": tableScansLongTablesStat, "VALUE": "200"},
@@ -402,6 +410,71 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbGcCurrentBlockTime.Enabled = true
+	cfg.Metrics.OracledbLockTime.Enabled = true
+	cfg.Metrics.OracledbRecoveryBlocks.Enabled = true
+	cfg.Metrics.OracledbSmonPosts.Enabled = true
+	cfg.Metrics.OracledbTransactionRollbacks.Enabled = true
+
+	m := scrapeWithConfig(t, cfg)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Type() != pmetric.MetricTypeSum {
+			continue
+		}
+		dps := me.Sum().DataPoints()
+		switch me.Name() {
+		case "oracledb.gc.current_block.time":
+			seen++
+			gcDir, _ := dps.At(0).Attributes().Get("network.io.direction")
+			assert.Equal(t, "receive", gcDir.Str())
+			assert.InDelta(t, 6.4, dps.At(0).DoubleValue(), 1e-9)
+		case "oracledb.lock.time":
+			seen++
+			// one data point per oracledb.session.type; raw centiseconds are divided by 100
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				sessionType, _ := dp.Attributes().Get("oracledb.session.type")
+				switch sessionType.Str() {
+				case "background":
+					assert.InDelta(t, 3.5, dp.DoubleValue(), 1e-9)
+				case "foreground":
+					assert.InDelta(t, 12.0, dp.DoubleValue(), 1e-9)
+				default:
+					t.Errorf("unexpected oracledb.session.type %q", sessionType.Str())
+				}
+			}
+		case "oracledb.recovery.blocks":
+			seen++
+			assert.Equal(t, int64(8800), dps.At(0).IntValue())
+		case "oracledb.smon.posts":
+			seen++
+			// one data point per oracledb.smon.type
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				smonType, _ := dp.Attributes().Get("oracledb.smon.type")
+				switch smonType.Str() {
+				case "instance":
+					assert.Equal(t, int64(12), dp.IntValue())
+				case "transaction":
+					assert.Equal(t, int64(7), dp.IntValue())
+				default:
+					t.Errorf("unexpected oracledb.smon.type %q", smonType.Str())
+				}
+			}
+		case "oracledb.transaction.rollbacks":
+			seen++
+			assert.Equal(t, int64(4521), dps.At(0).IntValue())
+		}
+	}
+	assert.Equal(t, 5, seen)
 }
 
 func TestScraper_ScrapeOSStat(t *testing.T) {
