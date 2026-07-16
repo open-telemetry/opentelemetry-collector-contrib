@@ -199,6 +199,10 @@ attributes:
     type: string
     requirement_level: required
     enum: [allocated, deallocated]
+  sqlserver.index.id:
+    description: The identifier of the index.
+    type: int
+    requirement_level: recommended
   sqlserver.lock.block.type:
     description: The type of lock block tracked by the lock manager.
     type: string
@@ -216,6 +220,10 @@ attributes:
   sqlserver.logical_reads:
     description: Number of logical reads (data read from cache/memory).
     type: int
+    requirement_level: recommended
+  sqlserver.object.name:
+    description: The name of the database object.
+    type: string
     requirement_level: recommended
   sqlserver.open_transaction_count:
     description: Number of transactions currently open in the session.
@@ -293,6 +301,10 @@ attributes:
   sqlserver.row_count:
     description: Number of rows affected or returned by the query.
     type: int
+    requirement_level: recommended
+  sqlserver.schema.name:
+    description: The name of the database schema.
+    type: string
     requirement_level: recommended
   sqlserver.session.duration:
     description: Total elapsed time in seconds the session has been actively executing requests.
@@ -664,6 +676,43 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.index.fragmentation:
+    enabled: false
+    description: Average fragmentation percentage of the index.
+    stability: development
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.index.page.count:
+    enabled: false
+    description: Number of pages in the index.
+    stability: development
+    unit: "{page}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.index.page.utilization:
+    enabled: false
+    description: Average percentage of available data storage space used in all pages of the index.
+    stability: development
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.index.record.count:
+    enabled: false
+    description: Total number of records in the index.
+    stability: development
+    unit: "{record}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.search.rate:
     enabled: false
@@ -673,6 +722,16 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.index.size:
+    enabled: false
+    description: Total size of the index.
+    stability: development
+    unit: "By"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.latch.superlatch.count:
     enabled: false
     description: Number of superlatches currently active.
