@@ -54,6 +54,10 @@
                         <val xsi:type="xsd:int">12</val>
                     </propSet>
                     <propSet>
+                        <name>summary.quickStats.overallCpuReadiness</name>
+                        <val xsi:type="xsd:int">225</val>
+                    </propSet>
+                    <propSet>
                         <name>summary.quickStats.ssdSwappedMemory</name>
                         <val xsi:type="xsd:long">0</val>
                     </propSet>
@@ -127,6 +131,10 @@
                         <val xsi:type="xsd:int">12</val>
                     </propSet>
                     <propSet>
+                        <name>summary.quickStats.overallCpuReadiness</name>
+                        <val xsi:type="xsd:int">225</val>
+                    </propSet>
+                    <propSet>
                         <name>summary.quickStats.ssdSwappedMemory</name>
                         <val xsi:type="xsd:long">0</val>
                     </propSet>
@@ -198,6 +206,10 @@
                     <propSet>
                         <name>summary.quickStats.overallCpuUsage</name>
                         <val xsi:type="xsd:int">12</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.overallCpuReadiness</name>
+                        <val xsi:type="xsd:int">225</val>
                     </propSet>
                     <propSet>
                         <name>summary.quickStats.ssdSwappedMemory</name>

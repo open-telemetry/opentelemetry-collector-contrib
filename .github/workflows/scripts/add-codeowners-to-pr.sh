@@ -5,7 +5,9 @@
 #
 # Adds code owners without write access as reviewers on a PR. Note that
 # the code owners must still be a member of the `open-telemetry`
-# organization.
+# organization. Reviewers are requested one at a time so that a single
+# code owner who cannot be requested does not prevent the rest from being
+# requested.
 #
 # Note that since this script is considered a requirement for PRs,
 # it should never fail.
@@ -16,6 +18,28 @@ if [[ -z "${REPO:-}" || -z "${PR:-}" ]]; then
     echo "One or more of REPO and PR have not been set, please ensure each is set."
     exit 0
 fi
+
+request_review () {
+    # We have to use the GitHub API directly due to an issue with how the CLI
+    # handles PR updates that causes it require access to organization teams,
+    # and the GitHub token doesn't provide that permission.
+    # For more: https://github.com/cli/cli/issues/4844
+    local reviewer="$1"
+    local response
+    local message
+
+    echo "Requesting review from ${reviewer}"
+    response=$(curl -s \
+        -X POST \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+        "https://api.github.com/repos/${REPO}/pulls/${PR}/requested_reviewers" \
+        -d "{\"reviewers\":[\"${reviewer}\"]}")
+    message=$(echo "${response}" | jq -r '.message // empty' 2>/dev/null || true)
+    if [[ -n "${message}" ]]; then
+        echo "Could not request a review from ${reviewer}: ${message}"
+    fi
+}
 
 main () {
     CUR_DIRECTORY=$(dirname "$0")
@@ -33,10 +57,10 @@ main () {
     FILES=$(echo -n "${JSON}"| jq -r '.files[].path')
     REVIEW_LOGINS=$(echo -n "${JSON}"| jq -r '.latestReviews[].author.login')
     COMPONENTS=$(bash "${CUR_DIRECTORY}/get-components.sh" | tac) # Reversed so we visit subdirectories first
-    REVIEWERS=""
     LABELS=""
     declare -A PROCESSED_COMPONENTS
     declare -A REVIEWED
+    declare -A REVIEWER_SET
 
     for REVIEWER in ${REVIEW_LOGINS}; do
         # GitHub adds "app/" in front of user logins. The API docs don't make
@@ -84,10 +108,7 @@ main () {
                     continue
                 fi
 
-                if [[ -n "${REVIEWERS}" ]]; then
-                    REVIEWERS+=","
-                fi
-                REVIEWERS+=$(echo -n "${OWNER}" | sed -E 's/@(.+)/"\1"/')
+                REVIEWER_SET["${OWNER#@}"]=true
             done
 
             LABEL_NAME="$(awk -v path="${COMPONENT}" '$1 == path {print $2}' .github/component_labels.txt)"
@@ -118,23 +139,12 @@ main () {
     # Note that adding the labels above will not trigger any other workflows to
     # add code owners, so we have to do it here.
     #
-    # We have to use the GitHub API directly due to an issue with how the CLI
-    # handles PR updates that causes it require access to organization teams,
-    # and the GitHub token doesn't provide that permission.
-    # For more: https://github.com/cli/cli/issues/4844
-    #
-    # The GitHub API validates that authors are not requested to review, but
-    # accepts duplicate logins and logins that are already reviewers.
-    if [[ -n "${REVIEWERS}" ]]; then
-        echo "Requesting review from ${REVIEWERS}"
-        curl \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${REPO}/pulls/${PR}/requested_reviewers" \
-            -d "{\"reviewers\":[${REVIEWERS}]}" \
-            | jq ".message" \
-            || echo "jq was unable to parse GitHub's response"
+    # Reviewers are requested one at a time so a single invalid reviewer
+    # doesn't drop the rest of the requests.
+    if [[ -n "${!REVIEWER_SET[*]}" ]]; then
+        for REVIEWER in "${!REVIEWER_SET[@]}"; do
+            request_review "${REVIEWER}"
+        done
     else
         echo "No code owners found"
     fi
