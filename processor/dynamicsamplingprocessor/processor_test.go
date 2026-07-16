@@ -482,8 +482,8 @@ func TestProcessor_HonoursIncomingThreshold(t *testing.T) {
 			{
 				Name: "fixed",
 				Sampler: SamplerConfig{
-					Type:          Deterministic,
-					Deterministic: DeterministicConfig{SamplingPercentage: 10}, // rate 10 = keep 10% of population
+					Type:               Deterministic,
+					SamplingPercentage: 10, // rate 10 = keep 10% of population
 				},
 			},
 		},
@@ -527,8 +527,8 @@ func TestProcessor_UpstreamStricterThanRate_UpstreamWins(t *testing.T) {
 			{
 				Name: "loose",
 				Sampler: SamplerConfig{
-					Type:          Deterministic,
-					Deterministic: DeterministicConfig{SamplingPercentage: 50}, // rate 2 = 50% of population
+					Type:               Deterministic,
+					SamplingPercentage: 50, // rate 2 = 50% of population
 				},
 			},
 		},
