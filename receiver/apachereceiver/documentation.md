@@ -147,7 +147,7 @@ The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION)
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| apache.server.name | The name of the Apache HTTP server. | Any Str | true | - |
-| apache.server.port | The port of the Apache HTTP server. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| apache.server.name | The name of the Apache HTTP server. | Any Str | true | - | - |
+| apache.server.port | The port of the Apache HTTP server. | Any Str | true | - | - |

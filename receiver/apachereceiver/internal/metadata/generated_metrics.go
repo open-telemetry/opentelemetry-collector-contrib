@@ -4,15 +4,14 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
-	"strconv"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"slices"
+	"strconv"
+	"time"
 )
 
 const (
@@ -175,13 +174,15 @@ var MetricsInfo = metricsInfo{
 		Name: "apache.connection.active",
 	},
 	ApacheConnections: metricInfo{
-		Name: "apache.connections",
+		Name:       "apache.connections",
+		Attributes: []string{"apache.connection.state"},
 	},
 	ApacheCPULoad: metricInfo{
 		Name: "apache.cpu.load",
 	},
 	ApacheCPUTime: metricInfo{
-		Name: "apache.cpu.time",
+		Name:       "apache.cpu.time",
+		Attributes: []string{"apache.process.level", "cpu.mode"},
 	},
 	ApacheLoad1: metricInfo{
 		Name: "apache.load.1",
@@ -211,7 +212,8 @@ var MetricsInfo = metricsInfo{
 		Name: "apache.worker.idle",
 	},
 	ApacheWorkers: metricInfo{
-		Name: "apache.workers",
+		Name:       "apache.workers",
+		Attributes: []string{"apache.worker.state"},
 	},
 }
 
@@ -233,7 +235,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricApacheConnectionActive struct {

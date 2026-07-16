@@ -89,7 +89,8 @@ var MetricsInfo = metricsInfo{
 		Name: "zookeeper.file_descriptor.open",
 	},
 	ZookeeperFollowerCount: metricInfo{
-		Name: "zookeeper.follower.count",
+		Name:       "zookeeper.follower.count",
+		Attributes: []string{"state"},
 	},
 	ZookeeperFsyncExceededThresholdCount: metricInfo{
 		Name: "zookeeper.fsync.exceeded_threshold.count",
@@ -104,7 +105,8 @@ var MetricsInfo = metricsInfo{
 		Name: "zookeeper.latency.min",
 	},
 	ZookeeperPacketCount: metricInfo{
-		Name: "zookeeper.packet.count",
+		Name:       "zookeeper.packet.count",
+		Attributes: []string{"direction"},
 	},
 	ZookeeperRequestActive: metricInfo{
 		Name: "zookeeper.request.active",
@@ -143,7 +145,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricZookeeperConnectionActive struct {

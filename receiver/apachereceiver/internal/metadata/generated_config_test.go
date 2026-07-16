@@ -150,6 +150,42 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestApacheConnectionsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ApacheConnections
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ApacheConnectionsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric apache.connections doesn't have an attribute invalid, valid attributes: [apache.connection.state]")
+
+	cfg = DefaultMetricsConfig().ApacheConnections
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestApacheCPUTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ApacheCPUTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ApacheCPUTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric apache.cpu.time doesn't have an attribute invalid, valid attributes: [apache.process.level, cpu.mode]")
+
+	cfg = DefaultMetricsConfig().ApacheCPUTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestApacheWorkersMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ApacheWorkers
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ApacheWorkersMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric apache.workers doesn't have an attribute invalid, valid attributes: [apache.worker.state]")
+
+	cfg = DefaultMetricsConfig().ApacheWorkers
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

@@ -78,65 +78,51 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheConnectionActiveDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheConnectionsDataPoint(ts, "1", AttributeApacheConnectionStateWriting)
 			if tt.name == "reaggregate_set" {
 				mb.RecordApacheConnectionsDataPoint(ts, "3", AttributeApacheConnectionStateKeepalive)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheCPULoadDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheCPUTimeDataPoint(ts, "1", AttributeApacheProcessLevelSelf, AttributeCPUModeSystem)
 			if tt.name == "reaggregate_set" {
 				mb.RecordApacheCPUTimeDataPoint(ts, "3", AttributeApacheProcessLevelChildren, AttributeCPUModeUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheLoad1DataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheLoad15DataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheLoad5DataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheRequestCountDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheRequestTimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheTrafficDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheUptimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheWorkerActiveDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheWorkerIdleDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheWorkersDataPoint(ts, 1, AttributeApacheWorkerStateOpen)

@@ -88,6 +88,14 @@ func validateConfiguration(config *Config) error {
 			return fmt.Errorf("missing required field %q while %q is %v", newNameFieldName, actionFieldName, Insert)
 		}
 
+		if transform.Action == Combine && transform.NewName == "" {
+			return fmt.Errorf("missing required field %q while %q is %v", newNameFieldName, actionFieldName, Combine)
+		}
+
+		if transform.Action == Combine && transform.AggregationType == "" {
+			return fmt.Errorf("missing required field %q while %q is %v", aggregationTypeFieldName, actionFieldName, Combine)
+		}
+
 		if transform.Action == Group && transform.GroupResourceLabels == nil {
 			return fmt.Errorf("missing required field %q while %q is %v", groupResourceLabelsFieldName, actionFieldName, Group)
 		}
@@ -147,6 +155,7 @@ func buildHelperConfig(config *Config, version string) ([]internalTransform, err
 			NewName:             t.NewName,
 			GroupResourceLabels: t.GroupResourceLabels,
 			AggregationType:     t.AggregationType,
+			SubmatchCase:        t.SubmatchCase,
 			Operations:          make([]internalOperation, len(t.Operations)),
 		}
 

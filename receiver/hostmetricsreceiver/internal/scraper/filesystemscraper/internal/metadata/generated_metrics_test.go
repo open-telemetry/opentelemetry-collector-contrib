@@ -69,14 +69,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemFilesystemInodesUsageDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val", AttributeStateFree)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemFilesystemInodesUsageDataPoint(ts, 3, "device-val-2", "mode-val-2", "mountpoint-val-2", "type-val-2", AttributeStateReserved)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemFilesystemUsageDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val", AttributeStateFree)
