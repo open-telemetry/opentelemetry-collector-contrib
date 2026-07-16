@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 )
 
@@ -396,7 +397,10 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 	for _, op := range options {
 		op(&s)
 	}
-	if tp := telemetrySettings.TracerProvider; tp != nil {
+	switch tp := telemetrySettings.TracerProvider.(type) {
+	case nil, noop.TracerProvider:
+		// do nothing - tracer remains nil
+	default:
 		s.tracer = tp.Tracer("ottl")
 	}
 	return s
