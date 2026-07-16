@@ -70,10 +70,6 @@ func (p *franzAdminProvider) release() {
 	if p.refCount > 0 {
 		return
 	}
-	p.closeLocked()
-}
-
-func (p *franzAdminProvider) closeLocked() {
 	if p.adm != nil {
 		// kadm.Client.Close also closes the underlying *kgo.Client.
 		p.adm.Close()
