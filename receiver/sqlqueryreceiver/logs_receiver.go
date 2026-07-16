@@ -166,8 +166,9 @@ func (receiver *logsReceiver) startCollecting() {
 
 func (receiver *logsReceiver) collect() {
 	type collectResult struct {
-		logs plog.Logs
-		err  error
+		queryReceiver *logsQueryReceiver
+		logs          plog.Logs
+		err           error
 	}
 	resultsChannel := make(chan collectResult, len(receiver.queryReceivers))
 	for _, queryReceiver := range receiver.queryReceivers {
@@ -185,18 +186,21 @@ func (receiver *logsReceiver) collect() {
 			if err != nil {
 				receiver.settings.Logger.Error("error collecting logs", zap.Error(err), zap.String("query", queryReceiver.ID()))
 			}
-			resultsChannel <- collectResult{logs: logs, err: err}
+			resultsChannel <- collectResult{queryReceiver: queryReceiver, logs: logs, err: err}
 		}(queryReceiver)
 	}
 
 	allLogs := plog.NewLogs()
 	var collectErr error
+	var successfulReceivers []*logsQueryReceiver
 	for range receiver.queryReceivers {
 		select {
 		case result := <-resultsChannel:
 			result.logs.ResourceLogs().MoveAndAppendTo(allLogs.ResourceLogs())
 			if result.err != nil {
 				collectErr = errors.Join(collectErr, result.err)
+			} else {
+				successfulReceivers = append(successfulReceivers, result.queryReceiver)
 			}
 		case <-receiver.shutdownRequested:
 			return
@@ -216,6 +220,12 @@ func (receiver *logsReceiver) collect() {
 		receiver.obsrecv.EndLogsOp(ctx, metadata.Type.String(), logRecordCount, err)
 		if err != nil {
 			receiver.settings.Logger.Error("failed to send logs: %w", zap.Error(err))
+		} else {
+			for _, qr := range successfulReceivers {
+				if commitErr := qr.commitTrackingValue(context.Background()); commitErr != nil {
+					receiver.settings.Logger.Error("failed to commit tracking value", zap.Error(commitErr), zap.String("query", qr.ID()))
+				}
+			}
 		}
 	}
 }
@@ -255,9 +265,11 @@ type logsQueryReceiver struct {
 	logger       *zap.Logger
 	telemetry    sqlquery.TelemetryConfig
 
-	db            *sql.DB
-	client        sqlquery.DbClient
-	trackingValue string
+	db                      *sql.DB
+	client                  sqlquery.DbClient
+	trackingValue           string
+	pendingTrackingValue    string
+	hasPendingTrackingValue bool
 	// TODO: Extract persistence into its own component
 	storageClient           storage.Client
 	trackingValueStorageKey string
@@ -351,17 +363,20 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 		}
 	}
 
-	if len(rows) > 0 {
-		errs = append(errs, queryReceiver.storeTrackingValue(ctx, rows[len(rows)-1]))
+	if len(rows) > 0 && queryReceiver.query.TrackingColumn != "" {
+		queryReceiver.pendingTrackingValue = rows[len(rows)-1][queryReceiver.query.TrackingColumn]
+		queryReceiver.hasPendingTrackingValue = true
 	}
 	return logs, errors.Join(errs...)
 }
 
-func (queryReceiver *logsQueryReceiver) storeTrackingValue(ctx context.Context, row sqlquery.StringMap) error {
-	if queryReceiver.query.TrackingColumn == "" {
+func (queryReceiver *logsQueryReceiver) commitTrackingValue(ctx context.Context) error {
+	if !queryReceiver.hasPendingTrackingValue {
 		return nil
 	}
-	queryReceiver.trackingValue = row[queryReceiver.query.TrackingColumn]
+	queryReceiver.trackingValue = queryReceiver.pendingTrackingValue
+	queryReceiver.pendingTrackingValue = ""
+	queryReceiver.hasPendingTrackingValue = false
 	if queryReceiver.storageClient != nil {
 		err := queryReceiver.storageClient.Set(ctx, queryReceiver.trackingValueStorageKey, []byte(queryReceiver.trackingValue))
 		if err != nil {
