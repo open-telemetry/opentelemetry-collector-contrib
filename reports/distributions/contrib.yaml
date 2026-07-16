@@ -103,7 +103,7 @@ components:
     processor:
         - attributes
         - cardinality_guardian
-        - cumulativetodelta
+        - cumulative_to_delta
         - deltatocumulative
         - deltatorate
         - drain
@@ -180,7 +180,6 @@ components:
         - iis
         - influxdb
         - jaeger
-        - jmx
         - journald
         - k8s_cluster
         - k8s_events

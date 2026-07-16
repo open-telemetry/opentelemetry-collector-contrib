@@ -1,0 +1,11 @@
+change_type: breaking
+
+component: connector/routing
+
+note: Promote the `connector.routing.defaultErrorModeIgnore` feature gate to beta. The default `error_mode` is now `ignore` instead of `propagate`.
+
+issues: [48418]
+
+subtext: To restore the previous default of `propagate`, run the collector with the feature gate disabled by passing `--feature-gates=-connector.routing.defaultErrorModeIgnore`.
+
+change_logs: [user]
