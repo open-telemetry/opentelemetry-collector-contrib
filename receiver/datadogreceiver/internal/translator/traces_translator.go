@@ -297,7 +297,8 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			}
 			newSpan := slice.AppendEmpty()
 
-			_ = tagsToSpanLinks(span.GetMeta(), newSpan.Links())
+			setSpanLinks(span, newSpan.Links(), logger)
+			setSpanEvents(span, newSpan.Events(), logger)
 
 			newSpan.SetTraceID(uInt64ToTraceID(0, span.TraceID))
 			// Try to get the 128-bit traceID, if available.
@@ -392,55 +393,226 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 	return results, nil
 }
 
-// DDSpanLink represents the structure of each JSON object
-type DDSpanLink struct {
-	TraceID    string         `json:"trace_id"`
-	SpanID     string         `json:"span_id"`
-	Tracestate string         `json:"tracestate"`
-	Attributes map[string]any `json:"attributes"`
+// setSpanLinks populates the OTel span links from a Datadog span. Datadog tracers send links in the
+// native span_links field, which carries the full 128-bit trace id (trace_id + trace_id_high) and
+// the W3C trace flags; spans converted from OTLP by the Datadog agent instead carry a _dd.span_links
+// meta JSON string. Native links take precedence. The meta key is always removed so it does not also
+// surface as a raw span attribute.
+func setSpanLinks(span *pb.Span, dest ptrace.SpanLinkSlice, logger *zap.Logger) {
+	raw, hasMeta := span.Meta["_dd.span_links"]
+	delete(span.Meta, "_dd.span_links")
+
+	if len(span.SpanLinks) > 0 {
+		for _, l := range span.SpanLinks {
+			link := dest.AppendEmpty()
+			link.SetTraceID(uInt64ToTraceID(l.TraceIDHigh, l.TraceID))
+			link.SetSpanID(uInt64ToSpanID(l.SpanID))
+			link.TraceState().FromRaw(l.Tracestate)
+			link.SetFlags(l.Flags)
+			for k, v := range l.Attributes {
+				link.Attributes().PutStr(k, v)
+			}
+		}
+		return
+	}
+
+	if hasMeta {
+		if err := metaSpanLinks(raw, dest); err != nil {
+			logger.Error("error parsing _dd.span_links", zap.Error(err))
+		}
+	}
 }
 
-func tagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
-	key := "_dd.span_links"
-	val, ok := tags[key]
-	if !ok {
-		return nil
-	}
-	delete(tags, key)
+// ddSpanLink mirrors an entry of the _dd.span_links meta JSON array. Datadog encodes the ids either
+// as decimal numbers (dd-trace tracers: trace_id + optional trace_id_high + span_id) or as hex
+// strings (OTLP spans converted by the Datadog agent: 32-char trace_id, 16-char span_id), so the ids
+// are kept raw and decoded to accept both encodings.
+type ddSpanLink struct {
+	TraceID     json.RawMessage `json:"trace_id"`
+	TraceIDHigh json.RawMessage `json:"trace_id_high"`
+	SpanID      json.RawMessage `json:"span_id"`
+	Tracestate  string          `json:"tracestate"`
+	Flags       uint32          `json:"flags"`
+	Attributes  map[string]any  `json:"attributes"`
+}
 
-	var spans []DDSpanLink
-	err := json.Unmarshal([]byte(val), &spans)
-	if err != nil {
+func metaSpanLinks(raw string, dest ptrace.SpanLinkSlice) error {
+	var links []ddSpanLink
+	if err := json.Unmarshal([]byte(raw), &links); err != nil {
 		return err
 	}
 
-	for i := 0; i < len(spans); i++ {
-		span := spans[i]
+	for _, l := range links {
 		link := dest.AppendEmpty()
 
-		// Convert trace id.
-		rawTrace, errTrace := oteltrace.TraceIDFromHex(span.TraceID)
-		if errTrace != nil {
-			return fmt.Errorf("error converting trace id (%s) from hex: %w", span.TraceID, errTrace)
-		}
-		link.SetTraceID(pcommon.TraceID(rawTrace))
-
-		// Convert span id.
-		rawSpan, errSpan := oteltrace.SpanIDFromHex(span.SpanID)
-		if errSpan != nil {
-			return fmt.Errorf("error converting span id (%s) from hex: %w", span.SpanID, errTrace)
-		}
-		link.SetSpanID(pcommon.SpanID(rawSpan))
-
-		link.TraceState().FromRaw(span.Tracestate)
-
-		err = link.Attributes().FromRaw(span.Attributes)
+		traceID, err := decodeLinkTraceID(l.TraceID, l.TraceIDHigh)
 		if err != nil {
+			return err
+		}
+		link.SetTraceID(traceID)
+
+		spanID, err := decodeLinkSpanID(l.SpanID)
+		if err != nil {
+			return err
+		}
+		link.SetSpanID(spanID)
+
+		link.TraceState().FromRaw(l.Tracestate)
+		link.SetFlags(l.Flags)
+		if err := link.Attributes().FromRaw(l.Attributes); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func decodeLinkTraceID(traceID, traceIDHigh json.RawMessage) (pcommon.TraceID, error) {
+	if isJSONString(traceID) {
+		var s string
+		if err := json.Unmarshal(traceID, &s); err != nil {
+			return pcommon.TraceID{}, err
+		}
+		raw, err := oteltrace.TraceIDFromHex(s)
+		if err != nil {
+			return pcommon.TraceID{}, fmt.Errorf("error converting trace id (%s) from hex: %w", s, err)
+		}
+		return pcommon.TraceID(raw), nil
+	}
+
+	low, err := rawUint64(traceID)
+	if err != nil {
+		return pcommon.TraceID{}, err
+	}
+	var high uint64
+	if len(traceIDHigh) > 0 {
+		if high, err = rawUint64(traceIDHigh); err != nil {
+			return pcommon.TraceID{}, err
+		}
+	}
+	return uInt64ToTraceID(high, low), nil
+}
+
+func decodeLinkSpanID(spanID json.RawMessage) (pcommon.SpanID, error) {
+	if isJSONString(spanID) {
+		var s string
+		if err := json.Unmarshal(spanID, &s); err != nil {
+			return pcommon.SpanID{}, err
+		}
+		raw, err := oteltrace.SpanIDFromHex(s)
+		if err != nil {
+			return pcommon.SpanID{}, fmt.Errorf("error converting span id (%s) from hex: %w", s, err)
+		}
+		return pcommon.SpanID(raw), nil
+	}
+
+	id, err := rawUint64(spanID)
+	if err != nil {
+		return pcommon.SpanID{}, err
+	}
+	return uInt64ToSpanID(id), nil
+}
+
+func isJSONString(raw json.RawMessage) bool {
+	return len(raw) > 0 && raw[0] == '"'
+}
+
+func rawUint64(raw json.RawMessage) (uint64, error) {
+	var n uint64
+	if err := json.Unmarshal(raw, &n); err != nil {
+		return 0, err
+	}
+	return n, nil
+}
+
+// setSpanEvents populates OTel span events from a Datadog span. Datadog tracers send events in the
+// native span_events field when the endpoint advertises support; otherwise (and for older tracers)
+// they arrive as an "events" meta JSON string. Native events take precedence. The events meta keys
+// are removed so they do not also surface as raw span attributes.
+func setSpanEvents(span *pb.Span, dest ptrace.SpanEventSlice, logger *zap.Logger) {
+	raw, hasMeta := span.Meta["events"]
+	delete(span.Meta, "events")
+	delete(span.Meta, "_dd.span_events.has_exception")
+
+	if len(span.SpanEvents) > 0 {
+		for _, e := range span.SpanEvents {
+			event := dest.AppendEmpty()
+			event.SetName(e.Name)
+			event.SetTimestamp(pcommon.Timestamp(e.TimeUnixNano))
+			for k, v := range e.Attributes {
+				putAttributeAnyValue(event.Attributes(), k, v)
+			}
+		}
+		return
+	}
+
+	if hasMeta {
+		if err := metaSpanEvents(raw, dest); err != nil {
+			logger.Error("error parsing span events", zap.Error(err))
+		}
+	}
+}
+
+// ddSpanEvent mirrors an entry of the "events" meta JSON array emitted by tracers that do not use the
+// native span_events field.
+type ddSpanEvent struct {
+	TimeUnixNano uint64         `json:"time_unix_nano"`
+	Name         string         `json:"name"`
+	Attributes   map[string]any `json:"attributes"`
+}
+
+func metaSpanEvents(raw string, dest ptrace.SpanEventSlice) error {
+	var events []ddSpanEvent
+	if err := json.Unmarshal([]byte(raw), &events); err != nil {
+		return err
+	}
+
+	for _, e := range events {
+		event := dest.AppendEmpty()
+		event.SetName(e.Name)
+		event.SetTimestamp(pcommon.Timestamp(e.TimeUnixNano))
+		if err := event.Attributes().FromRaw(e.Attributes); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func putAttributeAnyValue(attrs pcommon.Map, key string, v *pb.AttributeAnyValue) {
+	if v == nil {
+		return
+	}
+	switch v.Type {
+	case pb.AttributeAnyValue_STRING_VALUE:
+		attrs.PutStr(key, v.StringValue)
+	case pb.AttributeAnyValue_BOOL_VALUE:
+		attrs.PutBool(key, v.BoolValue)
+	case pb.AttributeAnyValue_INT_VALUE:
+		attrs.PutInt(key, v.IntValue)
+	case pb.AttributeAnyValue_DOUBLE_VALUE:
+		attrs.PutDouble(key, v.DoubleValue)
+	case pb.AttributeAnyValue_ARRAY_VALUE:
+		if v.ArrayValue == nil {
+			return
+		}
+		slice := attrs.PutEmptySlice(key)
+		for _, av := range v.ArrayValue.Values {
+			if av == nil {
+				continue
+			}
+			switch av.Type {
+			case pb.AttributeArrayValue_STRING_VALUE:
+				slice.AppendEmpty().SetStr(av.StringValue)
+			case pb.AttributeArrayValue_BOOL_VALUE:
+				slice.AppendEmpty().SetBool(av.BoolValue)
+			case pb.AttributeArrayValue_INT_VALUE:
+				slice.AppendEmpty().SetInt(av.IntValue)
+			case pb.AttributeArrayValue_DOUBLE_VALUE:
+				slice.AppendEmpty().SetDouble(av.DoubleValue)
+			}
+		}
+	}
 }
 
 var bufferPool = sync.Pool{
