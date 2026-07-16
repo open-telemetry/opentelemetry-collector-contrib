@@ -23,10 +23,19 @@ const (
 	formatAuto    = "auto"
 	formatJSON    = "json"
 	formatConsole = "console"
+
+	// malformedTrailingFieldsAttr is set on the entry's leftover attributes
+	// whenever a console-encoded line contained a "{" that looked like it
+	// might start structured trailing fields, but never resolved into valid
+	// JSON reaching the end of the line.
+	malformedTrailingFieldsAttr = "otelcol.self_log.malformed_trailing_json"
 )
 
-// consoleLineRegex matches zap's console encoding: <ts> <level> [<caller>] <msg> [<json fields>].
-var consoleLineRegex = regexp.MustCompile(`^(\S+)\s+(\S+)\s+(?:(\S+:\d+)\s+)?(.*?)(?:\s+(\{.*\}))?$`)
+// consoleLinePrefixRegex matches zap's console encoding up through the message:
+// <ts> <level> [<caller>] <rest>. It does not attempt to locate any trailing
+// JSON fields - regex alone can't tell whether a "{" is real JSON or just
+// part of the message text (e.g. "Config value for pool {default}").
+var consoleLinePrefixRegex = regexp.MustCompile(`^(\S+)\s+(\S+)\s+(?:(\S+:\d+)\s+)?(.*)$`)
 
 // Parser is an operator that parses otelcol self-logs and promotes the resource field onto the entry's Resource.
 type Parser struct {
@@ -94,32 +103,64 @@ func parseJSONLine(line string) (map[string]any, error) {
 	return parsed, nil
 }
 
-// parseConsoleLine parses a line where ts/level/caller/msg are plain text and any structured
-// fields are appended as a trailing JSON object.
+// parseConsoleLine parses a line where ts/level/caller are plain text, followed
+// by a message that may or may not have structured JSON fields appended after it.
 func parseConsoleLine(line string) (map[string]any, error) {
-	match := consoleLineRegex.FindStringSubmatch(line)
+	match := consoleLinePrefixRegex.FindStringSubmatch(line)
 	if match == nil {
 		return nil, errors.New("line cannot be parsed as a console-encoded otelcol self-log")
 	}
 
+	msg, fields, malformed := splitConsoleMessageAndFields(match[4])
+
 	result := map[string]any{
 		"ts":    match[1],
 		"level": match[2],
-		"msg":   strings.TrimSpace(match[4]),
+		"msg":   msg,
 	}
 	if caller := match[3]; caller != "" {
 		result["caller"] = caller
 	}
-
-	if jsonBlob := match[5]; jsonBlob != "" {
-		var fields map[string]any
-		if err := json.Unmarshal([]byte(jsonBlob), &fields); err != nil {
-			return nil, fmt.Errorf("failed to parse trailing structured fields: %w", err)
-		}
-		maps.Copy(result, fields)
+	if malformed {
+		result[malformedTrailingFieldsAttr] = true
 	}
+	maps.Copy(result, fields)
 
 	return result, nil
+}
+
+// splitConsoleMessageAndFields separates a message from an optional trailing
+// JSON object, using a real JSON decoder rather than a regex, so that:
+//   - braces inside the message text (e.g. "pool {default} is missing") don't
+//     get mistaken for the start of structured fields, and
+//   - nested objects inside the real trailing fields (e.g. "resource":{...})
+//     are matched to their correct closing brace, not the first "}" found.
+func splitConsoleMessageAndFields(rest string) (msg string, fields map[string]any, malformed bool) {
+	rest = strings.TrimSpace(rest)
+
+	sawUnresolvedBrace := false
+	searchFrom := 0
+	for {
+		idx := strings.IndexByte(rest[searchFrom:], '{')
+		if idx == -1 {
+			break
+		}
+		idx += searchFrom
+
+		candidate := rest[idx:]
+		dec := json.NewDecoder(strings.NewReader(candidate))
+		var decoded map[string]any
+		if err := dec.Decode(&decoded); err == nil {
+			if strings.TrimSpace(candidate[dec.InputOffset():]) == "" {
+				return strings.TrimSpace(rest[:idx]), decoded, false
+			}
+		}
+
+		sawUnresolvedBrace = true
+		searchFrom = idx + 1
+	}
+
+	return rest, nil, sawUnresolvedBrace
 }
 
 // postProcess promotes the ts, level, msg, and resource fields of a parsed otelcol self-log

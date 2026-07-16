@@ -4,12 +4,14 @@
 package otelcol
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestConfig(t *testing.T) {
@@ -53,78 +55,42 @@ func TestConfig(t *testing.T) {
 					return cfg
 				}(),
 			},
-			{
-				Name: "parse_from_simple",
-				Expect: func() *Config {
-					cfg := NewConfig()
-					cfg.ParseFrom = entry.NewBodyField("from")
-					return cfg
-				}(),
-			},
-			{
-				Name: "parse_to_attributes",
-				Expect: func() *Config {
-					cfg := NewConfig()
-					cfg.ParseTo = entry.RootableField{Field: entry.NewAttributeField()}
-					return cfg
-				}(),
-			},
-			{
-				Name: "parse_to_body",
-				Expect: func() *Config {
-					cfg := NewConfig()
-					cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
-					return cfg
-				}(),
-			},
-			{
-				Name: "parse_to_resource",
-				Expect: func() *Config {
-					cfg := NewConfig()
-					cfg.ParseTo = entry.RootableField{Field: entry.NewResourceField()}
-					return cfg
-				}(),
-			},
-			{
-				Name: "scope_name",
-				Expect: func() *Config {
-					cfg := NewConfig()
-					loggerNameParser := helper.NewScopeNameParser()
-					loggerNameParser.ParseFrom = entry.NewBodyField("logger_name_field")
-					cfg.ScopeNameParser = &loggerNameParser
-					return cfg
-				}(),
-			},
-			{
-				Name: "severity",
-				Expect: func() *Config {
-					cfg := NewConfig()
-					parseField := entry.NewBodyField("severity_field")
-					severityParser := helper.NewSeverityConfig()
-					severityParser.ParseFrom = &parseField
-					severityParser.Mapping = map[string]any{
-						"critical": "5xx",
-						"error":    "4xx",
-						"info":     "3xx",
-						"debug":    "2xx",
-					}
-					cfg.SeverityConfig = &severityParser
-					return cfg
-				}(),
-			},
-			{
-				Name: "timestamp",
-				Expect: func() *Config {
-					cfg := NewConfig()
-					parseField := entry.NewBodyField("timestamp_field")
-					cfg.TimeParser = &helper.TimeParser{
-						LayoutType: "strptime",
-						Layout:     "%Y-%m-%d",
-						ParseFrom:  &parseField,
-					}
-					return cfg
-				}(),
-			},
 		},
 	}.Run(t)
+}
+
+// TestConfigBuildIgnoresParseFromParseTo asserts that parse_from/parse_to
+// are always forced to body/attributes by Build(), regardless of what a
+// user sets in config. The unmarshal test above only checks that YAML
+// unmarshals into the struct fields - it would NOT catch a regression
+// where Build() stopped overriding them, or overrode them to the wrong
+// value (e.g. writing parsed fields to body instead of attributes, which
+// would silently discard them when postProcess overwrites e.Body).
+func TestConfigBuildIgnoresParseFromParseTo(t *testing.T) {
+	cfg := NewConfigWithID("test")
+
+	// Deliberately set these to something other than the fixed values.
+	cfg.ParseFrom = entry.NewBodyField("some_other_field")
+	cfg.ParseTo = entry.RootableField{Field: entry.NewAttributeField("some_other_field")}
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	parser, ok := op.(*Parser)
+	require.True(t, ok)
+
+	require.Equal(t, entry.NewBodyField(), parser.ParseFrom)
+	require.Equal(t, entry.NewAttributeField(), parser.ParseTo)
+
+	// End-to-end: confirm a real entry is still read from body and its
+	// parsed fields still land in attributes, not "some_other_field".
+	e := entry.New()
+	e.Body = `{"ts":"2026-07-06T22:56:21.989Z","level":"info","msg":"hello","extra":"value"}`
+
+	err = parser.Process(context.Background(), e)
+	require.NoError(t, err)
+
+	require.Equal(t, "hello", e.Body)
+	require.Equal(t, "value", e.Attributes["extra"])
 }

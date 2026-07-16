@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -41,6 +42,9 @@ type Config struct {
 
 // Build will build an otelcol parser operator.
 func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
+	c.ParseFrom = entry.NewBodyField()
+	c.ParseTo = entry.RootableField{Field: entry.NewAttributeField()}
+
 	parserOperator, err := c.ParserConfig.Build(set)
 	if err != nil {
 		return nil, err

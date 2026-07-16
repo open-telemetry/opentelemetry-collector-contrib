@@ -12,34 +12,3 @@ format_console:
 format_auto:
   type: otelcol
   format: auto
-parse_from_simple:
-  type: otelcol
-  parse_from: body.from
-parse_to_attributes:
-  type: otelcol
-  parse_to: attributes
-parse_to_body:
-  type: otelcol
-  parse_to: body
-parse_to_resource:
-  type: otelcol
-  parse_to: resource
-scope_name:
-  type: otelcol
-  scope_name:
-    parse_from: body.logger_name_field
-severity:
-  type: otelcol
-  severity:
-    parse_from: body.severity_field
-    mapping:
-      critical: 5xx
-      error: 4xx
-      info: 3xx
-      debug: 2xx
-timestamp:
-  type: otelcol
-  timestamp:
-    parse_from: body.timestamp_field
-    layout_type: strptime
-    layout: '%Y-%m-%d'

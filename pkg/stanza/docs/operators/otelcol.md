@@ -1,6 +1,6 @@
 ## `otelcol` operator
 
-The `otelcol` operator parses the string-type field selected by `parse_from` as a collector self-log (a log line emitted by the collector's own zap logger), recognizing either of zap's `json` or `console` encodings, and promotes the nested `resource` object onto the entry's Resource.
+The `otelcol` operator parses the entry body as a collector self-log (a log line emitted by the collector's own zap logger), recognizing either of zap's `json` or `console` encodings, and promotes the nested `resource` object onto the entry's Resource.
 
 ### Configuration Fields
 
@@ -8,17 +8,11 @@ The `otelcol` operator parses the string-type field selected by `parse_from` as 
 | ---          | ---              | ---         |
 | `id`         | `otelcol`        | A unique identifier for the operator. |
 | `output`     | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
-| `parse_from` | `body`           | The [field](../types/field.md) from which the value will be parsed. |
-| `parse_to`   | `attributes`     | The [field](../types/field.md) to which the value will be parsed. |
 | `on_error`   | `send`           | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md). |
 | `if`         |                  | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 | `format`     | `auto`           | One of `auto`, `json`, `console`. Forces a specific zap encoding instead of detecting it per line. |
-| `timestamp`  | `nil`            | An optional [timestamp](../types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator. |
-| `severity`   | `nil`            | An optional [severity](../types/severity.md) block which will parse a severity field before passing the entry to the output operator. |
 
-### Embedded Operations
-
-The `otelcol` operator can be configured to embed certain operations such as timestamp and severity parsing. For more information, see [complex parsers](../types/parsers.md#complex-parsers).
+The operator always reads from the entry body and always promotes `ts`, `level`, `msg`, and `resource` from a known, fixed schema — the shape zap's own encoders produce. There is nothing to point it at: any log line in this shape is a collector self-log, and any log line not in this shape isn't one this operator can parse.
 
 ### Example Configurations
 
@@ -178,3 +172,11 @@ Configuration:
 </td>
 </tr>
 </table>
+
+### Notes
+
+When a `console`-encoded line contains trailing text that looks like it
+was meant to be structured JSON fields but fails to parse, the operator
+does not error - it keeps the line as-is in `body`, and adds the attribute
+`otelcol.self_log.malformed_trailing_json: true` so the loss is visible
+rather than silent.
