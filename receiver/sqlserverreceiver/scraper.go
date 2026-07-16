@@ -584,8 +584,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const averageLatchWaitTime = "Average Latch Wait Time (ms)"
 	const totalLatchWaitTime = "Total Latch Wait Time (ms)"
 	const numberOfSuperLatches = "Number of SuperLatches"
-	const superLatchDemotionsPerSec = "SuperLatch Demotions/sec"
 	const superLatchPromotionsPerSec = "SuperLatch Promotions/sec"
+	const superLatchDemotionsPerSec = "SuperLatch Demotions/sec"
 	const worktablesFromCacheRatio = "Worktables From Cache Ratio"
 
 	rows, err := s.client.QueryRows(ctx)
