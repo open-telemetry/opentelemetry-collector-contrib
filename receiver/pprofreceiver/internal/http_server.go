@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver/internal/metadata"
 )
 
 // PushPath is the path the pprof push server listens on.
@@ -103,6 +104,18 @@ func (s *HTTPServer) handlePush(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to convert pprof to profiles: %v", err), http.StatusBadRequest)
 		return
+	}
+
+	// set ScopeName and Version
+	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+		rp := profiles.ResourceProfiles().At(i)
+		for j := 0; j < rp.ScopeProfiles().Len(); j++ {
+			sp := rp.ScopeProfiles().At(j)
+
+			// Directly setting values without any extra initialization
+			sp.Scope().SetName(metadata.ScopeName + "/httpserver")
+			sp.Scope().SetVersion(s.Settings.BuildInfo.Version)
+		}
 	}
 
 	ctx := r.Context()
