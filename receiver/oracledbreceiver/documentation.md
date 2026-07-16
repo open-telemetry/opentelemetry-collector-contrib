@@ -501,6 +501,30 @@ Average latency of a synchronous single-block read.
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Double | Development |
 
+### oracledb.jvm.memory.committed
+
+Committed (total) size of Oracle's in-database JVM (OJVM) call heap.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### oracledb.jvm.memory.live
+
+Size of live objects in Oracle's in-database JVM (OJVM) call heap.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### oracledb.jvm.memory.used
+
+Used size of Oracle's in-database JVM (OJVM) call heap.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
 ### oracledb.library_cache.utilization
 
 Fraction of library cache pin requests that found the object already cached, as computed by Oracle V$SYSMETRIC (% Hits/Pins).
@@ -544,6 +568,14 @@ Number of logon operations
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {operation} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.os.swaps
+
+Number of OS swap operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {swap} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.parallel_operations_downgraded_1_to_25_pct
 
@@ -863,6 +895,42 @@ Average number of sessions over the metric interval.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | session_status | Session status | Any Str | Recommended | - |
+
+### oracledb.session.stored_procedure.memory
+
+Memory currently allocated for stored procedures in the session.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### oracledb.session.wait.time
+
+Cumulative time sessions spent in waits.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.session.wait.state | Whether the session wait time/count is for idle or non-idle wait events. | Str: ``non_idle`` | Recommended | - |
+
+### oracledb.session.waits
+
+Cumulative number of waits across sessions.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {wait} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.session.wait.state | Whether the session wait time/count is for idle or non-idle wait events. | Str: ``non_idle`` | Recommended | - |
 
 ### oracledb.sga.limit
 
