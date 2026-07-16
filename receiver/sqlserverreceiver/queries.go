@@ -1107,10 +1107,10 @@ IF SERVERPROPERTY('IsHadrEnabled') != 1 RETURN;
 DECLARE
 	 @SqlStatement AS nvarchar(max)
 	,@MajorMinorVersion AS int = CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),4) AS int) * 100 + CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),3) AS int)
-	,@HardenedLatencyCol AS nvarchar(max) = N'NULL'
+	,@SecondaryLagCol AS nvarchar(max) = N'NULL'
 
 IF @MajorMinorVersion >= 1300 BEGIN
-	SET @HardenedLatencyCol = N'sec.[secondary_lag_seconds]'
+	SET @SecondaryLagCol = N'sec.[secondary_lag_seconds]'
 END
 
 SET @SqlStatement = N'
@@ -1122,7 +1122,9 @@ SELECT
 	,sec.[log_send_rate]                                    AS [log_send_rate]
 	,sec.[redo_queue_size]                                  AS [redo_queue_size]
 	,sec.[redo_rate]                                        AS [redo_rate]
-	,' + @HardenedLatencyCol + N'                           AS [hardened_latency]
+	,' + @SecondaryLagCol + N'                              AS [secondary_lag]
+	,REPLACE(@@SERVERNAME,''\'','':'')                      AS [sql_instance]
+	,HOST_NAME()                                            AS [computer_name]
 FROM sys.dm_hadr_database_replica_states AS sec WITH (NOLOCK)
 INNER JOIN sys.availability_replicas AS ar WITH (NOLOCK)
 	ON sec.[replica_id] = ar.[replica_id]

@@ -356,12 +356,12 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Context) error {
 	const (
 		agNameKey           = "availability_group_name"
-		hardenedLatencyKey  = "hardened_latency"
 		logSendQueueSizeKey = "log_send_queue_size"
 		logSendRateKey      = "log_send_rate"
 		redoQueueSizeKey    = "redo_queue_size"
 		redoRateKey         = "redo_rate"
 		replicaNameKey      = "replica_name"
+		secondaryLagKey     = "secondary_lag"
 	)
 
 	rows, err := s.client.QueryRows(ctx)
@@ -419,8 +419,8 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 		}
 
 		// secondary_lag_seconds is NULL on SQL Server < 2016
-		if row[hardenedLatencyKey] != "" {
-			val, err = retrieveFloat(row, hardenedLatencyKey)
+		if row[secondaryLagKey] != "" {
+			val, err = retrieveFloat(row, secondaryLagKey)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 			} else {

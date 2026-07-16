@@ -7,7 +7,7 @@
     "log_send_rate": "256",
     "redo_queue_size": "128",
     "redo_rate": "64",
-    "hardened_latency": "0.5",
+    "secondary_lag":"0.5",
     "computer_name": "testhost",
     "sql_instance": "MSSQLSERVER"
   },
@@ -19,7 +19,7 @@
     "log_send_rate": "512",
     "redo_queue_size": "256",
     "redo_rate": "128",
-    "hardened_latency": "",
+    "secondary_lag":"",
     "computer_name": "testhost",
     "sql_instance": "MSSQLSERVER"
   },
@@ -31,7 +31,7 @@
     "log_send_rate": "",
     "redo_queue_size": "64",
     "redo_rate": "32",
-    "hardened_latency": "1.2",
+    "secondary_lag":"1.2",
     "computer_name": "testhost",
     "sql_instance": "MSSQLSERVER"
   }
