@@ -1,0 +1,11 @@
+change_type: breaking
+
+component: processor/transform
+
+note: Promote the `processor.transform.defaultErrorModeIgnore` feature gate to stable. The default top-level `error_mode` is now permanently `ignore` instead of `propagate`.
+
+issues: [47231]
+
+subtext: The gate will be removed in v0.159.0.
+
+change_logs: [user]

@@ -255,8 +255,6 @@ linters:
           files:
             - "!**/*_test.go"
 
-
-
     forbidigo:
       analyze-types: true
       forbid:
@@ -325,6 +323,10 @@ linters:
       # Default is to use a neutral variety of English.
       # Setting locale to US will correct the British spelling of 'colour' to 'color'.
       locale: US
+
+    modernize:
+      disable:
+        - importcomment
 
     nolintlint:
       require-specific: true
