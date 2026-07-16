@@ -6,6 +6,7 @@ package componentchecker // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
 )
@@ -730,4 +732,50 @@ func TestDataToFlattenedJSONStringAdditionalCases(t *testing.T) {
 		result := DataToFlattenedJSONString(nil)
 		assert.Equal(t, "null", result)
 	})
+}
+
+func TestDataToYAMLString(t *testing.T) {
+	tests := []struct {
+		name     string
+		data     any
+		expected string
+	}{
+		{
+			name: "Simple map",
+			data: map[string]any{
+				"key": "value",
+			},
+			expected: "key: value\n",
+		},
+		{
+			// Regression test: time.Duration must render using its own string
+			// format (e.g. "200ms"), not as a raw nanosecond count. This is the
+			// exact bug this extension used to have when full_configuration was
+			// serialized as JSON instead of YAML, since encoding/json has no
+			// special handling for time.Duration.
+			name: "time.Duration renders as a duration string",
+			data: map[string]any{
+				"timeout": 200 * time.Millisecond,
+			},
+			expected: "timeout: 200ms\n",
+		},
+		{
+			name:     "Invalid YAML",
+			data:     make(chan int),
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := DataToYAMLString(tt.data)
+			assert.Equal(t, tt.expected, result)
+
+			if tt.expected != "" {
+				var parsed map[string]any
+				err := yaml.Unmarshal([]byte(result), &parsed)
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

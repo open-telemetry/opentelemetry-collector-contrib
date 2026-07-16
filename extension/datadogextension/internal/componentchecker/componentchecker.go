@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
 )
@@ -54,6 +55,26 @@ func DataToFlattenedJSONString(data any) string {
 	}
 	res := replacer.Replace(string(jsonData))
 	return res
+}
+
+// DataToYAMLString marshals data to a YAML string. Unlike DataToFlattenedJSONString,
+// this preserves the collector's own YAML type formatting for values such as
+// time.Duration (e.g. "200ms" instead of a raw nanosecond count), matching the
+// format used by the opampextension's effective configuration reporting.
+func DataToYAMLString(data any) (result string) {
+	// yaml.Marshal panics rather than returning an error for some unsupported
+	// types (e.g. channels), unlike encoding/json.Marshal.
+	defer func() {
+		if recover() != nil {
+			result = ""
+		}
+	}()
+
+	yamlData, err := yaml.Marshal(data)
+	if err != nil {
+		return ""
+	}
+	return string(yamlData)
 }
 
 // PopulateFullComponentsJSON creates a ModuleInfoJSON struct with all components from ModuleInfos
