@@ -91,11 +91,11 @@ func TestParseConsoleLineInvalid(t *testing.T) {
 
 func TestSplitConsoleMessageAndFields(t *testing.T) {
 	cases := []struct {
-		name           string
-		rest           string
-		wantMsg        string
-		wantFields     map[string]any
-		wantMalformed  bool
+		name          string
+		rest          string
+		wantMsg       string
+		wantFields    map[string]any
+		wantMalformed bool
 	}{
 		{
 			name:          "no_trailing_fields",
@@ -138,7 +138,7 @@ func TestSplitConsoleMessageAndFields(t *testing.T) {
 				`{"resource":{"k8s.pod.name":"otel-agent-qkvqj"},"otelcol.component.id":"receiver_creator"}`,
 			wantMsg: "Pool stats: {a} {b} {c} {d} {e} retrying",
 			wantFields: map[string]any{
-				"resource":              map[string]any{"k8s.pod.name": "otel-agent-qkvqj"},
+				"resource":             map[string]any{"k8s.pod.name": "otel-agent-qkvqj"},
 				"otelcol.component.id": "receiver_creator",
 			},
 			wantMalformed: false,
@@ -229,7 +229,7 @@ func TestProcess(t *testing.T) {
 				Body:         "Failed to scrape Prometheus endpoint",
 				Resource:     map[string]any{"k8s.pod.name": "otel-agent-qkvqj"},
 				Attributes: map[string]any{
-					"caller":                "internal/transaction.go:127",
+					"caller":               "internal/transaction.go:127",
 					"otelcol.component.id": "receiver_creator",
 				},
 			},
@@ -245,7 +245,7 @@ func TestProcess(t *testing.T) {
 				Body:         "Failed to scrape Prometheus endpoint",
 				Resource:     map[string]any{"k8s.pod.name": "otel-agent-qkvqj"},
 				Attributes: map[string]any{
-					"caller":                "internal/transaction.go:127",
+					"caller":               "internal/transaction.go:127",
 					"otelcol.component.id": "receiver_creator",
 				},
 			},
