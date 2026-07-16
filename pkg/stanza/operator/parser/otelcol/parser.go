@@ -25,9 +25,9 @@ const (
 	formatConsole = "console"
 
 	// malformedTrailingFieldsAttr is set on the entry's leftover attributes
-	// whenever a console-encoded line contained a "{" that looked like it
-	// might start structured trailing fields, but never resolved into valid
-	// JSON reaching the end of the line.
+	// whenever a console-encoded line ended with what looked like an attempt
+	// at structured trailing fields (i.e. the line ends in "}"), but the
+	// trailing text never resolved into valid JSON.
 	malformedTrailingFieldsAttr = "otelcol.self_log.malformed_trailing_json"
 )
 
@@ -135,8 +135,11 @@ func parseConsoleLine(line string) (map[string]any, error) {
 //     get mistaken for the start of structured fields, and
 //   - nested objects inside the real trailing fields (e.g. "resource":{...})
 //     are matched to their correct closing brace, not the first "}" found.
+
 func splitConsoleMessageAndFields(rest string) (msg string, fields map[string]any, malformed bool) {
 	rest = strings.TrimSpace(rest)
+
+	looksLikeTrailingJSON := strings.HasSuffix(rest, "}")
 
 	sawUnresolvedBrace := false
 	searchFrom := 0
@@ -156,7 +159,9 @@ func splitConsoleMessageAndFields(rest string) (msg string, fields map[string]an
 			}
 		}
 
-		sawUnresolvedBrace = true
+		if looksLikeTrailingJSON {
+			sawUnresolvedBrace = true
+		}
 		searchFrom = idx + 1
 	}
 

@@ -53,6 +53,35 @@ func TestConfigBuildInvalidFormat(t *testing.T) {
 	require.ErrorContains(t, err, "invalid `format` field")
 }
 
+// TestConfigBuildIgnoresParseFromParseTo asserts that parse_from/parse_to
+// are always forced to body/attributes by Build(), regardless of what a
+// user sets in config.
+func TestConfigBuildIgnoresParseFromParseTo(t *testing.T) {
+	cfg := NewConfigWithID("test")
+
+	cfg.ParseFrom = entry.NewBodyField("some_other_field")
+	cfg.ParseTo = entry.RootableField{Field: entry.NewAttributeField("some_other_field")}
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	parser, ok := op.(*Parser)
+	require.True(t, ok)
+
+	require.Equal(t, entry.NewBodyField(), parser.ParseFrom)
+	require.Equal(t, entry.NewAttributeField(), parser.ParseTo)
+
+	e := entry.New()
+	e.Body = `{"ts":"2026-07-06T22:56:21.989Z","level":"info","msg":"hello","extra":"value"}`
+
+	err = parser.Process(t.Context(), e)
+	require.NoError(t, err)
+
+	require.Equal(t, "hello", e.Body)
+	require.Equal(t, "value", e.Attributes["extra"])
+}
+
 func TestParseInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse(12345)
@@ -144,9 +173,19 @@ func TestSplitConsoleMessageAndFields(t *testing.T) {
 			wantMalformed: false,
 		},
 		{
-			// A brace in the message with no real trailing JSON at all -
-			// degrades gracefully, and is correctly flagged as malformed
-			// since a "{" was seen but never resolved.
+			// A brace in the message with no trailing JSON at all, and the
+			// line does NOT end in "}" - this is ordinary message text, not
+			// an attempt at structured fields, so it must NOT be flagged.
+			name:          "brace_in_message_not_at_end_no_real_fields",
+			rest:          "Config value for pool {default} is missing",
+			wantMsg:       "Config value for pool {default} is missing",
+			wantFields:    nil,
+			wantMalformed: false,
+		},
+		{
+			// A brace in the message with no real trailing JSON, but the
+			// line DOES end in "}" - this looks like an attempt at
+			// structured fields that never resolved, so it is flagged.
 			name:          "brace_in_message_no_real_fields",
 			rest:          "Value set to {ok}",
 			wantMsg:       "Value set to {ok}",
@@ -182,6 +221,7 @@ func TestProcess(t *testing.T) {
 	consoleLineNoFields := "2026-07-06T22:56:21.989Z\tinfo\tCollector started"
 	consoleLineBraceInMessage := "2026-07-06T22:56:21.989Z\twarn\tConfig value for pool {default} is missing\t" +
 		`{"resource":{"k8s.pod.name":"otel-agent-qkvqj"}}`
+	consoleLineBraceInMessageNoFields := "2026-07-06T22:56:21.989Z\twarn\tConfig value for pool {default} is missing"
 	consoleLineMalformedFields := "2026-07-06T22:56:21.989Z\twarn\tbroken message\t{\"resource\": invalid}"
 
 	wantTimestamp := time.Date(2026, time.July, 6, 22, 56, 21, 989000000, time.UTC)
@@ -272,6 +312,22 @@ func TestProcess(t *testing.T) {
 				SeverityText: "warn",
 				Body:         "Config value for pool {default} is missing",
 				Resource:     map[string]any{"k8s.pod.name": "otel-agent-qkvqj"},
+				Attributes:   map[string]any{},
+			},
+		},
+		{
+			// Checkbox: a brace in ordinary message text, with no trailing
+			// JSON at all, must NOT be flagged as malformed - the line
+			// doesn't end in "}", so there was never an attempt at
+			// structured fields to fail.
+			name:   "console_brace_in_message_not_flagged",
+			format: formatConsole,
+			input:  &entry.Entry{Body: consoleLineBraceInMessageNoFields},
+			expect: &entry.Entry{
+				Timestamp:    wantTimestamp,
+				Severity:     entry.Warn,
+				SeverityText: "warn",
+				Body:         "Config value for pool {default} is missing",
 				Attributes:   map[string]any{},
 			},
 		},
