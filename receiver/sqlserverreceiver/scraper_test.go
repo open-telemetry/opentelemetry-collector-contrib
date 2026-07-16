@@ -100,10 +100,18 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = enabled
 	cfg.Metrics.SqlserverScanPointRevalidationRate.Enabled = enabled
 	cfg.Metrics.SqlserverAttentionRate.Enabled = enabled
+	cfg.Metrics.SqlserverClrExecutionTime.Enabled = enabled
+	cfg.Metrics.SqlserverCursorCount.Enabled = enabled
+	cfg.Metrics.SqlserverCursorMemoryUsage.Enabled = enabled
+	cfg.Metrics.SqlserverCursorPlanCount.Enabled = enabled
+	cfg.Metrics.SqlserverCursorRequestRate.Enabled = enabled
 	cfg.Metrics.SqlserverParameterizationRate.Enabled = enabled
 	cfg.Metrics.SqlserverPlanExecutionRate.Enabled = enabled
 	cfg.Metrics.SqlserverRecompilationRatio.Enabled = enabled
+	cfg.Metrics.SqlserverStoredProcedureInvocationRate.Enabled = enabled
 	cfg.Metrics.SqlserverTableCount.Enabled = enabled
+	cfg.Metrics.SqlserverTaskCount.Enabled = enabled
+	cfg.Metrics.SqlserverTaskRate.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionDelay.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionLogFlushDataRate.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionLogFlushRate.Enabled = enabled
@@ -115,6 +123,8 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverTransactionRate.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
 	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
+	cfg.Metrics.SqlserverWorkerRequestCount.Enabled = enabled
+	cfg.Metrics.SqlserverWorkerThreadCount.Enabled = enabled
 	cfg.Metrics.SqlserverWorktableCacheHitRatio.Enabled = enabled
 
 	cfg.Events.DbServerTopQuery.Enabled = enabled
@@ -219,6 +229,8 @@ func TestSuccessfulScrape(t *testing.T) {
 					expectedFile = filepath.Join("testdata", "expectedWaitStats")
 				case getSQLServerIndexPhysicalStatsQuery(scraper.config.InstanceName):
 					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics")
+				case getSQLServerWorkerThreadsQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedWorkerThreads")
 				}
 				expectedFile += fileSuffix
 
