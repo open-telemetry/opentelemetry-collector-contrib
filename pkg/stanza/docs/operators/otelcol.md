@@ -12,7 +12,7 @@ The `otelcol` operator parses the entry body as a collector self-log (a log line
 | `if`         |                  | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 | `format`     | `auto`           | One of `auto`, `json`, `console`. Forces a specific zap encoding instead of detecting it per line. |
 
-The operator always reads from the entry body and always promotes `ts`, `level`, `msg`, and `resource` from a known, fixed schema — the shape zap's own encoders produce. There is nothing to point it at: any log line in this shape is a collector self-log, and any log line not in this shape isn't one this operator can parse.
+The schema is fixed - `ts`, `level`, `msg`, and `resource` always come from the same known shape zap's own encoders produce, so there is no field to configure it against. A log line either matches this shape or it isn't a collector self-log.
 
 ### Example Configurations
 
@@ -30,7 +30,7 @@ Configuration:
 
 ```json
 {
-  "body": "{\"ts\":\"2026-07-06T22:56:21.989Z\",\"level\":\"warn\",\"msg\":\"Failed to scrape Prometheus endpoint\",\"resource\":{\"k8s.pod.name\":\"otel-agent-qkvqj\",\"service.name\":\"otel-agent\"},\"otelcol.component.id\":\"receiver_creator\"}"
+  "body": "{\"ts\":\"2026-07-06T22:56:21Z\",\"level\":\"warn\",\"msg\":\"Failed to scrape endpoint\",\"resource\":{\"k8s.pod.name\":\"otel-agent\"}}"
 }
 ```
 
@@ -39,15 +39,11 @@ Configuration:
 
 ```json
 {
-  "timestamp": "2026-07-06T22:56:21.989Z",
+  "timestamp": "2026-07-06T22:56:21Z",
   "severity": "warn",
-  "body": "Failed to scrape Prometheus endpoint",
+  "body": "Failed to scrape endpoint",
   "resource": {
-    "k8s.pod.name": "otel-agent-qkvqj",
-    "service.name": "otel-agent"
-  },
-  "attributes": {
-    "otelcol.component.id": "receiver_creator"
+    "k8s.pod.name": "otel-agent"
   }
 }
 ```
@@ -70,7 +66,7 @@ Configuration:
 
 ```json
 {
-  "body": "2026-07-06T22:56:21.989Z\twarn\tinternal/transaction.go:127\tFailed to scrape Prometheus endpoint\t{\"resource\":{\"k8s.pod.name\":\"otel-agent-qkvqj\"},\"otelcol.component.id\":\"receiver_creator\"}"
+  "body": "2026-07-06T22:56:21Z\twarn\ttx.go:127\tFailed to scrape endpoint\t{\"resource\":{\"k8s.pod.name\":\"otel-agent\"}}"
 }
 ```
 
@@ -79,15 +75,14 @@ Configuration:
 
 ```json
 {
-  "timestamp": "2026-07-06T22:56:21.989Z",
+  "timestamp": "2026-07-06T22:56:21Z",
   "severity": "warn",
-  "body": "Failed to scrape Prometheus endpoint",
+  "body": "Failed to scrape endpoint",
   "resource": {
-    "k8s.pod.name": "otel-agent-qkvqj"
+    "k8s.pod.name": "otel-agent"
   },
   "attributes": {
-    "caller": "internal/transaction.go:127",
-    "otelcol.component.id": "receiver_creator"
+    "caller": "tx.go:127"
   }
 }
 ```
@@ -124,7 +119,7 @@ Configuration:
   "attributes": {
     "log.file.name": "collector.log"
   },
-  "body": "{\"ts\":\"2026-07-06T22:56:21.989Z\",\"level\":\"info\",\"msg\":\"Starting GRPC server\"}"
+  "body": "{\"ts\":\"2026-07-06T22:56:21Z\",\"level\":\"info\",\"msg\":\"Starting server\"}"
 }
 ```
 
@@ -136,9 +131,9 @@ Configuration:
   "attributes": {
     "log.file.name": "collector.log"
   },
-  "timestamp": "2026-07-06T22:56:21.989Z",
+  "timestamp": "2026-07-06T22:56:21Z",
   "severity": "info",
-  "body": "Starting GRPC server"
+  "body": "Starting server"
 }
 ```
 
@@ -153,7 +148,7 @@ Configuration:
   "attributes": {
     "log.file.name": "app.log"
   },
-  "body": "{\"ts\":\"2026-07-06T22:56:21.989Z\",\"level\":\"info\",\"msg\":\"Starting GRPC server\"}"
+  "body": "{\"ts\":\"2026-07-06T22:56:21Z\",\"level\":\"info\",\"msg\":\"Starting server\"}"
 }
 ```
 
@@ -165,7 +160,7 @@ Configuration:
   "attributes": {
     "log.file.name": "app.log"
   },
-  "body": "{\"ts\":\"2026-07-06T22:56:21.989Z\",\"level\":\"info\",\"msg\":\"Starting GRPC server\"}"
+  "body": "{\"ts\":\"2026-07-06T22:56:21Z\",\"level\":\"info\",\"msg\":\"Starting server\"}"
 }
 ```
 
@@ -173,10 +168,40 @@ Configuration:
 </tr>
 </table>
 
-### Notes
+#### Malformed trailing fields in a console-encoded line
 
-When a `console`-encoded line contains trailing text that looks like it
-was meant to be structured JSON fields but fails to parse, the operator
-does not error - it keeps the line as-is in `body`, and adds the attribute
-`otelcol.self_log.malformed_trailing_json: true` so the loss is visible
-rather than silent.
+Configuration:
+```yaml
+- type: otelcol
+```
+
+<table>
+<tr><td> Input body </td> <td> Output entry</td></tr>
+<tr>
+<td>
+
+```json
+{
+  "body": "2026-07-06T22:56:21Z\twarn\tbroken message\t{\"resource\": invalid}"
+}
+```
+
+</td>
+<td>
+
+```json
+{
+  "timestamp": "2026-07-06T22:56:21Z",
+  "severity": "warn",
+  "body": "broken message\t{\"resource\": invalid}",
+  "attributes": {
+    "otelcol.self_log.malformed_trailing_json": true
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
+The line is not dropped or errored on - the raw trailing text is preserved as-is in `body`, and the attribute above signals that the loss is visible rather than silent. This is the only case where malformed input does not follow the operator's normal [on_error](../types/on_error.md) behavior; any other unparseable line (e.g. invalid full-line JSON in `json` mode, or a line that doesn't match the `console` shape at all) still triggers `on_error` as usual.
