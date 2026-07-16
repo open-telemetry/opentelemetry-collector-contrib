@@ -139,7 +139,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.MaxBatchSizeBytes < 0 {
-		return errors.New("max_batch_byte_size must be greater than 0")
+		return errors.New("max_batch_size_bytes must be greater than 0")
 	}
 	if cfg.MaxBatchSizeBytes == 0 {
 		// Defaults to ~2.81MB
