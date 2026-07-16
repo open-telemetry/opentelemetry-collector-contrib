@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalTraces, "otlp-all"),
 				},
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				Table: []RoutingTableItem{
 					{
 						Statement: `route() where attributes["X-Tenant"] == "acme"`,
@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalMetrics, "otlp-all"),
 				},
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				Table: []RoutingTableItem{
 					{
 						Statement: `route() where attributes["X-Tenant"] == "acme"`,
@@ -81,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalLogs, "otlp-all"),
 				},
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				Table: []RoutingTableItem{
 					{
 						Statement: `route() where attributes["X-Tenant"] == "acme"`,

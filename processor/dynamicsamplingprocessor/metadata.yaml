@@ -33,6 +33,14 @@ telemetry:
         value_type: int
         monotonic: true
       stability: development
+    processor_dynamic_sampling_incoming_tracestate_unparseable:
+      enabled: true
+      description: Number of spans whose incoming W3C tracestate could not be parsed when applying the sampling threshold.
+      unit: "{spans}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
     processor_dynamic_sampling_traces_active:
       enabled: true
       description: Number of traces currently in the accumulation buffer awaiting a decision.
