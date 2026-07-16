@@ -532,6 +532,7 @@ Available Converters:
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
+- [IsEmpty](#isempty)
 - [IsInCIDR](#isincidr)
 - [IsInt](#isint)
 - [IsRootSpan](#isrootspan)
@@ -1492,6 +1493,32 @@ Examples:
 - `IsDouble(log.body)`
 
 - `IsDouble(log.attributes["maybe a double"])`
+
+### IsEmpty
+
+`IsEmpty(value)`
+
+The `IsEmpty` Converter returns `true` if the given `value` is considered empty.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+Specifically, it will return `true` if the provided `value` is one of the following:
+
+1. `nil`.
+2. An empty `pcommon.Value` (`pcommon.ValueTypeEmpty`).
+3. A `pcommon.Map` or native map with no entries.
+4. A `pcommon.Slice` or native slice (including `[]byte`) with no elements.
+5. Any other value equal to its type's zero value (for example, `""`, `0`, `false`, or an unset all-zero `pcommon.TraceID`/`pcommon.SpanID`).
+
+Otherwise, it will return `false`.
+
+Examples:
+
+- `IsEmpty(log.body)`
+
+- `IsEmpty(resource.attributes["maybe empty"])`
+
+- `IsEmpty("")`
 
 ### IsInCIDR
 

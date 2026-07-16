@@ -82,7 +82,6 @@ For more information about the maintainer role, see the [community repository](h
 
 ### Approvers
 
-- [Andrew Wilkins](https://github.com/axw), Elastic
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
 - [Braydon Kains](https://github.com/braydonk), Google
 - [Curtis Robert](https://github.com/crobert-1), Splunk
@@ -116,6 +115,7 @@ For more information about the triager role, see the [community repository](http
 ### Emeritus
 
 - [Alolita Sharma](https://github.com/alolita), Triager
+- [Andrew Wilkins](https://github.com/axw), Approver
 - [Anthony Mirabella](https://github.com/Aneurysm9), Approver
 - [Bryan Aguilar](https://github.com/bryan-aguilar), Approver
 - [Daniel Jaglowski](https://github.com/djaglowski), Maintainer
