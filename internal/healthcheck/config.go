@@ -110,14 +110,18 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	// For healthcheckv2extension: these fields control which protocols are enabled.
 	// We conditionally initialize and then clear to preserve "user specified" vs "not specified".
 	if conf.IsSet(httpConfigKey) {
+		httpServerConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		httpServerConfig.WriteTimeout = 0
+		httpServerConfig.ReadHeaderTimeout = 0
+		httpServerConfig.IdleTimeout = 0
+		httpServerConfig.NetAddr = confignet.AddrConfig{
+			Endpoint:  endpointForPort(DefaultHTTPPort),
+			Transport: confignet.TransportTypeTCP,
+		}
+		httpServerConfig.KeepAlivesEnabled = true
 		c.HTTPConfig = &http.Config{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  endpointForPort(DefaultHTTPPort),
-					Transport: confignet.TransportTypeTCP,
-				},
-				KeepAlivesEnabled: true,
-			},
+			ServerConfig: httpServerConfig,
 			Status: http.PathConfig{
 				Enabled: true,
 				Path:    "/status",
@@ -159,25 +163,33 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 }
 
 func NewDefaultConfig() component.Config {
+	legacyServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	legacyServerConfig.WriteTimeout = 0
+	legacyServerConfig.ReadHeaderTimeout = 0
+	legacyServerConfig.IdleTimeout = 0
+	legacyServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  endpointForPort(DefaultHTTPPort),
+		Transport: "tcp",
+	}
+	legacyServerConfig.KeepAlivesEnabled = true
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpServerConfig.WriteTimeout = 0
+	httpServerConfig.ReadHeaderTimeout = 0
+	httpServerConfig.IdleTimeout = 0
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  endpointForPort(DefaultHTTPPort),
+		Transport: "tcp",
+	}
+	httpServerConfig.KeepAlivesEnabled = true
 	return &Config{
 		LegacyConfig: http.LegacyConfig{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  endpointForPort(DefaultHTTPPort),
-					Transport: "tcp",
-				},
-				KeepAlivesEnabled: true,
-			},
-			Path: "/",
+			ServerConfig: legacyServerConfig,
+			Path:         "/",
 		},
 		HTTPConfig: &http.Config{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  endpointForPort(DefaultHTTPPort),
-					Transport: "tcp",
-				},
-				KeepAlivesEnabled: true,
-			},
+			ServerConfig: httpServerConfig,
 			Status: http.PathConfig{
 				Enabled:           true,
 				Path:              "/status",

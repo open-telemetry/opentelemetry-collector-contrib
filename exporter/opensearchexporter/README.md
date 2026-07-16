@@ -51,6 +51,7 @@ The OpenSearch exporter supports dynamic index names for both logs and traces us
   - The value is looked up from item attributes (log/span), scope attributes, and resource attributes (in that precedence order)
   - If the key is missing, the fallback value is used
   - Generated index names must adhere to [OpenSearch index naming restrictions](https://docs.opensearch.org/latest/api-reference/index-apis/create-index/#index-naming-restrictions)
+  - A substituted attribute value that is empty, starts with `.`, or contains `..` is skipped as if the key were missing, so the next attribute in the precedence order (then the fallback) is used. This keeps a value from resolving to a system index (e.g. `.kibana`) or a different index via a `..` segment. Other values are substituted as-is; a value OpenSearch rejects (uppercase, spaces, forbidden characters) surfaces as an indexing error rather than being silently rerouted. The configured fallback value is trusted and is not validated.
 
 **Time Suffix Format:**
 

@@ -83,7 +83,10 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 	unsymbolizedExecutablesSet := make(map[libpf.FileID]struct{})
 	stackPayload := make([]StackPayload, 0, profile.Samples().Len())
 
-	commonResourceAttributes := populateResourceData(dic, resource, scope, profile)
+	commonResourceAttributes, err := populateResourceData(dic, resource, scope, profile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to populate resource data: %w", err)
+	}
 
 	frequency := int64(math.Round(1e9 / float64(profile.Period())))
 	if frequency <= 0 {
@@ -513,16 +516,20 @@ func int64ToBytes(value int64) []byte {
 	return buf
 }
 
-func populateResourceData(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) map[string]string {
+func populateResourceData(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) (map[string]string, error) {
 	numAttrs := resource.Attributes().Len() + scope.Attributes().Len() + profile.AttributeIndices().Len()
 	if numAttrs == 0 {
-		return map[string]string{}
+		return map[string]string{}, nil
 	}
 	attrs := make(map[string]string, numAttrs)
 
 	addEventHostData(attrs, resource.Attributes())
 	addEventHostData(attrs, scope.Attributes())
-	addEventHostData(attrs, pprofile.FromAttributeIndices(dic.AttributeTable(), profile, dic))
+	profileAttrs, err := pprofile.FromAttributeIndices(dic.AttributeTable(), profile, dic)
+	if err != nil {
+		return nil, err
+	}
+	addEventHostData(attrs, profileAttrs)
 
-	return attrs
+	return attrs, nil
 }
