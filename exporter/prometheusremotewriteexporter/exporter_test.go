@@ -1179,7 +1179,7 @@ func TestRetries(t *testing.T) {
 			false,
 			true,
 			assert.Error,
-			assertPermanentConsumerError,
+			assertNonPermanentError,
 			canceledContext(),
 		},
 		{
