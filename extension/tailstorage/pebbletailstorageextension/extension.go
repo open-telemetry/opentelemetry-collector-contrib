@@ -12,26 +12,41 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension/internal/metadata"
 )
+
+type tailStorage interface {
+	Append(traceID pcommon.TraceID, td ptrace.Traces) error
+	Take(traceID pcommon.TraceID) (ptrace.Traces, error)
+	Delete(traceID pcommon.TraceID) error
+	Close() error
+}
 
 type pebbleTailStorageExtension struct {
 	settings extension.Settings
 	cfg      *Config
 
-	storage *storage
+	storage   tailStorage
+	telemetry *metadata.TelemetryBuilder
 }
 
 var _ extension.Extension = (*pebbleTailStorageExtension)(nil)
 
-func newExtension(settings extension.Settings, cfg *Config) *pebbleTailStorageExtension {
-	return &pebbleTailStorageExtension{
-		settings: settings,
-		cfg:      cfg,
+func newExtension(settings extension.Settings, cfg *Config) (*pebbleTailStorageExtension, error) {
+	telemetry, err := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
+	if err != nil {
+		return nil, err
 	}
+	return &pebbleTailStorageExtension{
+		settings:  settings,
+		cfg:       cfg,
+		telemetry: telemetry,
+	}, nil
 }
 
 func (e *pebbleTailStorageExtension) Start(ctx context.Context, _ component.Host) error {
-	storage, err := newStorage(ctx, e.cfg.Directory, e.settings.Logger)
+	storage, err := newStorage(ctx, e.cfg, e.settings.Logger, e.telemetry)
 	if err != nil {
 		return err
 	}
@@ -40,6 +55,7 @@ func (e *pebbleTailStorageExtension) Start(ctx context.Context, _ component.Host
 }
 
 func (e *pebbleTailStorageExtension) Shutdown(_ context.Context) error {
+	e.telemetry.Shutdown()
 	if e.storage == nil {
 		return nil
 	}
@@ -49,13 +65,25 @@ func (e *pebbleTailStorageExtension) Shutdown(_ context.Context) error {
 }
 
 func (e *pebbleTailStorageExtension) Append(traceID pcommon.TraceID, td ptrace.Traces) error {
-	return e.storage.Append(traceID, td)
+	err := e.storage.Append(traceID, td)
+	if err != nil {
+		e.telemetry.ExtensionPebbleTailStorageAppendErrors.Add(context.Background(), 1)
+	}
+	return err
 }
 
 func (e *pebbleTailStorageExtension) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
-	return e.storage.Take(traceID)
+	td, err := e.storage.Take(traceID)
+	if err != nil {
+		e.telemetry.ExtensionPebbleTailStorageTakeErrors.Add(context.Background(), 1)
+	}
+	return td, err
 }
 
 func (e *pebbleTailStorageExtension) Delete(traceID pcommon.TraceID) error {
-	return e.storage.Delete(traceID)
+	err := e.storage.Delete(traceID)
+	if err != nil {
+		e.telemetry.ExtensionPebbleTailStorageDeleteErrors.Add(context.Background(), 1)
+	}
+	return err
 }
