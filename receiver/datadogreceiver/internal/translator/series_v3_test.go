@@ -111,9 +111,13 @@ func TestHandleSeriesV3Payload_DeltaEncoding(t *testing.T) {
 			DictResourceType:   []int64{1},
 			DictResourceName:   []int64{2},
 			DictSourceTypeName: v3StringDict("System"),
+			DictUnitStr:        v3StringDict("second"),
+			// unitRefs is a sparse column: only the second metric carries
+			// flagHasUnit, so a single entry serves the whole payload
+			UnitRefs: []int64{1},
 			Types: []uint64{
 				uint64(intakev3.MetricType_Count) | uint64(intakev3.ValueType_Sint64),
-				uint64(intakev3.MetricType_Rate) | uint64(intakev3.ValueType_Zero),
+				uint64(intakev3.MetricType_Rate) | uint64(intakev3.ValueType_Zero) | uint64(intakev3.MetricFlags_flagHasUnit),
 			},
 			NameRefs:           []int64{1, 1},  // -> 1, 2
 			TagsetRefs:         []int64{1, 1},  // -> 1, 2
@@ -137,6 +141,7 @@ func TestHandleSeriesV3Payload_DeltaEncoding(t *testing.T) {
 	assert.Equal(t, "m.count", count.Metric)
 	assert.Equal(t, []string{"a:1", "b:2"}, count.Tags)
 	assert.Equal(t, gogen.MetricPayload_COUNT, count.Type)
+	assert.Empty(t, count.Unit) // no flagHasUnit: the sparse unit column is not consumed
 	assert.Equal(t, "System", count.SourceTypeName)
 	require.Len(t, count.Points, 2)
 	assert.Equal(t, int64(1000), count.Points[0].Timestamp)
@@ -148,6 +153,7 @@ func TestHandleSeriesV3Payload_DeltaEncoding(t *testing.T) {
 	assert.Equal(t, "m.rate", rate.Metric)
 	assert.Equal(t, []string{"a:1"}, rate.Tags)
 	assert.Equal(t, gogen.MetricPayload_RATE, rate.Type)
+	assert.Equal(t, "second", rate.Unit)
 	assert.Empty(t, rate.SourceTypeName)
 	assert.Equal(t, int64(20), rate.Interval)
 	require.Len(t, rate.Resources, 1)
