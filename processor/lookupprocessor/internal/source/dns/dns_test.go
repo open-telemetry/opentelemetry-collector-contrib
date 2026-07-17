@@ -6,6 +6,7 @@ package dns
 import (
 	"net"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -41,16 +42,26 @@ func TestConfigValidate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "unsupported record type",
+			name: "A record type",
 			config: &Config{
-				RecordType: "A",
+				RecordType: RecordTypeA,
+				Timeout:    1 * time.Second,
 			},
-			wantErr: true,
+			wantErr: false,
+		},
+		{
+			name: "AAAA record type",
+			config: &Config{
+				RecordType: RecordTypeAAAA,
+				Timeout:    1 * time.Second,
+			},
+			wantErr: false,
 		},
 		{
 			name: "invalid record type",
 			config: &Config{
 				RecordType: "INVALID",
+				Timeout:    1 * time.Second,
 			},
 			wantErr: true,
 		},
@@ -142,6 +153,111 @@ func TestDefaultConfig(t *testing.T) {
 
 // Integration tests - these actually perform DNS lookups
 // They're skipped in CI but useful for local development
+
+func TestLookupA_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	factory := NewFactory()
+	cfg := &Config{
+		RecordType: RecordTypeA,
+		Timeout:    5 * time.Second,
+		Cache: lookupsource.CacheConfig{
+			Enabled: false,
+		},
+	}
+
+	source, err := factory.CreateSource(t.Context(), lookupsource.CreateSettings{}, cfg)
+	require.NoError(t, err)
+
+	val, found, err := source.Lookup(t.Context(), "dns.google")
+	require.NoError(t, err)
+
+	if found {
+		ip, ok := val.(string)
+		assert.True(t, ok)
+		// A record should be an IPv4 address (contains dots, no colons)
+		assert.Contains(t, ip, ".")
+		assert.NotContains(t, ip, ":")
+		t.Logf("A lookup for dns.google: %s", ip)
+	} else {
+		t.Log("A lookup for dns.google not found (may be network issue)")
+	}
+}
+
+func TestLookupAAAA_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	factory := NewFactory()
+	cfg := &Config{
+		RecordType: RecordTypeAAAA,
+		Timeout:    5 * time.Second,
+		Cache: lookupsource.CacheConfig{
+			Enabled: false,
+		},
+	}
+
+	source, err := factory.CreateSource(t.Context(), lookupsource.CreateSettings{}, cfg)
+	require.NoError(t, err)
+
+	val, found, err := source.Lookup(t.Context(), "dns.google")
+	require.NoError(t, err)
+
+	if found {
+		ip, ok := val.(string)
+		assert.True(t, ok)
+		// AAAA record should be an IPv6 address (contains colons)
+		assert.Contains(t, ip, ":")
+		t.Logf("AAAA lookup for dns.google: %s", ip)
+	} else {
+		t.Log("AAAA lookup for dns.google not found (may be network issue or no IPv6)")
+	}
+}
+
+func TestLookupA_MultipleResults_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	factory := NewFactory()
+	cfg := &Config{
+		RecordType:      RecordTypeA,
+		Timeout:         5 * time.Second,
+		MultipleResults: true,
+		Cache: lookupsource.CacheConfig{
+			Enabled: false,
+		},
+	}
+
+	source, err := factory.CreateSource(t.Context(), lookupsource.CreateSettings{}, cfg)
+	require.NoError(t, err)
+
+	val, found, err := source.Lookup(t.Context(), "dns.google")
+	require.NoError(t, err)
+
+	if !found {
+		t.Skip("A lookup for dns.google not found (may be network issue)")
+	}
+
+	result, ok := val.(string)
+	require.True(t, ok)
+
+	// Multiple results must be comma-separated
+	ips := strings.Split(result, ",")
+	assert.Greater(t, len(ips), 1, "expected multiple IPs but got single result %q — MultipleResults may not be working", result)
+
+	// Each entry must be a valid IPv4 address (no colons)
+	for _, ip := range ips {
+		ip = strings.TrimSpace(ip)
+		assert.NotEmpty(t, ip)
+		assert.Contains(t, ip, ".", "expected IPv4 address, got %q", ip)
+		assert.NotContains(t, ip, ":", "A record should not return IPv6 addresses, got %q", ip)
+	}
+	t.Logf("A multiple ipv4 results for dns.google (%d IPs): %s", len(ips), result)
+}
 
 func TestLookupPTR_Integration(t *testing.T) {
 	if testing.Short() {

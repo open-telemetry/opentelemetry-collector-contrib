@@ -24,8 +24,14 @@ func GenerateTraces(tracePairsFile, spanPairsFile string) ([]ptrace.Traces, erro
 	if metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() && !metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
 		return nil, errors.New("internal.coreinternal.goldendataset.DontEmitV0NetworkConventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1NetworkConventions")
 	}
+	if metadata.InternalCoreinternalGoldendatasetDontEmitV0DatabaseConventionsFeatureGate.IsEnabled() && !metadata.InternalCoreinternalGoldendatasetEmitV1DatabaseConventionsFeatureGate.IsEnabled() {
+		return nil, errors.New("internal.coreinternal.goldendataset.DontEmitV0DatabaseConventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1DatabaseConventions")
+	}
 	if metadata.InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate.IsEnabled() && !metadata.InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate.IsEnabled() {
 		return nil, errors.New("internal.coreinternal.goldendataset.DontEmitV0RPCConventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1RPCConventions")
+	}
+	if metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.IsEnabled() && !metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.IsEnabled() {
+		return nil, errors.New("internal.coreinternal.goldendataset.DontEmitV0MessagingConventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1MessagingConventions")
 	}
 	random := (*randReader)(rand.New(rand.NewPCG(42, 0)))
 	pairsData, err := loadPictOutputFile(tracePairsFile)

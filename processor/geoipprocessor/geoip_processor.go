@@ -15,6 +15,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 )
 
@@ -101,7 +102,15 @@ func (g *geoIPProcessor) processAttributes(ctx context.Context, metadata pcommon
 
 	attributes, err := g.geoLocation(ctx, ipAddr)
 	if err != nil {
-		return err
+		switch g.cfg.ErrorMode {
+		case ottl.IgnoreError:
+			g.logger.Warn("failed to get geo location, ignoring", zap.String("IP", ipAddr.String()), zap.Error(err))
+			return nil
+		case ottl.SilentError:
+			return nil
+		default:
+			return err
+		}
 	}
 
 	for _, geoAttr := range attributes.ToSlice() {

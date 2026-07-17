@@ -74,7 +74,6 @@ func (h *handlerProviderImpl) getHandler(eventType eventType) (lambdaEventHandle
 
 // lambdaEventHandler defines the contract for AWS Lambda event handlers
 type lambdaEventHandler interface {
-	handlerType() eventType
 	handle(ctx context.Context, event json.RawMessage) error
 }
 
@@ -183,10 +182,6 @@ func newS3MetricsHandler(
 	}
 }
 
-func (*s3Handler) handlerType() eventType {
-	return s3Event
-}
-
 func (s *s3Handler) handle(ctx context.Context, event json.RawMessage) error {
 	var err error
 	parsedEvent, err := parseS3Event(event)
@@ -260,10 +255,6 @@ func newCWLogsSubscriptionHandler(
 	}
 }
 
-func (*cwLogsSubscriptionHandler) handlerType() eventType {
-	return cwEvent
-}
-
 func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMessage) error {
 	var log events.CloudwatchLogsEvent
 	if err := gojson.Unmarshal(event, &log); err != nil {
@@ -283,7 +274,18 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 
 	defer reader.Close()
 
-	decoder, err := c.logsDecoder.NewLogsDecoder(reader, encoding.WithFlushBytes(s3StreamBatchSize))
+	// Use T reader to extract metadata but rebuffer for downstream consumption
+	// CloudWatch subscription events are small in size compared to S3.
+	// Hence, parsing here has low impact for overall performance.
+	var buf bytes.Buffer
+	tReader := io.TeeReader(reader, &buf)
+
+	var mData cwMetadataEnvelope
+	if err = gojson.NewDecoder(tReader).Decode(&mData); err != nil {
+		return fmt.Errorf("failed to decode cloudwatch logs envelope: %w", err)
+	}
+
+	decoder, err := c.logsDecoder.NewLogsDecoder(&buf, encoding.WithFlushBytes(s3StreamBatchSize))
 	if err != nil {
 		return err
 	}
@@ -296,9 +298,50 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 				break
 			}
 
-			return fmt.Errorf("failed to decode S3 logs: %w", err)
+			return fmt.Errorf("failed to decode CloudWatch logs: %w", err)
 		}
-		if err = c.consumer.ConsumeLogs(ctx, logs); err != nil {
+
+		getEnrichedCWLog(logs, mData)
+		if err = c.consumer.ConsumeLogs(getEnrichedCtxForCWLogs(ctx, mData), logs); err != nil {
+			return checkConsumerErrorAndWrap(err)
+		}
+	}
+
+	return nil
+}
+
+// customHandler implements the custom event handling.
+type customHandler struct {
+	logsDecoder encoding.LogsDecoderFactory
+	consumer    consumer.Logs
+}
+
+func newCustomHandler(logsDecoder encoding.LogsDecoderFactory, consumer consumer.Logs) *customHandler {
+	return &customHandler{
+		logsDecoder: logsDecoder,
+		consumer:    consumer,
+	}
+}
+
+func (c *customHandler) handle(ctx context.Context, event json.RawMessage) error {
+	decoder, err := c.logsDecoder.NewLogsDecoder(bytes.NewReader(event))
+	if err != nil {
+		return fmt.Errorf("failed to create decoder for the Custom event: %w", err)
+	}
+
+	for {
+		var logs plog.Logs
+		logs, err = decoder.DecodeLogs()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			return fmt.Errorf("failed to decode the Custom event: %w", err)
+		}
+
+		err = c.consumer.ConsumeLogs(ctx, logs)
+		if err != nil {
 			return checkConsumerErrorAndWrap(err)
 		}
 	}
@@ -332,6 +375,45 @@ func getEnrichedContext(ctx context.Context, event events.S3EventRecord) context
 	metadata["aws.s3.bucket.name"] = []string{event.S3.Bucket.Name}
 	metadata["aws.s3.bucket.arn"] = []string{event.S3.Bucket.Arn}
 	metadata[string(conventions.AWSS3KeyKey)] = []string{event.S3.Object.Key}
+
+	info := client.Info{}
+	info.Metadata = client.NewMetadata(metadata)
+	return client.NewContext(ctx, info)
+}
+
+// cwMetadataEnvelope defines the structure to unmarshal the CloudWatch logs event envelope for metadata extraction.
+type cwMetadataEnvelope struct {
+	Owner     string `json:"owner"`
+	LogGroup  string `json:"logGroup"`
+	LogStream string `json:"logStream"`
+}
+
+// getEnrichedCWLog add extra metadata to resource attributes iff metadata is not already present.
+// This makes sure overrides do not happen if configured extensions already populate these attributes.
+func getEnrichedCWLog(logs plog.Logs, cwM cwMetadataEnvelope) {
+	for _, resourceLogs := range logs.ResourceLogs().All() {
+		resourceAttrs := resourceLogs.Resource().Attributes()
+
+		if _, ok := resourceAttrs.Get(string(conventions.CloudProviderKey)); !ok {
+			resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+		}
+		if _, ok := resourceAttrs.Get(string(conventions.CloudAccountIDKey)); !ok {
+			resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), cwM.Owner)
+		}
+		if _, ok := resourceAttrs.Get(string(conventions.AWSLogGroupNamesKey)); !ok {
+			resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwM.LogGroup)
+		}
+		if _, ok := resourceAttrs.Get(string(conventions.AWSLogStreamNamesKey)); !ok {
+			resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwM.LogStream)
+		}
+	}
+}
+
+func getEnrichedCtxForCWLogs(ctx context.Context, cwM cwMetadataEnvelope) context.Context {
+	metadata := map[string][]string{}
+	metadata[string(conventions.CloudAccountIDKey)] = []string{cwM.Owner}
+	metadata[string(conventions.AWSLogGroupNamesKey)] = []string{cwM.LogGroup}
+	metadata[string(conventions.AWSLogStreamNamesKey)] = []string{cwM.LogStream}
 
 	info := client.Info{}
 	info.Metadata = client.NewMetadata(metadata)

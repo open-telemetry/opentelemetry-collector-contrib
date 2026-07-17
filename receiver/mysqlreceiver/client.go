@@ -19,6 +19,7 @@ import (
 	// registers the mysql driver
 	"github.com/go-sql-driver/mysql"
 	"github.com/hashicorp/go-version"
+	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.uber.org/zap"
 )
 
@@ -52,6 +53,17 @@ func (v dbVersion) productString() string {
 		return "MariaDB"
 	}
 	return "MySQL"
+}
+
+// systemName returns the db.system.name value following OpenTelemetry semantic
+// conventions, sourced from the semconv package so the values stay tied to the
+// spec. This is distinct from productString, which is intended for
+// human-readable logging.
+func (v dbVersion) systemName() string {
+	if v.product == dbProductMariaDB {
+		return semconv.DBSystemNameMariaDB.Value.AsString()
+	}
+	return semconv.DBSystemNameMySQL.Value.AsString()
 }
 
 // supportsQuerySampleText reports whether the server's
@@ -290,6 +302,7 @@ type querySample struct {
 	processlistDB      string
 	processlistCommand string
 	processlistState   string
+	digestText         string
 	sqlText            string
 	digest             string
 	eventID            int64
@@ -966,6 +979,8 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 				dest = append(dest, &s.processlistCommand)
 			case "session_state":
 				dest = append(dest, &s.processlistState)
+			case "digest_text":
+				dest = append(dest, &s.digestText)
 			case "sql_text":
 				dest = append(dest, &s.sqlText)
 			case "fingerprint":

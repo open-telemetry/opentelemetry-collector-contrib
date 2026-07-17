@@ -71,12 +71,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNetworkConnectionsDataPoint(ts, 1, AttributeProtocolTcp, "state-val")
+			mb.RecordSystemNetworkConnectionsDataPoint(ts, 1, AttributeProtocolTCP, "state-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSystemNetworkConnectionsDataPoint(ts, 3, AttributeProtocolTcp, "state-val-2")
+				mb.RecordSystemNetworkConnectionsDataPoint(ts, 3, AttributeProtocolTCP, "state-val-2")
 			}
 
 			allMetricsCount++
@@ -84,28 +83,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSystemNetworkConntrackMaxDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkDroppedDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemNetworkDroppedDataPoint(ts, 3, "device-val-2", AttributeDirectionTransmit)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkErrorsDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemNetworkErrorsDataPoint(ts, 3, "device-val-2", AttributeDirectionTransmit)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkIoDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemNetworkIoDataPoint(ts, 3, "device-val-2", AttributeDirectionTransmit)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkPacketsDataPoint(ts, 1, "device-val", AttributeDirectionReceive)

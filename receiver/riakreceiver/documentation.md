@@ -86,6 +86,6 @@ The number of operations performed by vnodes on the node.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| riak.node.name | The name this node uses to identify itself. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| riak.node.name | The name this node uses to identify itself. | Any Str | true | - | - |

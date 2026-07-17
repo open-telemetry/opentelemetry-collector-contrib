@@ -22,6 +22,9 @@ const (
 
 	// nodePath is the endpoint for RabbitMQ nodes.
 	nodePath = "/api/nodes"
+
+	// exchangePath is the endpoint for RabbitMQ exchanges.
+	exchangePath = "/api/exchanges"
 )
 
 type client interface {
@@ -29,6 +32,8 @@ type client interface {
 	GetQueues(ctx context.Context) ([]*models.Queue, error)
 	// GetNodes calls "/api/nodes" endpoint to get list of nodes for the target node
 	GetNodes(ctx context.Context) ([]*models.Node, error)
+	// GetExchanges calls "/api/exchanges" endpoint to get list of exchanges for the target node
+	GetExchanges(ctx context.Context) ([]*models.Exchange, error)
 }
 
 var _ client = (*rabbitmqClient)(nil)
@@ -82,6 +87,17 @@ func (c *rabbitmqClient) GetNodes(ctx context.Context) ([]*models.Node, error) {
 	}
 
 	return nodes, nil
+}
+
+func (c *rabbitmqClient) GetExchanges(ctx context.Context) ([]*models.Exchange, error) {
+	var exchanges []*models.Exchange
+
+	if err := c.get(ctx, exchangePath, &exchanges); err != nil {
+		c.logger.Debug("Failed to retrieve exchanges", zap.Error(err))
+		return nil, err
+	}
+
+	return exchanges, nil
 }
 
 func (c *rabbitmqClient) get(ctx context.Context, path string, respObj any) error {

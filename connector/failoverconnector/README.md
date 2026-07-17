@@ -5,7 +5,8 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Ffailover%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Ffailover) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Ffailover%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Ffailover) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=connector_failover)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=connector_failover&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@akats7](https://www.github.com/akats7), [@fatsheep9146](https://www.github.com/fatsheep9146) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@akats7](https://www.github.com/akats7) |
+| Emeritus      | [@fatsheep9146](https://www.github.com/fatsheep9146) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -34,8 +35,6 @@ The following settings are available:
 
 - `priority_levels (required)`: list of pipeline level priorities in a 1 - n configuration, multiple pipelines can sit at a single priority level.
 - `retry_interval (optional)`: the frequency at which the pipeline levels will attempt to reestablish connection with all higher priority levels. Default value is 10 minutes. (See Example below for further explanation)
-- `retry_gap (optional)`: * **Deprecated** * the amount of time between trying two separate priority levels in a single retry_interval timeframe. Default value is 30 seconds. (See Example below for further explanation)
-- `max_retries (optional)`: **Deprecated** * the maximum retries per level. Default value is 10. Set to 0 to allow unlimited retries.
 
 The connector intakes a list of `priority_levels` each of which can contain multiple pipelines.
 If any pipeline at a stable level fails, the level is considered unhealthy and the connector will move down one priority level and route all data to the new level (assuming it is stable).

@@ -4,7 +4,6 @@
 The Kafka Metrics Receiver collects kafka metrics (brokers, topics, partitions, consumer groups) from a kafka server,
 and converts them into otlp.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

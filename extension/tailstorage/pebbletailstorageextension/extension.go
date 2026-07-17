@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package pebbletailstorageextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension"
 
 import (
@@ -28,8 +30,8 @@ func newExtension(settings extension.Settings, cfg *Config) *pebbleTailStorageEx
 	}
 }
 
-func (e *pebbleTailStorageExtension) Start(_ context.Context, _ component.Host) error {
-	storage, err := newStorage(e.cfg.Directory, e.settings.Logger)
+func (e *pebbleTailStorageExtension) Start(ctx context.Context, _ component.Host) error {
+	storage, err := newStorage(ctx, e.cfg.Directory, e.settings.Logger)
 	if err != nil {
 		return err
 	}
@@ -46,14 +48,14 @@ func (e *pebbleTailStorageExtension) Shutdown(_ context.Context) error {
 	return err
 }
 
-func (e *pebbleTailStorageExtension) Append(traceID pcommon.TraceID, rss ptrace.ResourceSpans) {
-	e.storage.Append(traceID, rss)
+func (e *pebbleTailStorageExtension) Append(traceID pcommon.TraceID, td ptrace.Traces) error {
+	return e.storage.Append(traceID, td)
 }
 
-func (e *pebbleTailStorageExtension) Take(traceID pcommon.TraceID) (ptrace.Traces, bool) {
+func (e *pebbleTailStorageExtension) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 	return e.storage.Take(traceID)
 }
 
-func (e *pebbleTailStorageExtension) Delete(traceID pcommon.TraceID) {
-	e.storage.Delete(traceID)
+func (e *pebbleTailStorageExtension) Delete(traceID pcommon.TraceID) error {
+	return e.storage.Delete(traceID)
 }

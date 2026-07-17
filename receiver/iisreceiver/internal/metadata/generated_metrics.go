@@ -112,13 +112,16 @@ var MetricsInfo = metricsInfo{
 		Name: "iis.network.blocked",
 	},
 	IisNetworkFileCount: metricInfo{
-		Name: "iis.network.file.count",
+		Name:       "iis.network.file.count",
+		Attributes: []string{"direction"},
 	},
 	IisNetworkIo: metricInfo{
-		Name: "iis.network.io",
+		Name:       "iis.network.io",
+		Attributes: []string{"direction"},
 	},
 	IisRequestCount: metricInfo{
-		Name: "iis.request.count",
+		Name:       "iis.request.count",
+		Attributes: []string{"request"},
 	},
 	IisRequestQueueAgeMax: metricInfo{
 		Name: "iis.request.queue.age.max",
@@ -155,7 +158,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricIisApplicationPoolState struct {

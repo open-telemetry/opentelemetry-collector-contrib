@@ -733,6 +733,10 @@ func (s *endpointState) extractProjectSlug(attrs pcommon.Map) string {
 		}
 	}
 
+	if !projectSlugRegexp.MatchString(serviceName) {
+		return ""
+	}
+
 	return serviceName
 }
 

@@ -174,6 +174,9 @@ agent:
   # Values here override the values in the agent description retrieved from the collector's
   # OpAMP extension (self-reported by the Collector).
   description:
+    # Passed to the Supervisor-injected OpAMP extension to copy the collector's 
+    # resource attributes into the non-identifying attributes.
+    include_resource_attributes: true
     identifying_attributes:
       client.id: "01HWWSK84BMT7J45663MBJMTPJ"
     non_identifying_attributes:
@@ -752,7 +755,7 @@ This configuration and the upgrade behavior is only used when the `accepts_packa
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `agent.package.agent_binary` | string | `"otelcol-contrib"` (Linux/macOS), `"otelcol-contrib.exe"` (Windows) | Name of the collector binary as it appears in the archive the supervisor downloads. Required when using archive format. |
+| `agent.package.agent_binary` | string | `"otelcol-contrib"` (Linux/macOS), `"otelcol-contrib.exe"` (Windows) | Name of the collector binary as it appears inside the archive the supervisor downloads. Used to locate the binary in archives that bundle multiple files. The archive format itself is detected from the download URL and Content-Type header, not configured. |
 | `agent.package.verifier.type` | string | `"cosign"` | Specifies which verification type should be used. Specific verifier configuration options are defined below. |
 
 The Supervisor configuration allows for other verification mechanisms to be added in the future. The list of

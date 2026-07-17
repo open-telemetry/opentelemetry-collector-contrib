@@ -26,6 +26,7 @@ exporters:
   datadog:
     api:
       key: "aaa"
+    hostname: "test-host"
     tls:
       insecure_skip_verify: true
     host_metadata:
