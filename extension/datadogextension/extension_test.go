@@ -219,9 +219,7 @@ func TestNotifyConfig(t *testing.T) {
 		assert.NotEmpty(t, ext.otelCollectorMetadata.ActiveComponents)
 		assert.NotNil(t, ext.httpServer, "http server should be created and started")
 
-		// full_configuration must be valid YAML, and duration values must render
-		// using their own string format (e.g. "200ms") rather than a raw
-		// nanosecond count, matching the format used by opampextension.
+		// full_configuration must be valid YAML
 		var parsedConfig map[string]any
 		require.NoError(t, yaml.Unmarshal([]byte(ext.otelCollectorMetadata.FullConfiguration), &parsedConfig))
 		assert.Contains(t, ext.otelCollectorMetadata.FullConfiguration, "timeout: 200ms")

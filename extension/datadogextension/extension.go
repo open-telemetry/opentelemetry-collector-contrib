@@ -121,10 +121,6 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		Version:     e.info.build.Version,
 	}
 
-	// Get the full collector configuration as a YAML string. YAML (rather than JSON)
-	// is used here so that values such as time.Duration render using the collector's
-	// own human-readable format (e.g. "200ms") instead of a raw nanosecond count,
-	// matching the format used by the opampextension's effective configuration reporting.
 	fullConfig := componentchecker.DataToYAMLString(e.configs.collector.ToStringMap())
 
 	// Prepare the base payload
