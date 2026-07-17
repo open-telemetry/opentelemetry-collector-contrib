@@ -40,6 +40,7 @@ func (cl dbSQLClient) metricRows(ctx context.Context, args ...any) ([]metricRow,
 	if err != nil {
 		return nil, err
 	}
+	defer sqlRows.Close()
 	var out []metricRow
 	row := reusableRow{
 		attrs: map[string]func() string{},
@@ -72,6 +73,9 @@ func (cl dbSQLClient) metricRows(ctx context.Context, args ...any) ([]metricRow,
 			return nil, err
 		}
 		out = append(out, row.toMetricRow())
+	}
+	if err := sqlRows.Err(); err != nil {
+		return nil, err
 	}
 	return out, nil
 }
