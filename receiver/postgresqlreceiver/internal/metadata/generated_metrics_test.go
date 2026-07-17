@@ -77,7 +77,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["postgresql.query.conflicts"] = mb.metricPostgresqlQueryConflicts.config.AggregationStrategy
 			aggMap["postgresql.replication.data_delay"] = mb.metricPostgresqlReplicationDataDelay.config.AggregationStrategy
 			aggMap["postgresql.rows"] = mb.metricPostgresqlRows.config.AggregationStrategy
-			aggMap["postgresql.vector.search.count"] = mb.metricPostgresqlVectorSearchCount.config.AggregationStrategy
+			aggMap["postgresql.vector.search.calls"] = mb.metricPostgresqlVectorSearchCalls.config.AggregationStrategy
 			aggMap["postgresql.vector.search.duration"] = mb.metricPostgresqlVectorSearchDuration.config.AggregationStrategy
 			aggMap["postgresql.vector.search.rows_returned"] = mb.metricPostgresqlVectorSearchRowsReturned.config.AggregationStrategy
 			aggMap["postgresql.wal.delay"] = mb.metricPostgresqlWalDelay.config.AggregationStrategy
@@ -230,9 +230,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlVectorInsertRowsDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordPostgresqlVectorSearchCountDataPoint(ts, 1, AttributePostgresqlDistanceFunctionNameCosine)
+			mb.RecordPostgresqlVectorSearchCallsDataPoint(ts, 1, AttributePostgresqlDistanceFunctionNameCosine)
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlVectorSearchCountDataPoint(ts, 3, AttributePostgresqlDistanceFunctionNameL2)
+				mb.RecordPostgresqlVectorSearchCallsDataPoint(ts, 3, AttributePostgresqlDistanceFunctionNameL2)
 			}
 
 			allMetricsCount++
@@ -283,7 +283,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricPostgresqlQueryConflicts.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlReplicationDataDelay.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlRows.aggDataPoints)
-				assert.Empty(t, mb.metricPostgresqlVectorSearchCount.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlVectorSearchCalls.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlVectorSearchDuration.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlVectorSearchRowsReturned.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlWalDelay.aggDataPoints)
@@ -1117,14 +1117,14 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "postgresql.vector.search.count":
+				case "postgresql.vector.search.calls":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["postgresql.vector.search.count"], "Found a duplicate in the metrics slice: postgresql.vector.search.count")
-						validatedMetrics["postgresql.vector.search.count"] = true
+						assert.False(t, validatedMetrics["postgresql.vector.search.calls"], "Found a duplicate in the metrics slice: postgresql.vector.search.calls")
+						validatedMetrics["postgresql.vector.search.calls"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The number of vector similarity search operations executed, grouped by the distance function used.", mi.Description())
-						assert.Equal(t, "{searches}", mi.Unit())
+						assert.Equal(t, "{search}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1136,19 +1136,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "cosine", postgresqlDistanceFunctionNameAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["postgresql.vector.search.count"], "Found a duplicate in the metrics slice: postgresql.vector.search.count")
-						validatedMetrics["postgresql.vector.search.count"] = true
+						assert.False(t, validatedMetrics["postgresql.vector.search.calls"], "Found a duplicate in the metrics slice: postgresql.vector.search.calls")
+						validatedMetrics["postgresql.vector.search.calls"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The number of vector similarity search operations executed, grouped by the distance function used.", mi.Description())
-						assert.Equal(t, "{searches}", mi.Unit())
+						assert.Equal(t, "{search}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["postgresql.vector.search.count"] {
+						switch aggMap["postgresql.vector.search.calls"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":

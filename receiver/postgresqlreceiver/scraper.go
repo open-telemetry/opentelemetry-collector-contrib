@@ -637,7 +637,7 @@ func (p *postgreSQLScraper) recordVectorSearchStats(
 ) bool {
 	// All metrics are opt-in and derived from the same pg_stat_statements query, so skip
 	// the collection entirely unless at least one of them is enabled.
-	if !p.config.Metrics.PostgresqlVectorSearchCount.Enabled &&
+	if !p.config.Metrics.PostgresqlVectorSearchCalls.Enabled &&
 		!p.config.Metrics.PostgresqlVectorSearchDuration.Enabled &&
 		!p.config.Metrics.PostgresqlVectorSearchRowsReturned.Enabled {
 		return false
@@ -658,7 +658,7 @@ func (p *postgreSQLScraper) recordVectorSearchStats(
 			p.logger.Debug("skipping unclassified vector distance function", zap.String("postgresql.distance.function.name", stat.distanceFunction))
 			continue
 		}
-		p.mb.RecordPostgresqlVectorSearchCountDataPoint(now, stat.calls, distanceFunction)
+		p.mb.RecordPostgresqlVectorSearchCallsDataPoint(now, stat.calls, distanceFunction)
 		p.mb.RecordPostgresqlVectorSearchDurationDataPoint(now, stat.totalExecTime, distanceFunction)
 		p.mb.RecordPostgresqlVectorSearchRowsReturnedDataPoint(now, stat.rowsReturned, distanceFunction)
 		recorded = true

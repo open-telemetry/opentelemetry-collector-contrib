@@ -143,17 +143,15 @@ Prerequisites:
 
 #### Search metrics
 
-Three metrics report similarity-search activity, all broken down by a `postgresql.distance.function.name` attribute
-whose value is one of `cosine`, `l2`, `inner_product`, `l1`, `hamming`, or `jaccard`:
+Three metrics report similarity-search activity
 
-- `postgresql.vector.search.count`: the cumulative number of vector search executions.
+- `postgresql.vector.search.calls`: the cumulative number of vector search executions.
 - `postgresql.vector.search.duration`: the cumulative execution time (in seconds) of vector searches.
 - `postgresql.vector.search.rows_returned`: the cumulative number of rows returned by vector searches.
 
 #### Insert metrics
 
-Two aggregated metrics report write activity against pgvector tables (tables with a `vector`, `halfvec`, or
-`sparsevec` column):
+These metrics report write activity against pgvector tables
 
 - `postgresql.vector.insert.rows`: the cumulative number of vectors inserted.
 - `postgresql.vector.insert.duration`: the cumulative execution time (in seconds) of those inserts.
@@ -164,7 +162,7 @@ All of these metrics are disabled by default. Enable the ones you need via:
 receivers:
   postgresql:
     metrics:
-      postgresql.vector.search.count:
+      postgresql.vector.search.calls:
         enabled: true
       postgresql.vector.search.duration:
         enabled: true

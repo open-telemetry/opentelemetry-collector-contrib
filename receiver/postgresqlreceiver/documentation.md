@@ -387,8 +387,8 @@ Number of rows updated by queries in the database.
 
 The cumulative execution time of statements that insert vectors into pgvector tables.
 
-This metric is opt-in and requires the `pg_stat_statements` extension to be installed and enabled,
-PostgreSQL 13 or later, and the `pgvector` extension in the scanned database.
+Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+extension in the scanned database.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -398,24 +398,24 @@ PostgreSQL 13 or later, and the `pgvector` extension in the scanned database.
 
 The number of vectors inserted into pgvector tables.
 
-This metric is opt-in and requires the `pg_stat_statements` extension to be installed and enabled,
-PostgreSQL 13 or later, and the `pgvector` extension in the scanned database.
+Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+extension in the scanned database.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {vectors} | Sum | Int | Cumulative | true | Development |
 
-### postgresql.vector.search.count
+### postgresql.vector.search.calls
 
 The number of vector similarity search operations executed, grouped by the distance function used.
 
-This metric is opt-in and requires the `pg_stat_statements` extension to be installed and enabled,
-PostgreSQL 13 or later, and the `pgvector` extension in the scanned database. The `l1`, `hamming`, and
-`jaccard` classifications additionally require pgvector 0.7.0 or later.
+Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+additionally require pgvector 0.7.0 or later.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {searches} | Sum | Int | Cumulative | true | Development |
+| {search} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -427,9 +427,9 @@ PostgreSQL 13 or later, and the `pgvector` extension in the scanned database. Th
 
 The cumulative execution time of vector similarity searches, grouped by the distance function used.
 
-This metric is opt-in and requires the `pg_stat_statements` extension to be installed and enabled,
-PostgreSQL 13 or later, and the `pgvector` extension in the scanned database. The `l1`, `hamming`, and
-`jaccard` classifications additionally require pgvector 0.7.0 or later.
+Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+additionally require pgvector 0.7.0 or later.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -445,9 +445,9 @@ PostgreSQL 13 or later, and the `pgvector` extension in the scanned database. Th
 
 The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.
 
-This metric is opt-in and requires the `pg_stat_statements` extension to be installed and enabled,
-PostgreSQL 13 or later, and the `pgvector` extension in the scanned database. The `l1`, `hamming`, and
-`jaccard` classifications additionally require pgvector 0.7.0 or later.
+Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+additionally require pgvector 0.7.0 or later.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |

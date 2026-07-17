@@ -234,7 +234,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{vectors}'
           - description: The number of vector similarity search operations executed, grouped by the distance function used.
-            name: postgresql.vector.search.count
+            name: postgresql.vector.search.calls
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -253,7 +253,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{searches}'
+            unit: '{search}'
           - description: The cumulative execution time of vector similarity searches, grouped by the distance function used.
             name: postgresql.vector.search.duration
             sum:

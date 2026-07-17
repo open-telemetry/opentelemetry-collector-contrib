@@ -1012,23 +1012,23 @@ func (ms *PostgresqlVectorInsertRowsMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// PostgresqlVectorSearchCountMetricAttributeKey specifies the key of an attribute for the postgresql.vector.search.count metric.
-type PostgresqlVectorSearchCountMetricAttributeKey string
+// PostgresqlVectorSearchCallsMetricAttributeKey specifies the key of an attribute for the postgresql.vector.search.calls metric.
+type PostgresqlVectorSearchCallsMetricAttributeKey string
 
 const (
-	PostgresqlVectorSearchCountMetricAttributeKeyPostgresqlDistanceFunctionName PostgresqlVectorSearchCountMetricAttributeKey = "postgresql.distance.function.name"
+	PostgresqlVectorSearchCallsMetricAttributeKeyPostgresqlDistanceFunctionName PostgresqlVectorSearchCallsMetricAttributeKey = "postgresql.distance.function.name"
 )
 
-// PostgresqlVectorSearchCountMetricConfig provides config for the postgresql.vector.search.count metric.
-type PostgresqlVectorSearchCountMetricConfig struct {
+// PostgresqlVectorSearchCallsMetricConfig provides config for the postgresql.vector.search.calls metric.
+type PostgresqlVectorSearchCallsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
 	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []PostgresqlVectorSearchCountMetricAttributeKey `mapstructure:"attributes"`
+	EnabledAttributes   []PostgresqlVectorSearchCallsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *PostgresqlVectorSearchCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *PostgresqlVectorSearchCallsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1042,12 +1042,12 @@ func (ms *PostgresqlVectorSearchCountMetricConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-func (ms *PostgresqlVectorSearchCountMetricConfig) Validate() error {
+func (ms *PostgresqlVectorSearchCallsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlVectorSearchCountMetricAttributeKeyPostgresqlDistanceFunctionName:
+		case PostgresqlVectorSearchCallsMetricAttributeKeyPostgresqlDistanceFunctionName:
 		default:
-			return fmt.Errorf("metric postgresql.vector.search.count doesn't have an attribute %v, valid attributes: [postgresql.distance.function.name]", val)
+			return fmt.Errorf("metric postgresql.vector.search.calls doesn't have an attribute %v, valid attributes: [postgresql.distance.function.name]", val)
 		}
 	}
 
@@ -1312,7 +1312,7 @@ type MetricsConfig struct {
 	PostgresqlTupUpdated               PostgresqlTupUpdatedMetricConfig               `mapstructure:"postgresql.tup_updated"`
 	PostgresqlVectorInsertDuration     PostgresqlVectorInsertDurationMetricConfig     `mapstructure:"postgresql.vector.insert.duration"`
 	PostgresqlVectorInsertRows         PostgresqlVectorInsertRowsMetricConfig         `mapstructure:"postgresql.vector.insert.rows"`
-	PostgresqlVectorSearchCount        PostgresqlVectorSearchCountMetricConfig        `mapstructure:"postgresql.vector.search.count"`
+	PostgresqlVectorSearchCalls        PostgresqlVectorSearchCallsMetricConfig        `mapstructure:"postgresql.vector.search.calls"`
 	PostgresqlVectorSearchDuration     PostgresqlVectorSearchDurationMetricConfig     `mapstructure:"postgresql.vector.search.duration"`
 	PostgresqlVectorSearchRowsReturned PostgresqlVectorSearchRowsReturnedMetricConfig `mapstructure:"postgresql.vector.search.rows_returned"`
 	PostgresqlWalAge                   PostgresqlWalAgeMetricConfig                   `mapstructure:"postgresql.wal.age"`
@@ -1450,10 +1450,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlVectorInsertRows: PostgresqlVectorInsertRowsMetricConfig{
 			Enabled: false,
 		},
-		PostgresqlVectorSearchCount: PostgresqlVectorSearchCountMetricConfig{
+		PostgresqlVectorSearchCalls: PostgresqlVectorSearchCallsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlVectorSearchCountMetricAttributeKey{PostgresqlVectorSearchCountMetricAttributeKeyPostgresqlDistanceFunctionName},
+			EnabledAttributes:   []PostgresqlVectorSearchCallsMetricAttributeKey{PostgresqlVectorSearchCallsMetricAttributeKeyPostgresqlDistanceFunctionName},
 		},
 		PostgresqlVectorSearchDuration: PostgresqlVectorSearchDurationMetricConfig{
 			Enabled:             false,

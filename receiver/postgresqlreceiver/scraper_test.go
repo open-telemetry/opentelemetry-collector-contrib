@@ -97,8 +97,8 @@ func TestScraperVectorMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"}
 	// Opt in to all pgvector metrics; everything else stays at defaults.
-	require.False(t, cfg.Metrics.PostgresqlVectorSearchCount.Enabled)
-	cfg.Metrics.PostgresqlVectorSearchCount.Enabled = true
+	require.False(t, cfg.Metrics.PostgresqlVectorSearchCalls.Enabled)
+	cfg.Metrics.PostgresqlVectorSearchCalls.Enabled = true
 	require.False(t, cfg.Metrics.PostgresqlVectorSearchDuration.Enabled)
 	cfg.Metrics.PostgresqlVectorSearchDuration.Enabled = true
 	require.False(t, cfg.Metrics.PostgresqlVectorSearchRowsReturned.Enabled)
