@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	mongooptions "go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.opentelemetry.io/collector/component"
@@ -153,7 +154,8 @@ func topQueryIntegrationTest(t *testing.T, mongoVersion string) {
 			case <-queryCtx.Done():
 				return
 			default:
-
+				coll.Find(queryCtx, bson.M{"status": "pending"}) //nolint:errcheck
+				queriesRun.Add(1)
 			}
 		}
 	}()
