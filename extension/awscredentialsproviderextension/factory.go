@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package awscredentialsproviderextension // import "github.com/elastic/opentelemetry-collector-components/extension/awscredentialsproviderextension"
+package awscredentialsproviderextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awscredentialsproviderextension"
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 
-	"github.com/elastic/opentelemetry-collector-components/extension/awscredentialsproviderextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awscredentialsproviderextension/internal/metadata"
 )
 
 // NewFactory creates a factory for the AWS Authenticator extension.

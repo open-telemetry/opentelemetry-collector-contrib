@@ -27,7 +27,7 @@ import (
 
 var (
 	Type      = component.MustNewType("awscredentialsprovider")
-	ScopeName = "github.com/elastic/opentelemetry-collector-components/extension/awscredentialsproviderextension"
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awscredentialsproviderextension"
 )
 
 const (

@@ -21,4 +21,4 @@
 // components through the Provider interface. AWS-SDK-based components (e.g. the
 // awscloudwatch receiver) reference the extension by ID and use the resolved
 // aws.CredentialsProvider for their SDK clients.
-package awscredentialsproviderextension // import "github.com/elastic/opentelemetry-collector-components/extension/awscredentialsproviderextension"
+package awscredentialsproviderextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awscredentialsproviderextension"

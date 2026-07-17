@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package awscredentialsproviderextension // import "github.com/elastic/opentelemetry-collector-components/extension/awscredentialsproviderextension"
+package awscredentialsproviderextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awscredentialsproviderextension"
 
 import (
 	"errors"

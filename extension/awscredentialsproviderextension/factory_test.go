@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 
-	"github.com/elastic/opentelemetry-collector-components/extension/awscredentialsproviderextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awscredentialsproviderextension/internal/metadata"
 )
 
 func TestNewFactory(t *testing.T) {

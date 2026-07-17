@@ -1,5 +1,5 @@
 type: awscredentialsprovider
-scope_name: github.com/elastic/opentelemetry-collector-components/extension/awscredentialsproviderextension
+scope_name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/awscredentialsproviderextension
 github_project: elastic/opentelemetry-collector-components
 
 description: |
