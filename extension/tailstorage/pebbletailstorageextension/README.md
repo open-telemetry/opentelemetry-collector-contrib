@@ -34,6 +34,11 @@ treat the directory as ephemeral.
 ## Configuration
 
 - `directory` (required): directory used to store Pebble DB files.
+- `max_storage_size_mib` (optional): maximum on-disk size observed for the Pebble tail
+  store. `0` keeps the existing unlimited behavior.
+
+The size limit protects normal runtime disk usage for this extension. It does not make
+the storage durable across restarts. Startup still clears any existing Pebble database.
 
 ## Example
 
@@ -52,6 +57,7 @@ policies.
 extensions:
   pebble_tail_storage:
     directory: /var/lib/otelcol/pebble-tail-storage
+    max_storage_size_mib: 10240
 
 receivers:
   otlp:
