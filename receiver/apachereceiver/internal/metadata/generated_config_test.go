@@ -29,10 +29,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheConnectionActive: ApacheConnectionActiveMetricConfig{
 						Enabled: true,
 					},
-					ApacheConnections: ApacheConnectionsMetricConfig{
+					ApacheConnectionStatus: ApacheConnectionStatusMetricConfig{
 						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ApacheConnectionsMetricAttributeKey{ApacheConnectionsMetricAttributeKeyApacheConnectionState},
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ApacheConnectionStatusMetricAttributeKey{ApacheConnectionStatusMetricAttributeKeyApacheConnectionState},
 					},
 					ApacheConnectionsAsync: ApacheConnectionsAsyncMetricConfig{
 						Enabled:             true,
@@ -109,10 +109,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheConnectionActive: ApacheConnectionActiveMetricConfig{
 						Enabled: false,
 					},
-					ApacheConnections: ApacheConnectionsMetricConfig{
+					ApacheConnectionStatus: ApacheConnectionStatusMetricConfig{
 						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ApacheConnectionsMetricAttributeKey{ApacheConnectionsMetricAttributeKeyApacheConnectionState},
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ApacheConnectionStatusMetricAttributeKey{ApacheConnectionStatusMetricAttributeKeyApacheConnectionState},
 					},
 					ApacheConnectionsAsync: ApacheConnectionsAsyncMetricConfig{
 						Enabled:             false,
@@ -186,20 +186,20 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ApacheConnectionActiveMetricConfig{}, ApacheConnectionsMetricConfig{}, ApacheConnectionsAsyncMetricConfig{}, ApacheCPULoadMetricConfig{}, ApacheCPUTimeMetricConfig{}, ApacheCurrentConnectionsMetricConfig{}, ApacheLoad1MetricConfig{}, ApacheLoad15MetricConfig{}, ApacheLoad5MetricConfig{}, ApacheRequestCountMetricConfig{}, ApacheRequestTimeMetricConfig{}, ApacheRequestsMetricConfig{}, ApacheScoreboardMetricConfig{}, ApacheTrafficMetricConfig{}, ApacheUptimeMetricConfig{}, ApacheWorkerActiveMetricConfig{}, ApacheWorkerIdleMetricConfig{}, ApacheWorkerStatusMetricConfig{}, ApacheWorkersMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ApacheConnectionActiveMetricConfig{}, ApacheConnectionStatusMetricConfig{}, ApacheConnectionsAsyncMetricConfig{}, ApacheCPULoadMetricConfig{}, ApacheCPUTimeMetricConfig{}, ApacheCurrentConnectionsMetricConfig{}, ApacheLoad1MetricConfig{}, ApacheLoad15MetricConfig{}, ApacheLoad5MetricConfig{}, ApacheRequestCountMetricConfig{}, ApacheRequestTimeMetricConfig{}, ApacheRequestsMetricConfig{}, ApacheScoreboardMetricConfig{}, ApacheTrafficMetricConfig{}, ApacheUptimeMetricConfig{}, ApacheWorkerActiveMetricConfig{}, ApacheWorkerIdleMetricConfig{}, ApacheWorkerStatusMetricConfig{}, ApacheWorkersMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
 
-func TestApacheConnectionsMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().ApacheConnections
+func TestApacheConnectionStatusMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ApacheConnectionStatus
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []ApacheConnectionsMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric apache.connections doesn't have an attribute invalid, valid attributes: [apache.connection.state]")
+	cfg.EnabledAttributes = []ApacheConnectionStatusMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric apache.connection.status doesn't have an attribute invalid, valid attributes: [apache.connection.state]")
 
-	cfg = DefaultMetricsConfig().ApacheConnections
+	cfg = DefaultMetricsConfig().ApacheConnectionStatus
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }

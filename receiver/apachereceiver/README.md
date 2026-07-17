@@ -95,7 +95,7 @@ Renamed metrics:
 | Original name | New name |
 | --- | --- |
 | `apache.current_connections` | `apache.connection.active` |
-| `apache.connections.async` | `apache.connections` |
+| `apache.connections.async` | `apache.connection.status` |
 | `apache.requests` | `apache.request.count` |
 | `apache.scoreboard` | `apache.worker.status` |
 | `apache.workers` | split into `apache.worker.active` (busy) and `apache.worker.idle` (idle) |
@@ -104,7 +104,7 @@ Renamed attributes:
 
 | Metric | Original attribute | New attribute |
 | --- | --- | --- |
-| `apache.connections` (was `apache.connections.async`) | `connection_state` | `apache.connection.state` |
+| `apache.connection.status` (was `apache.connections.async`) | `connection_state` | `apache.connection.state` |
 | `apache.worker.status` (was `apache.scoreboard`) | `state` | `apache.worker.state` |
 | `apache.cpu.time` | `level` | `apache.process.level` |
 | `apache.cpu.time` | `mode` | `cpu.mode` |

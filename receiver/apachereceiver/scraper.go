@@ -212,7 +212,7 @@ func (r *apacheScraper) recordConnectionsAsync(
 		addPartialIfError(errs, r.mb.RecordApacheConnectionsAsyncDataPoint(now, value, oldState))
 	}
 	if r.emitNew {
-		addPartialIfError(errs, r.mb.RecordApacheConnectionsDataPoint(now, value, newState))
+		addPartialIfError(errs, r.mb.RecordApacheConnectionStatusDataPoint(now, value, newState))
 	}
 }
 

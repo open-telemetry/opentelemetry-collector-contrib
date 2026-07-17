@@ -3,7 +3,7 @@ all_set:
   metrics:
     apache.connection.active:
       enabled: true
-    apache.connections:
+    apache.connection.status:
       enabled: true
       attributes: ["apache.connection.state"]
     apache.connections.async:
@@ -54,7 +54,7 @@ reaggregate_set:
   metrics:
     apache.connection.active:
       enabled: true
-    apache.connections:
+    apache.connection.status:
       enabled: true
       attributes: []
     apache.connections.async:
@@ -105,7 +105,7 @@ none_set:
   metrics:
     apache.connection.active:
       enabled: false
-    apache.connections:
+    apache.connection.status:
       enabled: false
       attributes: ["apache.connection.state"]
     apache.connections.async:

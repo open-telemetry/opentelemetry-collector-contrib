@@ -296,8 +296,8 @@ var MetricsInfo = metricsInfo{
 	ApacheConnectionActive: metricInfo{
 		Name: "apache.connection.active",
 	},
-	ApacheConnections: metricInfo{
-		Name:       "apache.connections",
+	ApacheConnectionStatus: metricInfo{
+		Name:       "apache.connection.status",
 		Attributes: []string{"apache.connection.state"},
 	},
 	ApacheConnectionsAsync: metricInfo{
@@ -360,7 +360,7 @@ var MetricsInfo = metricsInfo{
 
 type metricsInfo struct {
 	ApacheConnectionActive   metricInfo
-	ApacheConnections        metricInfo
+	ApacheConnectionStatus   metricInfo
 	ApacheConnectionsAsync   metricInfo
 	ApacheCPULoad            metricInfo
 	ApacheCPUTime            metricInfo
@@ -437,24 +437,26 @@ func newMetricApacheConnectionActive(cfg ApacheConnectionActiveMetricConfig) met
 	return m
 }
 
-type metricApacheConnections struct {
-	data          pmetric.Metric                // data buffer for generated metric.
-	config        ApacheConnectionsMetricConfig // metric config provided by user.
-	capacity      int                           // max observed number of data points added to the metric.
-	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
+type metricApacheConnectionStatus struct {
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        ApacheConnectionStatusMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
 }
 
-// init fills apache.connections metric with initial data.
-func (m *metricApacheConnections) init() {
-	m.data.SetName("apache.connections")
+// init fills apache.connection.status metric with initial data.
+func (m *metricApacheConnectionStatus) init() {
+	m.data.SetName("apache.connection.status")
 	m.data.SetDescription("The number of connections in different asynchronous states reported by Apache's server-status.")
-	m.data.SetUnit("{connection}")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricApacheConnections) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, apacheConnectionStateAttributeValue string) {
+func (m *metricApacheConnectionStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, apacheConnectionStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -462,12 +464,12 @@ func (m *metricApacheConnections) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, ApacheConnectionsMetricAttributeKeyApacheConnectionState) {
+	if slices.Contains(m.config.EnabledAttributes, ApacheConnectionStatusMetricAttributeKeyApacheConnectionState) {
 		dp.Attributes().PutStr("apache.connection.state", apacheConnectionStateAttributeValue)
 	}
 
 	var s string
-	dps := m.data.Gauge().DataPoints()
+	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
@@ -496,18 +498,18 @@ func (m *metricApacheConnections) recordDataPoint(start pcommon.Timestamp, ts pc
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricApacheConnections) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+func (m *metricApacheConnectionStatus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricApacheConnections) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+func (m *metricApacheConnectionStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
 			}
 		}
 		m.updateCapacity()
@@ -516,8 +518,8 @@ func (m *metricApacheConnections) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricApacheConnections(cfg ApacheConnectionsMetricConfig) metricApacheConnections {
-	m := metricApacheConnections{config: cfg}
+func newMetricApacheConnectionStatus(cfg ApacheConnectionStatusMetricConfig) metricApacheConnectionStatus {
+	m := metricApacheConnectionStatus{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -1427,7 +1429,7 @@ type metricApacheWorkerStatus struct {
 func (m *metricApacheWorkerStatus) init() {
 	m.data.SetName("apache.worker.status")
 	m.data.SetDescription("The number of workers in each state.")
-	m.data.SetUnit("{worker}")
+	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1609,7 +1611,7 @@ type MetricsBuilder struct {
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
 	metricApacheConnectionActive   metricApacheConnectionActive
-	metricApacheConnections        metricApacheConnections
+	metricApacheConnectionStatus   metricApacheConnectionStatus
 	metricApacheConnectionsAsync   metricApacheConnectionsAsync
 	metricApacheCPULoad            metricApacheCPULoad
 	metricApacheCPUTime            metricApacheCPUTime
@@ -1653,7 +1655,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricsBuffer:                  pmetric.NewMetrics(),
 		buildInfo:                      settings.BuildInfo,
 		metricApacheConnectionActive:   newMetricApacheConnectionActive(mbc.Metrics.ApacheConnectionActive),
-		metricApacheConnections:        newMetricApacheConnections(mbc.Metrics.ApacheConnections),
+		metricApacheConnectionStatus:   newMetricApacheConnectionStatus(mbc.Metrics.ApacheConnectionStatus),
 		metricApacheConnectionsAsync:   newMetricApacheConnectionsAsync(mbc.Metrics.ApacheConnectionsAsync),
 		metricApacheCPULoad:            newMetricApacheCPULoad(mbc.Metrics.ApacheCPULoad),
 		metricApacheCPUTime:            newMetricApacheCPUTime(mbc.Metrics.ApacheCPUTime),
@@ -1756,7 +1758,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricApacheConnectionActive.emit(ils.Metrics())
-	mb.metricApacheConnections.emit(ils.Metrics())
+	mb.metricApacheConnectionStatus.emit(ils.Metrics())
 	mb.metricApacheConnectionsAsync.emit(ils.Metrics())
 	mb.metricApacheCPULoad.emit(ils.Metrics())
 	mb.metricApacheCPUTime.emit(ils.Metrics())
@@ -1815,13 +1817,13 @@ func (mb *MetricsBuilder) RecordApacheConnectionActiveDataPoint(ts pcommon.Times
 	return nil
 }
 
-// RecordApacheConnectionsDataPoint adds a data point to apache.connections metric.
-func (mb *MetricsBuilder) RecordApacheConnectionsDataPoint(ts pcommon.Timestamp, inputVal string, apacheConnectionStateAttributeValue AttributeApacheConnectionState) error {
+// RecordApacheConnectionStatusDataPoint adds a data point to apache.connection.status metric.
+func (mb *MetricsBuilder) RecordApacheConnectionStatusDataPoint(ts pcommon.Timestamp, inputVal string, apacheConnectionStateAttributeValue AttributeApacheConnectionState) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
-		return fmt.Errorf("failed to parse int64 for ApacheConnections, value was %s: %w", inputVal, err)
+		return fmt.Errorf("failed to parse int64 for ApacheConnectionStatus, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheConnections.recordDataPoint(mb.startTime, ts, val, apacheConnectionStateAttributeValue.String())
+	mb.metricApacheConnectionStatus.recordDataPoint(mb.startTime, ts, val, apacheConnectionStateAttributeValue.String())
 	return nil
 }
 

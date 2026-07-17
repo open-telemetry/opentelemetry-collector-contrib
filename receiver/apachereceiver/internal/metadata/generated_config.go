@@ -29,23 +29,23 @@ func (ms *ApacheConnectionActiveMetricConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// ApacheConnectionsMetricAttributeKey specifies the key of an attribute for the apache.connections metric.
-type ApacheConnectionsMetricAttributeKey string
+// ApacheConnectionStatusMetricAttributeKey specifies the key of an attribute for the apache.connection.status metric.
+type ApacheConnectionStatusMetricAttributeKey string
 
 const (
-	ApacheConnectionsMetricAttributeKeyApacheConnectionState ApacheConnectionsMetricAttributeKey = "apache.connection.state"
+	ApacheConnectionStatusMetricAttributeKeyApacheConnectionState ApacheConnectionStatusMetricAttributeKey = "apache.connection.state"
 )
 
-// ApacheConnectionsMetricConfig provides config for the apache.connections metric.
-type ApacheConnectionsMetricConfig struct {
+// ApacheConnectionStatusMetricConfig provides config for the apache.connection.status metric.
+type ApacheConnectionStatusMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ApacheConnectionsMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ApacheConnectionStatusMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ApacheConnectionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ApacheConnectionStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -59,12 +59,12 @@ func (ms *ApacheConnectionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *ApacheConnectionsMetricConfig) Validate() error {
+func (ms *ApacheConnectionStatusMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ApacheConnectionsMetricAttributeKeyApacheConnectionState:
+		case ApacheConnectionStatusMetricAttributeKeyApacheConnectionState:
 		default:
-			return fmt.Errorf("metric apache.connections doesn't have an attribute %v, valid attributes: [apache.connection.state]", val)
+			return fmt.Errorf("metric apache.connection.status doesn't have an attribute %v, valid attributes: [apache.connection.state]", val)
 		}
 	}
 
@@ -561,7 +561,7 @@ func (ms *ApacheWorkersMetricConfig) Validate() error {
 // MetricsConfig provides config for apache metrics.
 type MetricsConfig struct {
 	ApacheConnectionActive   ApacheConnectionActiveMetricConfig   `mapstructure:"apache.connection.active"`
-	ApacheConnections        ApacheConnectionsMetricConfig        `mapstructure:"apache.connections"`
+	ApacheConnectionStatus   ApacheConnectionStatusMetricConfig   `mapstructure:"apache.connection.status"`
 	ApacheConnectionsAsync   ApacheConnectionsAsyncMetricConfig   `mapstructure:"apache.connections.async"`
 	ApacheCPULoad            ApacheCPULoadMetricConfig            `mapstructure:"apache.cpu.load"`
 	ApacheCPUTime            ApacheCPUTimeMetricConfig            `mapstructure:"apache.cpu.time"`
@@ -586,10 +586,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		ApacheConnectionActive: ApacheConnectionActiveMetricConfig{
 			Enabled: true,
 		},
-		ApacheConnections: ApacheConnectionsMetricConfig{
+		ApacheConnectionStatus: ApacheConnectionStatusMetricConfig{
 			Enabled:             true,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []ApacheConnectionsMetricAttributeKey{ApacheConnectionsMetricAttributeKeyApacheConnectionState},
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ApacheConnectionStatusMetricAttributeKey{ApacheConnectionStatusMetricAttributeKeyApacheConnectionState},
 		},
 		ApacheConnectionsAsync: ApacheConnectionsAsyncMetricConfig{
 			Enabled:             true,

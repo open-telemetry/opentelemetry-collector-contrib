@@ -140,14 +140,18 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: []
-  apache.connections: # (new)
+  apache.connection.status: # (new)
     enabled: true
     stability: development
     description: The number of connections in different asynchronous states reported by Apache's server-status.
-    unit: "{connection}"
-    gauge:
+    # Modeled as a status metric per
+    # https://opentelemetry.io/docs/specs/semconv/how-to-write-conventions/status-metrics/
+    unit: "1"
+    sum:
       value_type: int
       input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
     attributes: [apache.connection.state]
   apache.connections.async: # (old)
     enabled: true
@@ -314,7 +318,9 @@ metrics:
       The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION)
       is an encoded representation of the state of all the server's workers.
       This metric decodes the scoreboard and presents a count of workers in each state.
-    unit: "{worker}"
+    # Modeled as a status metric per
+    # https://opentelemetry.io/docs/specs/semconv/how-to-write-conventions/status-metrics/
+    unit: "1"
     sum:
       value_type: int
       monotonic: false

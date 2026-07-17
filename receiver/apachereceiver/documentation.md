@@ -20,13 +20,13 @@ The number of active connections currently attached to the HTTP server.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {connection} | Sum | Int | Cumulative | false | Development |
 
-### apache.connections
+### apache.connection.status
 
 The number of connections in different asynchronous states reported by Apache's server-status.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {connection} | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -183,7 +183,7 @@ The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION)
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {worker} | Sum | Int | Cumulative | false | Development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 

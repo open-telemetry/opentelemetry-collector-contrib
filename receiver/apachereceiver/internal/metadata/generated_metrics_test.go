@@ -67,7 +67,7 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["apache.connections"] = mb.metricApacheConnections.config.AggregationStrategy
+			aggMap["apache.connection.status"] = mb.metricApacheConnectionStatus.config.AggregationStrategy
 			aggMap["apache.connections.async"] = mb.metricApacheConnectionsAsync.config.AggregationStrategy
 			aggMap["apache.cpu.time"] = mb.metricApacheCPUTime.config.AggregationStrategy
 			aggMap["apache.scoreboard"] = mb.metricApacheScoreboard.config.AggregationStrategy
@@ -86,9 +86,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordApacheConnectionActiveDataPoint(ts, "1")
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheConnectionsDataPoint(ts, "1", AttributeApacheConnectionStateWriting)
+			mb.RecordApacheConnectionStatusDataPoint(ts, "1", AttributeApacheConnectionStateWriting)
 			if tt.name == "reaggregate_set" {
-				mb.RecordApacheConnectionsDataPoint(ts, "3", AttributeApacheConnectionStateKeepalive)
+				mb.RecordApacheConnectionStatusDataPoint(ts, "3", AttributeApacheConnectionStateKeepalive)
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -163,7 +163,7 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
-				assert.Empty(t, mb.metricApacheConnections.aggDataPoints)
+				assert.Empty(t, mb.metricApacheConnectionStatus.aggDataPoints)
 				assert.Empty(t, mb.metricApacheConnectionsAsync.aggDataPoints)
 				assert.Empty(t, mb.metricApacheCPUTime.aggDataPoints)
 				assert.Empty(t, mb.metricApacheScoreboard.aggDataPoints)
@@ -210,15 +210,17 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "apache.connections":
+				case "apache.connection.status":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["apache.connections"], "Found a duplicate in the metrics slice: apache.connections")
-						validatedMetrics["apache.connections"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.False(t, validatedMetrics["apache.connection.status"], "Found a duplicate in the metrics slice: apache.connection.status")
+						validatedMetrics["apache.connection.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The number of connections in different asynchronous states reported by Apache's server-status.", mi.Description())
-						assert.Equal(t, "{connection}", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, "1", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -227,17 +229,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "writing", apacheConnectionStateAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["apache.connections"], "Found a duplicate in the metrics slice: apache.connections")
-						validatedMetrics["apache.connections"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.False(t, validatedMetrics["apache.connection.status"], "Found a duplicate in the metrics slice: apache.connection.status")
+						validatedMetrics["apache.connection.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The number of connections in different asynchronous states reported by Apache's server-status.", mi.Description())
-						assert.Equal(t, "{connection}", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, "1", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["apache.connections"] {
+						switch aggMap["apache.connection.status"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -550,7 +554,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The number of workers in each state.", mi.Description())
-						assert.Equal(t, "{worker}", mi.Unit())
+						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -567,7 +571,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The number of workers in each state.", mi.Description())
-						assert.Equal(t, "{worker}", mi.Unit())
+						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)

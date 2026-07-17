@@ -13,9 +13,11 @@ resources:
               unit: '{connection}'
               temporality: cumulative
               monotonic: false
-            - name: apache.connections
-              type: gauge
-              unit: '{connection}'
+            - name: apache.connection.status
+              type: sum
+              unit: "1"
+              temporality: cumulative
+              monotonic: false
               datapoints:
                 - attributes:
                     apache.connection.state: closing
@@ -85,7 +87,7 @@ resources:
               monotonic: false
             - name: apache.worker.status
               type: sum
-              unit: '{worker}'
+              unit: "1"
               temporality: cumulative
               monotonic: false
               datapoints:
