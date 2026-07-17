@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.62.1-0.20260715151533-47267b188b26
 	go.opentelemetry.io/collector/config/configtls v1.62.1-0.20260715151533-47267b188b26
 	go.opentelemetry.io/collector/confmap v1.62.1-0.20260715151533-47267b188b26
-	go.opentelemetry.io/collector/confmap/xconfmap v0.156.1-0.20260709230849-fe96e04e8916
+	go.opentelemetry.io/collector/confmap/xconfmap v0.156.1-0.20260715151533-47267b188b26
 	go.uber.org/goleak v1.3.0
 )
 
