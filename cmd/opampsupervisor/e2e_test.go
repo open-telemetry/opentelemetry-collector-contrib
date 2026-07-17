@@ -32,10 +32,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/file"
-	"github.com/knadh/koanf/providers/rawbytes"
-	"github.com/knadh/koanf/v2"
 	clientTypes "github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/open-telemetry/opamp-go/server"
@@ -456,7 +452,8 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 
 			extraConfigData := map[string]string{"url": server.addr, "storage_dir": storageDir}
 			if mode.UseHUPConfigReload {
@@ -630,15 +627,13 @@ service:
 
 			waitForSupervisorConnection(server.supervisorConnected, true)
 
-			k := koanf.New("::")
-			require.NoError(t, k.Load(rawbytes.Provider([]byte(waitForEffectiveConfigMessage(t, &effectiveConfig))), yaml.Parser()))
+			conf, err := config.NewConfFromYAML([]byte(waitForEffectiveConfigMessage(t, &effectiveConfig)))
+			require.NoError(t, err)
 
-			resource, ok := k.Get("service::telemetry::resource").(map[string]any)
-			require.True(t, ok)
-			assert.NotContains(t, resource, "service.name")
-			assert.NotContains(t, resource, "service.version")
+			assert.False(t, conf.IsSet("service::telemetry::resource::service.name"))
+			assert.False(t, conf.IsSet("service::telemetry::resource::service.version"))
 
-			attrs, ok := resource["attributes"].([]any)
+			attrs, ok := conf.Get("service::telemetry::resource::attributes").([]any)
 			require.True(t, ok)
 
 			attrNames := make(map[string]struct{}, len(attrs))
@@ -889,7 +884,8 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 				}
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	// create input and output log files for checking the config passed via config_files param
 	inputFile, err := os.CreateTemp(storageDir, "input.log")
@@ -1054,7 +1050,8 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 
 			extraConfigData := map[string]string{"url": server.addr}
 			if mode.UseHUPConfigReload {
@@ -1143,7 +1140,8 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
 
@@ -1229,14 +1227,8 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 
 			// Load the Supervisor config so we can get the location of
 			// the Collector that will be run.
-			var cfg config.Supervisor
 			cfgFile := getSupervisorConfig(t, tt.cfg, map[string]string{})
-			k := koanf.New("::")
-			err := k.Load(file.Provider(cfgFile.Name()), yaml.Parser())
-			require.NoError(t, err)
-			err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
-				Tag: "mapstructure",
-			})
+			cfg, err := config.Load(cfgFile.Name())
 			require.NoError(t, err)
 
 			// Get the binary name and version from the Collector binary
@@ -1251,12 +1243,14 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 			}
 			componentsInfo, err := cmd.Output()
 			require.NoError(t, err)
-			k = koanf.New("::")
-			err = k.Load(rawbytes.Provider(componentsInfo), yaml.Parser())
+
+			conf, err := config.NewConfFromYAML(componentsInfo)
 			require.NoError(t, err)
-			buildinfo := k.StringMap("buildinfo")
-			command := buildinfo["command"]
-			version := buildinfo["version"]
+
+			command, ok := conf.Get("buildinfo::command").(string)
+			require.True(t, ok)
+			version, ok := conf.Get("buildinfo::version").(string)
+			require.True(t, ok)
 
 			server := newOpAMPServer(
 				t,
@@ -1269,11 +1263,12 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 
 			s, _ := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
 
-			require.Nil(t, s.Start(t.Context()))
+			require.NoError(t, s.Start(t.Context()))
 			defer s.Shutdown()
 
 			waitForSupervisorConnection(server.supervisorConnected, true)
@@ -1310,14 +1305,8 @@ func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
 
 	// Load the Supervisor config so we can get the location of
 	// the Collector that will be run.
-	var cfg config.Supervisor
 	cfgFile := getSupervisorConfig(t, "reports_available_components", map[string]string{})
-	k := koanf.New("::")
-	err := k.Load(file.Provider(cfgFile.Name()), yaml.Parser())
-	require.NoError(t, err)
-	err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
-		Tag: "mapstructure",
-	})
+	cfg, err := config.Load(cfgFile.Name())
 	require.NoError(t, err)
 
 	// Get the binary name and version from the Collector binary
@@ -1328,12 +1317,12 @@ func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
 	agentPath := cfg.Agent.Executable
 	componentsInfo, err := exec.Command(agentPath, "components").Output()
 	require.NoError(t, err)
-	k = koanf.New("::")
-	err = k.Load(rawbytes.Provider(componentsInfo), yaml.Parser())
+	conf, err := config.NewConfFromYAML(componentsInfo)
 	require.NoError(t, err)
-	buildinfo := k.StringMap("buildinfo")
-	command := buildinfo["command"]
-	version := buildinfo["version"]
+	command, ok := conf.Get("buildinfo::command").(string)
+	require.True(t, ok)
+	version, ok := conf.Get("buildinfo::version").(string)
+	require.True(t, ok)
 
 	server := newOpAMPServer(
 		t,
@@ -1355,7 +1344,8 @@ func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
 
 				return response
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "reports_available_components", map[string]string{"url": server.addr})
 
@@ -1418,7 +1408,8 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "basic", map[string]string{"url": server.addr})
 
@@ -1475,16 +1466,16 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 			// The effective config may be structurally different compared to what was sent.
 			// Recent Collector versions may normalize telemetry resource keys into the
 			// declarative `attributes` list, so accept both shapes.
-			k := koanf.New("::")
-			if err := k.Load(rawbytes.Provider([]byte(cfg)), yaml.Parser()); err != nil {
+			conf, err := config.NewConfFromYAML([]byte(cfg))
+			if err != nil {
 				return false
 			}
 
-			if k.Exists("service::telemetry::resource::test_key") {
+			if conf.IsSet("service::telemetry::resource::test_key") {
 				return true
 			}
 
-			attrs, ok := k.Get("service::telemetry::resource::attributes").([]any)
+			attrs, ok := conf.Get("service::telemetry::resource::attributes").([]any)
 			if !ok {
 				return false
 			}
@@ -1507,14 +1498,8 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 	// Load the Supervisor config so we can get the location of
 	// the Collector that will be run.
-	var cfg config.Supervisor
 	cfgFile := getSupervisorConfig(t, "agent_description", map[string]string{})
-	k := koanf.New("::")
-	err := k.Load(file.Provider(cfgFile.Name()), yaml.Parser())
-	require.NoError(t, err)
-	err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
-		Tag: "mapstructure",
-	})
+	cfg, err := config.Load(cfgFile.Name())
 	require.NoError(t, err)
 
 	host, err := os.Hostname()
@@ -1528,12 +1513,12 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 	agentPath := cfg.Agent.Executable
 	componentsInfo, err := exec.Command(agentPath, "components").Output()
 	require.NoError(t, err)
-	k = koanf.New("::")
-	err = k.Load(rawbytes.Provider(componentsInfo), yaml.Parser())
+	conf, err := config.NewConfFromYAML(componentsInfo)
 	require.NoError(t, err)
-	buildinfo := k.StringMap("buildinfo")
-	command := buildinfo["command"]
-	version := buildinfo["version"]
+	command, ok := conf.Get("buildinfo::command").(string)
+	require.True(t, ok)
+	version, ok := conf.Get("buildinfo::version").(string)
+	require.True(t, ok)
 
 	agentDescMessageChan := make(chan *protobufs.AgentToServer, 1)
 
@@ -1551,7 +1536,8 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
 
@@ -1603,7 +1589,8 @@ func TestSupervisorForwardsUpdatedAgentDescriptionFromCollector(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "agent_description", map[string]string{
 		"url":                         server.addr,
@@ -1849,7 +1836,8 @@ func TestSupervisorRestartCommand(t *testing.T) {
 						}
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 
 			storageDir := t.TempDir()
 			extraConfigData := map[string]string{
@@ -1938,7 +1926,8 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 	initialServer := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
-		types.ConnectionCallbacks{})
+		types.ConnectionCallbacks{},
+	)
 
 	s, _ := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
 
@@ -1957,7 +1946,8 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 			OnMessage: func(context.Context, types.Connection, *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	initialServer.sendToSupervisor(&protobufs.ServerToAgent{
 		ConnectionSettings: &protobufs.ConnectionSettingsOffers{
@@ -1990,7 +1980,8 @@ func TestSupervisorOpAMPWithHTTPEndpoint(t *testing.T) {
 			OnConnected: func(ctx context.Context, conn types.Connection) {
 				connected.Store(true)
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "http", map[string]string{"url": initialServer.addr})
 
@@ -2027,7 +2018,8 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 						}
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 
 			extraConfigData := map[string]string{"url": initialServer.addr, "storage_dir": tempDir}
 			if mode.UseHUPConfigReload {
@@ -2079,7 +2071,8 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 						}
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 			defer newServer.shutdown()
 
 			extraConfigData["url"] = newServer.addr
@@ -2128,7 +2121,8 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "basic", map[string]string{
 		"url":         server.addr,
@@ -2213,7 +2207,8 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "basic", map[string]string{
 		"url":         server.addr,
@@ -2323,7 +2318,8 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 				}
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "healthcheck_port", map[string]string{
 		"url": server.addr,
@@ -2524,7 +2520,8 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 
 			outputPath := filepath.Join(t.TempDir(), "output.txt")
 			backend := testbed.NewOTLPHTTPDataReceiver(4318)
@@ -2688,7 +2685,8 @@ func TestSupervisorReportsCollectorLogTailOnRemoteConfigCrash(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	storageDir := t.TempDir()
 	s, _ := newSupervisor(t, "basic", map[string]string{
@@ -2746,7 +2744,8 @@ func TestSupervisorOpAmpServerPort(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	supervisorOpAmpServerPort, err := findRandomPort()
 	require.NoError(t, err)
@@ -2897,14 +2896,8 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 
 	// Load the Supervisor config so we can get the location of
 	// the Collector that will be run.
-	var cfg config.Supervisor
 	cfgFile := getSupervisorConfig(t, "nocap", map[string]string{})
-	k := koanf.New("::")
-	err := k.Load(file.Provider(cfgFile.Name()), yaml.Parser())
-	require.NoError(t, err)
-	err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
-		Tag: "mapstructure",
-	})
+	cfg, err := config.Load(cfgFile.Name())
 	require.NoError(t, err)
 
 	// Get the binary name and version from the Collector binary
@@ -2915,12 +2908,12 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	agentPath := cfg.Agent.Executable
 	componentsInfo, err := exec.Command(agentPath, "components").Output()
 	require.NoError(t, err)
-	k = koanf.New("::")
-	err = k.Load(rawbytes.Provider(componentsInfo), yaml.Parser())
+	conf, err := config.NewConfFromYAML(componentsInfo)
 	require.NoError(t, err)
-	buildinfo := k.StringMap("buildinfo")
-	command := buildinfo["command"]
-	version := buildinfo["version"]
+	command, ok := conf.Get("buildinfo::command").(string)
+	require.True(t, ok)
+	version, ok := conf.Get("buildinfo::version").(string)
+	require.True(t, ok)
 
 	server := newOpAMPServer(
 		t,
@@ -2933,7 +2926,8 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	outputPath := filepath.Join(t.TempDir(), "output.txt")
 	backend := testbed.NewOTLPHTTPDataReceiver(4318)
@@ -2942,7 +2936,8 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	defer mockBackend.Stop()
 	require.NoError(t, mockBackend.Start())
 
-	s, _ := newSupervisor(t,
+	s, _ := newSupervisor(
+		t,
 		"emit_telemetry",
 		map[string]string{
 			"url":          server.addr,
@@ -3266,7 +3261,8 @@ func TestSupervisorValidatesConfigBeforeApplying(t *testing.T) {
 
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 
 			extraConfigData := map[string]string{
 				"url":             server.addr,
@@ -3372,7 +3368,8 @@ func TestSupervisorExtensionsFeatureGateRequired(t *testing.T) {
 		enableExtensionsFeatureGate(t)
 
 		// Create supervisor with configuration that has nop extension
-		s, _ := newSupervisor(t,
+		s, _ := newSupervisor(
+			t,
 			"extensions",
 			map[string]string{
 				"url": server.addr,
@@ -3674,7 +3671,8 @@ func TestSupervisorBinarySize(t *testing.T) {
 	}
 	binPath := filepath.Join(t.TempDir(), "opampsupervisor")
 
-	cmd := exec.CommandContext(t.Context(), "go", "build",
+	cmd := exec.CommandContext(
+		t.Context(), "go", "build",
 		"-trimpath",
 		"-ldflags=-s -w -X github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal.version=v1.0.0",
 		"-tags=",
