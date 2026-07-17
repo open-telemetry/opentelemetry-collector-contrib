@@ -19,7 +19,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/goccy/go-yaml"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
@@ -87,7 +87,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 		savedHash, opErr := m.sync(uint64(0), httpClient)
 		if opErr != nil {
 			if errors.Is(opErr, syscall.ECONNREFUSED) {
-				return 0, backoff.RetryAfter(1)
+				return 0, backoff.RetryAfter(time.Second, opErr)
 			}
 			return 0, opErr
 		}

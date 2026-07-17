@@ -277,6 +277,48 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{deadlock}'
+          - description: Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.
+            name: postgresql.query.conflicts
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "16"
+                  attributes:
+                    - key: postgresql.conflict.type
+                      value:
+                        stringValue: bufferpin
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "17"
+                  attributes:
+                    - key: postgresql.conflict.type
+                      value:
+                        stringValue: deadlock
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "14"
+                  attributes:
+                    - key: postgresql.conflict.type
+                      value:
+                        stringValue: lock
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "15"
+                  attributes:
+                    - key: postgresql.conflict.type
+                      value:
+                        stringValue: snapshot
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "13"
+                  attributes:
+                    - key: postgresql.conflict.type
+                      value:
+                        stringValue: tablespace
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{query}'
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:

@@ -9,6 +9,7 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib]
+  warnings: [Other]
   codeowners:
     active: [ishaish103]
     emeritus: [nslaughter]

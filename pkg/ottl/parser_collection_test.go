@@ -924,7 +924,7 @@ func mockParser(t *testing.T, options ...Option[any]) *Parser[any] {
 			}, nil
 		})
 
-	mockLambdaFactory := NewFactory("Lambda", &struct{ Expr LambdaExpression[any] }{},
+	mockLambdaFactory := NewFactory("Lambda", &struct{ Expr *LambdaExpression[any] }{},
 		func(FunctionContext, Arguments) (ExprFunc[any], error) {
 			return nil, nil
 		})
