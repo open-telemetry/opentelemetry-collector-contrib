@@ -3,6 +3,7 @@ all_set:
   metrics:
     postgresql.backends:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.bgwriter.buffers.allocated:
       enabled: true
     postgresql.bgwriter.buffers.writes:
@@ -18,13 +19,16 @@ all_set:
       enabled: true
     postgresql.blks_hit:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.blks_read:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.blocks_read:
       enabled: true
-      attributes: ["source"]
+      attributes: ["source","db.namespace","db.collection.name"]
     postgresql.commits:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.connection.max:
       enabled: true
     postgresql.database.count:
@@ -34,51 +38,67 @@ all_set:
       attributes: ["relation","mode","lock_type"]
     postgresql.db_size:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.deadlocks:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.function.calls:
       enabled: true
-      attributes: ["function"]
+      attributes: ["function","db.namespace"]
     postgresql.index.scans:
       enabled: true
+      attributes: ["db.namespace","db.collection.name","postgresql.index.name"]
     postgresql.index.size:
       enabled: true
+      attributes: ["db.namespace","db.collection.name","postgresql.index.name"]
     postgresql.operations:
       enabled: true
-      attributes: ["operation"]
+      attributes: ["operation","db.namespace","db.collection.name"]
     postgresql.query.conflicts:
       enabled: true
-      attributes: ["postgresql.conflict.type"]
+      attributes: ["postgresql.conflict.type","db.namespace"]
     postgresql.replication.data_delay:
       enabled: true
       attributes: ["replication_client"]
     postgresql.rollbacks:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.rows:
       enabled: true
-      attributes: ["state"]
+      attributes: ["state","db.namespace","db.collection.name"]
     postgresql.sequential_scans:
       enabled: true
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.table.count:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.table.size:
       enabled: true
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.table.vacuum.count:
       enabled: true
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.temp.io:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.temp_files:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.tup_deleted:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.tup_fetched:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.tup_inserted:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.tup_returned:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.tup_updated:
       enabled: true
+      attributes: ["db.namespace"]
     postgresql.wal.age:
       enabled: true
     postgresql.wal.delay:
@@ -100,6 +120,10 @@ all_set:
     postgresql.schema.name:
       enabled: true
     postgresql.table.name:
+      enabled: true
+    server.address:
+      enabled: true
+    server.port:
       enabled: true
     service.instance.id:
       enabled: true
@@ -111,6 +135,7 @@ reaggregate_set:
   metrics:
     postgresql.backends:
       enabled: true
+      attributes: []
     postgresql.bgwriter.buffers.allocated:
       enabled: true
     postgresql.bgwriter.buffers.writes:
@@ -126,13 +151,16 @@ reaggregate_set:
       enabled: true
     postgresql.blks_hit:
       enabled: true
+      attributes: []
     postgresql.blks_read:
       enabled: true
+      attributes: []
     postgresql.blocks_read:
       enabled: true
       attributes: []
     postgresql.commits:
       enabled: true
+      attributes: []
     postgresql.connection.max:
       enabled: true
     postgresql.database.count:
@@ -142,15 +170,19 @@ reaggregate_set:
       attributes: []
     postgresql.db_size:
       enabled: true
+      attributes: []
     postgresql.deadlocks:
       enabled: true
+      attributes: []
     postgresql.function.calls:
       enabled: true
       attributes: []
     postgresql.index.scans:
       enabled: true
+      attributes: []
     postgresql.index.size:
       enabled: true
+      attributes: []
     postgresql.operations:
       enabled: true
       attributes: []
@@ -162,31 +194,43 @@ reaggregate_set:
       attributes: []
     postgresql.rollbacks:
       enabled: true
+      attributes: []
     postgresql.rows:
       enabled: true
       attributes: []
     postgresql.sequential_scans:
       enabled: true
+      attributes: []
     postgresql.table.count:
       enabled: true
+      attributes: []
     postgresql.table.size:
       enabled: true
+      attributes: []
     postgresql.table.vacuum.count:
       enabled: true
+      attributes: []
     postgresql.temp.io:
       enabled: true
+      attributes: []
     postgresql.temp_files:
       enabled: true
+      attributes: []
     postgresql.tup_deleted:
       enabled: true
+      attributes: []
     postgresql.tup_fetched:
       enabled: true
+      attributes: []
     postgresql.tup_inserted:
       enabled: true
+      attributes: []
     postgresql.tup_returned:
       enabled: true
+      attributes: []
     postgresql.tup_updated:
       enabled: true
+      attributes: []
     postgresql.wal.age:
       enabled: true
     postgresql.wal.delay:
@@ -208,6 +252,10 @@ reaggregate_set:
     postgresql.schema.name:
       enabled: true
     postgresql.table.name:
+      enabled: true
+    server.address:
+      enabled: true
+    server.port:
       enabled: true
     service.instance.id:
       enabled: true
@@ -219,6 +267,7 @@ none_set:
   metrics:
     postgresql.backends:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.bgwriter.buffers.allocated:
       enabled: false
     postgresql.bgwriter.buffers.writes:
@@ -234,13 +283,16 @@ none_set:
       enabled: false
     postgresql.blks_hit:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.blks_read:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.blocks_read:
       enabled: false
-      attributes: ["source"]
+      attributes: ["source","db.namespace","db.collection.name"]
     postgresql.commits:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.connection.max:
       enabled: false
     postgresql.database.count:
@@ -250,51 +302,67 @@ none_set:
       attributes: ["relation","mode","lock_type"]
     postgresql.db_size:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.deadlocks:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.function.calls:
       enabled: false
-      attributes: ["function"]
+      attributes: ["function","db.namespace"]
     postgresql.index.scans:
       enabled: false
+      attributes: ["db.namespace","db.collection.name","postgresql.index.name"]
     postgresql.index.size:
       enabled: false
+      attributes: ["db.namespace","db.collection.name","postgresql.index.name"]
     postgresql.operations:
       enabled: false
-      attributes: ["operation"]
+      attributes: ["operation","db.namespace","db.collection.name"]
     postgresql.query.conflicts:
       enabled: false
-      attributes: ["postgresql.conflict.type"]
+      attributes: ["postgresql.conflict.type","db.namespace"]
     postgresql.replication.data_delay:
       enabled: false
       attributes: ["replication_client"]
     postgresql.rollbacks:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.rows:
       enabled: false
-      attributes: ["state"]
+      attributes: ["state","db.namespace","db.collection.name"]
     postgresql.sequential_scans:
       enabled: false
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.table.count:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.table.size:
       enabled: false
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.table.vacuum.count:
       enabled: false
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.temp.io:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.temp_files:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.tup_deleted:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.tup_fetched:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.tup_inserted:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.tup_returned:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.tup_updated:
       enabled: false
+      attributes: ["db.namespace"]
     postgresql.wal.age:
       enabled: false
     postgresql.wal.delay:
@@ -316,6 +384,10 @@ none_set:
     postgresql.schema.name:
       enabled: false
     postgresql.table.name:
+      enabled: false
+    server.address:
+      enabled: false
+    server.port:
       enabled: false
     service.instance.id:
       enabled: false
@@ -337,6 +409,12 @@ override_set:
     postgresql.table.name:
       enabled: true
       override_value: "override-postgresql.table.name"
+    server.address:
+      enabled: true
+      override_value: "override-server.address"
+    server.port:
+      enabled: true
+      override_value: 123
     service.instance.id:
       enabled: true
       override_value: "override-service.instance.id"
@@ -367,6 +445,18 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     postgresql.table.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    server.address:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    server.port:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -416,6 +506,18 @@ filter_set_exclude:
         - strict: "postgresql.table.name-val"
       events_exclude:
         - strict: "postgresql.table.name-val"
+    server.address:
+      enabled: true
+      metrics_exclude:
+        - strict: "server.address-val"
+      events_exclude:
+        - strict: "server.address-val"
+    server.port:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+      events_exclude:
+        - regexp: ".*"
     service.instance.id:
       enabled: true
       metrics_exclude:
