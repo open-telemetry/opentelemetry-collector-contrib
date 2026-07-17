@@ -2444,6 +2444,10 @@ func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStat
 // the status is reported without overwriting the persisted status of the
 // config that triggered the rollback, and true is returned.
 func (s *Supervisor) reportActiveConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) bool {
+	if !s.config.Capabilities.ReportsRemoteConfig {
+		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
+		return false
+	}
 	if s.shouldReportLastWorkingRemoteConfigStatus() {
 		s.reportLastWorkingRemoteConfigStatus(status, errorMessage)
 		return true
@@ -2454,9 +2458,6 @@ func (s *Supervisor) reportActiveConfigStatus(status protobufs.RemoteConfigStatu
 
 // reportLastWorkingRemoteConfigStatus reports the last working remote config status to the server.
 func (s *Supervisor) reportLastWorkingRemoteConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
-	if !s.config.Capabilities.ReportsRemoteConfig {
-		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
-	}
 	remoteConfig := s.lastWorkingRemoteConfig.Load()
 	rcs := &protobufs.RemoteConfigStatus{
 		LastRemoteConfigHash: remoteConfig.GetConfigHash(),
