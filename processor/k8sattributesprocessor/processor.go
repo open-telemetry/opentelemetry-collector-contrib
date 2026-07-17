@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -282,6 +283,28 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			setResourceAttribute(resource.Attributes(), key, val)
 		}
 	}
+
+	// Unlike the attributes above, k8s.cluster.uid is not tied to a specific pod, node or namespace, so it is stamped on any
+	// resource that belongs to this cluster rather than only on pod-associated telemetry. This is relevant for node/namespace
+	// metrics from k8sclusterreceiver or kubeletstatsreceiver, which are not pod-scoped. We only stamp it when the resource
+	// carries at least one k8s.* attribute, to avoid adding it to telemetry collected from outside the cluster
+	// (e.g. awscloudwatchreceiver or similar).
+	if kp.rules.ClusterUID && hasKubernetesAttribute(resource.Attributes()) {
+		if clusterUID := kube.GetClusterUID(kp.kc, kp.logger); clusterUID != "" {
+			setResourceAttribute(resource.Attributes(), string(conventions.K8SClusterUIDKey), clusterUID)
+		}
+	}
+}
+
+// hasKubernetesAttribute reports whether the resource carries at least one attribute in the "k8s." semantic-convention
+// namespace, which is used as a signal that the resource belongs to the cluster the collector runs in.
+func hasKubernetesAttribute(attrs pcommon.Map) bool {
+	for k := range attrs.All() {
+		if strings.HasPrefix(k, "k8s.") {
+			return true
+		}
+	}
+	return false
 }
 
 func setResourceAttribute(attributes pcommon.Map, key, val string) {
