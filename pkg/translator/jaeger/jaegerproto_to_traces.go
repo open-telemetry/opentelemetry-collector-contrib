@@ -287,7 +287,7 @@ func setInternalSpanStatus(attrs pcommon.Map, span ptrace.Span) {
 		// otel.status_message tag will have already been removed if
 		// statusExists is true.
 		attrs.Remove(string(conventions.OTelStatusCodeKey))
-	} else if httpCodeAttr, ok := attrs.Get("http.status_code"); !statusExists && ok {
+	} else if httpCodeAttr, ok := getHTTPStatusCodeAttr(attrs); !statusExists && ok {
 		// Fallback to introspecting if this span represents a failed HTTP
 		// request or response, but again, only do so if the `error` tag was
 		// not set to true and no explicit status was sent.
@@ -340,6 +340,19 @@ func codeFromAttr(attrVal pcommon.Value) (int64, error) {
 		return 0, fmt.Errorf("%w: %s", errType, attrVal.Type().String())
 	}
 	return val, nil
+}
+
+// getHTTPStatusCodeAttr returns the HTTP status code attribute value, preferring
+// the current semantic convention (http.response.status_code) and falling back
+// to the legacy attribute (http.status_code) for spans produced with older
+// semantic conventions. The legacy key is spelled out as a string literal
+// because it was removed from the semconv package (breaking change) and only
+// remains valid as a raw attribute name.
+func getHTTPStatusCodeAttr(attrs pcommon.Map) (pcommon.Value, bool) {
+	if httpCodeAttr, ok := attrs.Get(string(conventions.HTTPResponseStatusCodeKey)); ok {
+		return httpCodeAttr, true
+	}
+	return attrs.Get("http.status_code")
 }
 
 func getStatusCodeFromHTTPStatusAttr(attrVal pcommon.Value, kind ptrace.SpanKind) (ptrace.StatusCode, error) {

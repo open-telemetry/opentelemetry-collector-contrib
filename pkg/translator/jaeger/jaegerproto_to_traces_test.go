@@ -485,6 +485,33 @@ func TestSetInternalSpanStatus(t *testing.T) {
 			status:           emptyStatus,
 			attrsModifiedLen: 2,
 		},
+		{
+			name: "http.response.status_code tag is set as string",
+			attrs: map[string]any{
+				"http.response.status_code": "404",
+			},
+			status:           errorStatus,
+			attrsModifiedLen: 1,
+		},
+		{
+			name: "http.response.status_code, http.status_message and error tags are set",
+			attrs: map[string]any{
+				tracetranslator.TagError:         true,
+				"http.response.status_code":      404,
+				tracetranslator.TagHTTPStatusMsg: "HTTP 404: Not Found",
+			},
+			status:           errorStatusWith404Message,
+			attrsModifiedLen: 2,
+		},
+		{
+			name: "http.response.status_code takes precedence over http.status_code",
+			attrs: map[string]any{
+				"http.response.status_code": 404,
+				"http.status_code":          http.StatusOK,
+			},
+			status:           errorStatus,
+			attrsModifiedLen: 2,
+		},
 	}
 
 	for _, test := range tests {
