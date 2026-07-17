@@ -88,6 +88,7 @@ body:
       - exporter/zipkin
       - extension/ack
       - extension/asapauth
+      - extension/awscredentialsprovider
       - extension/awsproxy
       - extension/azureauth
       - extension/basicauth
