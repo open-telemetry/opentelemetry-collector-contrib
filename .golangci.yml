@@ -85,12 +85,6 @@ linters:
         path: processor/transformprocessor/internal/common/
         text: "var-naming: avoid meaningless package names"
 
-      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45003
-      - linters:
-          - revive
-        path: internal/healthcheck/internal/common/
-        text: "var-naming: avoid meaningless package names"
-
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45004
       - linters:
           - revive
@@ -114,12 +108,6 @@ linters:
           - revive
         path: extension/sumologicextension/internal/api/
         text: "var-naming: avoid meaningless package names"
-
-      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45003
-      - linters:
-          - revive
-        path: internal/healthcheck/internal/http/
-        text: "var-naming: avoid package names that conflict with Go standard library package names"
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116
       - linters:
@@ -255,8 +243,6 @@ linters:
           files:
             - "!**/*_test.go"
 
-
-
     forbidigo:
       analyze-types: true
       forbid:
@@ -325,6 +311,10 @@ linters:
       # Default is to use a neutral variety of English.
       # Setting locale to US will correct the British spelling of 'colour' to 'color'.
       locale: US
+
+    modernize:
+      disable:
+        - importcomment
 
     nolintlint:
       require-specific: true
