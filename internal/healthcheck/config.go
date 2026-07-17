@@ -15,20 +15,20 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/grpc"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/http"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/httpserver"
 )
 
 // Type aliases to expose internal types publicly
 type (
-	HTTPLegacyConfig             = http.LegacyConfig
-	HTTPConfig                   = http.Config
-	PathConfig                   = http.PathConfig
+	HTTPLegacyConfig             = httpserver.LegacyConfig
+	HTTPConfig                   = httpserver.Config
+	PathConfig                   = httpserver.PathConfig
 	GRPCConfig                   = grpc.Config
-	ComponentHealthConfig        = common.ComponentHealthConfig
-	CheckCollectorPipelineConfig = http.CheckCollectorPipelineConfig
-	ResponseBodyConfig           = http.ResponseBodyConfig
+	ComponentHealthConfig        = config.ComponentHealthConfig
+	CheckCollectorPipelineConfig = httpserver.CheckCollectorPipelineConfig
+	ResponseBodyConfig           = httpserver.ResponseBodyConfig
 )
 
 const (
@@ -54,16 +54,16 @@ func endpointForPort(port int) string {
 // extension, used to report the health status of the service.
 type Config struct {
 	// LegacyConfig contains the config for the existing healthcheck extension.
-	http.LegacyConfig `mapstructure:",squash"`
+	httpserver.LegacyConfig `mapstructure:",squash"`
 
 	// GRPCConfig is v2 config for the grpc healthcheck service.
 	GRPCConfig *grpc.Config `mapstructure:"grpc"`
 
 	// HTTPConfig is v2 config for the http healthcheck service.
-	HTTPConfig *http.Config `mapstructure:"http"`
+	HTTPConfig *httpserver.Config `mapstructure:"http"`
 
 	// ComponentHealthConfig is v2 config shared between http and grpc services
-	ComponentHealthConfig *common.ComponentHealthConfig `mapstructure:"component_health"`
+	ComponentHealthConfig *config.ComponentHealthConfig `mapstructure:"component_health"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -120,13 +120,13 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 			Transport: confignet.TransportTypeTCP,
 		}
 		httpServerConfig.KeepAlivesEnabled = true
-		c.HTTPConfig = &http.Config{
+		c.HTTPConfig = &httpserver.Config{
 			ServerConfig: httpServerConfig,
-			Status: http.PathConfig{
+			Status: httpserver.PathConfig{
 				Enabled: true,
 				Path:    "/status",
 			},
-			Config: http.PathConfig{
+			Config: httpserver.PathConfig{
 				Enabled: false,
 				Path:    "/config",
 			},
@@ -184,18 +184,18 @@ func NewDefaultConfig() component.Config {
 	}
 	httpServerConfig.KeepAlivesEnabled = true
 	return &Config{
-		LegacyConfig: http.LegacyConfig{
+		LegacyConfig: httpserver.LegacyConfig{
 			ServerConfig: legacyServerConfig,
 			Path:         "/",
 		},
-		HTTPConfig: &http.Config{
+		HTTPConfig: &httpserver.Config{
 			ServerConfig: httpServerConfig,
-			Status: http.PathConfig{
+			Status: httpserver.PathConfig{
 				Enabled:           true,
 				Path:              "/status",
 				IncludeAttributes: false,
 			},
-			Config: http.PathConfig{
+			Config: httpserver.PathConfig{
 				Enabled: false,
 				Path:    "/config",
 			},

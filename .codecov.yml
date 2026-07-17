@@ -773,10 +773,6 @@ component_management:
     name: receiver_jaeger
     paths:
     - receiver/jaegerreceiver/**
-  - component_id: receiver_jmx
-    name: receiver_jmx
-    paths:
-    - receiver/jmxreceiver/**
   - component_id: receiver_journald
     name: receiver_journald
     paths:

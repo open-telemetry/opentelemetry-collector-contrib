@@ -2671,6 +2671,65 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 	}
 }
 
+func TestSupervisorReportsCollectorLogTailOnRemoteConfigCrash(t *testing.T) {
+	var healthReport atomic.Value
+	var remoteConfigStatus atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.Health != nil {
+					healthReport.Store(message.Health)
+				}
+				if message.RemoteConfigStatus != nil {
+					remoteConfigStatus.Store(message.RemoteConfigStatus)
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	storageDir := t.TempDir()
+	s, _ := newSupervisor(t, "basic", map[string]string{
+		"url":                             server.addr,
+		"storage_dir":                     storageDir,
+		"collector_crash_log_snippet_kib": "4",
+	})
+	require.NoError(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	badCfg, badHash := createBadCollectorConf(t)
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: badCfg.Bytes()},
+				},
+			},
+			ConfigHash: badHash,
+		},
+	})
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		health, ok := healthReport.Load().(*protobufs.ComponentHealth)
+		require.True(c, ok)
+		assert.False(c, health.Healthy)
+		assert.Contains(c, health.LastError, "Collector log tail:")
+		assert.Contains(c, health.LastError, "failed to get config")
+	}, 15*time.Second, 100*time.Millisecond, "Supervisor did not report Collector log tail in health error")
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		require.True(c, ok)
+		assert.Equal(c, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, status.Status)
+		assert.Contains(c, status.ErrorMessage, "Collector log tail:")
+		assert.Contains(c, status.ErrorMessage, "failed to get config")
+	}, 15*time.Second, 100*time.Millisecond, "Supervisor did not report Collector log tail in remote config status")
+}
+
 func TestSupervisorOpAmpServerPort(t *testing.T) {
 	var agentConfig atomic.Value
 	server := newOpAMPServer(

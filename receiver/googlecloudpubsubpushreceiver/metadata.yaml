@@ -6,7 +6,8 @@ status:
   stability:
     development: [logs]
   codeowners:
-    active: [axw, constanca-m]
+    active: [constanca-m]
+    emeritus: [axw]
 
 tests:
   # start requires an encoding extension to exist
