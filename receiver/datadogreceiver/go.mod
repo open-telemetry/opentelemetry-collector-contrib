@@ -3,13 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.24.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.178
+	github.com/DataDog/agent-payload/v5 v5.0.205
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.76.0-devel
 	github.com/DataDog/datadog-agent/pkg/proto v0.76.0-devel
 	github.com/DataDog/datadog-agent/pkg/trace v0.76.0-devel
 	github.com/DataDog/datadog-api-client-go/v2 v2.52.0
 	github.com/DataDog/sketches-go v1.4.7
 	github.com/hashicorp/golang-lru/v2 v2.0.7
+	github.com/klauspost/compress v1.18.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.142.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.142.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.142.0
@@ -79,7 +80,6 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.18.2 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.3.0 // indirect
@@ -135,12 +135,12 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/net v0.48.0 // indirect
-	golang.org/x/oauth2 v0.32.0 // indirect
+	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
-	google.golang.org/grpc v1.78.0 // indirect
+	google.golang.org/grpc v1.79.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
