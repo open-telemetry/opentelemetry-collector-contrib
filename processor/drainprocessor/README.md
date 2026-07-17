@@ -173,12 +173,10 @@ processors:
     masking_rules:
       - name: ip
         pattern: '(\d{1,3}\.){3}\d{1,3}'
-      - name: uuid
-        pattern: '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
     emit_wildcards: true
 ```
 
-Given the body `"user alice logged in from 10.0.0.1 in 42 ms"` and the rules above, Drain sees `"user alice logged in from <ip> in 42 ms"` and produces a template such as `"user <*> logged in from <ip> in <*> ms"`. The resulting attributes are:
+Given the body `"user alice logged in from 10.0.0.1 in 42 ms"` and the rule above, Drain sees `"user alice logged in from <ip> in 42 ms"` and produces a template such as `"user <*> logged in from <ip> in <*> ms"`. The resulting attributes are:
 
 ```
 log.record.template                       = "user <*> logged in from <ip> in <*> ms"
