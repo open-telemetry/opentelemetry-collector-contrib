@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver/internal/metadata"
 )
 
 var _ xscraper.Profiles = &HTTPClientScraper{}
@@ -23,6 +24,7 @@ var _ xscraper.Profiles = &HTTPClientScraper{}
 type HTTPClientScraper struct {
 	ClientConfig confighttp.ClientConfig
 	Settings     component.TelemetrySettings
+	BuildInfo    component.BuildInfo
 	client       *http.Client
 }
 
@@ -56,5 +58,19 @@ func (hcs *HTTPClientScraper) ScrapeProfiles(_ context.Context) (pprofile.Profil
 	if err != nil {
 		return pprofile.Profiles{}, fmt.Errorf("failed to convert pprof to profiles: %w", err)
 	}
+
+	// set ScopeName and Version
+	name := metadata.ScopeName + "/httpclientscraper"
+	version := hcs.BuildInfo.Version
+
+	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+		rp := profiles.ResourceProfiles().At(i)
+		for j := 0; j < rp.ScopeProfiles().Len(); j++ {
+			sp := rp.ScopeProfiles().At(j)
+			sp.Scope().SetName(name)
+			sp.Scope().SetVersion(version)
+		}
+	}
+
 	return *profiles, err
 }

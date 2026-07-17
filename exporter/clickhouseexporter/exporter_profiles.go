@@ -114,7 +114,11 @@ func (e *profilesExporter) pushProfilesData(ctx context.Context, pd pprofile.Pro
 				periodType := stringAt(stringTable, profile.PeriodType().TypeStrindex())
 				periodUnit := stringAt(stringTable, profile.PeriodType().UnitStrindex())
 
-				profileAttrMap := internal.AttributesToMap(pprofile.FromAttributeIndices(dic.AttributeTable(), profile, dic))
+				profileAttrs, err := pprofile.FromAttributeIndices(dic.AttributeTable(), profile, dic)
+				if err != nil {
+					return fmt.Errorf("failed to resolve profile attributes: %w", err)
+				}
+				profileAttrMap := internal.AttributesToMap(profileAttrs)
 
 				samples := profile.Samples()
 				for s := 0; s < samples.Len(); s++ {
@@ -122,7 +126,11 @@ func (e *profilesExporter) pushProfilesData(ctx context.Context, pd pprofile.Pro
 
 					frames := resolveStack(dic, sample.StackIndex())
 					traceID, spanID := resolveLink(dic, sample.LinkIndex())
-					sampleAttrMap := internal.AttributesToMap(pprofile.FromAttributeIndices(dic.AttributeTable(), sample, dic))
+					sampleAttrs, err := pprofile.FromAttributeIndices(dic.AttributeTable(), sample, dic)
+					if err != nil {
+						return fmt.Errorf("failed to resolve sample attributes: %w", err)
+					}
+					sampleAttrMap := internal.AttributesToMap(sampleAttrs)
 
 					appendErr := batch.Append(
 						profileTime,

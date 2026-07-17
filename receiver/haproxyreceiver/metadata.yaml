@@ -70,7 +70,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: by
+    unit: By
   haproxy.bytes.output:
     description: Bytes out. Corresponds to HAProxy's `bout` metric.
     stability: development
@@ -80,7 +80,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: by
+    unit: By
   haproxy.clients.canceled:
     description: Number of data transfers aborted by the client. Corresponds to HAProxy's `cli_abrt` metric
     stability: development
@@ -100,7 +100,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: by
+    unit: By
   haproxy.compression.count:
     description: Number of HTTP responses that were compressed. Corresponds to HAProxy's `comp_rsp` metric.
     stability: development
@@ -120,7 +120,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: by
+    unit: By
   haproxy.compression.output:
     description: Number of HTTP response bytes emitted by the compressor. Corresponds to HAProxy's `comp_out` metric.
     stability: development
@@ -130,7 +130,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: by
+    unit: By
   haproxy.connections.average_time:
     description: Average connect time in ms over the 1024 last requests. Corresponds to HAProxy's `ctime` metric.
     stability: development
