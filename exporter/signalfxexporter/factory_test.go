@@ -668,7 +668,15 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	md := getMetrics(metrics)
 	require.Equal(t, 54, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
-	require.Empty(t, dps)
+
+	metricCounts := map[string]int{}
+	for _, dp := range dps {
+		metricCounts[dp.Metric]++
+	}
+	require.Equal(t, map[string]int{
+		"system.cpu.time": 7,
+		"system.disk.io":  1,
+	}, metricCounts)
 }
 
 // Benchmark test for default translation rules on an example hostmetrics dataset.
