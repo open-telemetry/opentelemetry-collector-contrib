@@ -1,0 +1,12 @@
+[
+  {
+    "measurement": "sqlserver_worker_threads",
+    "sql_instance": "testhost",
+    "computer_name": "testhost",
+    "total_threads": "608",
+    "active_threads": "42",
+    "available_threads": "566",
+    "waiting_for_cpu_threads": "5",
+    "requests_waiting_for_threads": "0"
+  }
+]

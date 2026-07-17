@@ -420,6 +420,22 @@ func TestValidateFallbackConfigsWithColBin_E2E(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("Valid profiles fallback config using agent feature gates", func(t *testing.T) {
+		profilesConfigPath := filepath.Join("testdata", "collector", "profiles_pipeline.yaml")
+		cfgFile := getSupervisorConfig(t, "fallback", map[string]string{
+			"url":                     "localhost:12345",
+			"storage_dir":             t.TempDir(),
+			"agent_argument":          "--feature-gates=+service.profilesSupport",
+			"startup_fallback_config": escapePathStringForWin(profilesConfigPath),
+		})
+
+		cfg, err := config.Load(cfgFile.Name())
+		require.NoError(t, err)
+		require.Equal(t, []string{"--feature-gates=+service.profilesSupport"}, cfg.Agent.Arguments)
+		_, err = supervisor.NewSupervisor(t.Context(), zap.NewNop(), cfg)
+		require.NoError(t, err)
+	})
+
 	t.Run("Invalid fallback config", func(t *testing.T) {
 		badColConfigPath := filepath.Join("testdata", "collector", "bad_config.yaml")
 		badCfgFile := getSupervisorConfig(t, "fallback", map[string]string{
