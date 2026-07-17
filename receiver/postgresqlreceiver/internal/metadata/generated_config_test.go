@@ -526,7 +526,7 @@ func TestPostgresqlVectorSearchRowsReturnedMetricsConfig_Validate(t *testing.T) 
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []PostgresqlVectorSearchRowsReturnedMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric postgresql.vector.search.rows.returned doesn't have an attribute invalid, valid attributes: [postgresql.distance.function.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.vector.search.rows_returned doesn't have an attribute invalid, valid attributes: [postgresql.distance.function.name]")
 
 	cfg = DefaultMetricsConfig().PostgresqlVectorSearchRowsReturned
 	cfg.AggregationStrategy = "invalid"

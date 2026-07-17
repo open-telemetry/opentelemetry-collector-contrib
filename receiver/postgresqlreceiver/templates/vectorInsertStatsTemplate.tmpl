@@ -1,3 +1,8 @@
+-- Performance note: the insert_statements CTE evaluates two regexp_match calls per row in
+-- pg_stat_statements. On instances with a very large statement cache (a high
+-- pg_stat_statements.max, e.g. tens of thousands of entries) this scan can become costly.
+-- It only runs when the opt-in vector insert metrics are enabled and pgvector is present;
+-- tune pg_stat_statements.max accordingly if the statement cache is unusually large.
 WITH vector_tables AS (
     SELECT DISTINCT
         lower(n.nspname) AS schema_name,

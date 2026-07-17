@@ -19,7 +19,7 @@ subtext: |
   Adds the following metrics, all disabled by default:
   `postgresql.vector.search.count`
   `postgresql.vector.search.duration`
-  `postgresql.vector.search.rows.returned`
+  `postgresql.vector.search.rows_returned`
   `postgresql.vector.insert.rows`
   `postgresql.vector.insert.duration`
 

@@ -131,28 +131,24 @@ This defines the cache's size for query plan.
 
 ### Vector Metrics
 
-The receiver can report [pgvector](https://github.com/pgvector/pgvector) activity through a set of opt-in metrics.
-All of them are derived from `pg_stat_statements` (which must be installed and enabled), require PostgreSQL 13 or
-later (`pg_stat_statements` 1.8+, which introduced the `total_exec_time` column used by the duration metrics), and
-require the [pgvector](https://github.com/pgvector/pgvector) extension installed in each scanned database.
+The receiver can report [pgvector](https://github.com/pgvector/pgvector) similarity-search and insert activity
+through a set of opt-in metrics.
+
+Prerequisites:
+
+- PostgreSQL 13 or later.
+- The [pgvector](https://github.com/pgvector/pgvector) extension installed in each scanned database. The `l1`,
+  `hamming`, and `jaccard` distance functions additionally require pgvector 0.7.0 or later.
+- The `pg_stat_statements` extension (version 1.8+) installed and enabled in each scanned database (see below).
 
 #### Search metrics
 
-Three metrics report similarity-search activity, all broken down by a `postgresql.distance.function.name` attribute:
+Three metrics report similarity-search activity, all broken down by a `postgresql.distance.function.name` attribute
+whose value is one of `cosine`, `l2`, `inner_product`, `l1`, `hamming`, or `jaccard`:
 
 - `postgresql.vector.search.count`: the cumulative number of vector search executions.
 - `postgresql.vector.search.duration`: the cumulative execution time (in seconds) of vector searches.
-- `postgresql.vector.search.rows.returned`: the cumulative number of rows returned by vector searches.
-
-Searches are classified by inspecting the statement text for a pgvector distance operator (for example `<=>`,
-`<->`, `<#>`, `<+>`, `<~>`, `<%>`) or distance function (for example `cosine_distance`, `l2_distance`,
-`inner_product`), and the resulting `postgresql.distance.function.name` attribute is one of `cosine`, `l2`, `inner_product`,
-`l1`, `hamming`, or `jaccard`. Because the values are cumulative counters, throughput and average response time
-(ART) can be derived downstream (for example
-`rate(postgresql.vector.search.duration) / rate(postgresql.vector.search.count)`).
-
-The `l1` (`<+>`), `hamming` (`<~>`), and `jaccard` (`<%>`) classifications additionally require pgvector 0.7.0 or
-later.
+- `postgresql.vector.search.rows_returned`: the cumulative number of rows returned by vector searches.
 
 #### Insert metrics
 
@@ -161,9 +157,6 @@ Two aggregated metrics report write activity against pgvector tables (tables wit
 
 - `postgresql.vector.insert.rows`: the cumulative number of vectors inserted.
 - `postgresql.vector.insert.duration`: the cumulative execution time (in seconds) of those inserts.
-
-Inserts are attributed by matching the target table of `INSERT`/`COPY` statements against pgvector tables, so the
-insertion rate can be derived downstream (for example `rate(postgresql.vector.insert.rows)`).
 
 All of these metrics are disabled by default. Enable the ones you need via:
 
@@ -175,7 +168,7 @@ receivers:
         enabled: true
       postgresql.vector.search.duration:
         enabled: true
-      postgresql.vector.search.rows.returned:
+      postgresql.vector.search.rows_returned:
         enabled: true
       postgresql.vector.insert.rows:
         enabled: true

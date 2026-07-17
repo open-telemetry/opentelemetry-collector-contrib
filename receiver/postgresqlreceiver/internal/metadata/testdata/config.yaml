@@ -89,7 +89,7 @@ all_set:
     postgresql.vector.search.duration:
       enabled: true
       attributes: ["postgresql.distance.function.name"]
-    postgresql.vector.search.rows.returned:
+    postgresql.vector.search.rows_returned:
       enabled: true
       attributes: ["postgresql.distance.function.name"]
     postgresql.wal.age:
@@ -210,7 +210,7 @@ reaggregate_set:
     postgresql.vector.search.duration:
       enabled: true
       attributes: []
-    postgresql.vector.search.rows.returned:
+    postgresql.vector.search.rows_returned:
       enabled: true
       attributes: []
     postgresql.wal.age:
@@ -331,7 +331,7 @@ none_set:
     postgresql.vector.search.duration:
       enabled: false
       attributes: ["postgresql.distance.function.name"]
-    postgresql.vector.search.rows.returned:
+    postgresql.vector.search.rows_returned:
       enabled: false
       attributes: ["postgresql.distance.function.name"]
     postgresql.wal.age:

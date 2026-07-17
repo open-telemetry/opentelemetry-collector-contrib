@@ -1108,14 +1108,14 @@ func (ms *PostgresqlVectorSearchDurationMetricConfig) Validate() error {
 	return nil
 }
 
-// PostgresqlVectorSearchRowsReturnedMetricAttributeKey specifies the key of an attribute for the postgresql.vector.search.rows.returned metric.
+// PostgresqlVectorSearchRowsReturnedMetricAttributeKey specifies the key of an attribute for the postgresql.vector.search.rows_returned metric.
 type PostgresqlVectorSearchRowsReturnedMetricAttributeKey string
 
 const (
 	PostgresqlVectorSearchRowsReturnedMetricAttributeKeyPostgresqlDistanceFunctionName PostgresqlVectorSearchRowsReturnedMetricAttributeKey = "postgresql.distance.function.name"
 )
 
-// PostgresqlVectorSearchRowsReturnedMetricConfig provides config for the postgresql.vector.search.rows.returned metric.
+// PostgresqlVectorSearchRowsReturnedMetricConfig provides config for the postgresql.vector.search.rows_returned metric.
 type PostgresqlVectorSearchRowsReturnedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -1143,7 +1143,7 @@ func (ms *PostgresqlVectorSearchRowsReturnedMetricConfig) Validate() error {
 		switch val {
 		case PostgresqlVectorSearchRowsReturnedMetricAttributeKeyPostgresqlDistanceFunctionName:
 		default:
-			return fmt.Errorf("metric postgresql.vector.search.rows.returned doesn't have an attribute %v, valid attributes: [postgresql.distance.function.name]", val)
+			return fmt.Errorf("metric postgresql.vector.search.rows_returned doesn't have an attribute %v, valid attributes: [postgresql.distance.function.name]", val)
 		}
 	}
 
@@ -1314,7 +1314,7 @@ type MetricsConfig struct {
 	PostgresqlVectorInsertRows         PostgresqlVectorInsertRowsMetricConfig         `mapstructure:"postgresql.vector.insert.rows"`
 	PostgresqlVectorSearchCount        PostgresqlVectorSearchCountMetricConfig        `mapstructure:"postgresql.vector.search.count"`
 	PostgresqlVectorSearchDuration     PostgresqlVectorSearchDurationMetricConfig     `mapstructure:"postgresql.vector.search.duration"`
-	PostgresqlVectorSearchRowsReturned PostgresqlVectorSearchRowsReturnedMetricConfig `mapstructure:"postgresql.vector.search.rows.returned"`
+	PostgresqlVectorSearchRowsReturned PostgresqlVectorSearchRowsReturnedMetricConfig `mapstructure:"postgresql.vector.search.rows_returned"`
 	PostgresqlWalAge                   PostgresqlWalAgeMetricConfig                   `mapstructure:"postgresql.wal.age"`
 	PostgresqlWalDelay                 PostgresqlWalDelayMetricConfig                 `mapstructure:"postgresql.wal.delay"`
 	PostgresqlWalLag                   PostgresqlWalLagMetricConfig                   `mapstructure:"postgresql.wal.lag"`

@@ -476,7 +476,7 @@ var MetricsInfo = metricsInfo{
 		Attributes: []string{"postgresql.distance.function.name"},
 	},
 	PostgresqlVectorSearchRowsReturned: metricInfo{
-		Name:       "postgresql.vector.search.rows.returned",
+		Name:       "postgresql.vector.search.rows_returned",
 		Attributes: []string{"postgresql.distance.function.name"},
 	},
 	PostgresqlWalAge: metricInfo{
@@ -2991,9 +2991,9 @@ type metricPostgresqlVectorSearchRowsReturned struct {
 	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
-// init fills postgresql.vector.search.rows.returned metric with initial data.
+// init fills postgresql.vector.search.rows_returned metric with initial data.
 func (m *metricPostgresqlVectorSearchRowsReturned) init() {
-	m.data.SetName("postgresql.vector.search.rows.returned")
+	m.data.SetName("postgresql.vector.search.rows_returned")
 	m.data.SetDescription("The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.")
 	m.data.SetUnit("{rows}")
 	m.data.SetEmptySum()
@@ -3805,7 +3805,7 @@ func (mb *MetricsBuilder) RecordPostgresqlVectorSearchDurationDataPoint(ts pcomm
 	mb.metricPostgresqlVectorSearchDuration.recordDataPoint(mb.startTime, ts, val, postgresqlDistanceFunctionNameAttributeValue.String())
 }
 
-// RecordPostgresqlVectorSearchRowsReturnedDataPoint adds a data point to postgresql.vector.search.rows.returned metric.
+// RecordPostgresqlVectorSearchRowsReturnedDataPoint adds a data point to postgresql.vector.search.rows_returned metric.
 func (mb *MetricsBuilder) RecordPostgresqlVectorSearchRowsReturnedDataPoint(ts pcommon.Timestamp, val int64, postgresqlDistanceFunctionNameAttributeValue AttributePostgresqlDistanceFunctionName) {
 	mb.metricPostgresqlVectorSearchRowsReturned.recordDataPoint(mb.startTime, ts, val, postgresqlDistanceFunctionNameAttributeValue.String())
 }

@@ -213,6 +213,26 @@ resourceMetrics:
             stringValue: PRAKSURY-M-7HKV:5432
     scopeMetrics:
       - metrics:
+          - description: The cumulative execution time of statements that insert vectors into pgvector tables.
+            name: postgresql.vector.insert.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 2.5
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of vectors inserted into pgvector tables.
+            name: postgresql.vector.insert.rows
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "70"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{vectors}'
           - description: The number of vector similarity search operations executed, grouped by the distance function used.
             name: postgresql.vector.search.count
             sum:
@@ -256,7 +276,7 @@ resourceMetrics:
               isMonotonic: true
             unit: s
           - description: The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.
-            name: postgresql.vector.search.rows.returned
+            name: postgresql.vector.search.rows_returned
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -276,39 +296,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{rows}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: postgresql.database.name
-          value:
-            stringValue: otel
-        - key: service.instance.id
-          value:
-            stringValue: PRAKSURY-M-7HKV:5432
-    scopeMetrics:
-      - metrics:
-          - description: The cumulative execution time of statements that insert vectors into pgvector tables.
-            name: postgresql.vector.insert.duration
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asDouble: 2.5
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: s
-          - description: The number of vectors inserted into pgvector tables.
-            name: postgresql.vector.insert.rows
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "70"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{vectors}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest

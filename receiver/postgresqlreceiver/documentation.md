@@ -387,8 +387,8 @@ Number of rows updated by queries in the database.
 
 The cumulative execution time of statements that insert vectors into pgvector tables.
 
-This metric is derived from the `pg_stat_statements` extension, which must be installed and enabled.
-This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` extension in the scanned database.
+This metric is opt-in and requires the `pg_stat_statements` extension to be installed and enabled,
+PostgreSQL 13 or later, and the `pgvector` extension in the scanned database.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -398,8 +398,8 @@ This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` ext
 
 The number of vectors inserted into pgvector tables.
 
-This metric is derived from the `pg_stat_statements` extension, which must be installed and enabled.
-This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` extension in the scanned database.
+This metric is opt-in and requires the `pg_stat_statements` extension to be installed and enabled,
+PostgreSQL 13 or later, and the `pgvector` extension in the scanned database.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -409,8 +409,8 @@ This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` ext
 
 The number of vector similarity search operations executed, grouped by the distance function used.
 
-This metric is derived from the `pg_stat_statements` extension, which must be installed and enabled.
-This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` extension in the scanned database. The `l1`, `hamming`, and
+This metric is opt-in and requires the `pg_stat_statements` extension to be installed and enabled,
+PostgreSQL 13 or later, and the `pgvector` extension in the scanned database. The `l1`, `hamming`, and
 `jaccard` classifications additionally require pgvector 0.7.0 or later.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
@@ -421,14 +421,14 @@ This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` ext
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| postgresql.distance.function.name | The vector distance (similarity) function used by the query, derived from the pgvector operator or distance function present in the statement text. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
+| postgresql.distance.function.name | The vector distance (similarity) function used by the query, one of the pgvector distance functions. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
 
 ### postgresql.vector.search.duration
 
 The cumulative execution time of vector similarity searches, grouped by the distance function used.
 
-This metric is derived from the `pg_stat_statements` extension, which must be installed and enabled.
-This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` extension in the scanned database. The `l1`, `hamming`, and
+This metric is opt-in and requires the `pg_stat_statements` extension to be installed and enabled,
+PostgreSQL 13 or later, and the `pgvector` extension in the scanned database. The `l1`, `hamming`, and
 `jaccard` classifications additionally require pgvector 0.7.0 or later.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
@@ -439,14 +439,14 @@ This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` ext
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| postgresql.distance.function.name | The vector distance (similarity) function used by the query, derived from the pgvector operator or distance function present in the statement text. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
+| postgresql.distance.function.name | The vector distance (similarity) function used by the query, one of the pgvector distance functions. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
 
-### postgresql.vector.search.rows.returned
+### postgresql.vector.search.rows_returned
 
 The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.
 
-This metric is derived from the `pg_stat_statements` extension, which must be installed and enabled.
-This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` extension in the scanned database. The `l1`, `hamming`, and
+This metric is opt-in and requires the `pg_stat_statements` extension to be installed and enabled,
+PostgreSQL 13 or later, and the `pgvector` extension in the scanned database. The `l1`, `hamming`, and
 `jaccard` classifications additionally require pgvector 0.7.0 or later.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
@@ -457,7 +457,7 @@ This metric is opt-in and requires PostgreSQL 13 or later and the `pgvector` ext
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| postgresql.distance.function.name | The vector distance (similarity) function used by the query, derived from the pgvector operator or distance function present in the statement text. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
+| postgresql.distance.function.name | The vector distance (similarity) function used by the query, one of the pgvector distance functions. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
 
 ### postgresql.wal.delay
 
