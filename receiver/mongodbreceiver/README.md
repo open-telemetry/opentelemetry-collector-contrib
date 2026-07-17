@@ -34,6 +34,41 @@ This receiver supports MongoDB versions:
 
 Mongodb recommends to set up a least privilege user (LPU) with a [`clusterMonitor` role](https://www.mongodb.com/docs/v5.0/reference/built-in-roles/#mongodb-authrole-clusterMonitor) in order to collect metrics. Please refer to [lpu.sh](./testdata/integration/scripts/lpu.sh) for an example of how to configure these permissions.
 
+### Permissions for explain plans (`db.server.top_query`)
+
+The `clusterMonitor` role is sufficient for metrics and basic slow query collection (profiler data and `getLog`). However, populating `mongodb.explain_plan.text` and `mongodb.explain_plan.hash` on `db.server.top_query` events requires the receiver to run `explain` against user collections, which needs the `find` privilege on each monitored database.
+
+Without this permission, slow query collection still works but explain fields are empty and an `Unauthorized` warning is logged for each query.
+
+To enable explain plans, grant `read` on each database you want to monitor (recommended — least privilege):
+
+```js
+db.createUser({
+  user: "otel",
+  pwd: "<password>",
+  roles: [
+    { role: "clusterMonitor", db: "admin" },
+    { role: "read", db: "mydb" },
+    { role: "read", db: "myotherdb" }
+  ]
+})
+```
+
+Alternatively, grant `readAnyDatabase` to cover all databases on the server:
+
+```js
+db.createUser({
+  user: "otel",
+  pwd: "<password>",
+  roles: [
+    { role: "clusterMonitor", db: "admin" },
+    { role: "readAnyDatabase", db: "admin" }
+  ]
+})
+```
+
+To disable explain plan collection entirely and avoid needing additional permissions, set `max_explain_each_interval: 0` in `top_query_collection`.
+
 ## Configuration
 
 The following settings are optional:
@@ -56,6 +91,13 @@ The following settings are optional:
 - `direct_connection`: If true, then the driver will not try to autodiscover other nodes, and perform instead a direct connection o the host.
 - `query_sample_collection`: Additional configuration for query sample collection (`db.server.query_sample` event):
   - `max_rows_per_query`: (default = `100`) The maximum number of eligible query samples to emit per `$currentOp` query. Must be greater than `0`.
+- `top_query_collection`: Additional configuration for slow query collection (`db.server.top_query` event):
+  - `collection_interval`: (default = `60s`) How often to scrape slow query data. Independent of the receiver's `collection_interval`.
+  - `top_query_count`: (default = `500`) The maximum number of slow query events to emit per scrape. The slowest N executions are selected.
+  - `max_query_sample_count`: (default = `1000`) The maximum number of slow query entries to read from `system.profile` or `getLog` per scrape before ranking.
+  - `max_explain_each_interval`: (default = `250`) The maximum number of server-side `explain` calls to issue per scrape interval. Set to `0` to disable explain plan collection entirely.
+  - `query_plan_cache_size`: (default = `500`) The number of query shapes whose explain plans are cached. Set to `0` to disable caching.
+  - `query_plan_cache_ttl`: (default = `10m`) How long a cached explain plan is considered valid.
 
 ### Example Configuration
 
@@ -66,13 +108,17 @@ receivers:
       - endpoint: localhost:27017
     username: otel
     password: ${env:MONGODB_PASSWORD}
-    query_sample_collection:
-      max_rows_per_query: 100
     collection_interval: 60s
     initial_delay: 1s
     tls:
       insecure: true
       insecure_skip_verify: true
+    query_sample_collection:
+      max_rows_per_query: 100
+    top_query_collection:
+      collection_interval: 60s
+      top_query_count: 500
+      max_explain_each_interval: 250
 ```
 
 ### Example Configuration (MongoDB Atlas / SRV)

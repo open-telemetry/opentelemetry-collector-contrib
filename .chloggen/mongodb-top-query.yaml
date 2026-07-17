@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/mongodb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add Top Query collection to the MongoDB receiver, emitting a `db.server.top_query` log event per slow query execution.
+note: Add `db.server.top_query` slow query event collection to the MongoDB receiver.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49623]
@@ -16,9 +16,10 @@ issues: [49623]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The top N slowest query executions per scrape window are emitted as `db.server.top_query`
-  log events. The `logs` signal is at `development` stability; attribute names may change
-  until OTel `db.server.top_query` conventions stabilize.
+  Emits the top N slowest query executions per scrape window as `db.server.top_query` log events,
+  including obfuscated query text, execution stats, and optional explain plans. Configurable via
+  the new `top_query_collection` config block. The `logs` signal is at `development` stability;
+  attribute names may change until OTel `db.server.top_query` conventions stabilize.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
