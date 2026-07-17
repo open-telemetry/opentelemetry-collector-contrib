@@ -14,12 +14,15 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate, true)()
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -534,6 +537,17 @@ func TestLoadConfig(t *testing.T) {
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func TestValidateKubeletRequiresFeatureGate(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate, false)()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Filter.Node = "node-a"
+	cfg.Kubelet.Enabled = true
+
+	err := cfg.Validate()
+	require.EqualError(t, err, "kubelet.enabled requires feature gate processor.k8sattributes.EnableKubeletPodSource")
 }
 
 func TestFilterConfigInvalidEnvVar(t *testing.T) {

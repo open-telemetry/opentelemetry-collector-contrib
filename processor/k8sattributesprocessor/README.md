@@ -241,13 +241,21 @@ After receiving a pod deletion event, the processor can keep the pod's metadata 
 
 ## Kubelet Pod Metadata Source
 
-The processor can experimentally poll the node-local kubelet `https://<node>:10250/pods` endpoint for pod metadata instead of using the Kubernetes API server pod informer. This is disabled by default and is intended for daemonset collectors in large clusters where pod watches create excessive API server load.
+The processor can experimentally poll the node-local kubelet `https://<node>:10250/pods` endpoint for pod metadata instead of using the Kubernetes API server pod informer. This is disabled by default, gated behind `processor.k8sattributes.EnableKubeletPodSource`, and is intended for daemonset collectors in large clusters where pod watches create excessive API server load.
 
 Kubelet mode lists pods on a timer and applies namespace, node, label, and field filters locally because kubelet `/pods` is not a watch API and does not support server-side selectors. It only returns pods visible to one kubelet. Pod metadata changes may lag by up to `kubelet.poll_interval`; shorter intervals improve freshness but increase kubelet request load. The processor may still use Kubernetes API server informers for namespace, node, and workload metadata when configured extraction rules require them.
 
 Kubelet mode requires `filter.node`, `filter.node_from_env_var`, or `kubelet.endpoint`. The collector service account must be allowed by kubelet authentication and authorization to read `/pods`, and the kubelet serving certificate must be trusted by the configured Kubernetes auth/TLS material. Some managed Kubernetes services restrict direct kubelet access from workload service accounts. For example, GKE documents that secure kubelet `/pods` access requires `nodes/proxy`, which cannot be granted in Autopilot clusters and is not recommended in Standard clusters. In those clusters this mode cannot be used unless kubelet authn/authz allows the collector to read `/pods`. If your cluster does not make the kubelet serving CA available to the collector, `kubelet.insecure_skip_verify` can be used to skip kubelet TLS verification. Plaintext `http` endpoints require `kubelet.allow_insecure_http`.
 
 When `auth_type` is `kubeConfig`, kubelet requests use the Kubernetes API server node proxy instead of direct node-local kubelet access. Use `serviceAccount` or TLS auth with a kubelet endpoint for the API server load-reduction path.
+
+Reference numbers:
+
+- Local `kind` control-plane validation showed the expected watch reduction: with `5` collector replicas, the API server `pods` `WATCH` count went from `5` to `10` with the normal API-backed pod source, and stayed at `5` with direct kubelet mode.
+- Synthetic local kubelet reconcile measurements showed roughly linear collector-side polling cost growth: about `2.45 ms` / `6.25 MiB` per poll at `1,000` pods, `13.0 ms` / `31.2 MiB` at `5,000` pods, and `28.6 ms` / `62.4 MiB` at `10,000` pods.
+- Existing processor data-path benchmarks remained cheap in the same local runs, roughly `0.55-0.67 us/op` depending on signal type.
+
+These are reference numbers, not universal capacity guidance. The tradeoff is the important part: direct kubelet mode can remove collector-owned API-server pod watch pressure, but it replaces incremental API watch updates with periodic full-snapshot polling and local reconciliation on each collector.
 
 ```yaml
 processors:

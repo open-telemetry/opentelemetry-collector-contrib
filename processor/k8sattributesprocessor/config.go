@@ -14,6 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 // Config defines configuration for k8s attributes processor.
@@ -75,6 +76,9 @@ func (cfg *Config) Validate() error {
 		return errors.New("kubelet.poll_interval must be greater than 0")
 	}
 	if cfg.Kubelet.Enabled {
+		if !metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate.IsEnabled() {
+			return errors.New("kubelet.enabled requires feature gate processor.k8sattributes.EnableKubeletPodSource")
+		}
 		if cfg.Filter.NodeFromEnvVar != "" {
 			if err := cfg.Filter.Validate(); err != nil {
 				return err

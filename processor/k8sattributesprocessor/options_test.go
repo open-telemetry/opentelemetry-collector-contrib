@@ -12,8 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/selection"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func TestWithAPIConfig(t *testing.T) {
@@ -56,6 +58,8 @@ func TestWithPassthrough(t *testing.T) {
 }
 
 func TestWithKubeletConfig(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate, true)()
+
 	p := &kubernetesprocessor{}
 	assert.NoError(t, withKubeletConfig(KubeletConfig{
 		Enabled:            true,
@@ -71,6 +75,13 @@ func TestWithKubeletConfig(t *testing.T) {
 		InsecureSkipVerify: true,
 		AllowInsecureHTTP:  true,
 	}, p.kubelet)
+}
+
+func TestWithKubeletConfigRequiresFeatureGate(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate, false)()
+
+	err := withKubeletConfig(KubeletConfig{Enabled: true, PollInterval: time.Second})(&kubernetesprocessor{})
+	require.EqualError(t, err, "kubelet.enabled requires feature gate processor.k8sattributes.EnableKubeletPodSource")
 }
 
 func TestEnabledAttributes(t *testing.T) {

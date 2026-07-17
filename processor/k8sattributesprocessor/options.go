@@ -4,6 +4,7 @@
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
+	"errors"
 	"os"
 	"regexp"
 	"time"
@@ -445,6 +446,9 @@ func withPodDeleteGracePeriod(duration time.Duration) option {
 
 func withKubeletConfig(cfg KubeletConfig) option {
 	return func(p *kubernetesprocessor) error {
+		if cfg.Enabled && !metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate.IsEnabled() {
+			return errors.New("kubelet.enabled requires feature gate processor.k8sattributes.EnableKubeletPodSource")
+		}
 		p.kubelet = kube.KubeletConfig{
 			Enabled:            cfg.Enabled,
 			PollInterval:       cfg.PollInterval,
