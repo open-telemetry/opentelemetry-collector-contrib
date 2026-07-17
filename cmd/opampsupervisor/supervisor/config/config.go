@@ -231,23 +231,26 @@ func (o OpAMPServer) Validate() error {
 }
 
 type Agent struct {
-	Executable              string            `mapstructure:"executable"`
-	InstanceID              string            `mapstructure:"instance_id"`
-	OrphanDetectionInterval time.Duration     `mapstructure:"orphan_detection_interval"`
-	Description             AgentDescription  `mapstructure:"description"`
-	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`
-	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
-	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
-	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
-	AutomaticConfigRollback bool              `mapstructure:"automatic_config_rollback"`
-	UseHUPConfigReload      bool              `mapstructure:"use_hup_config_reload"`
-	ValidateConfig          bool              `mapstructure:"validate_config"`
-	ConfigFiles             []string          `mapstructure:"config_files"`
-	Arguments               []string          `mapstructure:"args"`
-	Env                     map[string]string `mapstructure:"env"`
+	Executable                  string            `mapstructure:"executable"`
+	InstanceID                  string            `mapstructure:"instance_id"`
+	OrphanDetectionInterval     time.Duration     `mapstructure:"orphan_detection_interval"`
+	Description                 AgentDescription  `mapstructure:"description"`
+	ConfigApplyTimeout          time.Duration     `mapstructure:"config_apply_timeout"`
+	BootstrapTimeout            time.Duration     `mapstructure:"bootstrap_timeout"`
+	OpAMPServerPort             int               `mapstructure:"opamp_server_port"`
+	PassthroughLogs             bool              `mapstructure:"passthrough_logs"`
+	CollectorCrashLogSnippetKiB int               `mapstructure:"collector_crash_log_snippet_kib"`
+	AutomaticConfigRollback     bool              `mapstructure:"automatic_config_rollback"`
+	UseHUPConfigReload          bool              `mapstructure:"use_hup_config_reload"`
+	ValidateConfig              bool              `mapstructure:"validate_config"`
+	ConfigFiles                 []string          `mapstructure:"config_files"`
+	Arguments                   []string          `mapstructure:"args"`
+	Env                         map[string]string `mapstructure:"env"`
 	// StartupFallbackConfigs is an ordered list of fallback configuration files to use
 	// when the OpAMP server is unreachable. Configs are merged in order.
 	StartupFallbackConfigs []string `mapstructure:"startup_fallback_configs"`
+	// Package configures how collector executable updates are formatted and verified.
+	Package AgentPackage `mapstructure:"package"`
 }
 
 func (a Agent) Validate() error {
@@ -261,6 +264,14 @@ func (a Agent) Validate() error {
 
 	if a.OpAMPServerPort < 0 || a.OpAMPServerPort > 65535 {
 		return errors.New("agent::opamp_server_port must be a valid port number")
+	}
+
+	if a.CollectorCrashLogSnippetKiB < 0 {
+		return errors.New("agent::collector_crash_log_snippet_kib must be non-negative")
+	}
+
+	if a.CollectorCrashLogSnippetKiB > 1024 {
+		return errors.New("agent::collector_crash_log_snippet_kib must be less than or equal to 1024")
 	}
 
 	if a.InstanceID != "" {
@@ -329,6 +340,8 @@ func (a Agent) validateFallbackConfigsWithColBin() error {
 	for _, cfgPath := range a.StartupFallbackConfigs {
 		cfgValidateCommand = append(cfgValidateCommand, "--config", cfgPath)
 	}
+	cfgValidateCommand = append(cfgValidateCommand, a.Arguments...)
+
 	cmd := exec.Command(cfgValidateCommand[0], cfgValidateCommand[1:]...) // #nosec G204
 
 	cmd.Stdout = os.Stdout
@@ -468,11 +481,15 @@ func DefaultSupervisor() Supervisor {
 			Directory: defaultStorageDir,
 		},
 		Agent: Agent{
-			OrphanDetectionInterval: 5 * time.Second,
-			ConfigApplyTimeout:      5 * time.Second,
-			BootstrapTimeout:        3 * time.Second,
-			PassthroughLogs:         false,
-			ValidateConfig:          false,
+			OrphanDetectionInterval:     5 * time.Second,
+			ConfigApplyTimeout:          5 * time.Second,
+			BootstrapTimeout:            3 * time.Second,
+			PassthroughLogs:             false,
+			CollectorCrashLogSnippetKiB: 0,
+			ValidateConfig:              false,
+			Package: AgentPackage{
+				Verifier: Verifier{Type: VerifierTypeNone},
+			},
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{

@@ -203,6 +203,10 @@ func jSpanToInternal(span *model.Span, dest ptrace.Span) {
 	dest.SetStartTimestamp(pcommon.NewTimestampFromTime(span.StartTime))
 	dest.SetEndTimestamp(pcommon.NewTimestampFromTime(span.StartTime.Add(span.Duration)))
 
+	if span.Flags.IsSampled() {
+		dest.SetFlags(dest.Flags() | spanFlagsSampled)
+	}
+
 	parentSpanID := span.ParentSpanID()
 	if parentSpanID != model.SpanID(0) {
 		dest.SetParentSpanID(idutils.UInt64ToSpanID(uint64(parentSpanID)))

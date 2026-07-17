@@ -594,6 +594,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 
 					logFields := []zap.Field{
 						zap.Any("metrics", metricsByGrain.metrics[start:end]),
+						zap.String("metric_namespace", compositeKey.namespace),
 						zap.String("dimensions", compositeKey.dimensions),
 						zap.String("aggregations", compositeKey.aggregations),
 						zap.String("timegrain", compositeKey.timeGrain),
