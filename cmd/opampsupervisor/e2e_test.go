@@ -1,8 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build e2e
-
 package main
 
 import (
@@ -84,16 +82,44 @@ func getTestModes() []struct {
 
 var _ clientTypes.Logger = testLogger{}
 
+// testLogger is a simple logger implementation that writes logs to the given [testing.T] instance.
+// It ensures that logs are not written after the test has completed by using a mutex and a closed flag.
+// This also protects against races of the test runner trying to close to test while lingering Go routines
+// could still be trying to log.
+// The code that makes this necessary is https://github.com/open-telemetry/opamp-go/blob/e10249844dcd7a56f3ff4a536a73cffca9c90af5/server/serverimpl.go#L185-L186.
+// When the opamp-go starts closing existing connections when stopping the server, we shouldn't need the
+// mutex and closed flag anymore.
 type testLogger struct {
-	t *testing.T
+	t      *testing.T
+	mu     *sync.Mutex
+	closed *bool
+}
+
+func newTestLogger(t *testing.T) testLogger {
+	tl := testLogger{t: t, mu: &sync.Mutex{}, closed: new(bool)}
+	t.Cleanup(func() {
+		tl.mu.Lock()
+		defer tl.mu.Unlock()
+		*tl.closed = true
+	})
+	return tl
+}
+
+func (tl testLogger) logf(format string, args ...any) {
+	tl.mu.Lock()
+	defer tl.mu.Unlock()
+	if *tl.closed {
+		return
+	}
+	tl.t.Logf(format, args...)
 }
 
 func (tl testLogger) Debugf(_ context.Context, format string, args ...any) {
-	tl.t.Logf(format, args...)
+	tl.logf(format, args...)
 }
 
 func (tl testLogger) Errorf(_ context.Context, format string, args ...any) {
-	tl.t.Logf(format, args...)
+	tl.logf(format, args...)
 }
 
 func defaultConnectingHandler(connectionCallbacks types.ConnectionCallbacks) func(request *http.Request) types.ConnectionResponse {
@@ -138,7 +164,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 	var isAgentConnected atomic.Bool
 	var didShutdown atomic.Bool
 	connectedChan := make(chan bool)
-	s := server.New(testLogger{t: t})
+	s := server.New(newTestLogger(t))
 	onConnectedFunc := callbacks.OnConnected
 	callbacks.OnConnected = func(ctx context.Context, conn types.Connection) {
 		if didShutdown.Load() {
