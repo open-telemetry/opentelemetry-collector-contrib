@@ -45,11 +45,21 @@ var (
 		0.002, 0.004, 0.006, 0.008, 0.01, 0.05, 0.1, 0.2, 0.4, 0.8, 1, 1.4, 2, 5, 10, 15,
 	}
 
+	// defaultPeerAttributes lists the span attributes used to identify a peer,
+	// in priority order (higher = higher priority). It supports both the current
+	// semantic conventions and their legacy predecessors so spans emitted with
+	// either convention are matched:
+	//   - "peer.service": legacy key (PeerServiceKey), removed from semconv with
+	//     no direct replacement, kept as a string literal.
+	//   - "db.name" (legacy) / db.namespace (DBNamespaceKey, current).
+	//   - "db.system" (legacy) / db.system.name (DBSystemNameKey, current).
 	defaultPeerAttributes = []string{
-		string(conventions.PeerServiceKey), "db.name", "db.system",
+		"peer.service",
+		"db.name", string(conventions.DBNamespaceKey),
+		"db.system", string(conventions.DBSystemNameKey),
 	}
 
-	defaultDatabaseNameAttributes = []string{"db.name"}
+	defaultDatabaseNameAttributes = []string{"db.name", string(conventions.DBNamespaceKey)}
 
 	defaultMetricsFlushInterval = 60 * time.Second // 1 DPM
 )
