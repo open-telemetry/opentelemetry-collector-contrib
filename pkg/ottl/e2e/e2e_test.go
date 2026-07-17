@@ -1062,6 +1062,30 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ToJSON(attributes["foo"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", `{"bar":"pass","flags":"pass","nested":{"test":"pass"},"slice":["val"]}`)
+			},
+		},
+		{
+			statement: `set(attributes["test"], ToJSON(attributes["slices"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", `["slice1","slice2",{"name":"foo"}]`)
+			},
+		},
+		{
+			statement: `set(attributes["test"], ToJSON("hello world"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", `"hello world"`)
+			},
+		},
+		{
+			statement: `set(attributes["test"], ToJSON([attributes["foo"], "x"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", `[{"bar":"pass","flags":"pass","nested":{"test":"pass"},"slice":["val"]},"x"]`)
+			},
+		},
+		{
 			statement: `set(attributes["test"], ParseKeyValue("k1=v1 k2=v2"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
