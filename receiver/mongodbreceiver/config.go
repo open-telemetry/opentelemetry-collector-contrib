@@ -93,7 +93,7 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 
-	if c.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
+	if c.Events.DbServerTopQuery.Enabled {
 		if c.TopQueryCollection.TopQueryCount <= 0 {
 			err = multierr.Append(err, errors.New("top_query_collection.top_query_count must be greater than 0"))
 		}
