@@ -172,6 +172,7 @@ func TestValidate(t *testing.T) {
 func TestDefaultConfigIsInvalid(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.Empty(t, cfg.Sources)
+	assert.False(t, cfg.OverwriteSchemaURL)
 	require.ErrorContains(t, cfg.Validate(), "at least one source must be specified")
 }
 
@@ -187,6 +188,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
+				OverwriteSchemaURL: true,
 				Sources: []Source{
 					{
 						Name:            SourceOpenInference,

@@ -108,7 +108,7 @@ type metricNtpFrequencyOffset struct {
 func (m *metricNtpFrequencyOffset) init() {
 	m.data.SetName("ntp.frequency.offset")
 	m.data.SetDescription("The frequency is the rate by which the system s clock would be wrong if chronyd was not correcting it.")
-	m.data.SetUnit("ppm")
+	m.data.SetUnit("[ppm]")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -196,7 +196,7 @@ type metricNtpSkew struct {
 func (m *metricNtpSkew) init() {
 	m.data.SetName("ntp.skew")
 	m.data.SetDescription("This is the estimated error bound on the frequency.")
-	m.data.SetUnit("ppm")
+	m.data.SetUnit("[ppm]")
 	m.data.SetEmptyGauge()
 }
 
@@ -297,7 +297,7 @@ type metricNtpTimeCorrection struct {
 func (m *metricNtpTimeCorrection) init() {
 	m.data.SetName("ntp.time.correction")
 	m.data.SetDescription("The number of seconds difference between the system's clock and the reference clock")
-	m.data.SetUnit("seconds")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -386,7 +386,7 @@ type metricNtpTimeLastOffset struct {
 func (m *metricNtpTimeLastOffset) init() {
 	m.data.SetName("ntp.time.last_offset")
 	m.data.SetDescription("The estimated local offset on the last clock update")
-	m.data.SetUnit("seconds")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -475,7 +475,7 @@ type metricNtpTimeRmsOffset struct {
 func (m *metricNtpTimeRmsOffset) init() {
 	m.data.SetName("ntp.time.rms_offset")
 	m.data.SetDescription("the long term average of the offset value")
-	m.data.SetUnit("seconds")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -564,7 +564,7 @@ type metricNtpTimeRootDelay struct {
 func (m *metricNtpTimeRootDelay) init() {
 	m.data.SetName("ntp.time.root_delay")
 	m.data.SetDescription("This is the total of the network path delays to the stratum-1 system from which the system is ultimately synchronised.")
-	m.data.SetUnit("seconds")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]

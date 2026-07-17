@@ -10,7 +10,7 @@ This receiver queries the PostgreSQL [statistics collector](https://www.postgres
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fpostgresql%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fpostgresql) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fpostgresql%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fpostgresql) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_postgresql)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_postgresql&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17), [@Caleb-Hurshman](https://www.github.com/Caleb-Hurshman), [@ebrdarSplunk](https://www.github.com/ebrdarSplunk) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17), [@Caleb-Hurshman](https://www.github.com/Caleb-Hurshman), [@ebrdarSplunk](https://www.github.com/ebrdarSplunk), [@XSAM](https://www.github.com/XSAM), [@akshays-19](https://www.github.com/akshays-19), [@sv-splunk](https://www.github.com/sv-splunk), [@splunk-shanu](https://www.github.com/splunk-shanu) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -47,6 +47,9 @@ The monitoring user must be granted `SELECT` on `pg_stat_database`.
 > ```bash
 > otelcol-contrib --feature-gates=receiver.postgresql.separateSchemaAttr
 > ```
+>
+> **Note:** This gate is mutually exclusive with `receiver.postgresql.useOTelSemconv`. Both cannot be
+> enabled at the same time.
 >
 > See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559 for more details.
 
@@ -190,6 +193,15 @@ receivers:
       max_idle: 2
       max_open: 5
 ```
+
+## OpenTelemetry semantic conventions feature gate
+
+The feature gate `receiver.postgresql.useOTelSemconv` (alpha, disabled by default) controls the resource model used by this receiver:
+
+- **Gate disabled (default):** Legacy per-entity resource model. Each database, table, and index emits metrics under a separate resource with `postgresql.database.name`, `postgresql.table.name`, `postgresql.index.name`, and `postgresql.schema.name` as resource attributes. `service.instance.id` is in `host:port` format.
+- **Gate enabled:** Single resource per server. All metrics are emitted under one resource with `server.address`, `server.port`, and `service.instance.id` (UUID v5) as resource attributes, aligning with OpenTelemetry semantic conventions. Metric-level attributes `db.namespace`, `db.collection.name`, and `postgresql.index.name` are present on applicable metrics.
+
+This gate is mutually exclusive with `receiver.postgresql.separateSchemaAttr` — both cannot be enabled simultaneously.
 
 ## Metrics
 
