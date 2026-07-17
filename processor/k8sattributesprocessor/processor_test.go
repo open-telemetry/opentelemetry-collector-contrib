@@ -1191,6 +1191,54 @@ func TestClusterUIDNotAddedToExternalTelemetry(t *testing.T) {
 	})
 }
 
+// TestClusterUIDNotOverwritten verifies that a k8s.cluster.uid already present on incoming telemetry is preserved and not
+// replaced with this collector's cluster UID. This matters for gateway/central-collector setups where telemetry forwarded
+// from another cluster may already carry its own (correct) cluster UID, which must win over the local kube-system UID.
+// Note that this setup is not recommended anyway, the multi-cluster gateway should not extract k8s.cluster.uid.
+func TestClusterUIDNotOverwritten(t *testing.T) {
+	localClusterUID := "cluster-uid-1234"
+	existingClusterUID := "preexisting-cluster-uid"
+	m := newMultiTest(
+		t,
+		func() component.Config {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Extract.Metadata = []string{"k8s.cluster.uid"}
+			cfg.Extract.Labels = []FieldExtractConfig{}
+			return cfg
+		}(),
+		nil,
+	)
+
+	// The kube-system namespace is known to the client so a local cluster UID could be resolved, but the incoming
+	// telemetry already carries its own k8s.cluster.uid which must not be overwritten.
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.kc.(*fakeClient).Namespaces = map[string]*kube.Namespace{
+			"kube-system": {Name: "kube-system", NamespaceUID: localClusterUID},
+		}
+	})
+
+	withExistingClusterUID := func(uid string) generateResourceFunc {
+		return func(res pcommon.Resource) {
+			res.Attributes().PutStr("k8s.cluster.uid", uid)
+		}
+	}
+
+	m.testConsume(
+		t.Context(),
+		generateTraces(withExistingClusterUID(existingClusterUID)),
+		generateMetrics(withExistingClusterUID(existingClusterUID)),
+		generateLogs(withExistingClusterUID(existingClusterUID)),
+		generateProfiles(withExistingClusterUID(existingClusterUID)),
+		func(err error) {
+			assert.NoError(t, err)
+		})
+
+	m.assertBatchesLen(1)
+	m.assertResource(0, func(res pcommon.Resource) {
+		assertResourceHasStringAttribute(t, res, "k8s.cluster.uid", existingClusterUID)
+	})
+}
+
 func TestProcessorAddContainerAttributes(t *testing.T) {
 	tests := []struct {
 		name         string
