@@ -11,11 +11,22 @@ all_set:
       enabled: true
     sqlserver.batch.sql_recompilation.rate:
       enabled: true
+    sqlserver.clr.execution.time:
+      enabled: true
     sqlserver.computer.uptime:
       enabled: true
     sqlserver.connection.reset.rate:
       enabled: true
     sqlserver.cpu.count:
+      enabled: true
+    sqlserver.cursor.count:
+      enabled: true
+      attributes: ["cursor.state"]
+    sqlserver.cursor.memory.usage:
+      enabled: true
+    sqlserver.cursor.plan.count:
+      enabled: true
+    sqlserver.cursor.request.rate:
       enabled: true
     sqlserver.database.backup_or_restore.rate:
       enabled: true
@@ -160,9 +171,17 @@ all_set:
       enabled: true
     sqlserver.scan_point.revalidation.rate:
       enabled: true
+    sqlserver.stored_procedure.invocation.rate:
+      enabled: true
     sqlserver.table.count:
       enabled: true
       attributes: ["table.state","table.status"]
+    sqlserver.task.count:
+      enabled: true
+      attributes: ["task.state"]
+    sqlserver.task.rate:
+      enabled: true
+      attributes: ["task.result"]
     sqlserver.transaction.delay:
       enabled: true
     sqlserver.transaction.mirror_write.rate:
@@ -185,6 +204,12 @@ all_set:
       enabled: true
     sqlserver.user.connection.count:
       enabled: true
+    sqlserver.worker.request.count:
+      enabled: true
+      attributes: ["request.state"]
+    sqlserver.worker.thread.count:
+      enabled: true
+      attributes: ["worker.state"]
     sqlserver.worktable.cache.hit_ratio:
       enabled: true
   events:
@@ -223,11 +248,22 @@ reaggregate_set:
       enabled: true
     sqlserver.batch.sql_recompilation.rate:
       enabled: true
+    sqlserver.clr.execution.time:
+      enabled: true
     sqlserver.computer.uptime:
       enabled: true
     sqlserver.connection.reset.rate:
       enabled: true
     sqlserver.cpu.count:
+      enabled: true
+    sqlserver.cursor.count:
+      enabled: true
+      attributes: []
+    sqlserver.cursor.memory.usage:
+      enabled: true
+    sqlserver.cursor.plan.count:
+      enabled: true
+    sqlserver.cursor.request.rate:
       enabled: true
     sqlserver.database.backup_or_restore.rate:
       enabled: true
@@ -372,7 +408,15 @@ reaggregate_set:
       enabled: true
     sqlserver.scan_point.revalidation.rate:
       enabled: true
+    sqlserver.stored_procedure.invocation.rate:
+      enabled: true
     sqlserver.table.count:
+      enabled: true
+      attributes: []
+    sqlserver.task.count:
+      enabled: true
+      attributes: []
+    sqlserver.task.rate:
       enabled: true
       attributes: []
     sqlserver.transaction.delay:
@@ -397,6 +441,12 @@ reaggregate_set:
       enabled: true
     sqlserver.user.connection.count:
       enabled: true
+    sqlserver.worker.request.count:
+      enabled: true
+      attributes: []
+    sqlserver.worker.thread.count:
+      enabled: true
+      attributes: []
     sqlserver.worktable.cache.hit_ratio:
       enabled: true
   events:
@@ -435,11 +485,22 @@ none_set:
       enabled: false
     sqlserver.batch.sql_recompilation.rate:
       enabled: false
+    sqlserver.clr.execution.time:
+      enabled: false
     sqlserver.computer.uptime:
       enabled: false
     sqlserver.connection.reset.rate:
       enabled: false
     sqlserver.cpu.count:
+      enabled: false
+    sqlserver.cursor.count:
+      enabled: false
+      attributes: ["cursor.state"]
+    sqlserver.cursor.memory.usage:
+      enabled: false
+    sqlserver.cursor.plan.count:
+      enabled: false
+    sqlserver.cursor.request.rate:
       enabled: false
     sqlserver.database.backup_or_restore.rate:
       enabled: false
@@ -584,9 +645,17 @@ none_set:
       enabled: false
     sqlserver.scan_point.revalidation.rate:
       enabled: false
+    sqlserver.stored_procedure.invocation.rate:
+      enabled: false
     sqlserver.table.count:
       enabled: false
       attributes: ["table.state","table.status"]
+    sqlserver.task.count:
+      enabled: false
+      attributes: ["task.state"]
+    sqlserver.task.rate:
+      enabled: false
+      attributes: ["task.result"]
     sqlserver.transaction.delay:
       enabled: false
     sqlserver.transaction.mirror_write.rate:
@@ -609,6 +678,12 @@ none_set:
       enabled: false
     sqlserver.user.connection.count:
       enabled: false
+    sqlserver.worker.request.count:
+      enabled: false
+      attributes: ["request.state"]
+    sqlserver.worker.thread.count:
+      enabled: false
+      attributes: ["worker.state"]
     sqlserver.worktable.cache.hit_ratio:
       enabled: false
   events:
