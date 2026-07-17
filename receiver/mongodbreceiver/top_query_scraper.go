@@ -95,7 +95,7 @@ func buildPlanCache(config *Config, logger *zap.Logger) *lru.LRU[string, string]
 	return lru.NewLRU[string, string](size, nil, ttl)
 }
 
-func (s *mongodbScraper) doScrapeTopQueryLogs(ctx context.Context) (plog.Logs, error) {
+func (s *mongodbScraper) scrapeTopQueryLogs(ctx context.Context) (plog.Logs, error) {
 	if interval := s.config.TopQueryCollection.CollectionInterval; interval > 0 {
 		if !s.lastTopQueryExecution.IsZero() && time.Since(s.lastTopQueryExecution) < interval {
 			s.logger.Debug("Skipping top_query collection, interval has not elapsed")

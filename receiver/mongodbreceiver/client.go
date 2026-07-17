@@ -26,7 +26,7 @@ type client interface {
 	DBStats(ctx context.Context, DBName string) (bson.M, error)
 	TopStats(ctx context.Context) (bson.M, error)
 	IndexStats(ctx context.Context, DBName, collectionName string) ([]bson.M, error)
-	// RunCommand accepts any BSON-serialisable command (bson.M or bson.D).
+	// RunCommand accepts any BSON-serializable command (bson.M or bson.D).
 	RunCommand(ctx context.Context, db string, command any) (bson.M, error)
 	CurrentOp(ctx context.Context) ([]bson.M, error)
 	FindProfileDocs(ctx context.Context, dbName string, sinceTime, upperBound time.Time, maxRows int64) ([]slowQueryEntry, error)

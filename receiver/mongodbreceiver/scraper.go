@@ -199,10 +199,6 @@ func (s *mongodbScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	return s.lb.Emit(), nil
 }
 
-func (s *mongodbScraper) scrapeTopQueryLogs(ctx context.Context) (plog.Logs, error) {
-	return s.doScrapeTopQueryLogs(ctx)
-}
-
 func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now pcommon.Timestamp) {
 	serverStatus, err := c.ServerStatus(ctx, "admin")
 	if err != nil {

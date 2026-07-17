@@ -414,10 +414,13 @@ func defaultTopQueryCollection() TopQueryCollection {
 
 func TestValidateTopQueryCollection(t *testing.T) {
 	baseCfg := func() *Config {
+		lbc := metadata.DefaultLogsBuilderConfig()
+		lbc.Events.DbServerTopQuery.Enabled = true
 		return &Config{
 			Hosts:                 []confignet.TCPAddrConfig{{Endpoint: "localhost:27017"}},
 			ControllerConfig:      scraperhelper.NewDefaultControllerConfig(),
 			MetricsBuilderConfig:  metadata.NewDefaultMetricsBuilderConfig(),
+			LogsBuilderConfig:     lbc,
 			QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: defaultMaxRowsPerQuery},
 			TopQueryCollection:    defaultTopQueryCollection(),
 		}

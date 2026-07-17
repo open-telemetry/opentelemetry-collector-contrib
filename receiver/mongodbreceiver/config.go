@@ -93,23 +93,25 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 
-	if c.TopQueryCollection.TopQueryCount <= 0 {
-		err = multierr.Append(err, errors.New("top_query_collection.top_query_count must be greater than 0"))
-	}
-	if c.TopQueryCollection.MaxQuerySampleCount <= 0 {
-		err = multierr.Append(err, errors.New("top_query_collection.max_query_sample_count must be greater than 0"))
-	}
-	if c.TopQueryCollection.MaxExplainEachInterval <= 0 {
-		err = multierr.Append(err, errors.New("top_query_collection.max_explain_each_interval must be greater than 0"))
-	}
-	if c.TopQueryCollection.QueryPlanCacheSize < 0 {
-		err = multierr.Append(err, errors.New("top_query_collection.query_plan_cache_size must not be negative"))
-	}
-	if c.TopQueryCollection.CollectionInterval <= 0 {
-		err = multierr.Append(err, errors.New("top_query_collection.collection_interval must be greater than 0"))
-	}
-	if c.TopQueryCollection.QueryPlanCacheTTL <= 0 {
-		err = multierr.Append(err, errors.New("top_query_collection.query_plan_cache_ttl must be greater than 0"))
+	if c.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
+		if c.TopQueryCollection.TopQueryCount <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.top_query_count must be greater than 0"))
+		}
+		if c.TopQueryCollection.MaxQuerySampleCount <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.max_query_sample_count must be greater than 0"))
+		}
+		if c.TopQueryCollection.MaxExplainEachInterval <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.max_explain_each_interval must be greater than 0"))
+		}
+		if c.TopQueryCollection.QueryPlanCacheSize < 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.query_plan_cache_size must not be negative"))
+		}
+		if c.TopQueryCollection.CollectionInterval <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.collection_interval must be greater than 0"))
+		}
+		if c.TopQueryCollection.QueryPlanCacheTTL <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.query_plan_cache_ttl must be greater than 0"))
+		}
 	}
 
 	return err
