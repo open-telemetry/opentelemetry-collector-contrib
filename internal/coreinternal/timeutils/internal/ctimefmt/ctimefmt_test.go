@@ -81,6 +81,19 @@ func TestFlexibleParse(t *testing.T) {
 	}
 }
 
+func TestFailedParse(t *testing.T) {
+	for _, tc := range []struct {
+		name, format, input, wantErr string
+	}{
+		{"extra text", "%Y-%m-%dT%H:%M:%S.%L", "2022-12-31T23:59:59.000000000-0800", "extra text"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, err := Parse(tc.format, func(native string) (time.Time, error) { return time.Parse(native, tc.input) })
+			require.ErrorContains(t, err, tc.wantErr)
+		})
+	}
+}
+
 func TestZulu(t *testing.T) {
 	format := "%Y-%m-%dT%H:%M:%S.%L%z"
 	// These time should all parse as UTC.
