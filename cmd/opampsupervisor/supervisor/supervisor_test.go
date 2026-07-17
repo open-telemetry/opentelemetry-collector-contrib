@@ -24,9 +24,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/rawbytes"
-	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -36,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	collectorconfmap "go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"go.opentelemetry.io/otel/sdk/metric"
@@ -135,7 +132,7 @@ func setupSupervisorConfig(t *testing.T, configuration string) config.Supervisor
 	cfg, err := config.Load(cfgPath)
 	require.NoError(t, err)
 
-	err = collectorconfmap.Validate(cfg)
+	err = confmap.Validate(cfg)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -616,15 +613,12 @@ service:
 		got, err := s.composeAgentConfigFiles(nil, s.config.Agent.ConfigFiles)
 		require.NoError(t, err)
 
-		k := koanf.New("::")
-		require.NoError(t, k.Load(rawbytes.Provider(got), yaml.Parser()))
+		conf, err := config.NewConfFromYAML(got)
+		require.NoError(t, err)
+		assert.False(t, conf.IsSet("service::telemetry::resource::service.instance.id"))
+		assert.False(t, conf.IsSet("service::telemetry::resource::service.version"))
 
-		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
-		require.True(t, ok)
-		assert.NotContains(t, resource, "service.instance.id")
-		assert.NotContains(t, resource, "service.version")
-
-		attrs, ok := resource["attributes"].([]any)
+		attrs, ok := conf.Get("service::telemetry::resource::attributes").([]any)
 		require.True(t, ok)
 		assert.Contains(t, attrs, map[string]any{"name": "service.name", "value": "svc"})
 		assert.Contains(t, attrs, map[string]any{"name": "service.instance.id", "value": "018fee23-4a51-7303-a441-73faed7d9deb"})
@@ -673,17 +667,17 @@ service:
 		got, err := s.composeAgentConfigFiles(nil, s.config.Agent.ConfigFiles)
 		require.NoError(t, err)
 
-		k := koanf.New("::")
-		require.NoError(t, k.Load(rawbytes.Provider(got), yaml.Parser()))
+		conf, err := config.NewConfFromYAML(got)
+		require.NoError(t, err)
 
-		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
+		resource, ok := conf.Get("service::telemetry::resource").(map[string]any)
 		require.True(t, ok)
-		assert.NotContains(t, resource, "deployment.environment")
-		assert.NotContains(t, resource, "service.instance.id")
-		assert.NotContains(t, resource, "service.version")
+		assert.False(t, conf.IsSet("service::telemetry::resource::deployment.environment"))
+		assert.False(t, conf.IsSet("service::telemetry::resource::service.instance.id"))
+		assert.False(t, conf.IsSet("service::telemetry::resource::service.version"))
 
 		var resourceCfg otelconftelemetry.ResourceConfig
-		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
+		require.NoError(t, confmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
 		attrValues := make(map[string]any, len(resourceCfg.Attributes))
@@ -750,14 +744,14 @@ service:
 		}, s.config.Agent.ConfigFiles)
 		require.NoError(t, err)
 
-		k := koanf.New("::")
-		require.NoError(t, k.Load(rawbytes.Provider(got), yaml.Parser()))
+		conf, err := config.NewConfFromYAML(got)
+		require.NoError(t, err)
 
-		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
+		resource, ok := conf.Get("service::telemetry::resource").(map[string]any)
 		require.True(t, ok)
 
 		var resourceCfg otelconftelemetry.ResourceConfig
-		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
+		require.NoError(t, confmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
 		attrValues := make(map[string]any, len(resourceCfg.Attributes))
@@ -815,14 +809,14 @@ service:
 		}, s.config.Agent.ConfigFiles)
 		require.NoError(t, err)
 
-		k := koanf.New("::")
-		require.NoError(t, k.Load(rawbytes.Provider(got), yaml.Parser()))
+		conf, err := config.NewConfFromYAML(got)
+		require.NoError(t, err)
 
-		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
+		resource, ok := conf.Get("service::telemetry::resource").(map[string]any)
 		require.True(t, ok)
 
 		var resourceCfg otelconftelemetry.ResourceConfig
-		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
+		require.NoError(t, confmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
 		attrValues := make(map[string]any, len(resourceCfg.Attributes))
@@ -897,14 +891,14 @@ service:
 		}, s.config.Agent.ConfigFiles)
 		require.NoError(t, err)
 
-		k := koanf.New("::")
-		require.NoError(t, k.Load(rawbytes.Provider(got), yaml.Parser()))
+		conf, err := config.NewConfFromYAML(got)
+		require.NoError(t, err)
 
-		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
+		resource, ok := conf.Get("service::telemetry::resource").(map[string]any)
 		require.True(t, ok)
 
 		var resourceCfg otelconftelemetry.ResourceConfig
-		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
+		require.NoError(t, confmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
 		attrValues := make(map[string]any, len(resourceCfg.Attributes))
@@ -975,14 +969,14 @@ service:
 		}, s.config.Agent.ConfigFiles)
 		require.NoError(t, err)
 
-		k := koanf.New("::")
-		require.NoError(t, k.Load(rawbytes.Provider(got), yaml.Parser()))
+		conf, err := config.NewConfFromYAML(got)
+		require.NoError(t, err)
 
-		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
+		resource, ok := conf.Get("service::telemetry::resource").(map[string]any)
 		require.True(t, ok)
 
 		var resourceCfg otelconftelemetry.ResourceConfig
-		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
+		require.NoError(t, confmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
 		attrValues := make(map[string]any, len(resourceCfg.Attributes))
@@ -1024,15 +1018,13 @@ func TestComposeExtraTelemetryConfigUsesDeclarativeResourceAttributes(t *testing
 	}
 	require.NoError(t, s.createTemplates())
 
-	k := koanf.New("::")
-	require.NoError(t, k.Load(rawbytes.Provider(s.composeExtraTelemetryConfig()), yaml.Parser()))
+	conf, err := config.NewConfFromYAML(s.composeExtraTelemetryConfig())
+	require.NoError(t, err)
 
-	resource, ok := k.Get("service::telemetry::resource").(map[string]any)
-	require.True(t, ok)
-	assert.NotContains(t, resource, "service.name")
-	assert.NotContains(t, resource, "service.version")
+	assert.False(t, conf.IsSet("service::telemetry::resource::service.name"))
+	assert.False(t, conf.IsSet("service::telemetry::resource::service.version"))
 
-	attrs, ok := resource["attributes"].([]any)
+	attrs, ok := conf.Get("service::telemetry::resource::attributes").([]any)
 	require.True(t, ok)
 	require.Len(t, attrs, 2)
 	assert.Equal(t, []any{
@@ -1059,7 +1051,7 @@ func TestComposeExtraTelemetryConfigTemplateError(t *testing.T) {
 }
 
 func TestMergeConfMergesResourceAttributes(t *testing.T) {
-	incoming := collectorconfmap.NewFromStringMap(map[string]any{
+	incoming := confmap.NewFromStringMap(map[string]any{
 		"service": map[string]any{
 			"telemetry": map[string]any{
 				"resource": map[string]any{
@@ -1071,7 +1063,7 @@ func TestMergeConfMergesResourceAttributes(t *testing.T) {
 			},
 		},
 	})
-	base := collectorconfmap.NewFromStringMap(map[string]any{
+	base := confmap.NewFromStringMap(map[string]any{
 		"service": map[string]any{
 			"telemetry": map[string]any{
 				"resource": map[string]any{
