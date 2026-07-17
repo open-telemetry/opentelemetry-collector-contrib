@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: receiver/oracledb
+note: "Fix database connection and cursor leak by properly closing `sql.Rows` in `metricRows`."
+issues: [49705]
+change_logs: [user]
