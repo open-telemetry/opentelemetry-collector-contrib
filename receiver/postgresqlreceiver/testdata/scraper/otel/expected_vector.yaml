@@ -219,6 +219,10 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asDouble: 2.5
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -229,6 +233,10 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "70"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -240,6 +248,9 @@ resourceMetrics:
               dataPoints:
                 - asInt: "60"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
                     - key: postgresql.distance.function.name
                       value:
                         stringValue: cosine
@@ -247,6 +258,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "61"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
                     - key: postgresql.distance.function.name
                       value:
                         stringValue: l2
@@ -261,6 +275,9 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 0.5
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
                     - key: postgresql.distance.function.name
                       value:
                         stringValue: cosine
@@ -268,6 +285,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 1.5
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
                     - key: postgresql.distance.function.name
                       value:
                         stringValue: l2
@@ -282,6 +302,9 @@ resourceMetrics:
               dataPoints:
                 - asInt: "600"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
                     - key: postgresql.distance.function.name
                       value:
                         stringValue: cosine
@@ -289,6 +312,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "610"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
                     - key: postgresql.distance.function.name
                       value:
                         stringValue: l2

@@ -1099,3 +1099,126 @@ func getSQLServerWaitStatsQuery(instanceName string) string {
 	r := strings.NewReplacer("{filter_instance_name}", "")
 	return r.Replace(sqlServerWaitStatsQuery)
 }
+
+// sqlServerIndexPhysicalStatsQuery collects per-index physical stats (fragmentation, page count,
+// page density, record count) across all user databases. On on-prem/MI a cursor iterates over
+// sys.databases so that sys.indexes and sys.objects can be joined within each database context,
+// enabling consistent filtering. On Azure SQL Database (EngineEdition=5) the connection is
+// already scoped to a single database so a direct join is used instead.
+const sqlServerIndexPhysicalStatsQuery = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+DECLARE @EngineEdition AS INT = CAST(SERVERPROPERTY('EngineEdition') AS INT);
+
+IF @EngineEdition = 5 -- Azure SQL Database (single-database connection)
+BEGIN
+	SELECT
+		DB_NAME()                              AS [database_name]
+		,s.[name]                              AS [schema_name]
+		,OBJECT_NAME(p.[object_id])            AS [object_name]
+		,p.[index_id]                          AS [index_id]
+		,AVG(p.[avg_fragmentation_in_percent]) AS [avg_fragmentation_in_percent]
+		,SUM(p.[page_count])                   AS [page_count]
+		,AVG(p.[avg_page_space_used_in_percent]) AS [avg_page_space_used_in_percent]
+		,SUM(p.[record_count])                 AS [record_count]
+	FROM sys.dm_db_index_physical_stats(DB_ID(), NULL, NULL, NULL, N'SAMPLED') p
+	INNER JOIN sys.indexes i WITH (NOLOCK)
+		ON p.[object_id] = i.[object_id] AND p.[index_id] = i.[index_id]
+	INNER JOIN sys.objects o WITH (NOLOCK)
+		ON i.[object_id] = o.[object_id]
+	INNER JOIN sys.schemas s WITH (NOLOCK)
+		ON o.[schema_id] = s.[schema_id]
+	WHERE p.[index_id] > 0
+		AND o.[type] IN ('U', 'V')
+		AND o.[is_ms_shipped] = 0
+	GROUP BY p.[object_id], s.[name], p.[index_id]
+END
+ELSE -- on-prem / Azure SQL MI: cursor over all user databases
+BEGIN
+	CREATE TABLE #IndexPhysStats (
+		 [database_name]                  NVARCHAR(128)
+		,[schema_name]                    NVARCHAR(128)
+		,[object_name]                    NVARCHAR(128)
+		,[index_id]                       INT
+		,[avg_fragmentation_in_percent]   FLOAT
+		,[page_count]                     BIGINT
+		,[avg_page_space_used_in_percent] FLOAT
+		,[record_count]                   BIGINT
+	);
+
+	DECLARE @dbname NVARCHAR(128);
+	DECLARE @sql    NVARCHAR(MAX);
+
+	BEGIN TRY
+		DECLARE db_cursor CURSOR LOCAL FAST_FORWARD FOR
+			SELECT [name] FROM sys.databases WITH (NOLOCK)
+			WHERE [state] = 0 AND [database_id] > 4; -- exclude system databases
+		OPEN db_cursor;
+		FETCH NEXT FROM db_cursor INTO @dbname;
+		WHILE @@FETCH_STATUS = 0
+		BEGIN
+			SET @sql = N'
+			INSERT INTO #IndexPhysStats
+			SELECT
+				DB_NAME(p.[database_id])
+				,s.[name]
+				,OBJECT_NAME(p.[object_id], p.[database_id])
+				,p.[index_id]
+				,AVG(p.[avg_fragmentation_in_percent])
+				,SUM(p.[page_count])
+				,AVG(p.[avg_page_space_used_in_percent])
+				,SUM(p.[record_count])
+			FROM sys.dm_db_index_physical_stats(DB_ID(N''' + @dbname + N'''), NULL, NULL, NULL, N''SAMPLED'') p
+			INNER JOIN [' + @dbname + N'].sys.indexes i WITH (NOLOCK)
+				ON p.[object_id] = i.[object_id] AND p.[index_id] = i.[index_id]
+			INNER JOIN [' + @dbname + N'].sys.objects o WITH (NOLOCK)
+				ON i.[object_id] = o.[object_id]
+			INNER JOIN [' + @dbname + N'].sys.schemas s WITH (NOLOCK)
+				ON o.[schema_id] = s.[schema_id]
+			WHERE p.[index_id] > 0
+				AND o.[type] IN (''U'', ''V'')
+				AND o.[is_ms_shipped] = 0
+			GROUP BY p.[database_id], p.[object_id], s.[name], p.[index_id]';
+			BEGIN TRY
+				EXEC sp_executesql @sql;
+			END TRY
+			BEGIN CATCH
+				-- skip databases the login cannot access and continue
+			END CATCH
+			FETCH NEXT FROM db_cursor INTO @dbname;
+		END
+		CLOSE db_cursor;
+		DEALLOCATE db_cursor;
+	END TRY
+	BEGIN CATCH
+		-- catch any error that aborts the cursor loop (e.g. permission errors
+		-- on sys.dm_db_index_physical_stats for inaccessible databases);
+		-- clean up the cursor and fall through to return partial results
+		IF CURSOR_STATUS('local', 'db_cursor') >= 0
+		BEGIN
+			CLOSE db_cursor;
+			DEALLOCATE db_cursor;
+		END
+	END CATCH
+
+	SELECT * FROM #IndexPhysStats
+	{filter_instance_name};
+	DROP TABLE #IndexPhysStats;
+END
+`
+
+func getSQLServerIndexPhysicalStatsQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("WHERE @@SERVERNAME = '%s'", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerIndexPhysicalStatsQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerIndexPhysicalStatsQuery)
+}

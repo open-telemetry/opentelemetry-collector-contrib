@@ -13,9 +13,32 @@ import (
 
 	"github.com/google/pprof/profile"
 	"github.com/zeebo/xxh3"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
+
+type valueKind int
+
+const (
+	unsupported valueKind = 0
+	strKind     valueKind = 1
+	numKind     valueKind = 2
+)
+
+type pprofLabelValue struct {
+	kind valueKind
+	str  string
+	num  int64
+	unit string
+}
+
+type pprofLabelMerger struct {
+	labels      map[string]pprofLabelValue
+	strLabelCnt int
+	numLabelCnt int
+	numUnitCnt  int
+}
 
 // errNotFound is returned if something requested is not available
 var errNotFound = errors.New("not found")
@@ -51,15 +74,16 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	// "All Samples for a Profile SHOULD have the same shape."
 	for profileIdx := range numProfiles {
 		prof := pprofiles.At(profileIdx)
-		if prof.Samples().Len() == 0 {
+		samples := prof.Samples()
+		if samples.Len() == 0 {
 			continue
 		}
-		firstShape, err := sampleShapeOf(prof.Samples().At(0))
+		firstShape, err := sampleShapeOf(samples.At(0))
 		if err != nil {
 			return nil, fmt.Errorf("profile %d, sample 0: %w", profileIdx, err)
 		}
-		for sampleIdx := 1; sampleIdx < prof.Samples().Len(); sampleIdx++ {
-			shape, err := sampleShapeOf(prof.Samples().At(sampleIdx))
+		for sampleIdx := 1; sampleIdx < samples.Len(); sampleIdx++ {
+			shape, err := sampleShapeOf(samples.At(sampleIdx))
 			if err != nil {
 				return nil, fmt.Errorf("profile %d, sample %d: %w", profileIdx, sampleIdx, err)
 			}
@@ -108,6 +132,10 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		// Profiles uses the first profile as default. Therefore, swap first and last.
 		// All profiles must produce the same number of observations for a given sample.
 		var obsCount int
+		// Only unique attributes (key, value and unit) will be transformed.
+		labelMerger := &pprofLabelMerger{
+			labels: make(map[string]pprofLabelValue),
+		}
 		for i := range numProfiles {
 			// Swap first and last: first OTel profile becomes last pprof sample type
 			var mappedIdx int
@@ -120,7 +148,11 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 				mappedIdx = i
 			}
 			otlpSample := pprofiles.At(mappedIdx).Samples().At(sampleIdx)
-			vals, err := sampleToPprofValues(otlpSample)
+			shape, err := sampleShapeOf(otlpSample)
+			if err != nil {
+				return nil, err
+			}
+			vals, err := sampleToPprofValues(otlpSample, shape)
 			if err != nil {
 				return nil, err
 			}
@@ -130,6 +162,38 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 				return nil, fmt.Errorf("inconsistent sample shapes across profiles: profile 0 has %d observation(s), profile %d has %d", obsCount, i, len(vals))
 			}
 			valuesByProfile[i] = vals
+
+			for _, attrIdx := range otlpSample.AttributeIndices().All() {
+				attr := src.Dictionary().AttributeTable().At(int(attrIdx))
+				key := src.Dictionary().StringTable().At(int(attr.KeyStrindex()))
+				t := attr.Value().Type()
+				switch t {
+				case pcommon.ValueTypeStr:
+					strValue := attr.Value().Str()
+					err := labelMerger.mergeStrLabel(key, strValue)
+					if err != nil {
+						return nil, err
+					}
+				case pcommon.ValueTypeInt:
+					unit := ""
+					numValue := attr.Value().Int()
+					if attr.UnitStrindex() != 0 {
+						unit = src.Dictionary().StringTable().At(int(attr.UnitStrindex()))
+					}
+					err := labelMerger.mergeNumLabel(key, numValue, unit)
+					if err != nil {
+						return nil, err
+					}
+				case pcommon.ValueTypeBool:
+					strValue := attr.Value().AsString()
+					err := labelMerger.mergeStrLabel(key, strValue)
+					if err != nil {
+						return nil, err
+					}
+				default:
+					return nil, fmt.Errorf("incompatible sample attribute type: %s", t.String())
+				}
+			}
 		}
 
 		// Build the shared location list once; all expanded pprof samples for
@@ -183,10 +247,9 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 			for profIdx := range numProfiles {
 				pprofSample.Value[profIdx] = valuesByProfile[profIdx][obsIdx]
 			}
+			labelMerger.assignAll(&pprofSample)
 			dst.Sample = append(dst.Sample, &pprofSample)
 		}
-
-		// pprof.Sample.label is skipped for the moment.
 	}
 
 	// Set pprof values that should be common across all profiles.
@@ -292,21 +355,18 @@ func sampleShapeOf(s pprofile.Sample) (sampleShape, error) {
 // The caller emits one pprof Sample per returned element, all sharing the same
 // location list. This matches the pprof proto convention where aggregation is
 // done by summing samples that share the same stack, not by pre-collapsing.
-func sampleToPprofValues(s pprofile.Sample) ([]int64, error) {
-	shape, err := sampleShapeOf(s)
-	if err != nil {
-		return nil, err
-	}
+func sampleToPprofValues(s pprofile.Sample, shape sampleShape) ([]int64, error) {
 	switch shape {
 	case timestampsOnly:
 		return []int64{int64(s.TimestampsUnixNano().Len())}, nil
 	case singleAggregate:
 		return []int64{s.Values().At(0)}, nil
 	case perObservation:
-		nValues := s.Values().Len()
+		sv := s.Values()
+		nValues := sv.Len()
 		vals := make([]int64, nValues)
 		for i := range nValues {
-			vals[i] = s.Values().At(i)
+			vals[i] = sv.At(i)
 		}
 		return vals, nil
 	default:
@@ -560,4 +620,74 @@ func populateLocation(dst *profile.Profile, locationMap map[uint64]*profile.Loca
 	locationMap[lHash] = pprofL
 
 	return pprofL
+}
+
+func (p *pprofLabelMerger) mergeStrLabel(key, strValue string) error {
+	v, ok := p.labels[key]
+	if ok {
+		if v.kind != strKind {
+			return errors.New("inconsistent attribute value types across profiles")
+		}
+		if v.str != strValue {
+			return errors.New("inconsistent attribute str values across profiles")
+		}
+	} else {
+		p.labels[key] = pprofLabelValue{
+			kind: strKind,
+			str:  strValue,
+		}
+		p.strLabelCnt++
+	}
+	return nil
+}
+
+func (p *pprofLabelMerger) mergeNumLabel(key string, numValue int64, unit string) error {
+	v, ok := p.labels[key]
+	if ok {
+		if v.kind != numKind {
+			return errors.New("inconsistent attribute value types across profiles")
+		}
+		if v.num != numValue {
+			return errors.New("inconsistent attribute int values across profiles")
+		}
+		if v.unit != unit {
+			return errors.New("inconsistent attribute unit definitions across profiles")
+		}
+	} else {
+		p.labels[key] = pprofLabelValue{
+			kind: numKind,
+			num:  numValue,
+			unit: unit,
+		}
+		p.numLabelCnt++
+		if unit != "" {
+			p.numUnitCnt++
+		}
+	}
+	return nil
+}
+
+func (p *pprofLabelMerger) assignAll(pprofSample *profile.Sample) {
+	if len(p.labels) > 0 {
+		if p.strLabelCnt > 0 {
+			pprofSample.Label = make(map[string][]string, p.strLabelCnt)
+		}
+		if p.numLabelCnt > 0 {
+			pprofSample.NumLabel = make(map[string][]int64, p.numLabelCnt)
+		}
+		if p.numUnitCnt > 0 {
+			pprofSample.NumUnit = make(map[string][]string, p.numUnitCnt)
+		}
+		for k, v := range p.labels {
+			switch v.kind {
+			case strKind:
+				pprofSample.Label[k] = []string{v.str}
+			case numKind:
+				pprofSample.NumLabel[k] = []int64{v.num}
+				if v.unit != "" {
+					pprofSample.NumUnit[k] = []string{v.unit}
+				}
+			}
+		}
+	}
 }

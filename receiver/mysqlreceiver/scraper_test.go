@@ -1053,6 +1053,10 @@ func newTopQueryScraper(t *testing.T, mc *mockClient) *mySQLScraper {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemName.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
 	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
@@ -1320,60 +1324,10 @@ func TestLogDetectedVersion(t *testing.T) {
 	}
 }
 
-// TestSetScopeAttributes verifies that setScopeAttributes stamps db.version and
-// db.product onto every ScopeLogs scope, and that an unknown version is a no-op.
-func TestSetScopeAttributes(t *testing.T) {
-	makeLogsWithScopes := func(n int) plog.Logs {
-		logs := plog.NewLogs()
-		rl := logs.ResourceLogs().AppendEmpty()
-		for range n {
-			rl.ScopeLogs().AppendEmpty()
-		}
-		return logs
-	}
-
-	t.Run("MySQL 8 sets db.version and db.product", func(t *testing.T) {
-		s := &mySQLScraper{detectedVersion: mustDBVersion(t, "8.0.27")}
-		logs := makeLogsWithScopes(2)
-		s.setScopeAttributes(logs)
-
-		sls := logs.ResourceLogs().At(0).ScopeLogs()
-		for i := 0; i < sls.Len(); i++ {
-			attrs := sls.At(i).Scope().Attributes()
-			ver, ok := attrs.Get("db.version")
-			require.True(t, ok)
-			assert.Equal(t, "8.0.27", ver.Str())
-			prod, ok := attrs.Get("db.product")
-			require.True(t, ok)
-			assert.Equal(t, "MySQL", prod.Str())
-		}
-	})
-
-	t.Run("MariaDB sets db.product=MariaDB", func(t *testing.T) {
-		s := &mySQLScraper{detectedVersion: mustDBVersion(t, "10.11.6-MariaDB")}
-		logs := makeLogsWithScopes(1)
-		s.setScopeAttributes(logs)
-
-		attrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes()
-		prod, ok := attrs.Get("db.product")
-		require.True(t, ok)
-		assert.Equal(t, "MariaDB", prod.Str())
-	})
-
-	t.Run("unknown version is a no-op", func(t *testing.T) {
-		s := &mySQLScraper{} // detectedVersion is zero value
-		logs := makeLogsWithScopes(1)
-		s.setScopeAttributes(logs)
-
-		attrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes()
-		assert.Equal(t, 0, attrs.Len(), "no attributes should be set when version is unknown")
-	})
-}
-
-// TestScrapeQuerySampleFuncScopeAttributes verifies that scrapeQuerySampleFunc
-// stamps db.version and db.product scope attributes — exercising emitLogsWithScopeAttrs
+// TestScrapeQuerySampleFuncResourceAttributes verifies that scrapeQuerySampleFunc
+// stamps db.system.version and db.system.name resource attributes — exercising emitLogs
 // via the query-sample path (as opposed to the top-query path).
-func TestScrapeQuerySampleFuncScopeAttributes(t *testing.T) {
+func TestScrapeQuerySampleFuncResourceAttributes(t *testing.T) {
 	v8 := mustDBVersion(t, "8.0.27")
 	mc := &mockClient{querySamplesFile: "query_samples", dbVersionOverride: &v8}
 	cfg := createDefaultConfig().(*Config)
@@ -1381,6 +1335,10 @@ func TestScrapeQuerySampleFuncScopeAttributes(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemName.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
 	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
@@ -1389,16 +1347,13 @@ func TestScrapeQuerySampleFuncScopeAttributes(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, logs.ResourceLogs().Len())
 
-	sls := logs.ResourceLogs().At(0).ScopeLogs()
-	for i := 0; i < sls.Len(); i++ {
-		attrs := sls.At(i).Scope().Attributes()
-		ver, ok := attrs.Get("db.version")
-		assert.True(t, ok, "db.version scope attribute missing on query-sample output")
-		assert.Equal(t, "8.0.27", ver.Str())
-		prod, ok := attrs.Get("db.product")
-		assert.True(t, ok, "db.product scope attribute missing on query-sample output")
-		assert.Equal(t, "MySQL", prod.Str())
-	}
+	attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+	ver, ok := attrs.Get("db.system.version")
+	assert.True(t, ok, "db.system.version resource attribute missing on query-sample output")
+	assert.Equal(t, "8.0.27", ver.Str())
+	prod, ok := attrs.Get("db.system.name")
+	assert.True(t, ok, "db.system.name resource attribute missing on query-sample output")
+	assert.Equal(t, "mysql", prod.Str())
 }
 
 // TestScrapeTopQueryFuncScanRowWithSampleText verifies that when MySQL 8 is detected
@@ -1428,9 +1383,9 @@ func TestScrapeTopQueryFuncScanRowWithSampleText(t *testing.T) {
 		"sampleStatement must be the querySampleText scanned from column 6")
 }
 
-// TestScrapeTopQueryFuncScopeAttributes verifies that scrapeTopQueryFunc stamps
-// scope attributes onto emitted logs when a version has been detected.
-func TestScrapeTopQueryFuncScopeAttributes(t *testing.T) {
+// TestScrapeTopQueryFuncResourceAttributes verifies that scrapeTopQueryFunc stamps
+// resource attributes onto emitted logs when a version has been detected.
+func TestScrapeTopQueryFuncResourceAttributes(t *testing.T) {
 	v8 := mustDBVersion(t, "8.0.27")
 	mc := &mockClient{
 		topQueriesFile:    "top_queries",
@@ -1446,17 +1401,46 @@ func TestScrapeTopQueryFuncScopeAttributes(t *testing.T) {
 	require.Equal(t, 1, logs.ResourceLogs().Len())
 
 	sls := logs.ResourceLogs().At(0).ScopeLogs()
-
 	digest, _ := sls.At(0).LogRecords().At(0).Attributes().Get("mysql.events_statements_summary_by_digest.digest")
 	queryPlanHash, _ := sls.At(0).LogRecords().At(0).Attributes().Get("mysql.query_plan.hash")
 	assert.Equal(t, digest, queryPlanHash)
-	for i := 0; i < sls.Len(); i++ {
-		attrs := sls.At(i).Scope().Attributes()
-		ver, ok := attrs.Get("db.version")
-		assert.True(t, ok, "db.version scope attribute missing")
-		assert.Equal(t, "8.0.27", ver.Str())
-		prod, ok := attrs.Get("db.product")
-		assert.True(t, ok, "db.product scope attribute missing")
-		assert.Equal(t, "MySQL", prod.Str())
+
+	attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+	ver, ok := attrs.Get("db.system.version")
+	assert.True(t, ok, "db.system.version resource attribute missing")
+	assert.Equal(t, "8.0.27", ver.Str())
+	prod, ok := attrs.Get("db.system.name")
+	assert.True(t, ok, "db.system.name resource attribute missing")
+	assert.Equal(t, "mysql", prod.Str())
+}
+
+// TestScrapeTopQueryFuncNoDetectedVersion verifies that when no version was
+// detected at connect time (detectedVersion.version is nil), the db.system.name
+// and db.system.version resource attributes are omitted, while the always-set
+// resource attributes (e.g. the instance endpoint) are still stamped.
+func TestScrapeTopQueryFuncNoDetectedVersion(t *testing.T) {
+	mc := &mockClient{
+		topQueriesFile: "top_queries",
 	}
+	s := newTopQueryScraper(t, mc)
+	// Simulate version detection having failed at connect time.
+	s.detectedVersion = dbVersion{}
+
+	s.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "count_star", 1)
+	s.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "sum_timer_wait", 1)
+
+	logs, err := s.scrapeTopQueryFunc(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+
+	attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+	_, ok := attrs.Get("db.system.version")
+	assert.False(t, ok, "db.system.version must not be set when no version was detected")
+	_, ok = attrs.Get("db.system.name")
+	assert.False(t, ok, "db.system.name must not be set when no version was detected")
+
+	// The endpoint resource attribute is always set regardless of detection.
+	endpoint, ok := attrs.Get("mysql.instance.endpoint")
+	assert.True(t, ok, "mysql.instance.endpoint resource attribute missing")
+	assert.Equal(t, "localhost:3306", endpoint.Str())
 }

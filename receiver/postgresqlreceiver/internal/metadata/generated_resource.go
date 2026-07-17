@@ -49,6 +49,20 @@ func (rb *ResourceBuilder) SetPostgresqlTableName(val string) {
 	}
 }
 
+// SetServerAddress sets provided value as "server.address" attribute.
+func (rb *ResourceBuilder) SetServerAddress(val string) {
+	if rb.config.ServerAddress.Enabled {
+		rb.res.Attributes().PutStr("server.address", val)
+	}
+}
+
+// SetServerPort sets provided value as "server.port" attribute.
+func (rb *ResourceBuilder) SetServerPort(val int64) {
+	if rb.config.ServerPort.Enabled {
+		rb.res.Attributes().PutInt("server.port", val)
+	}
+}
+
 // SetServiceInstanceID sets provided value as "service.instance.id" attribute.
 func (rb *ResourceBuilder) SetServiceInstanceID(val string) {
 	if rb.config.ServiceInstanceID.Enabled {
