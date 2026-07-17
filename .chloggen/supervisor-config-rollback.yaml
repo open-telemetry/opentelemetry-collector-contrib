@@ -18,7 +18,7 @@ issues: [47192]
 # Use pipe (|) for multiline entries.
 subtext: |
   This behavior is controlled under the configuration option `agent.automatic_config_rollback`.
-  When an old remote confiugration is restored, the agent will report an "applied" status again
+  When an old remote configuration is restored, the agent will report an "applied" status again
   for this configuraiton.
 
 # If your change doesn't affect end users or the exported elements of any package,
