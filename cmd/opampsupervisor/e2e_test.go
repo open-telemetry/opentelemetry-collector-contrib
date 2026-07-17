@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"maps"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -295,9 +296,7 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 		"storage_dir": escapePathStringForWin(t.TempDir()),
 	}
 
-	for key, val := range extraConfigData {
-		configData[key] = val
-	}
+	maps.Copy(configData, extraConfigData)
 	err = templ.Execute(&buf, configData)
 	require.NoError(t, err)
 	cfgFile, err := os.CreateTemp(t.TempDir(), "config_*.yaml")
@@ -321,40 +320,6 @@ func writeTempConfigFile(t *testing.T, body string) string {
 	require.NoError(t, err)
 
 	return f.Name()
-}
-
-func writeSupervisorConfigFile(t *testing.T, serverAddr, storageDir string, configFiles []string, useHUP bool) string {
-	t.Helper()
-
-	var extension string
-	if runtime.GOOS == "windows" {
-		extension = ".exe"
-	}
-	executablePath, err := filepath.Abs("../../bin/otelcontribcol_" + runtime.GOOS + "_" + runtime.GOARCH + extension)
-	require.NoError(t, err)
-
-	var buf strings.Builder
-	fmt.Fprintf(&buf, "server:\n  endpoint: %q\n\n", "ws://"+serverAddr+"/v1/opamp")
-	buf.WriteString("capabilities:\n")
-	buf.WriteString("  reports_effective_config: true\n")
-	buf.WriteString("  reports_own_metrics: true\n")
-	buf.WriteString("  reports_own_logs: true\n")
-	buf.WriteString("  reports_own_traces: true\n")
-	buf.WriteString("  reports_health: true\n")
-	buf.WriteString("  accepts_remote_config: true\n")
-	buf.WriteString("  reports_remote_config: true\n")
-	buf.WriteString("  accepts_restart_command: true\n\n")
-	fmt.Fprintf(&buf, "storage:\n  directory: %q\n\n", storageDir)
-	fmt.Fprintf(&buf, "agent:\n  executable: %q\n", executablePath)
-	if useHUP {
-		buf.WriteString("  use_hup_config_reload: true\n")
-	}
-	buf.WriteString("  config_files:\n")
-	for _, file := range configFiles {
-		fmt.Fprintf(&buf, "    - %q\n", file)
-	}
-
-	return writeTempConfigFile(t, buf.String())
 }
 
 func waitForEffectiveConfigMessage(t *testing.T, effectiveConfig *atomic.Value) string {
@@ -465,7 +430,7 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
 			}
 
-			require.Nil(t, s.Start(t.Context()))
+			require.NoError(t, s.Start(t.Context()))
 			defer s.Shutdown()
 
 			waitForSupervisorConnection(server.supervisorConnected, true)
@@ -737,7 +702,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *tes
 				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
 			}
 			t.Cleanup(s.Shutdown)
-			require.Nil(t, s.Start(t.Context()))
+			require.NoError(t, s.Start(t.Context()))
 
 			// Verify the collector runs eventually by pinging the healthcheck extension
 			require.Eventually(t, func() bool {
@@ -816,7 +781,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
 			}
 
-			require.Nil(t, s.Start(t.Context()))
+			require.NoError(t, s.Start(t.Context()))
 			defer s.Shutdown()
 
 			// Fallback should not be applied when a persisted remote config exists.
@@ -908,7 +873,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 		"healthcheckPort": strconv.Itoa(secondHealthcheckPort),
 	})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -970,7 +935,7 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 		"healthcheck_port": "12345",
 	})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	// Verify the collector is not running by checking the healthcheck endpoint fails consistently
@@ -1063,7 +1028,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
 			}
 
-			require.Nil(t, s.Start(t.Context()))
+			require.NoError(t, s.Start(t.Context()))
 			defer s.Shutdown()
 
 			waitForSupervisorConnection(server.supervisorConnected, true)
@@ -1145,7 +1110,7 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 
 	s, _ := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -1238,9 +1203,7 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 			// attributes.
 			agentPath := cfg.Agent.Executable
 			cmd := exec.Command(agentPath, "components")
-			for _, env := range tt.env {
-				cmd.Env = append(cmd.Env, env)
-			}
+			cmd.Env = append(cmd.Env, tt.env...)
 			componentsInfo, err := cmd.Output()
 			require.NoError(t, err)
 
@@ -1349,7 +1312,7 @@ func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
 
 	s, _ := newSupervisor(t, "reports_available_components", map[string]string{"url": server.addr})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -1413,7 +1376,7 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 
 	s, _ := newSupervisor(t, "basic", map[string]string{"url": server.addr})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -1425,7 +1388,7 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { testKeyFile.Close() })
 
-	n, err := testKeyFile.Write([]byte(testKeyFile.Name()))
+	n, err := testKeyFile.WriteString(testKeyFile.Name())
 	require.NoError(t, err)
 	require.NotZero(t, n)
 
@@ -1541,7 +1504,7 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 
 	s, _ := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -1602,7 +1565,7 @@ func TestSupervisorForwardsUpdatedAgentDescriptionFromCollector(t *testing.T) {
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
-	updatedConfig := []byte(fmt.Sprintf(`
+	updatedConfig := fmt.Appendf(nil, `
 receivers:
   nop:
 
@@ -1619,7 +1582,7 @@ service:
       service.name: %s
       service.version: %s
       test.resource.attr: %s
-`, updatedServiceName, updatedServiceVersion, updatedResourceAttributeValue))
+`, updatedServiceName, updatedServiceVersion, updatedResourceAttributeValue)
 	updatedConfigHash := sha256.Sum256(updatedConfig)
 
 	server.sendToSupervisor(&protobufs.ServerToAgent{
@@ -1853,7 +1816,7 @@ func TestSupervisorRestartCommand(t *testing.T) {
 				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
 			}
 
-			require.Nil(t, s.Start(t.Context()))
+			require.NoError(t, s.Start(t.Context()))
 			defer s.Shutdown()
 
 			waitForSupervisorConnection(server.supervisorConnected, true)
@@ -1931,7 +1894,7 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 
 	s, _ := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(initialServer.supervisorConnected, true)
@@ -1985,7 +1948,7 @@ func TestSupervisorOpAMPWithHTTPEndpoint(t *testing.T) {
 
 	s, _ := newSupervisor(t, "http", map[string]string{"url": initialServer.addr})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(initialServer.supervisorConnected, true)
@@ -2031,7 +1994,7 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
 			}
 
-			require.Nil(t, s.Start(t.Context()))
+			require.NoError(t, s.Start(t.Context()))
 
 			waitForSupervisorConnection(initialServer.supervisorConnected, true)
 
@@ -2081,7 +2044,7 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
 			}
 
-			require.Nil(t, s1.Start(t.Context()))
+			require.NoError(t, s1.Start(t.Context()))
 			defer s1.Shutdown()
 
 			waitForSupervisorConnection(newServer.supervisorConnected, true)
@@ -2129,7 +2092,7 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 		"storage_dir": storageDir,
 	})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
@@ -2161,7 +2124,7 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 		"storage_dir": storageDir,
 	})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -2215,7 +2178,7 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 		"storage_dir": storageDir,
 	})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
@@ -2245,7 +2208,7 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 		"storage_dir": storageDir,
 	})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -2277,7 +2240,7 @@ func TestSupervisorWritesAgentFilesToStorageDir(t *testing.T) {
 		"storage_dir": storageDir,
 	})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
@@ -2325,7 +2288,7 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 		"url": server.addr,
 	})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -2455,7 +2418,7 @@ func TestSupervisorLogging(t *testing.T) {
 
 	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
 	require.NoError(t, err)
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 	require.True(t, connected.Load(), "Supervisor failed to connect")
@@ -2543,7 +2506,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 			if mode.UseHUPConfigReload {
 				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
 			}
-			require.Nil(t, s.Start(t.Context()))
+			require.NoError(t, s.Start(t.Context()))
 			defer s.Shutdown()
 
 			waitForSupervisorConnection(server.supervisorConnected, true)
@@ -2656,7 +2619,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 				}, 10*time.Second, 250*time.Millisecond)
 
 				receivedTraces := mockBackend.GetReceivedTraces()
-				for i := 0; i < len(receivedTraces); i++ {
+				for i := range receivedTraces {
 					gotSpans = append(gotSpans, receivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 				}
 
@@ -2752,7 +2715,7 @@ func TestSupervisorOpAmpServerPort(t *testing.T) {
 
 	s, _ := newSupervisor(t, "server_port", map[string]string{"url": server.addr, "supervisor_opamp_server_port": fmt.Sprintf("%d", supervisorOpAmpServerPort)})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -2816,7 +2779,7 @@ func TestSupervisorHealthCheckServer(t *testing.T) {
 
 	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
 	require.NoError(t, err)
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
@@ -2856,7 +2819,7 @@ func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 
 	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
 	require.NoError(t, err)
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	// Wait for the health check server to start
@@ -2945,7 +2908,7 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		},
 	)
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -2987,7 +2950,7 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 
 	for _, expectedSpan := range expectedSpans {
 		gotSpan := false
-		for i := 0; i < len(receivedTraces); i++ {
+		for i := range receivedTraces {
 			require.Equal(t, 1, receivedTraces[i].ResourceSpans().At(0).ScopeSpans().Len())
 			require.Equal(t, 1, receivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
 			if receivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name() != expectedSpan {
@@ -3016,7 +2979,7 @@ func TestSupervisorReportsHeartbeat(t *testing.T) {
 	)
 	s, _ := newSupervisor(t, "reports_heartbeat", map[string]string{"url": server.addr})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -3037,9 +3000,7 @@ func TestSupervisorReportsHeartbeat(t *testing.T) {
 	// supervisor reconnects to the server
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
-	require.Eventually(t, func() bool {
-		return heartbeatReport.Load()
-	}, 3*time.Second, 250*time.Millisecond)
+	require.Eventually(t, heartbeatReport.Load, 3*time.Second, 250*time.Millisecond)
 }
 
 // isHeartbeatMessage returns true if all fields of the message are nil.
@@ -3278,7 +3239,7 @@ func TestSupervisorValidatesConfigBeforeApplying(t *testing.T) {
 			}
 			require.True(t, supervisorCfg.Agent.ValidateConfig, "ValidateConfig should be enabled for this test")
 
-			require.Nil(t, s.Start(t.Context()))
+			require.NoError(t, s.Start(t.Context()))
 			defer s.Shutdown()
 
 			waitForSupervisorConnection(server.supervisorConnected, true)
@@ -3602,16 +3563,16 @@ func newMockTokenServer(t *testing.T, initialToken string) *mockTokenServer {
 	mts.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mts.requests.Add(1)
 
-		require.NoError(t, r.ParseForm())
-		require.Equal(t, "client_credentials", r.PostFormValue("grant_type"))
-		require.Equal(t, "opamp", r.PostFormValue("scope"))
+		assert.NoError(t, r.ParseForm())
+		assert.Equal(t, "client_credentials", r.PostFormValue("grant_type"))
+		assert.Equal(t, "opamp", r.PostFormValue("scope"))
 
 		// oauth2 client_credentials flow first tries HTTP Basic on the token
 		// endpoint, so assert that to catch any config regression.
 		username, password, ok := r.BasicAuth()
-		require.True(t, ok, "token request missing basic auth")
-		require.Equal(t, "opamp-client-id", username)
-		require.Equal(t, "opamp-client-secret", password)
+		assert.True(t, ok, "token request missing basic auth")
+		assert.Equal(t, "opamp-client-id", username)
+		assert.Equal(t, "opamp-client-secret", password)
 
 		mts.mu.Lock()
 		token := mts.currentToken
@@ -3624,7 +3585,7 @@ func newMockTokenServer(t *testing.T, initialToken string) *mockTokenServer {
 			"expires_in":   1,
 		})
 	}))
-	t.Cleanup(mts.Server.Close)
+	t.Cleanup(mts.Close)
 	return mts
 }
 
