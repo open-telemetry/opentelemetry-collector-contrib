@@ -33,8 +33,6 @@ import (
 )
 
 const (
-	defaultServerTimeout = 20 * time.Second
-
 	ackResponse                       = `{"acks": %s}`
 	responseOK                        = `{"text": "Success", "code": 0}`
 	responseOKWithAckID               = `{"text": "Success", "code": 0, "ackId": %d}`
@@ -164,11 +162,6 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 	if err != nil {
 		return err
 	}
-
-	// TODO: Evaluate what properties should be configurable, for now
-	//		set some hard-coded values.
-	r.server.ReadHeaderTimeout = defaultServerTimeout
-	r.server.WriteTimeout = defaultServerTimeout
 
 	r.shutdownWG.Go(func() {
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {

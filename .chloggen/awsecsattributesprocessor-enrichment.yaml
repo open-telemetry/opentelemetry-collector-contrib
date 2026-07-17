@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: processor/awsecsattributes
+component: processor/aws_ecs_attributes
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add the ECS metadata enrichment logic that attaches AWS ECS attributes to logs, metrics, traces and profiles.

@@ -12,7 +12,7 @@
 
 # AWS ECS Attributes Processor
 
-The `awsecsattributes` processor enriches logs, metrics, traces and profiles with
+The `aws_ecs_attributes` processor enriches logs, metrics, traces and profiles with
 AWS ECS metadata for daemonset-style deployments on EC2, where a single collector
 runs per host and processes telemetry for all containers on that host. It discovers
 the ECS metadata endpoint for each container, reads the metadata, and attaches the
@@ -36,7 +36,7 @@ sequenceDiagram
         participant docker as docker api
         participant mAPI as ecs metadata api
     end
-    participant otel as otel (awsecsattributes processor)
+    participant otel as otel (aws_ecs_attributes processor)
     activate otel
     rect rgba(76, 175, 80, 0.12)
         otel->>docker: get a list of all running containers and metadata endpoints from the env
@@ -122,7 +122,7 @@ Example configuration:
 
 ```yaml
 processors:
-  awsecsattributes:
+  aws_ecs_attributes:
     # check for the container ID in the following resource attributes
     container_id:
       sources:
