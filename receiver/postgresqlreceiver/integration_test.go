@@ -65,7 +65,67 @@ func TestIntegrationWithConnectionPool(t *testing.T) {
 	t.Run("all_db_connpool", integrationTest("all_db_connpool", []string{}, pre17TestVersion))
 }
 
-func integrationTest(name string, databases []string, pgVersion string) func(*testing.T) {
+func TestIntegrationSemconv(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, true)()
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlConnectionPoolFeatureGate, false)()
+	t.Run("multi_db", integrationTestSemconv("multi_db_semconv", []string{"otel", "otel2"}, pre17TestVersion))
+}
+
+func integrationTest(
+	name string,
+	databases []string,
+	pgVersion string,
+	additionalIgnoredResourceAttributeValues ...string,
+) func(*testing.T) {
+	compareOptions := []pmetrictest.CompareMetricsOption{
+		pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
+	}
+	for _, attribute := range additionalIgnoredResourceAttributeValues {
+		compareOptions = append(compareOptions, pmetrictest.IgnoreResourceAttributeValue(attribute))
+	}
+	compareOptions = append(compareOptions,
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricValues(
+			"postgresql.backends",
+			"postgresql.bgwriter.buffers.allocated",
+			"postgresql.bgwriter.buffers.writes",
+			"postgresql.bgwriter.checkpoint.count",
+			"postgresql.bgwriter.duration",
+			"postgresql.bgwriter.maxwritten",
+			"postgresql.blks_hit",
+			"postgresql.blks_read",
+			"postgresql.blocks_read",
+			"postgresql.commits",
+			"postgresql.connection.max",
+			"postgresql.database.count",
+			"postgresql.database.locks",
+			"postgresql.db_size",
+			"postgresql.deadlocks",
+			"postgresql.index.scans",
+			"postgresql.index.size",
+			"postgresql.operations",
+			"postgresql.replication.data_delay",
+			"postgresql.rollbacks",
+			"postgresql.rows",
+			"postgresql.sequential_scans",
+			"postgresql.table.count",
+			"postgresql.table.size",
+			"postgresql.table.vacuum.count",
+			"postgresql.tup_deleted",
+			"postgresql.tup_fetched",
+			"postgresql.tup_inserted",
+			"postgresql.tup_returned",
+			"postgresql.tup_updated",
+			"postgresql.wal.age",
+			"postgresql.wal.delay",
+			"postgresql.wal.lag",
+		),
+		pmetrictest.IgnoreSubsequentDataPoints("postgresql.backends"),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+	)
+
 	expectedFile := filepath.Join("testdata", "integration", "expected_"+name+".yaml")
 	return scraperinttest.NewIntegrationTest(
 		NewFactory(),
@@ -110,50 +170,12 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 				rCfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
-		scraperinttest.WithCompareOptions(
-			pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricValues(
-				"postgresql.backends",
-				"postgresql.bgwriter.buffers.allocated",
-				"postgresql.bgwriter.buffers.writes",
-				"postgresql.bgwriter.checkpoint.count",
-				"postgresql.bgwriter.duration",
-				"postgresql.bgwriter.maxwritten",
-				"postgresql.blks_hit",
-				"postgresql.blks_read",
-				"postgresql.blocks_read",
-				"postgresql.commits",
-				"postgresql.connection.max",
-				"postgresql.database.count",
-				"postgresql.database.locks",
-				"postgresql.db_size",
-				"postgresql.deadlocks",
-				"postgresql.index.scans",
-				"postgresql.index.size",
-				"postgresql.operations",
-				"postgresql.replication.data_delay",
-				"postgresql.rollbacks",
-				"postgresql.rows",
-				"postgresql.sequential_scans",
-				"postgresql.table.count",
-				"postgresql.table.size",
-				"postgresql.table.vacuum.count",
-				"postgresql.tup_deleted",
-				"postgresql.tup_fetched",
-				"postgresql.tup_inserted",
-				"postgresql.tup_returned",
-				"postgresql.tup_updated",
-				"postgresql.wal.age",
-				"postgresql.wal.delay",
-				"postgresql.wal.lag",
-			),
-			pmetrictest.IgnoreSubsequentDataPoints("postgresql.backends"),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp(),
-		),
+		scraperinttest.WithCompareOptions(compareOptions...),
 	).Run
+}
+
+func integrationTestSemconv(name string, databases []string, pgVersion string) func(*testing.T) {
+	return integrationTest(name, databases, pgVersion, "server.address", "server.port")
 }
 
 func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
@@ -367,11 +389,12 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	}
 	clientFactory := newDefaultClientFactory(&cfg)
 
-	ns := newPostgreSQLScraper(receiver.Settings{
+	ns, err := newPostgreSQLScraper(receiver.Settings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zap.Must(zap.NewProduction()),
 		},
 	}, &cfg, clientFactory, newCache(1), newTTLCache[string](1000, time.Second))
+	assert.NoError(t, err)
 	plogs, err := ns.scrapeQuerySamples(t.Context(), 30)
 	assert.NoError(t, err)
 	logRecords := plogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
