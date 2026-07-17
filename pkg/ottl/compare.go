@@ -139,6 +139,9 @@ func (p *ottlValueComparator) compareString(a string, b any, op compareOp) bool 
 }
 
 func (p *ottlValueComparator) compareByte(a []byte, b any, op compareOp) bool {
+	if a == nil {
+		return p.compare(b, nil, op)
+	}
 	switch v := b.(type) {
 	case nil:
 		return op == ne
@@ -384,9 +387,6 @@ func (p *ottlValueComparator) compare(a, b any, op compareOp) bool {
 	case string:
 		return p.compareString(v, b, op)
 	case []byte:
-		if v == nil {
-			return p.compare(b, nil, op)
-		}
 		return p.compareByte(v, b, op)
 	case time.Duration:
 		return p.compareDuration(v, b, op)

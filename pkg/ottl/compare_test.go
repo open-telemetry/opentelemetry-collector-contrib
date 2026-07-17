@@ -209,6 +209,10 @@ func Test_comparison(t *testing.T) {
 		{"pvalue slice vs raw slice diff", pvSlice1, sl2, []bool{false, true, false, false, false, false}},
 		{"pvalue empty vs nil", pcommon.NewValueEmpty(), nil, []bool{true, false, false, true, true, false}},
 		{"pvalue int vs nil", pcommon.NewValueInt(1), nil, []bool{false, true, false, false, false, false}},
+		{"pvalue empty-bytes vs nil", pcommon.NewValueBytes(), nil, []bool{true, false, false, true, true, false}},
+		{"nil vs pvalue empty-bytes", nil, pcommon.NewValueBytes(), []bool{true, false, false, true, true, false}},
+		{"pvalue empty-bytes vs raw nil bytes", pcommon.NewValueBytes(), []byte(nil), []bool{true, false, false, true, true, false}},
+		{"pvalue empty vs raw nil bytes", pcommon.NewValueEmpty(), []byte(nil), []bool{true, false, false, true, true, false}},
 
 		// raw type vs pcommon.Value (swap direction)
 		{"raw int64 vs pvalue int", i64a, pcommon.NewValueInt(1), []bool{true, false, false, true, true, false}},
