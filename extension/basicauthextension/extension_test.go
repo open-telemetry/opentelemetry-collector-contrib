@@ -5,18 +5,23 @@ package basicauthextension // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap/zaptest"
 )
 
 var credentials = [][]string{
@@ -102,6 +107,7 @@ func TestBasicAuth_NoHeader(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	_, err = ext.Authenticate(t.Context(), map[string][]string{})
 	assert.Equal(t, errNoAuth, err)
 }
@@ -113,6 +119,7 @@ func TestBasicAuth_InvalidPrefix(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	_, err = ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Bearer token"}})
 	assert.Equal(t, errInvalidSchemePrefix, err)
 }
@@ -136,6 +143,7 @@ func TestBasicAuth_InvalidFormat(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	for _, auth := range [][]string{
 		{"non decodable", "invalid"},
 		{"missing separator", "aW52YWxpZAo="},
@@ -297,3 +305,194 @@ func TestBasicAuth_ClientInvalid(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+type mockSecretProvider struct {
+	secret   atomic.Pointer[string]
+	onChange func(string)
+}
+
+func (m *mockSecretProvider) Start(context.Context, component.Host) error { return nil }
+func (m *mockSecretProvider) Shutdown(context.Context) error              { return nil }
+
+func (m *mockSecretProvider) GetSecret(_ context.Context) (string, error) {
+	s := m.secret.Load()
+	if s == nil {
+		return "", fmt.Errorf("no secret configured")
+	}
+	return *s, nil
+}
+
+func (m *mockSecretProvider) OnChange(fn func(string)) {
+	m.onChange = fn
+}
+
+func (m *mockSecretProvider) setSecret(s string) {
+	m.secret.Store(&s)
+}
+
+func (m *mockSecretProvider) simulateRotation(s string) {
+	m.secret.Store(&s)
+	if m.onChange != nil {
+		m.onChange(s)
+	}
+}
+
+// mockHost wraps componenttest.NewNopHost() and adds custom extensions.
+type mockHost struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (h *mockHost) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+func newMockHost(exts map[component.ID]component.Component) *mockHost {
+	return &mockHost{
+		Host:       componenttest.NewNopHost(),
+		extensions: exts,
+	}
+}
+
+func TestClientAuth_SecretProvider(t *testing.T) {
+	t.Parallel()
+	secret := map[string]string{"user": "admin", "pass": "secret123"}
+	data, _ := json.Marshal(secret)
+
+	mock := &mockSecretProvider{}
+	mock.setSecret(string(data))
+
+	providerID := component.MustNewID("testprovider")
+	host := newMockHost(map[component.ID]component.Component{
+		providerID: mock,
+	})
+
+	ext := &basicAuthClient{
+		clientAuth: &ClientAuthSettings{
+			SecretProvider: &SecretProviderConfig{
+				ID:          providerID,
+				UsernameKey: "user",
+				PasswordKey: "pass",
+			},
+		},
+		logger: zaptest.NewLogger(t),
+	}
+
+	require.NoError(t, ext.Start(t.Context(), host))
+	defer func() { require.NoError(t, ext.Shutdown(t.Context())) }()
+
+	assert.Equal(t, "admin", ext.Username())
+	assert.Equal(t, "secret123", ext.Password())
+
+	rt, err := ext.RoundTripper(&mockRoundTripper{})
+	require.NoError(t, err)
+
+	resp, err := rt.RoundTrip(&http.Request{Method: http.MethodGet})
+	require.NoError(t, err)
+	assert.Contains(t, resp.Header.Get("Authorization"), "Basic ")
+}
+
+func TestServerAuth_SecretProvider(t *testing.T) {
+	t.Parallel()
+
+	mock := &mockSecretProvider{}
+	mock.setSecret("testuser:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=")
+
+	providerID := component.MustNewID("testprovider")
+	host := newMockHost(map[component.ID]component.Component{
+		providerID: mock,
+	})
+
+	ext := &basicAuthServer{
+		htpasswd: &HtpasswdSettings{
+			SecretProvider: &SecretProviderConfig{
+				ID: providerID,
+			},
+		},
+		logger: zaptest.NewLogger(t),
+	}
+
+	require.NoError(t, ext.Start(t.Context(), host))
+	defer func() { require.NoError(t, ext.Shutdown(t.Context())) }()
+
+	auth := "dGVzdHVzZXI6cGFzc3dvcmQ=" // testuser:password
+	ctx, err := ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Basic " + auth}})
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+}
+
+func TestSecretProvider_ExtensionNotFound(t *testing.T) {
+	t.Parallel()
+	host := newMockHost(map[component.ID]component.Component{})
+
+	ext := &basicAuthServer{
+		htpasswd: &HtpasswdSettings{
+			SecretProvider: &SecretProviderConfig{
+				ID: component.MustNewID("nonexistent"),
+			},
+		},
+		logger: zaptest.NewLogger(t),
+	}
+
+	err := ext.Start(t.Context(), host)
+	assert.ErrorContains(t, err, "not found")
+}
+
+func TestSecretProvider_ExtensionNotImplemented(t *testing.T) {
+	t.Parallel()
+	providerID := component.MustNewID("notaprovider")
+	host := newMockHost(map[component.ID]component.Component{
+		providerID: nopExtension{},
+	})
+
+	ext := &basicAuthServer{
+		htpasswd: &HtpasswdSettings{
+			SecretProvider: &SecretProviderConfig{
+				ID: providerID,
+			},
+		},
+		logger: zaptest.NewLogger(t),
+	}
+
+	err := ext.Start(t.Context(), host)
+	assert.ErrorContains(t, err, "does not implement SecretProvider")
+}
+
+func TestDependencies_Server(t *testing.T) {
+	t.Parallel()
+	providerID := component.MustNewID("myprovider")
+
+	ext := &basicAuthServer{
+		htpasswd: &HtpasswdSettings{
+			SecretProvider: &SecretProviderConfig{ID: providerID},
+		},
+	}
+	assert.Equal(t, []component.ID{providerID}, ext.Dependencies())
+
+	extNoProvider := &basicAuthServer{
+		htpasswd: &HtpasswdSettings{Inline: "user:pass"},
+	}
+	assert.Nil(t, extNoProvider.Dependencies())
+}
+
+func TestDependencies_Client(t *testing.T) {
+	t.Parallel()
+	providerID := component.MustNewID("myprovider")
+
+	ext := &basicAuthClient{
+		clientAuth: &ClientAuthSettings{
+			SecretProvider: &SecretProviderConfig{ID: providerID, UsernameKey: "u", PasswordKey: "p"},
+		},
+	}
+	assert.Equal(t, []component.ID{providerID}, ext.Dependencies())
+
+	extNoProvider := &basicAuthClient{
+		clientAuth: &ClientAuthSettings{Username: "user", Password: "pass"},
+	}
+	assert.Nil(t, extNoProvider.Dependencies())
+}
+
+type nopExtension struct{}
+
+func (nopExtension) Start(context.Context, component.Host) error { return nil }
+func (nopExtension) Shutdown(context.Context) error              { return nil }
