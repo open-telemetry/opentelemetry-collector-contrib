@@ -4,8 +4,8 @@ go 1.25.0
 
 require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.80.2
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.82.0-devel.0.20260617134427-74e6d071eaae
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.82.0-devel.0.20260617134427-74e6d071eaae
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.83.0-devel.0.20260714134811-fee4bbf7ff73
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.83.0-devel.0.20260714134811-fee4bbf7ff73
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.80.2
 	github.com/DataDog/datadog-api-client-go/v2 v2.62.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
@@ -30,7 +30,7 @@ require (
 	go.opentelemetry.io/collector/exporter v1.62.1-0.20260709230849-fe96e04e8916
 	go.opentelemetry.io/collector/exporter/exportertest v0.156.1-0.20260709230849-fe96e04e8916
 	go.opentelemetry.io/collector/pdata v1.62.1-0.20260709230849-fe96e04e8916
-	go.opentelemetry.io/otel v1.44.0
+	go.opentelemetry.io/otel v1.44.1-0.20260622141720-fbe3d073ba93
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	k8s.io/apimachinery v0.35.4
@@ -174,10 +174,10 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.156.1-0.20260709230849-fe96e04e8916 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.156.1-0.20260709230849-fe96e04e8916 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
-	go.opentelemetry.io/otel/metric v1.44.0 // indirect
+	go.opentelemetry.io/otel/metric v1.44.1-0.20260622141720-fbe3d073ba93 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
-	go.opentelemetry.io/otel/trace v1.44.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.44.1-0.20260622141720-fbe3d073ba93 // indirect
+	go.opentelemetry.io/otel/trace v1.44.1-0.20260622141720-fbe3d073ba93 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
@@ -186,7 +186,7 @@ require (
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.44.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
