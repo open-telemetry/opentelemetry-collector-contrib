@@ -680,6 +680,19 @@ resourceMetrics:
                         stringValue: pg_locks
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: RowExclusiveLock
+                    - key: relation
+                      value:
+                        stringValue: test1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: postgresql.database.locks
             unit: '{lock}'
           - description: The database disk usage.
