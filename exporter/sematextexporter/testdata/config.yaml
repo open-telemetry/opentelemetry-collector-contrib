@@ -1,4 +1,7 @@
 sematext/default-config:
+  region: us
+  metrics:
+    app_token: "<METRICS_APP_TOKEN>"
 sematext/override-config:
   timeout: 500ms
   sending_queue:

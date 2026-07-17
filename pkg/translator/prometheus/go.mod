@@ -1,18 +1,18 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus
 
-go 1.24.0
+go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.142.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.156.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/featuregate v1.48.1-0.20260105153205-84f07c4ff3db
-	go.opentelemetry.io/collector/pdata v1.48.1-0.20260105153205-84f07c4ff3db
+	go.opentelemetry.io/collector/featuregate v1.62.1-0.20260715151533-47267b188b26
+	go.opentelemetry.io/collector/pdata v1.62.1-0.20260715151533-47267b188b26
 	go.uber.org/goleak v1.3.0
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/hashicorp/go-version v1.8.0 // indirect
+	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

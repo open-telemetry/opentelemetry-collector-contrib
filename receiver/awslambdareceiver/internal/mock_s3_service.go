@@ -11,6 +11,7 @@ package internal
 
 import (
 	context "context"
+	io "io"
 	reflect "reflect"
 
 	s3 "github.com/aws/aws-sdk-go-v2/service/s3"
@@ -139,6 +140,21 @@ func (mr *MockS3ServiceMockRecorder) DeleteObject(ctx, bucketName, objectKey any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteObject", reflect.TypeOf((*MockS3Service)(nil).DeleteObject), ctx, bucketName, objectKey)
 }
 
+// GetReader mocks base method.
+func (m *MockS3Service) GetReader(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetReader", ctx, bucketName, objectKey)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetReader indicates an expected call of GetReader.
+func (mr *MockS3ServiceMockRecorder) GetReader(ctx, bucketName, objectKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReader", reflect.TypeOf((*MockS3Service)(nil).GetReader), ctx, bucketName, objectKey)
+}
+
 // ListObjects mocks base method.
 func (m *MockS3Service) ListObjects(ctx context.Context, bucketName, continuationToken, prefix string) (*s3.ListObjectsV2Output, error) {
 	m.ctrl.T.Helper()
@@ -194,16 +210,16 @@ func (m *MockS3Provider) EXPECT() *MockS3ProviderMockRecorder {
 }
 
 // GetService mocks base method.
-func (m *MockS3Provider) GetService(ctx context.Context) (S3Service, error) {
+func (m *MockS3Provider) GetService(ctx context.Context, staticCreds AWSOptions) (S3Service, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetService", ctx)
+	ret := m.ctrl.Call(m, "GetService", ctx, staticCreds)
 	ret0, _ := ret[0].(S3Service)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetService indicates an expected call of GetService.
-func (mr *MockS3ProviderMockRecorder) GetService(ctx any) *gomock.Call {
+func (mr *MockS3ProviderMockRecorder) GetService(ctx, staticCreds any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetService", reflect.TypeOf((*MockS3Provider)(nil).GetService), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetService", reflect.TypeOf((*MockS3Provider)(nil).GetService), ctx, staticCreds)
 }

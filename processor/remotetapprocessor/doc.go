@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package remotetapprocessor can be positioned anywhere in a pipeline, allowing
 // data to pass through to the next component. Simultaneously, it makes a portion

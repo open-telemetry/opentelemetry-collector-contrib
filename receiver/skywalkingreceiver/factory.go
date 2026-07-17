@@ -44,6 +44,16 @@ func NewFactory() receiver.Factory {
 
 // CreateDefaultConfig creates the default configuration for Skywalking receiver.
 func createDefaultConfig() component.Config {
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpServerConfig.WriteTimeout = 0
+	httpServerConfig.ReadHeaderTimeout = 0
+	httpServerConfig.IdleTimeout = 0
+	httpServerConfig.KeepAlivesEnabled = false
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  defaultHTTPEndpoint,
+	}
 	return &Config{
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
@@ -52,9 +62,7 @@ func createDefaultConfig() component.Config {
 					Transport: confignet.TransportTypeTCP,
 				},
 			},
-			HTTP: &confighttp.ServerConfig{
-				Endpoint: defaultHTTPEndpoint,
-			},
+			HTTP: &httpServerConfig,
 		},
 	}
 }
@@ -129,7 +137,7 @@ func createConfiguration(rCfg *Config) (*configuration, error) {
 
 	if rCfg.HTTP != nil {
 		c.CollectorHTTPSettings = *rCfg.HTTP
-		if c.CollectorHTTPPort, err = extractPortFromEndpoint(rCfg.HTTP.Endpoint); err != nil {
+		if c.CollectorHTTPPort, err = extractPortFromEndpoint(rCfg.HTTP.NetAddr.Endpoint); err != nil {
 			return nil, fmt.Errorf("unable to extract port for the HTTP endpoint: %w", err)
 		}
 	}

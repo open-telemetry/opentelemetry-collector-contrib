@@ -36,6 +36,7 @@ COMMON_LABELS["priority:p2"]="priority:p2"
 COMMON_LABELS["priority:p3"]="priority:p3"
 COMMON_LABELS["stale"]="Stale"
 COMMON_LABELS["never-stale"]="never stale"
+COMMON_LABELS["skip-changelog"]="Skip Changelog"
 
 LABELS=$(echo "${COMMENT}" | sed -E 's%^/label%%')
 

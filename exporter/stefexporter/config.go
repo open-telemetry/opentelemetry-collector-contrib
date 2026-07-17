@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-// Config defines configuration for logging exporter.
+// Config defines configuration for STEF exporter.
 type Config struct {
 	exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	QueueConfig                  configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`

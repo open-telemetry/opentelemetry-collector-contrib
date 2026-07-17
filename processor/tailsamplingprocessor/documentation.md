@@ -6,9 +6,25 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_processor_tail_sampling_count_bytes_sampled
+
+Count of bytes that were sampled or not per sampling policy
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| policy | Name of the policy | Any Str | - |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
+| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` | - |
+
 ### otelcol_processor_tail_sampling_count_spans_sampled
 
-Count of spans that were sampled or not per sampling policy [Development]
+Count of spans that were sampled or not per sampling policy
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -16,15 +32,23 @@ Count of spans that were sampled or not per sampling policy [Development]
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| policy | Name of the policy | Any Str |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
-| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| policy | Name of the policy | Any Str | - |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
+| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` | - |
+
+### otelcol_processor_tail_sampling_count_spans_with_unparseable_tracestate
+
+Count of spans skipped while rewriting the effective `th` because their tracestate could not be parsed
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {spans} | Sum | Int | true | Development |
 
 ### otelcol_processor_tail_sampling_count_traces_sampled
 
-Count of traces that were sampled or not per sampling policy [Development]
+Count of traces that were sampled or not per sampling policy
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -32,15 +56,15 @@ Count of traces that were sampled or not per sampling policy [Development]
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| policy | Name of the policy | Any Str |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
-| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| policy | Name of the policy | Any Str | - |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
+| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` | - |
 
 ### otelcol_processor_tail_sampling_early_releases_from_cache_decision
 
-Number of spans that were able to be immediately released due to a decision cache hit. [Development]
+Number of spans that were able to be immediately released due to a decision cache hit.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -48,13 +72,13 @@ Number of spans that were able to be immediately released due to a decision cach
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
 
 ### otelcol_processor_tail_sampling_global_count_traces_sampled
 
-Global count of traces that were sampled or not by at least one policy [Development]
+Global count of traces that were sampled or not by at least one policy
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -62,14 +86,14 @@ Global count of traces that were sampled or not by at least one policy [Developm
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
-| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
+| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` | - |
 
 ### otelcol_processor_tail_sampling_new_trace_id_received
 
-Counts the arrival of new traces [Development]
+Counts the arrival of new traces
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -77,7 +101,7 @@ Counts the arrival of new traces [Development]
 
 ### otelcol_processor_tail_sampling_sampling_decision_timer_latency
 
-Latency (in milliseconds) of each run of the sampling decision timer [Development]
+Latency (in milliseconds) of each run of the sampling decision timer
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -85,7 +109,7 @@ Latency (in milliseconds) of each run of the sampling decision timer [Developmen
 
 ### otelcol_processor_tail_sampling_sampling_late_span_age
 
-Time (in seconds) from the sampling decision was taken and the arrival of a late span [Development]
+Time (in seconds) from the sampling decision was taken and the arrival of a late span
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -93,7 +117,7 @@ Time (in seconds) from the sampling decision was taken and the arrival of a late
 
 ### otelcol_processor_tail_sampling_sampling_policy_evaluation_error
 
-Count of sampling policy evaluation errors [Development]
+Count of sampling policy evaluation errors
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -101,7 +125,7 @@ Count of sampling policy evaluation errors [Development]
 
 ### otelcol_processor_tail_sampling_sampling_policy_execution_count
 
-Total number of executions of a specific sampling policy [Development]
+Total number of executions of a specific sampling policy
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -109,27 +133,27 @@ Total number of executions of a specific sampling policy [Development]
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| policy | Name of the policy | Any Str |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| policy | Name of the policy | Any Str | - |
 
 ### otelcol_processor_tail_sampling_sampling_policy_execution_time_sum
 
-Total time spent (in microseconds) executing a specific sampling policy [Development]
+Total time spent (in microseconds) executing a specific sampling policy
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| µs | Sum | Int | true | Development |
+| us | Sum | Int | true | Development |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| policy | Name of the policy | Any Str |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| policy | Name of the policy | Any Str | - |
 
 ### otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 
-Count of traces that needed to be dropped before the configured wait time [Development]
+Count of traces that needed to be dropped before the configured wait time
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -137,7 +161,7 @@ Count of traces that needed to be dropped before the configured wait time [Devel
 
 ### otelcol_processor_tail_sampling_sampling_trace_removal_age
 
-Time (in seconds) from arrival of a new trace until its removal from memory [Development]
+Time (in seconds) from arrival of a new trace until its removal from memory
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -145,8 +169,30 @@ Time (in seconds) from arrival of a new trace until its removal from memory [Dev
 
 ### otelcol_processor_tail_sampling_sampling_traces_on_memory
 
-Tracks the number of traces current on memory [Development]
+Tracks the number of traces current on memory
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {traces} | Gauge | Int | Development |
+
+### otelcol_processor_tail_sampling_traces_dropped_too_large
+
+Count of traces that were dropped because they were too large
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {traces} | Sum | Int | true | Development |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `processor.tailsamplingprocessor.metricstatcountbytessampled` | alpha | When enabled, a new metric stat_count_bytes_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of bytes sampled or not per sampling policy, where the original counts traces. | v0.152.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48348) |
+| `processor.tailsamplingprocessor.metricstatcountspanssampled` | alpha | When enabled, a new metric stat_count_spans_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of spans sampled or not per sampling policy, where the original counts traces. | v0.95.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30482) |
+| `processor.tailsamplingprocessor.recordpolicy` | alpha | When enabled, attaches the name of the policy (and if applicable, composite policy) responsible for sampling a trace in the 'tailsampling.policy', 'tailsampling.composite_policy', and `tailsampling.cached_decision` attributes. | v0.120.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35180) |
+| `processor.tailsamplingprocessor.tailstorageextension` | alpha | When enabled, allows configuring tail_storage to use a tail storage extension implementation. | v0.150.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/47331) |
+| `processor.tailsamplingprocessor.usetracestate` | alpha | When enabled, sampling policies consult OpenTelemetry probability sampling information carried in W3C tracestate (the 'rv' and 'th' fields of the 'ot' section). The 'probabilistic' policy uses tracestate randomness for its sampling decision (falling back to the legacy FNV trace ID hash when no tracestate sampling info is present), and the processor rewrites the outgoing 'th' on sampled traces to the effective threshold across all matched policies. | v0.154.0 | N/A | [Link](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

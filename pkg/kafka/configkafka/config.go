@@ -6,9 +6,12 @@ package configkafka // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"errors"
 	"fmt"
+	"math"
+	"strings"
 	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/twmb/franz-go/pkg/kversion"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -19,14 +22,30 @@ const (
 	EarliestOffset = "earliest"
 )
 
+// GroupRebalanceStrategy defines the strategy to use for partition assignment.
+type GroupRebalanceStrategy string
+
+const (
+	// RangeBalanceStrategy assigns partitions on a per-topic basis.
+	RangeBalanceStrategy GroupRebalanceStrategy = "range"
+	// RoundRobinBalanceStrategy assigns partitions to all consumers in a round-robin fashion.
+	RoundRobinBalanceStrategy GroupRebalanceStrategy = "roundrobin"
+	// StickyBalanceStrategy attempts to preserve previous assignments when rebalancing.
+	StickyBalanceStrategy GroupRebalanceStrategy = "sticky"
+	// CooperativeStickyBalanceStrategy is similar to sticky but uses cooperative rebalancing.
+	CooperativeStickyBalanceStrategy GroupRebalanceStrategy = "cooperative-sticky"
+)
+
 type ClientConfig struct {
 	// Brokers holds the list of Kafka bootstrap servers (default localhost:9092).
 	Brokers []string `mapstructure:"brokers"`
 
-	// ResolveCanonicalBootstrapServersOnly configures the Kafka client to perform
-	// a DNS lookup on each of the provided brokers, and then perform a reverse
-	// lookup on the resulting IPs to obtain the canonical hostnames to use as the
-	// bootstrap servers. This can be required in SASL environments.
+	// ResolveCanonicalBootstrapServersOnly is ignored, and exists for
+	// backwards compatibility in config parsing.
+	//
+	// Deprecated [v0.153.0]: this field is a no-op since the migration to franz-go,
+	// which has no direct equivalent to the associated Sarama config. This config
+	// will be removed in a future release.
 	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
 
 	// ProtocolVersion defines the Kafka protocol version that the client will
@@ -62,14 +81,18 @@ type ClientConfig struct {
 	//
 	// NOTE: this is experimental and may be removed in a future release.
 	UseLeaderEpoch bool `mapstructure:"use_leader_epoch"`
+
+	// ConnIdleTimeout specifies the time after which idle connections are not reused and may be closed.
+	ConnIdleTimeout time.Duration `mapstructure:"conn_idle_timeout"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
-		Brokers:        []string{"localhost:9092"},
-		ClientID:       "otel-collector",
-		Metadata:       NewDefaultMetadataConfig(),
-		UseLeaderEpoch: true,
+		Brokers:         []string{"localhost:9092"},
+		ClientID:        "otel-collector",
+		Metadata:        NewDefaultMetadataConfig(),
+		UseLeaderEpoch:  true,
+		ConnIdleTimeout: 9 * time.Minute,
 	}
 }
 
@@ -78,9 +101,12 @@ func (c ClientConfig) Validate() error {
 		return errors.New("brokers must be specified")
 	}
 	if c.ProtocolVersion != "" {
-		if _, err := sarama.ParseKafkaVersion(c.ProtocolVersion); err != nil {
-			return fmt.Errorf("invalid protocol version: %w", err)
+		if kversion.FromString(c.ProtocolVersion) == nil {
+			return fmt.Errorf("invalid protocol version: %q", c.ProtocolVersion)
 		}
+	}
+	if c.ConnIdleTimeout <= 0 {
+		return fmt.Errorf("conn_idle_timeout (%s) must be positive", c.ConnIdleTimeout)
 	}
 	return nil
 }
@@ -109,10 +135,6 @@ type ConsumerConfig struct {
 	// The minimum bytes per fetch from Kafka (default "1")
 	MinFetchSize int32 `mapstructure:"min_fetch_size"`
 
-	// The default bytes per fetch from Kafka (default "1048576")
-	// Only used with Sarama client. Use MaxFetchSize for franz-go.
-	DefaultFetchSize int32 `mapstructure:"default_fetch_size"`
-
 	// The maximum bytes per fetch from Kafka (default "1048576")
 	MaxFetchSize int32 `mapstructure:"max_fetch_size"`
 
@@ -124,12 +146,23 @@ type ConsumerConfig struct {
 	// per partition (default "1048576")
 	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
 
-	// RebalanceStrategy specifies the strategy to use for partition assignment.
-	// Possible values are "range", "roundrobin", and "sticky", and
-	// "cooperative-sticky" (franz-go only).
+	// GroupRebalanceStrategies specifies the ordered strategies to advertise
+	// for partition assignment. Kafka selects the first strategy supported by
+	// every member of the consumer group. Built-in values are "range",
+	// "roundrobin", "sticky", and "cooperative-sticky". Any other value is
+	// treated as the component ID of a registered extension that implements
+	// kgo.GroupBalancer. When omitted, the franz-go default applies, currently
+	// "cooperative-sticky". This field is mutually exclusive with
+	// GroupRebalanceStrategy.
+	GroupRebalanceStrategies []GroupRebalanceStrategy `mapstructure:"group_rebalance_strategies"`
+
+	// GroupRebalanceStrategy specifies the strategy to use for partition
+	// assignment. Accepts the same values as GroupRebalanceStrategies.
 	//
-	// Defaults to "cooperative-sticky" for franz-go, "range" for Sarama.
-	GroupRebalanceStrategy string `mapstructure:"group_rebalance_strategy,omitempty"`
+	// Defaults to "cooperative-sticky".
+	//
+	// Deprecated [v0.154.0]: use GroupRebalanceStrategies instead.
+	GroupRebalanceStrategy GroupRebalanceStrategy `mapstructure:"group_rebalance_strategy"`
 
 	// GroupInstanceID specifies the ID of the consumer
 	GroupInstanceID string `mapstructure:"group_instance_id,omitempty"`
@@ -148,7 +181,6 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 		MinFetchSize:          1,
 		MaxFetchSize:          1048576,
 		MaxFetchWait:          250 * time.Millisecond,
-		DefaultFetchSize:      1048576,
 		MaxPartitionFetchSize: 1048576,
 	}
 }
@@ -164,15 +196,19 @@ func (c ConsumerConfig) Validate() error {
 		)
 	}
 
-	if c.GroupRebalanceStrategy != "" {
-		switch c.GroupRebalanceStrategy {
-		case sarama.RangeBalanceStrategyName, sarama.RoundRobinBalanceStrategyName, sarama.StickyBalanceStrategyName:
-			// Valid
-		default:
-			return fmt.Errorf(
-				"rebalance_strategy should be one of 'range', 'roundrobin', or 'sticky'. configured value %v",
-				c.GroupRebalanceStrategy,
-			)
+	if c.GroupRebalanceStrategy != "" && len(c.GroupRebalanceStrategies) > 0 {
+		return errors.New("group_rebalance_strategy and group_rebalance_strategies are mutually exclusive; group_rebalance_strategy is deprecated, prefer group_rebalance_strategies")
+	}
+
+	if err := validateGroupRebalanceStrategy(c.GroupRebalanceStrategy); err != nil {
+		return err
+	}
+	for _, strategy := range c.GroupRebalanceStrategies {
+		if strings.TrimSpace(string(strategy)) == "" {
+			return errors.New("group_rebalance_strategies entries cannot be empty")
+		}
+		if err := validateGroupRebalanceStrategy(strategy); err != nil {
+			return err
 		}
 	}
 
@@ -197,6 +233,32 @@ func (c ConsumerConfig) Validate() error {
 	return nil
 }
 
+func validateGroupRebalanceStrategy(strategy GroupRebalanceStrategy) error {
+	// An empty value means the deprecated group_rebalance_strategy field is
+	// unset. Treat it as valid so the default ConsumerConfig passes validation.
+	// Empty entries inside group_rebalance_strategies are rejected by the caller.
+	if strategy == "" {
+		return nil
+	}
+	switch strategy {
+	case RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy:
+		// Built-in strategy, valid.
+	default:
+		// Accept any value that parses as a component ID; the extension
+		// will be resolved at runtime by the consumer client.
+		var id component.ID
+		if err := id.UnmarshalText([]byte(strategy)); err != nil {
+			return fmt.Errorf(
+				"group rebalance strategy %q is not a built-in strategy (%s, %s, %s, %s) or a valid extension ID: %w",
+				strategy,
+				RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy,
+				err,
+			)
+		}
+	}
+	return nil
+}
+
 type AutoCommitConfig struct {
 	// Whether or not to auto-commit updated offsets back to the broker.
 	// (default enabled).
@@ -207,9 +269,25 @@ type AutoCommitConfig struct {
 	Interval time.Duration `mapstructure:"interval"`
 }
 
+// franzGoMinBrokerWriteBytes is franz-go's hardcoded 100 MiB floor for
+// kgo.BrokerMaxWriteBytes: values below it are rejected by franz-go at client
+// construction. It is also franz-go's default for that option, so it doubles as
+// the default for ProducerConfig.MaxBrokerWriteBytes, preserving the prior
+// (non-configurable) behavior when left unset.
+const franzGoMinBrokerWriteBytes = 100 << 20 // 104857600
+
 type ProducerConfig struct {
-	// Maximum message bytes the producer will accept to produce (default 1000000)
+	// MaxMessageBytes is the maximum message bytes the producer will accept to
+	// produce. It must be less than or equal to MaxBrokerWriteBytes, and must
+	// fit in an int32 as it maps to franz-go's kgo.ProducerBatchMaxBytes.
+	// (default 1000000)
 	MaxMessageBytes int `mapstructure:"max_message_bytes"`
+
+	// MaxBrokerWriteBytes is the maximum bytes the producer will write to a
+	// broker in a single request. It must be >= MaxMessageBytes. Maps to
+	// franz-go's kgo.BrokerMaxWriteBytes, whose default (and minimum accepted
+	// value) is 100 MiB. (default 104857600)
+	MaxBrokerWriteBytes int `mapstructure:"max_broker_write_bytes"`
 
 	// RequiredAcks holds the number acknowledgements required before producing
 	// returns successfully. See:
@@ -224,7 +302,7 @@ type ProducerConfig struct {
 	RequiredAcks RequiredAcks `mapstructure:"required_acks"`
 
 	// Compression Codec used to produce messages
-	// https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#CompressionCodec
+	// https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#CompressionCodec
 	// The options are: 'none' (default), 'gzip', 'snappy', 'lz4', and 'zstd'
 	Compression string `mapstructure:"compression"`
 
@@ -248,6 +326,7 @@ type ProducerConfig struct {
 func NewDefaultProducerConfig() ProducerConfig {
 	return ProducerConfig{
 		MaxMessageBytes:        1000000,
+		MaxBrokerWriteBytes:    franzGoMinBrokerWriteBytes,
 		RequiredAcks:           WaitForLocal,
 		Compression:            "none",
 		FlushMaxMessages:       10000,
@@ -273,6 +352,32 @@ func (c ProducerConfig) Validate() error {
 	}
 	if c.MaxMessageBytes < 0 {
 		return fmt.Errorf("max_message_bytes (%d) must be non-negative", c.MaxMessageBytes)
+	}
+	// Both limits are passed to franz-go as int32, so reject anything that would
+	// overflow on conversion and silently become a negative/invalid size.
+	if c.MaxMessageBytes > math.MaxInt32 {
+		return fmt.Errorf("max_message_bytes (%d) must not exceed %d", c.MaxMessageBytes, math.MaxInt32)
+	}
+	if c.MaxBrokerWriteBytes < 0 {
+		return fmt.Errorf("max_broker_write_bytes (%d) must be non-negative", c.MaxBrokerWriteBytes)
+	}
+	if c.MaxBrokerWriteBytes < franzGoMinBrokerWriteBytes {
+		return fmt.Errorf(
+			"max_broker_write_bytes (%d) must be at least %d (%d MiB, franz-go minimum)",
+			c.MaxBrokerWriteBytes,
+			franzGoMinBrokerWriteBytes,
+			franzGoMinBrokerWriteBytes>>20,
+		)
+	}
+	if c.MaxBrokerWriteBytes > math.MaxInt32 {
+		return fmt.Errorf("max_broker_write_bytes (%d) must not exceed %d", c.MaxBrokerWriteBytes, math.MaxInt32)
+	}
+	if c.MaxMessageBytes > c.MaxBrokerWriteBytes {
+		return fmt.Errorf(
+			"max_message_bytes (%d) cannot be greater than max_broker_write_bytes (%d)",
+			c.MaxMessageBytes,
+			c.MaxBrokerWriteBytes,
+		)
 	}
 	if c.FlushMaxMessages < 1 {
 		return fmt.Errorf("flush_max_messages (%d) must be at least 1", c.FlushMaxMessages)
@@ -388,12 +493,20 @@ type SASLConfig struct {
 	Username string `mapstructure:"username"`
 	// Password to be used on authentication
 	Password string `mapstructure:"password"`
-	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, SCRAM-SHA-256 or SCRAM-SHA-512).
+	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER,
+	// SCRAM-SHA-256 or SCRAM-SHA-512).
 	Mechanism string `mapstructure:"mechanism"`
-	// SASL Protocol Version to be used, possible values are: (0, 1). Defaults to 0.
+	// Version is ignored, and exists for backwards compatibility in config parsing.
+	//
+	// Deprecated [v0.153.0]: this field is a no-op since the migration to franz-go,
+	// which negotiates the SASL handshake version automatically. This config will be
+	// removed in a future release.
 	Version int `mapstructure:"version"`
 	// AWSMSK holds configuration specific to AWS MSK.
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
+	// ID of type "extension" providing a TokenSource for OAUTHBEARER Mechanism,
+	// typically named "oauth2client"
+	OAuthBearerTokenSource component.ID `mapstructure:"oauthbearer_token_source,omitempty"`
 }
 
 func (c SASLConfig) Validate() error {
@@ -407,6 +520,10 @@ func (c SASLConfig) Validate() error {
 		}
 		if c.Password == "" {
 			return errors.New("password is required")
+		}
+	case "OAUTHBEARER":
+		if c.OAuthBearerTokenSource == (component.ID{}) {
+			return errors.New("oauth2authclient extension is required")
 		}
 	default:
 		return fmt.Errorf(

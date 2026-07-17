@@ -7,18 +7,12 @@ import (
 	"encoding/json"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler"
 )
 
 const (
-	// OpenTelemetry attribute name for the operations mode of the WAF policy
-	attributeSecurityRuleRulesetModeKey = "security_rule.ruleset.mode"
-
-	// OpenTelemetry attribute name for the action taken on the request
-	attributeSecurityRuleActionKey = "security_rule.action"
-
 	// OpenTelemetry attribute name for the unique ID to identify the health probe request
 	attributeAzureFrontDoorHealthProbeID = "azure.frontdoor.health_probe.id"
 

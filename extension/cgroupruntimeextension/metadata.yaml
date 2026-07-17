@@ -1,4 +1,6 @@
-type: cgroupruntime
+display_name: Cgroup Go Runtime Extension
+type: cgroup_runtime
+deprecated_type: cgroupruntime
 
 status:
   class: extension

@@ -225,6 +225,9 @@ func Test_Start(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
+			defer func() {
+				assert.NoError(t, prwe.Shutdown(t.Context()))
+			}()
 			assert.NotNil(t, prwe.client)
 		})
 	}
@@ -241,11 +244,9 @@ func Test_Shutdown(t *testing.T) {
 	require.NoError(t, err)
 	errChan := make(chan error, 5)
 	for range 5 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			errChan <- prwe.PushMetrics(t.Context(), pmetric.NewMetrics())
-		}()
+		})
 	}
 	wg.Wait()
 	close(errChan)
@@ -384,6 +385,9 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	if err := prwe.Start(context.Background(), componenttest.NewNopHost()); err != nil {
 		return err
 	}
+	defer func() {
+		_ = prwe.Shutdown(context.Background())
+	}()
 
 	return prwe.handleExport(context.Background(), testmap, nil)
 }
@@ -758,9 +762,9 @@ func Test_PushMetrics(t *testing.T) {
 
 					if tt.enableSendingRW2 {
 						cfg.RemoteWriteProtoMsg = remoteapi.WriteV2MessageType
-						oldValue := enableSendingRW2FeatureGate.IsEnabled()
-						testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, tt.enableSendingRW2)
-						defer testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, oldValue)
+						oldValue := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled()
+						testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, tt.enableSendingRW2)
+						defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, oldValue)
 					} else {
 						cfg.RemoteWriteProtoMsg = remoteapi.WriteV1MessageType
 					}
@@ -810,7 +814,7 @@ func Test_PushMetrics(t *testing.T) {
 						metadatatest.AssertEqualExporterPrometheusremotewriteFailedTranslations(t, tel, []metricdata.DataPoint[int64]{
 							{
 								Value:      int64(tt.expectedFailedTranslations),
-								Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite"), attribute.String("endpoint", clientConfig.Endpoint)),
+								Attributes: attribute.NewSet(attribute.String("exporter", metadata.Type.String()), attribute.String("endpoint", clientConfig.Endpoint)),
 							},
 						}, metricdatatest.IgnoreTimestamp())
 					}
@@ -818,7 +822,7 @@ func Test_PushMetrics(t *testing.T) {
 					metadatatest.AssertEqualExporterPrometheusremotewriteTranslatedTimeSeries(t, tel, []metricdata.DataPoint[int64]{
 						{
 							Value:      int64(tt.expectedTimeSeries),
-							Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite"), attribute.String("endpoint", clientConfig.Endpoint)),
+							Attributes: attribute.NewSet(attribute.String("exporter", metadata.Type.String()), attribute.String("endpoint", clientConfig.Endpoint)),
 						},
 					}, metricdatatest.IgnoreTimestamp())
 				})
@@ -1107,6 +1111,10 @@ func assertPermanentConsumerError(t assert.TestingT, err error, _ ...any) bool {
 	return assert.True(t, consumererror.IsPermanent(err), "error should be consumererror.Permanent")
 }
 
+func assertNonPermanentError(t assert.TestingT, err error, _ ...any) bool {
+	return assert.False(t, consumererror.IsPermanent(err), "error should not be consumererror.Permanent")
+}
+
 func TestRetries(t *testing.T) {
 	tts := []struct {
 		name             string
@@ -1114,6 +1122,7 @@ func TestRetries(t *testing.T) {
 		expectedAttempts int
 		httpStatus       int
 		RetryOnHTTP429   bool
+		retryEnabled     bool
 		assertError      assert.ErrorAssertionFunc
 		assertErrorType  assert.ErrorAssertionFunc
 		ctx              context.Context
@@ -1124,6 +1133,7 @@ func TestRetries(t *testing.T) {
 			4,
 			http.StatusInternalServerError,
 			false,
+			true,
 			assert.NoError,
 			assert.NoError,
 			t.Context(),
@@ -1133,6 +1143,7 @@ func TestRetries(t *testing.T) {
 			3,
 			4,
 			http.StatusTooManyRequests,
+			true,
 			true,
 			assert.NoError,
 			assert.NoError,
@@ -1144,6 +1155,7 @@ func TestRetries(t *testing.T) {
 			1,
 			http.StatusTooManyRequests,
 			false,
+			true,
 			assert.Error,
 			assertPermanentConsumerError,
 			t.Context(),
@@ -1154,6 +1166,7 @@ func TestRetries(t *testing.T) {
 			1,
 			http.StatusBadRequest,
 			false,
+			true,
 			assert.Error,
 			assertPermanentConsumerError,
 			t.Context(),
@@ -1164,9 +1177,32 @@ func TestRetries(t *testing.T) {
 			0,
 			http.StatusInternalServerError,
 			false,
+			true,
 			assert.Error,
 			assertPermanentConsumerError,
 			canceledContext(),
+		},
+		{
+			"test 5xx with retry disabled returns non-permanent error",
+			4,
+			1,
+			http.StatusServiceUnavailable,
+			false,
+			false,
+			assert.Error,
+			assertNonPermanentError,
+			t.Context(),
+		},
+		{
+			"test 4xx with retry disabled returns permanent error",
+			4,
+			1,
+			http.StatusBadRequest,
+			false,
+			false,
+			assert.Error,
+			assertPermanentConsumerError,
+			t.Context(),
 		},
 	}
 
@@ -1198,7 +1234,7 @@ func TestRetries(t *testing.T) {
 				client:         http.DefaultClient,
 				retryOnHTTP429: tt.RetryOnHTTP429,
 				retrySettings: configretry.BackOffConfig{
-					Enabled: true,
+					Enabled: tt.retryEnabled,
 				},
 				settings:  testTel.NewTelemetrySettings(),
 				telemetry: telemetry,

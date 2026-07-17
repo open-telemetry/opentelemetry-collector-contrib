@@ -1,0 +1,19 @@
+type: object
+properties:
+  account:
+    type: string
+  database:
+    type: string
+  password:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  role:
+    type: string
+  schema:
+    type: string
+  username:
+    type: string
+  warehouse:
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/metadata.metrics_builder_config

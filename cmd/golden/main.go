@@ -6,8 +6,10 @@ package main // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -53,17 +55,17 @@ func run(args []string) error {
 	factory := otlpreceiver.NewFactory()
 	receiverConfig := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	if cfg.OTLPHTTPEndoint != "" {
-		if insertErr := insertDefault(&receiverConfig.HTTP); insertErr != nil {
+		if insertErr := insertDefault(&receiverConfig.Protocols.HTTP); insertErr != nil {
 			return insertErr
 		}
-		receiverConfig.HTTP.Get().ServerConfig.Endpoint = cfg.OTLPHTTPEndoint
+		receiverConfig.Protocols.HTTP.Get().ServerConfig.NetAddr.Endpoint = cfg.OTLPHTTPEndoint
 	}
 
 	if cfg.OTLPEndpoint != "" {
-		if insertErr := insertDefault(&receiverConfig.GRPC); insertErr != nil {
+		if insertErr := insertDefault(&receiverConfig.Protocols.GRPC); insertErr != nil {
 			return insertErr
 		}
-		receiverConfig.GRPC.Get().NetAddr.Endpoint = cfg.OTLPEndpoint
+		receiverConfig.Protocols.GRPC.Get().NetAddr.Endpoint = cfg.OTLPEndpoint
 	}
 
 	logger, err := zap.NewDevelopment()
@@ -103,8 +105,13 @@ func run(args []string) error {
 	case <-sink.DoneChan:
 	}
 
-	if sink.Error != nil {
-		return sink.Error
+	if len(sink.Errors) > 0 {
+		var errMsg strings.Builder
+		fmt.Fprintf(&errMsg, "comparison failed with %d error(s):\n", len(sink.Errors))
+		for _, attemptErr := range sink.Errors {
+			fmt.Fprintf(&errMsg, "  Attempt %d: %v\n", attemptErr.AttemptNumber, attemptErr.Error)
+		}
+		return errors.New(errMsg.String())
 	}
 	if timeout {
 		return errors.New("timeout waiting for data")

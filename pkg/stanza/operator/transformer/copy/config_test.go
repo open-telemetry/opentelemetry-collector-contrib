@@ -82,6 +82,16 @@ func TestUnmarshal(t *testing.T) {
 				Name:            "invalid_missing_to_and_from",
 				ExpectBuildErrs: []error{errMissingTo, errMissingFrom},
 			},
+			{
+				Name: "on_error_drop",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.From = entry.NewBodyField("key")
+					cfg.To = entry.NewBodyField("key2")
+					cfg.OnError = "drop"
+					return cfg
+				}(),
+			},
 		},
 	}.Run(t)
 }

@@ -6,9 +6,11 @@ package windowseventlogreceiver // import "github.com/open-telemetry/opentelemet
 import (
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -26,6 +28,38 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
+}
+
+func TestNegativeCacheSizeRejected(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	cm := confmap.NewFromStringMap(map[string]any{
+		"resolve_sids": map[string]any{
+			"cache_size": -1,
+		},
+	})
+	err := cm.Unmarshal(cfg)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "cache_size")
+}
+
+func TestNegativeCacheTTLRejected(t *testing.T) {
+	cfg := &ResolveSIDsConfig{
+		Enabled:  true,
+		CacheTTL: -1 * time.Second,
+	}
+	err := cfg.Validate()
+	require.Error(t, err)
+	require.ErrorContains(t, err, "cache_ttl must not be negative")
+}
+
+func TestZeroCacheTTLAccepted(t *testing.T) {
+	cfg := &ResolveSIDsConfig{
+		Enabled:  true,
+		CacheTTL: 0,
+	}
+	require.NoError(t, cfg.Validate())
 }
 
 func TestCreateAndShutdown(t *testing.T) {

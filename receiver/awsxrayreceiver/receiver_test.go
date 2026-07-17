@@ -47,7 +47,7 @@ func TestProxyCreationFailed(t *testing.T) {
 	assert.NoError(t, err, "there should be address available")
 
 	sink := new(consumertest.TracesSink)
-	_, err = newReceiver(
+	rcvr, err := newReceiver(
 		&Config{
 			AddrConfig: confignet.AddrConfig{
 				Endpoint:  addr,
@@ -62,7 +62,8 @@ func TestProxyCreationFailed(t *testing.T) {
 		sink,
 		receivertest.NewNopSettings(metadata.Type),
 	)
-	assert.Error(t, err, "receiver creation should fail due to failure to create TCP proxy")
+	assert.NoError(t, err, "receiver should be created before proxy startup")
+	assert.Error(t, rcvr.Start(t.Context(), componenttest.NewNopHost()), "receiver start should fail due to failure to create TCP proxy")
 }
 
 func TestPollerCreationFailed(t *testing.T) {
@@ -338,13 +339,28 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 }
 
 func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, accepted, refused int64) {
-	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
-	assert.NoError(t, err)
+	var got metricdata.Metrics
+	var err error
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		got, err = tt.GetMetric("otelcol_receiver_accepted_spans")
+		assert.NoError(c, err)
+		if err != nil {
+			return
+		}
+		sum, ok := got.Data.(metricdata.Sum[int64])
+		assert.True(c, ok)
+		if !ok {
+			return
+		}
+		if assert.Len(c, sum.DataPoints, 1) {
+			assert.Equal(c, accepted, sum.DataPoints[0].Value)
+		}
+	}, 5*time.Second, 100*time.Millisecond)
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_accepted_spans",
 			Description: "Number of spans successfully pushed into the pipeline. [Alpha]",
-			Unit:        "{spans}",
+			Unit:        "{span}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -359,13 +375,26 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 			},
 		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-	got, err = tt.GetMetric("otelcol_receiver_refused_spans")
-	assert.NoError(t, err)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		got, err = tt.GetMetric("otelcol_receiver_refused_spans")
+		assert.NoError(c, err)
+		if err != nil {
+			return
+		}
+		sum, ok := got.Data.(metricdata.Sum[int64])
+		assert.True(c, ok)
+		if !ok {
+			return
+		}
+		if assert.Len(c, sum.DataPoints, 1) {
+			assert.Equal(c, refused, sum.DataPoints[0].Value)
+		}
+	}, 5*time.Second, 100*time.Millisecond)
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_refused_spans",
 			Description: "Number of spans that could not be pushed into the pipeline. [Alpha]",
-			Unit:        "{spans}",
+			Unit:        "{span}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,

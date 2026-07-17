@@ -40,6 +40,10 @@ func (cfg *Config) Validate() error {
 	if cfg.CollectorID == "" || strings.Contains(cfg.CollectorID, "${") {
 		return errors.New("CollectorID is not a valid ID")
 	}
+	// ensure valid interval
+	if cfg.Interval <= 0 {
+		return fmt.Errorf("interval must be a positive duration, got %s", cfg.Interval)
+	}
 
 	return nil
 }

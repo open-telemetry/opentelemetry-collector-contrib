@@ -20,6 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
+	alibabaecs "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
@@ -35,7 +36,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
+	ibmcloudclassic "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic"
+	ibmcloudvpc "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8sapi"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
@@ -43,6 +46,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/oraclecloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
+	tencentcvm "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/tencent/cvm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/upcloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr"
 )
@@ -62,6 +66,7 @@ type factory struct {
 func NewFactory() processor.Factory {
 	resourceProviderFactory := internal.NewProviderFactory(map[internal.DetectorType]internal.DetectorFactory{
 		akamai.TypeStr:           akamai.NewDetector,
+		alibabaecs.TypeStr:       alibabaecs.NewDetector,
 		aks.TypeStr:              aks.NewDetector,
 		azure.TypeStr:            azure.NewDetector,
 		consul.TypeStr:           consul.NewDetector,
@@ -76,14 +81,18 @@ func NewFactory() processor.Factory {
 		gcp.TypeStr:              gcp.NewDetector,
 		heroku.TypeStr:           heroku.NewDetector,
 		hetzner.TypeStr:          hetzner.NewDetector,
+		ibmcloudclassic.TypeStr:  ibmcloudclassic.NewDetector,
+		ibmcloudvpc.TypeStr:      ibmcloudvpc.NewDetector,
 		scaleway.TypeStr:         scaleway.NewDetector,
 		system.TypeStr:           system.NewDetector,
 		openshift.TypeStr:        openshift.NewDetector,
 		nova.TypeStr:             nova.NewDetector,
 		oraclecloud.TypeStr:      oraclecloud.NewDetector,
-		k8snode.TypeStr:          k8snode.NewDetector,
+		k8sapi.TypeStr:           k8sapi.NewDetector,
+		k8sapi.TypeStrAlias:      k8sapi.NewDeprecatedDetector,
 		kubeadm.TypeStr:          kubeadm.NewDetector,
 		dynatrace.TypeStr:        dynatrace.NewDetector,
+		tencentcvm.TypeStr:       tencentcvm.NewDetector,
 		upcloud.TypeStr:          upcloud.NewDetector,
 		vultr.TypeStr:            vultr.NewDetector,
 	})
@@ -96,6 +105,7 @@ func NewFactory() processor.Factory {
 	return xprocessor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
+		xprocessor.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 		xprocessor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
 		xprocessor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
 		xprocessor.WithLogs(f.createLogsProcessor, metadata.LogsStability),

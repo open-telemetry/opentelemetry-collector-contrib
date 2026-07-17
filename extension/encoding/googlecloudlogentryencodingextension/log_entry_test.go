@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	gojson "github.com/goccy/go-json"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -17,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/passthroughnlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/proxynlb"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -110,11 +112,54 @@ func TestHandleHTTPRequestField(t *testing.T) {
 			expectsErr: "failed to parse request url",
 		},
 		{
-			name: "invalid protocol",
+			// Short ALPN token — well-known HTTP variants are normalised to
+			// name="http" + numeric version so telemetry stays consistent with
+			// the HTTP/1.1 form (regression test for #45214).
+			name: "h2 protocol normalised to http/2",
 			request: &httpRequest{
-				Protocol: "invalid",
+				Protocol: "h2",
 			},
-			expectsErr: `expected exactly one "/"`,
+			expectsAttributes: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "2",
+			},
+		},
+		{
+			name: "h2c protocol normalised to http/2",
+			request: &httpRequest{
+				Protocol: "h2c",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "2",
+			},
+		},
+		{
+			name: "h3 protocol normalised to http/3",
+			request: &httpRequest{
+				Protocol: "h3",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "3",
+			},
+		},
+		{
+			// Non-HTTP short ALPN token falls through to the raw-name path.
+			name: "unknown short ALPN token preserved as name",
+			request: &httpRequest{
+				Protocol: "mqtt",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name": "mqtt",
+			},
+		},
+		{
+			name: "invalid protocol — too many slashes",
+			request: &httpRequest{
+				Protocol: "a/b/c",
+			},
+			expectsErr: `at most one "/"`,
 		},
 		{
 			name: "invalid protocol 2",
@@ -592,6 +637,46 @@ func TestHandleProtoPayload(t *testing.T) {
 			}
 			require.NoError(t, err)
 			require.Equal(t, lr.Body().AsRaw(), tt.expectsBody)
+		})
+	}
+}
+
+func TestToSnakeCase(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		ignore   string
+		expected string
+	}{
+		{
+			name:     "k8s label key preserved",
+			input:    "labels.authorization.k8s.io/decision",
+			ignore:   ".",
+			expected: "labels.authorization.k8s.io/decision",
+		},
+		{
+			name:     "already snake_case unchanged",
+			input:    "already_snake",
+			ignore:   ".",
+			expected: "already_snake",
+		},
+		{
+			name:     "simple camelCase converted",
+			input:    "simpleLabel",
+			ignore:   ".",
+			expected: "simple_label",
+		},
+		{
+			name:     "h2c in lowercase preserved",
+			input:    "proxy.h2c.enabled",
+			ignore:   ".",
+			expected: "proxy.h2c.enabled",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := shared.ToSnakeCase(tt.input, tt.ignore)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

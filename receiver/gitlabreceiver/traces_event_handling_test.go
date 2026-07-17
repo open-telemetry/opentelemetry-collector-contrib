@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	gitlab "gitlab.com/gitlab-org/api/client-go"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -145,6 +145,24 @@ func TestProcessStageSpans(t *testing.T) {
 	}
 }
 
+func TestProcessStageSpans_SkipsStageWithEmptyStartedAt(t *testing.T) {
+	receiver, pipeline, traceID, parentSpanID := setupTestPipelineFromJSON(t, pipelineWebhookEventWithUnstartedStage)
+	glPipeline := &glPipeline{pipeline}
+
+	traces := ptrace.NewTraces()
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+
+	stages, err := receiver.processStageSpans(resourceSpans, glPipeline, traceID, parentSpanID)
+	require.NoError(t, err, "empty StartedAt on an unstarted stage should be skipped, not error")
+	require.Len(t, stages, 2, "both stages are still returned so processJobSpans can look up the started one by name")
+
+	// Only the started stage ("build") should have produced a span. The
+	// "deploy" stage, whose only job never started, is skipped.
+	require.Equal(t, 1, resourceSpans.ScopeSpans().Len(), "only the started stage should produce a span")
+	span := resourceSpans.ScopeSpans().At(0).Spans().At(0)
+	require.Equal(t, "build", span.Name(), "the surviving stage span should be the one that started")
+}
+
 func TestProcessJobSpans(t *testing.T) {
 	receiver, pipeline, traceID, _ := setupTestPipelineFromJSON(t, validPipelineWebhookEvent)
 	glPipeline := &glPipeline{pipeline}
@@ -179,7 +197,7 @@ func TestProcessJobSpans(t *testing.T) {
 func TestNewTraceID(t *testing.T) {
 	tests := []struct {
 		name       string
-		id         int
+		id         int64
 		finishedAt string
 		expectErr  bool
 	}{
@@ -220,7 +238,7 @@ func TestNewTraceID(t *testing.T) {
 func TestNewPipelineSpanID(t *testing.T) {
 	tests := []struct {
 		name       string
-		id         int
+		id         int64
 		finishedAt string
 		expectErr  bool
 	}{
@@ -261,7 +279,7 @@ func TestNewPipelineSpanID(t *testing.T) {
 func TestNewStageSpanID(t *testing.T) {
 	tests := []struct {
 		name      string
-		id        int
+		id        int64
 		stage     string
 		startedAt string
 		expectErr bool
@@ -306,7 +324,7 @@ func TestNewStageSpanID(t *testing.T) {
 func TestNewJobSpanID(t *testing.T) {
 	tests := []struct {
 		name      string
-		id        int
+		id        int64
 		startedAt string
 		expectErr bool
 	}{
@@ -681,14 +699,7 @@ func TestRunnerAttributes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var runner struct {
-				ID          int      `json:"id"`
-				Description string   `json:"description"`
-				Active      bool     `json:"active"`
-				IsShared    bool     `json:"is_shared"`
-				RunnerType  string   `json:"runner_type"`
-				Tags        []string `json:"tags"`
-			}
+			var runner gitlab.PipelineEventBuildRunner
 			err := json.Unmarshal([]byte(tt.runnerData), &runner)
 			require.NoError(t, err)
 

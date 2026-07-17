@@ -1,4 +1,4 @@
-signaltometrics:
+signal_to_metrics:
   datapoints:
     - name: gauge.to.histogram
       description: A histogram created from gauge values

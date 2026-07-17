@@ -65,3 +65,68 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestConfig_Validate(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      *Config
+		expectedErr string
+	}{
+		{
+			name: "valid config",
+			config: &Config{
+				LeaseName:      "test-lease",
+				LeaseNamespace: "test-namespace",
+				LeaseDuration:  15 * time.Second,
+				RenewDuration:  10 * time.Second,
+				RetryPeriod:    2 * time.Second,
+			},
+			expectedErr: "",
+		},
+		{
+			name: "missing lease name",
+			config: &Config{
+				LeaseName:      "",
+				LeaseNamespace: "test-namespace",
+				LeaseDuration:  15 * time.Second,
+				RenewDuration:  10 * time.Second,
+				RetryPeriod:    2 * time.Second,
+			},
+			expectedErr: "lease name and namespace must be set",
+		},
+		{
+			name: "missing lease namespace",
+			config: &Config{
+				LeaseName:      "test-lease",
+				LeaseNamespace: "",
+				LeaseDuration:  15 * time.Second,
+				RenewDuration:  10 * time.Second,
+				RetryPeriod:    2 * time.Second,
+			},
+			expectedErr: "lease name and namespace must be set",
+		},
+		{
+			name: "missing both lease name and namespace",
+			config: &Config{
+				LeaseName:      "",
+				LeaseNamespace: "",
+				LeaseDuration:  15 * time.Second,
+				RenewDuration:  10 * time.Second,
+				RetryPeriod:    2 * time.Second,
+			},
+			expectedErr: "lease name and namespace must be set",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.expectedErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.expectedErr)
+			}
+		})
+	}
+}

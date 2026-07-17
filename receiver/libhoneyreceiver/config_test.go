@@ -36,7 +36,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	require.True(t, ok, "invalid Config type")
 
 	getOrInsertDefault(t, &libhoneyCfg.HTTP)
-	assert.Equal(t, "localhost:8080", libhoneyCfg.HTTP.Get().Endpoint)
+	assert.Equal(t, "localhost:8080", libhoneyCfg.HTTP.Get().NetAddr.Endpoint)
 	assert.Equal(t, []string{"/events", "/event", "/batch"}, libhoneyCfg.HTTP.Get().TracesURLPaths)
 	assert.Empty(t, libhoneyCfg.AuthAPI)
 	assert.Equal(t, "service.name", libhoneyCfg.FieldMapConfig.Resources.ServiceName)

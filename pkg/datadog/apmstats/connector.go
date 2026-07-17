@@ -15,6 +15,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/config"
+	otelstats "github.com/DataDog/datadog-agent/pkg/trace/otel/stats"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
 	"github.com/DataDog/datadog-agent/pkg/util/option"
 	"github.com/DataDog/datadog-go/v5/statsd"
@@ -26,7 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/internal/metadata"
 )
 
 // traceToMetricConnector is the schema for connector
@@ -144,12 +145,11 @@ func getTraceAgentCfg(logger *zap.Logger, cfg datadogconfig.TracesConnectorConfi
 		logger.Info("traces::compute_top_level_by_span_kind needs to be enabled in both the Datadog connector and Datadog exporter configs if both components are being used")
 		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
 	}
-	if !featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
+	if !metadata.DatadogEnableReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
 	}
-	if !featuregates.OperationAndResourceNameV2FeatureGate.IsEnabled() {
+	if !metadata.DatadogEnableOperationAndResourceNameV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_operation_and_resource_name_logic_v2"] = struct{}{}
-	} else {
 		logger.Info("Please enable feature gate datadog.EnableOperationAndResourceNameV2 for improved operation and resource name logic. The v1 logic will be deprecated in the future - if you have Datadog monitors or alerts set on operation/resource names, you may need to migrate them to the new convention. See the migration guide at https://docs.datadoghq.com/opentelemetry/guide/migrate/migrate_operation_names/")
 	}
 	if v := cfg.BucketInterval; v > 0 {
@@ -161,11 +161,11 @@ func getTraceAgentCfg(logger *zap.Logger, cfg datadogconfig.TracesConnectorConfi
 var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // Start implements the component.Component interface.
-func (c *traceToMetricConnector) Start(_ context.Context, _ component.Host) error {
+func (c *traceToMetricConnector) Start(ctx context.Context, _ component.Host) error {
 	c.logger.Info("Starting datadogconnector")
 	c.concentrator.Start()
 	c.wg.Add(1)
-	go c.run()
+	go c.run(ctx)
 	c.isStarted = true
 	return nil
 }
@@ -194,7 +194,7 @@ func (*traceToMetricConnector) Capabilities() consumer.Capabilities {
 }
 
 func (c *traceToMetricConnector) ConsumeTraces(_ context.Context, traces ptrace.Traces) error {
-	inputs := stats.OTLPTracesToConcentratorInputsWithObfuscation(traces, c.tcfg, c.ctagKeys, c.peerTagKeys, c.obfuscator)
+	inputs := otelstats.OTLPTracesToConcentratorInputsWithObfuscation(traces, c.tcfg, c.ctagKeys, c.peerTagKeys, c.obfuscator)
 	for _, input := range inputs {
 		c.concentrator.Add(input)
 	}
@@ -203,7 +203,7 @@ func (c *traceToMetricConnector) ConsumeTraces(_ context.Context, traces ptrace.
 
 // run awaits incoming stats resulting from the agent's ingestion, converts them
 // to metrics and flushes them using the configured metrics exporter.
-func (c *traceToMetricConnector) run() {
+func (c *traceToMetricConnector) run(ctx context.Context) {
 	defer c.wg.Done()
 	for {
 		select {
@@ -221,8 +221,6 @@ func (c *traceToMetricConnector) run() {
 				c.logger.Error("Failed to convert stats to metrics", zap.Error(err))
 				continue
 			}
-			// APM stats as metrics
-			ctx := context.TODO()
 
 			// send metrics to the consumer or next component in pipeline
 			if err := c.metricsConsumer.ConsumeMetrics(ctx, mx); err != nil {

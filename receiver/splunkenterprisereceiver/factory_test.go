@@ -38,7 +38,7 @@ func TestDefaultConfig(t *testing.T) {
 			InitialDelay:       1 * time.Second,
 			Timeout:            60 * time.Second,
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		VersionInfo:          false,
 	}
 

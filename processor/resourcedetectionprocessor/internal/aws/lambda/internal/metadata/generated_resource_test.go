@@ -37,51 +37,50 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("aws.log.group.names")
+			awsLogGroupNamesAttrVal, ok := res.Attributes().Get("aws.log.group.names")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, []any{"aws.log.group.names-item1", "aws.log.group.names-item2"}, val.Slice().AsRaw())
+				assert.Equal(t, []any{"aws.log.group.names-item1", "aws.log.group.names-item2"}, awsLogGroupNamesAttrVal.Slice().AsRaw())
 			}
-			val, ok = res.Attributes().Get("aws.log.stream.names")
+			awsLogStreamNamesAttrVal, ok := res.Attributes().Get("aws.log.stream.names")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, []any{"aws.log.stream.names-item1", "aws.log.stream.names-item2"}, val.Slice().AsRaw())
+				assert.Equal(t, []any{"aws.log.stream.names-item1", "aws.log.stream.names-item2"}, awsLogStreamNamesAttrVal.Slice().AsRaw())
 			}
-			val, ok = res.Attributes().Get("cloud.platform")
+			cloudPlatformAttrVal, ok := res.Attributes().Get("cloud.platform")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.platform-val", val.Str())
+				assert.Equal(t, "cloud.platform-val", cloudPlatformAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.provider")
+			cloudProviderAttrVal, ok := res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.provider-val", val.Str())
+				assert.Equal(t, "cloud.provider-val", cloudProviderAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.region")
+			cloudRegionAttrVal, ok := res.Attributes().Get("cloud.region")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.region-val", val.Str())
+				assert.Equal(t, "cloud.region-val", cloudRegionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("faas.instance")
+			faasInstanceAttrVal, ok := res.Attributes().Get("faas.instance")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "faas.instance-val", val.Str())
+				assert.Equal(t, "faas.instance-val", faasInstanceAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("faas.max_memory")
+			faasMaxMemoryAttrVal, ok := res.Attributes().Get("faas.max_memory")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "faas.max_memory-val", val.Str())
+				assert.Equal(t, "faas.max_memory-val", faasMaxMemoryAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("faas.name")
+			faasNameAttrVal, ok := res.Attributes().Get("faas.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "faas.name-val", val.Str())
+				assert.Equal(t, "faas.name-val", faasNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("faas.version")
+			faasVersionAttrVal, ok := res.Attributes().Get("faas.version")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "faas.version-val", val.Str())
+				assert.Equal(t, "faas.version-val", faasVersionAttrVal.Str())
 			}
 		})
 	}

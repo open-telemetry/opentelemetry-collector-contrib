@@ -33,8 +33,6 @@ import (
 )
 
 const (
-	defaultServerTimeout = 20 * time.Second
-
 	ackResponse                       = `{"acks": %s}`
 	responseOK                        = `{"text": "Success", "code": 0}`
 	responseOKWithAckID               = `{"text": "Success", "code": 0, "ackId": %d}`
@@ -101,7 +99,7 @@ var (
 
 // newReceiver creates the Splunk HEC receiver with the given configuration.
 func newReceiver(settings receiver.Settings, config Config) (*splunkReceiver, error) {
-	if config.Endpoint == "" {
+	if config.NetAddr.Endpoint == "" {
 		return nil, errEmptyEndpoint
 	}
 
@@ -119,15 +117,8 @@ func newReceiver(settings receiver.Settings, config Config) (*splunkReceiver, er
 		return nil, err
 	}
 	r := &splunkReceiver{
-		settings: settings,
-		config:   &config,
-		server: &http.Server{
-			Addr: config.Endpoint,
-			// TODO: Evaluate what properties should be configurable, for now
-			//		set some hard-coded values.
-			ReadHeaderTimeout: defaultServerTimeout,
-			WriteTimeout:      defaultServerTimeout,
-		},
+		settings:       settings,
+		config:         &config,
 		obsrecv:        obsrecv,
 		gzipReaderPool: &sync.Pool{New: func() any { return new(gzip.Reader) }},
 	}
@@ -164,7 +155,7 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 	// set up the listener
 	ln, err := r.config.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", r.config.NetAddr.Endpoint, err)
 	}
 
 	r.server, err = r.config.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, mx)
@@ -172,18 +163,11 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	// TODO: Evaluate what properties should be configurable, for now
-	//		set some hard-coded values.
-	r.server.ReadHeaderTimeout = defaultServerTimeout
-	r.server.WriteTimeout = defaultServerTimeout
-
-	r.shutdownWG.Add(1)
-	go func() {
-		defer r.shutdownWG.Done()
+	r.shutdownWG.Go(func() {
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 
 	return err
 }
@@ -191,6 +175,9 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *splunkReceiver) Shutdown(context.Context) error {
+	if r.server == nil {
+		return nil
+	}
 	err := r.server.Close()
 	r.shutdownWG.Wait()
 	return err

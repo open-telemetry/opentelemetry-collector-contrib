@@ -254,6 +254,8 @@ func buildLibhoneyEventFromMap(rawEvent map[string]any) libhoneyevent.LibhoneyEv
 			event.Samplerate = v
 		case int64:
 			event.Samplerate = int(v)
+		case uint64:
+			event.Samplerate = int(v)
 		case float64:
 			event.Samplerate = int(v)
 		}
@@ -268,6 +270,8 @@ func buildLibhoneyEventFromMap(rawEvent map[string]any) libhoneyevent.LibhoneyEv
 			event.MsgPackTimestamp = &propertime
 		case *time.Time:
 			event.MsgPackTimestamp = v
+		case time.Time:
+			event.MsgPackTimestamp = &v
 		}
 	}
 	if event.MsgPackTimestamp == nil {

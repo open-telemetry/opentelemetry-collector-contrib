@@ -30,14 +30,17 @@ func TestConfig(t *testing.T) {
 
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
+	defaultCfg.(*Config).Retry.RetryOnDocumentStatus = defaultCfg.(*Config).Retry.RetryOnStatus
 
 	defaultLogstashFormatCfg := createDefaultConfig()
 	defaultLogstashFormatCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
 	defaultLogstashFormatCfg.(*Config).LogstashFormat.Enabled = true
+	defaultLogstashFormatCfg.(*Config).Retry.RetryOnDocumentStatus = defaultLogstashFormatCfg.(*Config).Retry.RetryOnStatus
 
 	defaultRawCfg := createDefaultConfig()
 	defaultRawCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
 	defaultRawCfg.(*Config).Mapping.Mode = "raw"
+	defaultRawCfg.(*Config).Retry.RetryOnDocumentStatus = defaultRawCfg.(*Config).Retry.RetryOnStatus
 
 	defaultMaxIdleConns := 100
 	defaultIdleConnTimeout := 90 * time.Second
@@ -85,6 +88,9 @@ func TestConfig(t *testing.T) {
 				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
+				TracesDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
 				LogsDynamicPipeline: DynamicPipelineSettings{
 					Enabled: false,
 				},
@@ -114,6 +120,10 @@ func TestConfig(t *testing.T) {
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
 					RetryOnStatus: []int{
+						http.StatusTooManyRequests,
+						http.StatusInternalServerError,
+					},
+					RetryOnDocumentStatus: []int{
 						http.StatusTooManyRequests,
 						http.StatusInternalServerError,
 					},
@@ -168,6 +178,9 @@ func TestConfig(t *testing.T) {
 				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
+				TracesDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
 				LogsDynamicPipeline: DynamicPipelineSettings{
 					Enabled: false,
 				},
@@ -191,11 +204,12 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Retry: RetrySettings{
-					Enabled:         true,
-					MaxRetries:      5,
-					InitialInterval: 100 * time.Millisecond,
-					MaxInterval:     1 * time.Minute,
-					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					Enabled:               true,
+					MaxRetries:            5,
+					InitialInterval:       100 * time.Millisecond,
+					MaxInterval:           1 * time.Minute,
+					RetryOnStatus:         []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					RetryOnDocumentStatus: []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
 					Mode:         "otel",
@@ -241,6 +255,9 @@ func TestConfig(t *testing.T) {
 				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
+				TracesDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
 				LogsDynamicPipeline: DynamicPipelineSettings{
 					Enabled: false,
 				},
@@ -264,11 +281,12 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Retry: RetrySettings{
-					Enabled:         true,
-					MaxRetries:      5,
-					InitialInterval: 100 * time.Millisecond,
-					MaxInterval:     1 * time.Minute,
-					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					Enabled:               true,
+					MaxRetries:            5,
+					InitialInterval:       100 * time.Millisecond,
+					MaxInterval:           1 * time.Minute,
+					RetryOnStatus:         []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					RetryOnDocumentStatus: []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
 					Mode:         "otel",
@@ -408,6 +426,33 @@ func TestConfig(t *testing.T) {
 				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
 			}),
 		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "suppress_conflict_errors"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.SuppressConflictErrors = true
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "retry_on_document_status"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.Retry.RetryOnStatus = []int{http.StatusTooManyRequests, http.StatusInternalServerError}
+				cfg.Retry.RetryOnDocumentStatus = []int{http.StatusBadRequest, http.StatusConflict}
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "retry_on_document_status_empty"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.Retry.RetryOnStatus = []int{http.StatusTooManyRequests, http.StatusInternalServerError}
+				cfg.Retry.RetryOnDocumentStatus = []int{}
+			}),
+		},
 	}
 
 	for _, tt := range tests {
@@ -479,27 +524,12 @@ func TestConfig_Validate(t *testing.T) {
 			}),
 			err: "exactly one of [endpoint, endpoints, cloudid] must be specified",
 		},
-		"invalid mapping mode": {
-			config: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"http://test:9200"}
-				cfg.Mapping.Mode = "invalid"
-			}),
-			err: `invalid or disallowed default mapping mode "invalid"`,
-		},
 		"invalid allowed mapping modes": {
 			config: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoints = []string{"http://test:9200"}
 				cfg.Mapping.AllowedModes = []string{"foo"}
 			}),
 			err: `unknown allowed mapping mode name "foo"`,
-		},
-		"disallowed mapping mode": {
-			config: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"http://test:9200"}
-				cfg.Mapping.Mode = "otel"
-				cfg.Mapping.AllowedModes = []string{"raw"}
-			}),
-			err: `invalid or disallowed default mapping mode "otel"`,
 		},
 		"invalid scheme": {
 			config: withDefaultConfig(func(cfg *Config) {
@@ -598,6 +628,7 @@ func TestParseCloudID(t *testing.T) {
 
 func withDefaultConfig(fns ...func(*Config)) *Config {
 	cfg := createDefaultConfig().(*Config)
+	cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 	for _, fn := range fns {
 		fn(cfg)
 	}

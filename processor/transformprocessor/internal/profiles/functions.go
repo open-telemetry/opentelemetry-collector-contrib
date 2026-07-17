@@ -9,7 +9,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-func ProfileFunctions() map[string]ottl.Factory[ottlprofile.TransformContext] {
+func ProfileFunctions() map[string]ottl.Factory[*ottlprofile.TransformContext] {
 	// No profiles-only functions yet.
-	return ottlfuncs.StandardFuncs[ottlprofile.TransformContext]()
+	return ottlfuncs.StandardFuncs[*ottlprofile.TransformContext]()
 }

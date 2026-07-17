@@ -64,7 +64,7 @@ func v3Request(t *testing.T, pl *intakev3.Payload) *http.Request {
 }
 
 func TestHandleSeriesV3Payload_SingleGauge(t *testing.T) {
-	mt := NewMetricsTranslator(component.BuildInfo{})
+	mt := NewMetricsTranslator(component.BuildInfo{}, 0)
 	series, err := mt.HandleSeriesV3Payload(v3Request(t, buildMinimalV3Payload()))
 	require.NoError(t, err)
 	require.Len(t, series, 1)
@@ -89,7 +89,7 @@ func TestHandleSeriesV3Payload_Unit(t *testing.T) {
 	pl.MetricData.DictUnitStr = v3StringDict("millisecond")
 	pl.MetricData.UnitRefs = []int64{1}
 
-	mt := NewMetricsTranslator(component.BuildInfo{})
+	mt := NewMetricsTranslator(component.BuildInfo{}, 0)
 	series, err := mt.HandleSeriesV3Payload(v3Request(t, pl))
 	require.NoError(t, err)
 	require.Len(t, series, 1)
@@ -132,7 +132,7 @@ func TestHandleSeriesV3Payload_DeltaEncoding(t *testing.T) {
 		},
 	}
 
-	mt := NewMetricsTranslator(component.BuildInfo{})
+	mt := NewMetricsTranslator(component.BuildInfo{}, 0)
 	series, err := mt.HandleSeriesV3Payload(v3Request(t, pl))
 	require.NoError(t, err)
 	require.Len(t, series, 2)
@@ -195,7 +195,7 @@ func TestHandleSeriesV3Payload_TagsetSpliceAndMetadata(t *testing.T) {
 		},
 	}
 
-	mt := NewMetricsTranslator(component.BuildInfo{})
+	mt := NewMetricsTranslator(component.BuildInfo{}, 0)
 	series, err := mt.HandleSeriesV3Payload(v3Request(t, pl))
 	require.NoError(t, err)
 	require.Len(t, series, 2)
@@ -228,14 +228,14 @@ func TestHandleSeriesV3Payload_SketchInSeriesPayloadErrors(t *testing.T) {
 		},
 	}
 
-	mt := NewMetricsTranslator(component.BuildInfo{})
+	mt := NewMetricsTranslator(component.BuildInfo{}, 0)
 	_, err := mt.HandleSeriesV3Payload(v3Request(t, pl))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unexpected sketch metric")
 }
 
 func TestHandleSeriesV3Payload_Empty(t *testing.T) {
-	mt := NewMetricsTranslator(component.BuildInfo{})
+	mt := NewMetricsTranslator(component.BuildInfo{}, 0)
 
 	// payload without metric data
 	series, err := mt.HandleSeriesV3Payload(v3Request(t, &intakev3.Payload{}))
@@ -251,7 +251,7 @@ func TestHandleSeriesV3Payload_Empty(t *testing.T) {
 }
 
 func TestHandleSeriesV3Payload_Malformed(t *testing.T) {
-	mt := NewMetricsTranslator(component.BuildInfo{})
+	mt := NewMetricsTranslator(component.BuildInfo{}, 0)
 
 	for name, mutate := range map[string]func(*intakev3.MetricData){
 		"truncated name dictionary": func(md *intakev3.MetricData) {
@@ -293,7 +293,7 @@ func TestHandleSeriesV3Payload_InvalidUTF8TagSanitized(t *testing.T) {
 	pl := buildMinimalV3Payload()
 	pl.MetricData.DictTagStr = []byte{2, 0xff, 0xfe} // invalid UTF-8 tag string
 
-	mt := NewMetricsTranslator(component.BuildInfo{})
+	mt := NewMetricsTranslator(component.BuildInfo{}, 0)
 	series, err := mt.HandleSeriesV3Payload(v3Request(t, pl))
 	require.NoError(t, err)
 	require.Len(t, series, 1)

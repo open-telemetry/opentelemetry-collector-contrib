@@ -1,13 +1,15 @@
 type: datadog
+display_name: Datadog Connector
 
 status:
   class: connector
   stability:
     beta: [traces_to_metrics, traces_to_traces]
   distributions: [contrib]
+  unsupported_platforms: [aix]
   codeowners:
-    active: [mx-psi, dineshg13, ankitpatel96, jade-guiton-dd, IbraheemA]
-    emeritus: [gbbr]
+    active: [mx-psi, dineshg13, jade-guiton-dd, IbraheemA]
+    emeritus: [gbbr, ankitpatel96]
 
 tests:
   goleak:

@@ -43,7 +43,7 @@ func TestChronyScraper(t *testing.T) {
 		{
 			scenario: "Successfully read default tracking information",
 			conf: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 			mockTracking: &chrony.Tracking{
 				SkewPPM:           1000.300,
@@ -63,7 +63,7 @@ func TestChronyScraper(t *testing.T) {
 
 				m := metric.Metrics().AppendEmpty()
 				m.SetName("ntp.skew")
-				m.SetUnit("ppm")
+				m.SetUnit("[ppm]")
 				m.SetDescription("This is the estimated error bound on the frequency.")
 				g := m.SetEmptyGauge().DataPoints().AppendEmpty()
 				g.SetDoubleValue(1000.300)
@@ -72,7 +72,7 @@ func TestChronyScraper(t *testing.T) {
 
 				m = metric.Metrics().AppendEmpty()
 				m.SetName("ntp.time.correction")
-				m.SetUnit("seconds")
+				m.SetUnit("s")
 				m.SetDescription("The number of seconds difference between the system's clock and the reference clock")
 				g = m.SetEmptyGauge().DataPoints().AppendEmpty()
 				g.Attributes().PutStr("leap.status", "normal")
@@ -82,7 +82,7 @@ func TestChronyScraper(t *testing.T) {
 
 				m = metric.Metrics().AppendEmpty()
 				m.SetName("ntp.time.last_offset")
-				m.SetUnit("seconds")
+				m.SetUnit("s")
 				m.SetDescription("The estimated local offset on the last clock update")
 				g = m.SetEmptyGauge().DataPoints().AppendEmpty()
 				g.Attributes().PutStr("leap.status", "normal")
@@ -95,7 +95,7 @@ func TestChronyScraper(t *testing.T) {
 		{
 			scenario: "client failed to connect to chronyd",
 			conf: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 			mockTracking: nil,
 			mockErr:      errInvalidValue,

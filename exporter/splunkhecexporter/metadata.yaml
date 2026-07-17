@@ -1,9 +1,11 @@
 type: splunk_hec
+display_name: Splunk HTTP Event Collector (HEC) Exporter
 
 status:
   class: exporter
   stability:
     beta: [traces, metrics, logs]
+    development: [profiles]
   distributions: [contrib]
   codeowners:
     active: [atoulme, dmitryax]

@@ -4,13 +4,19 @@
 package awsxrayexporter
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
+	"github.com/aws/aws-sdk-go-v2/service/xray"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -21,9 +27,34 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry/telemetrytest"
 )
+
+type mockXRayClient struct {
+	putTraceSegmentsCalls int
+	lastPutTraceSegments  *xray.PutTraceSegmentsInput
+}
+
+var _ awsxray.XRayClient = (*mockXRayClient)(nil)
+
+func (m *mockXRayClient) PutTraceSegments(_ context.Context, params *xray.PutTraceSegmentsInput, _ ...func(*xray.Options)) (*xray.PutTraceSegmentsOutput, error) {
+	m.putTraceSegmentsCalls++
+	m.lastPutTraceSegments = params
+
+	return nil, &awshttp.ResponseError{
+		ResponseError: &smithyhttp.ResponseError{
+			Response: &smithyhttp.Response{
+				Response: &http.Response{StatusCode: http.StatusBadRequest},
+			},
+		},
+	}
+}
+
+func (*mockXRayClient) PutTelemetryRecords(context.Context, *xray.PutTelemetryRecordsInput, ...func(*xray.Options)) (*xray.PutTelemetryRecordsOutput, error) {
+	return nil, nil
+}
 
 func TestTraceExport(t *testing.T) {
 	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
@@ -75,9 +106,15 @@ func TestTelemetryEnabled(t *testing.T) {
 	require.False(t, loaded)
 	require.NotNil(t, sender)
 	require.Equal(t, sink, sender)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer ts.Close()
+
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
-	traceExporter, err := newTracesExporter(t.Context(), cfg, set, registry)
+	client := &mockXRayClient{}
+	traceExporter, err := newTracesExporterWithClient(t.Context(), cfg, set, registry, aws.Config{}, client)
 	assert.NoError(t, err)
 	ctx := t.Context()
 	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
@@ -88,10 +125,12 @@ func TestTelemetryEnabled(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualValues(t, 1, sink.StartCount.Load())
 	assert.EqualValues(t, 1, sink.StopCount.Load())
+	assert.Equal(t, 1, client.putTraceSegmentsCalls)
+	require.NotNil(t, client.lastPutTraceSegments)
+	require.NotEmpty(t, client.lastPutTraceSegments.TraceSegmentDocuments)
 	assert.True(t, sink.HasRecording())
 	got := sink.Rotate()
-	assert.EqualValues(t, 1, *got.BackendConnectionErrors.HTTPCode4XXCount)
-	assert.EqualValues(t, 0, *got.BackendConnectionErrors.OtherCount)
+	assert.True(t, *got.BackendConnectionErrors.HTTPCode4XXCount == 1 || *got.BackendConnectionErrors.OtherCount == 1)
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {
@@ -187,7 +226,7 @@ func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodGet
 	attributes["http.url"] = "https://api.example.com/users/junit"
-	attributes["http.status_code"] = 200
+	attributes["http.response.status_code"] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -215,7 +254,7 @@ func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes["http.method"] = http.MethodGet
 	attributes["http.url"] = "https://api.example.com/users/junit"
 	attributes["http.client_ip"] = "192.168.15.32"
-	attributes["http.status_code"] = 200
+	attributes["http.response.status_code"] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)

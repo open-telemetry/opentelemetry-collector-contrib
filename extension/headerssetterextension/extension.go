@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/action"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/source"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
 )
 
 type header struct {
@@ -40,6 +41,8 @@ type headerSetterExtension struct {
 	headers        []header
 	additionalAuth *component.ID
 	host           component.Host
+	resolvers      []credentialsfile.ValueResolver
+	logger         *zap.Logger
 }
 
 // Dependencies implements extensioncapabilities.Dependent.
@@ -51,8 +54,30 @@ func (h *headerSetterExtension) Dependencies() []component.ID {
 }
 
 // Start stores the host for later use in getting the additional auth extension.
-func (h *headerSetterExtension) Start(_ context.Context, host component.Host) error {
+func (h *headerSetterExtension) start(ctx context.Context, host component.Host) error {
 	h.host = host
+
+	// Start all file resolvers
+	for _, resolver := range h.resolvers {
+		if err := resolver.Start(ctx); err != nil {
+			return fmt.Errorf("failed to start value resolver: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// Shutdown stops all file resolvers
+func (h *headerSetterExtension) shutdown(_ context.Context) error {
+	var errs []error
+	for _, resolver := range h.resolvers {
+		if err := resolver.Shutdown(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to shutdown resolvers: %v", errs)
+	}
 	return nil
 }
 
@@ -129,12 +154,23 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (*headerSetterEx
 	}
 
 	headers := make([]header, 0, len(cfg.HeadersConfig))
+	var resolvers []credentialsfile.ValueResolver
+
 	for _, h := range cfg.HeadersConfig {
 		var s source.Source
 		switch {
 		case h.Value != nil:
 			s = &source.StaticSource{
 				Value: *h.Value,
+			}
+		case h.ValueFile != nil:
+			resolver, err := credentialsfile.NewValueResolver("", *h.ValueFile, logger)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create value resolver for header %s: %w", *h.Key, err)
+			}
+			resolvers = append(resolvers, resolver)
+			s = &source.FileSource{
+				Resolver: resolver,
 			}
 		case h.FromAttribute != nil:
 			defaultValue := ""
@@ -177,11 +213,14 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (*headerSetterEx
 	ext := &headerSetterExtension{
 		headers:        headers,
 		additionalAuth: cfg.AdditionalAuth,
+		resolvers:      resolvers,
+		logger:         logger,
 	}
 
-	// Enable Start method if additional_auth is configured
-	if cfg.AdditionalAuth != nil {
-		ext.StartFunc = ext.Start
+	// Enable Start/Shutdown methods if additional_auth is configured or if we have file resolvers
+	if cfg.AdditionalAuth != nil || len(resolvers) > 0 {
+		ext.StartFunc = ext.start
+		ext.ShutdownFunc = ext.shutdown
 	}
 
 	return ext, nil

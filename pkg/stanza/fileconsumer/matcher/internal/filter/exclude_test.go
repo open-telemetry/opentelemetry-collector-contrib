@@ -12,7 +12,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	internaltime "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/time"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/stanzatime"
 )
 
 func TestExcludeOlderThanFilter(t *testing.T) {
@@ -73,8 +73,8 @@ func TestExcludeOlderThanFilter(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			internaltime.Since = internaltime.NewAlwaysIncreasingClock().Since
-			defer func() { internaltime.Since = time.Since }()
+			stanzatime.Since = stanzatime.NewAlwaysIncreasingClock().Since
+			defer func() { stanzatime.Since = time.Since }()
 
 			tmpDir := t.TempDir()
 			var items []*item

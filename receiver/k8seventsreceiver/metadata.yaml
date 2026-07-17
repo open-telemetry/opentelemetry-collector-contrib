@@ -1,4 +1,9 @@
+display_name: Kubernetes Events Receiver
 type: k8s_events
+
+description: |
+  The Kubernetes Events Receiver collects events from the Kubernetes
+  API server. It collects all the new or updated events that come in.
 
 status:
   class: receiver
@@ -11,3 +16,21 @@ status:
 # TODO: Update the receiver to pass the tests
 tests:
   skip_lifecycle: true
+  goleak:
+    ignore:
+      any:
+        # The e2e tests use a real k8s client whose HTTP/2 connection to the API
+        # server keeps a readLoop goroutine alive past the test.
+        - "golang.org/x/net/http2.(*ClientConn).readLoop"
+
+telemetry:
+  metrics:
+    k8s.events.modified.filtered:
+      prefix: otelcol.
+      enabled: true
+      description: Number of MODIFIED watch events filtered out by dedup_interval. Always 0 when dedup_interval is not set.
+      stability: development
+      unit: "{events}"
+      sum:
+        value_type: int
+        monotonic: true

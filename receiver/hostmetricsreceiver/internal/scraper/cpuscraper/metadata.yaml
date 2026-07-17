@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [dmitryax, braydonk]
+    active: [dmitryax, braydonk, rogercoll]
 
 sem_conv_version: 1.9.0
 
@@ -14,10 +14,17 @@ attributes:
   cpu:
     description: Logical CPU number starting at 0.
     type: string
+    requirement_level: opt_in
+
+  cpu.frequency:
+    name_override: cpu
+    description: Logical CPU number starting at 0.
+    type: string
 
   state:
     description: Breakdown of CPU usage by type.
     type: string
+    requirement_level: recommended
     enum: [idle, interrupt, nice, softirq, steal, system, user, wait]
 
 metrics:
@@ -25,18 +32,16 @@ metrics:
     enabled: false
     description: Current frequency of the CPU core in Hz.
     unit: "Hz"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
-    attributes: [cpu]
+    attributes: [cpu.frequency]
 
   system.cpu.logical.count:
-    enabled: false
+    enabled: true
     description: Number of available logical CPUs.
     unit: "{cpu}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       monotonic: false
@@ -46,8 +51,7 @@ metrics:
     enabled: false
     description: Number of available physical CPUs.
     unit: "{cpu}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       monotonic: false
@@ -57,8 +61,7 @@ metrics:
     enabled: true
     description: Total seconds each logical CPU spent on each mode.
     unit: s
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: double
       aggregation_temporality: cumulative
@@ -69,8 +72,7 @@ metrics:
     enabled: false
     description: Difference in system.cpu.time since the last measurement per logical CPU, divided by the elapsed time (value in interval [0,1]).
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: [cpu, state]

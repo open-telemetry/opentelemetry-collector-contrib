@@ -1,4 +1,5 @@
 type: awskinesis
+display_name: AWS Kinesis Exporter
 
 status:
   class: exporter

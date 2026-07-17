@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalTraces, "otlp-all"),
 				},
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				Table: []RoutingTableItem{
 					{
 						Statement: `route() where attributes["X-Tenant"] == "acme"`,
@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalMetrics, "otlp-all"),
 				},
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				Table: []RoutingTableItem{
 					{
 						Statement: `route() where attributes["X-Tenant"] == "acme"`,
@@ -81,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalLogs, "otlp-all"),
 				},
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				Table: []RoutingTableItem{
 					{
 						Statement: `route() where attributes["X-Tenant"] == "acme"`,
@@ -367,6 +367,77 @@ func TestValidateConfig(t *testing.T) {
 				Table: []RoutingTableItem{
 					{
 						Context:   "log",
+						Condition: `attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "otelcol context with statement",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "otelcol",
+						Statement: `route() where otelcol.client.metadata["x-tenant"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "otelcol context with condition",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "otelcol",
+						Condition: `otelcol.client.metadata["x-tenant"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid action value",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Action:    "invalid",
+						Condition: `attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: "invalid routing action: if provided should be one of move/copy",
+		},
+		{
+			name: "valid action: copy",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Action:    "copy",
+						Condition: `attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "valid action: move",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Action:    "move",
 						Condition: `attributes["attr"] == "acme"`,
 						Pipelines: []pipeline.ID{
 							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),

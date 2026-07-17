@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogextension
 
 import (
@@ -20,7 +22,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.uber.org/zap"
@@ -60,7 +64,7 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 	moduleInfoJSON := createModuleInfoFromSampleConfig()
 
 	// Test PopulateActiveComponents with the loaded configuration
-	activeComponents, err := componentchecker.PopulateActiveComponents(confMap, moduleInfoJSON)
+	activeComponents, err := componentchecker.PopulateActiveComponents(zap.NewNop(), confMap, moduleInfoJSON)
 	require.NoError(t, err, "PopulateActiveComponents should not return error")
 	require.NotNil(t, activeComponents, "activeComponents should not be nil")
 
@@ -72,7 +76,7 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 	// - hostmetrics: 1 time (metrics)
 	// - memory_limiter: 3 times (traces, metrics, logs)
 	// - debug: 3 times (traces, metrics, logs)
-	// - otlphttp: 3 times (traces, metrics, logs)
+	// - otlp_http: 3 times (traces, metrics, logs)
 	// - datadog/connector: 2 times (traces exporter, metrics receiver)
 	// Total: 2 + 3 + 1 + 3 + 3 + 3 + 2 = 17
 	expectedComponentCount := 17
@@ -115,7 +119,7 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 			hasDebug = true
 			assert.Equal(t, "exporter", component.Kind)
 			assert.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
-		case "otlphttp":
+		case "otlp_http":
 			hasOtlphttp = true
 			assert.Equal(t, "exporter", component.Kind)
 			assert.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
@@ -136,7 +140,7 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 	assert.True(t, hasHostmetrics, "should have hostmetrics receiver")
 	assert.True(t, hasMemoryLimiter, "should have memory_limiter processor")
 	assert.True(t, hasDebug, "should have debug exporter")
-	assert.True(t, hasOtlphttp, "should have otlphttp exporter")
+	assert.True(t, hasOtlphttp, "should have otlp_http exporter")
 }
 
 func TestDataToFlattenedJSONStringIntegration(t *testing.T) {
@@ -230,6 +234,9 @@ func TestFullOtelCollectorPayloadIntegration(t *testing.T) {
 	assert.NotEmpty(t, testPayload.Metadata.ActiveComponents)
 
 	// Step 2: Create mock Datadog agent components
+
+	// Isolate from DD_API_KEY env var; nodetreemodel skips empty-string env vars.
+	t.Setenv("DD_API_KEY", "")
 
 	// Extract the backend URL to configure components to use our mock
 	backendURL := mockBackend.URL
@@ -331,7 +338,7 @@ func createTestOtelCollectorPayload() *payload.OtelCollectorPayload {
 
 	// Create module info and populate active components
 	moduleInfoJSON := createModuleInfoFromSampleConfig()
-	activeComponents, _ := componentchecker.PopulateActiveComponents(confMap, moduleInfoJSON)
+	activeComponents, _ := componentchecker.PopulateActiveComponents(zap.NewNop(), confMap, moduleInfoJSON)
 
 	// Create build info
 	buildInfo := payload.CustomBuildInfo{
@@ -358,8 +365,11 @@ func createTestOtelCollectorPayload() *payload.OtelCollectorPayload {
 		site,
 		fullConfig,
 		"unknown",
+		"",
 		buildInfo,
 		int64(payloadTTL),
+		"",
+		"",
 	)
 
 	// Populate with realistic component data
@@ -440,7 +450,7 @@ func createModuleInfoFromSampleConfig() *payload.ModuleInfoJSON {
 			Configured: true,
 		},
 		{
-			Type:       "otlphttp",
+			Type:       "otlp_http",
 			Kind:       "exporter",
 			Gomod:      "go.opentelemetry.io/collector/exporter/otlphttpexporter",
 			Version:    "v0.127.0",
@@ -548,7 +558,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 
 	// Create module info and populate active components for realistic test data
 	moduleInfoJSON := createModuleInfoFromSampleConfig()
-	activeComponents, err := componentchecker.PopulateActiveComponents(confMap, moduleInfoJSON)
+	activeComponents, err := componentchecker.PopulateActiveComponents(zap.NewNop(), confMap, moduleInfoJSON)
 	require.NoError(t, err)
 
 	// Create OtelCollector metadata
@@ -566,8 +576,11 @@ func TestHTTPServerIntegration(t *testing.T) {
 		"datadoghq.com",
 		fullConfig,
 		"unknown",
+		"",
 		buildInfo,
 		int64(payloadTTL),
+		"",
+		"",
 	)
 	if activeComponents != nil {
 		otelMetadata.ActiveComponents = *activeComponents
@@ -604,11 +617,19 @@ func TestHTTPServerIntegration(t *testing.T) {
 	require.NotNil(t, serializer)
 
 	// Step 3: Create HTTP server configuration
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpServerConfig.WriteTimeout = 0
+	httpServerConfig.ReadHeaderTimeout = 0
+	httpServerConfig.IdleTimeout = 0
+	httpServerConfig.KeepAlivesEnabled = false
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
 	serverConfig := &httpserver.Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:0", // Use any available port for testing
-		},
-		Path: "/otel/metadata",
+		ServerConfig: httpServerConfig,
+		Path:         "/otel/metadata",
 	}
 
 	// Step 4: Create and test the HTTP server
@@ -619,6 +640,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 		testHostname,
 		testUUID,
 		otelMetadata,
+		telemetrySettings,
 	)
 	require.NotNil(t, server)
 
@@ -628,7 +650,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 	defer serializer.Stop()
 
 	// Start the HTTP server
-	server.Start()
+	require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
 		ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 		defer cancel()
@@ -726,11 +748,34 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 		"datadoghq.com",
 		"{}",
 		"unknown",
+		"",
 		buildInfo,
 		int64(payloadTTL),
+		"",
+		"",
 	)
 
 	// Test different server configurations
+	defaultServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	defaultServerConfig.WriteTimeout = 0
+	defaultServerConfig.ReadHeaderTimeout = 0
+	defaultServerConfig.IdleTimeout = 0
+	defaultServerConfig.KeepAlivesEnabled = false
+	defaultServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  httpserver.DefaultServerEndpoint,
+	}
+	customServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	customServerConfig.WriteTimeout = 0
+	customServerConfig.ReadHeaderTimeout = 0
+	customServerConfig.IdleTimeout = 0
+	customServerConfig.KeepAlivesEnabled = false
+	customServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:9999",
+	}
 	testCases := []struct {
 		name   string
 		config *httpserver.Config
@@ -738,19 +783,15 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 		{
 			name: "default_config",
 			config: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: httpserver.DefaultServerEndpoint,
-				},
-				Path: "/metadata",
+				ServerConfig: defaultServerConfig,
+				Path:         "/metadata",
 			},
 		},
 		{
 			name: "custom_endpoint_and_path",
 			config: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:9999",
-				},
-				Path: "/custom/otel/metadata",
+				ServerConfig: customServerConfig,
+				Path:         "/custom/otel/metadata",
 			},
 		},
 	}
@@ -765,11 +806,12 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 				"test-host-"+tc.name,
 				"test-uuid-"+tc.name,
 				otelMetadata,
+				telemetrySettings,
 			)
 			require.NotNil(t, server)
 
 			// Test server creation doesn't panic and can be started/stopped
-			server.Start()
+			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
 			time.Sleep(50 * time.Millisecond) // Brief pause to allow server startup
 
 			ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
@@ -816,16 +858,27 @@ func TestHTTPServerConcurrentAccess(t *testing.T) {
 		"datadoghq.com",
 		"{}",
 		"unknown",
+		"",
 		buildInfo,
 		int64(payloadTTL),
+		"",
+		"",
 	)
 
 	// Create server
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpServerConfig.WriteTimeout = 0
+	httpServerConfig.ReadHeaderTimeout = 0
+	httpServerConfig.IdleTimeout = 0
+	httpServerConfig.KeepAlivesEnabled = false
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
 	serverConfig := &httpserver.Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:0",
-		},
-		Path: "/concurrent/metadata",
+		ServerConfig: httpServerConfig,
+		Path:         "/concurrent/metadata",
 	}
 
 	server := httpserver.NewServer(
@@ -835,6 +888,7 @@ func TestHTTPServerConcurrentAccess(t *testing.T) {
 		"concurrent-test-host",
 		"concurrent-test-uuid",
 		otelMetadata,
+		telemetrySettings,
 	)
 
 	// Start serializer

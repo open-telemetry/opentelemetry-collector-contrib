@@ -23,28 +23,19 @@ permissions: read-all
 jobs:
   setup-environment:
     timeout-minutes: 30
-    runs-on: oracle-bare-metal-64cpu-512gb-x86-64
+    runs-on: oracle-bare-metal-64cpu-1024gb-x86-64-ubuntu-24
     if: ${{ github.actor != 'dependabot[bot]' &&  github.repository_owner == 'open-telemetry' }}
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - run: make genoteltestbedcol
       - run: make oteltestbedcol
       - name: Upload Testbed Binaries
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: testbed-binaries
           path: ./bin/*
@@ -54,32 +45,31 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   loadtest:
-    runs-on: oracle-bare-metal-64cpu-512gb-x86-64
+    runs-on: oracle-bare-metal-64cpu-1024gb-x86-64-ubuntu-24
     needs: [setup-environment]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - run: mkdir -p results && touch results/TESTRESULTS.md
       - name: Download Testbed Binaries
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: testbed-binaries
           path: bin/
       - run: chmod +x bin/*
+      # Remove any pre-installed kwokctl so the action installs the pinned version
+      - name: Remove existing KWOK binaries
+        run: |
+          sudo rm -f /usr/local/bin/kwokctl /usr/local/bin/kwok
+      - name: Install KWOK (kwokctl)
+        uses: kubernetes-sigs/kwok@156033d7df7ea0e09cea82b715fe566ea68aeeb4 # v0.8.0
+        with:
+          command: kwokctl
       - name: Loadtest
         run: make -C testbed run-tests
         env:
@@ -95,13 +85,13 @@ jobs:
       - name: Upload Test Results
         if: ${{ failure() || success() }}
         continue-on-error: true
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: test-result-archive-${{steps.filename.outputs.name}}
           path: ./*.tar
       - run: cp testbed/tests/results/benchmarks.json testbed/tests/results/${{steps.filename.outputs.name}}.json
       - name: Upload benchmarks.json
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: benchmark-results-${{steps.filename.outputs.name}}
           path: testbed/tests/results/${{steps.filename.outputs.name}}.json
@@ -117,8 +107,8 @@ jobs:
       contents: write
     if: github.event_name != 'pull_request'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: benchmark-results-*
           merge-multiple: true
@@ -133,3 +123,20 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           benchmark-data-dir-path: "docs/benchmarks/loadtests"
           auto-push: true
+
+  workflow-notification:
+    permissions:
+      issues: write
+    needs:
+      - setup-environment
+      - loadtest
+      - update-benchmarks
+    if: always()
+    uses: open-telemetry/shared-workflows/.github/workflows/workflow-failure-issue.yml@62d5939b47144252763c5ff9fffe8c20d76cd806 # v0.4.0
+    with:
+      success: >-
+        ${{
+          needs.setup-environment.result == 'success' &&
+          needs.loadtest.result == 'success' &&
+          needs.update-benchmarks.result == 'success'
+        }}

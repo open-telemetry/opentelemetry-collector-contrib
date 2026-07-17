@@ -3,14 +3,19 @@
 package awslambdareceiver
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -18,6 +23,8 @@ import (
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal/metadata"
 )
@@ -29,7 +36,7 @@ func TestCreateLogs(t *testing.T) {
 	// Create receiver using factory with S3 encoding config.
 	// Note: The S3Encoding value must match the component ID used when registering the extension.
 
-	s3Encoding := "awslogs_encoding"
+	s3Encoding := "aws_logs_encoding"
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -49,26 +56,19 @@ func TestCreateLogs(t *testing.T) {
 	goMock := gomock.NewController(t)
 	s3Service := internal.NewMockS3Service(goMock)
 	s3Provider := internal.NewMockS3Provider(goMock)
-	s3Provider.EXPECT().GetService(gomock.Any()).AnyTimes().Return(s3Service, nil)
+	s3Provider.EXPECT().GetService(gomock.Any(), gomock.Any()).AnyTimes().Return(s3Service, nil)
 
 	// Test data - mock S3 file content
 	testData := []byte("version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status\n2 627286350134 eni-0377aa710071c557e 172.31.31.124 140.82.121.6 52718 443 6 13 3777 1751375679 ENDTIME ACCEPT OK\n")
-	s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(testData, nil)
+	s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(io.NopCloser(bytes.NewReader(testData)), nil)
 
 	// Register the extension with the same component ID as S3Encoding
 	// This is required: the extension ID must match cfg.S3Encoding
 	host := mockHost{GetFunc: func() map[component.ID]component.Component {
 		return map[component.ID]component.Component{
-			component.MustNewID(s3Encoding): &mockExtensionWithPLogUnmarshaler{
-				Unmarshaler: unmarshalLogsFunc(func(data []byte) (plog.Logs, error) {
-					require.Equal(t, string(testData), string(data))
-					logs := plog.NewLogs()
-					rl := logs.ResourceLogs().AppendEmpty()
-					sl := rl.ScopeLogs().AppendEmpty()
-					sl.LogRecords().AppendEmpty()
-					return logs, nil
-				}),
-			},
+			component.MustNewID(s3Encoding): &mockExtensionWithPLogUnmarshaler{},
 		}
 	}}
 
@@ -80,6 +80,7 @@ func TestCreateLogs(t *testing.T) {
 	// Process an S3 event notification.
 	lambdaEvent, err := json.Marshal(events.S3Event{
 		Records: []events.S3EventRecord{{
+			AWSRegion:   "us-east-1",
 			EventSource: "aws:s3",
 			S3: events.S3Entity{
 				Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
@@ -93,6 +94,17 @@ func TestCreateLogs(t *testing.T) {
 
 	// Verify logs were sent to the sink
 	require.NotZero(t, sink.LogRecordCount(), "Expected logs to be sent to sink")
+
+	// Validate context enrichment with S3 metadata
+	contexts := sink.Contexts()
+	require.Len(t, contexts, 1, "Expected one context for the consumed logs")
+	m := client.FromContext(contexts[0]).Metadata
+
+	// Check that S3 metadata is present in the context
+	require.Contains(t, m.Get("cloud.region"), "us-east-1")
+	require.Contains(t, m.Get("aws.s3.bucket.name"), "test-bucket")
+	require.Contains(t, m.Get("aws.s3.bucket.arn"), "arn:aws:s3:::test-bucket")
+	require.Contains(t, m.Get("aws.s3.key"), "test-file.txt")
 }
 
 func TestCreateMetrics(t *testing.T) {
@@ -121,24 +133,14 @@ func TestCreateMetrics(t *testing.T) {
 	goMock := gomock.NewController(t)
 	s3Service := internal.NewMockS3Service(goMock)
 	s3Provider := internal.NewMockS3Provider(goMock)
-	s3Provider.EXPECT().GetService(gomock.Any()).AnyTimes().Return(s3Service, nil)
-	s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(
-		[]byte("dummy data"), nil,
-	)
+	s3Provider.EXPECT().GetService(gomock.Any(), gomock.Any()).AnyTimes().Return(s3Service, nil)
+	s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(io.NopCloser(bytes.NewReader([]byte("dummy data"))), nil)
 
 	host := mockHost{GetFunc: func() map[component.ID]component.Component {
 		return map[component.ID]component.Component{
-			component.MustNewID(encoderName): &mockExtensionWithPMetricUnmarshaler{
-				Unmarshaler: unmarshalMetricsFunc(func(data []byte) (pmetric.Metrics, error) {
-					require.Equal(t, "dummy data", string(data))
-					metrics := pmetric.NewMetrics()
-					rm := metrics.ResourceMetrics().AppendEmpty()
-					ilm := rm.ScopeMetrics().AppendEmpty()
-					dp := ilm.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
-					dp.SetIntValue(123)
-					return metrics, nil
-				}),
-			},
+			component.MustNewID(encoderName): &mockExtensionWithPMetricUnmarshaler{},
 		}
 	}}
 
@@ -150,6 +152,7 @@ func TestCreateMetrics(t *testing.T) {
 	// Process an S3 event notification.
 	lambdaEvent, err := json.Marshal(events.S3Event{
 		Records: []events.S3EventRecord{{
+			AWSRegion:   "us-east-1",
 			EventSource: "aws:s3",
 			S3: events.S3Entity{
 				Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
@@ -163,6 +166,84 @@ func TestCreateMetrics(t *testing.T) {
 
 	// Verify metrics were sent to the sink
 	require.NotZero(t, sink.DataPointCount(), "Expected metrics to be sent to sink")
+
+	// Validate context enrichment with S3 metadata
+	contexts := sink.Contexts()
+	require.Len(t, contexts, 1, "Expected one context for the consumed logs")
+	m := client.FromContext(contexts[0]).Metadata
+
+	// Check that S3 metadata is present in the context
+	require.Contains(t, m.Get("cloud.region"), "us-east-1")
+	require.Contains(t, m.Get("aws.s3.bucket.name"), "test-bucket")
+	require.Contains(t, m.Get("aws.s3.bucket.arn"), "arn:aws:s3:::test-bucket")
+	require.Contains(t, m.Get("aws.s3.key"), "test-file.txt")
+}
+
+func TestCustomHandlerRegistration(t *testing.T) {
+	// Set Lambda environment variables required by Start()
+	t.Setenv("AWS_EXECUTION_ENV", "AWS_Lambda_python3.12")
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	goMock := gomock.NewController(t)
+	s3Service := internal.NewMockS3Service(goMock)
+	s3Provider := internal.NewMockS3Provider(goMock)
+	s3Provider.EXPECT().GetService(gomock.Any(), gomock.Any()).AnyTimes().Return(s3Service, nil)
+
+	// A custom event payload that detectTriggerType classifies as customEvent.
+	customEventPayload := []byte(`{"custom":"payload"}`)
+
+	t.Run("custom handler is not registered by default", func(t *testing.T) {
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig().(*Config)
+
+		sink := consumertest.LogsSink{}
+		receiver, err := factory.CreateLogs(t.Context(), settings, cfg, &sink)
+		require.NoError(t, err)
+
+		host := mockHost{GetFunc: func() map[component.ID]component.Component {
+			return map[component.ID]component.Component{}
+		}}
+
+		// Initialize the handlerProvider manually (without starting Lambda runtime to avoid goroutine leaks in tests)
+		awsReceiver := receiver.(*awsLambdaReceiver)
+		awsReceiver.hp, err = newLogsHandler(t.Context(), cfg, settings, host, &sink, s3Provider)
+		require.NoError(t, err)
+
+		// Processing fails fast since no custom handler is registered by default.
+		err = awsReceiver.processLambdaEvent(t.Context(), customEventPayload)
+		require.Error(t, err)
+		require.ErrorContains(t, err, "cannot handle event type")
+		require.Zero(t, sink.LogRecordCount())
+	})
+
+	t.Run("registered custom extension processes log content", func(t *testing.T) {
+		customEncoding := "custom_encoding"
+
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.Custom.Encoding = customEncoding
+
+		sink := consumertest.LogsSink{}
+		receiver, err := factory.CreateLogs(t.Context(), settings, cfg, &sink)
+		require.NoError(t, err)
+
+		host := mockHost{GetFunc: func() map[component.ID]component.Component {
+			return map[component.ID]component.Component{
+				component.MustNewID(customEncoding): &mockExtensionWithPLogUnmarshaler{},
+			}
+		}}
+
+		// Initialize the handlerProvider manually (without starting Lambda runtime to avoid goroutine leaks in tests)
+		awsReceiver := receiver.(*awsLambdaReceiver)
+		awsReceiver.hp, err = newLogsHandler(t.Context(), cfg, settings, host, &sink, s3Provider)
+		require.NoError(t, err)
+
+		// The custom extension decodes the raw event into log records.
+		err = awsReceiver.processLambdaEvent(t.Context(), customEventPayload)
+		require.NoError(t, err)
+		require.NotZero(t, sink.LogRecordCount(), "Expected logs to be sent to sink")
+	})
 }
 
 func TestStartRequiresLambdaEnvironment(t *testing.T) {
@@ -194,9 +275,7 @@ func TestStartRequiresLambdaEnvironment(t *testing.T) {
 
 func TestProcessLambdaEvent(t *testing.T) {
 	commonCfg := Config{
-		S3: sharedConfig{
-			Encoding: "awslogs",
-		},
+		S3: S3Config{sharedConfig: sharedConfig{Encoding: "awslogs"}},
 	}
 
 	commonLogger := zap.NewNop()
@@ -394,11 +473,9 @@ func TestExtractFirstKey(t *testing.T) {
 
 func TestDetectTriggerType(t *testing.T) {
 	tests := []struct {
-		name         string
-		input        []byte
-		want         eventType
-		isError      bool
-		errorContent string
+		name  string
+		input []byte
+		want  eventType
 	}{
 		{
 			name:  "Parse S3 event",
@@ -406,26 +483,19 @@ func TestDetectTriggerType(t *testing.T) {
 			want:  s3Event,
 		},
 		{
-			name:         "Invalid event - unknown json",
-			input:        []byte(`{"key": "value"}`),
-			isError:      true,
-			errorContent: "unknown event type",
+			name:  "Invalid event - unknown json",
+			input: []byte(`{"key": "value"}`),
+			want:  customEvent,
 		},
 		{
-			name:         "Invalid event - no JSON key",
-			input:        []byte(`invalid content`),
-			isError:      true,
-			errorContent: "invalid JSON payload",
+			name:  "Invalid event - no JSON key",
+			input: []byte(`invalid content`),
+			want:  customEvent,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := detectTriggerType(tt.input)
-			if tt.errorContent != "" {
-				require.ErrorContains(t, err, tt.errorContent)
-				return
-			}
-			require.NoError(t, err)
+			got := detectTriggerType(tt.input)
 			require.Equal(t, tt.want, got)
 		})
 	}
@@ -484,22 +554,22 @@ func TestHandleCustomTrigger(t *testing.T) {
 			expectHandleCount: 0,
 		},
 		{
-			name: "Event handling fails for unknown event type",
+			name: "Custom trigger for custom event",
 			handlerFunc: func() internal.CustomTriggerHandler {
 				handler := internal.NewMockCustomTriggerHandler(goMock)
 				handler.EXPECT().HasNext(t.Context()).Times(1).Return(true)
+				handler.EXPECT().HasNext(t.Context()).Times(1).Return(false)
 				handler.EXPECT().PostProcess(gomock.Any()).AnyTimes()
 				handler.EXPECT().IsDryRun().AnyTimes().Return(false)
 				handler.EXPECT().Error().AnyTimes().Return(nil)
 
 				handler.EXPECT().
 					GetNext(gomock.Any()).Times(1).
-					Return([]byte(`{"test": "unknown trigger"}`), nil)
+					Return([]byte(`{"test": "someMessage"}`), nil)
 
 				return handler
 			},
-			expectHandleCount: 0,
-			expectError:       "unknown event type with key: test",
+			expectHandleCount: 1,
 		},
 		{
 			name: "Event handling ends with error when handler returns error",
@@ -542,14 +612,176 @@ func TestHandleCustomTrigger(t *testing.T) {
 	}
 }
 
+func TestS3MultiEncodingConfig_Validate(t *testing.T) {
+	// Verify that a config with S3 Encodings (all raw passthrough, no extension needed)
+	// passes validation and has the expected number of entries.
+	cfg := &Config{
+		S3: S3Config{
+			Encodings: []S3Encoding{
+				{Name: "vpcflow"}, // raw passthrough, no extension needed
+				{Name: "catchall", PathPattern: "*"},
+			},
+		},
+		CloudWatch: sharedConfig{},
+	}
+	require.NoError(t, cfg.Validate())
+	require.Len(t, cfg.S3.Encodings, 2)
+}
+
+func TestNewLogsHandler_MultiEncodingS3_Branch(t *testing.T) {
+	// Verify that newLogsHandler succeeds when cfg.S3.Encodings is non-empty (multi-format
+	// path builds a router). Both branches produce *s3Handler after the handler unification,
+	// so the test just verifies construction succeeds and the S3 handler is registered.
+	cfg := &Config{
+		S3: S3Config{
+			Encodings: []S3Encoding{
+				{Name: "vpcflow"},                    // raw passthrough, uses default decoder
+				{Name: "catchall", PathPattern: "*"}, // catch-all, uses default decoder
+			},
+		},
+		CloudWatch: sharedConfig{},
+	}
+	require.NoError(t, cfg.Validate())
+
+	ctr := gomock.NewController(t)
+	s3Service := internal.NewMockS3Service(ctr)
+	s3Provider := internal.NewMockS3Provider(ctr)
+	s3Provider.EXPECT().GetService(gomock.Any(), gomock.Any()).Return(s3Service, nil)
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	host := componenttest.NewNopHost() // no extensions needed — all raw passthrough
+	sink := &consumertest.LogsSink{}
+
+	hp, err := newLogsHandler(t.Context(), cfg, settings, host, sink, s3Provider)
+	require.NoError(t, err)
+	require.NotNil(t, hp)
+
+	handler, err := hp.getHandler(s3Event)
+	require.NoError(t, err)
+	require.NotNil(t, handler)
+}
+
+func TestBuildS3LogsRouter_RawPassthrough(t *testing.T) {
+	// Verify that buildS3LogsRouter succeeds when all encodings are raw passthrough
+	// (no extension references), and the resulting router routes correctly.
+	cfg := S3Config{
+		Encodings: []S3Encoding{
+			{Name: "vpcflow"},                    // default pattern, no encoding = raw
+			{Name: "catchall", PathPattern: "*"}, // catch-all, no encoding = raw
+		},
+	}
+
+	// Use a nop host — no extensions needed since all entries are raw passthrough.
+	host := componenttest.NewNopHost()
+	router, err := buildS3LogsRouter(host, cfg, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, router)
+
+	// VPC flow log key should match the vpcflow entry.
+	decoder, name, err := router.GetDecoder("AWSLogs/123/vpcflowlogs/us-east-1/file.log.gz")
+	require.NoError(t, err)
+	assert.Equal(t, "vpcflow", name)
+	assert.NotNil(t, decoder)
+
+	// Random key should fall through to catch-all.
+	decoder, name, err = router.GetDecoder("random/path/file.log")
+	require.NoError(t, err)
+	assert.Equal(t, "catchall", name)
+	assert.NotNil(t, decoder)
+}
+
+func TestNewMetricsHandler_EncodingsNotSupported(t *testing.T) {
+	// Multi-format routing via 's3.encodings' is logs-only. Verify that the metrics handler
+	// rejects configs that set this field.
+	cfg := &Config{
+		S3: S3Config{
+			Encodings: []S3Encoding{{Name: "cloudwatch-metrics", PathPattern: "*"}},
+		},
+	}
+
+	ctr := gomock.NewController(t)
+	s3Provider := internal.NewMockS3Provider(ctr)
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	host := componenttest.NewNopHost()
+	sink := &consumertest.MetricsSink{}
+
+	hp, err := newMetricsHandler(t.Context(), cfg, settings, host, sink, s3Provider)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "'s3.encodings' is only supported for the logs signal type")
+	assert.Nil(t, hp)
+}
+
 type mockExtensionWithPLogUnmarshaler struct {
 	mockExtension    // Embed the base mock implementation.
 	plog.Unmarshaler // Add the unmarshaler interface when needed.
 }
 
+func (mockExtensionWithPLogUnmarshaler) UnmarshalLogs(_ []byte) (plog.Logs, error) {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty()
+	return logs, nil
+}
+
+func (mockExtensionWithPLogUnmarshaler) NewLogsDecoder(_ io.Reader, _ ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	isEOF := false
+	return xstreamencoding.NewLogsDecoderAdapter(
+			func() (plog.Logs, error) {
+				if isEOF {
+					return plog.Logs{}, io.EOF
+				}
+
+				logs := plog.NewLogs()
+				rl := logs.ResourceLogs().AppendEmpty()
+				sl := rl.ScopeLogs().AppendEmpty()
+				sl.LogRecords().AppendEmpty()
+
+				isEOF = true
+				return logs, nil
+			},
+			func() int64 {
+				return 0
+			}),
+		nil
+}
+
 type mockExtensionWithPMetricUnmarshaler struct {
 	mockExtension       // Embed the base mock implementation.
 	pmetric.Unmarshaler // Add the unmarshaler interface when needed.
+}
+
+func (mockExtensionWithPMetricUnmarshaler) UnmarshalMetrics(_ []byte) (pmetric.Metrics, error) {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	dp := ilm.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(123)
+	return metrics, nil
+}
+
+func (mockExtensionWithPMetricUnmarshaler) NewMetricsDecoder(_ io.Reader, _ ...encoding.DecoderOption) (encoding.MetricsDecoder, error) {
+	isEOF := false
+	return xstreamencoding.NewMetricsDecoderAdapter(
+			func() (pmetric.Metrics, error) {
+				if isEOF {
+					return pmetric.Metrics{}, io.EOF
+				}
+
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
+				dp := ilm.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetIntValue(123)
+
+				isEOF = true
+				return metrics, nil
+			},
+			func() int64 {
+				return 0
+			}),
+		nil
 }
 
 type mockExtension struct{}
@@ -571,16 +803,4 @@ type mockHost struct {
 
 func (m mockHost) GetExtensions() map[component.ID]component.Component {
 	return m.GetFunc()
-}
-
-type unmarshalLogsFunc func([]byte) (plog.Logs, error)
-
-func (f unmarshalLogsFunc) UnmarshalLogs(data []byte) (plog.Logs, error) {
-	return f(data)
-}
-
-type unmarshalMetricsFunc func([]byte) (pmetric.Metrics, error)
-
-func (f unmarshalMetricsFunc) UnmarshalMetrics(data []byte) (pmetric.Metrics, error) {
-	return f(data)
 }

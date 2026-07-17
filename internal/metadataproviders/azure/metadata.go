@@ -77,7 +77,8 @@ func (p *azureProviderImpl) Metadata(ctx context.Context) (*ComputeMetadata, err
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Add("Metadata", "True")
+	// As per the Azure IMDS documentation, the Metadata header must be set to "true" (note lowercase).
+	req.Header.Add("Metadata", "true")
 	q := req.URL.Query()
 	q.Add(formatKey, jsonFormat)
 	q.Add(apiVersionKey, apiVersion)

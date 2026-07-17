@@ -29,7 +29,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ControllerConfig:     cfg,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		Schema:               defaultSchema,
 		Database:             defaultDB,
 		Role:                 defaultRole,
@@ -62,6 +62,6 @@ func createMetricsReceiver(
 		&cfg.ControllerConfig,
 		params,
 		consumer,
-		scraperhelper.AddScraper(metadata.Type, s),
+		scraperhelper.AddMetricsScraper(metadata.Type, s),
 	)
 }

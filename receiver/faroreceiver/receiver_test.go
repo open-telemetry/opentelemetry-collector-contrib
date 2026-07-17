@@ -16,12 +16,15 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/faroreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/faroreceiver/internal/metadatatest"
 )
 
 func TestFaroReceiver_Start(t *testing.T) {
@@ -40,19 +43,19 @@ func TestFaroReceiver_Start(t *testing.T) {
 		{
 			name:               "minimal-traces-only",
 			payload:            filepath.Join("testdata", "traces", "minimal-traces-only.json"),
-			expectedStatusCode: http.StatusOK,
+			expectedStatusCode: http.StatusAccepted,
 			expectedTraces:     filepath.Join("testdata", "golden", "minimal-traces-only.yaml"),
 		},
 		{
 			name:               "minimal-logs-only",
 			payload:            filepath.Join("testdata", "logs", "minimal-logs-only.json"),
-			expectedStatusCode: http.StatusOK,
+			expectedStatusCode: http.StatusAccepted,
 			expectedLogs:       filepath.Join("testdata", "golden", "minimal-logs-only.yaml"),
 		},
 		{
 			name:               "minimal-logs-and-traces-only",
 			payload:            filepath.Join("testdata", "logsandtraces", "minimal-only.json"),
-			expectedStatusCode: http.StatusOK,
+			expectedStatusCode: http.StatusAccepted,
 			expectedLogs:       filepath.Join("testdata", "golden", "minimal-logs-only.yaml"),
 			expectedTraces:     filepath.Join("testdata", "golden", "minimal-traces-only.yaml"),
 		},
@@ -111,4 +114,50 @@ func TestFaroReceiver_Start(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFaroReceiver_CustomTelemetry(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+	cfg := createDefaultConfig().(*Config)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.TelemetrySettings = tel.NewTelemetrySettings()
+	settings.Logger = zap.NewNop()
+
+	receiver, err := newFaroReceiver(cfg, &settings)
+	require.NoError(t, err)
+
+	receiver.RegisterTracesConsumer(new(consumertest.TracesSink))
+	receiver.RegisterLogsConsumer(new(consumertest.LogsSink))
+
+	require.NoError(t, receiver.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, receiver.Shutdown(t.Context())) }()
+
+	server := httptest.NewServer(http.HandlerFunc(receiver.handleFaroRequest))
+	defer server.Close()
+
+	contents, err := os.ReadFile(filepath.Join("testdata", "all-signals.json"))
+	require.NoError(t, err)
+
+	req, err := http.NewRequest(http.MethodPost, server.URL+faroPath, bytes.NewBuffer(contents))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+
+	metadatatest.AssertEqualFaroLogIngested(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualFaroMeasurementIngested(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 3}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualFaroExceptionIngested(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualFaroEventIngested(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 4}},
+		metricdatatest.IgnoreTimestamp())
 }

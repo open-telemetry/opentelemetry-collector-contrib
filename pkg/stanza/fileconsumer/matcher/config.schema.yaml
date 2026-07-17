@@ -1,0 +1,45 @@
+$defs:
+  criteria:
+    type: object
+    properties:
+      exclude:
+        type: array
+        items:
+          type: string
+      exclude_older_than:
+        description: ExcludeOlderThan allows excluding files whose modification time is older than the specified age.
+        type: string
+        format: duration
+      include:
+        type: array
+        items:
+          type: string
+      ordering_criteria:
+        $ref: ordering_criteria
+  ordering_criteria:
+    type: object
+    properties:
+      group_by:
+        type: string
+      regex:
+        type: string
+      sort_by:
+        type: array
+        items:
+          $ref: sort
+      top_n:
+        type: integer
+  sort:
+    type: object
+    properties:
+      ascending:
+        type: boolean
+      layout:
+        description: Timestamp only
+        type: string
+      location:
+        type: string
+      regex_key:
+        type: string
+      sort_type:
+        type: string

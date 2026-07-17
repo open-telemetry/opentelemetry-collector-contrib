@@ -64,5 +64,9 @@ resourceLogs:
             body: {}
             timeUnixNano: "1745508906000000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.frontdoor
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

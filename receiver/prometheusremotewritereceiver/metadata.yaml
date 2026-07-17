@@ -1,4 +1,10 @@
-type: prometheusremotewrite
+display_name: Prometheus Remote Write Receiver
+type: prometheus_remote_write
+deprecated_type: prometheusremotewrite
+
+description: |
+  This receiver implements the
+  [Prometheus Remote Write 2.0 protocol](https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/).
 
 status:
   class: receiver
@@ -6,7 +12,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dashpole, ArthurSens, perebaj]
+    active: [dashpole, ArthurSens, perebaj, himanshu130700]
 tests:
   config:
   goleak:

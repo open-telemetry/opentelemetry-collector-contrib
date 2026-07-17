@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
@@ -32,6 +32,20 @@ type conversionEntry struct {
 	skipIfExists     bool
 }
 
+// collectECSFields extracts all target ECS field paths from conversion maps
+// and returns them as a set (map) for efficient lookups.
+func collectECSFields(maps ...map[string]conversionEntry) map[string]struct{} {
+	fields := make(map[string]struct{})
+	for _, m := range maps {
+		for _, entry := range m {
+			if entry.to != "" && !entry.skip {
+				fields[entry.to] = struct{}{}
+			}
+		}
+	}
+	return fields
+}
+
 // resourceAttrsConversionMap contains conversions for resource-level attributes
 // from their Semantic Conventions (SemConv) names to equivalent Elastic Common
 // Schema (ECS) names.
@@ -43,8 +57,8 @@ var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventionsv126.DeploymentEnvironmentKey): {to: "service.environment"},
 	string(conventions.DeploymentEnvironmentNameKey): {to: "service.environment"},
 	string(conventions.TelemetrySDKNameKey):          {skip: true},
-	string(conventions.TelemetrySDKLanguageKey):      {skip: true},
-	string(conventions.TelemetrySDKVersionKey):       {skip: true},
+	string(conventions.TelemetrySDKLanguageKey):      {to: "service.language.name"},
+	string(conventions.TelemetrySDKVersionKey):       {to: "service.language.version"},
 	string(conventions.TelemetryDistroNameKey):       {skip: true},
 	string(conventions.TelemetryDistroVersionKey):    {skip: true},
 	string(conventions.CloudPlatformKey):             {to: "cloud.service.name"},
@@ -79,13 +93,69 @@ var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventions.FaaSTriggerKey):               {to: "faas.trigger.type"},
 }
 
+var (
+	scopeAttrsConversionMap = map[string]conversionEntry{}
+
+	logRecordAttrsConversionMap = map[string]conversionEntry{
+		"event.name":                                {to: "event.action"},
+		string(conventions.ExceptionMessageKey):     {to: "error.message"},
+		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
+		string(conventions.ExceptionTypeKey):        {to: "error.type"},
+		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
+		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
+	}
+
+	spanAttrsConversionMap = map[string]conversionEntry{
+		string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
+		string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
+		string(conventions.DBQueryTextKey):          {to: "span.db.statement"},
+		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
+	}
+
+	// ecsSpanEventAttrsConversionMap is used when encoding span events as separate
+	// ECS log documents. It maps OTel exception attributes to the correct nested ECS
+	// paths (distinct from logRecordAttrsConversionMap which uses flat error.* paths),
+	// and suppresses routing-only attributes that must not appear in the final document.
+	ecsSpanEventAttrsConversionMap = map[string]conversionEntry{
+		string(conventions.ExceptionTypeKey):        {to: "error.exception.type"},
+		string(conventions.ExceptionMessageKey):     {to: "error.exception.message"},
+		string(conventions.ExceptionStacktraceKey):  {to: "error.stack_trace"},
+		string(conventionsv126.ExceptionEscapedKey): {skip: true}, // processor writes error.exception.handled
+		elasticsearch.DataStreamType:                {skip: true}, // routing only, written by addDataStreamAttributes
+		elasticsearch.DataStreamDataset:             {skip: true},
+		elasticsearch.DataStreamNamespace:           {skip: true},
+		"error.grouping_name":                       {skip: true}, // scripted field in logs-apm.error; cannot be indexed directly
+	}
+
+	// Precomputed protected fields for performance
+	logProtectedFields = collectECSFields(
+		resourceAttrsConversionMap,
+		scopeAttrsConversionMap,
+		logRecordAttrsConversionMap,
+	)
+	spanProtectedFields = collectECSFields(
+		resourceAttrsConversionMap,
+		scopeAttrsConversionMap,
+		spanAttrsConversionMap,
+	)
+	spanEventProtectedFields = collectECSFields(
+		resourceAttrsConversionMap,
+		scopeAttrsConversionMap,
+		ecsSpanEventAttrsConversionMap,
+	)
+	metricsProtectedFields = collectECSFields(resourceAttrsConversionMap)
+)
+
 var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
 
 // documentEncoder is an interface for encoding signals to Elasticsearch documents.
 type documentEncoder interface {
 	encodeLog(encodingContext, plog.LogRecord, elasticsearch.Index, *bytes.Buffer) error
 	encodeSpan(encodingContext, ptrace.Span, elasticsearch.Index, *bytes.Buffer) error
-	encodeSpanEvent(encodingContext, ptrace.Span, ptrace.SpanEvent, elasticsearch.Index, *bytes.Buffer) error
+	// encodeSpanEvent encodes the span event into buf and returns the index the document
+	// should be written to. Encoders that do not produce a document return an empty buffer;
+	// encoders that need custom routing return a different index than the one passed in.
+	encodeSpanEvent(encodingContext, ptrace.Span, ptrace.SpanEvent, elasticsearch.Index, *bytes.Buffer) (elasticsearch.Index, error)
 	encodeMetrics(_ encodingContext, _ []datapoints.DataPoint, validationErrors *[]error, _ elasticsearch.Index, _ *bytes.Buffer) (map[string]string, error)
 	encodeProfile(_ encodingContext, _ pprofile.ProfilesDictionary, _ pprofile.Profile, _ func(*bytes.Buffer, string, string) error) error
 }
@@ -140,7 +210,6 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 
 type legacyModeEncoder struct {
 	nonOTelSpanEncoder
-	nopSpanEventEncoder
 	metricsUnsupportedEncoder
 	profilesUnsupportedEncoder
 	attributesPrefix string
@@ -148,7 +217,6 @@ type legacyModeEncoder struct {
 
 type ecsModeEncoder struct {
 	ecsDataPointsEncoder
-	nopSpanEventEncoder
 	profilesUnsupportedEncoder
 }
 
@@ -186,7 +254,7 @@ func (e legacyModeEncoder) encodeLog(ec encodingContext, record plog.LogRecord, 
 	document.AddAttributes("Scope", scopeToAttributes(ec.scope))
 	encodeAttributes(e.attributesPrefix, &document, record.Attributes(), idx)
 
-	return document.Serialize(buf, false)
+	return document.Serialize(buf, false, nil)
 }
 
 func (ecsModeEncoder) encodeLog(
@@ -199,29 +267,13 @@ func (ecsModeEncoder) encodeLog(
 
 	// First, try to map resource-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-
 	// Then, try to map scope-level attributes to ECS fields.
-	scopeAttrsConversionMap := map[string]conversionEntry{
-		// None at the moment
-	}
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-
 	// Finally, try to map record-level attributes to ECS fields.
-	recordAttrsConversionMap := map[string]conversionEntry{
-		"event.name":                                {to: "event.action"},
-		string(conventions.ExceptionMessageKey):     {to: "error.message"},
-		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
-		string(conventions.ExceptionTypeKey):        {to: "error.type"},
-		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
-		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
-	}
-	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
+	encodeAttributesECSMode(&document, record.Attributes(), logRecordAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
 
 	// Handle special cases.
-	encodeLogAgentNameECSMode(&document, ec.resource)
-	encodeLogAgentVersionECSMode(&document, ec.resource)
-	encodeHostOsTypeECSMode(&document, ec.resource)
 	encodeLogTimestampECSMode(&document, record)
 	document.AddTraceID("trace.id", record.TraceID())
 	document.AddSpanID("span.id", record.SpanID())
@@ -235,7 +287,7 @@ func (ecsModeEncoder) encodeLog(
 		document.AddAttribute("message", record.Body())
 	}
 
-	return document.Serialize(buf, true)
+	return document.Serialize(buf, true, logProtectedFields)
 }
 
 func (ecsModeEncoder) encodeSpan(
@@ -248,34 +300,10 @@ func (ecsModeEncoder) encodeSpan(
 
 	// First, try to map resource-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-
 	// Then, try to map scope-level attributes to ECS fields.
-	scopeAttrsConversionMap := map[string]conversionEntry{
-		// None at the moment
-	}
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-
-	// Finally, try to map record-level attributes to ECS fields.
-
-	// determine the correct message queue name based on the trace type (Elastic span or transaction)
-	messageQueueName := "span.message.queue.name"
-	processor, _ := span.Attributes().Get("processor.event")
-	if processor.Str() == "transaction" {
-		messageQueueName = "transaction.message.queue.name"
-	}
-
-	spanAttrsConversionMap := map[string]conversionEntry{
-		string(conventions.MessagingDestinationNameKey): {to: messageQueueName},
-		string(conventions.MessagingOperationNameKey):   {to: "span.action"},
-		string(conventionsv126.DBSystemKey):             {to: "span.db.type"},
-		string(conventions.DBNamespaceKey):              {to: "span.db.instance"},
-		string(conventions.DBQueryTextKey):              {to: "span.db.statement"},
-		string(conventions.HTTPResponseBodySizeKey):     {to: "http.response.encoded_body_size"},
-	}
-
-	// Handle special cases.
+	// Finally, try to map span-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap)
-	encodeHostOsTypeECSMode(&document, ec.resource)
 	addDataStreamAttributes(&document, "", idx)
 
 	document.AddTimestamp("@timestamp", span.StartTimestamp())
@@ -293,7 +321,7 @@ func (ecsModeEncoder) encodeSpan(
 		document.AddString("span.kind", spanKind)
 	}
 
-	return document.Serialize(buf, true)
+	return document.Serialize(buf, true, spanProtectedFields)
 }
 
 // spanKindToECSStr converts an OTel SpanKind to its ECS equivalent string representation defined here:
@@ -346,13 +374,13 @@ func (e otelModeEncoder) encodeSpanEvent(
 	spanEvent ptrace.SpanEvent,
 	idx elasticsearch.Index,
 	buf *bytes.Buffer,
-) error {
+) (elasticsearch.Index, error) {
 	e.serializer.SerializeSpanEvent(
 		ec.resource, ec.resourceSchemaURL,
 		ec.scope, ec.scopeSchemaURL,
 		span, spanEvent, idx, buf,
 	)
-	return nil
+	return idx, nil
 }
 
 func (e otelModeEncoder) encodeMetrics(
@@ -396,8 +424,8 @@ func (bodymapModeEncoder) encodeSpan(encodingContext, ptrace.Span, elasticsearch
 	return errors.New("bodymap mode does not support encoding spans")
 }
 
-func (bodymapModeEncoder) encodeSpanEvent(encodingContext, ptrace.Span, ptrace.SpanEvent, elasticsearch.Index, *bytes.Buffer) error {
-	return errors.New("bodymap mode does not support encoding span events")
+func (bodymapModeEncoder) encodeSpanEvent(_ encodingContext, _ ptrace.Span, _ ptrace.SpanEvent, idx elasticsearch.Index, _ *bytes.Buffer) (elasticsearch.Index, error) {
+	return idx, errors.New("bodymap mode does not support encoding span events")
 }
 
 type metricsUnsupportedEncoder struct {
@@ -453,7 +481,7 @@ func (e nonOTelSpanEncoder) encodeSpan(
 	document.AddAttributes("Scope", scopeToAttributes(ec.scope))
 	encodeAttributes(e.attributesPrefix, &document, span.Attributes(), idx)
 	document.AddEvents(e.eventsPrefix, span.Events())
-	return document.Serialize(buf, e.dedot)
+	return document.Serialize(buf, e.dedot, nil)
 }
 
 type ecsDataPointsEncoder struct{}
@@ -467,10 +495,12 @@ func (ecsDataPointsEncoder) encodeMetrics(
 ) (map[string]string, error) {
 	dp0 := dataPoints[0]
 	var document objmodel.Document
+
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
 	document.AddAttributes("", dp0.Attributes())
 	addDataStreamAttributes(&document, "", idx)
+	var docCount uint64
 
 	for _, dp := range dataPoints {
 		value, err := dp.Value()
@@ -478,9 +508,22 @@ func (ecsDataPointsEncoder) encodeMetrics(
 			*validationErrors = append(*validationErrors, err)
 			continue
 		}
-		document.AddAttribute(dp.Metric().Name(), value)
+		metric := dp.Metric()
+		metricName := metric.Name()
+		document.AddAttribute(metricName, value)
+		if name := dp.DynamicTemplate(metric, datapoints.DynamicTemplateModeECS); name != "" {
+			document.AddDynamicTemplate(metricName, name)
+		}
+
+		if dp.HasMappingHint(elasticsearch.HintDocCount) {
+			docCount = dp.DocCount()
+		}
 	}
-	err := document.Serialize(buf, true)
+
+	if docCount != 0 {
+		document.AddUInt("_doc_count", docCount)
+	}
+	err := document.Serialize(buf, true, metricsProtectedFields)
 
 	return document.DynamicTemplates(), err
 }
@@ -496,14 +539,85 @@ func addDataStreamAttributes(document *objmodel.Document, key string, idx elasti
 	}
 }
 
-// nopSpanEventEncoder is embedded in all non-OTel encoders,
-// since only OTel mapping mode currently encodes span events
-// as separate documents. In all others they are stored within
-// the span document.
-type nopSpanEventEncoder struct{}
+// encodeSpanEvent encodes span events as separate ECS log documents.
+// Exception events go to logs-apm.error-*, non-exception events to logs-apm.app.<service>-*.
+func (ecsModeEncoder) encodeSpanEvent(
+	ec encodingContext,
+	span ptrace.Span,
+	event ptrace.SpanEvent,
+	_ elasticsearch.Index,
+	buf *bytes.Buffer,
+) (elasticsearch.Index, error) {
+	isException := isExceptionSpanEvent(event)
+	dataset := ecsSpanEventDataset(ec, event)
+	namespace := ecsSpanEventNamespace(ec, event)
+	idx := elasticsearch.NewDataStreamIndex(defaultDataStreamTypeLogs, dataset, namespace)
 
-func (nopSpanEventEncoder) encodeSpanEvent(encodingContext, ptrace.Span, ptrace.SpanEvent, elasticsearch.Index, *bytes.Buffer) error {
-	return nil
+	var document objmodel.Document
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
+	encodeAttributesECSMode(&document, event.Attributes(), ecsSpanEventAttrsConversionMap)
+	addDataStreamAttributes(&document, "", idx)
+
+	document.AddTimestamp("@timestamp", event.Timestamp())
+	document.AddTraceID("trace.id", span.TraceID())
+
+	// Determine whether the parent span is a transaction or a regular span.
+	// The elasticapmprocessor sets "transaction.id" on transaction spans only.
+	if txnIDAttr, ok := span.Attributes().Get("transaction.id"); ok {
+		txnID := txnIDAttr.Str()
+		document.AddString("transaction.id", txnID)
+		document.AddString("span.id", txnID)
+		if isException {
+			document.AddString("parent.id", txnID)
+		}
+	} else {
+		// Parent is a regular span.
+		if isException {
+			document.AddString("parent.id", span.SpanID().String())
+		} else {
+			document.AddSpanID("span.id", span.SpanID())
+		}
+	}
+
+	if !isException {
+		document.AddString("event.kind", "event")
+		document.AddString("message", event.Name())
+	}
+
+	return idx, document.Serialize(buf, true, spanEventProtectedFields)
+}
+
+func isExceptionSpanEvent(event ptrace.SpanEvent) bool {
+	if event.Name() != "exception" {
+		return false
+	}
+	attrs := event.Attributes()
+	_, hasType := attrs.Get(string(conventions.ExceptionTypeKey))
+	_, hasMessage := attrs.Get(string(conventions.ExceptionMessageKey))
+	return hasType || hasMessage
+}
+
+func ecsSpanEventDataset(ec encodingContext, event ptrace.SpanEvent) string {
+	if isExceptionSpanEvent(event) {
+		return "apm.error"
+	}
+	if svcName, ok := ec.resource.Attributes().Get(string(conventions.ServiceNameKey)); ok && svcName.Str() != "" {
+		return sanitizeDataStreamField("apm.app."+svcName.Str(), disallowedDatasetRunes, "")
+	}
+	return "apm.app"
+}
+
+func ecsSpanEventNamespace(ec encodingContext, event ptrace.SpanEvent) string {
+	ns, _ := getFromAttributes(elasticsearch.DataStreamNamespace, defaultDataStreamNamespace,
+		event.Attributes(), ec.scope.Attributes(), ec.resource.Attributes())
+	return sanitizeDataStreamField(ns, disallowedNamespaceRunes, "")
+}
+
+// encodeSpanEvent is a no-op for legacy mapping modes: span events remain embedded
+// within the parent span document rather than being extracted as separate documents.
+func (legacyModeEncoder) encodeSpanEvent(_ encodingContext, _ ptrace.Span, _ ptrace.SpanEvent, idx elasticsearch.Index, _ *bytes.Buffer) (elasticsearch.Index, error) {
+	return idx, nil
 }
 
 func encodeAttributes(prefix string, document *objmodel.Document, attributes pcommon.Map, idx elasticsearch.Index) {
@@ -571,85 +685,6 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 		// Otherwise, add key at top level with attribute name as-is.
 		document.AddAttribute(k, v)
 	}
-}
-
-func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Resource) {
-	// Parse out telemetry SDK name, language, and distro name from resource
-	// attributes, setting defaults as needed.
-	telemetrySdkName := "otlp"
-	var telemetrySdkLanguage, telemetryDistroName string
-
-	attrs := resource.Attributes()
-	if v, exists := attrs.Get(string(conventions.TelemetrySDKNameKey)); exists {
-		telemetrySdkName = v.Str()
-	}
-	if v, exists := attrs.Get(string(conventions.TelemetrySDKLanguageKey)); exists {
-		telemetrySdkLanguage = v.Str()
-	}
-	if v, exists := attrs.Get(string(conventions.TelemetryDistroNameKey)); exists {
-		telemetryDistroName = v.Str()
-		if telemetrySdkLanguage == "" {
-			telemetrySdkLanguage = "unknown"
-		}
-	}
-
-	// Construct agent name from telemetry SDK name, language, and distro name.
-	agentName := telemetrySdkName
-	if telemetryDistroName != "" {
-		agentName = fmt.Sprintf("%s/%s/%s", agentName, telemetrySdkLanguage, telemetryDistroName)
-	} else if telemetrySdkLanguage != "" {
-		agentName = fmt.Sprintf("%s/%s", agentName, telemetrySdkLanguage)
-	}
-
-	// Set agent name in document.
-	document.AddString("agent.name", agentName)
-}
-
-func encodeLogAgentVersionECSMode(document *objmodel.Document, resource pcommon.Resource) {
-	attrs := resource.Attributes()
-
-	if telemetryDistroVersion, exists := attrs.Get(string(conventions.TelemetryDistroVersionKey)); exists {
-		document.AddString("agent.version", telemetryDistroVersion.Str())
-		return
-	}
-
-	if telemetrySdkVersion, exists := attrs.Get(string(conventions.TelemetrySDKVersionKey)); exists {
-		document.AddString("agent.version", telemetrySdkVersion.Str())
-		return
-	}
-}
-
-func encodeHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
-	// https://www.elastic.co/guide/en/ecs/current/ecs-os.html#field-os-type:
-	//
-	// "One of these following values should be used (lowercase): linux, macos, unix, windows.
-	// If the OS you’re dealing with is not in the list, the field should not be populated."
-
-	var ecsHostOsType string
-	if semConvOsType, exists := resource.Attributes().Get(string(conventions.OSTypeKey)); exists {
-		switch semConvOsType.Str() {
-		case "windows", "linux":
-			ecsHostOsType = semConvOsType.Str()
-		case "darwin":
-			ecsHostOsType = "macos"
-		case "aix", "hpux", "solaris":
-			ecsHostOsType = "unix"
-		}
-	}
-
-	if semConvOsName, exists := resource.Attributes().Get(string(conventions.OSNameKey)); exists {
-		switch semConvOsName.Str() {
-		case "Android":
-			ecsHostOsType = "android"
-		case "iOS":
-			ecsHostOsType = "ios"
-		}
-	}
-
-	if ecsHostOsType == "" {
-		return
-	}
-	document.AddString("host.os.type", ecsHostOsType)
 }
 
 func encodeLogTimestampECSMode(document *objmodel.Document, record plog.LogRecord) {

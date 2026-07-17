@@ -5,16 +5,19 @@ package subscriptionfilter
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -23,11 +26,11 @@ func TestValidateLog(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		log         events.CloudwatchLogsData
+		log         cloudwatchLogsData
 		expectedErr string
 	}{
 		"valid_cloudwatch_log_data_message": {
-			log: events.CloudwatchLogsData{
+			log: cloudwatchLogsData{
 				MessageType: "DATA_MESSAGE",
 				Owner:       "owner",
 				LogGroup:    "log-group",
@@ -35,7 +38,7 @@ func TestValidateLog(t *testing.T) {
 			},
 		},
 		"empty_owner_cloudwatch_log_data_message": {
-			log: events.CloudwatchLogsData{
+			log: cloudwatchLogsData{
 				MessageType: "DATA_MESSAGE",
 				LogGroup:    "log-group",
 				LogStream:   "log-stream",
@@ -43,7 +46,7 @@ func TestValidateLog(t *testing.T) {
 			expectedErr: errEmptyOwner.Error(),
 		},
 		"empty_log_group_cloudwatch_log_data_message": {
-			log: events.CloudwatchLogsData{
+			log: cloudwatchLogsData{
 				MessageType: "DATA_MESSAGE",
 				Owner:       "owner",
 				LogStream:   "log-stream",
@@ -51,7 +54,7 @@ func TestValidateLog(t *testing.T) {
 			expectedErr: errEmptyLogGroup.Error(),
 		},
 		"empty_log_stream_cloudwatch_log_data_message": {
-			log: events.CloudwatchLogsData{
+			log: cloudwatchLogsData{
 				MessageType: "DATA_MESSAGE",
 				Owner:       "owner",
 				LogGroup:    "log-group",
@@ -59,12 +62,12 @@ func TestValidateLog(t *testing.T) {
 			expectedErr: errEmptyLogStream.Error(),
 		},
 		"valid_cloudwatch_log_control_message": {
-			log: events.CloudwatchLogsData{
+			log: cloudwatchLogsData{
 				MessageType: "CONTROL_MESSAGE",
 			},
 		},
 		"invalid_message_type_cloudwatch_log": {
-			log: events.CloudwatchLogsData{
+			log: cloudwatchLogsData{
 				MessageType: "INVALID",
 			},
 			expectedErr: `cloudwatch log has invalid message type "INVALID"`,
@@ -150,4 +153,209 @@ func TestUnmarshallCloudwatchLog_SubscriptionFilter(t *testing.T) {
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
 		})
 	}
+}
+
+// TestUnmarshallCloudwatchLog_MultipleJSONObjects verifies that UnmarshalAWSLogs
+// handles multiple concatenated JSON objects in a single reader.
+func TestUnmarshallCloudwatchLog_MultipleJSONObjects(t *testing.T) {
+	t.Parallel()
+
+	filesDirectory := "testdata"
+	reader := readAndCompressLogFile(t, filesDirectory, "multiple_json_objects.json")
+
+	unmarshalerCW := NewSubscriptionFilterUnmarshaler(component.BuildInfo{})
+	logs, err := unmarshalerCW.UnmarshalAWSLogs(reader)
+	require.NoError(t, err)
+
+	expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, "multiple_json_objects_expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+}
+
+func TestNewLogsDecoder(t *testing.T) {
+	directory := "testdata/stream"
+	expectPattern := "subscription_filter_expect_%d.yaml"
+
+	tests := []struct {
+		name   string
+		offset int64
+	}{
+		{
+			name:   "Normal streaming",
+			offset: 0,
+		},
+		{
+			name:   "Streaming with offset",
+			offset: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content := readAndCompressLogFile(t, directory, "subscription_filter.json")
+			unmarshaler := NewSubscriptionFilterUnmarshaler(component.BuildInfo{})
+
+			// flush each record and start with defined offset
+			streamer, err := unmarshaler.NewLogsDecoder(content, encoding.WithFlushItems(1), encoding.WithOffset(tt.offset))
+			require.NoError(t, err)
+
+			index := tt.offset
+			for {
+				index++
+				var logs plog.Logs
+				logs, err = streamer.DecodeLogs()
+				if err != nil {
+					if errors.Is(err, io.EOF) {
+						break
+					}
+
+					t.Errorf("failed to unmarshal log %d: %v", index, err)
+				}
+
+				var expectedLogs plog.Logs
+				expectedLogs, err = golden.ReadLogs(filepath.Join(directory, fmt.Sprintf(expectPattern, index)))
+				require.NoError(t, err)
+				require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+				require.Equal(t, index, streamer.Offset())
+			}
+
+			// expect EOF after all logs are read
+			_, err = streamer.DecodeLogs()
+			require.ErrorIs(t, err, io.EOF)
+		})
+	}
+}
+
+func TestUnmarshallCloudwatchLog_ExtractedFields(t *testing.T) {
+	t.Parallel()
+
+	filesDirectory := "testdata"
+	tests := map[string]struct {
+		reader               io.Reader
+		logsExpectedFilename string
+	}{
+		"extracted_fields_account_id": {
+			reader:               readAndCompressLogFile(t, filesDirectory, "extracted_fields_account_id.json"),
+			logsExpectedFilename: "extracted_fields_account_id_expected.yaml",
+		},
+		"extracted_fields_both": {
+			reader:               readAndCompressLogFile(t, filesDirectory, "extracted_fields_both.json"),
+			logsExpectedFilename: "extracted_fields_both_expected.yaml",
+		},
+		"two_records_same_extracted_fields": {
+			reader:               readAndCompressLogFile(t, filesDirectory, "two_records_same_extracted_fields.json"),
+			logsExpectedFilename: "two_records_same_extracted_fields_expected.yaml",
+		},
+		"two_records_different_extracted_fields": {
+			reader:               readAndCompressLogFile(t, filesDirectory, "two_records_different_extracted_fields.json"),
+			logsExpectedFilename: "two_records_different_extracted_fields_expected.yaml",
+		},
+	}
+
+	unmarshalerCW := NewSubscriptionFilterUnmarshaler(component.BuildInfo{})
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			logs, err := unmarshalerCW.UnmarshalAWSLogs(test.reader)
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, test.logsExpectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+		})
+	}
+}
+
+// recordingInner records bytes handed to UnmarshalLogs and returns one
+// non-empty plog.Logs so dispatched output is observable.
+type recordingInner struct {
+	received [][]byte
+}
+
+func (r *recordingInner) UnmarshalLogs(buf []byte) (plog.Logs, error) {
+	r.received = append(r.received, buf)
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty()
+	return logs, nil
+}
+
+func TestMatchRoute(t *testing.T) {
+	inner := &recordingInner{}
+	f := &SubscriptionFilterUnmarshaler{
+		routes: []route{
+			{name: "lambda", inner: inner, logGroupParts: []string{"", "aws", "lambda", "*"}, payload: PayloadMessage},
+			{name: "vpcflow", inner: inner, logStreamParts: []string{"eni-*"}, payload: PayloadMessage},
+			{name: "catchall", inner: inner, logGroupParts: []string{"*"}, payload: PayloadMessage},
+		},
+	}
+
+	r := f.matchRoute("/aws/lambda/foo", "anything")
+	require.NotNil(t, r)
+	require.Equal(t, "lambda", r.name)
+
+	r = f.matchRoute("/random/group", "eni-0abc")
+	require.NotNil(t, r)
+	require.Equal(t, "vpcflow", r.name)
+
+	r = f.matchRoute("/random/group", "anything")
+	require.NotNil(t, r)
+	require.Equal(t, "catchall", r.name)
+}
+
+func TestMultiEnvelopeRouting(t *testing.T) {
+	ctInner := &recordingInner{}
+	lambdaInner := &recordingInner{}
+	f := &SubscriptionFilterUnmarshaler{
+		routes: []route{
+			{name: "lambda", inner: lambdaInner, logGroupParts: []string{"", "aws", "lambda", "*"}, payload: PayloadMessage},
+			{name: "cloudtrail", inner: ctInner, logStreamParts: []string{"*_CloudTrail_*"}, payload: PayloadMessage},
+		},
+	}
+
+	payload := []byte(`{"messageType":"DATA_MESSAGE","owner":"123","logGroup":"/aws/cloudtrail/management","logStream":"acc_CloudTrail_us-east-1","logEvents":[{"id":"e1","timestamp":1000,"message":"ct event"}]}
+{"messageType":"DATA_MESSAGE","owner":"123","logGroup":"/aws/lambda/foo","logStream":"latest","logEvents":[{"id":"e2","timestamp":2000,"message":"lambda event"}]}`)
+
+	_, err := f.UnmarshalAWSLogs(bytes.NewReader(payload))
+	require.NoError(t, err)
+
+	require.Len(t, ctInner.received, 1)
+	require.Len(t, lambdaInner.received, 1)
+	require.Equal(t, []byte("ct event"), ctInner.received[0])
+	require.Equal(t, []byte("lambda event"), lambdaInner.received[0])
+}
+
+func TestNoMatchFallback(t *testing.T) {
+	inner := &recordingInner{}
+	f := &SubscriptionFilterUnmarshaler{
+		buildInfo: component.BuildInfo{},
+		routes: []route{
+			{name: "lambda", inner: inner, logGroupParts: []string{"", "aws", "lambda", "*"}, payload: PayloadMessage},
+		},
+	}
+
+	payload := []byte(`{"messageType":"DATA_MESSAGE","owner":"123","logGroup":"/aws/rds/mydb","logStream":"some-stream","logEvents":[{"id":"e1","timestamp":1000,"message":"fallback event"}]}`)
+
+	logs, err := f.UnmarshalAWSLogs(bytes.NewReader(payload))
+	require.NoError(t, err)
+
+	require.Empty(t, inner.received, "no inner should have been dispatched to")
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+	require.Equal(t, "fallback event",
+		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+}
+
+func TestControlMessageInRoutedMode(t *testing.T) {
+	inner := &recordingInner{}
+	f := &SubscriptionFilterUnmarshaler{
+		routes: []route{
+			{name: "catchall", inner: inner, logGroupParts: []string{"*"}, payload: PayloadMessage},
+		},
+	}
+
+	payload := []byte(`{"messageType":"CONTROL_MESSAGE","owner":"123","logGroup":"any","logStream":"any","logEvents":[]}`)
+
+	logs, err := f.UnmarshalAWSLogs(bytes.NewReader(payload))
+	require.NoError(t, err)
+
+	require.Empty(t, inner.received, "CONTROL_MESSAGE must not dispatch")
+	require.Equal(t, 0, logs.ResourceLogs().Len())
 }

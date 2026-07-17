@@ -57,6 +57,7 @@ func TestPrometheusConverter_addGaugeNumberDataPoints(t *testing.T) {
 			err := converter.addGaugeNumberDataPoints(
 				metric.Gauge().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				Settings{},
 				metric.Name(),
 			)
@@ -223,6 +224,7 @@ func TestPrometheusConverter_addSumNumberDataPoints(t *testing.T) {
 			err := converter.addSumNumberDataPoints(
 				metric.Sum().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				metric,
 				Settings{},
 				metric.Name(),

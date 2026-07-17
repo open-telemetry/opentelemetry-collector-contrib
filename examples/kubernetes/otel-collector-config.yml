@@ -1,5 +1,5 @@
 receivers:
-  filelog:
+  file_log:
     include:
       - /var/log/pods/*/*/*.log
     exclude:
@@ -79,5 +79,5 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       exporters: [debug]

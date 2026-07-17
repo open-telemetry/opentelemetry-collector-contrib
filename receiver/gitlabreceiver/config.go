@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/multierr"
@@ -75,13 +76,20 @@ type GitlabHeaders struct {
 }
 
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = defaultEndpoint
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = netAddr
+	serverConfig.ReadTimeout = defaultReadTimeout
+	serverConfig.WriteTimeout = defaultWriteTimeout
 	return &Config{
 		WebHook: WebHook{
-			ServerConfig: confighttp.ServerConfig{
-				Endpoint:     defaultEndpoint,
-				ReadTimeout:  defaultReadTimeout,
-				WriteTimeout: defaultWriteTimeout,
-			},
+			ServerConfig: serverConfig,
 			GitlabHeaders: GitlabHeaders{
 				Customizable: map[string]string{
 					defaultUserAgentHeader:      "",

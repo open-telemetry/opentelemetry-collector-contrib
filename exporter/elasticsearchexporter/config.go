@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"slices"
 	"strings"
 	"time"
 
@@ -66,6 +65,9 @@ type Config struct {
 	// LogsDynamicID configures whether log record attribute `elasticsearch.document_id` is set as the document ID in ES.
 	LogsDynamicID DynamicIDSettings `mapstructure:"logs_dynamic_id"`
 
+	// TracesDynamicID configures whether span attribute `elasticsearch.document_id` is set as the document ID in ES.
+	TracesDynamicID DynamicIDSettings `mapstructure:"traces_dynamic_id"`
+
 	// LogsDynamicPipeline configures whether log record attribute `elasticsearch.document_pipeline` is set as the document ingest pipeline for ES.
 	LogsDynamicPipeline DynamicPipelineSettings `mapstructure:"logs_dynamic_pipeline"`
 
@@ -86,6 +88,10 @@ type Config struct {
 	Flush          FlushSettings          `mapstructure:"flush"`
 	Mapping        MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat LogstashFormatSettings `mapstructure:"logstash_format"`
+
+	// SuppressConflictErrors configures whether 409 Conflict responses are logged as errors.
+	// If set to true, document level version conflict exceptions (409) will not be logged.
+	SuppressConflictErrors bool `mapstructure:"suppress_conflict_errors"`
 
 	// TelemetrySettings contains settings useful for testing/debugging purposes.
 	// This is experimental and may change at any time.
@@ -117,6 +123,22 @@ type Config struct {
 	//
 	// Keys are case-insensitive and duplicates will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
+
+	// BulkResponseFilterPath sets the filter_path parameter of bulk API requests,
+	// which controls what data is returned in the response from Elasticsearch.
+	//
+	// Note: If `items.*._index.items` is not in the BulkResponseFilterPath
+	// than for any failed documents, the exporter will not be able
+	// to log the index to which the document was being written
+	// to.
+	//
+	// Note: if `items.*._index.items` is not in the BulkResponseFilterPath
+	// than the export will log rejection of duplicates to
+	// ".profiling-stackframes" which were previously suppressed.
+	//
+	// BulkResponseFilterPath defaults to
+	// "items.*._index,items.*.status,items.*.failure_store,items.*.error.type,items.*.error.reason"
+	BulkResponseFilterPath string `mapstructure:"bulk_response_filter_path"`
 }
 
 type TelemetrySettings struct {
@@ -249,12 +271,16 @@ type RetrySettings struct {
 	// MaxInterval configures the max waiting time if consecutive requests failed.
 	MaxInterval time.Duration `mapstructure:"max_interval"`
 
-	// RetryOnStatus configures the status codes that trigger request or document level retries.
+	// RetryOnStatus configures the status codes that trigger request level retries.
 	RetryOnStatus []int `mapstructure:"retry_on_status"`
+
+	// RetryOnDocumentStatus configures the status codes that trigger document level retries.
+	// If unset, RetryOnDocumentStatus defaults to RetryOnStatus.
+	RetryOnDocumentStatus []int `mapstructure:"retry_on_document_status"`
 }
 
 type MappingsSettings struct {
-	// Mode configures the default document mapping mode.
+	// Deprecated: [v0.145.0] Mode is ignored. The default mapping mode is "otel".
 	//
 	// The mode may be overridden in two ways:
 	//  - by the client metadata key X-Elastic-Mapping-Mode, if specified
@@ -327,6 +353,11 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 			qbCfg.MaxSize = int64(cfg.Flush.Bytes)
 		}
 	}
+
+	if !conf.IsSet("retry::retry_on_document_status") {
+		cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
+	}
+
 	return nil
 }
 
@@ -349,9 +380,6 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("unknown allowed mapping mode name %q", name)
 		}
 		canonicalAllowedModes[i] = canonicalName
-	}
-	if !slices.Contains(canonicalAllowedModes, canonicalMappingModeName(cfg.Mapping.Mode)) {
-		return fmt.Errorf("invalid or disallowed default mapping mode %q", cfg.Mapping.Mode)
 	}
 
 	if cfg.Compression != "none" && cfg.Compression != configcompression.TypeGzip {
@@ -497,6 +525,9 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 		cfg.Retry.MaxRetries = cfg.Retry.MaxRequests - 1
 		// Do not set cfg.Retry.Enabled = false if cfg.Retry.MaxRequest = 1 to avoid breaking change on behavior
 		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
+	}
+	if canonicalMappingModeName(cfg.Mapping.Mode) != MappingOTel.String() {
+		logger.Warn("mapping::mode config option is deprecated and ignored. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. See the README for migration instructions.")
 	}
 	if cfg.LogsDynamicIndex.Enabled {
 		logger.Warn("logs_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")

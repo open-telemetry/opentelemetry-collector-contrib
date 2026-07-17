@@ -31,7 +31,7 @@ import (
 var jaegerAgent = component.NewIDWithName(metadata.Type, "agent_test")
 
 func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalNetworkAddress(t, "udp")
 	testJaegerAgent(t, addr, Protocols{
 		ThriftCompactUDP: configoptional.Some(ProtocolUDP{
 			Endpoint:        addr,
@@ -57,7 +57,7 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 }
 
 func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalNetworkAddress(t, "udp")
 	testJaegerAgent(t, addr, Protocols{
 		ThriftBinaryUDP: configoptional.Some(ProtocolUDP{
 			Endpoint:        addr,
@@ -68,7 +68,7 @@ func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
 
 func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	// This test confirms that the thrift binary port is opened correctly.  This is all we can test at the moment.  See above.
-	addr := testutil.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalNetworkAddress(t, "udp")
 
 	config := Protocols{
 		ThriftBinaryUDP: configoptional.Some(ProtocolUDP{
@@ -83,7 +83,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	assert.NoError(t, jr.startAgent(), "Start failed")
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
 
-	l, err := net.Listen("udp", addr)
+	l, err := net.ListenPacket("udp", addr)
 	assert.Error(t, err, "should not have been able to listen to the port")
 
 	if l != nil {

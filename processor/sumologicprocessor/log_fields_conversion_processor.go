@@ -19,16 +19,16 @@ const (
 	TraceIDAttributeName        = "traceid"
 )
 
-type logFieldAttribute struct {
+type LogFieldAttribute struct {
 	Enabled bool   `mapstructure:"enabled"`
 	Name    string `mapstructure:"name"`
 }
 
-type logFieldAttributesConfig struct {
-	SeverityNumberAttribute *logFieldAttribute `mapstructure:"severity_number"`
-	SeverityTextAttribute   *logFieldAttribute `mapstructure:"severity_text"`
-	SpanIDAttribute         *logFieldAttribute `mapstructure:"span_id"`
-	TraceIDAttribute        *logFieldAttribute `mapstructure:"trace_id"`
+type LogFieldAttributesConfig struct {
+	SeverityNumberAttribute *LogFieldAttribute `mapstructure:"severity_number"`
+	SeverityTextAttribute   *LogFieldAttribute `mapstructure:"severity_text"`
+	SpanIDAttribute         *LogFieldAttribute `mapstructure:"span_id"`
+	TraceIDAttribute        *LogFieldAttribute `mapstructure:"trace_id"`
 }
 
 // spanIDToHexOrEmptyString returns a hex string from SpanID.
@@ -80,10 +80,10 @@ var severityNumberToLevel = map[string]string{
 // logFieldsConversionProcessor converts specific log entries to attributes which leads to presenting them as fields
 // in the backend
 type logFieldsConversionProcessor struct {
-	LogFieldsAttributes *logFieldAttributesConfig
+	LogFieldsAttributes *LogFieldAttributesConfig
 }
 
-func newLogFieldConversionProcessor(logFieldsAttributes *logFieldAttributesConfig) *logFieldsConversionProcessor {
+func newLogFieldConversionProcessor(logFieldsAttributes *LogFieldAttributesConfig) *logFieldsConversionProcessor {
 	return &logFieldsConversionProcessor{
 		logFieldsAttributes,
 	}

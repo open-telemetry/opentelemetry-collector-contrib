@@ -28,5 +28,5 @@ func createExtension(_ context.Context, _ extension.Settings, _ component.Config
 }
 
 func createDefaultConfig() component.Config {
-	return nil
+	return &Config{}
 }

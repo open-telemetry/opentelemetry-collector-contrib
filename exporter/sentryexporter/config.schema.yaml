@@ -1,0 +1,37 @@
+$defs:
+  routing_config:
+    type: object
+    properties:
+      attribute_to_project_mapping:
+        description: AttributeToProjectMapping is a user defined map to override the default resource attribute to project mapping for the defined key value pairs.
+        type: object
+        additionalProperties:
+          type: string
+      project_from_attribute:
+        description: 'ProjectFromAttribute is the resource attribute name used when mapping a resource attribute to a Sentry project (default: service.name).'
+        type: string
+description: Config defines the configuration for the Sentry exporter.
+type: object
+properties:
+  auth_token:
+    description: AuthToken is the Sentry auth token used for OTLP ingestion and REST APIs.
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  auto_create_projects:
+    description: AutoCreateProjects enables automatic project creation when a destination project is missing in Sentry.
+    type: boolean
+  org_slug:
+    description: OrgSlug is the target Sentry organization slug.
+    type: string
+  routing:
+    description: Routing controls how resource attributes map to Sentry projects.
+    $ref: routing_config
+  sending_queue:
+    description: QueueConfig configures the sending queue.
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  url:
+    description: URL is the base URL for the Sentry organization (e.g. https://sentry.io).
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config

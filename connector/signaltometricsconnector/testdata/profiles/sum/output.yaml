@@ -7,7 +7,7 @@ resourceMetrics:
         - key: resource.foo
           value:
             stringValue: foo
-        - key: signaltometrics.service.instance.id
+        - key: signal_to_metrics.service.instance.id
           value:
             stringValue: 627cc493-f310-47de-96bd-71410b7dec09
     scopeMetrics:
@@ -19,6 +19,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "3"
                   timeUnixNano: "1000000"
+              isMonotonic: true
           - description: Count total number of profiles as per profile.foo attribute
             name: profiles.foo.sum
             sum:
@@ -29,7 +30,9 @@ resourceMetrics:
                     - key: profile.foo
                       value:
                         stringValue: foo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
+              isMonotonic: true
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
   - resource:
@@ -37,7 +40,7 @@ resourceMetrics:
         - key: resource.foo
           value:
             stringValue: foo
-        - key: signaltometrics.service.instance.id
+        - key: signal_to_metrics.service.instance.id
           value:
             stringValue: 627cc493-f310-47de-96bd-71410b7dec09
     scopeMetrics:
@@ -48,6 +51,8 @@ resourceMetrics:
               aggregationTemporality: 1
               dataPoints:
                 - asInt: "3"
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
+              isMonotonic: true
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector

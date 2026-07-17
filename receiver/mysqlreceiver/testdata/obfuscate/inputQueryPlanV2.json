@@ -1,0 +1,56 @@
+{
+  "query": "/* select#1 */ select coalesce(`performance_schema`.`events_statements_summary_by_digest`.`SCHEMA_NAME`,'') AS `COALESCE(``schema_name``, '')`,coalesce(`performance_schema`.`events_statements_summary_by_digest`.`DIGEST`,'') AS `COALESCE(``digest``, '')`,coalesce(`performance_schema`.`events_statements_summary_by_digest`.`DIGEST_TEXT`,'') AS `COALESCE(``digest_text``, '')`,`performance_schema`.`events_statements_summary_by_digest`.`COUNT_STAR` AS `count_star`,`performance_schema`.`events_statements_summary_by_digest`.`SUM_TIMER_WAIT` AS `sum_timer_wait`,`performance_schema`.`events_statements_summary_by_digest`.`QUERY_SAMPLE_TEXT` AS `query_sample_text` from `performance_schema`.`events_statements_summary_by_digest` where ((`performance_schema`.`events_statements_summary_by_digest`.`LAST_SEEN` >= <cache>((now() - interval 10000 second))) and (((not((`performance_schema`.`events_statements_summary_by_digest`.`DIGEST_TEXT` like 'EXPLAIN %'))) and (not((`performance_schema`.`events_statements_summary_by_digest`.`DIGEST_TEXT` like '/* otel-collector-ignore */%')))) or (`performance_schema`.`events_statements_summary_by_digest`.`DIGEST_TEXT` is null))) order by `performance_schema`.`events_statements_summary_by_digest`.`COUNT_STAR` desc limit 100",
+  "inputs": [
+    {
+      "inputs": [
+        {
+          "inputs": [
+            {
+              "operation": "Table scan on events_statements_summary_by_digest",
+              "table_name": "events_statements_summary_by_digest",
+              "access_type": "table",
+              "schema_name": "performance_schema",
+              "used_columns": [
+                "SCHEMA_NAME",
+                "DIGEST",
+                "DIGEST_TEXT",
+                "COUNT_STAR",
+                "SUM_TIMER_WAIT",
+                "LAST_SEEN",
+                "QUERY_SAMPLE_TEXT"
+              ],
+              "estimated_rows": 10000.0,
+              "estimated_total_cost": 459.4703522981638
+            }
+          ],
+          "condition": "((performance_schema.events_statements_summary_by_digest.LAST_SEEN >= <cache>((now() - interval 10000 second))) and (((not((performance_schema.events_statements_summary_by_digest.DIGEST_TEXT like 'EXPLAIN %'))) and (not((performance_schema.events_statements_summary_by_digest.DIGEST_TEXT like '/* otel-collector-ignore */%')))) or (performance_schema.events_statements_summary_by_digest.DIGEST_TEXT is null)))",
+          "operation": "Filter: ((performance_schema.events_statements_summary_by_digest.LAST_SEEN >= <cache>((now() - interval 10000 second))) and (((not((performance_schema.events_statements_summary_by_digest.DIGEST_TEXT like 'EXPLAIN %'))) and (not((performance_schema.events_statements_summary_by_digest.DIGEST_TEXT like '/* otel-collector-ignore */%')))) or (performance_schema.events_statements_summary_by_digest.DIGEST_TEXT is null)))",
+          "access_type": "filter",
+          "estimated_rows": 2703.0,
+          "filter_columns": [
+            "performance_schema.events_statements_summary_by_digest.DIGEST_TEXT",
+            "performance_schema.events_statements_summary_by_digest.LAST_SEEN"
+          ],
+          "estimated_total_cost": 459.4703522981638
+        }
+      ],
+      "row_ids": true,
+      "operation": "Sort row IDs: performance_schema.events_statements_summary_by_digest.COUNT_STAR DESC, limit input to 100 row(s) per chunk",
+      "access_type": "sort",
+      "sort_fields": [
+        "performance_schema.events_statements_summary_by_digest.COUNT_STAR DESC"
+      ],
+      "estimated_rows": 2703.0,
+      "per_chunk_limit": 100,
+      "estimated_total_cost": 459.4703522981638
+    }
+  ],
+  "operation": "Limit: 100 row(s)",
+  "access_type": "limit",
+  "limit_offset": 0,
+  "estimated_rows": 100.0,
+  "estimated_total_cost": 459.4703522981638,
+  "query_type": "select",
+  "json_schema_version": "2.0"
+}
+

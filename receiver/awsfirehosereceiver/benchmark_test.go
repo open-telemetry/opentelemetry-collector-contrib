@@ -36,7 +36,7 @@ func BenchmarkLogsConsumer_cwlogs(b *testing.B) {
 		for _, numLogs := range []int{1, 10} {
 			b.Run(fmt.Sprintf("%dresources_%drecords_%dlogs", numLogGroups, numRecords, numLogs), func(b *testing.B) {
 				config := createDefaultConfig().(*Config)
-				config.Endpoint = "localhost:0"
+				config.NetAddr.Endpoint = "localhost:0"
 				r, err := createLogsReceiver(
 					b.Context(),
 					receivertest.NewNopSettings(metadata.Type),
@@ -91,7 +91,7 @@ func BenchmarkMetricsConsumer_cwmetrics(b *testing.B) {
 		for _, numMetrics := range []int{1, 10} {
 			b.Run(fmt.Sprintf("%dresources_%drecords_%dmetrics", numStreams, numRecords, numMetrics), func(b *testing.B) {
 				config := createDefaultConfig().(*Config)
-				config.Endpoint = "localhost:0"
+				config.NetAddr.Endpoint = "localhost:0"
 				r, err := createMetricsReceiver(
 					b.Context(),
 					receivertest.NewNopSettings(metadata.Type),

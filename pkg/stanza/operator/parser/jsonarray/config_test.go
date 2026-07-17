@@ -11,6 +11,7 @@ import (
 
 	commontestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
@@ -83,7 +84,7 @@ func TestBuildWithFeatureGate(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			if c.isFeatureGateEnable {
-				defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
+				defer commontestutil.SetFeatureGateForTest(t, metadata.LogsJSONParserArrayFeatureGate, true)()
 			}
 
 			buildFunc, ok := operator.Lookup(operatorType)

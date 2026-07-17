@@ -1,5 +1,7 @@
-type: azureblob
+type: azure_blob
+deprecated_type: azureblob
 scope_name: otelcol/azureblobexporter
+display_name: Azure Blob Storage Exporter
 
 status:
   class: exporter

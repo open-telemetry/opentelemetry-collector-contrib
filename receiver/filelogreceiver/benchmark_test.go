@@ -67,3 +67,25 @@ func benchmarkReadSingleStaticFile(b *testing.B, numLines int) {
 		require.NoError(b, rcvr.Shutdown(b.Context()))
 	}
 }
+
+// BenchmarkReceiverStartupShutdown benchmarks receiver startup and shutdown
+func BenchmarkReceiverStartupShutdown(b *testing.B) {
+	cfg := &FileLogConfig{
+		InputConfig: func() file.Config {
+			c := file.NewConfig()
+			c.Include = []string{"/nonexistent/file"}
+			c.PollInterval = time.Millisecond
+			c.StartAt = "beginning"
+			return *c
+		}(),
+	}
+	sink := new(consumertest.LogsSink)
+	f := NewFactory()
+
+	for b.Loop() {
+		rcvr, err := f.CreateLogs(b.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
+		require.NoError(b, err)
+		require.NoError(b, rcvr.Start(b.Context(), componenttest.NewNopHost()))
+		require.NoError(b, rcvr.Shutdown(b.Context()))
+	}
+}

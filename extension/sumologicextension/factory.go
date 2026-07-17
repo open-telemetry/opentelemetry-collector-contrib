@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 //
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package sumologicextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension"
 
@@ -10,6 +10,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/credentials"
@@ -37,7 +38,13 @@ func createDefaultConfig() component.Config {
 		return nil
 	}
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
 	return &Config{
+		ClientConfig:                  clientConfig,
 		APIBaseURL:                    DefaultAPIBaseURL,
 		HeartBeatInterval:             DefaultHeartbeatInterval,
 		CollectorCredentialsDirectory: defaultCredsPath,
@@ -47,6 +54,7 @@ func createDefaultConfig() component.Config {
 		Ephemeral:                     false,
 		TimeZone:                      "",
 		StickySessionEnabled:          false,
+		UpdateMetadata:                true,
 		BackOff: backOffConfig{
 			InitialInterval: backoff.DefaultInitialInterval,
 			MaxInterval:     backoff.DefaultMaxInterval,

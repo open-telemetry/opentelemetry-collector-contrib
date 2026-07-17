@@ -61,7 +61,7 @@ func (me *metricsExporter) start(ctx context.Context, host component.Host) error
 	me.logger.Info("Starting BMC Helix Metrics Exporter")
 
 	// Initialize and store the MetricsProducer
-	me.producer = om.NewMetricsProducer(me.logger)
+	me.producer = om.NewMetricsProducer(me.logger, me.config.EnrichMetricWithAttributes)
 
 	// Initialize and store the MetricsClient
 	client, err := om.NewMetricsClient(ctx, me.config.ClientConfig, me.config.APIKey, host, me.telemetrySettings, me.logger)

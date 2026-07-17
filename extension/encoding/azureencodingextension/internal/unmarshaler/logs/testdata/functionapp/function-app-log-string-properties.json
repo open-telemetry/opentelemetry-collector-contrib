@@ -1,0 +1,18 @@
+{
+  "records": [
+    {
+      "category": "FunctionAppLogs",
+      "resourceId": "/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/AZURE-RESOURCE-GROUP-NAME/PROVIDERS/MICROSOFT.WEB/SITES/AZURE-FUNCTION-APP-NAME1",
+      "level": "Informational",
+      "operationName": "Microsoft.Web/sites/functions/log",
+      "properties": "{'appName':'AZURE-FUNCTION-APP-NAME1','roleInstance':'d00e000e00c000c0000000000b0c00000000000cca00d0dc0d0a0fb00cba00f','message':'conversation_twilio_queue-00000000-0000-0000-0000-000000000000-Receiver:ReceiveBatchAsyncstart.MessageCount=1','category':'Azure.Messaging.ServiceBus','hostVersion':'4.1047.100.3','hostInstanceId':'00000000-0000-0000-0000-000000000000','level':'Information','levelId':2,'processId':9,'eventId':7,'eventName':'ReceiveMessageStart'}",
+      "location": "eastus2",
+      "time": "2026-04-07T16:06:56Z",
+      "EventStampType": "Stamp",
+      "EventPrimaryStampName": "waws-prod-bn0-000",
+      "EventStampName": "waws-prod-bn0-000",
+      "Host": "hostname",
+      "EventIpAddress": "00.00.0.000"
+    }
+  ]
+}

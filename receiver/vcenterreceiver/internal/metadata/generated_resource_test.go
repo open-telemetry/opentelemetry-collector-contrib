@@ -40,66 +40,65 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("vcenter.cluster.name")
+			vcenterClusterNameAttrVal, ok := res.Attributes().Get("vcenter.cluster.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "vcenter.cluster.name-val", val.Str())
+				assert.Equal(t, "vcenter.cluster.name-val", vcenterClusterNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("vcenter.datacenter.name")
+			vcenterDatacenterNameAttrVal, ok := res.Attributes().Get("vcenter.datacenter.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "vcenter.datacenter.name-val", val.Str())
+				assert.Equal(t, "vcenter.datacenter.name-val", vcenterDatacenterNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("vcenter.datastore.name")
+			vcenterDatastoreNameAttrVal, ok := res.Attributes().Get("vcenter.datastore.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "vcenter.datastore.name-val", val.Str())
+				assert.Equal(t, "vcenter.datastore.name-val", vcenterDatastoreNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("vcenter.host.name")
+			vcenterHostNameAttrVal, ok := res.Attributes().Get("vcenter.host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "vcenter.host.name-val", val.Str())
+				assert.Equal(t, "vcenter.host.name-val", vcenterHostNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("vcenter.resource_pool.inventory_path")
+			vcenterResourcePoolInventoryPathAttrVal, ok := res.Attributes().Get("vcenter.resource_pool.inventory_path")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "vcenter.resource_pool.inventory_path-val", val.Str())
+				assert.Equal(t, "vcenter.resource_pool.inventory_path-val", vcenterResourcePoolInventoryPathAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("vcenter.resource_pool.name")
+			vcenterResourcePoolNameAttrVal, ok := res.Attributes().Get("vcenter.resource_pool.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "vcenter.resource_pool.name-val", val.Str())
+				assert.Equal(t, "vcenter.resource_pool.name-val", vcenterResourcePoolNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("vcenter.virtual_app.inventory_path")
+			vcenterVirtualAppInventoryPathAttrVal, ok := res.Attributes().Get("vcenter.virtual_app.inventory_path")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "vcenter.virtual_app.inventory_path-val", val.Str())
+				assert.Equal(t, "vcenter.virtual_app.inventory_path-val", vcenterVirtualAppInventoryPathAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("vcenter.virtual_app.name")
+			vcenterVirtualAppNameAttrVal, ok := res.Attributes().Get("vcenter.virtual_app.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "vcenter.virtual_app.name-val", val.Str())
+				assert.Equal(t, "vcenter.virtual_app.name-val", vcenterVirtualAppNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("vcenter.vm.id")
+			vcenterVMIDAttrVal, ok := res.Attributes().Get("vcenter.vm.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "vcenter.vm.id-val", val.Str())
+				assert.Equal(t, "vcenter.vm.id-val", vcenterVMIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("vcenter.vm.name")
+			vcenterVMNameAttrVal, ok := res.Attributes().Get("vcenter.vm.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "vcenter.vm.name-val", val.Str())
+				assert.Equal(t, "vcenter.vm.name-val", vcenterVMNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("vcenter.vm_template.id")
+			vcenterVMTemplateIDAttrVal, ok := res.Attributes().Get("vcenter.vm_template.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "vcenter.vm_template.id-val", val.Str())
+				assert.Equal(t, "vcenter.vm_template.id-val", vcenterVMTemplateIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("vcenter.vm_template.name")
+			vcenterVMTemplateNameAttrVal, ok := res.Attributes().Get("vcenter.vm_template.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "vcenter.vm_template.name-val", val.Str())
+				assert.Equal(t, "vcenter.vm_template.name-val", vcenterVMTemplateNameAttrVal.Str())
 			}
 		})
 	}

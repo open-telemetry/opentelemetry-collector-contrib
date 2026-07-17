@@ -1,0 +1,90 @@
+$defs:
+  buffer_settings:
+    type: object
+    properties:
+      group_by:
+        type: array
+        items:
+          type: string
+      max_lifetime:
+        type: string
+        format: duration
+      max_parallel_outgoing:
+        type: integer
+      purge_older_than:
+        type: string
+        format: duration
+      retry_initial_interval:
+        type: string
+        format: duration
+      retry_max_elapsed_time:
+        type: string
+        format: duration
+      retry_max_interval:
+        type: string
+        format: duration
+      retry_shutdown_timeout:
+        type: string
+        format: duration
+  logs_settings:
+    type: object
+    properties:
+      decompose_complex_message_field:
+        description: DecomposeComplexMessageField is an optional flag to signal that message / body of complex types (e.g. a map) should be decomposed / deconstructed into multiple fields. This is usually done outside of the main DataSet integration on the client side (e.g. as part of the attribute processor or similar) or on the server side (DataSet server side JSON parser for message field) and that's why this functionality is disabled by default.
+        type: boolean
+      decomposed_complex_message_prefix:
+        description: 'DecomposedComplexMessagePrefix is prefix for the decomposed complex message (see DecomposeComplexMessageField). Default value: body.map.'
+        type: string
+      export_distinguishing_suffix:
+        description: 'ExportDistinguishingSuffix is suffix used to be appended to the end of attribute name in case of collision Default value: _'
+        type: string
+      export_resource_info_on_event:
+        description: 'ExportResourceInfo is optional flag to signal that the resource info is being exported to DataSet while exporting Logs. This is especially useful when reducing DataSet billable log volume. Default value: false'
+        type: boolean
+      export_resource_prefix:
+        description: 'ExportResourcePrefix is prefix for the resource attributes when they are exported (see ExportResourceInfo). Default value: resource.attributes.'
+        type: string
+      export_scope_info_on_event:
+        description: 'ExportScopeInfo is an optional flag that signals if scope info should be exported (when available) with each event. If scope information is not utilized, it makes sense to disable exporting it since it will result in increased billable log volume. Default value: true'
+        type: boolean
+      export_scope_prefix:
+        description: 'ExportScopePrefix is prefix for the scope attributes when they are exported (see ExportScopeInfo). Default value: scope.attributes.'
+        type: string
+      export_separator:
+        description: 'ExportSeparator is separator used when flattening exported attributes Default value: .'
+        type: string
+  server_host_settings:
+    type: object
+    properties:
+      server_host:
+        type: string
+      use_hostname:
+        type: boolean
+  traces_settings:
+    type: object
+    properties:
+      export_distinguishing_suffix:
+        description: 'ExportDistinguishingSuffix is suffix used to be appended to the end of attribute name in case of collision Default value: _'
+        type: string
+      export_separator:
+        description: 'ExportSeparator is separator used when flattening exported attributes Default value: .'
+        type: string
+type: object
+properties:
+  api_key:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  dataset_url:
+    type: string
+  debug:
+    type: boolean
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  timeout:
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
+allOf:
+  - $ref: buffer_settings
+  - $ref: traces_settings
+  - $ref: logs_settings
+  - $ref: server_host_settings
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

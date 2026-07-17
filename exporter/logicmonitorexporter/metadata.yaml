@@ -1,4 +1,5 @@
 type: logicmonitor
+display_name: LogicMonitor Exporter
 
 status:
   class: exporter

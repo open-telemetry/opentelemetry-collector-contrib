@@ -116,7 +116,7 @@ func commonSplunkEvent(
 	ts pcommon.Timestamp,
 ) *Event {
 	return &Event{
-		Time:       timestampToSecondsWithMillisecondPrecision(ts),
+		Time:       nanoToEpochSeconds(ts),
 		Host:       "myhost",
 		Source:     "myservice",
 		SourceType: "mysourcetype",

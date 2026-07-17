@@ -20,15 +20,25 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemdServiceCPUTime:  MetricConfig{Enabled: true},
-					SystemdServiceRestarts: MetricConfig{Enabled: true},
-					SystemdUnitState:       MetricConfig{Enabled: true},
+					SystemdServiceCPUTime: SystemdServiceCPUTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemdServiceCPUTimeMetricAttributeKey{SystemdServiceCPUTimeMetricAttributeKeyCPUMode},
+					},
+					SystemdServiceRestarts: SystemdServiceRestartsMetricConfig{
+						Enabled: true,
+					},
+					SystemdUnitState: SystemdUnitStateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemdUnitStateMetricAttributeKey{SystemdUnitStateMetricAttributeKeySystemdUnitActiveState},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SystemdUnitName: ResourceAttributeConfig{Enabled: true},
@@ -39,9 +49,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemdServiceCPUTime:  MetricConfig{Enabled: false},
-					SystemdServiceRestarts: MetricConfig{Enabled: false},
-					SystemdUnitState:       MetricConfig{Enabled: false},
+					SystemdServiceCPUTime: SystemdServiceCPUTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemdServiceCPUTimeMetricAttributeKey{SystemdServiceCPUTimeMetricAttributeKeyCPUMode},
+					},
+					SystemdServiceRestarts: SystemdServiceRestartsMetricConfig{
+						Enabled: false,
+					},
+					SystemdUnitState: SystemdUnitStateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemdUnitStateMetricAttributeKey{SystemdUnitStateMetricAttributeKeySystemdUnitActiveState},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SystemdUnitName: ResourceAttributeConfig{Enabled: false},
@@ -52,10 +72,33 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemdServiceCPUTimeMetricConfig{}, SystemdServiceRestartsMetricConfig{}, SystemdUnitStateMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+func TestSystemdServiceCPUTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemdServiceCPUTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemdServiceCPUTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric systemd.service.cpu.time doesn't have an attribute invalid, valid attributes: [cpu.mode]")
+
+	cfg = DefaultMetricsConfig().SystemdServiceCPUTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemdUnitStateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemdUnitState
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemdUnitStateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric systemd.unit.state doesn't have an attribute invalid, valid attributes: [systemd.unit.active_state]")
+
+	cfg = DefaultMetricsConfig().SystemdUnitState
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -63,7 +106,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

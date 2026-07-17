@@ -1,4 +1,9 @@
-type: httpcheck
+display_name: HTTP Check Receiver
+type: http_check
+deprecated_type: httpcheck
+
+description: |
+  The HTTP Check Receiver can be used for synthetic checks against HTTP endpoints.
 
 status:
   class: receiver
@@ -7,7 +12,9 @@ status:
   distributions: [contrib, k8s]
   warnings: []
   codeowners:
-    active: [codeboten, VenuEmmadi]
+    active: [VenuEmmadi]
+    emeritus: [codeboten]
+    seeking_new: true
 
 resource_attributes:
 
@@ -15,67 +22,73 @@ attributes:
   error.message:
     description: Error message recorded during check
     type: string
+    requirement_level: recommended
   http.method:
     description: HTTP request method
     type: string
+    requirement_level: recommended
   http.status_class:
     description: HTTP response status class
     type: string
+    requirement_level: recommended
   http.status_code:
     description: HTTP response status code
     type: int
+    requirement_level: recommended
   http.tls.cn:
     description: The commonName in the subject of the certificate.
     type: string
+    requirement_level: recommended
   http.tls.issuer:
     description: The entity that issued the certificate.
     type: string
+    requirement_level: recommended
   http.tls.san:
     description: The Subject Alternative Name of the certificate.
     type: slice
+    requirement_level: recommended
   http.url:
     description: Full HTTP request URL.
     type: string
+    requirement_level: recommended
   network.transport:
     description: OSI transport layer or inter-process communication method.
     type: string
+    requirement_level: recommended
   validation.type:
     description: Type of validation performed (contains, json_path, size, regex)
     type: string
+    requirement_level: recommended
 
 metrics:
   httpcheck.client.connection.duration:
     description: Time spent establishing TCP connection to the endpoint.
     enabled: false
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
-    unit: ms
+    unit: ns
     attributes: [http.url, network.transport]
   httpcheck.client.request.duration:
     description: Time spent sending the HTTP request to the endpoint.
     enabled: false
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
-    unit: ms
+    unit: ns
     attributes: [http.url]
   httpcheck.dns.lookup.duration:
     description: Time spent performing DNS lookup for the endpoint.
     enabled: false
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
-    unit: ms
+    unit: ns
     attributes: [http.url]
   httpcheck.duration:
     description: Measures the duration of the HTTP check.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: ms
@@ -83,8 +96,7 @@ metrics:
   httpcheck.error:
     description: Records errors occurring during HTTP check.
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -94,17 +106,15 @@ metrics:
   httpcheck.response.duration:
     description: Time spent receiving the HTTP response from the endpoint.
     enabled: false
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
-    unit: ms
+    unit: ns
     attributes: [http.url]
   httpcheck.response.size:
     description: Size of response body in bytes.
     enabled: false
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "By"
@@ -112,8 +122,7 @@ metrics:
   httpcheck.status:
     description: 1 if the check resulted in status_code matching the status_class, otherwise 0.
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -123,8 +132,7 @@ metrics:
   httpcheck.tls.cert_remaining:
     description: Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.
     enabled: false
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "s"
@@ -132,17 +140,15 @@ metrics:
   httpcheck.tls.handshake.duration:
     description: Time spent performing TLS handshake with the endpoint.
     enabled: false
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
-    unit: ms
+    unit: ns
     attributes: [http.url]
   httpcheck.validation.failed:
     description: Number of response validations that failed.
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -152,8 +158,7 @@ metrics:
   httpcheck.validation.passed:
     description: Number of response validations that passed.
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative

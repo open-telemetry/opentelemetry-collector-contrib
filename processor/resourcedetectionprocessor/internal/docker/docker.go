@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
@@ -29,6 +29,7 @@ type Detector struct {
 	provider docker.Provider
 	logger   *zap.Logger
 	rb       *metadata.ResourceBuilder
+	cfg      metadata.ResourceAttributesConfig
 }
 
 // NewDetector creates a new system metadata detector
@@ -42,23 +43,36 @@ func NewDetector(p processor.Settings, cfg internal.DetectorConfig) (internal.De
 		provider: dockerProvider,
 		logger:   p.Logger,
 		rb:       metadata.NewResourceBuilder(cfg.(Config).ResourceAttributes),
+		cfg:      cfg.(Config).ResourceAttributes,
 	}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	osType, err := d.provider.OSType(ctx)
-	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS type: %w", err)
+	if d.cfg.OsType.Enabled {
+		osType, err := d.provider.OSType(ctx)
+		if err != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting OS type: %w", err)
+		}
+		d.rb.SetOsType(osType)
 	}
 
-	hostname, err := d.provider.Hostname(ctx)
-	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS hostname: %w", err)
+	if d.cfg.HostName.Enabled {
+		hostname, err := d.provider.Hostname(ctx)
+		if err != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting OS hostname: %w", err)
+		}
+		d.rb.SetHostName(hostname)
 	}
 
-	d.rb.SetHostName(hostname)
-	d.rb.SetOsType(osType)
+	if d.cfg.ContainerName.Enabled || d.cfg.ContainerImageName.Enabled {
+		info, err := d.provider.ContainerInfo(ctx)
+		if err != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting container info: %w", err)
+		}
+		d.rb.SetContainerName(info.Name)
+		d.rb.SetContainerImageName(info.Image)
+	}
 
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }

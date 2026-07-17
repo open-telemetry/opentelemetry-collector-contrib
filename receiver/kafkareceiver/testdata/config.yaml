@@ -49,6 +49,11 @@ kafka/rebalance_strategy:
   group_rebalance_strategy: sticky
   group_instance_id: test-instance
 
+kafka/rebalance_strategies:
+  group_rebalance_strategies:
+    - cooperative-sticky
+    - my_balancer
+
 kafka/message_marking:
   message_marking:
     after: true
@@ -81,3 +86,6 @@ kafka/regex_topic_with_exclusion:
     exclude_topics:
     - "^traces-debug-.*$"
     encoding: otlp_proto
+
+kafka/conn_idle_timeout:
+  conn_idle_timeout: 5m

@@ -18,7 +18,7 @@ The total number of accepted client connections
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| connections | Sum | Int | Cumulative | true | Development |
+| {connections} | Sum | Int | Cumulative | true | Development |
 
 ### nginx.connections_current
 
@@ -26,13 +26,13 @@ The current number of nginx connections by state
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| connections | Sum | Int | Cumulative | false | Development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| state | The state of a connection | Str: ``active``, ``reading``, ``writing``, ``waiting`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| state | The state of a connection | Str: ``active``, ``reading``, ``writing``, ``waiting`` | Recommended | - |
 
 ### nginx.connections_handled
 
@@ -40,7 +40,7 @@ The total number of handled connections. Generally, the parameter value is the s
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| connections | Sum | Int | Cumulative | true | Development |
+| {connections} | Sum | Int | Cumulative | true | Development |
 
 ### nginx.requests
 
@@ -48,4 +48,4 @@ Total number of requests made to the server since it started
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| requests | Sum | Int | Cumulative | true | Development |
+| {requests} | Sum | Int | Cumulative | true | Development |

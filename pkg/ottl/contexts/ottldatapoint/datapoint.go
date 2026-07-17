@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxdatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxotelcol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
@@ -54,18 +55,7 @@ func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) er
 	err := encoder.AddObject("resource", logging.Resource(tCtx.GetResource()))
 	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.GetInstrumentationScope())))
 	err = errors.Join(err, encoder.AddObject("metric", logging.Metric(tCtx.metric)))
-
-	switch dp := tCtx.dataPoint.(type) {
-	case pmetric.NumberDataPoint:
-		err = encoder.AddObject("datapoint", logging.NumberDataPoint(dp))
-	case pmetric.HistogramDataPoint:
-		err = encoder.AddObject("datapoint", logging.HistogramDataPoint(dp))
-	case pmetric.ExponentialHistogramDataPoint:
-		err = encoder.AddObject("datapoint", logging.ExponentialHistogramDataPoint(dp))
-	case pmetric.SummaryDataPoint:
-		err = encoder.AddObject("datapoint", logging.SummaryDataPoint(dp))
-	}
-
+	err = errors.Join(err, encoder.AddObject("datapoint", logging.DataPoint(tCtx.dataPoint)))
 	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
 	return err
 }
@@ -145,6 +135,7 @@ func EnablePathContextNames() ottl.Option[*TransformContext] {
 			ctxscope.LegacyName,
 			ctxscope.Name,
 			ctxmetric.Name,
+			ctxotelcol.Name,
 		})(p)
 	}
 }
@@ -225,5 +216,6 @@ func pathExpressionParser(cacheGetter ctxcache.Getter[*TransformContext]) ottl.P
 			ctxscope.LegacyName: ctxscope.PathGetSetter[*TransformContext],
 			ctxmetric.Name:      ctxmetric.PathGetSetter[*TransformContext],
 			ctxdatapoint.Name:   ctxdatapoint.PathGetSetter[*TransformContext],
+			ctxotelcol.Name:     ctxotelcol.PathGetSetter[*TransformContext],
 		})
 }

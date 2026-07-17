@@ -10,6 +10,12 @@ resourceMetrics:
         - key: k8s.replicationcontroller.uid
           value:
             stringValue: test-replicationcontroller-1-uid
+      entityRefs:
+        - descriptionKeys:
+            - k8s.replicationcontroller.name
+          idKeys:
+            - k8s.replicationcontroller.uid
+          type: k8s.replicationcontroller
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:

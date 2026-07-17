@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
@@ -21,6 +22,17 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
+
+	oneServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	oneServerConfig.WriteTimeout = 0
+	oneServerConfig.ReadHeaderTimeout = 0
+	oneServerConfig.IdleTimeout = 0
+	oneServerConfig.KeepAlivesEnabled = false
+	oneServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:12345",
+	}
 
 	tests := []struct {
 		id       component.ID
@@ -34,9 +46,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "one"),
 			expected: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:12345",
-				},
+				ServerConfig:     oneServerConfig,
 				Timeout:          50 * time.Second,
 				AttributesPrefix: "dap_",
 				Encoding:         "command",

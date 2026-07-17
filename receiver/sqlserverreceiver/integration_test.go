@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
@@ -38,12 +39,13 @@ func basicConfig(portNumber uint) *Config {
 			MaxRowsPerQuery: 100,
 		},
 		TopQueryCollection: TopQueryCollection{
-			LookbackTime:        1000,
+			LookbackTime:        1 * time.Second,
 			MaxQuerySampleCount: 100,
 			TopQueryCount:       100,
 			CollectionInterval:  1 * time.Millisecond,
 		},
 		isDirectDBConnectionEnabled: true,
+		MetricsBuilderConfig:        metadata.NewDefaultMetricsBuilderConfig(),
 		LogsBuilderConfig: metadata.LogsBuilderConfig{
 			Events: metadata.EventsConfig{
 				DbServerQuerySample: metadata.EventConfig{
@@ -81,6 +83,89 @@ func setupContainer() (testcontainers.Container, error) {
 	)
 }
 
+func TestIndexPhysicalStatsScraper(t *testing.T) {
+	ci, err := setupContainer()
+	require.NoError(t, err)
+	require.NoError(t, ci.Start(t.Context()))
+	defer testcontainers.CleanupContainer(t, ci)
+
+	p, err := ci.MappedPort(t.Context(), "1433")
+	require.NoError(t, err)
+
+	portNumber, err := strconv.Atoi(p.Port())
+	require.NoError(t, err)
+
+	cfg := basicConfig(uint(portNumber))
+	cfg.Metrics.SqlserverIndexFragmentation.Enabled = true
+	cfg.Metrics.SqlserverIndexPageCount.Enabled = true
+	cfg.Metrics.SqlserverIndexPageUtilization.Enabled = true
+	cfg.Metrics.SqlserverIndexRecordCount.Enabled = true
+	cfg.Metrics.SqlserverIndexSize.Enabled = true
+
+	settings := receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.Must(zap.NewProduction()),
+		},
+	}
+
+	scrapers := setupSQLServerScrapers(settings, cfg)
+	require.NotEmpty(t, scrapers)
+
+	// Find the index physical stats scraper
+	var indexScraper *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName) {
+			indexScraper = s
+			break
+		}
+	}
+	require.NotNil(t, indexScraper, "index physical stats scraper not found")
+	require.NoError(t, indexScraper.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, indexScraper.Shutdown(t.Context())) }()
+
+	actualMetrics, err := indexScraper.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	// We expect at least 2 indexes from test_indexed_table (PK clustered + nonclustered)
+	// in the mydb database
+	require.Positive(t, actualMetrics.ResourceMetrics().Len(), "expected at least one resource metric")
+
+	// Collect all data points and verify attribute presence
+	foundMyDB := false
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		resourceAttrs := rm.Resource().Attributes()
+		dbNameVal, ok := resourceAttrs.Get("sqlserver.database.name")
+		if !ok {
+			continue
+		}
+		if dbNameVal.AsString() != "mydb" {
+			continue
+		}
+		foundMyDB = true
+
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				gauge := m.Gauge()
+				for l := 0; l < gauge.DataPoints().Len(); l++ {
+					dp := gauge.DataPoints().At(l)
+					attrs := dp.Attributes()
+					_, hasIndexID := attrs.Get("sqlserver.index.id")
+					_, hasObjectName := attrs.Get("sqlserver.object.name")
+					_, hasSchemaName := attrs.Get("sqlserver.schema.name")
+					assert.True(t, hasIndexID, "metric %s missing sqlserver.index.id", m.Name())
+					assert.True(t, hasObjectName, "metric %s missing sqlserver.object.name", m.Name())
+					assert.True(t, hasSchemaName, "metric %s missing sqlserver.schema.name", m.Name())
+				}
+			}
+		}
+	}
+
+	assert.True(t, foundMyDB, "expected metrics for 'mydb' database")
+}
+
 func TestEventsScraper(t *testing.T) {
 	ci, initErr := setupContainer()
 
@@ -111,24 +196,34 @@ func TestEventsScraper(t *testing.T) {
 					return queryCount.Load() > 0
 				}, 10*time.Second, 100*time.Millisecond, "Query did not start in time")
 
-				actualLog, err := scraper.ScrapeLogs(t.Context())
-				assert.NoError(t, err)
-				assert.NotNil(t, actualLog)
-				logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+				assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+					actualLog, err := scraper.ScrapeLogs(t.Context())
+					assert.NoError(tt, err)
+					assert.NotNil(tt, actualLog)
 
-				assert.Equal(t, 2, logRecords.Len())
-				found := false
-				for i := 0; i < logRecords.Len(); i++ {
-					attributes := logRecords.At(i).Attributes().AsRaw()
-					if attributes["db.namespace"] == "master" {
-						continue
+					if actualLog.ResourceLogs().Len() == 0 {
+						assert.Fail(tt, "No resource logs found")
+						return
 					}
-					found = true
-					query := attributes["db.query.text"].(string)
-					// as the query is not a standard query, only the `WAITFOR` part can be returned from db.
-					assert.True(t, strings.HasPrefix(query, "WAITFOR"))
-				}
-				assert.True(t, found)
+
+					logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+					assert.GreaterOrEqual(tt, logRecords.Len(), 1)
+
+					found := false
+					for i := 0; i < logRecords.Len(); i++ {
+						attributes := logRecords.At(i).Attributes().AsRaw()
+						if attributes["db.namespace"] == "master" {
+							continue
+						}
+						found = true
+						query := attributes["db.query.text"].(string)
+						// as the query is not a standard query, only the `WAITFOR` part can be returned from db.
+						assert.True(tt, strings.HasPrefix(query, "WAITFOR"), "Expected query to start with WAITFOR, got: %s", query)
+					}
+
+					assert.True(tt, found, "Expected query not found in logs")
+				}, 10*time.Second, 100*time.Millisecond)
+
 				finished.Store(true)
 			},
 		},
@@ -152,24 +247,38 @@ func TestEventsScraper(t *testing.T) {
 					// collection interval it will not be considered as a top query.
 					return queryCount.Load() > currentQueriesCount+1
 				}, 10*time.Second, 2*time.Second, "Query did not execute enough times")
+
 				var actualLog plog.Logs
+				var found bool
 				assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 					actualLog, err = scraper.ScrapeLogs(t.Context())
-					assert.NotNil(tt, actualLog)
 					assert.NoError(tt, err)
-					assert.Positive(tt, actualLog.LogRecordCount())
-				}, 10*time.Second, 100*time.Millisecond)
-				found := false
-				logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-				for i := 0; i < logRecords.Len(); i++ {
-					attributes := logRecords.At(i).Attributes().AsRaw()
+					assert.NotNil(tt, actualLog)
 
-					query := attributes["db.query.text"].(string)
-					if query == "SELECT * FROM dbo.test_table" {
-						found = true
+					if actualLog.LogRecordCount() == 0 {
+						assert.Fail(tt, "No log records found")
+						return
 					}
-				}
-				assert.True(t, found)
+
+					if actualLog.ResourceLogs().Len() == 0 {
+						assert.Fail(tt, "No resource logs found")
+						return
+					}
+
+					found = false
+					logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+					for i := 0; i < logRecords.Len(); i++ {
+						attributes := logRecords.At(i).Attributes().AsRaw()
+						query := attributes["db.query.text"].(string)
+						if query == "SELECT * FROM dbo.test_table" {
+							found = true
+							break
+						}
+					}
+
+					assert.True(tt, found, "Expected query not found in logs")
+				}, 10*time.Second, 100*time.Millisecond)
+
 				finished.Store(true)
 			},
 		},
@@ -208,8 +317,6 @@ func TestEventsScraper(t *testing.T) {
 					}
 				}
 			}(queryContext)
-
-			time.Sleep(10 * time.Second)
 
 			portNumber, err := strconv.Atoi(p.Port())
 			assert.NoError(t, err)

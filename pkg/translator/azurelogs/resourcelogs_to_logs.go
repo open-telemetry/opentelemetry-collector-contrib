@@ -16,9 +16,10 @@ import (
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs/internal/metadata"
 )
 
 const (
@@ -27,12 +28,14 @@ const (
 
 	attributeAzureCategory          = "azure.category"
 	attributeAzureCorrelationID     = "azure.correlation_id"
+	attributeAzureDuration          = "azure.duration"
+	attributeAzureLocation          = "azure.location"
 	attributeAzureOperationName     = "azure.operation.name"
 	attributeAzureOperationVersion  = "azure.operation.version"
+	attributeEventOriginal          = "event.original"
 	attributeAzureResultType        = "azure.result.type"
 	attributeAzureResultSignature   = "azure.result.signature"
 	attributeAzureResultDescription = "azure.result.description"
-	attributeEventOriginal          = "event.original"
 
 	// Constants for Azure Log Record body fields
 	azureCategory          = "category"
@@ -47,8 +50,22 @@ const (
 	azureResultDescription = "result.description"
 	azureTenantID          = "tenant.id"
 
-	// Identity claims
-	identityClaimEmail = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
+	// Constants for Identity > claims
+	identityClaimIssuer    = "iss"
+	identityClaimSubject   = "sub"
+	identityClaimAudience  = "aud"
+	identityClaimExpires   = "exp"
+	identityClaimNotBefore = "nbf"
+	identityClaimIssuedAt  = "iat"
+
+	identityClaimScope                 = "http://schemas.microsoft.com/identity/claims/scope"
+	identityClaimType                  = "idtyp"
+	identityClaimApplicationID         = "appid"
+	identityClaimAuthMethodsReferences = "http://schemas.microsoft.com/claims/authnmethodsreferences"
+	identityClaimProvider              = "http://schemas.microsoft.com/identity/claims/identityprovider"
+	identityClaimIdentifierObject      = "http://schemas.microsoft.com/identity/claims/objectidentifier"
+	identityClaimIdentifierName        = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+	identityClaimEmailAddress          = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
 )
 
 var errMissingTimestamp = errors.New("missing timestamp")
@@ -58,21 +75,44 @@ type azureRecords struct {
 	Records []azureLogRecord `json:"records"`
 }
 
+type evidence struct {
+	Role                string `json:"role"`
+	RoleAssignmentScope string `json:"roleAssignmentScope"`
+	RoleAssignmentID    string `json:"roleAssignmentId"`
+	RoleDefinitionID    string `json:"roleDefinitionId"`
+	PrincipalID         string `json:"principalId"`
+	PrincipalType       string `json:"principalType"`
+}
+
+type authorization struct {
+	Scope    string    `json:"scope"`
+	Action   string    `json:"action"`
+	Evidence *evidence `json:"evidence"`
+}
+
 // identity describes the identity of the user or application that performed the operation
 // described by the log event.
 type identity struct {
 	// Claims usually contains the JWT token used by Active Directory
 	// to authenticate the user or application to perform this
 	// operation in Resource Manager.
-	Claims map[string]string `json:"claims"`
+	Claims        map[string]string `json:"claims"`
+	Authorization *authorization    `json:"authorization"`
 }
 
 // azureLogRecord represents a single Azure log following
 // the common schema:
 // https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/resource-logs-schema
+// Some services don't follow the common schema and may have different fields, but these are the most common ones across all services and are used for grouping and semantic conventions mapping.
+// Example:
+//   - Service Bus: https://learn.microsoft.com/en-us/azure/service-bus-messaging/monitor-service-bus-reference#operational-logs
+//   - Event Hub: https://learn.microsoft.com/en-us/azure/event-hubs/monitor-event-hubs-reference#archive-logs-schema
 type azureLogRecord struct {
 	Time              string          `json:"time"`
 	Timestamp         string          `json:"timeStamp"`
+	EventTimeString   string          `json:"EventTimeString"`
+	EventTimestamp    string          `json:"EventTimestamp"`
+	StartTime         string          `json:"startTime"`
 	ResourceID        string          `json:"resourceId"`
 	TenantID          *string         `json:"tenantId"`
 	OperationName     string          `json:"operationName"`
@@ -88,6 +128,16 @@ type azureLogRecord struct {
 	Level             *json.Number    `json:"Level"`
 	Location          *string         `json:"location"`
 	Properties        json.RawMessage `json:"properties"`
+	EventProperties   json.RawMessage `json:"EventProperties"`
+}
+
+// getProperties returns whichever properties field is populated,
+// preferring "properties" over "EventProperties".
+func (r *azureLogRecord) getProperties() json.RawMessage {
+	if len(r.Properties) > 0 {
+		return r.Properties
+	}
+	return r.EventProperties
 }
 
 var _ plog.Unmarshaler = (*ResourceLogsUnmarshaler)(nil)
@@ -107,6 +157,11 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 	if iter.Error != nil {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
+	}
+
+	if metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() &&
+		!metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
+		return plog.Logs{}, errors.New("pkg.translator.azurelogs.DontEmitV0LogConventions cannot be enabled without enabling pkg.translator.azurelogs.EmitV1LogConventions")
 	}
 
 	var rawRecordMap map[int]json.RawMessage
@@ -144,13 +199,23 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 		nanos, err := getTimestamp(log, r.TimeFormats...)
 		if err != nil {
-			r.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", log.Time))
+			fields := []zap.Field{zap.String("timestamp", log.Time)}
+			if log.ResourceID != "" {
+				fields = append(fields, zap.String("resource_id", log.ResourceID))
+			}
+			if log.Category != "" {
+				fields = append(fields, zap.String("category", log.Category))
+			}
+			r.Logger.Warn("Unable to convert timestamp from log", fields...)
 			continue
 		}
 
 		lr := scopeLogs.LogRecords().AppendEmpty()
 		lr.SetTimestamp(nanos)
 		lr.SetObservedTimestamp(observedTimestamp)
+		if metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
+			lr.SetEventName("az.resource.log")
+		}
 
 		if log.Level != nil {
 			severity := asSeverity(*log.Level)
@@ -158,7 +223,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 			lr.SetSeverityText(log.Level.String())
 		}
 
-		err = addRecordAttributes(log.Category, log.Properties, lr)
+		err = addRecordAttributes(log.Category, log.getProperties(), lr)
 		if err != nil {
 			if errors.Is(err, errStillToImplement) || errors.Is(err, errUnsupportedCategory) {
 				// TODO @constanca-m This will be removed once the categories
@@ -193,7 +258,12 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		rl := l.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 		rl.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), resourceID)
-		rl.Resource().Attributes().PutStr(string(conventionsv128.EventNameKey), "az.resource.log")
+		// NOTE: event.name semantically belongs on each LogRecord (not the Resource).
+		// Legacy behavior incorrectly placed it on the Resource for all records.
+		// Use pkg.translator.azurelogs.EmitV1LogConventions to migrate to SetEventName().
+		if !metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() {
+			rl.Resource().Attributes().PutStr("event.name", "az.resource.log")
+		}
 		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
 	}
 
@@ -201,13 +271,20 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 }
 
 func getTimestamp(record *azureLogRecord, formats ...string) (pcommon.Timestamp, error) {
-	if record.Time != "" {
+	switch {
+	case record.Time != "":
 		return asTimestamp(record.Time, formats...)
-	} else if record.Timestamp != "" {
+	case record.Timestamp != "":
 		return asTimestamp(record.Timestamp, formats...)
+	case record.EventTimeString != "":
+		return asTimestamp(record.EventTimeString, formats...)
+	case record.EventTimestamp != "":
+		return asTimestamp(record.EventTimestamp, formats...)
+	case record.StartTime != "":
+		return asTimestamp(record.StartTime, formats...)
+	default:
+		return 0, errMissingTimestamp
 	}
-
-	return 0, errMissingTimestamp
 }
 
 // asTimestamp will parse an ISO8601 string into an OpenTelemetry
@@ -231,12 +308,21 @@ func asTimestamp(s string, formats ...string) (pcommon.Timestamp, error) {
 	return 0, err
 }
 
+// asTimeFromUnixTimestamp converts a Unix timestamp string to a time.Time.
+func parseUnixTimestamp(unixStr string) (time.Time, error) {
+	t, err := strconv.ParseInt(unixStr, 10, 64)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Unix(t, 0).UTC(), nil
+}
+
 // asSeverity converts the Azure log level to equivalent
 // OpenTelemetry severity numbers. If the log level is not
 // valid, then the 'Unspecified' value is returned.
 func asSeverity(number json.Number) plog.SeverityNumber {
 	switch number.String() {
-	case "Informational":
+	case "Informational", "Information":
 		return plog.SeverityNumberInfo
 	case "Warning":
 		return plog.SeverityNumberWarn
@@ -260,6 +346,7 @@ func putStrPtr(field string, value *string, record plog.LogRecord) {
 	}
 }
 
+// addCommonSchema adds the common schema attributes to the log record.
 func addCommonSchema(log *azureLogRecord, record plog.LogRecord) {
 	record.Attributes().PutStr(attributeAzureCategory, log.Category)
 	putStrPtr(attributeAzureCorrelationID, log.CorrelationID, record)
@@ -270,6 +357,13 @@ func addCommonSchema(log *azureLogRecord, record plog.LogRecord) {
 	putStrPtr(attributeAzureResultSignature, log.ResultSignature, record)
 	putStrPtr(attributeAzureResultDescription, log.ResultDescription, record)
 	putStrPtr(string(conventions.NetworkPeerAddressKey), log.CallerIPAddress, record)
+	putStrPtr(attributeAzureLocation, log.Location, record)
+
+	if log.DurationMs != nil {
+		if duration, err := strconv.ParseInt(log.DurationMs.String(), 10, 64); err == nil {
+			record.Attributes().PutInt(attributeAzureDuration, duration)
+		}
+	}
 
 	addIdentityAttributes(log.Identity, record)
 }
@@ -294,12 +388,13 @@ func extractRawAttributes(log *azureLogRecord, rawRecord json.RawMessage) map[st
 	attrs[azureOperationName] = log.OperationName
 	setIf(attrs, azureOperationVersion, log.OperationVersion)
 
-	if log.Properties != nil {
-		copyPropertiesAndApplySemanticConventions(log.Category, log.Properties, attrs)
+	properties := log.getProperties()
+	if properties != nil {
+		copyPropertiesAndApplySemanticConventions(log.Category, properties, attrs)
 	}
 
 	// The original log needs to be preserved for logs that don't have a properties field
-	if len(log.Properties) == 0 && len(rawRecord) > 0 {
+	if len(properties) == 0 && len(rawRecord) > 0 {
 		// Format the JSON with proper indentation to match expected output
 		var formattedJSON bytes.Buffer
 		if err := json.Indent(&formattedJSON, rawRecord, "", "\t"); err == nil {
@@ -393,10 +488,76 @@ func addIdentityAttributes(identityJSON json.RawMessage, record plog.LogRecord) 
 		return
 	}
 
+	// Authorization
+	// ------------------------------------------------------------
+
+	if id.Authorization != nil {
+		record.Attributes().PutStr(attributeIdentityAuthorizationScope, id.Authorization.Scope)
+		record.Attributes().PutStr(attributeIdentityAuthorizationAction, id.Authorization.Action)
+
+		if id.Authorization.Evidence != nil {
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidenceRole, id.Authorization.Evidence.Role)
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidenceRoleAssignmentScope, id.Authorization.Evidence.RoleAssignmentScope)
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidenceRoleAssignmentID, id.Authorization.Evidence.RoleAssignmentID)
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidenceRoleDefinitionID, id.Authorization.Evidence.RoleDefinitionID)
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidencePrincipalID, id.Authorization.Evidence.PrincipalID)
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidencePrincipalType, id.Authorization.Evidence.PrincipalType)
+		}
+	}
+
+	// Claims
+	// ------------------------------------------------------------
+
 	// Extract known claims details we want to include in the
 	// log record.
 	// Extract common claim fields
-	if email := id.Claims[identityClaimEmail]; email != "" {
+
+	if iss := id.Claims[identityClaimIssuer]; iss != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsIssuer, iss)
+	}
+	if sub := id.Claims[identityClaimSubject]; sub != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsSubject, sub)
+	}
+	if aud := id.Claims[identityClaimAudience]; aud != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsAudience, aud)
+	}
+	if exp := id.Claims[identityClaimExpires]; exp != "" {
+		if expTime, err := parseUnixTimestamp(exp); err == nil {
+			record.Attributes().PutStr(attributeIdentityClaimsNotAfter, expTime.Format(time.RFC3339))
+		}
+	}
+	if nbf := id.Claims[identityClaimNotBefore]; nbf != "" {
+		if nbfTime, err := parseUnixTimestamp(nbf); err == nil {
+			record.Attributes().PutStr(attributeIdentityClaimsNotBefore, nbfTime.Format(time.RFC3339))
+		}
+	}
+	if iat := id.Claims[identityClaimIssuedAt]; iat != "" {
+		if iatTime, err := parseUnixTimestamp(iat); err == nil {
+			record.Attributes().PutStr(attributeIdentityClaimsCreated, iatTime.Format(time.RFC3339))
+		}
+	}
+	if scope := id.Claims[identityClaimScope]; scope != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsScope, scope)
+	}
+	if idtyp := id.Claims[identityClaimType]; idtyp != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsType, idtyp)
+	}
+	if appid := id.Claims[identityClaimApplicationID]; appid != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsApplicationID, appid)
+	}
+	if authmethods := id.Claims[identityClaimAuthMethodsReferences]; authmethods != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsAuthMethodsReferences, authmethods)
+	}
+	if provider := id.Claims[identityClaimProvider]; provider != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsProvider, provider)
+	}
+	if object := id.Claims[identityClaimIdentifierObject]; object != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsIdentifierObject, object)
+	}
+	if name := id.Claims[identityClaimIdentifierName]; name != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsIdentifierName, name)
+	}
+	if email := id.Claims[identityClaimEmailAddress]; email != "" {
 		record.Attributes().PutStr(string(conventions.UserEmailKey), email)
 	}
 }

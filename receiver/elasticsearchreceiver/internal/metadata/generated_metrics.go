@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -10,6 +11,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+)
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 
 // AttributeCacheName specifies the value cache_name attribute.
@@ -540,25 +548,30 @@ var MapAttributeThreadState = map[string]AttributeThreadState{
 
 var MetricsInfo = metricsInfo{
 	ElasticsearchBreakerMemoryEstimated: metricInfo{
-		Name: "elasticsearch.breaker.memory.estimated",
+		Name:       "elasticsearch.breaker.memory.estimated",
+		Attributes: []string{"circuit_breaker_name"},
 	},
 	ElasticsearchBreakerMemoryLimit: metricInfo{
-		Name: "elasticsearch.breaker.memory.limit",
+		Name:       "elasticsearch.breaker.memory.limit",
+		Attributes: []string{"circuit_breaker_name"},
 	},
 	ElasticsearchBreakerTripped: metricInfo{
-		Name: "elasticsearch.breaker.tripped",
+		Name:       "elasticsearch.breaker.tripped",
+		Attributes: []string{"circuit_breaker_name"},
 	},
 	ElasticsearchClusterDataNodes: metricInfo{
 		Name: "elasticsearch.cluster.data_nodes",
 	},
 	ElasticsearchClusterHealth: metricInfo{
-		Name: "elasticsearch.cluster.health",
+		Name:       "elasticsearch.cluster.health",
+		Attributes: []string{"health_status"},
 	},
 	ElasticsearchClusterInFlightFetch: metricInfo{
 		Name: "elasticsearch.cluster.in_flight_fetch",
 	},
 	ElasticsearchClusterIndicesCacheEvictions: metricInfo{
-		Name: "elasticsearch.cluster.indices.cache.evictions",
+		Name:       "elasticsearch.cluster.indices.cache.evictions",
+		Attributes: []string{"cache_name"},
 	},
 	ElasticsearchClusterNodes: metricInfo{
 		Name: "elasticsearch.cluster.nodes",
@@ -567,67 +580,87 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.cluster.pending_tasks",
 	},
 	ElasticsearchClusterPublishedStatesDifferences: metricInfo{
-		Name: "elasticsearch.cluster.published_states.differences",
+		Name:       "elasticsearch.cluster.published_states.differences",
+		Attributes: []string{"cluster_published_difference_state"},
 	},
 	ElasticsearchClusterPublishedStatesFull: metricInfo{
 		Name: "elasticsearch.cluster.published_states.full",
 	},
 	ElasticsearchClusterShards: metricInfo{
-		Name: "elasticsearch.cluster.shards",
+		Name:       "elasticsearch.cluster.shards",
+		Attributes: []string{"shard_state"},
 	},
 	ElasticsearchClusterStateQueue: metricInfo{
-		Name: "elasticsearch.cluster.state_queue",
+		Name:       "elasticsearch.cluster.state_queue",
+		Attributes: []string{"cluster_state_queue_state"},
 	},
 	ElasticsearchClusterStateUpdateCount: metricInfo{
-		Name: "elasticsearch.cluster.state_update.count",
+		Name:       "elasticsearch.cluster.state_update.count",
+		Attributes: []string{"cluster_state_update_state"},
 	},
 	ElasticsearchClusterStateUpdateTime: metricInfo{
-		Name: "elasticsearch.cluster.state_update.time",
+		Name:       "elasticsearch.cluster.state_update.time",
+		Attributes: []string{"cluster_state_update_state", "cluster_state_update_type"},
 	},
 	ElasticsearchIndexCacheEvictions: metricInfo{
-		Name: "elasticsearch.index.cache.evictions",
+		Name:       "elasticsearch.index.cache.evictions",
+		Attributes: []string{"cache_name", "index_aggregation_type"},
 	},
 	ElasticsearchIndexCacheMemoryUsage: metricInfo{
-		Name: "elasticsearch.index.cache.memory.usage",
+		Name:       "elasticsearch.index.cache.memory.usage",
+		Attributes: []string{"cache_name", "index_aggregation_type"},
 	},
 	ElasticsearchIndexCacheSize: metricInfo{
-		Name: "elasticsearch.index.cache.size",
+		Name:       "elasticsearch.index.cache.size",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexDocuments: metricInfo{
-		Name: "elasticsearch.index.documents",
+		Name:       "elasticsearch.index.documents",
+		Attributes: []string{"document_state", "index_aggregation_type"},
 	},
 	ElasticsearchIndexOperationsCompleted: metricInfo{
-		Name: "elasticsearch.index.operations.completed",
+		Name:       "elasticsearch.index.operations.completed",
+		Attributes: []string{"operation", "index_aggregation_type"},
 	},
 	ElasticsearchIndexOperationsMergeCurrent: metricInfo{
-		Name: "elasticsearch.index.operations.merge.current",
+		Name:       "elasticsearch.index.operations.merge.current",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexOperationsMergeDocsCount: metricInfo{
-		Name: "elasticsearch.index.operations.merge.docs_count",
+		Name:       "elasticsearch.index.operations.merge.docs_count",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexOperationsMergeSize: metricInfo{
-		Name: "elasticsearch.index.operations.merge.size",
+		Name:       "elasticsearch.index.operations.merge.size",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexOperationsTime: metricInfo{
-		Name: "elasticsearch.index.operations.time",
+		Name:       "elasticsearch.index.operations.time",
+		Attributes: []string{"operation", "index_aggregation_type"},
 	},
 	ElasticsearchIndexSegmentsCount: metricInfo{
-		Name: "elasticsearch.index.segments.count",
+		Name:       "elasticsearch.index.segments.count",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexSegmentsMemory: metricInfo{
-		Name: "elasticsearch.index.segments.memory",
+		Name:       "elasticsearch.index.segments.memory",
+		Attributes: []string{"index_aggregation_type", "segments_memory_object_type"},
 	},
 	ElasticsearchIndexSegmentsSize: metricInfo{
-		Name: "elasticsearch.index.segments.size",
+		Name:       "elasticsearch.index.segments.size",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexShardsSize: metricInfo{
-		Name: "elasticsearch.index.shards.size",
+		Name:       "elasticsearch.index.shards.size",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexTranslogOperations: metricInfo{
-		Name: "elasticsearch.index.translog.operations",
+		Name:       "elasticsearch.index.translog.operations",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexTranslogSize: metricInfo{
-		Name: "elasticsearch.index.translog.size",
+		Name:       "elasticsearch.index.translog.size",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexingPressureMemoryLimit: metricInfo{
 		Name: "elasticsearch.indexing_pressure.memory.limit",
@@ -639,16 +672,20 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.indexing_pressure.memory.total.replica_rejections",
 	},
 	ElasticsearchMemoryIndexingPressure: metricInfo{
-		Name: "elasticsearch.memory.indexing_pressure",
+		Name:       "elasticsearch.memory.indexing_pressure",
+		Attributes: []string{"indexing_pressure_stage"},
 	},
 	ElasticsearchNodeCacheCount: metricInfo{
-		Name: "elasticsearch.node.cache.count",
+		Name:       "elasticsearch.node.cache.count",
+		Attributes: []string{"query_cache_count_type"},
 	},
 	ElasticsearchNodeCacheEvictions: metricInfo{
-		Name: "elasticsearch.node.cache.evictions",
+		Name:       "elasticsearch.node.cache.evictions",
+		Attributes: []string{"cache_name"},
 	},
 	ElasticsearchNodeCacheMemoryUsage: metricInfo{
-		Name: "elasticsearch.node.cache.memory.usage",
+		Name:       "elasticsearch.node.cache.memory.usage",
+		Attributes: []string{"cache_name"},
 	},
 	ElasticsearchNodeCacheSize: metricInfo{
 		Name: "elasticsearch.node.cache.size",
@@ -657,7 +694,8 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.node.cluster.connections",
 	},
 	ElasticsearchNodeClusterIo: metricInfo{
-		Name: "elasticsearch.node.cluster.io",
+		Name:       "elasticsearch.node.cluster.io",
+		Attributes: []string{"direction"},
 	},
 	ElasticsearchNodeDiskIoRead: metricInfo{
 		Name: "elasticsearch.node.disk.io.read",
@@ -666,7 +704,8 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.node.disk.io.write",
 	},
 	ElasticsearchNodeDocuments: metricInfo{
-		Name: "elasticsearch.node.documents",
+		Name:       "elasticsearch.node.documents",
+		Attributes: []string{"document_state"},
 	},
 	ElasticsearchNodeFsDiskAvailable: metricInfo{
 		Name: "elasticsearch.node.fs.disk.available",
@@ -693,28 +732,36 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.node.open_files",
 	},
 	ElasticsearchNodeOperationsCompleted: metricInfo{
-		Name: "elasticsearch.node.operations.completed",
+		Name:       "elasticsearch.node.operations.completed",
+		Attributes: []string{"operation"},
 	},
 	ElasticsearchNodeOperationsCurrent: metricInfo{
-		Name: "elasticsearch.node.operations.current",
+		Name:       "elasticsearch.node.operations.current",
+		Attributes: []string{"operation"},
 	},
 	ElasticsearchNodeOperationsGetCompleted: metricInfo{
-		Name: "elasticsearch.node.operations.get.completed",
+		Name:       "elasticsearch.node.operations.get.completed",
+		Attributes: []string{"get_result"},
 	},
 	ElasticsearchNodeOperationsGetTime: metricInfo{
-		Name: "elasticsearch.node.operations.get.time",
+		Name:       "elasticsearch.node.operations.get.time",
+		Attributes: []string{"get_result"},
 	},
 	ElasticsearchNodeOperationsTime: metricInfo{
-		Name: "elasticsearch.node.operations.time",
+		Name:       "elasticsearch.node.operations.time",
+		Attributes: []string{"operation"},
 	},
 	ElasticsearchNodePipelineIngestDocumentsCurrent: metricInfo{
-		Name: "elasticsearch.node.pipeline.ingest.documents.current",
+		Name:       "elasticsearch.node.pipeline.ingest.documents.current",
+		Attributes: []string{"ingest_pipeline_name"},
 	},
 	ElasticsearchNodePipelineIngestDocumentsPreprocessed: metricInfo{
-		Name: "elasticsearch.node.pipeline.ingest.documents.preprocessed",
+		Name:       "elasticsearch.node.pipeline.ingest.documents.preprocessed",
+		Attributes: []string{"ingest_pipeline_name"},
 	},
 	ElasticsearchNodePipelineIngestOperationsFailed: metricInfo{
-		Name: "elasticsearch.node.pipeline.ingest.operations.failed",
+		Name:       "elasticsearch.node.pipeline.ingest.operations.failed",
+		Attributes: []string{"ingest_pipeline_name"},
 	},
 	ElasticsearchNodeScriptCacheEvictions: metricInfo{
 		Name: "elasticsearch.node.script.cache_evictions",
@@ -726,7 +773,8 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.node.script.compilations",
 	},
 	ElasticsearchNodeSegmentsMemory: metricInfo{
-		Name: "elasticsearch.node.segments.memory",
+		Name:       "elasticsearch.node.segments.memory",
+		Attributes: []string{"segments_memory_object_type"},
 	},
 	ElasticsearchNodeShardsDataSetSize: metricInfo{
 		Name: "elasticsearch.node.shards.data_set.size",
@@ -738,13 +786,16 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.node.shards.size",
 	},
 	ElasticsearchNodeThreadPoolTasksFinished: metricInfo{
-		Name: "elasticsearch.node.thread_pool.tasks.finished",
+		Name:       "elasticsearch.node.thread_pool.tasks.finished",
+		Attributes: []string{"thread_pool_name", "task_state"},
 	},
 	ElasticsearchNodeThreadPoolTasksQueued: metricInfo{
-		Name: "elasticsearch.node.thread_pool.tasks.queued",
+		Name:       "elasticsearch.node.thread_pool.tasks.queued",
+		Attributes: []string{"thread_pool_name"},
 	},
 	ElasticsearchNodeThreadPoolThreads: metricInfo{
-		Name: "elasticsearch.node.thread_pool.threads",
+		Name:       "elasticsearch.node.thread_pool.threads",
+		Attributes: []string{"thread_pool_name", "thread_state"},
 	},
 	ElasticsearchNodeTranslogOperations: metricInfo{
 		Name: "elasticsearch.node.translog.operations",
@@ -768,7 +819,8 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.os.cpu.usage",
 	},
 	ElasticsearchOsMemory: metricInfo{
-		Name: "elasticsearch.os.memory",
+		Name:       "elasticsearch.os.memory",
+		Attributes: []string{"memory_state"},
 	},
 	ElasticsearchProcessCPUTime: metricInfo{
 		Name: "elasticsearch.process.cpu.time",
@@ -783,10 +835,12 @@ var MetricsInfo = metricsInfo{
 		Name: "jvm.classes.loaded",
 	},
 	JvmGcCollectionsCount: metricInfo{
-		Name: "jvm.gc.collections.count",
+		Name:       "jvm.gc.collections.count",
+		Attributes: []string{"collector_name"},
 	},
 	JvmGcCollectionsElapsed: metricInfo{
-		Name: "jvm.gc.collections.elapsed",
+		Name:       "jvm.gc.collections.elapsed",
+		Attributes: []string{"collector_name"},
 	},
 	JvmMemoryHeapCommitted: metricInfo{
 		Name: "jvm.memory.heap.committed",
@@ -807,10 +861,12 @@ var MetricsInfo = metricsInfo{
 		Name: "jvm.memory.nonheap.used",
 	},
 	JvmMemoryPoolMax: metricInfo{
-		Name: "jvm.memory.pool.max",
+		Name:       "jvm.memory.pool.max",
+		Attributes: []string{"memory_pool_name"},
 	},
 	JvmMemoryPoolUsed: metricInfo{
-		Name: "jvm.memory.pool.used",
+		Name:       "jvm.memory.pool.used",
+		Attributes: []string{"memory_pool_name"},
 	},
 	JvmThreadsCount: metricInfo{
 		Name: "jvm.threads.count",
@@ -913,13 +969,15 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricElasticsearchBreakerMemoryEstimated struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                  // data buffer for generated metric.
+	config        ElasticsearchBreakerMemoryEstimatedMetricConfig // metric config provided by user.
+	capacity      int                                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.breaker.memory.estimated metric with initial data.
@@ -929,17 +987,48 @@ func (m *metricElasticsearchBreakerMemoryEstimated) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchBreakerMemoryEstimated) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, circuitBreakerNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchBreakerMemoryEstimatedMetricAttributeKeyCircuitBreakerName) {
+		dp.Attributes().PutStr("name", circuitBreakerNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("name", circuitBreakerNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -952,14 +1041,20 @@ func (m *metricElasticsearchBreakerMemoryEstimated) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchBreakerMemoryEstimated) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchBreakerMemoryEstimated(cfg MetricConfig) metricElasticsearchBreakerMemoryEstimated {
+func newMetricElasticsearchBreakerMemoryEstimated(cfg ElasticsearchBreakerMemoryEstimatedMetricConfig) metricElasticsearchBreakerMemoryEstimated {
 	m := metricElasticsearchBreakerMemoryEstimated{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -968,9 +1063,10 @@ func newMetricElasticsearchBreakerMemoryEstimated(cfg MetricConfig) metricElasti
 }
 
 type metricElasticsearchBreakerMemoryLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        ElasticsearchBreakerMemoryLimitMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.breaker.memory.limit metric with initial data.
@@ -982,17 +1078,48 @@ func (m *metricElasticsearchBreakerMemoryLimit) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchBreakerMemoryLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, circuitBreakerNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchBreakerMemoryLimitMetricAttributeKeyCircuitBreakerName) {
+		dp.Attributes().PutStr("name", circuitBreakerNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("name", circuitBreakerNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1005,14 +1132,20 @@ func (m *metricElasticsearchBreakerMemoryLimit) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchBreakerMemoryLimit) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchBreakerMemoryLimit(cfg MetricConfig) metricElasticsearchBreakerMemoryLimit {
+func newMetricElasticsearchBreakerMemoryLimit(cfg ElasticsearchBreakerMemoryLimitMetricConfig) metricElasticsearchBreakerMemoryLimit {
 	m := metricElasticsearchBreakerMemoryLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1021,9 +1154,10 @@ func newMetricElasticsearchBreakerMemoryLimit(cfg MetricConfig) metricElasticsea
 }
 
 type metricElasticsearchBreakerTripped struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        ElasticsearchBreakerTrippedMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.breaker.tripped metric with initial data.
@@ -1035,17 +1169,48 @@ func (m *metricElasticsearchBreakerTripped) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchBreakerTripped) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, circuitBreakerNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchBreakerTrippedMetricAttributeKeyCircuitBreakerName) {
+		dp.Attributes().PutStr("name", circuitBreakerNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("name", circuitBreakerNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1058,14 +1223,20 @@ func (m *metricElasticsearchBreakerTripped) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchBreakerTripped) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchBreakerTripped(cfg MetricConfig) metricElasticsearchBreakerTripped {
+func newMetricElasticsearchBreakerTripped(cfg ElasticsearchBreakerTrippedMetricConfig) metricElasticsearchBreakerTripped {
 	m := metricElasticsearchBreakerTripped{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1074,9 +1245,9 @@ func newMetricElasticsearchBreakerTripped(cfg MetricConfig) metricElasticsearchB
 }
 
 type metricElasticsearchClusterDataNodes struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   ElasticsearchClusterDataNodesMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.cluster.data_nodes metric with initial data.
@@ -1115,8 +1286,9 @@ func (m *metricElasticsearchClusterDataNodes) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricElasticsearchClusterDataNodes(cfg MetricConfig) metricElasticsearchClusterDataNodes {
+func newMetricElasticsearchClusterDataNodes(cfg ElasticsearchClusterDataNodesMetricConfig) metricElasticsearchClusterDataNodes {
 	m := metricElasticsearchClusterDataNodes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1125,9 +1297,10 @@ func newMetricElasticsearchClusterDataNodes(cfg MetricConfig) metricElasticsearc
 }
 
 type metricElasticsearchClusterHealth struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        ElasticsearchClusterHealthMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.cluster.health metric with initial data.
@@ -1139,17 +1312,48 @@ func (m *metricElasticsearchClusterHealth) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchClusterHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, healthStatusAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchClusterHealthMetricAttributeKeyHealthStatus) {
+		dp.Attributes().PutStr("status", healthStatusAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("status", healthStatusAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1162,14 +1366,20 @@ func (m *metricElasticsearchClusterHealth) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchClusterHealth) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchClusterHealth(cfg MetricConfig) metricElasticsearchClusterHealth {
+func newMetricElasticsearchClusterHealth(cfg ElasticsearchClusterHealthMetricConfig) metricElasticsearchClusterHealth {
 	m := metricElasticsearchClusterHealth{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1178,9 +1388,9 @@ func newMetricElasticsearchClusterHealth(cfg MetricConfig) metricElasticsearchCl
 }
 
 type metricElasticsearchClusterInFlightFetch struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   ElasticsearchClusterInFlightFetchMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.cluster.in_flight_fetch metric with initial data.
@@ -1219,8 +1429,9 @@ func (m *metricElasticsearchClusterInFlightFetch) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricElasticsearchClusterInFlightFetch(cfg MetricConfig) metricElasticsearchClusterInFlightFetch {
+func newMetricElasticsearchClusterInFlightFetch(cfg ElasticsearchClusterInFlightFetchMetricConfig) metricElasticsearchClusterInFlightFetch {
 	m := metricElasticsearchClusterInFlightFetch{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1229,9 +1440,10 @@ func newMetricElasticsearchClusterInFlightFetch(cfg MetricConfig) metricElastics
 }
 
 type metricElasticsearchClusterIndicesCacheEvictions struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                        // data buffer for generated metric.
+	config        ElasticsearchClusterIndicesCacheEvictionsMetricConfig // metric config provided by user.
+	capacity      int                                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.cluster.indices.cache.evictions metric with initial data.
@@ -1243,17 +1455,48 @@ func (m *metricElasticsearchClusterIndicesCacheEvictions) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchClusterIndicesCacheEvictions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKeyCacheName) {
+		dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1266,14 +1509,20 @@ func (m *metricElasticsearchClusterIndicesCacheEvictions) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchClusterIndicesCacheEvictions) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchClusterIndicesCacheEvictions(cfg MetricConfig) metricElasticsearchClusterIndicesCacheEvictions {
+func newMetricElasticsearchClusterIndicesCacheEvictions(cfg ElasticsearchClusterIndicesCacheEvictionsMetricConfig) metricElasticsearchClusterIndicesCacheEvictions {
 	m := metricElasticsearchClusterIndicesCacheEvictions{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1282,9 +1531,9 @@ func newMetricElasticsearchClusterIndicesCacheEvictions(cfg MetricConfig) metric
 }
 
 type metricElasticsearchClusterNodes struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   ElasticsearchClusterNodesMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.cluster.nodes metric with initial data.
@@ -1323,8 +1572,9 @@ func (m *metricElasticsearchClusterNodes) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchClusterNodes(cfg MetricConfig) metricElasticsearchClusterNodes {
+func newMetricElasticsearchClusterNodes(cfg ElasticsearchClusterNodesMetricConfig) metricElasticsearchClusterNodes {
 	m := metricElasticsearchClusterNodes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1333,9 +1583,9 @@ func newMetricElasticsearchClusterNodes(cfg MetricConfig) metricElasticsearchClu
 }
 
 type metricElasticsearchClusterPendingTasks struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                               // data buffer for generated metric.
+	config   ElasticsearchClusterPendingTasksMetricConfig // metric config provided by user.
+	capacity int                                          // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.cluster.pending_tasks metric with initial data.
@@ -1374,8 +1624,9 @@ func (m *metricElasticsearchClusterPendingTasks) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricElasticsearchClusterPendingTasks(cfg MetricConfig) metricElasticsearchClusterPendingTasks {
+func newMetricElasticsearchClusterPendingTasks(cfg ElasticsearchClusterPendingTasksMetricConfig) metricElasticsearchClusterPendingTasks {
 	m := metricElasticsearchClusterPendingTasks{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1384,9 +1635,10 @@ func newMetricElasticsearchClusterPendingTasks(cfg MetricConfig) metricElasticse
 }
 
 type metricElasticsearchClusterPublishedStatesDifferences struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                             // data buffer for generated metric.
+	config        ElasticsearchClusterPublishedStatesDifferencesMetricConfig // metric config provided by user.
+	capacity      int                                                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.cluster.published_states.differences metric with initial data.
@@ -1398,17 +1650,48 @@ func (m *metricElasticsearchClusterPublishedStatesDifferences) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchClusterPublishedStatesDifferences) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, clusterPublishedDifferenceStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKeyClusterPublishedDifferenceState) {
+		dp.Attributes().PutStr("state", clusterPublishedDifferenceStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("state", clusterPublishedDifferenceStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1421,14 +1704,20 @@ func (m *metricElasticsearchClusterPublishedStatesDifferences) updateCapacity() 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchClusterPublishedStatesDifferences) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchClusterPublishedStatesDifferences(cfg MetricConfig) metricElasticsearchClusterPublishedStatesDifferences {
+func newMetricElasticsearchClusterPublishedStatesDifferences(cfg ElasticsearchClusterPublishedStatesDifferencesMetricConfig) metricElasticsearchClusterPublishedStatesDifferences {
 	m := metricElasticsearchClusterPublishedStatesDifferences{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1437,9 +1726,9 @@ func newMetricElasticsearchClusterPublishedStatesDifferences(cfg MetricConfig) m
 }
 
 type metricElasticsearchClusterPublishedStatesFull struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                      // data buffer for generated metric.
+	config   ElasticsearchClusterPublishedStatesFullMetricConfig // metric config provided by user.
+	capacity int                                                 // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.cluster.published_states.full metric with initial data.
@@ -1478,8 +1767,9 @@ func (m *metricElasticsearchClusterPublishedStatesFull) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricElasticsearchClusterPublishedStatesFull(cfg MetricConfig) metricElasticsearchClusterPublishedStatesFull {
+func newMetricElasticsearchClusterPublishedStatesFull(cfg ElasticsearchClusterPublishedStatesFullMetricConfig) metricElasticsearchClusterPublishedStatesFull {
 	m := metricElasticsearchClusterPublishedStatesFull{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1488,9 +1778,10 @@ func newMetricElasticsearchClusterPublishedStatesFull(cfg MetricConfig) metricEl
 }
 
 type metricElasticsearchClusterShards struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        ElasticsearchClusterShardsMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.cluster.shards metric with initial data.
@@ -1502,17 +1793,48 @@ func (m *metricElasticsearchClusterShards) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchClusterShards) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, shardStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchClusterShardsMetricAttributeKeyShardState) {
+		dp.Attributes().PutStr("state", shardStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("state", shardStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1525,14 +1847,20 @@ func (m *metricElasticsearchClusterShards) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchClusterShards) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchClusterShards(cfg MetricConfig) metricElasticsearchClusterShards {
+func newMetricElasticsearchClusterShards(cfg ElasticsearchClusterShardsMetricConfig) metricElasticsearchClusterShards {
 	m := metricElasticsearchClusterShards{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1541,9 +1869,10 @@ func newMetricElasticsearchClusterShards(cfg MetricConfig) metricElasticsearchCl
 }
 
 type metricElasticsearchClusterStateQueue struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        ElasticsearchClusterStateQueueMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.cluster.state_queue metric with initial data.
@@ -1555,17 +1884,48 @@ func (m *metricElasticsearchClusterStateQueue) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchClusterStateQueue) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, clusterStateQueueStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchClusterStateQueueMetricAttributeKeyClusterStateQueueState) {
+		dp.Attributes().PutStr("state", clusterStateQueueStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("state", clusterStateQueueStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1578,14 +1938,20 @@ func (m *metricElasticsearchClusterStateQueue) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchClusterStateQueue) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchClusterStateQueue(cfg MetricConfig) metricElasticsearchClusterStateQueue {
+func newMetricElasticsearchClusterStateQueue(cfg ElasticsearchClusterStateQueueMetricConfig) metricElasticsearchClusterStateQueue {
 	m := metricElasticsearchClusterStateQueue{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1594,9 +1960,10 @@ func newMetricElasticsearchClusterStateQueue(cfg MetricConfig) metricElasticsear
 }
 
 type metricElasticsearchClusterStateUpdateCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                   // data buffer for generated metric.
+	config        ElasticsearchClusterStateUpdateCountMetricConfig // metric config provided by user.
+	capacity      int                                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.cluster.state_update.count metric with initial data.
@@ -1608,17 +1975,48 @@ func (m *metricElasticsearchClusterStateUpdateCount) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchClusterStateUpdateCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, clusterStateUpdateStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchClusterStateUpdateCountMetricAttributeKeyClusterStateUpdateState) {
+		dp.Attributes().PutStr("state", clusterStateUpdateStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("state", clusterStateUpdateStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1631,14 +2029,20 @@ func (m *metricElasticsearchClusterStateUpdateCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchClusterStateUpdateCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchClusterStateUpdateCount(cfg MetricConfig) metricElasticsearchClusterStateUpdateCount {
+func newMetricElasticsearchClusterStateUpdateCount(cfg ElasticsearchClusterStateUpdateCountMetricConfig) metricElasticsearchClusterStateUpdateCount {
 	m := metricElasticsearchClusterStateUpdateCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1647,9 +2051,10 @@ func newMetricElasticsearchClusterStateUpdateCount(cfg MetricConfig) metricElast
 }
 
 type metricElasticsearchClusterStateUpdateTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                  // data buffer for generated metric.
+	config        ElasticsearchClusterStateUpdateTimeMetricConfig // metric config provided by user.
+	capacity      int                                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.cluster.state_update.time metric with initial data.
@@ -1661,18 +2066,51 @@ func (m *metricElasticsearchClusterStateUpdateTime) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchClusterStateUpdateTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, clusterStateUpdateStateAttributeValue string, clusterStateUpdateTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchClusterStateUpdateTimeMetricAttributeKeyClusterStateUpdateState) {
+		dp.Attributes().PutStr("state", clusterStateUpdateStateAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchClusterStateUpdateTimeMetricAttributeKeyClusterStateUpdateType) {
+		dp.Attributes().PutStr("type", clusterStateUpdateTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("state", clusterStateUpdateStateAttributeValue)
-	dp.Attributes().PutStr("type", clusterStateUpdateTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1685,14 +2123,20 @@ func (m *metricElasticsearchClusterStateUpdateTime) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchClusterStateUpdateTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchClusterStateUpdateTime(cfg MetricConfig) metricElasticsearchClusterStateUpdateTime {
+func newMetricElasticsearchClusterStateUpdateTime(cfg ElasticsearchClusterStateUpdateTimeMetricConfig) metricElasticsearchClusterStateUpdateTime {
 	m := metricElasticsearchClusterStateUpdateTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1701,9 +2145,10 @@ func newMetricElasticsearchClusterStateUpdateTime(cfg MetricConfig) metricElasti
 }
 
 type metricElasticsearchIndexCacheEvictions struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        ElasticsearchIndexCacheEvictionsMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.cache.evictions metric with initial data.
@@ -1715,18 +2160,51 @@ func (m *metricElasticsearchIndexCacheEvictions) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexCacheEvictions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheNameAttributeValue string, indexAggregationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexCacheEvictionsMetricAttributeKeyCacheName) {
+		dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexCacheEvictionsMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1739,14 +2217,20 @@ func (m *metricElasticsearchIndexCacheEvictions) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexCacheEvictions) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexCacheEvictions(cfg MetricConfig) metricElasticsearchIndexCacheEvictions {
+func newMetricElasticsearchIndexCacheEvictions(cfg ElasticsearchIndexCacheEvictionsMetricConfig) metricElasticsearchIndexCacheEvictions {
 	m := metricElasticsearchIndexCacheEvictions{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1755,9 +2239,10 @@ func newMetricElasticsearchIndexCacheEvictions(cfg MetricConfig) metricElasticse
 }
 
 type metricElasticsearchIndexCacheMemoryUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        ElasticsearchIndexCacheMemoryUsageMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.cache.memory.usage metric with initial data.
@@ -1769,18 +2254,51 @@ func (m *metricElasticsearchIndexCacheMemoryUsage) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexCacheMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheNameAttributeValue string, indexAggregationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexCacheMemoryUsageMetricAttributeKeyCacheName) {
+		dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexCacheMemoryUsageMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1793,14 +2311,20 @@ func (m *metricElasticsearchIndexCacheMemoryUsage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexCacheMemoryUsage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexCacheMemoryUsage(cfg MetricConfig) metricElasticsearchIndexCacheMemoryUsage {
+func newMetricElasticsearchIndexCacheMemoryUsage(cfg ElasticsearchIndexCacheMemoryUsageMetricConfig) metricElasticsearchIndexCacheMemoryUsage {
 	m := metricElasticsearchIndexCacheMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1809,9 +2333,10 @@ func newMetricElasticsearchIndexCacheMemoryUsage(cfg MetricConfig) metricElastic
 }
 
 type metricElasticsearchIndexCacheSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        ElasticsearchIndexCacheSizeMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.cache.size metric with initial data.
@@ -1823,17 +2348,48 @@ func (m *metricElasticsearchIndexCacheSize) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexCacheSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexCacheSizeMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1846,14 +2402,20 @@ func (m *metricElasticsearchIndexCacheSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexCacheSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexCacheSize(cfg MetricConfig) metricElasticsearchIndexCacheSize {
+func newMetricElasticsearchIndexCacheSize(cfg ElasticsearchIndexCacheSizeMetricConfig) metricElasticsearchIndexCacheSize {
 	m := metricElasticsearchIndexCacheSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1862,9 +2424,10 @@ func newMetricElasticsearchIndexCacheSize(cfg MetricConfig) metricElasticsearchI
 }
 
 type metricElasticsearchIndexDocuments struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        ElasticsearchIndexDocumentsMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.documents metric with initial data.
@@ -1876,18 +2439,51 @@ func (m *metricElasticsearchIndexDocuments) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexDocuments) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, documentStateAttributeValue string, indexAggregationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexDocumentsMetricAttributeKeyDocumentState) {
+		dp.Attributes().PutStr("state", documentStateAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexDocumentsMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("state", documentStateAttributeValue)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1900,14 +2496,20 @@ func (m *metricElasticsearchIndexDocuments) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexDocuments) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexDocuments(cfg MetricConfig) metricElasticsearchIndexDocuments {
+func newMetricElasticsearchIndexDocuments(cfg ElasticsearchIndexDocumentsMetricConfig) metricElasticsearchIndexDocuments {
 	m := metricElasticsearchIndexDocuments{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1916,9 +2518,10 @@ func newMetricElasticsearchIndexDocuments(cfg MetricConfig) metricElasticsearchI
 }
 
 type metricElasticsearchIndexOperationsCompleted struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                    // data buffer for generated metric.
+	config        ElasticsearchIndexOperationsCompletedMetricConfig // metric config provided by user.
+	capacity      int                                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.operations.completed metric with initial data.
@@ -1930,18 +2533,51 @@ func (m *metricElasticsearchIndexOperationsCompleted) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexOperationsCompleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string, indexAggregationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexOperationsCompletedMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexOperationsCompletedMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1954,14 +2590,20 @@ func (m *metricElasticsearchIndexOperationsCompleted) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexOperationsCompleted) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexOperationsCompleted(cfg MetricConfig) metricElasticsearchIndexOperationsCompleted {
+func newMetricElasticsearchIndexOperationsCompleted(cfg ElasticsearchIndexOperationsCompletedMetricConfig) metricElasticsearchIndexOperationsCompleted {
 	m := metricElasticsearchIndexOperationsCompleted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1970,9 +2612,10 @@ func newMetricElasticsearchIndexOperationsCompleted(cfg MetricConfig) metricElas
 }
 
 type metricElasticsearchIndexOperationsMergeCurrent struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                       // data buffer for generated metric.
+	config        ElasticsearchIndexOperationsMergeCurrentMetricConfig // metric config provided by user.
+	capacity      int                                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.operations.merge.current metric with initial data.
@@ -1982,17 +2625,48 @@ func (m *metricElasticsearchIndexOperationsMergeCurrent) init() {
 	m.data.SetUnit("{merges}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexOperationsMergeCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexOperationsMergeCurrentMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2005,14 +2679,20 @@ func (m *metricElasticsearchIndexOperationsMergeCurrent) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexOperationsMergeCurrent) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexOperationsMergeCurrent(cfg MetricConfig) metricElasticsearchIndexOperationsMergeCurrent {
+func newMetricElasticsearchIndexOperationsMergeCurrent(cfg ElasticsearchIndexOperationsMergeCurrentMetricConfig) metricElasticsearchIndexOperationsMergeCurrent {
 	m := metricElasticsearchIndexOperationsMergeCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2021,9 +2701,10 @@ func newMetricElasticsearchIndexOperationsMergeCurrent(cfg MetricConfig) metricE
 }
 
 type metricElasticsearchIndexOperationsMergeDocsCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                         // data buffer for generated metric.
+	config        ElasticsearchIndexOperationsMergeDocsCountMetricConfig // metric config provided by user.
+	capacity      int                                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.operations.merge.docs_count metric with initial data.
@@ -2035,17 +2716,48 @@ func (m *metricElasticsearchIndexOperationsMergeDocsCount) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexOperationsMergeDocsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2058,14 +2770,20 @@ func (m *metricElasticsearchIndexOperationsMergeDocsCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexOperationsMergeDocsCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexOperationsMergeDocsCount(cfg MetricConfig) metricElasticsearchIndexOperationsMergeDocsCount {
+func newMetricElasticsearchIndexOperationsMergeDocsCount(cfg ElasticsearchIndexOperationsMergeDocsCountMetricConfig) metricElasticsearchIndexOperationsMergeDocsCount {
 	m := metricElasticsearchIndexOperationsMergeDocsCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2074,9 +2792,10 @@ func newMetricElasticsearchIndexOperationsMergeDocsCount(cfg MetricConfig) metri
 }
 
 type metricElasticsearchIndexOperationsMergeSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                    // data buffer for generated metric.
+	config        ElasticsearchIndexOperationsMergeSizeMetricConfig // metric config provided by user.
+	capacity      int                                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.operations.merge.size metric with initial data.
@@ -2088,17 +2807,48 @@ func (m *metricElasticsearchIndexOperationsMergeSize) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexOperationsMergeSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexOperationsMergeSizeMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2111,14 +2861,20 @@ func (m *metricElasticsearchIndexOperationsMergeSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexOperationsMergeSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexOperationsMergeSize(cfg MetricConfig) metricElasticsearchIndexOperationsMergeSize {
+func newMetricElasticsearchIndexOperationsMergeSize(cfg ElasticsearchIndexOperationsMergeSizeMetricConfig) metricElasticsearchIndexOperationsMergeSize {
 	m := metricElasticsearchIndexOperationsMergeSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2127,9 +2883,10 @@ func newMetricElasticsearchIndexOperationsMergeSize(cfg MetricConfig) metricElas
 }
 
 type metricElasticsearchIndexOperationsTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        ElasticsearchIndexOperationsTimeMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.operations.time metric with initial data.
@@ -2141,18 +2898,51 @@ func (m *metricElasticsearchIndexOperationsTime) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexOperationsTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string, indexAggregationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexOperationsTimeMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexOperationsTimeMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2165,14 +2955,20 @@ func (m *metricElasticsearchIndexOperationsTime) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexOperationsTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexOperationsTime(cfg MetricConfig) metricElasticsearchIndexOperationsTime {
+func newMetricElasticsearchIndexOperationsTime(cfg ElasticsearchIndexOperationsTimeMetricConfig) metricElasticsearchIndexOperationsTime {
 	m := metricElasticsearchIndexOperationsTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2181,9 +2977,10 @@ func newMetricElasticsearchIndexOperationsTime(cfg MetricConfig) metricElasticse
 }
 
 type metricElasticsearchIndexSegmentsCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        ElasticsearchIndexSegmentsCountMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.segments.count metric with initial data.
@@ -2195,17 +2992,48 @@ func (m *metricElasticsearchIndexSegmentsCount) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexSegmentsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexSegmentsCountMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2218,14 +3046,20 @@ func (m *metricElasticsearchIndexSegmentsCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexSegmentsCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexSegmentsCount(cfg MetricConfig) metricElasticsearchIndexSegmentsCount {
+func newMetricElasticsearchIndexSegmentsCount(cfg ElasticsearchIndexSegmentsCountMetricConfig) metricElasticsearchIndexSegmentsCount {
 	m := metricElasticsearchIndexSegmentsCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2234,9 +3068,10 @@ func newMetricElasticsearchIndexSegmentsCount(cfg MetricConfig) metricElasticsea
 }
 
 type metricElasticsearchIndexSegmentsMemory struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        ElasticsearchIndexSegmentsMemoryMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.segments.memory metric with initial data.
@@ -2248,18 +3083,51 @@ func (m *metricElasticsearchIndexSegmentsMemory) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexSegmentsMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string, segmentsMemoryObjectTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexSegmentsMemoryMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexSegmentsMemoryMetricAttributeKeySegmentsMemoryObjectType) {
+		dp.Attributes().PutStr("object", segmentsMemoryObjectTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
-	dp.Attributes().PutStr("object", segmentsMemoryObjectTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2272,14 +3140,20 @@ func (m *metricElasticsearchIndexSegmentsMemory) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexSegmentsMemory) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexSegmentsMemory(cfg MetricConfig) metricElasticsearchIndexSegmentsMemory {
+func newMetricElasticsearchIndexSegmentsMemory(cfg ElasticsearchIndexSegmentsMemoryMetricConfig) metricElasticsearchIndexSegmentsMemory {
 	m := metricElasticsearchIndexSegmentsMemory{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2288,9 +3162,10 @@ func newMetricElasticsearchIndexSegmentsMemory(cfg MetricConfig) metricElasticse
 }
 
 type metricElasticsearchIndexSegmentsSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        ElasticsearchIndexSegmentsSizeMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.segments.size metric with initial data.
@@ -2302,17 +3177,48 @@ func (m *metricElasticsearchIndexSegmentsSize) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexSegmentsSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexSegmentsSizeMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2325,14 +3231,20 @@ func (m *metricElasticsearchIndexSegmentsSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexSegmentsSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexSegmentsSize(cfg MetricConfig) metricElasticsearchIndexSegmentsSize {
+func newMetricElasticsearchIndexSegmentsSize(cfg ElasticsearchIndexSegmentsSizeMetricConfig) metricElasticsearchIndexSegmentsSize {
 	m := metricElasticsearchIndexSegmentsSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2341,9 +3253,10 @@ func newMetricElasticsearchIndexSegmentsSize(cfg MetricConfig) metricElasticsear
 }
 
 type metricElasticsearchIndexShardsSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        ElasticsearchIndexShardsSizeMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.shards.size metric with initial data.
@@ -2355,17 +3268,48 @@ func (m *metricElasticsearchIndexShardsSize) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexShardsSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexShardsSizeMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2378,14 +3322,20 @@ func (m *metricElasticsearchIndexShardsSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexShardsSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexShardsSize(cfg MetricConfig) metricElasticsearchIndexShardsSize {
+func newMetricElasticsearchIndexShardsSize(cfg ElasticsearchIndexShardsSizeMetricConfig) metricElasticsearchIndexShardsSize {
 	m := metricElasticsearchIndexShardsSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2394,9 +3344,10 @@ func newMetricElasticsearchIndexShardsSize(cfg MetricConfig) metricElasticsearch
 }
 
 type metricElasticsearchIndexTranslogOperations struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                   // data buffer for generated metric.
+	config        ElasticsearchIndexTranslogOperationsMetricConfig // metric config provided by user.
+	capacity      int                                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.translog.operations metric with initial data.
@@ -2408,17 +3359,48 @@ func (m *metricElasticsearchIndexTranslogOperations) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexTranslogOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexTranslogOperationsMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2431,14 +3413,20 @@ func (m *metricElasticsearchIndexTranslogOperations) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexTranslogOperations) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexTranslogOperations(cfg MetricConfig) metricElasticsearchIndexTranslogOperations {
+func newMetricElasticsearchIndexTranslogOperations(cfg ElasticsearchIndexTranslogOperationsMetricConfig) metricElasticsearchIndexTranslogOperations {
 	m := metricElasticsearchIndexTranslogOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2447,9 +3435,10 @@ func newMetricElasticsearchIndexTranslogOperations(cfg MetricConfig) metricElast
 }
 
 type metricElasticsearchIndexTranslogSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        ElasticsearchIndexTranslogSizeMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.index.translog.size metric with initial data.
@@ -2461,17 +3450,48 @@ func (m *metricElasticsearchIndexTranslogSize) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchIndexTranslogSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchIndexTranslogSizeMetricAttributeKeyIndexAggregationType) {
+		dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2484,14 +3504,20 @@ func (m *metricElasticsearchIndexTranslogSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchIndexTranslogSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchIndexTranslogSize(cfg MetricConfig) metricElasticsearchIndexTranslogSize {
+func newMetricElasticsearchIndexTranslogSize(cfg ElasticsearchIndexTranslogSizeMetricConfig) metricElasticsearchIndexTranslogSize {
 	m := metricElasticsearchIndexTranslogSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2500,9 +3526,9 @@ func newMetricElasticsearchIndexTranslogSize(cfg MetricConfig) metricElasticsear
 }
 
 type metricElasticsearchIndexingPressureMemoryLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                       // data buffer for generated metric.
+	config   ElasticsearchIndexingPressureMemoryLimitMetricConfig // metric config provided by user.
+	capacity int                                                  // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.indexing_pressure.memory.limit metric with initial data.
@@ -2539,8 +3565,9 @@ func (m *metricElasticsearchIndexingPressureMemoryLimit) emit(metrics pmetric.Me
 	}
 }
 
-func newMetricElasticsearchIndexingPressureMemoryLimit(cfg MetricConfig) metricElasticsearchIndexingPressureMemoryLimit {
+func newMetricElasticsearchIndexingPressureMemoryLimit(cfg ElasticsearchIndexingPressureMemoryLimitMetricConfig) metricElasticsearchIndexingPressureMemoryLimit {
 	m := metricElasticsearchIndexingPressureMemoryLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2549,9 +3576,9 @@ func newMetricElasticsearchIndexingPressureMemoryLimit(cfg MetricConfig) metricE
 }
 
 type metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                                        // data buffer for generated metric.
+	config   ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsMetricConfig // metric config provided by user.
+	capacity int                                                                   // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.indexing_pressure.memory.total.primary_rejections metric with initial data.
@@ -2590,8 +3617,9 @@ func (m *metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections) emit(m
 	}
 }
 
-func newMetricElasticsearchIndexingPressureMemoryTotalPrimaryRejections(cfg MetricConfig) metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections {
+func newMetricElasticsearchIndexingPressureMemoryTotalPrimaryRejections(cfg ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsMetricConfig) metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections {
 	m := metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2600,9 +3628,9 @@ func newMetricElasticsearchIndexingPressureMemoryTotalPrimaryRejections(cfg Metr
 }
 
 type metricElasticsearchIndexingPressureMemoryTotalReplicaRejections struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                                        // data buffer for generated metric.
+	config   ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsMetricConfig // metric config provided by user.
+	capacity int                                                                   // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.indexing_pressure.memory.total.replica_rejections metric with initial data.
@@ -2641,8 +3669,9 @@ func (m *metricElasticsearchIndexingPressureMemoryTotalReplicaRejections) emit(m
 	}
 }
 
-func newMetricElasticsearchIndexingPressureMemoryTotalReplicaRejections(cfg MetricConfig) metricElasticsearchIndexingPressureMemoryTotalReplicaRejections {
+func newMetricElasticsearchIndexingPressureMemoryTotalReplicaRejections(cfg ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsMetricConfig) metricElasticsearchIndexingPressureMemoryTotalReplicaRejections {
 	m := metricElasticsearchIndexingPressureMemoryTotalReplicaRejections{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2651,9 +3680,10 @@ func newMetricElasticsearchIndexingPressureMemoryTotalReplicaRejections(cfg Metr
 }
 
 type metricElasticsearchMemoryIndexingPressure struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                  // data buffer for generated metric.
+	config        ElasticsearchMemoryIndexingPressureMetricConfig // metric config provided by user.
+	capacity      int                                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.memory.indexing_pressure metric with initial data.
@@ -2665,17 +3695,48 @@ func (m *metricElasticsearchMemoryIndexingPressure) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchMemoryIndexingPressure) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexingPressureStageAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchMemoryIndexingPressureMetricAttributeKeyIndexingPressureStage) {
+		dp.Attributes().PutStr("stage", indexingPressureStageAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("stage", indexingPressureStageAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2688,14 +3749,20 @@ func (m *metricElasticsearchMemoryIndexingPressure) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchMemoryIndexingPressure) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchMemoryIndexingPressure(cfg MetricConfig) metricElasticsearchMemoryIndexingPressure {
+func newMetricElasticsearchMemoryIndexingPressure(cfg ElasticsearchMemoryIndexingPressureMetricConfig) metricElasticsearchMemoryIndexingPressure {
 	m := metricElasticsearchMemoryIndexingPressure{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2704,9 +3771,10 @@ func newMetricElasticsearchMemoryIndexingPressure(cfg MetricConfig) metricElasti
 }
 
 type metricElasticsearchNodeCacheCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        ElasticsearchNodeCacheCountMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.cache.count metric with initial data.
@@ -2718,17 +3786,48 @@ func (m *metricElasticsearchNodeCacheCount) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodeCacheCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, queryCacheCountTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeCacheCountMetricAttributeKeyQueryCacheCountType) {
+		dp.Attributes().PutStr("type", queryCacheCountTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("type", queryCacheCountTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2741,14 +3840,20 @@ func (m *metricElasticsearchNodeCacheCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodeCacheCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodeCacheCount(cfg MetricConfig) metricElasticsearchNodeCacheCount {
+func newMetricElasticsearchNodeCacheCount(cfg ElasticsearchNodeCacheCountMetricConfig) metricElasticsearchNodeCacheCount {
 	m := metricElasticsearchNodeCacheCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2757,9 +3862,10 @@ func newMetricElasticsearchNodeCacheCount(cfg MetricConfig) metricElasticsearchN
 }
 
 type metricElasticsearchNodeCacheEvictions struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        ElasticsearchNodeCacheEvictionsMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.cache.evictions metric with initial data.
@@ -2771,17 +3877,48 @@ func (m *metricElasticsearchNodeCacheEvictions) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodeCacheEvictions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeCacheEvictionsMetricAttributeKeyCacheName) {
+		dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2794,14 +3931,20 @@ func (m *metricElasticsearchNodeCacheEvictions) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodeCacheEvictions) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodeCacheEvictions(cfg MetricConfig) metricElasticsearchNodeCacheEvictions {
+func newMetricElasticsearchNodeCacheEvictions(cfg ElasticsearchNodeCacheEvictionsMetricConfig) metricElasticsearchNodeCacheEvictions {
 	m := metricElasticsearchNodeCacheEvictions{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2810,9 +3953,10 @@ func newMetricElasticsearchNodeCacheEvictions(cfg MetricConfig) metricElasticsea
 }
 
 type metricElasticsearchNodeCacheMemoryUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        ElasticsearchNodeCacheMemoryUsageMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.cache.memory.usage metric with initial data.
@@ -2824,17 +3968,48 @@ func (m *metricElasticsearchNodeCacheMemoryUsage) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodeCacheMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeCacheMemoryUsageMetricAttributeKeyCacheName) {
+		dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2847,14 +4022,20 @@ func (m *metricElasticsearchNodeCacheMemoryUsage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodeCacheMemoryUsage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodeCacheMemoryUsage(cfg MetricConfig) metricElasticsearchNodeCacheMemoryUsage {
+func newMetricElasticsearchNodeCacheMemoryUsage(cfg ElasticsearchNodeCacheMemoryUsageMetricConfig) metricElasticsearchNodeCacheMemoryUsage {
 	m := metricElasticsearchNodeCacheMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2863,9 +4044,9 @@ func newMetricElasticsearchNodeCacheMemoryUsage(cfg MetricConfig) metricElastics
 }
 
 type metricElasticsearchNodeCacheSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   ElasticsearchNodeCacheSizeMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.cache.size metric with initial data.
@@ -2904,8 +4085,9 @@ func (m *metricElasticsearchNodeCacheSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchNodeCacheSize(cfg MetricConfig) metricElasticsearchNodeCacheSize {
+func newMetricElasticsearchNodeCacheSize(cfg ElasticsearchNodeCacheSizeMetricConfig) metricElasticsearchNodeCacheSize {
 	m := metricElasticsearchNodeCacheSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2914,9 +4096,9 @@ func newMetricElasticsearchNodeCacheSize(cfg MetricConfig) metricElasticsearchNo
 }
 
 type metricElasticsearchNodeClusterConnections struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   ElasticsearchNodeClusterConnectionsMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.cluster.connections metric with initial data.
@@ -2955,8 +4137,9 @@ func (m *metricElasticsearchNodeClusterConnections) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricElasticsearchNodeClusterConnections(cfg MetricConfig) metricElasticsearchNodeClusterConnections {
+func newMetricElasticsearchNodeClusterConnections(cfg ElasticsearchNodeClusterConnectionsMetricConfig) metricElasticsearchNodeClusterConnections {
 	m := metricElasticsearchNodeClusterConnections{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2965,9 +4148,10 @@ func newMetricElasticsearchNodeClusterConnections(cfg MetricConfig) metricElasti
 }
 
 type metricElasticsearchNodeClusterIo struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        ElasticsearchNodeClusterIoMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.cluster.io metric with initial data.
@@ -2979,17 +4163,48 @@ func (m *metricElasticsearchNodeClusterIo) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodeClusterIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeClusterIoMetricAttributeKeyDirection) {
+		dp.Attributes().PutStr("direction", directionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3002,14 +4217,20 @@ func (m *metricElasticsearchNodeClusterIo) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodeClusterIo) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodeClusterIo(cfg MetricConfig) metricElasticsearchNodeClusterIo {
+func newMetricElasticsearchNodeClusterIo(cfg ElasticsearchNodeClusterIoMetricConfig) metricElasticsearchNodeClusterIo {
 	m := metricElasticsearchNodeClusterIo{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3018,9 +4239,9 @@ func newMetricElasticsearchNodeClusterIo(cfg MetricConfig) metricElasticsearchNo
 }
 
 type metricElasticsearchNodeDiskIoRead struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ElasticsearchNodeDiskIoReadMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.disk.io.read metric with initial data.
@@ -3059,8 +4280,9 @@ func (m *metricElasticsearchNodeDiskIoRead) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchNodeDiskIoRead(cfg MetricConfig) metricElasticsearchNodeDiskIoRead {
+func newMetricElasticsearchNodeDiskIoRead(cfg ElasticsearchNodeDiskIoReadMetricConfig) metricElasticsearchNodeDiskIoRead {
 	m := metricElasticsearchNodeDiskIoRead{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3069,9 +4291,9 @@ func newMetricElasticsearchNodeDiskIoRead(cfg MetricConfig) metricElasticsearchN
 }
 
 type metricElasticsearchNodeDiskIoWrite struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   ElasticsearchNodeDiskIoWriteMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.disk.io.write metric with initial data.
@@ -3110,8 +4332,9 @@ func (m *metricElasticsearchNodeDiskIoWrite) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchNodeDiskIoWrite(cfg MetricConfig) metricElasticsearchNodeDiskIoWrite {
+func newMetricElasticsearchNodeDiskIoWrite(cfg ElasticsearchNodeDiskIoWriteMetricConfig) metricElasticsearchNodeDiskIoWrite {
 	m := metricElasticsearchNodeDiskIoWrite{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3120,9 +4343,10 @@ func newMetricElasticsearchNodeDiskIoWrite(cfg MetricConfig) metricElasticsearch
 }
 
 type metricElasticsearchNodeDocuments struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        ElasticsearchNodeDocumentsMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.documents metric with initial data.
@@ -3134,17 +4358,48 @@ func (m *metricElasticsearchNodeDocuments) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodeDocuments) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, documentStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeDocumentsMetricAttributeKeyDocumentState) {
+		dp.Attributes().PutStr("state", documentStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("state", documentStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3157,14 +4412,20 @@ func (m *metricElasticsearchNodeDocuments) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodeDocuments) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodeDocuments(cfg MetricConfig) metricElasticsearchNodeDocuments {
+func newMetricElasticsearchNodeDocuments(cfg ElasticsearchNodeDocumentsMetricConfig) metricElasticsearchNodeDocuments {
 	m := metricElasticsearchNodeDocuments{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3173,9 +4434,9 @@ func newMetricElasticsearchNodeDocuments(cfg MetricConfig) metricElasticsearchNo
 }
 
 type metricElasticsearchNodeFsDiskAvailable struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                               // data buffer for generated metric.
+	config   ElasticsearchNodeFsDiskAvailableMetricConfig // metric config provided by user.
+	capacity int                                          // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.fs.disk.available metric with initial data.
@@ -3214,8 +4475,9 @@ func (m *metricElasticsearchNodeFsDiskAvailable) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricElasticsearchNodeFsDiskAvailable(cfg MetricConfig) metricElasticsearchNodeFsDiskAvailable {
+func newMetricElasticsearchNodeFsDiskAvailable(cfg ElasticsearchNodeFsDiskAvailableMetricConfig) metricElasticsearchNodeFsDiskAvailable {
 	m := metricElasticsearchNodeFsDiskAvailable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3224,9 +4486,9 @@ func newMetricElasticsearchNodeFsDiskAvailable(cfg MetricConfig) metricElasticse
 }
 
 type metricElasticsearchNodeFsDiskFree struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ElasticsearchNodeFsDiskFreeMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.fs.disk.free metric with initial data.
@@ -3265,8 +4527,9 @@ func (m *metricElasticsearchNodeFsDiskFree) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchNodeFsDiskFree(cfg MetricConfig) metricElasticsearchNodeFsDiskFree {
+func newMetricElasticsearchNodeFsDiskFree(cfg ElasticsearchNodeFsDiskFreeMetricConfig) metricElasticsearchNodeFsDiskFree {
 	m := metricElasticsearchNodeFsDiskFree{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3275,9 +4538,9 @@ func newMetricElasticsearchNodeFsDiskFree(cfg MetricConfig) metricElasticsearchN
 }
 
 type metricElasticsearchNodeFsDiskTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   ElasticsearchNodeFsDiskTotalMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.fs.disk.total metric with initial data.
@@ -3316,8 +4579,9 @@ func (m *metricElasticsearchNodeFsDiskTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchNodeFsDiskTotal(cfg MetricConfig) metricElasticsearchNodeFsDiskTotal {
+func newMetricElasticsearchNodeFsDiskTotal(cfg ElasticsearchNodeFsDiskTotalMetricConfig) metricElasticsearchNodeFsDiskTotal {
 	m := metricElasticsearchNodeFsDiskTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3326,9 +4590,9 @@ func newMetricElasticsearchNodeFsDiskTotal(cfg MetricConfig) metricElasticsearch
 }
 
 type metricElasticsearchNodeHTTPConnections struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                               // data buffer for generated metric.
+	config   ElasticsearchNodeHTTPConnectionsMetricConfig // metric config provided by user.
+	capacity int                                          // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.http.connections metric with initial data.
@@ -3367,8 +4631,9 @@ func (m *metricElasticsearchNodeHTTPConnections) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricElasticsearchNodeHTTPConnections(cfg MetricConfig) metricElasticsearchNodeHTTPConnections {
+func newMetricElasticsearchNodeHTTPConnections(cfg ElasticsearchNodeHTTPConnectionsMetricConfig) metricElasticsearchNodeHTTPConnections {
 	m := metricElasticsearchNodeHTTPConnections{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3377,9 +4642,9 @@ func newMetricElasticsearchNodeHTTPConnections(cfg MetricConfig) metricElasticse
 }
 
 type metricElasticsearchNodeIngestDocuments struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                               // data buffer for generated metric.
+	config   ElasticsearchNodeIngestDocumentsMetricConfig // metric config provided by user.
+	capacity int                                          // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.ingest.documents metric with initial data.
@@ -3418,8 +4683,9 @@ func (m *metricElasticsearchNodeIngestDocuments) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricElasticsearchNodeIngestDocuments(cfg MetricConfig) metricElasticsearchNodeIngestDocuments {
+func newMetricElasticsearchNodeIngestDocuments(cfg ElasticsearchNodeIngestDocumentsMetricConfig) metricElasticsearchNodeIngestDocuments {
 	m := metricElasticsearchNodeIngestDocuments{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3428,9 +4694,9 @@ func newMetricElasticsearchNodeIngestDocuments(cfg MetricConfig) metricElasticse
 }
 
 type metricElasticsearchNodeIngestDocumentsCurrent struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                      // data buffer for generated metric.
+	config   ElasticsearchNodeIngestDocumentsCurrentMetricConfig // metric config provided by user.
+	capacity int                                                 // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.ingest.documents.current metric with initial data.
@@ -3469,8 +4735,9 @@ func (m *metricElasticsearchNodeIngestDocumentsCurrent) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricElasticsearchNodeIngestDocumentsCurrent(cfg MetricConfig) metricElasticsearchNodeIngestDocumentsCurrent {
+func newMetricElasticsearchNodeIngestDocumentsCurrent(cfg ElasticsearchNodeIngestDocumentsCurrentMetricConfig) metricElasticsearchNodeIngestDocumentsCurrent {
 	m := metricElasticsearchNodeIngestDocumentsCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3479,9 +4746,9 @@ func newMetricElasticsearchNodeIngestDocumentsCurrent(cfg MetricConfig) metricEl
 }
 
 type metricElasticsearchNodeIngestOperationsFailed struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                      // data buffer for generated metric.
+	config   ElasticsearchNodeIngestOperationsFailedMetricConfig // metric config provided by user.
+	capacity int                                                 // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.ingest.operations.failed metric with initial data.
@@ -3520,8 +4787,9 @@ func (m *metricElasticsearchNodeIngestOperationsFailed) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricElasticsearchNodeIngestOperationsFailed(cfg MetricConfig) metricElasticsearchNodeIngestOperationsFailed {
+func newMetricElasticsearchNodeIngestOperationsFailed(cfg ElasticsearchNodeIngestOperationsFailedMetricConfig) metricElasticsearchNodeIngestOperationsFailed {
 	m := metricElasticsearchNodeIngestOperationsFailed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3530,9 +4798,9 @@ func newMetricElasticsearchNodeIngestOperationsFailed(cfg MetricConfig) metricEl
 }
 
 type metricElasticsearchNodeOpenFiles struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   ElasticsearchNodeOpenFilesMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.open_files metric with initial data.
@@ -3571,8 +4839,9 @@ func (m *metricElasticsearchNodeOpenFiles) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchNodeOpenFiles(cfg MetricConfig) metricElasticsearchNodeOpenFiles {
+func newMetricElasticsearchNodeOpenFiles(cfg ElasticsearchNodeOpenFilesMetricConfig) metricElasticsearchNodeOpenFiles {
 	m := metricElasticsearchNodeOpenFiles{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3581,9 +4850,10 @@ func newMetricElasticsearchNodeOpenFiles(cfg MetricConfig) metricElasticsearchNo
 }
 
 type metricElasticsearchNodeOperationsCompleted struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                   // data buffer for generated metric.
+	config        ElasticsearchNodeOperationsCompletedMetricConfig // metric config provided by user.
+	capacity      int                                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.operations.completed metric with initial data.
@@ -3595,17 +4865,48 @@ func (m *metricElasticsearchNodeOperationsCompleted) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodeOperationsCompleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeOperationsCompletedMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3618,14 +4919,20 @@ func (m *metricElasticsearchNodeOperationsCompleted) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodeOperationsCompleted) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodeOperationsCompleted(cfg MetricConfig) metricElasticsearchNodeOperationsCompleted {
+func newMetricElasticsearchNodeOperationsCompleted(cfg ElasticsearchNodeOperationsCompletedMetricConfig) metricElasticsearchNodeOperationsCompleted {
 	m := metricElasticsearchNodeOperationsCompleted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3634,9 +4941,10 @@ func newMetricElasticsearchNodeOperationsCompleted(cfg MetricConfig) metricElast
 }
 
 type metricElasticsearchNodeOperationsCurrent struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        ElasticsearchNodeOperationsCurrentMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.operations.current metric with initial data.
@@ -3646,17 +4954,48 @@ func (m *metricElasticsearchNodeOperationsCurrent) init() {
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodeOperationsCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeOperationsCurrentMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3669,14 +5008,20 @@ func (m *metricElasticsearchNodeOperationsCurrent) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodeOperationsCurrent) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodeOperationsCurrent(cfg MetricConfig) metricElasticsearchNodeOperationsCurrent {
+func newMetricElasticsearchNodeOperationsCurrent(cfg ElasticsearchNodeOperationsCurrentMetricConfig) metricElasticsearchNodeOperationsCurrent {
 	m := metricElasticsearchNodeOperationsCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3685,9 +5030,10 @@ func newMetricElasticsearchNodeOperationsCurrent(cfg MetricConfig) metricElastic
 }
 
 type metricElasticsearchNodeOperationsGetCompleted struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                      // data buffer for generated metric.
+	config        ElasticsearchNodeOperationsGetCompletedMetricConfig // metric config provided by user.
+	capacity      int                                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.operations.get.completed metric with initial data.
@@ -3699,17 +5045,48 @@ func (m *metricElasticsearchNodeOperationsGetCompleted) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodeOperationsGetCompleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, getResultAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeOperationsGetCompletedMetricAttributeKeyGetResult) {
+		dp.Attributes().PutStr("result", getResultAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("result", getResultAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3722,14 +5099,20 @@ func (m *metricElasticsearchNodeOperationsGetCompleted) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodeOperationsGetCompleted) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodeOperationsGetCompleted(cfg MetricConfig) metricElasticsearchNodeOperationsGetCompleted {
+func newMetricElasticsearchNodeOperationsGetCompleted(cfg ElasticsearchNodeOperationsGetCompletedMetricConfig) metricElasticsearchNodeOperationsGetCompleted {
 	m := metricElasticsearchNodeOperationsGetCompleted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3738,9 +5121,10 @@ func newMetricElasticsearchNodeOperationsGetCompleted(cfg MetricConfig) metricEl
 }
 
 type metricElasticsearchNodeOperationsGetTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        ElasticsearchNodeOperationsGetTimeMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.operations.get.time metric with initial data.
@@ -3752,17 +5136,48 @@ func (m *metricElasticsearchNodeOperationsGetTime) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodeOperationsGetTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, getResultAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeOperationsGetTimeMetricAttributeKeyGetResult) {
+		dp.Attributes().PutStr("result", getResultAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("result", getResultAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3775,14 +5190,20 @@ func (m *metricElasticsearchNodeOperationsGetTime) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodeOperationsGetTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodeOperationsGetTime(cfg MetricConfig) metricElasticsearchNodeOperationsGetTime {
+func newMetricElasticsearchNodeOperationsGetTime(cfg ElasticsearchNodeOperationsGetTimeMetricConfig) metricElasticsearchNodeOperationsGetTime {
 	m := metricElasticsearchNodeOperationsGetTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3791,9 +5212,10 @@ func newMetricElasticsearchNodeOperationsGetTime(cfg MetricConfig) metricElastic
 }
 
 type metricElasticsearchNodeOperationsTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        ElasticsearchNodeOperationsTimeMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.operations.time metric with initial data.
@@ -3805,17 +5227,48 @@ func (m *metricElasticsearchNodeOperationsTime) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodeOperationsTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeOperationsTimeMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3828,14 +5281,20 @@ func (m *metricElasticsearchNodeOperationsTime) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodeOperationsTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodeOperationsTime(cfg MetricConfig) metricElasticsearchNodeOperationsTime {
+func newMetricElasticsearchNodeOperationsTime(cfg ElasticsearchNodeOperationsTimeMetricConfig) metricElasticsearchNodeOperationsTime {
 	m := metricElasticsearchNodeOperationsTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3844,9 +5303,10 @@ func newMetricElasticsearchNodeOperationsTime(cfg MetricConfig) metricElasticsea
 }
 
 type metricElasticsearchNodePipelineIngestDocumentsCurrent struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                              // data buffer for generated metric.
+	config        ElasticsearchNodePipelineIngestDocumentsCurrentMetricConfig // metric config provided by user.
+	capacity      int                                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.pipeline.ingest.documents.current metric with initial data.
@@ -3858,17 +5318,48 @@ func (m *metricElasticsearchNodePipelineIngestDocumentsCurrent) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodePipelineIngestDocumentsCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKeyIngestPipelineName) {
+		dp.Attributes().PutStr("name", ingestPipelineNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("name", ingestPipelineNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3881,14 +5372,20 @@ func (m *metricElasticsearchNodePipelineIngestDocumentsCurrent) updateCapacity()
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodePipelineIngestDocumentsCurrent) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodePipelineIngestDocumentsCurrent(cfg MetricConfig) metricElasticsearchNodePipelineIngestDocumentsCurrent {
+func newMetricElasticsearchNodePipelineIngestDocumentsCurrent(cfg ElasticsearchNodePipelineIngestDocumentsCurrentMetricConfig) metricElasticsearchNodePipelineIngestDocumentsCurrent {
 	m := metricElasticsearchNodePipelineIngestDocumentsCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3897,9 +5394,10 @@ func newMetricElasticsearchNodePipelineIngestDocumentsCurrent(cfg MetricConfig) 
 }
 
 type metricElasticsearchNodePipelineIngestDocumentsPreprocessed struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                                   // data buffer for generated metric.
+	config        ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricConfig // metric config provided by user.
+	capacity      int                                                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                                                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.pipeline.ingest.documents.preprocessed metric with initial data.
@@ -3911,17 +5409,48 @@ func (m *metricElasticsearchNodePipelineIngestDocumentsPreprocessed) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodePipelineIngestDocumentsPreprocessed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKeyIngestPipelineName) {
+		dp.Attributes().PutStr("name", ingestPipelineNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("name", ingestPipelineNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3934,14 +5463,20 @@ func (m *metricElasticsearchNodePipelineIngestDocumentsPreprocessed) updateCapac
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodePipelineIngestDocumentsPreprocessed) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodePipelineIngestDocumentsPreprocessed(cfg MetricConfig) metricElasticsearchNodePipelineIngestDocumentsPreprocessed {
+func newMetricElasticsearchNodePipelineIngestDocumentsPreprocessed(cfg ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricConfig) metricElasticsearchNodePipelineIngestDocumentsPreprocessed {
 	m := metricElasticsearchNodePipelineIngestDocumentsPreprocessed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3950,9 +5485,10 @@ func newMetricElasticsearchNodePipelineIngestDocumentsPreprocessed(cfg MetricCon
 }
 
 type metricElasticsearchNodePipelineIngestOperationsFailed struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                              // data buffer for generated metric.
+	config        ElasticsearchNodePipelineIngestOperationsFailedMetricConfig // metric config provided by user.
+	capacity      int                                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.pipeline.ingest.operations.failed metric with initial data.
@@ -3964,17 +5500,48 @@ func (m *metricElasticsearchNodePipelineIngestOperationsFailed) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodePipelineIngestOperationsFailed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKeyIngestPipelineName) {
+		dp.Attributes().PutStr("name", ingestPipelineNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("name", ingestPipelineNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3987,14 +5554,20 @@ func (m *metricElasticsearchNodePipelineIngestOperationsFailed) updateCapacity()
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodePipelineIngestOperationsFailed) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodePipelineIngestOperationsFailed(cfg MetricConfig) metricElasticsearchNodePipelineIngestOperationsFailed {
+func newMetricElasticsearchNodePipelineIngestOperationsFailed(cfg ElasticsearchNodePipelineIngestOperationsFailedMetricConfig) metricElasticsearchNodePipelineIngestOperationsFailed {
 	m := metricElasticsearchNodePipelineIngestOperationsFailed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4003,9 +5576,9 @@ func newMetricElasticsearchNodePipelineIngestOperationsFailed(cfg MetricConfig) 
 }
 
 type metricElasticsearchNodeScriptCacheEvictions struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                    // data buffer for generated metric.
+	config   ElasticsearchNodeScriptCacheEvictionsMetricConfig // metric config provided by user.
+	capacity int                                               // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.script.cache_evictions metric with initial data.
@@ -4044,8 +5617,9 @@ func (m *metricElasticsearchNodeScriptCacheEvictions) emit(metrics pmetric.Metri
 	}
 }
 
-func newMetricElasticsearchNodeScriptCacheEvictions(cfg MetricConfig) metricElasticsearchNodeScriptCacheEvictions {
+func newMetricElasticsearchNodeScriptCacheEvictions(cfg ElasticsearchNodeScriptCacheEvictionsMetricConfig) metricElasticsearchNodeScriptCacheEvictions {
 	m := metricElasticsearchNodeScriptCacheEvictions{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4054,9 +5628,9 @@ func newMetricElasticsearchNodeScriptCacheEvictions(cfg MetricConfig) metricElas
 }
 
 type metricElasticsearchNodeScriptCompilationLimitTriggered struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                               // data buffer for generated metric.
+	config   ElasticsearchNodeScriptCompilationLimitTriggeredMetricConfig // metric config provided by user.
+	capacity int                                                          // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.script.compilation_limit_triggered metric with initial data.
@@ -4095,8 +5669,9 @@ func (m *metricElasticsearchNodeScriptCompilationLimitTriggered) emit(metrics pm
 	}
 }
 
-func newMetricElasticsearchNodeScriptCompilationLimitTriggered(cfg MetricConfig) metricElasticsearchNodeScriptCompilationLimitTriggered {
+func newMetricElasticsearchNodeScriptCompilationLimitTriggered(cfg ElasticsearchNodeScriptCompilationLimitTriggeredMetricConfig) metricElasticsearchNodeScriptCompilationLimitTriggered {
 	m := metricElasticsearchNodeScriptCompilationLimitTriggered{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4105,9 +5680,9 @@ func newMetricElasticsearchNodeScriptCompilationLimitTriggered(cfg MetricConfig)
 }
 
 type metricElasticsearchNodeScriptCompilations struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   ElasticsearchNodeScriptCompilationsMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.script.compilations metric with initial data.
@@ -4146,8 +5721,9 @@ func (m *metricElasticsearchNodeScriptCompilations) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricElasticsearchNodeScriptCompilations(cfg MetricConfig) metricElasticsearchNodeScriptCompilations {
+func newMetricElasticsearchNodeScriptCompilations(cfg ElasticsearchNodeScriptCompilationsMetricConfig) metricElasticsearchNodeScriptCompilations {
 	m := metricElasticsearchNodeScriptCompilations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4156,9 +5732,10 @@ func newMetricElasticsearchNodeScriptCompilations(cfg MetricConfig) metricElasti
 }
 
 type metricElasticsearchNodeSegmentsMemory struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        ElasticsearchNodeSegmentsMemoryMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.segments.memory metric with initial data.
@@ -4170,17 +5747,48 @@ func (m *metricElasticsearchNodeSegmentsMemory) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodeSegmentsMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, segmentsMemoryObjectTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeSegmentsMemoryMetricAttributeKeySegmentsMemoryObjectType) {
+		dp.Attributes().PutStr("object", segmentsMemoryObjectTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("object", segmentsMemoryObjectTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4193,14 +5801,20 @@ func (m *metricElasticsearchNodeSegmentsMemory) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodeSegmentsMemory) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodeSegmentsMemory(cfg MetricConfig) metricElasticsearchNodeSegmentsMemory {
+func newMetricElasticsearchNodeSegmentsMemory(cfg ElasticsearchNodeSegmentsMemoryMetricConfig) metricElasticsearchNodeSegmentsMemory {
 	m := metricElasticsearchNodeSegmentsMemory{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4209,9 +5823,9 @@ func newMetricElasticsearchNodeSegmentsMemory(cfg MetricConfig) metricElasticsea
 }
 
 type metricElasticsearchNodeShardsDataSetSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                 // data buffer for generated metric.
+	config   ElasticsearchNodeShardsDataSetSizeMetricConfig // metric config provided by user.
+	capacity int                                            // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.shards.data_set.size metric with initial data.
@@ -4250,8 +5864,9 @@ func (m *metricElasticsearchNodeShardsDataSetSize) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricElasticsearchNodeShardsDataSetSize(cfg MetricConfig) metricElasticsearchNodeShardsDataSetSize {
+func newMetricElasticsearchNodeShardsDataSetSize(cfg ElasticsearchNodeShardsDataSetSizeMetricConfig) metricElasticsearchNodeShardsDataSetSize {
 	m := metricElasticsearchNodeShardsDataSetSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4260,9 +5875,9 @@ func newMetricElasticsearchNodeShardsDataSetSize(cfg MetricConfig) metricElastic
 }
 
 type metricElasticsearchNodeShardsReservedSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   ElasticsearchNodeShardsReservedSizeMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.shards.reserved.size metric with initial data.
@@ -4301,8 +5916,9 @@ func (m *metricElasticsearchNodeShardsReservedSize) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricElasticsearchNodeShardsReservedSize(cfg MetricConfig) metricElasticsearchNodeShardsReservedSize {
+func newMetricElasticsearchNodeShardsReservedSize(cfg ElasticsearchNodeShardsReservedSizeMetricConfig) metricElasticsearchNodeShardsReservedSize {
 	m := metricElasticsearchNodeShardsReservedSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4311,9 +5927,9 @@ func newMetricElasticsearchNodeShardsReservedSize(cfg MetricConfig) metricElasti
 }
 
 type metricElasticsearchNodeShardsSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ElasticsearchNodeShardsSizeMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.shards.size metric with initial data.
@@ -4352,8 +5968,9 @@ func (m *metricElasticsearchNodeShardsSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchNodeShardsSize(cfg MetricConfig) metricElasticsearchNodeShardsSize {
+func newMetricElasticsearchNodeShardsSize(cfg ElasticsearchNodeShardsSizeMetricConfig) metricElasticsearchNodeShardsSize {
 	m := metricElasticsearchNodeShardsSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4362,9 +5979,10 @@ func newMetricElasticsearchNodeShardsSize(cfg MetricConfig) metricElasticsearchN
 }
 
 type metricElasticsearchNodeThreadPoolTasksFinished struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                       // data buffer for generated metric.
+	config        ElasticsearchNodeThreadPoolTasksFinishedMetricConfig // metric config provided by user.
+	capacity      int                                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.thread_pool.tasks.finished metric with initial data.
@@ -4376,18 +5994,51 @@ func (m *metricElasticsearchNodeThreadPoolTasksFinished) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodeThreadPoolTasksFinished) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, taskStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKeyThreadPoolName) {
+		dp.Attributes().PutStr("thread_pool_name", threadPoolNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKeyTaskState) {
+		dp.Attributes().PutStr("state", taskStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("thread_pool_name", threadPoolNameAttributeValue)
-	dp.Attributes().PutStr("state", taskStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4400,14 +6051,20 @@ func (m *metricElasticsearchNodeThreadPoolTasksFinished) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodeThreadPoolTasksFinished) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodeThreadPoolTasksFinished(cfg MetricConfig) metricElasticsearchNodeThreadPoolTasksFinished {
+func newMetricElasticsearchNodeThreadPoolTasksFinished(cfg ElasticsearchNodeThreadPoolTasksFinishedMetricConfig) metricElasticsearchNodeThreadPoolTasksFinished {
 	m := metricElasticsearchNodeThreadPoolTasksFinished{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4416,9 +6073,10 @@ func newMetricElasticsearchNodeThreadPoolTasksFinished(cfg MetricConfig) metricE
 }
 
 type metricElasticsearchNodeThreadPoolTasksQueued struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                     // data buffer for generated metric.
+	config        ElasticsearchNodeThreadPoolTasksQueuedMetricConfig // metric config provided by user.
+	capacity      int                                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.thread_pool.tasks.queued metric with initial data.
@@ -4430,17 +6088,48 @@ func (m *metricElasticsearchNodeThreadPoolTasksQueued) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodeThreadPoolTasksQueued) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKeyThreadPoolName) {
+		dp.Attributes().PutStr("thread_pool_name", threadPoolNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("thread_pool_name", threadPoolNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4453,14 +6142,20 @@ func (m *metricElasticsearchNodeThreadPoolTasksQueued) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodeThreadPoolTasksQueued) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodeThreadPoolTasksQueued(cfg MetricConfig) metricElasticsearchNodeThreadPoolTasksQueued {
+func newMetricElasticsearchNodeThreadPoolTasksQueued(cfg ElasticsearchNodeThreadPoolTasksQueuedMetricConfig) metricElasticsearchNodeThreadPoolTasksQueued {
 	m := metricElasticsearchNodeThreadPoolTasksQueued{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4469,9 +6164,10 @@ func newMetricElasticsearchNodeThreadPoolTasksQueued(cfg MetricConfig) metricEla
 }
 
 type metricElasticsearchNodeThreadPoolThreads struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        ElasticsearchNodeThreadPoolThreadsMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.node.thread_pool.threads metric with initial data.
@@ -4483,18 +6179,51 @@ func (m *metricElasticsearchNodeThreadPoolThreads) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchNodeThreadPoolThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeThreadPoolThreadsMetricAttributeKeyThreadPoolName) {
+		dp.Attributes().PutStr("thread_pool_name", threadPoolNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchNodeThreadPoolThreadsMetricAttributeKeyThreadState) {
+		dp.Attributes().PutStr("state", threadStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("thread_pool_name", threadPoolNameAttributeValue)
-	dp.Attributes().PutStr("state", threadStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4507,14 +6236,20 @@ func (m *metricElasticsearchNodeThreadPoolThreads) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchNodeThreadPoolThreads) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchNodeThreadPoolThreads(cfg MetricConfig) metricElasticsearchNodeThreadPoolThreads {
+func newMetricElasticsearchNodeThreadPoolThreads(cfg ElasticsearchNodeThreadPoolThreadsMetricConfig) metricElasticsearchNodeThreadPoolThreads {
 	m := metricElasticsearchNodeThreadPoolThreads{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4523,9 +6258,9 @@ func newMetricElasticsearchNodeThreadPoolThreads(cfg MetricConfig) metricElastic
 }
 
 type metricElasticsearchNodeTranslogOperations struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   ElasticsearchNodeTranslogOperationsMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.translog.operations metric with initial data.
@@ -4564,8 +6299,9 @@ func (m *metricElasticsearchNodeTranslogOperations) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricElasticsearchNodeTranslogOperations(cfg MetricConfig) metricElasticsearchNodeTranslogOperations {
+func newMetricElasticsearchNodeTranslogOperations(cfg ElasticsearchNodeTranslogOperationsMetricConfig) metricElasticsearchNodeTranslogOperations {
 	m := metricElasticsearchNodeTranslogOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4574,9 +6310,9 @@ func newMetricElasticsearchNodeTranslogOperations(cfg MetricConfig) metricElasti
 }
 
 type metricElasticsearchNodeTranslogSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   ElasticsearchNodeTranslogSizeMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.translog.size metric with initial data.
@@ -4615,8 +6351,9 @@ func (m *metricElasticsearchNodeTranslogSize) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricElasticsearchNodeTranslogSize(cfg MetricConfig) metricElasticsearchNodeTranslogSize {
+func newMetricElasticsearchNodeTranslogSize(cfg ElasticsearchNodeTranslogSizeMetricConfig) metricElasticsearchNodeTranslogSize {
 	m := metricElasticsearchNodeTranslogSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4625,9 +6362,9 @@ func newMetricElasticsearchNodeTranslogSize(cfg MetricConfig) metricElasticsearc
 }
 
 type metricElasticsearchNodeTranslogUncommittedSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                       // data buffer for generated metric.
+	config   ElasticsearchNodeTranslogUncommittedSizeMetricConfig // metric config provided by user.
+	capacity int                                                  // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.node.translog.uncommitted.size metric with initial data.
@@ -4666,8 +6403,9 @@ func (m *metricElasticsearchNodeTranslogUncommittedSize) emit(metrics pmetric.Me
 	}
 }
 
-func newMetricElasticsearchNodeTranslogUncommittedSize(cfg MetricConfig) metricElasticsearchNodeTranslogUncommittedSize {
+func newMetricElasticsearchNodeTranslogUncommittedSize(cfg ElasticsearchNodeTranslogUncommittedSizeMetricConfig) metricElasticsearchNodeTranslogUncommittedSize {
 	m := metricElasticsearchNodeTranslogUncommittedSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4676,9 +6414,9 @@ func newMetricElasticsearchNodeTranslogUncommittedSize(cfg MetricConfig) metricE
 }
 
 type metricElasticsearchOsCPULoadAvg15m struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   ElasticsearchOsCPULoadAvg15mMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.os.cpu.load_avg.15m metric with initial data.
@@ -4715,8 +6453,9 @@ func (m *metricElasticsearchOsCPULoadAvg15m) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchOsCPULoadAvg15m(cfg MetricConfig) metricElasticsearchOsCPULoadAvg15m {
+func newMetricElasticsearchOsCPULoadAvg15m(cfg ElasticsearchOsCPULoadAvg15mMetricConfig) metricElasticsearchOsCPULoadAvg15m {
 	m := metricElasticsearchOsCPULoadAvg15m{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4725,9 +6464,9 @@ func newMetricElasticsearchOsCPULoadAvg15m(cfg MetricConfig) metricElasticsearch
 }
 
 type metricElasticsearchOsCPULoadAvg1m struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ElasticsearchOsCPULoadAvg1mMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.os.cpu.load_avg.1m metric with initial data.
@@ -4764,8 +6503,9 @@ func (m *metricElasticsearchOsCPULoadAvg1m) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchOsCPULoadAvg1m(cfg MetricConfig) metricElasticsearchOsCPULoadAvg1m {
+func newMetricElasticsearchOsCPULoadAvg1m(cfg ElasticsearchOsCPULoadAvg1mMetricConfig) metricElasticsearchOsCPULoadAvg1m {
 	m := metricElasticsearchOsCPULoadAvg1m{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4774,9 +6514,9 @@ func newMetricElasticsearchOsCPULoadAvg1m(cfg MetricConfig) metricElasticsearchO
 }
 
 type metricElasticsearchOsCPULoadAvg5m struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ElasticsearchOsCPULoadAvg5mMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.os.cpu.load_avg.5m metric with initial data.
@@ -4813,8 +6553,9 @@ func (m *metricElasticsearchOsCPULoadAvg5m) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchOsCPULoadAvg5m(cfg MetricConfig) metricElasticsearchOsCPULoadAvg5m {
+func newMetricElasticsearchOsCPULoadAvg5m(cfg ElasticsearchOsCPULoadAvg5mMetricConfig) metricElasticsearchOsCPULoadAvg5m {
 	m := metricElasticsearchOsCPULoadAvg5m{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4823,9 +6564,9 @@ func newMetricElasticsearchOsCPULoadAvg5m(cfg MetricConfig) metricElasticsearchO
 }
 
 type metricElasticsearchOsCPUUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   ElasticsearchOsCPUUsageMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.os.cpu.usage metric with initial data.
@@ -4862,8 +6603,9 @@ func (m *metricElasticsearchOsCPUUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchOsCPUUsage(cfg MetricConfig) metricElasticsearchOsCPUUsage {
+func newMetricElasticsearchOsCPUUsage(cfg ElasticsearchOsCPUUsageMetricConfig) metricElasticsearchOsCPUUsage {
 	m := metricElasticsearchOsCPUUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4872,9 +6614,10 @@ func newMetricElasticsearchOsCPUUsage(cfg MetricConfig) metricElasticsearchOsCPU
 }
 
 type metricElasticsearchOsMemory struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        ElasticsearchOsMemoryMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills elasticsearch.os.memory metric with initial data.
@@ -4884,17 +6627,48 @@ func (m *metricElasticsearchOsMemory) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricElasticsearchOsMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ElasticsearchOsMemoryMetricAttributeKeyMemoryState) {
+		dp.Attributes().PutStr("state", memoryStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("state", memoryStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4907,14 +6681,20 @@ func (m *metricElasticsearchOsMemory) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricElasticsearchOsMemory) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricElasticsearchOsMemory(cfg MetricConfig) metricElasticsearchOsMemory {
+func newMetricElasticsearchOsMemory(cfg ElasticsearchOsMemoryMetricConfig) metricElasticsearchOsMemory {
 	m := metricElasticsearchOsMemory{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4923,9 +6703,9 @@ func newMetricElasticsearchOsMemory(cfg MetricConfig) metricElasticsearchOsMemor
 }
 
 type metricElasticsearchProcessCPUTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ElasticsearchProcessCPUTimeMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.process.cpu.time metric with initial data.
@@ -4964,8 +6744,9 @@ func (m *metricElasticsearchProcessCPUTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchProcessCPUTime(cfg MetricConfig) metricElasticsearchProcessCPUTime {
+func newMetricElasticsearchProcessCPUTime(cfg ElasticsearchProcessCPUTimeMetricConfig) metricElasticsearchProcessCPUTime {
 	m := metricElasticsearchProcessCPUTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4974,9 +6755,9 @@ func newMetricElasticsearchProcessCPUTime(cfg MetricConfig) metricElasticsearchP
 }
 
 type metricElasticsearchProcessCPUUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   ElasticsearchProcessCPUUsageMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.process.cpu.usage metric with initial data.
@@ -5013,8 +6794,9 @@ func (m *metricElasticsearchProcessCPUUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchProcessCPUUsage(cfg MetricConfig) metricElasticsearchProcessCPUUsage {
+func newMetricElasticsearchProcessCPUUsage(cfg ElasticsearchProcessCPUUsageMetricConfig) metricElasticsearchProcessCPUUsage {
 	m := metricElasticsearchProcessCPUUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5023,9 +6805,9 @@ func newMetricElasticsearchProcessCPUUsage(cfg MetricConfig) metricElasticsearch
 }
 
 type metricElasticsearchProcessMemoryVirtual struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   ElasticsearchProcessMemoryVirtualMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills elasticsearch.process.memory.virtual metric with initial data.
@@ -5064,8 +6846,9 @@ func (m *metricElasticsearchProcessMemoryVirtual) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricElasticsearchProcessMemoryVirtual(cfg MetricConfig) metricElasticsearchProcessMemoryVirtual {
+func newMetricElasticsearchProcessMemoryVirtual(cfg ElasticsearchProcessMemoryVirtualMetricConfig) metricElasticsearchProcessMemoryVirtual {
 	m := metricElasticsearchProcessMemoryVirtual{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5074,9 +6857,9 @@ func newMetricElasticsearchProcessMemoryVirtual(cfg MetricConfig) metricElastics
 }
 
 type metricJvmClassesLoaded struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   JvmClassesLoadedMetricConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
 }
 
 // init fills jvm.classes.loaded metric with initial data.
@@ -5113,8 +6896,9 @@ func (m *metricJvmClassesLoaded) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricJvmClassesLoaded(cfg MetricConfig) metricJvmClassesLoaded {
+func newMetricJvmClassesLoaded(cfg JvmClassesLoadedMetricConfig) metricJvmClassesLoaded {
 	m := metricJvmClassesLoaded{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5123,9 +6907,10 @@ func newMetricJvmClassesLoaded(cfg MetricConfig) metricJvmClassesLoaded {
 }
 
 type metricJvmGcCollectionsCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        JvmGcCollectionsCountMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills jvm.gc.collections.count metric with initial data.
@@ -5137,17 +6922,48 @@ func (m *metricJvmGcCollectionsCount) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricJvmGcCollectionsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, collectorNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, JvmGcCollectionsCountMetricAttributeKeyCollectorName) {
+		dp.Attributes().PutStr("name", collectorNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("name", collectorNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -5160,14 +6976,20 @@ func (m *metricJvmGcCollectionsCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricJvmGcCollectionsCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricJvmGcCollectionsCount(cfg MetricConfig) metricJvmGcCollectionsCount {
+func newMetricJvmGcCollectionsCount(cfg JvmGcCollectionsCountMetricConfig) metricJvmGcCollectionsCount {
 	m := metricJvmGcCollectionsCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5176,9 +6998,10 @@ func newMetricJvmGcCollectionsCount(cfg MetricConfig) metricJvmGcCollectionsCoun
 }
 
 type metricJvmGcCollectionsElapsed struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        JvmGcCollectionsElapsedMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills jvm.gc.collections.elapsed metric with initial data.
@@ -5190,17 +7013,48 @@ func (m *metricJvmGcCollectionsElapsed) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricJvmGcCollectionsElapsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, collectorNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, JvmGcCollectionsElapsedMetricAttributeKeyCollectorName) {
+		dp.Attributes().PutStr("name", collectorNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("name", collectorNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -5213,14 +7067,20 @@ func (m *metricJvmGcCollectionsElapsed) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricJvmGcCollectionsElapsed) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricJvmGcCollectionsElapsed(cfg MetricConfig) metricJvmGcCollectionsElapsed {
+func newMetricJvmGcCollectionsElapsed(cfg JvmGcCollectionsElapsedMetricConfig) metricJvmGcCollectionsElapsed {
 	m := metricJvmGcCollectionsElapsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5229,9 +7089,9 @@ func newMetricJvmGcCollectionsElapsed(cfg MetricConfig) metricJvmGcCollectionsEl
 }
 
 type metricJvmMemoryHeapCommitted struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   JvmMemoryHeapCommittedMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills jvm.memory.heap.committed metric with initial data.
@@ -5268,8 +7128,9 @@ func (m *metricJvmMemoryHeapCommitted) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricJvmMemoryHeapCommitted(cfg MetricConfig) metricJvmMemoryHeapCommitted {
+func newMetricJvmMemoryHeapCommitted(cfg JvmMemoryHeapCommittedMetricConfig) metricJvmMemoryHeapCommitted {
 	m := metricJvmMemoryHeapCommitted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5278,9 +7139,9 @@ func newMetricJvmMemoryHeapCommitted(cfg MetricConfig) metricJvmMemoryHeapCommit
 }
 
 type metricJvmMemoryHeapMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   JvmMemoryHeapMaxMetricConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
 }
 
 // init fills jvm.memory.heap.max metric with initial data.
@@ -5317,8 +7178,9 @@ func (m *metricJvmMemoryHeapMax) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricJvmMemoryHeapMax(cfg MetricConfig) metricJvmMemoryHeapMax {
+func newMetricJvmMemoryHeapMax(cfg JvmMemoryHeapMaxMetricConfig) metricJvmMemoryHeapMax {
 	m := metricJvmMemoryHeapMax{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5327,9 +7189,9 @@ func newMetricJvmMemoryHeapMax(cfg MetricConfig) metricJvmMemoryHeapMax {
 }
 
 type metricJvmMemoryHeapUsed struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   JvmMemoryHeapUsedMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills jvm.memory.heap.used metric with initial data.
@@ -5366,8 +7228,9 @@ func (m *metricJvmMemoryHeapUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricJvmMemoryHeapUsed(cfg MetricConfig) metricJvmMemoryHeapUsed {
+func newMetricJvmMemoryHeapUsed(cfg JvmMemoryHeapUsedMetricConfig) metricJvmMemoryHeapUsed {
 	m := metricJvmMemoryHeapUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5376,9 +7239,9 @@ func newMetricJvmMemoryHeapUsed(cfg MetricConfig) metricJvmMemoryHeapUsed {
 }
 
 type metricJvmMemoryHeapUtilization struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   JvmMemoryHeapUtilizationMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills jvm.memory.heap.utilization metric with initial data.
@@ -5415,8 +7278,9 @@ func (m *metricJvmMemoryHeapUtilization) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricJvmMemoryHeapUtilization(cfg MetricConfig) metricJvmMemoryHeapUtilization {
+func newMetricJvmMemoryHeapUtilization(cfg JvmMemoryHeapUtilizationMetricConfig) metricJvmMemoryHeapUtilization {
 	m := metricJvmMemoryHeapUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5425,9 +7289,9 @@ func newMetricJvmMemoryHeapUtilization(cfg MetricConfig) metricJvmMemoryHeapUtil
 }
 
 type metricJvmMemoryNonheapCommitted struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   JvmMemoryNonheapCommittedMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills jvm.memory.nonheap.committed metric with initial data.
@@ -5464,8 +7328,9 @@ func (m *metricJvmMemoryNonheapCommitted) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricJvmMemoryNonheapCommitted(cfg MetricConfig) metricJvmMemoryNonheapCommitted {
+func newMetricJvmMemoryNonheapCommitted(cfg JvmMemoryNonheapCommittedMetricConfig) metricJvmMemoryNonheapCommitted {
 	m := metricJvmMemoryNonheapCommitted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5474,9 +7339,9 @@ func newMetricJvmMemoryNonheapCommitted(cfg MetricConfig) metricJvmMemoryNonheap
 }
 
 type metricJvmMemoryNonheapUsed struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   JvmMemoryNonheapUsedMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills jvm.memory.nonheap.used metric with initial data.
@@ -5513,8 +7378,9 @@ func (m *metricJvmMemoryNonheapUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricJvmMemoryNonheapUsed(cfg MetricConfig) metricJvmMemoryNonheapUsed {
+func newMetricJvmMemoryNonheapUsed(cfg JvmMemoryNonheapUsedMetricConfig) metricJvmMemoryNonheapUsed {
 	m := metricJvmMemoryNonheapUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5523,9 +7389,10 @@ func newMetricJvmMemoryNonheapUsed(cfg MetricConfig) metricJvmMemoryNonheapUsed 
 }
 
 type metricJvmMemoryPoolMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric               // data buffer for generated metric.
+	config        JvmMemoryPoolMaxMetricConfig // metric config provided by user.
+	capacity      int                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills jvm.memory.pool.max metric with initial data.
@@ -5535,17 +7402,48 @@ func (m *metricJvmMemoryPoolMax) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricJvmMemoryPoolMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryPoolNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, JvmMemoryPoolMaxMetricAttributeKeyMemoryPoolName) {
+		dp.Attributes().PutStr("name", memoryPoolNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("name", memoryPoolNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -5558,14 +7456,20 @@ func (m *metricJvmMemoryPoolMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricJvmMemoryPoolMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricJvmMemoryPoolMax(cfg MetricConfig) metricJvmMemoryPoolMax {
+func newMetricJvmMemoryPoolMax(cfg JvmMemoryPoolMaxMetricConfig) metricJvmMemoryPoolMax {
 	m := metricJvmMemoryPoolMax{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5574,9 +7478,10 @@ func newMetricJvmMemoryPoolMax(cfg MetricConfig) metricJvmMemoryPoolMax {
 }
 
 type metricJvmMemoryPoolUsed struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        JvmMemoryPoolUsedMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills jvm.memory.pool.used metric with initial data.
@@ -5586,17 +7491,48 @@ func (m *metricJvmMemoryPoolUsed) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricJvmMemoryPoolUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryPoolNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, JvmMemoryPoolUsedMetricAttributeKeyMemoryPoolName) {
+		dp.Attributes().PutStr("name", memoryPoolNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("name", memoryPoolNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -5609,14 +7545,20 @@ func (m *metricJvmMemoryPoolUsed) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricJvmMemoryPoolUsed) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricJvmMemoryPoolUsed(cfg MetricConfig) metricJvmMemoryPoolUsed {
+func newMetricJvmMemoryPoolUsed(cfg JvmMemoryPoolUsedMetricConfig) metricJvmMemoryPoolUsed {
 	m := metricJvmMemoryPoolUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5625,9 +7567,9 @@ func newMetricJvmMemoryPoolUsed(cfg MetricConfig) metricJvmMemoryPoolUsed {
 }
 
 type metricJvmThreadsCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   JvmThreadsCountMetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
 }
 
 // init fills jvm.threads.count metric with initial data.
@@ -5664,8 +7606,9 @@ func (m *metricJvmThreadsCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricJvmThreadsCount(cfg MetricConfig) metricJvmThreadsCount {
+func newMetricJvmThreadsCount(cfg JvmThreadsCountMetricConfig) metricJvmThreadsCount {
 	m := metricJvmThreadsCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

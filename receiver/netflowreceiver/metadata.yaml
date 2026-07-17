@@ -1,5 +1,13 @@
+display_name: Netflow Receiver
 type: netflow
 scope_name: otelcol/netflowreceiver
+
+description: |
+  The Netflow Receiver can listen for [netflow](https://en.wikipedia.org/wiki/NetFlow),
+  [sflow](https://en.wikipedia.org/wiki/SFlow), and [ipfix](https://en.wikipedia.org/wiki/IP_Flow_Information_Export)
+  data and convert it to OpenTelemetry logs. The receiver is based on the
+  [goflow2](https://github.com/netsampler/goflow2) project.
+
 
 status:
   class: receiver

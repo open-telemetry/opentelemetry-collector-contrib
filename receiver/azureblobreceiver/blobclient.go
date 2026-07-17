@@ -14,6 +14,8 @@ import (
 
 type blobClient interface {
 	readBlob(ctx context.Context, containerName, blobName string) (*bytes.Buffer, error)
+	listBlobs(ctx context.Context, containerName string) ([]string, error)
+	deleteBlob(ctx context.Context, containerName, blobName string) error
 }
 
 type azureBlobClient struct {
@@ -23,14 +25,24 @@ type azureBlobClient struct {
 
 var _ blobClient = (*azureBlobClient)(nil)
 
-func (bc *azureBlobClient) readBlob(ctx context.Context, containerName, blobName string) (*bytes.Buffer, error) {
-	defer func() {
-		_, blobDeleteErr := bc.serviceClient.DeleteBlob(ctx, containerName, blobName, nil)
-		if blobDeleteErr != nil {
-			bc.logger.Error("failed to delete blob", zap.Error(blobDeleteErr))
+func (bc *azureBlobClient) listBlobs(ctx context.Context, containerName string) ([]string, error) {
+	var blobs []string
+	pager := bc.serviceClient.NewListBlobsFlatPager(containerName, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
 		}
-	}()
+		for _, blob := range page.Segment.BlobItems {
+			if blob.Name != nil {
+				blobs = append(blobs, *blob.Name)
+			}
+		}
+	}
+	return blobs, nil
+}
 
+func (bc *azureBlobClient) readBlob(ctx context.Context, containerName, blobName string) (*bytes.Buffer, error) {
 	get, err := bc.serviceClient.DownloadStream(ctx, containerName, blobName, nil)
 	if err != nil {
 		return nil, err
@@ -43,6 +55,11 @@ func (bc *azureBlobClient) readBlob(ctx context.Context, containerName, blobName
 	_, err = downloadedData.ReadFrom(retryReader)
 
 	return downloadedData, err
+}
+
+func (bc *azureBlobClient) deleteBlob(ctx context.Context, containerName, blobName string) error {
+	_, err := bc.serviceClient.DeleteBlob(ctx, containerName, blobName, nil)
+	return err
 }
 
 func newBlobClientFromConnectionString(connectionString string, logger *zap.Logger) (*azureBlobClient, error) {

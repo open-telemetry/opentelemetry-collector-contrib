@@ -1,0 +1,38 @@
+$defs:
+  aws_session_settings:
+    description: AWSSessionSettings defines the common session configs for AWS components
+    type: object
+    properties:
+      endpoint:
+        description: X-Ray service endpoint to which the collector sends segment documents.
+        type: string
+      external_id:
+        description: External ID to verify third party role assumption
+        type: string
+      local_mode:
+        description: Local mode to skip EC2 instance metadata check.
+        type: boolean
+      max_retries:
+        description: Maximum number of retries before abandoning an attempt to post data.
+        type: integer
+      no_verify_ssl:
+        description: Enable or disable TLS certificate verification.
+        type: boolean
+      num_workers:
+        description: Maximum number of concurrent calls to AWS X-Ray to upload documents.
+        type: integer
+      proxy_address:
+        description: Upload segments to AWS X-Ray through a proxy.
+        type: string
+      region:
+        description: Send segments to AWS X-Ray service in a specific region.
+        type: string
+      request_timeout_seconds:
+        description: Number of seconds before timing out a request.
+        type: integer
+      resource_arn:
+        description: Amazon Resource Name (ARN) of the AWS resource running the collector.
+        type: string
+      role_arn:
+        description: IAM role to upload segments to a different account.
+        type: string

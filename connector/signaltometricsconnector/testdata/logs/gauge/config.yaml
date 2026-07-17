@@ -1,11 +1,11 @@
-signaltometrics:
+signal_to_metrics:
   logs:
     - name: logs.memory_mb
-      description: Extract memory_mb from log records 
+      description: Extract memory_mb from log records
       gauge:
         value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:int}MB")["memory_mb"]
     - name: logs.cpu
-      description: Extract cpu from log records 
+      description: Extract cpu from log records
       gauge:
         value: ExtractGrokPatterns(body, "CPU usage %{NUMBER:cpu:float}")["cpu"]
     - name: logs.foo.memory_mb
@@ -35,3 +35,4 @@ signaltometrics:
         - key: log.bar
       gauge:
         value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:int}MB")["memory_mb"]
+

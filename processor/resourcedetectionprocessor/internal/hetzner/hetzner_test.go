@@ -44,6 +44,7 @@ func TestHetznerDetector_Detect_OK(t *testing.T) {
 	withFakeMetaServer(t, mux)
 
 	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.CloudPlatform.Enabled = true
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 
@@ -53,6 +54,7 @@ func TestHetznerDetector_Detect_OK(t *testing.T) {
 
 	want := map[string]any{
 		"cloud.provider":          TypeStr,
+		"cloud.platform":          TypeStr + ".cloud_server",
 		"host.id":                 "987654321",
 		"host.name":               "srv-123",
 		"cloud.region":            "nbg1",

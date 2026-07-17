@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
@@ -112,4 +114,9 @@ func TestConfig(t *testing.T) {
 			},
 		},
 	}.Run(t)
+}
+
+func TestDefaultValues(t *testing.T) {
+	cfg := NewConfig()
+	assert.Equal(t, helper.ByteSize(1024*1024), cfg.MaxLogSize)
 }

@@ -25,6 +25,26 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
+	defaultsHTTPServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	defaultsHTTPServerConfig.WriteTimeout = 0
+	defaultsHTTPServerConfig.ReadHeaderTimeout = 0
+	defaultsHTTPServerConfig.IdleTimeout = 0
+	defaultsHTTPServerConfig.KeepAlivesEnabled = false
+	defaultsHTTPServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:3500",
+	}
+	mixedHTTPServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	mixedHTTPServerConfig.WriteTimeout = 0
+	mixedHTTPServerConfig.ReadHeaderTimeout = 0
+	mixedHTTPServerConfig.IdleTimeout = 0
+	mixedHTTPServerConfig.KeepAlivesEnabled = false
+	mixedHTTPServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:4500",
+	}
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -39,9 +59,7 @@ func TestLoadConfig(t *testing.T) {
 							Transport: confignet.TransportTypeTCP,
 						},
 					},
-					HTTP: &confighttp.ServerConfig{
-						Endpoint: "localhost:3500",
-					},
+					HTTP: &defaultsHTTPServerConfig,
 				},
 			},
 		},
@@ -55,9 +73,7 @@ func TestLoadConfig(t *testing.T) {
 							Transport: confignet.TransportTypeTCP,
 						},
 					},
-					HTTP: &confighttp.ServerConfig{
-						Endpoint: "localhost:4500",
-					},
+					HTTP: &mixedHTTPServerConfig,
 				},
 				KeepTimestamp: true,
 			},
@@ -118,7 +134,7 @@ func TestConfigWithUnknownKeysConfig(t *testing.T) {
 	}{
 		{
 			id:  component.NewIDWithName(metadata.Type, "extra_keys"),
-			err: "'' has invalid keys: foo",
+			err: "'lokireceiver.Config' has invalid keys: foo",
 		},
 	}
 

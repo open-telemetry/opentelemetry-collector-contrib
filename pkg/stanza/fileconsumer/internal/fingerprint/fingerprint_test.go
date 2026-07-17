@@ -338,3 +338,91 @@ func TestCompressionFingerprint(t *testing.T) {
 	uncompressedFP := New(data)
 	uncompressedFP.Equal(compressedFP)
 }
+
+func TestFingerprint_Bytes(t *testing.T) {
+	data := []byte("hello world fingerprint")
+	fp := New(data)
+
+	got := fp.Bytes()
+	require.Equal(t, data, got)
+
+	// Verify Bytes returns a copy (not the internal slice)
+	got2 := fp.Bytes()
+	require.NotSame(t, &got[0], &got2[0],
+		"Bytes() should return a new copy on each call")
+
+	// Verify mutating the returned slice does not affect the fingerprint
+	got[0] = 0xFF
+	require.Equal(t, data, fp.Bytes(),
+		"mutating returned slice must not affect the fingerprint")
+}
+
+func TestFingerprint_Bytes_Empty(t *testing.T) {
+	fp := New([]byte{})
+	got := fp.Bytes()
+	require.Empty(t, got)
+}
+
+func TestFingerprintKeyCaching(t *testing.T) {
+	data := []byte("test fingerprint data")
+	fp := New(data)
+
+	key1 := fp.Key()
+	require.Equal(t, string(data), key1)
+
+	key2 := fp.Key()
+	require.Equal(t, key1, key2)
+	require.NotEmpty(t, fp.key)
+}
+
+func TestFingerprintCopyDoesNotShareKey(t *testing.T) {
+	original := New([]byte("original data"))
+	originalKey := original.Key()
+	require.NotEmpty(t, originalKey)
+
+	copied := original.Copy()
+	require.Empty(t, copied.key)
+	require.Equal(t, originalKey, copied.Key())
+}
+
+func TestFingerprintKeyWithNilOrEmpty(t *testing.T) {
+	var nilFP *Fingerprint
+	require.Empty(t, nilFP.Key())
+
+	emptyFP := New([]byte{})
+	require.Empty(t, emptyFP.Key())
+}
+
+func TestNewFromFileGzipOffset(t *testing.T) {
+	tmp := t.TempDir()
+	compressedFile := filetest.OpenTempWithPattern(t, tmp, "*.gz")
+	gzipWriter := gzip.NewWriter(compressedFile)
+
+	data := []byte("this is a test line for offset testing in gzip")
+	_, err := gzipWriter.Write(data)
+	require.NoError(t, err)
+	require.NoError(t, gzipWriter.Close())
+
+	// 1. Get the expected fingerprint by reading it from offset 0 first
+	_, err = compressedFile.Seek(0, io.SeekStart)
+	require.NoError(t, err)
+
+	expectedFP, err := NewFromFile(compressedFile, len(data), true, zap.NewNop())
+	require.NoError(t, err)
+
+	// 2. Now seek to a non-zero offset
+	nonZeroOffset := int64(10)
+	_, err = compressedFile.Seek(nonZeroOffset, io.SeekStart)
+	require.NoError(t, err)
+
+	// 3. Call NewFromFile which will try to decompress and read fingerprint.
+	// This will fail or return a mismatched/empty fingerprint because it is not seeked to 0.
+	actualFP, err := NewFromFile(compressedFile, len(data), true, zap.NewNop())
+	require.NoError(t, err)
+	require.True(t, expectedFP.Equal(actualFP))
+
+	// 4. Assert that the offset of the file is not modified
+	currentOffset, err := compressedFile.Seek(0, io.SeekCurrent)
+	require.NoError(t, err)
+	require.Equal(t, nonZeroOffset, currentOffset)
+}

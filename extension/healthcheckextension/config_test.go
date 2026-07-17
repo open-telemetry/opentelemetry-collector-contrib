@@ -27,6 +27,23 @@ import (
 func TestLoadConfigLegacy(t *testing.T) {
 	t.Parallel()
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:13",
+	}
+	serverConfig.TLS = configoptional.Some(configtls.ServerConfig{
+		Config: configtls.Config{
+			CAFile:   "/path/to/ca",
+			CertFile: "/path/to/cert",
+			KeyFile:  "/path/to/key",
+		},
+	})
 	tests := []struct {
 		id          component.ID
 		expected    component.Config
@@ -41,17 +58,8 @@ func TestLoadConfigLegacy(t *testing.T) {
 			expected: &Config{
 				Config: healthcheck.Config{
 					LegacyConfig: healthcheck.HTTPLegacyConfig{
-						ServerConfig: confighttp.ServerConfig{
-							Endpoint: "localhost:13",
-							TLS: configoptional.Some(configtls.ServerConfig{
-								Config: configtls.Config{
-									CAFile:   "/path/to/ca",
-									CertFile: "/path/to/cert",
-									KeyFile:  "/path/to/key",
-								},
-							}),
-						},
-						Path: "/",
+						ServerConfig: serverConfig,
+						Path:         "/",
 						CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
 							Enabled:                  false,
 							Interval:                 "5m",
@@ -119,10 +127,10 @@ func TestLoadConfigV2WithoutGate(t *testing.T) {
 }
 
 func TestLoadConfigV2WithGate(t *testing.T) {
-	prev := useComponentStatusGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(useComponentStatusGate.ID(), true))
+	prev := metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(useComponentStatusGate.ID(), prev))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.ID(), prev))
 	})
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -134,13 +142,31 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.NoError(t, xconfmap.Validate(cfg))
+	legacyServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	legacyServerConfig.WriteTimeout = 0
+	legacyServerConfig.ReadHeaderTimeout = 0
+	legacyServerConfig.IdleTimeout = 0
+	legacyServerConfig.KeepAlivesEnabled = false
+	legacyServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:13133",
+	}
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpServerConfig.WriteTimeout = 0
+	httpServerConfig.ReadHeaderTimeout = 0
+	httpServerConfig.IdleTimeout = 0
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:13133",
+	}
+	httpServerConfig.KeepAlivesEnabled = true
 	assert.Equal(t, &Config{
 		Config: healthcheck.Config{
 			LegacyConfig: healthcheck.HTTPLegacyConfig{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:13133",
-				},
-				Path: "/",
+				ServerConfig: legacyServerConfig,
+				Path:         "/",
 				CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
 					Enabled:                  false,
 					Interval:                 "5m",
@@ -148,9 +174,7 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 				},
 			},
 			HTTPConfig: &healthcheck.HTTPConfig{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:13133",
-				},
+				ServerConfig: httpServerConfig,
 				Status: healthcheck.PathConfig{
 					Enabled: true,
 					Path:    "/status",
@@ -166,6 +190,7 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 						Endpoint:  "localhost:13132",
 						Transport: confignet.TransportTypeTCP,
 					},
+					Keepalive: configoptional.Some(configgrpc.NewDefaultKeepaliveServerConfig()),
 				},
 			},
 			ComponentHealthConfig: &healthcheck.ComponentHealthConfig{

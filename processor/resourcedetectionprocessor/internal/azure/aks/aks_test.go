@@ -31,7 +31,7 @@ func TestDetector_Detect_K8s_Azure(t *testing.T) {
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	assert.Equal(t, map[string]any{
 		"cloud.provider": "azure",
-		"cloud.platform": "azure_aks",
+		"cloud.platform": "azure.aks",
 	}, res.Attributes().AsRaw(), "Resource attrs returned are incorrect")
 }
 

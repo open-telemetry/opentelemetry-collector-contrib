@@ -19,11 +19,13 @@ import (
 	"sync"
 	"time"
 
+	keystore "github.com/pavlo-v-chernykh/keystore-go/v4"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
+	"software.sslmate.com/src/go-pkcs12"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver/internal/metadata"
 )
@@ -100,6 +102,23 @@ func validateFilepath(filePath string) error {
 	return nil
 }
 
+// resolveFileFormat returns the effective FileFormat for a target.
+// If format is auto (or the zero value ""), it infers from the file extension.
+func resolveFileFormat(format FileFormat, filePath string) FileFormat {
+	if format != FileFormatAuto && format != "" {
+		return format
+	}
+	ext := strings.ToLower(filepath.Ext(filePath))
+	switch ext {
+	case ".jks":
+		return FileFormatJKS
+	case ".p12", ".pfx":
+		return FileFormatPKCS12
+	default:
+		return FileFormatPEM
+	}
+}
+
 func getConnectionState(endpoint string) (tls.ConnectionState, error) {
 	conn, err := tls.Dial("tcp", endpoint, &tls.Config{InsecureSkipVerify: true})
 	if err != nil {
@@ -107,6 +126,44 @@ func getConnectionState(endpoint string) (tls.ConnectionState, error) {
 	}
 	defer conn.Close()
 	return conn.ConnectionState(), nil
+}
+
+// extractCertMetrics records the tlscheck.time_left metric for a single leaf certificate.
+// target is the resource label (endpoint string or file path).
+func (s *scraper) extractCertMetrics(target string, cert *x509.Certificate, metrics *pmetric.Metrics, mux *sync.Mutex) {
+	issuer := cert.Issuer.String()
+	commonName := cert.Subject.CommonName
+
+	sans := make([]any, 0, len(cert.DNSNames)+len(cert.IPAddresses)+len(cert.URIs)+len(cert.EmailAddresses))
+	for _, ip := range cert.IPAddresses {
+		sans = append(sans, ip.String())
+	}
+	for _, uri := range cert.URIs {
+		sans = append(sans, uri.String())
+	}
+	for _, dnsName := range cert.DNSNames {
+		sans = append(sans, dnsName)
+	}
+	for _, emailAddress := range cert.EmailAddresses {
+		sans = append(sans, emailAddress)
+	}
+
+	currentTime := time.Now()
+	timeLeft := cert.NotAfter.Sub(currentTime).Seconds()
+	timeLeftInt := int64(timeLeft)
+	now := pcommon.NewTimestampFromTime(currentTime)
+
+	// Build per-certificate metrics outside the critical section to reduce lock contention.
+	mb := metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.NewTimestampFromTime(currentTime)))
+	rb := mb.NewResourceBuilder()
+	rb.SetTlscheckTarget(target)
+	mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, sans)
+	resourceMetrics := mb.Emit(metadata.WithResource(rb.Emit()))
+
+	// Only guard the mutation of the shared metrics object with the mutex.
+	mux.Lock()
+	resourceMetrics.ResourceMetrics().At(0).MoveTo(metrics.ResourceMetrics().AppendEmpty())
+	mux.Unlock()
 }
 
 func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, wg *sync.WaitGroup, mux *sync.Mutex, errs chan error) {
@@ -132,55 +189,32 @@ func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, wg *
 		return
 	}
 
-	cert := state.PeerCertificates[0]
-	issuer := cert.Issuer.String()
-	commonName := cert.Subject.CommonName
-	sans := make([]any, len(cert.DNSNames)+len(cert.IPAddresses)+len(cert.URIs)+len(cert.EmailAddresses))
-	i := 0
-	for _, ip := range cert.IPAddresses {
-		sans[i] = ip.String()
-		i++
-	}
-
-	for _, uri := range cert.URIs {
-		sans[i] = uri.String()
-		i++
-	}
-
-	for _, dnsName := range cert.DNSNames {
-		sans[i] = dnsName
-		i++
-	}
-
-	for _, emailAddress := range cert.EmailAddresses {
-		sans[i] = emailAddress
-		i++
-	}
-
-	currentTime := time.Now()
-	timeLeft := cert.NotAfter.Sub(currentTime).Seconds()
-	timeLeftInt := int64(timeLeft)
-	now := pcommon.NewTimestampFromTime(time.Now())
-
-	mux.Lock()
-	defer mux.Unlock()
-
-	mb := metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.NewTimestampFromTime(time.Now())))
-	rb := mb.NewResourceBuilder()
-	rb.SetTlscheckTarget(endpoint)
-	mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, sans)
-	resourceMetrics := mb.Emit(metadata.WithResource(rb.Emit()))
-	resourceMetrics.ResourceMetrics().At(0).MoveTo(metrics.ResourceMetrics().AppendEmpty())
+	s.extractCertMetrics(endpoint, state.PeerCertificates[0], metrics, mux)
 }
 
-func (s *scraper) scrapeFile(filePath string, metrics *pmetric.Metrics, wg *sync.WaitGroup, mux *sync.Mutex, errs chan error) {
+func (s *scraper) scrapeFile(target *CertificateTarget, metrics *pmetric.Metrics, wg *sync.WaitGroup, mux *sync.Mutex, errs chan error) {
 	defer wg.Done()
+	filePath := target.FilePath
+
 	if err := validateFilepath(filePath); err != nil {
 		s.settings.Logger.Error("Failed to validate certificate file", zap.String("file_path", filePath), zap.Error(err))
 		errs <- err
 		return
 	}
 
+	format := resolveFileFormat(target.FileFormat, filePath)
+
+	switch format {
+	case FileFormatJKS:
+		s.scrapeJKS(target, metrics, mux, errs)
+	case FileFormatPKCS12:
+		s.scrapePKCS12(target, metrics, mux, errs)
+	default:
+		s.scrapePEM(filePath, metrics, mux, errs)
+	}
+}
+
+func (s *scraper) scrapePEM(filePath string, metrics *pmetric.Metrics, mux *sync.Mutex, errs chan error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		s.settings.Logger.Error("Failed to open certificate file", zap.String("file_path", filePath), zap.Error(err))
@@ -219,52 +253,119 @@ func (s *scraper) scrapeFile(filePath string, metrics *pmetric.Metrics, wg *sync
 	}
 
 	if len(certs) == 0 {
-		s.settings.Logger.Error("No valid certificates found in file", zap.String("file_path", filePath))
+		err := fmt.Errorf("no valid certificates found in PEM file: %s", filePath)
+		s.settings.Logger.Error(err.Error(), zap.String("file_path", filePath))
 		errs <- err
 		return
 	}
 
 	s.settings.Logger.Debug("Found certificates in chain", zap.String("file_path", filePath), zap.Int("count", len(certs)))
 
-	cert := certs[0] // Use the leaf certificate
-	issuer := cert.Issuer.String()
-	commonName := cert.Subject.CommonName
-	sans := make([]any, len(cert.DNSNames)+len(cert.IPAddresses)+len(cert.URIs)+len(cert.EmailAddresses))
-	i := 0
-	for _, ip := range cert.IPAddresses {
-		sans[i] = ip.String()
-		i++
+	// Use the leaf certificate (first in file)
+	s.extractCertMetrics(filePath, certs[0], metrics, mux)
+}
+
+func (s *scraper) scrapeJKS(target *CertificateTarget, metrics *pmetric.Metrics, mux *sync.Mutex, errs chan error) {
+	filePath := target.FilePath
+	password := []byte(string(target.Password))
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		s.settings.Logger.Error("Failed to open JKS file", zap.String("file_path", filePath), zap.Error(err))
+		errs <- err
+		return
+	}
+	defer file.Close()
+
+	ks := keystore.New()
+	if err := ks.Load(file, password); err != nil {
+		s.settings.Logger.Error("Failed to load JKS keystore", zap.String("file_path", filePath), zap.Error(err))
+		errs <- err
+		return
 	}
 
-	for _, uri := range cert.URIs {
-		sans[i] = uri.String()
-		i++
+	aliases := ks.Aliases()
+	if len(aliases) == 0 {
+		err := fmt.Errorf("no entries found in JKS keystore: %s", filePath)
+		s.settings.Logger.Error(err.Error(), zap.String("file_path", filePath))
+		errs <- err
+		return
 	}
 
-	for _, dnsName := range cert.DNSNames {
-		sans[i] = dnsName
-		i++
+	foundAny := false
+	var lastAliasErr error
+	for _, alias := range aliases {
+		if entry, err := ks.GetTrustedCertificateEntry(alias); err == nil {
+			cert, parseErr := x509.ParseCertificate(entry.Certificate.Content)
+			if parseErr != nil {
+				s.settings.Logger.Warn("Failed to parse trusted certificate in JKS",
+					zap.String("file_path", filePath),
+					zap.String("alias", alias),
+					zap.Error(parseErr))
+				continue
+			}
+			s.extractCertMetrics(filePath, cert, metrics, mux)
+			foundAny = true
+		} else if entry, err := ks.GetPrivateKeyEntry(alias, password); err == nil {
+			if len(entry.CertificateChain) == 0 {
+				continue
+			}
+			// First cert in the chain is the leaf
+			cert, parseErr := x509.ParseCertificate(entry.CertificateChain[0].Content)
+			if parseErr != nil {
+				s.settings.Logger.Warn("Failed to parse private key entry certificate in JKS",
+					zap.String("file_path", filePath),
+					zap.String("alias", alias),
+					zap.Error(parseErr))
+				continue
+			}
+			s.extractCertMetrics(filePath, cert, metrics, mux)
+			foundAny = true
+		} else {
+			lastAliasErr = err
+			s.settings.Logger.Debug("Failed to read alias from JKS keystore",
+				zap.String("file_path", filePath),
+				zap.String("alias", alias),
+				zap.Error(err))
+		}
 	}
 
-	for _, emailAddress := range cert.EmailAddresses {
-		sans[i] = emailAddress
-		i++
+	if !foundAny {
+		err := fmt.Errorf("no parseable certificates found in JKS keystore: %s", filePath)
+		if lastAliasErr != nil {
+			err = fmt.Errorf("%w: last alias error: %w", err, lastAliasErr)
+		}
+		s.settings.Logger.Error(err.Error(), zap.String("file_path", filePath))
+		errs <- err
+	}
+}
+
+func (s *scraper) scrapePKCS12(target *CertificateTarget, metrics *pmetric.Metrics, mux *sync.Mutex, errs chan error) {
+	filePath := target.FilePath
+	password := string(target.Password)
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		s.settings.Logger.Error("Failed to read PKCS#12 file", zap.String("file_path", filePath), zap.Error(err))
+		errs <- err
+		return
 	}
 
-	currentTime := time.Now()
-	timeLeft := cert.NotAfter.Sub(currentTime).Seconds()
-	timeLeftInt := int64(timeLeft)
-	now := pcommon.NewTimestampFromTime(time.Now())
+	_, cert, _, err := pkcs12.DecodeChain(data, password)
+	if err != nil {
+		s.settings.Logger.Error("Failed to decode PKCS#12 keystore", zap.String("file_path", filePath), zap.Error(err))
+		errs <- err
+		return
+	}
 
-	mux.Lock()
-	defer mux.Unlock()
+	if cert == nil {
+		err := fmt.Errorf("no leaf certificate found in PKCS#12 file: %s", filePath)
+		s.settings.Logger.Error(err.Error(), zap.String("file_path", filePath))
+		errs <- err
+		return
+	}
 
-	mb := metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.NewTimestampFromTime(time.Now())))
-	rb := mb.NewResourceBuilder()
-	rb.SetTlscheckTarget(filePath)
-	mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, sans)
-	resourceMetrics := mb.Emit(metadata.WithResource(rb.Emit()))
-	resourceMetrics.ResourceMetrics().At(0).MoveTo(metrics.ResourceMetrics().AppendEmpty())
+	s.extractCertMetrics(filePath, cert, metrics, mux)
 }
 
 func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
@@ -288,7 +389,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	for _, target := range s.cfg.Targets {
 		if target.FilePath != "" {
-			go s.scrapeFile(target.FilePath, &metrics, &wg, &mux, errChan)
+			go s.scrapeFile(target, &metrics, &wg, &mux, errChan)
 		} else {
 			go s.scrapeEndpoint(target.Endpoint, &metrics, &wg, &mux, errChan)
 		}

@@ -1,13 +1,14 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package httpserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -17,7 +18,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -41,18 +44,27 @@ func TestServerStart(t *testing.T) {
 					w.WriteHeader(http.StatusOK)
 				}))
 				defer server.Close()
+				serverConfig := confighttp.NewDefaultServerConfig()
+				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+				serverConfig.WriteTimeout = 0
+				serverConfig.ReadHeaderTimeout = 0
+				serverConfig.IdleTimeout = 0
+				serverConfig.KeepAlivesEnabled = false
+				serverConfig.NetAddr = confignet.AddrConfig{
+					Transport: "tcp",
+					Endpoint:  DefaultServerEndpoint,
+				}
 				s := NewServer(
 					logger,
 					&mockSerializer{},
 					&Config{
-						ServerConfig: confighttp.ServerConfig{
-							Endpoint: DefaultServerEndpoint,
-						},
-						Path: "/metadata",
+						ServerConfig: serverConfig,
+						Path:         "/metadata",
 					},
 					"test-hostname",
 					"test-uuid",
 					payload.OtelCollector{},
+					componenttest.NewNopTelemetrySettings(),
 				)
 				return s, logs
 			},
@@ -63,7 +75,7 @@ func TestServerStart(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s, logs := tt.setupServer()
-			s.Start()
+			require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 
 			// Verify the logs
 			for _, expectedLog := range tt.expectedLogs {
@@ -163,18 +175,27 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger, logs, serializer := tt.setupTest()
+			serverConfig := confighttp.NewDefaultServerConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			serverConfig.WriteTimeout = 0
+			serverConfig.ReadHeaderTimeout = 0
+			serverConfig.IdleTimeout = 0
+			serverConfig.KeepAlivesEnabled = false
+			serverConfig.NetAddr = confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  DefaultServerEndpoint,
+			}
 			s := NewServer(
 				logger,
 				serializer,
 				&Config{
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: DefaultServerEndpoint,
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				"test-hostname",
 				"test-uuid",
 				payload.OtelCollector{},
+				componenttest.NewNopTelemetrySettings(),
 			)
 			ocPayload, err := s.SendPayload()
 			if tt.expectedError != "" {
@@ -220,6 +241,7 @@ const successfulInstanceResponse = `{
     "health_status": "",
     "collector_resource_attributes": {},
     "collector_deployment_type": "unknown",
+    "collector_installation_method": "",
     "ttl": 900000000000
   },
   "uuid": "test-uuid"
@@ -320,9 +342,9 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 	}()
 
 	// Track the number of concurrent calls to SendMetadata
-	var callCount int32
-	var maxConcurrentCalls int32
-	var currentConcurrentCalls int32
+	var callCount atomic.Int32
+	var maxConcurrentCalls atomic.Int32
+	var currentConcurrentCalls atomic.Int32
 
 	core, _ := observer.New(zapcore.InfoLevel)
 	logger := zap.New(core)
@@ -330,12 +352,12 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 	serializer := &mockSerializer{
 		sendMetadataFunc: func(any) error {
 			// Increment current concurrent calls
-			current := atomic.AddInt32(&currentConcurrentCalls, 1)
+			current := currentConcurrentCalls.Add(1)
 
 			// Update max if this is higher
 			for {
-				maxVal := atomic.LoadInt32(&maxConcurrentCalls)
-				if current <= maxVal || atomic.CompareAndSwapInt32(&maxConcurrentCalls, maxVal, current) {
+				maxVal := maxConcurrentCalls.Load()
+				if current <= maxVal || maxConcurrentCalls.CompareAndSwap(maxVal, current) {
 					break
 				}
 			}
@@ -344,8 +366,8 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 			time.Sleep(10 * time.Millisecond)
 
 			// Decrement current concurrent calls and increment total call count
-			atomic.AddInt32(&currentConcurrentCalls, -1)
-			atomic.AddInt32(&callCount, 1)
+			currentConcurrentCalls.Add(-1)
+			callCount.Add(1)
 
 			return nil
 		},
@@ -392,10 +414,10 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 	}
 
 	// Verify the expected number of serializer calls were made
-	assert.Equal(t, int32(numRequests), atomic.LoadInt32(&callCount), "Should have made %d serializer calls", numRequests)
+	assert.Equal(t, int32(numRequests), callCount.Load(), "Should have made %d serializer calls", numRequests)
 
 	// Log the maximum concurrent calls for debugging
-	t.Logf("Maximum concurrent calls to SendMetadata: %d", atomic.LoadInt32(&maxConcurrentCalls))
+	t.Logf("Maximum concurrent calls to SendMetadata: %d", maxConcurrentCalls.Load())
 
 	// Note: This test verifies that concurrent calls don't crash or deadlock,
 	// but it doesn't guarantee thread safety of the underlying serializer.
@@ -413,13 +435,13 @@ func TestServerStop(t *testing.T) {
 		simulateSlowStop bool
 	}{
 		{
-			name: "Stop with nil server - should be no-op",
+			name: "Stop with nil listenClose - should be no-op",
 			setupServer: func() (*Server, *observer.ObservedLogs) {
 				core, logs := observer.New(zapcore.InfoLevel)
 				logger := zap.New(core)
 				return &Server{
-					logger: logger,
-					server: nil, // nil server
+					logger:      logger,
+					listenClose: nil, // nil listenClose
 				}, logs
 			},
 			contextSetup: func() (context.Context, context.CancelFunc) {
@@ -440,14 +462,13 @@ func TestServerStop(t *testing.T) {
 					w.WriteHeader(http.StatusOK)
 				})
 				server := &http.Server{
-					Addr:              "127.0.0.1:0", // Use any available port
 					Handler:           mux,
 					ReadHeaderTimeout: 10 * time.Millisecond,
 				}
 
 				return &Server{
-					logger: logger,
-					server: server,
+					logger:      logger,
+					listenClose: server.Shutdown,
 				}, logs
 			},
 			contextSetup: func() (context.Context, context.CancelFunc) {
@@ -464,22 +485,8 @@ func TestServerStop(t *testing.T) {
 			ctx, cancel := tt.contextSetup()
 			defer cancel()
 
-			if srv.server != nil && srv.server.Addr != "" {
-				listener, err := net.Listen("tcp", srv.server.Addr)
-				require.NoError(t, err)
-				go func() {
-					if err := srv.server.Serve(listener); err != nil && err != http.ErrServerClosed {
-						t.Logf("Unexpected server error: %v", err)
-					}
-				}()
-
-				if tt.simulateSlowStop {
-					cancel()
-					resp, err := http.Get("http://" + srv.server.Addr + "/block")
-					if err == nil {
-						_ = resp.Body.Close()
-					}
-				}
+			if tt.simulateSlowStop {
+				cancel()
 			}
 
 			start := time.Now()
@@ -528,13 +535,13 @@ func TestServerStopChannelBehavior(t *testing.T) {
 	}
 
 	srv := &Server{
-		logger: logger,
-		server: server,
+		logger:      logger,
+		listenClose: server.Shutdown,
 	}
 
 	// Start the server
 	go func() {
-		if err := srv.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			t.Errorf("Unexpected server error: %v", err)
 		}
 	}()
@@ -586,13 +593,13 @@ func TestServerStopConcurrency(t *testing.T) {
 	}
 
 	srv := &Server{
-		logger: logger,
-		server: server,
+		logger:      logger,
+		listenClose: server.Shutdown,
 	}
 
 	// Start the server
 	go func() {
-		if err := srv.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			t.Logf("Unexpected server error: %v", err)
 		}
 	}()
@@ -643,11 +650,19 @@ func TestServerStopConcurrency(t *testing.T) {
 
 func TestServer_SendPayload(t *testing.T) {
 	logger := zap.NewNop()
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:0",
+	}
 	config := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:0",
-		},
-		Path: "/test",
+		ServerConfig: serverConfig,
+		Path:         "/test",
 	}
 	pl := payload.OtelCollector{}           // or fill as needed
 	serializer := &mockSerializer{state: 1} // 1 == defaultforwarder.Started
@@ -657,7 +672,7 @@ func TestServer_SendPayload(t *testing.T) {
 		return nil
 	}
 
-	server := NewServer(logger, serializer, config, "host", "uuid", pl)
+	server := NewServer(logger, serializer, config, "host", "uuid", pl, componenttest.NewNopTelemetrySettings())
 
 	result, err := server.SendPayload()
 	assert.NoError(t, err)
@@ -671,16 +686,24 @@ func TestServer_SendPayload(t *testing.T) {
 
 func TestServer_SendPayload_ForwarderNotStarted(t *testing.T) {
 	logger := zap.NewNop()
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:0",
+	}
 	config := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:0",
-		},
-		Path: "/test",
+		ServerConfig: serverConfig,
+		Path:         "/test",
 	}
 	pl := payload.OtelCollector{}
 	serializer := &mockSerializer{state: 0} // 0 != defaultforwarder.Started
 
-	server := NewServer(logger, serializer, config, "host", "uuid", pl)
+	server := NewServer(logger, serializer, config, "host", "uuid", pl, componenttest.NewNopTelemetrySettings())
 
 	result, err := server.SendPayload()
 	assert.Error(t, err)
@@ -732,18 +755,27 @@ func TestNewServerErrorPaths(t *testing.T) {
 		logger := zap.New(core)
 
 		// Create server but don't start it
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: "tcp",
+			Endpoint:  "localhost:0", // Valid endpoint
+		}
 		s := NewServer(
 			logger,
 			&mockSerializer{},
 			&Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:0", // Valid endpoint
-				},
-				Path: "/metadata",
+				ServerConfig: serverConfig,
+				Path:         "/metadata",
 			},
 			"test-hostname",
 			"test-uuid",
 			payload.OtelCollector{},
+			componenttest.NewNopTelemetrySettings(),
 		)
 
 		// Stop should not panic even if server was never started
@@ -752,17 +784,17 @@ func TestNewServerErrorPaths(t *testing.T) {
 		})
 	})
 
-	t.Run("Stop server with nil server", func(t *testing.T) {
+	t.Run("Stop server with nil listenClose", func(t *testing.T) {
 		core, _ := observer.New(zapcore.InfoLevel)
 		logger := zap.New(core)
 
-		// Create a server instance with nil server field
+		// Create a server instance with nil listenClose field
 		s := &Server{
-			logger: logger,
-			server: nil,
+			logger:      logger,
+			listenClose: nil,
 		}
 
-		// Stop should not panic with nil server
+		// Stop should not panic with nil listenClose
 		assert.NotPanics(t, func() {
 			s.Stop(t.Context())
 		})

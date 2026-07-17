@@ -4,6 +4,7 @@
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
@@ -45,11 +46,30 @@ type Config struct {
 	// RoutingKey is a single routing key value
 	RoutingKey string `mapstructure:"routing_key"`
 
-	// RoutingAttributes creates a composite routing key, based on several resource attributes of the application.
+	// RoutingAttributes creates a composite routing key from the listed attributes.
 	//
-	// Supports all attributes available (both resource and span), as well as the pseudo attributes "span.kind" and
+	// For traces, attributes can come from resource, scope, or span, plus the pseudo attributes "span.kind" and
 	// "span.name".
+	// For logs, attributes can come from resource, scope, or log record attributes, plus the pseudo attributes
+	// "log.severity" and "log.body".
+	// For metrics, attributes can come from resource, scope, or datapoint attributes.
+	// Keys are encoded as "name=value|name=value|" in the order configured. Missing attributes are encoded as "name=|".
+	// Non-string values are deterministically stringified.
 	RoutingAttributes []string `mapstructure:"routing_attributes"`
+}
+
+// Validate checks if the exporter configuration is valid.
+func (c *Config) Validate() error {
+	// routing_attributes only has meaning when routing_key=attributes.
+	if c.RoutingKey == attrRoutingStr && len(c.RoutingAttributes) == 0 {
+		return fmt.Errorf("routing_attributes must be specified when routing_key is %q", attrRoutingStr)
+	}
+
+	if c.RoutingKey != attrRoutingStr && len(c.RoutingAttributes) > 0 {
+		return fmt.Errorf("routing_attributes can only be used when routing_key is %q; got %q. Remove routing_attributes or set routing_key to %q", attrRoutingStr, c.RoutingKey, attrRoutingStr)
+	}
+
+	return nil
 }
 
 // Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.
@@ -103,4 +123,5 @@ type AWSCloudMapResolver struct {
 	Interval      time.Duration            `mapstructure:"interval"`
 	Timeout       time.Duration            `mapstructure:"timeout"`
 	Port          *uint16                  `mapstructure:"port"`
+	OwnerAccount  *string                  `mapstructure:"owner_account"`
 }

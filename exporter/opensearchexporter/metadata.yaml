@@ -1,4 +1,5 @@
 type: opensearch
+display_name: OpenSearch Exporter
 
 status:
   class: exporter

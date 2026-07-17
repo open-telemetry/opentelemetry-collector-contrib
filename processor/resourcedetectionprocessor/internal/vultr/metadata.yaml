@@ -8,6 +8,10 @@ status:
     active: [Aneurysm9, dashpole, paulojmdias]
 
 resource_attributes:
+  cloud.platform:
+    description: The cloud.platform
+    enabled: false
+    type: string
   cloud.provider:
     description: The cloud.provider
     enabled: true

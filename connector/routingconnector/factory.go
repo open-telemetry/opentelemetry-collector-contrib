@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package routingconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
 
@@ -15,6 +15,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
+
+func defaultErrorMode() ottl.ErrorMode {
+	if metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.IsEnabled() {
+		return ottl.IgnoreError
+	}
+	return ottl.PropagateError
+}
 
 // NewFactory returns a ConnectorFactory.
 func NewFactory() connector.Factory {
@@ -30,7 +37,7 @@ func NewFactory() connector.Factory {
 // createDefaultConfig creates the default configuration.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ErrorMode: ottl.PropagateError,
+		ErrorMode: defaultErrorMode(),
 	}
 }
 

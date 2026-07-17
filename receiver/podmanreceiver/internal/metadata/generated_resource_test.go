@@ -32,26 +32,25 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("container.id")
+			containerIDAttrVal, ok := res.Attributes().Get("container.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "container.id-val", val.Str())
+				assert.Equal(t, "container.id-val", containerIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("container.image.name")
+			containerImageNameAttrVal, ok := res.Attributes().Get("container.image.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "container.image.name-val", val.Str())
+				assert.Equal(t, "container.image.name-val", containerImageNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("container.name")
+			containerNameAttrVal, ok := res.Attributes().Get("container.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "container.name-val", val.Str())
+				assert.Equal(t, "container.name-val", containerNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("container.runtime")
+			containerRuntimeAttrVal, ok := res.Attributes().Get("container.runtime")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "container.runtime-val", val.Str())
+				assert.Equal(t, "container.runtime-val", containerRuntimeAttrVal.Str())
 			}
 		})
 	}

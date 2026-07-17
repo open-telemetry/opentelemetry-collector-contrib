@@ -1,4 +1,9 @@
+display_name: AVRO Log Encoding Extension
 type: avro_log_encoding
+
+description: >
+  The `avrolog` encoding extension is used to unmarshal AVRO and insert it into the body of a log record. Marshalling
+  is not supported.
 
 status:
   disable_codecov_badge: true

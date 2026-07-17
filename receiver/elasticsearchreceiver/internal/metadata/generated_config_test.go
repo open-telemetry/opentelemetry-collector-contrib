@@ -20,104 +20,384 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ElasticsearchBreakerMemoryEstimated:                       MetricConfig{Enabled: true},
-					ElasticsearchBreakerMemoryLimit:                           MetricConfig{Enabled: true},
-					ElasticsearchBreakerTripped:                               MetricConfig{Enabled: true},
-					ElasticsearchClusterDataNodes:                             MetricConfig{Enabled: true},
-					ElasticsearchClusterHealth:                                MetricConfig{Enabled: true},
-					ElasticsearchClusterInFlightFetch:                         MetricConfig{Enabled: true},
-					ElasticsearchClusterIndicesCacheEvictions:                 MetricConfig{Enabled: true},
-					ElasticsearchClusterNodes:                                 MetricConfig{Enabled: true},
-					ElasticsearchClusterPendingTasks:                          MetricConfig{Enabled: true},
-					ElasticsearchClusterPublishedStatesDifferences:            MetricConfig{Enabled: true},
-					ElasticsearchClusterPublishedStatesFull:                   MetricConfig{Enabled: true},
-					ElasticsearchClusterShards:                                MetricConfig{Enabled: true},
-					ElasticsearchClusterStateQueue:                            MetricConfig{Enabled: true},
-					ElasticsearchClusterStateUpdateCount:                      MetricConfig{Enabled: true},
-					ElasticsearchClusterStateUpdateTime:                       MetricConfig{Enabled: true},
-					ElasticsearchIndexCacheEvictions:                          MetricConfig{Enabled: true},
-					ElasticsearchIndexCacheMemoryUsage:                        MetricConfig{Enabled: true},
-					ElasticsearchIndexCacheSize:                               MetricConfig{Enabled: true},
-					ElasticsearchIndexDocuments:                               MetricConfig{Enabled: true},
-					ElasticsearchIndexOperationsCompleted:                     MetricConfig{Enabled: true},
-					ElasticsearchIndexOperationsMergeCurrent:                  MetricConfig{Enabled: true},
-					ElasticsearchIndexOperationsMergeDocsCount:                MetricConfig{Enabled: true},
-					ElasticsearchIndexOperationsMergeSize:                     MetricConfig{Enabled: true},
-					ElasticsearchIndexOperationsTime:                          MetricConfig{Enabled: true},
-					ElasticsearchIndexSegmentsCount:                           MetricConfig{Enabled: true},
-					ElasticsearchIndexSegmentsMemory:                          MetricConfig{Enabled: true},
-					ElasticsearchIndexSegmentsSize:                            MetricConfig{Enabled: true},
-					ElasticsearchIndexShardsSize:                              MetricConfig{Enabled: true},
-					ElasticsearchIndexTranslogOperations:                      MetricConfig{Enabled: true},
-					ElasticsearchIndexTranslogSize:                            MetricConfig{Enabled: true},
-					ElasticsearchIndexingPressureMemoryLimit:                  MetricConfig{Enabled: true},
-					ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: MetricConfig{Enabled: true},
-					ElasticsearchIndexingPressureMemoryTotalReplicaRejections: MetricConfig{Enabled: true},
-					ElasticsearchMemoryIndexingPressure:                       MetricConfig{Enabled: true},
-					ElasticsearchNodeCacheCount:                               MetricConfig{Enabled: true},
-					ElasticsearchNodeCacheEvictions:                           MetricConfig{Enabled: true},
-					ElasticsearchNodeCacheMemoryUsage:                         MetricConfig{Enabled: true},
-					ElasticsearchNodeCacheSize:                                MetricConfig{Enabled: true},
-					ElasticsearchNodeClusterConnections:                       MetricConfig{Enabled: true},
-					ElasticsearchNodeClusterIo:                                MetricConfig{Enabled: true},
-					ElasticsearchNodeDiskIoRead:                               MetricConfig{Enabled: true},
-					ElasticsearchNodeDiskIoWrite:                              MetricConfig{Enabled: true},
-					ElasticsearchNodeDocuments:                                MetricConfig{Enabled: true},
-					ElasticsearchNodeFsDiskAvailable:                          MetricConfig{Enabled: true},
-					ElasticsearchNodeFsDiskFree:                               MetricConfig{Enabled: true},
-					ElasticsearchNodeFsDiskTotal:                              MetricConfig{Enabled: true},
-					ElasticsearchNodeHTTPConnections:                          MetricConfig{Enabled: true},
-					ElasticsearchNodeIngestDocuments:                          MetricConfig{Enabled: true},
-					ElasticsearchNodeIngestDocumentsCurrent:                   MetricConfig{Enabled: true},
-					ElasticsearchNodeIngestOperationsFailed:                   MetricConfig{Enabled: true},
-					ElasticsearchNodeOpenFiles:                                MetricConfig{Enabled: true},
-					ElasticsearchNodeOperationsCompleted:                      MetricConfig{Enabled: true},
-					ElasticsearchNodeOperationsCurrent:                        MetricConfig{Enabled: true},
-					ElasticsearchNodeOperationsGetCompleted:                   MetricConfig{Enabled: true},
-					ElasticsearchNodeOperationsGetTime:                        MetricConfig{Enabled: true},
-					ElasticsearchNodeOperationsTime:                           MetricConfig{Enabled: true},
-					ElasticsearchNodePipelineIngestDocumentsCurrent:           MetricConfig{Enabled: true},
-					ElasticsearchNodePipelineIngestDocumentsPreprocessed:      MetricConfig{Enabled: true},
-					ElasticsearchNodePipelineIngestOperationsFailed:           MetricConfig{Enabled: true},
-					ElasticsearchNodeScriptCacheEvictions:                     MetricConfig{Enabled: true},
-					ElasticsearchNodeScriptCompilationLimitTriggered:          MetricConfig{Enabled: true},
-					ElasticsearchNodeScriptCompilations:                       MetricConfig{Enabled: true},
-					ElasticsearchNodeSegmentsMemory:                           MetricConfig{Enabled: true},
-					ElasticsearchNodeShardsDataSetSize:                        MetricConfig{Enabled: true},
-					ElasticsearchNodeShardsReservedSize:                       MetricConfig{Enabled: true},
-					ElasticsearchNodeShardsSize:                               MetricConfig{Enabled: true},
-					ElasticsearchNodeThreadPoolTasksFinished:                  MetricConfig{Enabled: true},
-					ElasticsearchNodeThreadPoolTasksQueued:                    MetricConfig{Enabled: true},
-					ElasticsearchNodeThreadPoolThreads:                        MetricConfig{Enabled: true},
-					ElasticsearchNodeTranslogOperations:                       MetricConfig{Enabled: true},
-					ElasticsearchNodeTranslogSize:                             MetricConfig{Enabled: true},
-					ElasticsearchNodeTranslogUncommittedSize:                  MetricConfig{Enabled: true},
-					ElasticsearchOsCPULoadAvg15m:                              MetricConfig{Enabled: true},
-					ElasticsearchOsCPULoadAvg1m:                               MetricConfig{Enabled: true},
-					ElasticsearchOsCPULoadAvg5m:                               MetricConfig{Enabled: true},
-					ElasticsearchOsCPUUsage:                                   MetricConfig{Enabled: true},
-					ElasticsearchOsMemory:                                     MetricConfig{Enabled: true},
-					ElasticsearchProcessCPUTime:                               MetricConfig{Enabled: true},
-					ElasticsearchProcessCPUUsage:                              MetricConfig{Enabled: true},
-					ElasticsearchProcessMemoryVirtual:                         MetricConfig{Enabled: true},
-					JvmClassesLoaded:                                          MetricConfig{Enabled: true},
-					JvmGcCollectionsCount:                                     MetricConfig{Enabled: true},
-					JvmGcCollectionsElapsed:                                   MetricConfig{Enabled: true},
-					JvmMemoryHeapCommitted:                                    MetricConfig{Enabled: true},
-					JvmMemoryHeapMax:                                          MetricConfig{Enabled: true},
-					JvmMemoryHeapUsed:                                         MetricConfig{Enabled: true},
-					JvmMemoryHeapUtilization:                                  MetricConfig{Enabled: true},
-					JvmMemoryNonheapCommitted:                                 MetricConfig{Enabled: true},
-					JvmMemoryNonheapUsed:                                      MetricConfig{Enabled: true},
-					JvmMemoryPoolMax:                                          MetricConfig{Enabled: true},
-					JvmMemoryPoolUsed:                                         MetricConfig{Enabled: true},
-					JvmThreadsCount:                                           MetricConfig{Enabled: true},
+					ElasticsearchBreakerMemoryEstimated: ElasticsearchBreakerMemoryEstimatedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchBreakerMemoryEstimatedMetricAttributeKey{ElasticsearchBreakerMemoryEstimatedMetricAttributeKeyCircuitBreakerName},
+					},
+					ElasticsearchBreakerMemoryLimit: ElasticsearchBreakerMemoryLimitMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchBreakerMemoryLimitMetricAttributeKey{ElasticsearchBreakerMemoryLimitMetricAttributeKeyCircuitBreakerName},
+					},
+					ElasticsearchBreakerTripped: ElasticsearchBreakerTrippedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchBreakerTrippedMetricAttributeKey{ElasticsearchBreakerTrippedMetricAttributeKeyCircuitBreakerName},
+					},
+					ElasticsearchClusterDataNodes: ElasticsearchClusterDataNodesMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchClusterHealth: ElasticsearchClusterHealthMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterHealthMetricAttributeKey{ElasticsearchClusterHealthMetricAttributeKeyHealthStatus},
+					},
+					ElasticsearchClusterInFlightFetch: ElasticsearchClusterInFlightFetchMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchClusterIndicesCacheEvictions: ElasticsearchClusterIndicesCacheEvictionsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKey{ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKeyCacheName},
+					},
+					ElasticsearchClusterNodes: ElasticsearchClusterNodesMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchClusterPendingTasks: ElasticsearchClusterPendingTasksMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchClusterPublishedStatesDifferences: ElasticsearchClusterPublishedStatesDifferencesMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKey{ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKeyClusterPublishedDifferenceState},
+					},
+					ElasticsearchClusterPublishedStatesFull: ElasticsearchClusterPublishedStatesFullMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchClusterShards: ElasticsearchClusterShardsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterShardsMetricAttributeKey{ElasticsearchClusterShardsMetricAttributeKeyShardState},
+					},
+					ElasticsearchClusterStateQueue: ElasticsearchClusterStateQueueMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterStateQueueMetricAttributeKey{ElasticsearchClusterStateQueueMetricAttributeKeyClusterStateQueueState},
+					},
+					ElasticsearchClusterStateUpdateCount: ElasticsearchClusterStateUpdateCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterStateUpdateCountMetricAttributeKey{ElasticsearchClusterStateUpdateCountMetricAttributeKeyClusterStateUpdateState},
+					},
+					ElasticsearchClusterStateUpdateTime: ElasticsearchClusterStateUpdateTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterStateUpdateTimeMetricAttributeKey{ElasticsearchClusterStateUpdateTimeMetricAttributeKeyClusterStateUpdateState, ElasticsearchClusterStateUpdateTimeMetricAttributeKeyClusterStateUpdateType},
+					},
+					ElasticsearchIndexCacheEvictions: ElasticsearchIndexCacheEvictionsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexCacheEvictionsMetricAttributeKey{ElasticsearchIndexCacheEvictionsMetricAttributeKeyCacheName, ElasticsearchIndexCacheEvictionsMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexCacheMemoryUsage: ElasticsearchIndexCacheMemoryUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexCacheMemoryUsageMetricAttributeKey{ElasticsearchIndexCacheMemoryUsageMetricAttributeKeyCacheName, ElasticsearchIndexCacheMemoryUsageMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexCacheSize: ElasticsearchIndexCacheSizeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexCacheSizeMetricAttributeKey{ElasticsearchIndexCacheSizeMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexDocuments: ElasticsearchIndexDocumentsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexDocumentsMetricAttributeKey{ElasticsearchIndexDocumentsMetricAttributeKeyDocumentState, ElasticsearchIndexDocumentsMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexOperationsCompleted: ElasticsearchIndexOperationsCompletedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsCompletedMetricAttributeKey{ElasticsearchIndexOperationsCompletedMetricAttributeKeyOperation, ElasticsearchIndexOperationsCompletedMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexOperationsMergeCurrent: ElasticsearchIndexOperationsMergeCurrentMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchIndexOperationsMergeCurrentMetricAttributeKey{ElasticsearchIndexOperationsMergeCurrentMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexOperationsMergeDocsCount: ElasticsearchIndexOperationsMergeDocsCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKey{ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexOperationsMergeSize: ElasticsearchIndexOperationsMergeSizeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsMergeSizeMetricAttributeKey{ElasticsearchIndexOperationsMergeSizeMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexOperationsTime: ElasticsearchIndexOperationsTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsTimeMetricAttributeKey{ElasticsearchIndexOperationsTimeMetricAttributeKeyOperation, ElasticsearchIndexOperationsTimeMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexSegmentsCount: ElasticsearchIndexSegmentsCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexSegmentsCountMetricAttributeKey{ElasticsearchIndexSegmentsCountMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexSegmentsMemory: ElasticsearchIndexSegmentsMemoryMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexSegmentsMemoryMetricAttributeKey{ElasticsearchIndexSegmentsMemoryMetricAttributeKeyIndexAggregationType, ElasticsearchIndexSegmentsMemoryMetricAttributeKeySegmentsMemoryObjectType},
+					},
+					ElasticsearchIndexSegmentsSize: ElasticsearchIndexSegmentsSizeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexSegmentsSizeMetricAttributeKey{ElasticsearchIndexSegmentsSizeMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexShardsSize: ElasticsearchIndexShardsSizeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexShardsSizeMetricAttributeKey{ElasticsearchIndexShardsSizeMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexTranslogOperations: ElasticsearchIndexTranslogOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexTranslogOperationsMetricAttributeKey{ElasticsearchIndexTranslogOperationsMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexTranslogSize: ElasticsearchIndexTranslogSizeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexTranslogSizeMetricAttributeKey{ElasticsearchIndexTranslogSizeMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexingPressureMemoryLimit: ElasticsearchIndexingPressureMemoryLimitMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchIndexingPressureMemoryTotalReplicaRejections: ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchMemoryIndexingPressure: ElasticsearchMemoryIndexingPressureMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchMemoryIndexingPressureMetricAttributeKey{ElasticsearchMemoryIndexingPressureMetricAttributeKeyIndexingPressureStage},
+					},
+					ElasticsearchNodeCacheCount: ElasticsearchNodeCacheCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeCacheCountMetricAttributeKey{ElasticsearchNodeCacheCountMetricAttributeKeyQueryCacheCountType},
+					},
+					ElasticsearchNodeCacheEvictions: ElasticsearchNodeCacheEvictionsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeCacheEvictionsMetricAttributeKey{ElasticsearchNodeCacheEvictionsMetricAttributeKeyCacheName},
+					},
+					ElasticsearchNodeCacheMemoryUsage: ElasticsearchNodeCacheMemoryUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeCacheMemoryUsageMetricAttributeKey{ElasticsearchNodeCacheMemoryUsageMetricAttributeKeyCacheName},
+					},
+					ElasticsearchNodeCacheSize: ElasticsearchNodeCacheSizeMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeClusterConnections: ElasticsearchNodeClusterConnectionsMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeClusterIo: ElasticsearchNodeClusterIoMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeClusterIoMetricAttributeKey{ElasticsearchNodeClusterIoMetricAttributeKeyDirection},
+					},
+					ElasticsearchNodeDiskIoRead: ElasticsearchNodeDiskIoReadMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeDiskIoWrite: ElasticsearchNodeDiskIoWriteMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeDocuments: ElasticsearchNodeDocumentsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeDocumentsMetricAttributeKey{ElasticsearchNodeDocumentsMetricAttributeKeyDocumentState},
+					},
+					ElasticsearchNodeFsDiskAvailable: ElasticsearchNodeFsDiskAvailableMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeFsDiskFree: ElasticsearchNodeFsDiskFreeMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeFsDiskTotal: ElasticsearchNodeFsDiskTotalMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeHTTPConnections: ElasticsearchNodeHTTPConnectionsMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeIngestDocuments: ElasticsearchNodeIngestDocumentsMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeIngestDocumentsCurrent: ElasticsearchNodeIngestDocumentsCurrentMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeIngestOperationsFailed: ElasticsearchNodeIngestOperationsFailedMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeOpenFiles: ElasticsearchNodeOpenFilesMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeOperationsCompleted: ElasticsearchNodeOperationsCompletedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsCompletedMetricAttributeKey{ElasticsearchNodeOperationsCompletedMetricAttributeKeyOperation},
+					},
+					ElasticsearchNodeOperationsCurrent: ElasticsearchNodeOperationsCurrentMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchNodeOperationsCurrentMetricAttributeKey{ElasticsearchNodeOperationsCurrentMetricAttributeKeyOperation},
+					},
+					ElasticsearchNodeOperationsGetCompleted: ElasticsearchNodeOperationsGetCompletedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsGetCompletedMetricAttributeKey{ElasticsearchNodeOperationsGetCompletedMetricAttributeKeyGetResult},
+					},
+					ElasticsearchNodeOperationsGetTime: ElasticsearchNodeOperationsGetTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsGetTimeMetricAttributeKey{ElasticsearchNodeOperationsGetTimeMetricAttributeKeyGetResult},
+					},
+					ElasticsearchNodeOperationsTime: ElasticsearchNodeOperationsTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsTimeMetricAttributeKey{ElasticsearchNodeOperationsTimeMetricAttributeKeyOperation},
+					},
+					ElasticsearchNodePipelineIngestDocumentsCurrent: ElasticsearchNodePipelineIngestDocumentsCurrentMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKey{ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKeyIngestPipelineName},
+					},
+					ElasticsearchNodePipelineIngestDocumentsPreprocessed: ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKey{ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKeyIngestPipelineName},
+					},
+					ElasticsearchNodePipelineIngestOperationsFailed: ElasticsearchNodePipelineIngestOperationsFailedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKey{ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKeyIngestPipelineName},
+					},
+					ElasticsearchNodeScriptCacheEvictions: ElasticsearchNodeScriptCacheEvictionsMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeScriptCompilationLimitTriggered: ElasticsearchNodeScriptCompilationLimitTriggeredMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeScriptCompilations: ElasticsearchNodeScriptCompilationsMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeSegmentsMemory: ElasticsearchNodeSegmentsMemoryMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeSegmentsMemoryMetricAttributeKey{ElasticsearchNodeSegmentsMemoryMetricAttributeKeySegmentsMemoryObjectType},
+					},
+					ElasticsearchNodeShardsDataSetSize: ElasticsearchNodeShardsDataSetSizeMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeShardsReservedSize: ElasticsearchNodeShardsReservedSizeMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeShardsSize: ElasticsearchNodeShardsSizeMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeThreadPoolTasksFinished: ElasticsearchNodeThreadPoolTasksFinishedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKey{ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKeyTaskState},
+					},
+					ElasticsearchNodeThreadPoolTasksQueued: ElasticsearchNodeThreadPoolTasksQueuedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKey{ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKeyThreadPoolName},
+					},
+					ElasticsearchNodeThreadPoolThreads: ElasticsearchNodeThreadPoolThreadsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeThreadPoolThreadsMetricAttributeKey{ElasticsearchNodeThreadPoolThreadsMetricAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolThreadsMetricAttributeKeyThreadState},
+					},
+					ElasticsearchNodeTranslogOperations: ElasticsearchNodeTranslogOperationsMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeTranslogSize: ElasticsearchNodeTranslogSizeMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchNodeTranslogUncommittedSize: ElasticsearchNodeTranslogUncommittedSizeMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchOsCPULoadAvg15m: ElasticsearchOsCPULoadAvg15mMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchOsCPULoadAvg1m: ElasticsearchOsCPULoadAvg1mMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchOsCPULoadAvg5m: ElasticsearchOsCPULoadAvg5mMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchOsCPUUsage: ElasticsearchOsCPUUsageMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchOsMemory: ElasticsearchOsMemoryMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchOsMemoryMetricAttributeKey{ElasticsearchOsMemoryMetricAttributeKeyMemoryState},
+					},
+					ElasticsearchProcessCPUTime: ElasticsearchProcessCPUTimeMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchProcessCPUUsage: ElasticsearchProcessCPUUsageMetricConfig{
+						Enabled: true,
+					},
+					ElasticsearchProcessMemoryVirtual: ElasticsearchProcessMemoryVirtualMetricConfig{
+						Enabled: true,
+					},
+					JvmClassesLoaded: JvmClassesLoadedMetricConfig{
+						Enabled: true,
+					},
+					JvmGcCollectionsCount: JvmGcCollectionsCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []JvmGcCollectionsCountMetricAttributeKey{JvmGcCollectionsCountMetricAttributeKeyCollectorName},
+					},
+					JvmGcCollectionsElapsed: JvmGcCollectionsElapsedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []JvmGcCollectionsElapsedMetricAttributeKey{JvmGcCollectionsElapsedMetricAttributeKeyCollectorName},
+					},
+					JvmMemoryHeapCommitted: JvmMemoryHeapCommittedMetricConfig{
+						Enabled: true,
+					},
+					JvmMemoryHeapMax: JvmMemoryHeapMaxMetricConfig{
+						Enabled: true,
+					},
+					JvmMemoryHeapUsed: JvmMemoryHeapUsedMetricConfig{
+						Enabled: true,
+					},
+					JvmMemoryHeapUtilization: JvmMemoryHeapUtilizationMetricConfig{
+						Enabled: true,
+					},
+					JvmMemoryNonheapCommitted: JvmMemoryNonheapCommittedMetricConfig{
+						Enabled: true,
+					},
+					JvmMemoryNonheapUsed: JvmMemoryNonheapUsedMetricConfig{
+						Enabled: true,
+					},
+					JvmMemoryPoolMax: JvmMemoryPoolMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []JvmMemoryPoolMaxMetricAttributeKey{JvmMemoryPoolMaxMetricAttributeKeyMemoryPoolName},
+					},
+					JvmMemoryPoolUsed: JvmMemoryPoolUsedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []JvmMemoryPoolUsedMetricAttributeKey{JvmMemoryPoolUsedMetricAttributeKeyMemoryPoolName},
+					},
+					JvmThreadsCount: JvmThreadsCountMetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ElasticsearchClusterName: ResourceAttributeConfig{Enabled: true},
@@ -131,98 +411,378 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ElasticsearchBreakerMemoryEstimated:                       MetricConfig{Enabled: false},
-					ElasticsearchBreakerMemoryLimit:                           MetricConfig{Enabled: false},
-					ElasticsearchBreakerTripped:                               MetricConfig{Enabled: false},
-					ElasticsearchClusterDataNodes:                             MetricConfig{Enabled: false},
-					ElasticsearchClusterHealth:                                MetricConfig{Enabled: false},
-					ElasticsearchClusterInFlightFetch:                         MetricConfig{Enabled: false},
-					ElasticsearchClusterIndicesCacheEvictions:                 MetricConfig{Enabled: false},
-					ElasticsearchClusterNodes:                                 MetricConfig{Enabled: false},
-					ElasticsearchClusterPendingTasks:                          MetricConfig{Enabled: false},
-					ElasticsearchClusterPublishedStatesDifferences:            MetricConfig{Enabled: false},
-					ElasticsearchClusterPublishedStatesFull:                   MetricConfig{Enabled: false},
-					ElasticsearchClusterShards:                                MetricConfig{Enabled: false},
-					ElasticsearchClusterStateQueue:                            MetricConfig{Enabled: false},
-					ElasticsearchClusterStateUpdateCount:                      MetricConfig{Enabled: false},
-					ElasticsearchClusterStateUpdateTime:                       MetricConfig{Enabled: false},
-					ElasticsearchIndexCacheEvictions:                          MetricConfig{Enabled: false},
-					ElasticsearchIndexCacheMemoryUsage:                        MetricConfig{Enabled: false},
-					ElasticsearchIndexCacheSize:                               MetricConfig{Enabled: false},
-					ElasticsearchIndexDocuments:                               MetricConfig{Enabled: false},
-					ElasticsearchIndexOperationsCompleted:                     MetricConfig{Enabled: false},
-					ElasticsearchIndexOperationsMergeCurrent:                  MetricConfig{Enabled: false},
-					ElasticsearchIndexOperationsMergeDocsCount:                MetricConfig{Enabled: false},
-					ElasticsearchIndexOperationsMergeSize:                     MetricConfig{Enabled: false},
-					ElasticsearchIndexOperationsTime:                          MetricConfig{Enabled: false},
-					ElasticsearchIndexSegmentsCount:                           MetricConfig{Enabled: false},
-					ElasticsearchIndexSegmentsMemory:                          MetricConfig{Enabled: false},
-					ElasticsearchIndexSegmentsSize:                            MetricConfig{Enabled: false},
-					ElasticsearchIndexShardsSize:                              MetricConfig{Enabled: false},
-					ElasticsearchIndexTranslogOperations:                      MetricConfig{Enabled: false},
-					ElasticsearchIndexTranslogSize:                            MetricConfig{Enabled: false},
-					ElasticsearchIndexingPressureMemoryLimit:                  MetricConfig{Enabled: false},
-					ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: MetricConfig{Enabled: false},
-					ElasticsearchIndexingPressureMemoryTotalReplicaRejections: MetricConfig{Enabled: false},
-					ElasticsearchMemoryIndexingPressure:                       MetricConfig{Enabled: false},
-					ElasticsearchNodeCacheCount:                               MetricConfig{Enabled: false},
-					ElasticsearchNodeCacheEvictions:                           MetricConfig{Enabled: false},
-					ElasticsearchNodeCacheMemoryUsage:                         MetricConfig{Enabled: false},
-					ElasticsearchNodeCacheSize:                                MetricConfig{Enabled: false},
-					ElasticsearchNodeClusterConnections:                       MetricConfig{Enabled: false},
-					ElasticsearchNodeClusterIo:                                MetricConfig{Enabled: false},
-					ElasticsearchNodeDiskIoRead:                               MetricConfig{Enabled: false},
-					ElasticsearchNodeDiskIoWrite:                              MetricConfig{Enabled: false},
-					ElasticsearchNodeDocuments:                                MetricConfig{Enabled: false},
-					ElasticsearchNodeFsDiskAvailable:                          MetricConfig{Enabled: false},
-					ElasticsearchNodeFsDiskFree:                               MetricConfig{Enabled: false},
-					ElasticsearchNodeFsDiskTotal:                              MetricConfig{Enabled: false},
-					ElasticsearchNodeHTTPConnections:                          MetricConfig{Enabled: false},
-					ElasticsearchNodeIngestDocuments:                          MetricConfig{Enabled: false},
-					ElasticsearchNodeIngestDocumentsCurrent:                   MetricConfig{Enabled: false},
-					ElasticsearchNodeIngestOperationsFailed:                   MetricConfig{Enabled: false},
-					ElasticsearchNodeOpenFiles:                                MetricConfig{Enabled: false},
-					ElasticsearchNodeOperationsCompleted:                      MetricConfig{Enabled: false},
-					ElasticsearchNodeOperationsCurrent:                        MetricConfig{Enabled: false},
-					ElasticsearchNodeOperationsGetCompleted:                   MetricConfig{Enabled: false},
-					ElasticsearchNodeOperationsGetTime:                        MetricConfig{Enabled: false},
-					ElasticsearchNodeOperationsTime:                           MetricConfig{Enabled: false},
-					ElasticsearchNodePipelineIngestDocumentsCurrent:           MetricConfig{Enabled: false},
-					ElasticsearchNodePipelineIngestDocumentsPreprocessed:      MetricConfig{Enabled: false},
-					ElasticsearchNodePipelineIngestOperationsFailed:           MetricConfig{Enabled: false},
-					ElasticsearchNodeScriptCacheEvictions:                     MetricConfig{Enabled: false},
-					ElasticsearchNodeScriptCompilationLimitTriggered:          MetricConfig{Enabled: false},
-					ElasticsearchNodeScriptCompilations:                       MetricConfig{Enabled: false},
-					ElasticsearchNodeSegmentsMemory:                           MetricConfig{Enabled: false},
-					ElasticsearchNodeShardsDataSetSize:                        MetricConfig{Enabled: false},
-					ElasticsearchNodeShardsReservedSize:                       MetricConfig{Enabled: false},
-					ElasticsearchNodeShardsSize:                               MetricConfig{Enabled: false},
-					ElasticsearchNodeThreadPoolTasksFinished:                  MetricConfig{Enabled: false},
-					ElasticsearchNodeThreadPoolTasksQueued:                    MetricConfig{Enabled: false},
-					ElasticsearchNodeThreadPoolThreads:                        MetricConfig{Enabled: false},
-					ElasticsearchNodeTranslogOperations:                       MetricConfig{Enabled: false},
-					ElasticsearchNodeTranslogSize:                             MetricConfig{Enabled: false},
-					ElasticsearchNodeTranslogUncommittedSize:                  MetricConfig{Enabled: false},
-					ElasticsearchOsCPULoadAvg15m:                              MetricConfig{Enabled: false},
-					ElasticsearchOsCPULoadAvg1m:                               MetricConfig{Enabled: false},
-					ElasticsearchOsCPULoadAvg5m:                               MetricConfig{Enabled: false},
-					ElasticsearchOsCPUUsage:                                   MetricConfig{Enabled: false},
-					ElasticsearchOsMemory:                                     MetricConfig{Enabled: false},
-					ElasticsearchProcessCPUTime:                               MetricConfig{Enabled: false},
-					ElasticsearchProcessCPUUsage:                              MetricConfig{Enabled: false},
-					ElasticsearchProcessMemoryVirtual:                         MetricConfig{Enabled: false},
-					JvmClassesLoaded:                                          MetricConfig{Enabled: false},
-					JvmGcCollectionsCount:                                     MetricConfig{Enabled: false},
-					JvmGcCollectionsElapsed:                                   MetricConfig{Enabled: false},
-					JvmMemoryHeapCommitted:                                    MetricConfig{Enabled: false},
-					JvmMemoryHeapMax:                                          MetricConfig{Enabled: false},
-					JvmMemoryHeapUsed:                                         MetricConfig{Enabled: false},
-					JvmMemoryHeapUtilization:                                  MetricConfig{Enabled: false},
-					JvmMemoryNonheapCommitted:                                 MetricConfig{Enabled: false},
-					JvmMemoryNonheapUsed:                                      MetricConfig{Enabled: false},
-					JvmMemoryPoolMax:                                          MetricConfig{Enabled: false},
-					JvmMemoryPoolUsed:                                         MetricConfig{Enabled: false},
-					JvmThreadsCount:                                           MetricConfig{Enabled: false},
+					ElasticsearchBreakerMemoryEstimated: ElasticsearchBreakerMemoryEstimatedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchBreakerMemoryEstimatedMetricAttributeKey{ElasticsearchBreakerMemoryEstimatedMetricAttributeKeyCircuitBreakerName},
+					},
+					ElasticsearchBreakerMemoryLimit: ElasticsearchBreakerMemoryLimitMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchBreakerMemoryLimitMetricAttributeKey{ElasticsearchBreakerMemoryLimitMetricAttributeKeyCircuitBreakerName},
+					},
+					ElasticsearchBreakerTripped: ElasticsearchBreakerTrippedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchBreakerTrippedMetricAttributeKey{ElasticsearchBreakerTrippedMetricAttributeKeyCircuitBreakerName},
+					},
+					ElasticsearchClusterDataNodes: ElasticsearchClusterDataNodesMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchClusterHealth: ElasticsearchClusterHealthMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterHealthMetricAttributeKey{ElasticsearchClusterHealthMetricAttributeKeyHealthStatus},
+					},
+					ElasticsearchClusterInFlightFetch: ElasticsearchClusterInFlightFetchMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchClusterIndicesCacheEvictions: ElasticsearchClusterIndicesCacheEvictionsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKey{ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKeyCacheName},
+					},
+					ElasticsearchClusterNodes: ElasticsearchClusterNodesMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchClusterPendingTasks: ElasticsearchClusterPendingTasksMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchClusterPublishedStatesDifferences: ElasticsearchClusterPublishedStatesDifferencesMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKey{ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKeyClusterPublishedDifferenceState},
+					},
+					ElasticsearchClusterPublishedStatesFull: ElasticsearchClusterPublishedStatesFullMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchClusterShards: ElasticsearchClusterShardsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterShardsMetricAttributeKey{ElasticsearchClusterShardsMetricAttributeKeyShardState},
+					},
+					ElasticsearchClusterStateQueue: ElasticsearchClusterStateQueueMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterStateQueueMetricAttributeKey{ElasticsearchClusterStateQueueMetricAttributeKeyClusterStateQueueState},
+					},
+					ElasticsearchClusterStateUpdateCount: ElasticsearchClusterStateUpdateCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterStateUpdateCountMetricAttributeKey{ElasticsearchClusterStateUpdateCountMetricAttributeKeyClusterStateUpdateState},
+					},
+					ElasticsearchClusterStateUpdateTime: ElasticsearchClusterStateUpdateTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterStateUpdateTimeMetricAttributeKey{ElasticsearchClusterStateUpdateTimeMetricAttributeKeyClusterStateUpdateState, ElasticsearchClusterStateUpdateTimeMetricAttributeKeyClusterStateUpdateType},
+					},
+					ElasticsearchIndexCacheEvictions: ElasticsearchIndexCacheEvictionsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexCacheEvictionsMetricAttributeKey{ElasticsearchIndexCacheEvictionsMetricAttributeKeyCacheName, ElasticsearchIndexCacheEvictionsMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexCacheMemoryUsage: ElasticsearchIndexCacheMemoryUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexCacheMemoryUsageMetricAttributeKey{ElasticsearchIndexCacheMemoryUsageMetricAttributeKeyCacheName, ElasticsearchIndexCacheMemoryUsageMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexCacheSize: ElasticsearchIndexCacheSizeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexCacheSizeMetricAttributeKey{ElasticsearchIndexCacheSizeMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexDocuments: ElasticsearchIndexDocumentsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexDocumentsMetricAttributeKey{ElasticsearchIndexDocumentsMetricAttributeKeyDocumentState, ElasticsearchIndexDocumentsMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexOperationsCompleted: ElasticsearchIndexOperationsCompletedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsCompletedMetricAttributeKey{ElasticsearchIndexOperationsCompletedMetricAttributeKeyOperation, ElasticsearchIndexOperationsCompletedMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexOperationsMergeCurrent: ElasticsearchIndexOperationsMergeCurrentMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchIndexOperationsMergeCurrentMetricAttributeKey{ElasticsearchIndexOperationsMergeCurrentMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexOperationsMergeDocsCount: ElasticsearchIndexOperationsMergeDocsCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKey{ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexOperationsMergeSize: ElasticsearchIndexOperationsMergeSizeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsMergeSizeMetricAttributeKey{ElasticsearchIndexOperationsMergeSizeMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexOperationsTime: ElasticsearchIndexOperationsTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsTimeMetricAttributeKey{ElasticsearchIndexOperationsTimeMetricAttributeKeyOperation, ElasticsearchIndexOperationsTimeMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexSegmentsCount: ElasticsearchIndexSegmentsCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexSegmentsCountMetricAttributeKey{ElasticsearchIndexSegmentsCountMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexSegmentsMemory: ElasticsearchIndexSegmentsMemoryMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexSegmentsMemoryMetricAttributeKey{ElasticsearchIndexSegmentsMemoryMetricAttributeKeyIndexAggregationType, ElasticsearchIndexSegmentsMemoryMetricAttributeKeySegmentsMemoryObjectType},
+					},
+					ElasticsearchIndexSegmentsSize: ElasticsearchIndexSegmentsSizeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexSegmentsSizeMetricAttributeKey{ElasticsearchIndexSegmentsSizeMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexShardsSize: ElasticsearchIndexShardsSizeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexShardsSizeMetricAttributeKey{ElasticsearchIndexShardsSizeMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexTranslogOperations: ElasticsearchIndexTranslogOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexTranslogOperationsMetricAttributeKey{ElasticsearchIndexTranslogOperationsMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexTranslogSize: ElasticsearchIndexTranslogSizeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexTranslogSizeMetricAttributeKey{ElasticsearchIndexTranslogSizeMetricAttributeKeyIndexAggregationType},
+					},
+					ElasticsearchIndexingPressureMemoryLimit: ElasticsearchIndexingPressureMemoryLimitMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchIndexingPressureMemoryTotalReplicaRejections: ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchMemoryIndexingPressure: ElasticsearchMemoryIndexingPressureMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchMemoryIndexingPressureMetricAttributeKey{ElasticsearchMemoryIndexingPressureMetricAttributeKeyIndexingPressureStage},
+					},
+					ElasticsearchNodeCacheCount: ElasticsearchNodeCacheCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeCacheCountMetricAttributeKey{ElasticsearchNodeCacheCountMetricAttributeKeyQueryCacheCountType},
+					},
+					ElasticsearchNodeCacheEvictions: ElasticsearchNodeCacheEvictionsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeCacheEvictionsMetricAttributeKey{ElasticsearchNodeCacheEvictionsMetricAttributeKeyCacheName},
+					},
+					ElasticsearchNodeCacheMemoryUsage: ElasticsearchNodeCacheMemoryUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeCacheMemoryUsageMetricAttributeKey{ElasticsearchNodeCacheMemoryUsageMetricAttributeKeyCacheName},
+					},
+					ElasticsearchNodeCacheSize: ElasticsearchNodeCacheSizeMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeClusterConnections: ElasticsearchNodeClusterConnectionsMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeClusterIo: ElasticsearchNodeClusterIoMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeClusterIoMetricAttributeKey{ElasticsearchNodeClusterIoMetricAttributeKeyDirection},
+					},
+					ElasticsearchNodeDiskIoRead: ElasticsearchNodeDiskIoReadMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeDiskIoWrite: ElasticsearchNodeDiskIoWriteMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeDocuments: ElasticsearchNodeDocumentsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeDocumentsMetricAttributeKey{ElasticsearchNodeDocumentsMetricAttributeKeyDocumentState},
+					},
+					ElasticsearchNodeFsDiskAvailable: ElasticsearchNodeFsDiskAvailableMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeFsDiskFree: ElasticsearchNodeFsDiskFreeMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeFsDiskTotal: ElasticsearchNodeFsDiskTotalMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeHTTPConnections: ElasticsearchNodeHTTPConnectionsMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeIngestDocuments: ElasticsearchNodeIngestDocumentsMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeIngestDocumentsCurrent: ElasticsearchNodeIngestDocumentsCurrentMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeIngestOperationsFailed: ElasticsearchNodeIngestOperationsFailedMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeOpenFiles: ElasticsearchNodeOpenFilesMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeOperationsCompleted: ElasticsearchNodeOperationsCompletedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsCompletedMetricAttributeKey{ElasticsearchNodeOperationsCompletedMetricAttributeKeyOperation},
+					},
+					ElasticsearchNodeOperationsCurrent: ElasticsearchNodeOperationsCurrentMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchNodeOperationsCurrentMetricAttributeKey{ElasticsearchNodeOperationsCurrentMetricAttributeKeyOperation},
+					},
+					ElasticsearchNodeOperationsGetCompleted: ElasticsearchNodeOperationsGetCompletedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsGetCompletedMetricAttributeKey{ElasticsearchNodeOperationsGetCompletedMetricAttributeKeyGetResult},
+					},
+					ElasticsearchNodeOperationsGetTime: ElasticsearchNodeOperationsGetTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsGetTimeMetricAttributeKey{ElasticsearchNodeOperationsGetTimeMetricAttributeKeyGetResult},
+					},
+					ElasticsearchNodeOperationsTime: ElasticsearchNodeOperationsTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsTimeMetricAttributeKey{ElasticsearchNodeOperationsTimeMetricAttributeKeyOperation},
+					},
+					ElasticsearchNodePipelineIngestDocumentsCurrent: ElasticsearchNodePipelineIngestDocumentsCurrentMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKey{ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKeyIngestPipelineName},
+					},
+					ElasticsearchNodePipelineIngestDocumentsPreprocessed: ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKey{ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKeyIngestPipelineName},
+					},
+					ElasticsearchNodePipelineIngestOperationsFailed: ElasticsearchNodePipelineIngestOperationsFailedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKey{ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKeyIngestPipelineName},
+					},
+					ElasticsearchNodeScriptCacheEvictions: ElasticsearchNodeScriptCacheEvictionsMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeScriptCompilationLimitTriggered: ElasticsearchNodeScriptCompilationLimitTriggeredMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeScriptCompilations: ElasticsearchNodeScriptCompilationsMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeSegmentsMemory: ElasticsearchNodeSegmentsMemoryMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeSegmentsMemoryMetricAttributeKey{ElasticsearchNodeSegmentsMemoryMetricAttributeKeySegmentsMemoryObjectType},
+					},
+					ElasticsearchNodeShardsDataSetSize: ElasticsearchNodeShardsDataSetSizeMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeShardsReservedSize: ElasticsearchNodeShardsReservedSizeMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeShardsSize: ElasticsearchNodeShardsSizeMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeThreadPoolTasksFinished: ElasticsearchNodeThreadPoolTasksFinishedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKey{ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKeyTaskState},
+					},
+					ElasticsearchNodeThreadPoolTasksQueued: ElasticsearchNodeThreadPoolTasksQueuedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKey{ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKeyThreadPoolName},
+					},
+					ElasticsearchNodeThreadPoolThreads: ElasticsearchNodeThreadPoolThreadsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeThreadPoolThreadsMetricAttributeKey{ElasticsearchNodeThreadPoolThreadsMetricAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolThreadsMetricAttributeKeyThreadState},
+					},
+					ElasticsearchNodeTranslogOperations: ElasticsearchNodeTranslogOperationsMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeTranslogSize: ElasticsearchNodeTranslogSizeMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchNodeTranslogUncommittedSize: ElasticsearchNodeTranslogUncommittedSizeMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchOsCPULoadAvg15m: ElasticsearchOsCPULoadAvg15mMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchOsCPULoadAvg1m: ElasticsearchOsCPULoadAvg1mMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchOsCPULoadAvg5m: ElasticsearchOsCPULoadAvg5mMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchOsCPUUsage: ElasticsearchOsCPUUsageMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchOsMemory: ElasticsearchOsMemoryMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchOsMemoryMetricAttributeKey{ElasticsearchOsMemoryMetricAttributeKeyMemoryState},
+					},
+					ElasticsearchProcessCPUTime: ElasticsearchProcessCPUTimeMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchProcessCPUUsage: ElasticsearchProcessCPUUsageMetricConfig{
+						Enabled: false,
+					},
+					ElasticsearchProcessMemoryVirtual: ElasticsearchProcessMemoryVirtualMetricConfig{
+						Enabled: false,
+					},
+					JvmClassesLoaded: JvmClassesLoadedMetricConfig{
+						Enabled: false,
+					},
+					JvmGcCollectionsCount: JvmGcCollectionsCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []JvmGcCollectionsCountMetricAttributeKey{JvmGcCollectionsCountMetricAttributeKeyCollectorName},
+					},
+					JvmGcCollectionsElapsed: JvmGcCollectionsElapsedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []JvmGcCollectionsElapsedMetricAttributeKey{JvmGcCollectionsElapsedMetricAttributeKeyCollectorName},
+					},
+					JvmMemoryHeapCommitted: JvmMemoryHeapCommittedMetricConfig{
+						Enabled: false,
+					},
+					JvmMemoryHeapMax: JvmMemoryHeapMaxMetricConfig{
+						Enabled: false,
+					},
+					JvmMemoryHeapUsed: JvmMemoryHeapUsedMetricConfig{
+						Enabled: false,
+					},
+					JvmMemoryHeapUtilization: JvmMemoryHeapUtilizationMetricConfig{
+						Enabled: false,
+					},
+					JvmMemoryNonheapCommitted: JvmMemoryNonheapCommittedMetricConfig{
+						Enabled: false,
+					},
+					JvmMemoryNonheapUsed: JvmMemoryNonheapUsedMetricConfig{
+						Enabled: false,
+					},
+					JvmMemoryPoolMax: JvmMemoryPoolMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []JvmMemoryPoolMaxMetricAttributeKey{JvmMemoryPoolMaxMetricAttributeKeyMemoryPoolName},
+					},
+					JvmMemoryPoolUsed: JvmMemoryPoolUsedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []JvmMemoryPoolUsedMetricAttributeKey{JvmMemoryPoolUsedMetricAttributeKeyMemoryPoolName},
+					},
+					JvmThreadsCount: JvmThreadsCountMetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ElasticsearchClusterName: ResourceAttributeConfig{Enabled: false},
@@ -236,10 +796,585 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ElasticsearchBreakerMemoryEstimatedMetricConfig{}, ElasticsearchBreakerMemoryLimitMetricConfig{}, ElasticsearchBreakerTrippedMetricConfig{}, ElasticsearchClusterDataNodesMetricConfig{}, ElasticsearchClusterHealthMetricConfig{}, ElasticsearchClusterInFlightFetchMetricConfig{}, ElasticsearchClusterIndicesCacheEvictionsMetricConfig{}, ElasticsearchClusterNodesMetricConfig{}, ElasticsearchClusterPendingTasksMetricConfig{}, ElasticsearchClusterPublishedStatesDifferencesMetricConfig{}, ElasticsearchClusterPublishedStatesFullMetricConfig{}, ElasticsearchClusterShardsMetricConfig{}, ElasticsearchClusterStateQueueMetricConfig{}, ElasticsearchClusterStateUpdateCountMetricConfig{}, ElasticsearchClusterStateUpdateTimeMetricConfig{}, ElasticsearchIndexCacheEvictionsMetricConfig{}, ElasticsearchIndexCacheMemoryUsageMetricConfig{}, ElasticsearchIndexCacheSizeMetricConfig{}, ElasticsearchIndexDocumentsMetricConfig{}, ElasticsearchIndexOperationsCompletedMetricConfig{}, ElasticsearchIndexOperationsMergeCurrentMetricConfig{}, ElasticsearchIndexOperationsMergeDocsCountMetricConfig{}, ElasticsearchIndexOperationsMergeSizeMetricConfig{}, ElasticsearchIndexOperationsTimeMetricConfig{}, ElasticsearchIndexSegmentsCountMetricConfig{}, ElasticsearchIndexSegmentsMemoryMetricConfig{}, ElasticsearchIndexSegmentsSizeMetricConfig{}, ElasticsearchIndexShardsSizeMetricConfig{}, ElasticsearchIndexTranslogOperationsMetricConfig{}, ElasticsearchIndexTranslogSizeMetricConfig{}, ElasticsearchIndexingPressureMemoryLimitMetricConfig{}, ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsMetricConfig{}, ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsMetricConfig{}, ElasticsearchMemoryIndexingPressureMetricConfig{}, ElasticsearchNodeCacheCountMetricConfig{}, ElasticsearchNodeCacheEvictionsMetricConfig{}, ElasticsearchNodeCacheMemoryUsageMetricConfig{}, ElasticsearchNodeCacheSizeMetricConfig{}, ElasticsearchNodeClusterConnectionsMetricConfig{}, ElasticsearchNodeClusterIoMetricConfig{}, ElasticsearchNodeDiskIoReadMetricConfig{}, ElasticsearchNodeDiskIoWriteMetricConfig{}, ElasticsearchNodeDocumentsMetricConfig{}, ElasticsearchNodeFsDiskAvailableMetricConfig{}, ElasticsearchNodeFsDiskFreeMetricConfig{}, ElasticsearchNodeFsDiskTotalMetricConfig{}, ElasticsearchNodeHTTPConnectionsMetricConfig{}, ElasticsearchNodeIngestDocumentsMetricConfig{}, ElasticsearchNodeIngestDocumentsCurrentMetricConfig{}, ElasticsearchNodeIngestOperationsFailedMetricConfig{}, ElasticsearchNodeOpenFilesMetricConfig{}, ElasticsearchNodeOperationsCompletedMetricConfig{}, ElasticsearchNodeOperationsCurrentMetricConfig{}, ElasticsearchNodeOperationsGetCompletedMetricConfig{}, ElasticsearchNodeOperationsGetTimeMetricConfig{}, ElasticsearchNodeOperationsTimeMetricConfig{}, ElasticsearchNodePipelineIngestDocumentsCurrentMetricConfig{}, ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricConfig{}, ElasticsearchNodePipelineIngestOperationsFailedMetricConfig{}, ElasticsearchNodeScriptCacheEvictionsMetricConfig{}, ElasticsearchNodeScriptCompilationLimitTriggeredMetricConfig{}, ElasticsearchNodeScriptCompilationsMetricConfig{}, ElasticsearchNodeSegmentsMemoryMetricConfig{}, ElasticsearchNodeShardsDataSetSizeMetricConfig{}, ElasticsearchNodeShardsReservedSizeMetricConfig{}, ElasticsearchNodeShardsSizeMetricConfig{}, ElasticsearchNodeThreadPoolTasksFinishedMetricConfig{}, ElasticsearchNodeThreadPoolTasksQueuedMetricConfig{}, ElasticsearchNodeThreadPoolThreadsMetricConfig{}, ElasticsearchNodeTranslogOperationsMetricConfig{}, ElasticsearchNodeTranslogSizeMetricConfig{}, ElasticsearchNodeTranslogUncommittedSizeMetricConfig{}, ElasticsearchOsCPULoadAvg15mMetricConfig{}, ElasticsearchOsCPULoadAvg1mMetricConfig{}, ElasticsearchOsCPULoadAvg5mMetricConfig{}, ElasticsearchOsCPUUsageMetricConfig{}, ElasticsearchOsMemoryMetricConfig{}, ElasticsearchProcessCPUTimeMetricConfig{}, ElasticsearchProcessCPUUsageMetricConfig{}, ElasticsearchProcessMemoryVirtualMetricConfig{}, JvmClassesLoadedMetricConfig{}, JvmGcCollectionsCountMetricConfig{}, JvmGcCollectionsElapsedMetricConfig{}, JvmMemoryHeapCommittedMetricConfig{}, JvmMemoryHeapMaxMetricConfig{}, JvmMemoryHeapUsedMetricConfig{}, JvmMemoryHeapUtilizationMetricConfig{}, JvmMemoryNonheapCommittedMetricConfig{}, JvmMemoryNonheapUsedMetricConfig{}, JvmMemoryPoolMaxMetricConfig{}, JvmMemoryPoolUsedMetricConfig{}, JvmThreadsCountMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+func TestElasticsearchBreakerMemoryEstimatedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchBreakerMemoryEstimated
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchBreakerMemoryEstimatedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.breaker.memory.estimated doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchBreakerMemoryEstimated
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchBreakerMemoryLimitMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchBreakerMemoryLimit
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchBreakerMemoryLimitMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.breaker.memory.limit doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchBreakerMemoryLimit
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchBreakerTrippedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchBreakerTripped
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchBreakerTrippedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.breaker.tripped doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchBreakerTripped
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchClusterHealthMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchClusterHealth
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchClusterHealthMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.cluster.health doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchClusterHealth
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchClusterIndicesCacheEvictionsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchClusterIndicesCacheEvictions
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.cluster.indices.cache.evictions doesn't have an attribute invalid, valid attributes: [cache_name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchClusterIndicesCacheEvictions
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchClusterPublishedStatesDifferencesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchClusterPublishedStatesDifferences
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.cluster.published_states.differences doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchClusterPublishedStatesDifferences
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchClusterShardsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchClusterShards
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchClusterShardsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.cluster.shards doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchClusterShards
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchClusterStateQueueMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchClusterStateQueue
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchClusterStateQueueMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.cluster.state_queue doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchClusterStateQueue
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchClusterStateUpdateCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchClusterStateUpdateCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchClusterStateUpdateCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.cluster.state_update.count doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchClusterStateUpdateCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchClusterStateUpdateTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchClusterStateUpdateTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchClusterStateUpdateTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.cluster.state_update.time doesn't have an attribute invalid, valid attributes: [state, type]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchClusterStateUpdateTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexCacheEvictionsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexCacheEvictions
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexCacheEvictionsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.cache.evictions doesn't have an attribute invalid, valid attributes: [cache_name, aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexCacheEvictions
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexCacheMemoryUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexCacheMemoryUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexCacheMemoryUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.cache.memory.usage doesn't have an attribute invalid, valid attributes: [cache_name, aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexCacheMemoryUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexCacheSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexCacheSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexCacheSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.cache.size doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexCacheSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexDocumentsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexDocuments
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexDocumentsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.documents doesn't have an attribute invalid, valid attributes: [state, aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexDocuments
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexOperationsCompletedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexOperationsCompleted
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexOperationsCompletedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.operations.completed doesn't have an attribute invalid, valid attributes: [operation, aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexOperationsCompleted
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexOperationsMergeCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexOperationsMergeCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexOperationsMergeCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.operations.merge.current doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexOperationsMergeCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexOperationsMergeDocsCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexOperationsMergeDocsCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.operations.merge.docs_count doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexOperationsMergeDocsCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexOperationsMergeSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexOperationsMergeSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexOperationsMergeSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.operations.merge.size doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexOperationsMergeSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexOperationsTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexOperationsTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexOperationsTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.operations.time doesn't have an attribute invalid, valid attributes: [operation, aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexOperationsTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexSegmentsCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexSegmentsCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexSegmentsCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.segments.count doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexSegmentsCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexSegmentsMemoryMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexSegmentsMemory
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexSegmentsMemoryMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.segments.memory doesn't have an attribute invalid, valid attributes: [aggregation, object]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexSegmentsMemory
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexSegmentsSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexSegmentsSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexSegmentsSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.segments.size doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexSegmentsSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexShardsSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexShardsSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexShardsSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.shards.size doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexShardsSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexTranslogOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexTranslogOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexTranslogOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.translog.operations doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexTranslogOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexTranslogSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexTranslogSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexTranslogSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.translog.size doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexTranslogSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchMemoryIndexingPressureMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchMemoryIndexingPressure
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchMemoryIndexingPressureMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.memory.indexing_pressure doesn't have an attribute invalid, valid attributes: [stage]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchMemoryIndexingPressure
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeCacheCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeCacheCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeCacheCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.cache.count doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeCacheCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeCacheEvictionsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeCacheEvictions
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeCacheEvictionsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.cache.evictions doesn't have an attribute invalid, valid attributes: [cache_name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeCacheEvictions
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeCacheMemoryUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeCacheMemoryUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeCacheMemoryUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.cache.memory.usage doesn't have an attribute invalid, valid attributes: [cache_name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeCacheMemoryUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeClusterIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeClusterIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeClusterIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.cluster.io doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeClusterIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeDocumentsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeDocuments
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeDocumentsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.documents doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeDocuments
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeOperationsCompletedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeOperationsCompleted
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeOperationsCompletedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.operations.completed doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeOperationsCompleted
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeOperationsCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeOperationsCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeOperationsCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.operations.current doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeOperationsCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeOperationsGetCompletedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeOperationsGetCompleted
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeOperationsGetCompletedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.operations.get.completed doesn't have an attribute invalid, valid attributes: [result]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeOperationsGetCompleted
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeOperationsGetTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeOperationsGetTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeOperationsGetTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.operations.get.time doesn't have an attribute invalid, valid attributes: [result]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeOperationsGetTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeOperationsTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeOperationsTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeOperationsTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.operations.time doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeOperationsTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodePipelineIngestDocumentsCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodePipelineIngestDocumentsCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.pipeline.ingest.documents.current doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodePipelineIngestDocumentsCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodePipelineIngestDocumentsPreprocessedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodePipelineIngestDocumentsPreprocessed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.pipeline.ingest.documents.preprocessed doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodePipelineIngestDocumentsPreprocessed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodePipelineIngestOperationsFailedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodePipelineIngestOperationsFailed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.pipeline.ingest.operations.failed doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodePipelineIngestOperationsFailed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeSegmentsMemoryMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeSegmentsMemory
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeSegmentsMemoryMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.segments.memory doesn't have an attribute invalid, valid attributes: [object]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeSegmentsMemory
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeThreadPoolTasksFinishedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeThreadPoolTasksFinished
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.thread_pool.tasks.finished doesn't have an attribute invalid, valid attributes: [thread_pool_name, state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeThreadPoolTasksFinished
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeThreadPoolTasksQueuedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeThreadPoolTasksQueued
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.thread_pool.tasks.queued doesn't have an attribute invalid, valid attributes: [thread_pool_name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeThreadPoolTasksQueued
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeThreadPoolThreadsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeThreadPoolThreads
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeThreadPoolThreadsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.thread_pool.threads doesn't have an attribute invalid, valid attributes: [thread_pool_name, state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeThreadPoolThreads
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchOsMemoryMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchOsMemory
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchOsMemoryMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.os.memory doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchOsMemory
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestJvmGcCollectionsCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().JvmGcCollectionsCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []JvmGcCollectionsCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric jvm.gc.collections.count doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().JvmGcCollectionsCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestJvmGcCollectionsElapsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().JvmGcCollectionsElapsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []JvmGcCollectionsElapsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric jvm.gc.collections.elapsed doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().JvmGcCollectionsElapsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestJvmMemoryPoolMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().JvmMemoryPoolMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []JvmMemoryPoolMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric jvm.memory.pool.max doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().JvmMemoryPoolMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestJvmMemoryPoolUsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().JvmMemoryPoolUsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []JvmMemoryPoolUsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric jvm.memory.pool.used doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().JvmMemoryPoolUsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -247,7 +1382,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

@@ -7,12 +7,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2/checkpoints"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 )
@@ -47,6 +53,19 @@ type azPartitionClient interface {
 	ReceiveEvents(ctx context.Context, maxBatchSize int, options *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error)
 }
 
+func getPollConfig(config *Config) (int, int) {
+	maxPollEvents, pollRate := 100, 5
+	if config != nil {
+		if config.MaxPollEvents != 0 {
+			maxPollEvents = config.MaxPollEvents
+		}
+		if config.PollRate != 0 {
+			pollRate = config.PollRate
+		}
+	}
+	return maxPollEvents, pollRate
+}
+
 func getConsumerGroup(config *Config) string {
 	if config.ConsumerGroup == "" {
 		return "$Default"
@@ -54,16 +73,48 @@ func getConsumerGroup(config *Config) string {
 	return config.ConsumerGroup
 }
 
-func newAzeventhubWrapper(h *eventhubHandler) (*hubWrapperAzeventhubImpl, error) {
-	consumerGroup := getConsumerGroup(h.config)
+// createConsumerClient creates a new Azure Event Hub consumer client.
+// If auth is configured, it uses the auth extension to create the client.
+// Otherwise, it uses the connection string.
+func createConsumerClient(
+	config *Config,
+	host component.Host,
+	consumerGroup string,
+	logger *zap.Logger,
+) (*azeventhubs.ConsumerClient, error) {
+	if config.Auth != nil {
+		if config.Connection != "" {
+			logger.Warn("both 'auth' and 'connection' are specified, 'connection' will be ignored.")
+		}
+		ext, ok := host.GetExtensions()[*config.Auth]
+		if !ok {
+			return nil, fmt.Errorf("failed to resolve auth extension %q", *config.Auth)
+		}
+		credential, ok := ext.(azcore.TokenCredential)
+		if !ok {
+			return nil, fmt.Errorf("extension %q does not implement azcore.TokenCredential", *config.Auth)
+		}
 
-	hub, newHubErr := azeventhubs.NewConsumerClientFromConnectionString(
-		h.config.Connection,
+		return azeventhubs.NewConsumerClient(
+			config.EventHub.Namespace,
+			config.EventHub.Name,
+			consumerGroup,
+			credential,
+			&azeventhubs.ConsumerClientOptions{},
+		)
+	}
+	return azeventhubs.NewConsumerClientFromConnectionString(
+		config.Connection,
 		"",
 		consumerGroup,
 		&azeventhubs.ConsumerClientOptions{},
 	)
+}
 
+func newAzeventhubWrapper(h *eventhubHandler, host component.Host) (*hubWrapperAzeventhubImpl, error) {
+	consumerGroup := getConsumerGroup(h.config)
+
+	hub, newHubErr := createConsumerClient(h.config, host, consumerGroup, h.settings.Logger)
 	if newHubErr != nil {
 		h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
 		return nil, newHubErr
@@ -137,7 +188,7 @@ func (h *hubWrapperAzeventhubImpl) GetRuntimeInformation(ctx context.Context) (*
 	return nil, errNoConfig
 }
 
-func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool) (listenerHandleWrapper, error) {
+func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool, logger *zap.Logger) (listenerHandleWrapper, error) {
 	if h.hub != nil {
 		namespace, err := h.namespace()
 		if err != nil {
@@ -156,6 +207,7 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 		)
 		pc, err := h.hub.NewPartitionClient(partitionID, &azeventhubs.PartitionClientOptions{
 			StartPosition: startPos,
+			Prefetch:      h.config.PrefetchCount,
 		})
 		if err != nil {
 			return nil, err
@@ -169,35 +221,26 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 			defer close(w.done)
 			defer pc.Close(ctx)
 
+			maxPollEvents, pollRate := getPollConfig(h.config)
 			for {
 				if ctx.Err() != nil {
 					return
 				}
 
-				maxPollEvents := 100
-				pollRate := 5
-				if h.config != nil {
-					if h.config.MaxPollEvents != 0 {
-						maxPollEvents = h.config.MaxPollEvents
-					}
-					if h.config.PollRate != 0 {
-						pollRate = h.config.PollRate
-					}
-				}
 				timeout, cancelTimeout := context.WithTimeout(ctx, time.Second*time.Duration(pollRate))
 				events, err := pc.ReceiveEvents(timeout, maxPollEvents, nil)
 				cancelTimeout()
 				if err != nil && !errors.Is(err, context.DeadlineExceeded) {
-					w.setErr(err)
-					return
+					logger.Error("error receiving events", zap.Error(err))
+					continue
 				}
 
 				for _, ev := range events {
 					if err := handler(ctx, &azureEvent{
 						AzEventData: ev,
 					}); err != nil {
-						w.setErr(err)
-						return
+						logger.Error("error processing event", zap.Error(err))
+						continue
 					}
 				}
 
@@ -211,8 +254,8 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 							},
 						)
 						if err != nil {
-							w.setErr(err)
-							return
+							logger.Error("error writing checkpoint", zap.Error(err))
+							continue
 						}
 					}
 				}
@@ -261,6 +304,9 @@ func (h *hubWrapperAzeventhubImpl) getStartPos(
 }
 
 func (h *hubWrapperAzeventhubImpl) namespace() (string, error) {
+	if h.config.Auth != nil {
+		return h.config.EventHub.Namespace, nil
+	}
 	parsed, err := azeventhubs.ParseConnectionString(h.config.Connection)
 	if err != nil {
 		return "", err
@@ -293,4 +339,137 @@ func (p *partitionListener) setErr(err error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.err = err
+}
+
+// createBlobCheckpointStore creates an Azure Blob Storage-backed checkpoint store
+// for use with the distributed Processor.
+func createBlobCheckpointStore(config *Config, host component.Host, logger *zap.Logger) (azeventhubs.CheckpointStore, error) {
+	blobCfg := config.BlobCheckpointStore
+
+	var containerClient *container.Client
+
+	switch {
+	case blobCfg.Connection != "":
+		var err error
+		containerClient, err = container.NewClientFromConnectionString(blobCfg.Connection, blobCfg.ContainerName, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create blob container client from connection string: %w", err)
+		}
+	case config.Auth != nil:
+		ext, ok := host.GetExtensions()[*config.Auth]
+		if !ok {
+			return nil, fmt.Errorf("failed to resolve auth extension %q for blob checkpoint store", *config.Auth)
+		}
+		credential, ok := ext.(azcore.TokenCredential)
+		if !ok {
+			return nil, fmt.Errorf("extension %q does not implement azcore.TokenCredential", *config.Auth)
+		}
+		containerURL, err := url.JoinPath(blobCfg.StorageAccountURL, blobCfg.ContainerName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct container URL: %w", err)
+		}
+		containerClient, err = container.NewClient(containerURL, credential, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create blob container client with auth: %w", err)
+		}
+	default:
+		return nil, errors.New("blob checkpoint store requires either a connection string or auth extension")
+	}
+
+	store, err := checkpoints.NewBlobStore(containerClient, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create blob checkpoint store: %w", err)
+	}
+
+	logger.Info("Created blob checkpoint store", zap.String("container", blobCfg.ContainerName))
+	return store, nil
+}
+
+// createProcessor creates an Azure Event Hub Processor for distributed consumption.
+// It returns both the Processor and the ConsumerClient so the caller can close the
+// client on shutdown (the Processor does not take ownership of closing it).
+func createProcessor(config *Config, host component.Host, logger *zap.Logger) (*azeventhubs.Processor, *azeventhubs.ConsumerClient, error) {
+	consumerGroup := getConsumerGroup(config)
+	consumerClient, err := createConsumerClient(config, host, consumerGroup, logger)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create consumer client for processor: %w", err)
+	}
+
+	checkpointStore, err := createBlobCheckpointStore(config, host, logger)
+	if err != nil {
+		consumerClient.Close(context.Background())
+		return nil, nil, err
+	}
+
+	processor, err := azeventhubs.NewProcessor(consumerClient, checkpointStore, &azeventhubs.ProcessorOptions{
+		Prefetch: config.PrefetchCount,
+	})
+	if err != nil {
+		consumerClient.Close(context.Background())
+		return nil, nil, fmt.Errorf("failed to create processor: %w", err)
+	}
+
+	return processor, consumerClient, nil
+}
+
+// processorPartitionClient is an interface for the subset of
+// azeventhubs.ProcessorPartitionClient methods used by processPartitionEvents.
+// This enables testing without requiring a real Azure connection.
+type processorPartitionClient interface {
+	PartitionID() string
+	ReceiveEvents(ctx context.Context, count int, options *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error)
+	UpdateCheckpoint(ctx context.Context, latestEvent *azeventhubs.ReceivedEventData, options *azeventhubs.UpdateCheckpointOptions) error
+	Close(ctx context.Context) error
+}
+
+// processPartitionEvents receives and processes events from a single partition
+// assigned by the Processor.
+func processPartitionEvents(
+	ctx context.Context,
+	partitionClient processorPartitionClient,
+	handler hubHandler,
+	config *Config,
+	logger *zap.Logger,
+) {
+	logger.Debug("Starting distributed processing for partition", zap.String("partition", partitionClient.PartitionID()))
+	defer partitionClient.Close(context.Background())
+
+	maxPollEvents, pollRate := getPollConfig(config)
+
+	for {
+		if ctx.Err() != nil {
+			return
+		}
+
+		timeout, cancelTimeout := context.WithTimeout(ctx, time.Second*time.Duration(pollRate))
+		events, err := partitionClient.ReceiveEvents(timeout, maxPollEvents, nil)
+		cancelTimeout()
+
+		if err != nil && !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
+			var eventHubError *azeventhubs.Error
+			if errors.As(err, &eventHubError) && eventHubError.Code == azeventhubs.ErrorCodeOwnershipLost {
+				logger.Debug("Partition ownership lost, stopping processing", zap.String("partition", partitionClient.PartitionID()))
+				return
+			}
+			logger.Error("Error receiving events in distributed mode", zap.Error(err), zap.String("partition", partitionClient.PartitionID()))
+			continue
+		}
+
+		var lastSuccessful *azeventhubs.ReceivedEventData
+		for _, ev := range events {
+			if err := handler(ctx, &azureEvent{
+				AzEventData: ev,
+			}); err != nil {
+				logger.Error("Error processing event in distributed mode", zap.Error(err), zap.String("partition", partitionClient.PartitionID()))
+				break
+			}
+			lastSuccessful = ev
+		}
+
+		if lastSuccessful != nil {
+			if err := partitionClient.UpdateCheckpoint(ctx, lastSuccessful, nil); err != nil {
+				logger.Error("Error updating checkpoint", zap.Error(err), zap.String("partition", partitionClient.PartitionID()))
+			}
+		}
+	}
 }

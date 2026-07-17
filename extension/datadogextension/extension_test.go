@@ -1,16 +1,20 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogextension
 
 import (
 	"context"
 	"errors"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/metrics/event"
 	"github.com/DataDog/datadog-agent/pkg/metrics/servicecheck"
@@ -23,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -65,6 +71,21 @@ func TestNewExtension(t *testing.T) {
 		require.Error(t, err)
 		assert.Equal(t, "host error", err.Error())
 	})
+
+	t.Run("config hostname skips source provider", func(t *testing.T) {
+		cfgWithHostname := &Config{
+			API:      datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			Hostname: "my-configured-host",
+		}
+		// Provider returns an error; if it were called the test would fail.
+		hostProvider := &mockSourceProvider{err: errors.New("provider should not be called")}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		ext, err := newExtension(t.Context(), cfgWithHostname, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		assert.False(t, hostProvider.called, "source provider must not be called when hostname is set in config")
+		assert.Equal(t, "my-configured-host", ext.info.host.Identifier)
+		assert.Equal(t, "config", ext.info.hostnameSource)
+	})
 }
 
 func TestExtensionLifecycle(t *testing.T) {
@@ -72,10 +93,20 @@ func TestExtensionLifecycle(t *testing.T) {
 		set := extension.Settings{TelemetrySettings: componenttest.NewNopTelemetrySettings()}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				ServerConfig: serverConfig,
 				Path:         "/test-path",
 			},
 		}
@@ -145,10 +176,20 @@ func TestNotifyConfig(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				ServerConfig: serverConfig,
 				Path:         "/test-path",
 			},
 		}
@@ -193,10 +234,20 @@ func TestCollectorResourceAttributesArePopulated(t *testing.T) {
 	}
 	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 	uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
 	cfg := &Config{
 		API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 		HTTPConfig: &httpserver.Config{
-			ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+			ServerConfig: serverConfig,
 			Path:         "/test-path",
 		},
 	}
@@ -211,9 +262,9 @@ func TestCollectorResourceAttributesArePopulated(t *testing.T) {
 	err = ext.NotifyConfig(t.Context(), conf)
 	require.NoError(t, err)
 
-	// Expect map with keys and values
+	// Expect map with keys and values (os.type is always injected as a fallback)
 	require.NotNil(t, ext.otelCollectorMetadata)
-	expected := map[string]string{"a_key": "1", "b_key": "2"}
+	expected := map[string]string{"a_key": "1", "b_key": "2", "os.type": runtime.GOOS}
 	assert.Equal(t, expected, ext.otelCollectorMetadata.CollectorResourceAttributes)
 
 	// Cleanup
@@ -235,10 +286,20 @@ func TestCollectorResourceAttributesWithMultipleKeys(t *testing.T) {
 	}
 	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 	uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
 	cfg := &Config{
 		API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 		HTTPConfig: &httpserver.Config{
-			ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+			ServerConfig: serverConfig,
 			Path:         "/test-path",
 		},
 	}
@@ -253,12 +314,13 @@ func TestCollectorResourceAttributesWithMultipleKeys(t *testing.T) {
 	err = ext.NotifyConfig(t.Context(), conf)
 	require.NoError(t, err)
 
-	// Verify all resource attributes are collected
+	// Verify all resource attributes are collected (os.type is always injected as a fallback)
 	require.NotNil(t, ext.otelCollectorMetadata)
 	expected := map[string]string{
 		"deployment.environment.name": "prod",
 		"cloud.region":                "us-east",
 		"team.name":                   "backend",
+		"os.type":                     runtime.GOOS,
 	}
 	assert.Equal(t, expected, ext.otelCollectorMetadata.CollectorResourceAttributes)
 
@@ -288,10 +350,20 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				ServerConfig: serverConfig,
 				Path:         "/test-path",
 			},
 		}
@@ -325,10 +397,20 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				ServerConfig: serverConfig,
 				Path:         "/test-path",
 			},
 		}
@@ -360,10 +442,20 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				ServerConfig: serverConfig,
 				Path:         "/test-path",
 			},
 		}
@@ -441,10 +533,20 @@ func TestExtension_DeploymentTypeInPayload(t *testing.T) {
 			}
 			hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 			uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+			serverConfig := confighttp.NewDefaultServerConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			serverConfig.WriteTimeout = 0
+			serverConfig.ReadHeaderTimeout = 0
+			serverConfig.IdleTimeout = 0
+			serverConfig.KeepAlivesEnabled = false
+			serverConfig.NetAddr = confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:0",
+			}
 			cfg := &Config{
 				API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+					ServerConfig: serverConfig,
 					Path:         "/test-path",
 				},
 				DeploymentType: tt.deploymentType,
@@ -489,10 +591,20 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				ServerConfig: serverConfig,
 				Path:         "/test-path",
 			},
 		}
@@ -542,10 +654,20 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				ServerConfig: serverConfig,
 				Path:         "/test-path",
 			},
 		}
@@ -597,10 +719,20 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				ServerConfig: serverConfig,
 				Path:         "/test-path",
 			},
 		}
@@ -659,10 +791,20 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				ServerConfig: serverConfig,
 				Path:         "/test-path",
 			},
 		}
@@ -726,15 +868,42 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 	})
 }
 
+func TestBuildAgentConfigPropagatesTLSSetting(t *testing.T) {
+	t.Run("insecure_skip_verify true propagates to skip_ssl_validation", func(t *testing.T) {
+		clientConfig := confighttp.NewDefaultClientConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		clientConfig.MaxIdleConns = 0
+		clientConfig.IdleConnTimeout = 0
+		clientConfig.ForceAttemptHTTP2 = false
+		clientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
+		cfg := &Config{
+			API:          datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			ClientConfig: clientConfig,
+		}
+		agentCfg := buildAgentConfig(cfg).(pkgconfigmodel.Config)
+		assert.True(t, agentCfg.GetBool("skip_ssl_validation"))
+	})
+
+	t.Run("insecure_skip_verify false leaves skip_ssl_validation false", func(t *testing.T) {
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+		}
+		agentCfg := buildAgentConfig(cfg).(pkgconfigmodel.Config)
+		assert.False(t, agentCfg.GetBool("skip_ssl_validation"))
+	})
+}
+
 // Mock providers for testing
 var _ source.Provider = (*mockSourceProvider)(nil)
 
 type mockSourceProvider struct {
 	source source.Source
 	err    error
+	called bool
 }
 
 func (m *mockSourceProvider) Source(_ context.Context) (source.Source, error) {
+	m.called = true
 	if m.err != nil {
 		return source.Source{}, m.err
 	}
@@ -889,6 +1058,16 @@ func TestExtensionLivenessMetric(t *testing.T) {
 		mockSerializer.state = defaultforwarder.Started
 
 		// Create extension with test config
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{
 				Key:  "test-api-key-1234567890123456",
@@ -896,7 +1075,7 @@ func TestExtensionLivenessMetric(t *testing.T) {
 			},
 			Hostname: "test-hostname-configured",
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				ServerConfig: serverConfig,
 				Path:         "/test-path",
 			},
 		}
@@ -961,6 +1140,16 @@ func TestExtensionLivenessMetric(t *testing.T) {
 		mockSerializer.state = defaultforwarder.Started
 
 		// Create extension without configured hostname
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{
 				Key:  "test-api-key-1234567890123456",
@@ -968,7 +1157,7 @@ func TestExtensionLivenessMetric(t *testing.T) {
 			},
 			// No Hostname set - will be inferred
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				ServerConfig: serverConfig,
 				Path:         "/test-path",
 			},
 		}
@@ -1029,6 +1218,16 @@ func TestExtensionLivenessMetric(t *testing.T) {
 		mockSerializer.state = defaultforwarder.Started
 
 		// Create extension
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{
 				Key:  "test-api-key-1234567890123456",
@@ -1036,7 +1235,7 @@ func TestExtensionLivenessMetric(t *testing.T) {
 			},
 			Hostname: "test-hostname",
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				ServerConfig: serverConfig,
 				Path:         "/test-path",
 			},
 		}

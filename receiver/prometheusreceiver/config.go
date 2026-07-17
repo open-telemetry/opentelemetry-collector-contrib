@@ -11,6 +11,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/goccy/go-yaml"
 	commonconfig "github.com/prometheus/common/config"
@@ -18,10 +19,10 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/apiserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/targetallocator"
 )
 
@@ -30,30 +31,36 @@ type Config struct {
 	PrometheusConfig   *PromConfig `mapstructure:"config"`
 	TrimMetricSuffixes bool        `mapstructure:"trim_metric_suffixes"`
 
-	// ReportExtraScrapeMetrics - enables reporting of additional metrics for Prometheus client like scrape_body_size_bytes
-	//
-	// Deprecated: use the feature gate "receiver.prometheusreceiver.EnableReportExtraScrapeMetrics" instead.
-	ReportExtraScrapeMetrics bool `mapstructure:"report_extra_scrape_metrics"`
-
 	TargetAllocator configoptional.Optional[targetallocator.Config] `mapstructure:"target_allocator"`
 
 	//  APIServer has the settings to enable the receiver to host the Prometheus API
 	// server in agent mode. This allows the user to call the endpoint to get
 	// the config, service discovery, and targets for debugging purposes.
-	APIServer APIServer `mapstructure:"api_server"`
+	APIServer apiserver.Config `mapstructure:"api_server"`
+
+	// ScrapeOnShutdown enables a final scrape before the receiver closes.
+	//
+	// NOTE: This final scrape ignores the configured scrape interval.
+	ScrapeOnShutdown bool `mapstructure:"scrape_on_shutdown"`
+
+	// DiscoveryReloadOnStartup enables discovering targets immediately on start up as opposed
+	// to waiting for the configured interval before initializing the scrape pools.
+	DiscoveryReloadOnStartup bool `mapstructure:"discovery_reload_on_startup"`
+
+	// InitialScrapeOffset adds a fixed delay before the initial scrape of targets.
+	// This duration is applied on top of the receiver's internal load balancing offset.
+	// It avoids readiness races and backend rate limits immediately after startup.
+	InitialScrapeOffset time.Duration `mapstructure:"initial_scrape_offset"`
 
 	// For testing only.
 	ignoreMetadata bool
+	skipOffsetting bool
 }
 
 // Validate checks the receiver configuration is valid.
 func (cfg *Config) Validate() error {
 	if !cfg.PrometheusConfig.ContainsScrapeConfigs() && !cfg.TargetAllocator.HasValue() {
 		return errors.New("no Prometheus scrape_configs or target_allocator set")
-	}
-
-	if err := cfg.APIServer.Validate(); err != nil {
-		return fmt.Errorf("invalid API server configuration settings: %w", err)
 	}
 
 	return nil
@@ -226,22 +233,5 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 	if err := checkFile(tlsConfig.KeyFile); err != nil {
 		return fmt.Errorf("error checking client key file %q: %w", tlsConfig.KeyFile, err)
 	}
-	return nil
-}
-
-type APIServer struct {
-	Enabled      bool                    `mapstructure:"enabled"`
-	ServerConfig confighttp.ServerConfig `mapstructure:"server_config"`
-}
-
-func (cfg *APIServer) Validate() error {
-	if !cfg.Enabled {
-		return nil
-	}
-
-	if cfg.ServerConfig.Endpoint == "" {
-		return errors.New("if api_server is enabled, it requires a non-empty server_config endpoint")
-	}
-
 	return nil
 }

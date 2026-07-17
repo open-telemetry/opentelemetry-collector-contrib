@@ -27,6 +27,7 @@ import (
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/prometheus/prometheus/util/teststorage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -35,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/sharedpromconfig"
 )
 
 type mockTargetAllocator struct {
@@ -736,7 +738,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 
 			baseCfg, err := promconfig.Load("", nil)
 			require.NoError(t, err)
-			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, baseCfg)
+			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, sharedpromconfig.NewConfig(baseCfg))
 			require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 			allocator.wg.Wait()
@@ -775,15 +777,20 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 						s.Labels["__meta_url"] = model.LabelValue(sdConfig.URL)
 						require.Equal(t, s.Labels, group.Labels)
 
-						// The manager may not be done processing the Refresh call by the
-						// time we check the value of the ScrapeConfig.
-						require.Eventually(t, func() bool {
-							v := manager.configUpdateCount.Load()
-							return v >= int64(len(tc.responses.responses["/scrape_configs"]))
-						}, 5*time.Second, 250*time.Millisecond)
+						// Wait for the manager to finish processing all config updates.
+						expected := int64(len(tc.responses.responses["/scrape_configs"]))
+						for manager.configUpdateCount.Load() < expected {
+							select {
+							case <-manager.configUpdated:
+							case <-time.After(5 * time.Second):
+								require.FailNowf(t, "timed out", "waiting for config update count to reach %d, got %d",
+									expected, manager.configUpdateCount.Load())
+							}
+						}
 
 						if s.MetricRelabelConfig != nil {
-							for _, sc := range manager.promCfg.ScrapeConfigs {
+							promCfg := manager.promCfg.Get()
+							for _, sc := range promCfg.ScrapeConfigs {
 								if sc.JobName == s.MetricRelabelConfig.JobName {
 									for _, mc := range sc.MetricRelabelConfigs {
 										require.Equal(t, s.MetricRelabelConfig.MetricRelabelRegex, mc.Regex)
@@ -793,7 +800,8 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 						}
 
 						if s.ScrapeFallbackProtocol != "" {
-							for _, sc := range manager.promCfg.ScrapeConfigs {
+							promCfg := manager.promCfg.Get()
+							for _, sc := range promCfg.ScrapeConfigs {
 								if sc.JobName == job {
 									require.Equal(t, sc.ScrapeFallbackProtocol, s.ScrapeFallbackProtocol)
 								}
@@ -938,7 +946,7 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 	baseCfg, err := promconfig.Load("", nil)
 	require.NoError(t, err)
 	baseCfg.ScrapeConfigs = initialScrapeConfigs
-	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, baseCfg)
+	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, sharedpromconfig.NewConfig(baseCfg))
 	require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 	allocator.wg.Wait()
@@ -949,21 +957,23 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 	require.Len(t, providers, 2)
 	require.IsType(t, &promHTTP.Discovery{}, providers[1].Discoverer())
 
-	require.Len(t, manager.promCfg.ScrapeConfigs, 3)
-	require.Equal(t, "job1", manager.promCfg.ScrapeConfigs[0].JobName)
-	require.Equal(t, "job2", manager.promCfg.ScrapeConfigs[1].JobName)
-	require.Equal(t, "job3", manager.promCfg.ScrapeConfigs[2].JobName)
+	promCfg := manager.promCfg.Get()
+	require.Len(t, promCfg.ScrapeConfigs, 3)
+	require.Equal(t, "job1", promCfg.ScrapeConfigs[0].JobName)
+	require.Equal(t, "job2", promCfg.ScrapeConfigs[1].JobName)
+	require.Equal(t, "job3", promCfg.ScrapeConfigs[2].JobName)
 }
 
 func initPrometheusManagers(ctx context.Context, t *testing.T) (*scrape.Manager, *discovery.Manager) {
 	logger := promslog.NewNopLogger()
 	reg := prometheus.NewRegistry()
-	sdMetrics, err := discovery.RegisterSDMetrics(reg, discovery.NewRefreshMetrics(reg))
+	sdMetrics, err := discovery.CreateAndRegisterSDMetrics(reg)
 	require.NoError(t, err)
 	discoveryManager := discovery.NewManager(ctx, logger, reg, sdMetrics)
 	require.NotNil(t, discoveryManager)
 
-	scrapeManager, err := scrape.NewManager(&scrape.Options{}, logger, nil, nil, reg)
+	store := teststorage.New(t)
+	scrapeManager, err := scrape.NewManager(&scrape.Options{}, logger, nil, store, nil, reg)
 	require.NoError(t, err)
 	return scrapeManager, discoveryManager
 }

@@ -1,0 +1,14 @@
+description: Config has the configuration for the extension enabling the golang net/http/pprof (Performance Profiler) extension.
+type: object
+properties:
+  block_profile_fraction:
+    description: Fraction of blocking events that are profiled. A value <= 0 disables profiling. See https://golang.org/pkg/runtime/#SetBlockProfileRate for details.
+    type: integer
+  mutex_profile_fraction:
+    description: Fraction of mutex contention events that are profiled. A value <= 0 disables profiling. See https://golang.org/pkg/runtime/#SetMutexProfileFraction for details.
+    type: integer
+  save_to_file:
+    description: Optional file name to save the CPU profile to. The profiling starts when the Collector starts and is saved to the file when the Collector is terminated.
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confignet.tcp_addr_config

@@ -5,6 +5,7 @@ package kafka // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"strings"
@@ -24,8 +25,10 @@ import (
 	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"github.com/twmb/franz-go/plugin/kzap"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
@@ -35,10 +38,18 @@ const (
 	SCRAMSHA256          = "SCRAM-SHA-256"
 	PLAIN                = "PLAIN"
 	AWSMSKIAMOAUTHBEARER = "AWS_MSK_IAM_OAUTHBEARER" //nolint:gosec // These aren't credentials.
+	OAUTHBEARER          = "OAUTHBEARER"
 )
 
+type contextTokenSource interface {
+	Token(context.Context) (*oauth2.Token, error)
+}
+
 // NewFranzSyncProducer creates a new Kafka client using the franz-go library.
-func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfig,
+func NewFranzSyncProducer(
+	ctx context.Context,
+	host component.Host,
+	clientCfg configkafka.ClientConfig,
 	cfg configkafka.ProducerConfig,
 	timeout time.Duration,
 	logger *zap.Logger,
@@ -50,16 +61,16 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 	default:
 		codec = codec.WithLevel(int(cfg.CompressionParams.Level))
 	}
-	opts, err := commonOpts(ctx, clientCfg, logger, append(
+	// Prepend a default sarama-compatible partitioner so that callers can override
+	// it by appending their own kgo.RecordPartitioner option in opts.
+	opts = append([]kgo.Opt{kgo.RecordPartitioner(newSaramaCompatPartitioner())}, opts...)
+	opts, err := commonOpts(ctx, host, clientCfg, logger, append(
 		opts,
 		kgo.ProduceRequestTimeout(timeout),
 		kgo.ProducerBatchCompression(codec),
-		// Use the UniformBytesPartitioner that is the default in franz-go with
-		// the legacy compatibility sarama hashing to avoid hashing to different
-		// partitions in case partitioning is enabled.
-		kgo.RecordPartitioner(newSaramaCompatPartitioner()),
 		kgo.ProducerLinger(cfg.Linger),
 		kgo.ProducerBatchMaxBytes(int32(cfg.MaxMessageBytes)),
+		kgo.BrokerMaxWriteBytes(int32(cfg.MaxBrokerWriteBytes)),
 		kgo.MaxBufferedRecords(cfg.FlushMaxMessages),
 	)...)
 	if err != nil {
@@ -86,14 +97,17 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 }
 
 // NewFranzConsumerGroup creates a new Kafka consumer client using the franz-go library.
-func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConfig,
+func NewFranzConsumerGroup(
+	ctx context.Context,
+	host component.Host,
+	clientCfg configkafka.ClientConfig,
 	consumerCfg configkafka.ConsumerConfig,
 	topics []string,
 	excludeTopics []string,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
-	opts, err := commonOpts(ctx, clientCfg, logger, append([]kgo.Opt{
+	opts, err := commonOpts(ctx, host, clientCfg, logger, append([]kgo.Opt{
 		kgo.ConsumeTopics(topics...),
 		kgo.ConsumerGroup(consumerCfg.GroupID),
 		kgo.SessionTimeout(consumerCfg.SessionTimeout),
@@ -151,16 +165,19 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 	}
 
 	// Configure rebalance strategy
-	switch consumerCfg.GroupRebalanceStrategy {
-	case "range": // Sarama default.
-		opts = append(opts, kgo.Balancers(kgo.RangeBalancer()))
-	case "roundrobin":
-		opts = append(opts, kgo.Balancers(kgo.RoundRobinBalancer()))
-	case "sticky":
-		opts = append(opts, kgo.Balancers(kgo.StickyBalancer()))
-	// NOTE(marclop): This is a new type of balancer, document accordingly.
-	case "cooperative-sticky":
-		opts = append(opts, kgo.Balancers(kgo.CooperativeStickyBalancer()))
+	if consumerCfg.GroupRebalanceStrategy != "" {
+		logger.Warn("group_rebalance_strategy is deprecated, use group_rebalance_strategies instead")
+	}
+	balancerOpt, err := balancerOptFromStrategies(
+		consumerCfg.GroupRebalanceStrategy,
+		consumerCfg.GroupRebalanceStrategies,
+		host,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if balancerOpt != nil {
+		opts = append(opts, balancerOpt)
 	}
 	return kgo.NewClient(opts...)
 }
@@ -168,11 +185,12 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 // NewFranzClient creates a franz-go client using the same commonOpts used for producer/consumer.
 func NewFranzClient(
 	ctx context.Context,
+	host component.Host,
 	clientCfg configkafka.ClientConfig,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
-	opts, err := commonOpts(ctx, clientCfg, logger, opts...)
+	opts, err := commonOpts(ctx, host, clientCfg, logger, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -182,23 +200,99 @@ func NewFranzClient(
 // NewFranzClusterAdminClient creates a kadm admin client from a freshly created franz client.
 func NewFranzClusterAdminClient(
 	ctx context.Context,
+	host component.Host,
 	clientCfg configkafka.ClientConfig,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kadm.Client, *kgo.Client, error) {
-	cl, err := NewFranzClient(ctx, clientCfg, logger, opts...)
+	cl, err := NewFranzClient(ctx, host, clientCfg, logger, opts...)
 	if err != nil {
 		return nil, nil, err
 	}
 	return kadm.NewClient(cl), cl, nil
 }
 
-// NewFranzAdminFromClient returns a kadm admin bound to an existing kgo client.
-func NewFranzAdminFromClient(cl *kgo.Client) *kadm.Client {
-	return kadm.NewClient(cl)
+// balancerOptFromStrategies returns a kgo.Opt that sets the group balancers, or
+// nil if no strategy is configured (franz-go default applies). The deprecated
+// singular strategy and the strategies list are mutually exclusive (enforced by
+// ConsumerConfig.Validate).
+func balancerOptFromStrategies(
+	strategy configkafka.GroupRebalanceStrategy,
+	strategies []configkafka.GroupRebalanceStrategy,
+	host component.Host,
+) (kgo.Opt, error) {
+	if strategy == "" && len(strategies) == 0 {
+		return nil, nil
+	}
+	if len(strategies) == 0 {
+		balancer, err := balancerFromStrategy(strategy, "group_rebalance_strategy", host)
+		if err != nil {
+			return nil, err
+		}
+		return kgo.Balancers(balancer), nil
+	}
+
+	balancers, err := balancersFromStrategies(strategies, host)
+	if err != nil {
+		return nil, err
+	}
+	return kgo.Balancers(balancers...), nil
 }
 
-func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
+func balancersFromStrategies(strategies []configkafka.GroupRebalanceStrategy, host component.Host) ([]kgo.GroupBalancer, error) {
+	balancers := make([]kgo.GroupBalancer, 0, len(strategies))
+	for i, strategy := range strategies {
+		field := fmt.Sprintf("group_rebalance_strategies[%d]", i)
+		balancer, err := balancerFromStrategy(strategy, field, host)
+		if err != nil {
+			return nil, err
+		}
+		if balancer != nil {
+			balancers = append(balancers, balancer)
+		}
+	}
+	if len(balancers) == 0 {
+		return nil, errors.New("group_rebalance_strategies has no valid group rebalance strategies")
+	}
+	return balancers, nil
+}
+
+func balancerFromStrategy(strategy configkafka.GroupRebalanceStrategy, field string, host component.Host) (kgo.GroupBalancer, error) {
+	switch strategy {
+	case "":
+		return nil, nil
+	case configkafka.RangeBalanceStrategy:
+		return kgo.RangeBalancer(), nil
+	case configkafka.RoundRobinBalanceStrategy:
+		return kgo.RoundRobinBalancer(), nil
+	case configkafka.StickyBalanceStrategy:
+		return kgo.StickyBalancer(), nil
+	case configkafka.CooperativeStickyBalanceStrategy:
+		return kgo.CooperativeStickyBalancer(), nil
+	default:
+		var id component.ID
+		if err := id.UnmarshalText([]byte(strategy)); err != nil {
+			return nil, fmt.Errorf(
+				"%s %q is not a built-in strategy or a valid extension ID: %w",
+				field, strategy, err,
+			)
+		}
+		ext, ok := host.GetExtensions()[id]
+		if !ok {
+			return nil, fmt.Errorf("%s extension %q not found", field, id)
+		}
+		balancer, ok := ext.(kgo.GroupBalancer)
+		if !ok {
+			return nil, fmt.Errorf("%s extension %q does not implement kgo.GroupBalancer", field, id)
+		}
+		return balancer, nil
+	}
+}
+
+func commonOpts(
+	ctx context.Context,
+	host component.Host,
+	clientCfg configkafka.ClientConfig,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) ([]kgo.Opt, error) {
@@ -233,7 +327,7 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 		opts = append(opts, kgo.SASL(auth.AsMechanism()))
 	}
 	if clientCfg.Authentication.SASL != nil {
-		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL)
+		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL, host)
 		if err != nil {
 			return nil, fmt.Errorf("failed to configure SASL: %w", err)
 		}
@@ -258,6 +352,10 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 	if clientCfg.Metadata.RefreshInterval > 0 {
 		opts = append(opts, kgo.MetadataMaxAge(clientCfg.Metadata.RefreshInterval))
 	}
+	// Configure connection idle timeout
+	if clientCfg.ConnIdleTimeout > 0 {
+		opts = append(opts, kgo.ConnIdleTimeout(clientCfg.ConnIdleTimeout))
+	}
 	// Configure the min/max protocol version if provided
 	if clientCfg.ProtocolVersion != "" {
 		keyVersions := make(map[string]any)
@@ -276,7 +374,7 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 	return opts, nil
 }
 
-func configureKgoSASL(cfg *configkafka.SASLConfig) (kgo.Opt, error) {
+func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt, error) {
 	var m sasl.Mechanism
 	switch cfg.Mechanism {
 	case PLAIN:
@@ -289,6 +387,22 @@ func configureKgoSASL(cfg *configkafka.SASLConfig) (kgo.Opt, error) {
 		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
 			token, _, err := signer.GenerateAuthToken(ctx, cfg.AWSMSK.Region)
 			return oauth.Auth{Token: token}, err
+		})
+	case OAUTHBEARER:
+		extMap := host.GetExtensions()
+		oauthExt, exists := extMap[cfg.OAuthBearerTokenSource]
+		if !exists {
+			return nil, fmt.Errorf("extension %s is not configured", cfg.OAuthBearerTokenSource)
+		}
+
+		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
+			ts := oauthExt.(contextTokenSource)
+
+			token, err := ts.Token(ctx)
+			if err != nil {
+				return oauth.Auth{}, err
+			}
+			return oauth.Auth{Token: token.AccessToken}, nil
 		})
 	default:
 		return nil, fmt.Errorf("unsupported SASL mechanism: %s", cfg.Mechanism)
@@ -342,7 +456,13 @@ func compressionCodec(compression string) kgo.CompressionCodec {
 }
 
 func newSaramaCompatPartitioner() kgo.Partitioner {
-	return kgo.StickyKeyPartitioner(kgo.SaramaCompatHasher(saramaHashFn))
+	return kgo.StickyKeyPartitioner(NewSaramaCompatHasher())
+}
+
+// NewSaramaCompatHasher returns a PartitionerHasher that replicates the default
+// Sarama partitioning behavior: FNV-1a hashing with Sarama's int32 sign convention.
+func NewSaramaCompatHasher() kgo.PartitionerHasher {
+	return kgo.SaramaCompatHasher(saramaHashFn)
 }
 
 func saramaHashFn(b []byte) uint32 {

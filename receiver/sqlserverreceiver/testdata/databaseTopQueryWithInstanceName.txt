@@ -14,10 +14,10 @@ with qstats as (
 		SUM(qs.total_rows) AS total_rows,
 		SUM(qs.total_grant_kb) as total_grant_kb
 	FROM sys.dm_exec_query_stats AS qs
-	WHERE qs.last_execution_time BETWEEN DATEADD(SECOND, @lookbackTime, GETDATE()) AND GETDATE() AND (@instanceName = '' OR  @@SERVERNAME = @instanceName)
 	GROUP BY
 		qs.query_hash,
 		qs.query_plan_hash
+	HAVING MAX(DATEADD(ms, qs.last_elapsed_time / 1000, qs.last_execution_time)) > DATEADD(SECOND, @lookbackTime, GETDATE())
 )
 SELECT qs.*,
 	SUBSTRING(st.text, (stats.statement_start_offset / 2) + 1,
@@ -28,4 +28,5 @@ SELECT qs.*,
 FROM qstats AS qs
 		INNER JOIN sys.dm_exec_query_stats AS stats on qs.query_plan_handle = stats.plan_handle
 		CROSS APPLY sys.dm_exec_query_plan(qs.query_plan_handle) AS qp
-		CROSS APPLY sys.dm_exec_sql_text(qs.query_plan_handle) AS st;
+		CROSS APPLY sys.dm_exec_sql_text(qs.query_plan_handle) AS st
+		WHERE st.text IS NOT NULL;

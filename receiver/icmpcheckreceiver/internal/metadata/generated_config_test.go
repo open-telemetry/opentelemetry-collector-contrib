@@ -20,17 +20,27 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					PingLossRatio: MetricConfig{Enabled: true},
-					PingRttAvg:    MetricConfig{Enabled: true},
-					PingRttMax:    MetricConfig{Enabled: true},
-					PingRttMin:    MetricConfig{Enabled: true},
-					PingRttStddev: MetricConfig{Enabled: true},
+					PingLossRatio: PingLossRatioMetricConfig{
+						Enabled: true,
+					},
+					PingRttAvg: PingRttAvgMetricConfig{
+						Enabled: true,
+					},
+					PingRttMax: PingRttMaxMetricConfig{
+						Enabled: true,
+					},
+					PingRttMin: PingRttMinMetricConfig{
+						Enabled: true,
+					},
+					PingRttStddev: PingRttStddevMetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					NetPeerIP:   ResourceAttributeConfig{Enabled: true},
@@ -42,11 +52,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					PingLossRatio: MetricConfig{Enabled: false},
-					PingRttAvg:    MetricConfig{Enabled: false},
-					PingRttMax:    MetricConfig{Enabled: false},
-					PingRttMin:    MetricConfig{Enabled: false},
-					PingRttStddev: MetricConfig{Enabled: false},
+					PingLossRatio: PingLossRatioMetricConfig{
+						Enabled: false,
+					},
+					PingRttAvg: PingRttAvgMetricConfig{
+						Enabled: false,
+					},
+					PingRttMax: PingRttMaxMetricConfig{
+						Enabled: false,
+					},
+					PingRttMin: PingRttMinMetricConfig{
+						Enabled: false,
+					},
+					PingRttStddev: PingRttStddevMetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					NetPeerIP:   ResourceAttributeConfig{Enabled: false},
@@ -58,7 +78,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(PingLossRatioMetricConfig{}, PingRttAvgMetricConfig{}, PingRttMaxMetricConfig{}, PingRttMinMetricConfig{}, PingRttStddevMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -69,7 +89,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

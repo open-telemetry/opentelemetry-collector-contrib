@@ -1,4 +1,10 @@
+display_name: ICMP Check Receiver
 type: icmpcheckreceiver
+
+description: |
+  The ICMP Check Receiver can be used for synthetic checks against network endpoints. This receiver will send ICMP Echo
+  Requests (pings) to the specified `targets`. It provides device availability monitoring and interface statistics with
+  native OpenTelemetry OTLP metrics generation.
 
 status:
   class: receiver
@@ -22,40 +28,35 @@ metrics:
   ping.loss.ratio:
     description: The percentage of lost packets.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     unit: "%"
   ping.rtt.avg:
     description: Average round-trip time in milliseconds.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: ms
   ping.rtt.max:
     description: Maximum round-trip time in milliseconds.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: ms
   ping.rtt.min:
     description: Minimum round-trip time in milliseconds.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: ms
   ping.rtt.stddev:
     description: Standard deviation of round-trip time in milliseconds.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: ms

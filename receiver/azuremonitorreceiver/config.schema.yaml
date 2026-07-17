@@ -1,0 +1,77 @@
+$defs:
+  auth_config:
+    description: AuthConfig defines the auth settings for the azure receiver.
+    type: object
+    properties:
+      authenticator:
+        description: AuthenticatorID specifies the name of the azure extension to authenticate the requests to azure monitor.
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
+  dimensions_config:
+    type: object
+    properties:
+      enabled:
+        x-pointer: true
+        type: boolean
+      overrides:
+        $ref: nested_list_alias
+description: Config defines the configuration for the various elements of the receiver agent.
+type: object
+properties:
+  append_tags_as_attributes:
+    type: array
+    items:
+      type: string
+  auth:
+    description: Authentication accepts the component azureauthextension, and uses it to get an access token to make requests. Using this, `credentials` and any related fields become useless.
+    x-pointer: true
+    $ref: auth_config
+  cache_resources:
+    type: number
+    x-customType: float64
+  cache_resources_definitions:
+    type: number
+    x-customType: float64
+  client_id:
+    type: string
+  client_secret:
+    type: string
+  cloud:
+    type: string
+  credentials:
+    description: 'Deprecated: Credentials is deprecated.'
+    type: string
+  dimensions:
+    $ref: dimensions_config
+  discover_subscriptions:
+    type: boolean
+  federated_token_file:
+    type: string
+  maximum_number_of_metrics_in_a_call:
+    type: integer
+  maximum_number_of_records_per_resource:
+    type: integer
+    x-customType: int32
+  maximum_resources_per_batch:
+    type: integer
+  metrics:
+    $ref: nested_list_alias
+  resource_groups:
+    type: array
+    items:
+      type: string
+  services:
+    type: array
+    items:
+      type: string
+  subscription_ids:
+    type: array
+    items:
+      type: string
+  tenant_id:
+    type: string
+  use_batch_api:
+    type: boolean
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/metadata.metrics_builder_config

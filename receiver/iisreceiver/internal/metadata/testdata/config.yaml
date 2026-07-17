@@ -15,10 +15,51 @@ all_set:
       enabled: true
     iis.network.file.count:
       enabled: true
+      attributes: ["direction"]
     iis.network.io:
       enabled: true
+      attributes: ["direction"]
     iis.request.count:
       enabled: true
+      attributes: ["request"]
+    iis.request.queue.age.max:
+      enabled: true
+    iis.request.queue.count:
+      enabled: true
+    iis.request.rejected:
+      enabled: true
+    iis.thread.active:
+      enabled: true
+    iis.uptime:
+      enabled: true
+  resource_attributes:
+    iis.application_pool:
+      enabled: true
+    iis.site:
+      enabled: true
+reaggregate_set:
+  metrics:
+    iis.application_pool.state:
+      enabled: true
+    iis.application_pool.uptime:
+      enabled: true
+    iis.connection.active:
+      enabled: true
+    iis.connection.anonymous:
+      enabled: true
+    iis.connection.attempt.count:
+      enabled: true
+    iis.network.blocked:
+      enabled: true
+    iis.network.file.count:
+      enabled: true
+      attributes: []
+    iis.network.io:
+      enabled: true
+      attributes: []
+    iis.request.count:
+      enabled: true
+      attributes: []
     iis.request.queue.age.max:
       enabled: true
     iis.request.queue.count:
@@ -50,10 +91,13 @@ none_set:
       enabled: false
     iis.network.file.count:
       enabled: false
+      attributes: ["direction"]
     iis.network.io:
       enabled: false
+      attributes: ["direction"]
     iis.request.count:
       enabled: false
+      attributes: ["request"]
     iis.request.queue.age.max:
       enabled: false
     iis.request.queue.count:

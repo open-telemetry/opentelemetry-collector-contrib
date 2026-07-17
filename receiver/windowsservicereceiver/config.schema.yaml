@@ -1,0 +1,14 @@
+description: Config defines configuration for windowsservice receiver.
+type: object
+properties:
+  exclude_services:
+    type: array
+    items:
+      type: string
+  include_services:
+    type: array
+    items:
+      type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/metadata.metrics_builder_config

@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"testing"
 	"time"
 
@@ -145,11 +144,11 @@ func startSplunk() splunkContainerConfig {
 	}
 
 	// Use the container's host and port for your tests
-	logger.Info("Splunk running at:", zap.String("host", host), zap.Int("uiPort", uiPort.Int()), zap.Int("hecPort", hecPort.Int()), zap.Int("managementPort", managementPort.Int()))
+	logger.Info("Splunk running at:", zap.String("host", host), zap.String("uiPort", uiPort.String()), zap.String("hecPort", hecPort.String()), zap.String("managementPort", managementPort.Port()))
 	integrationtestutils.SetConfigVariable("HOST", host)
-	integrationtestutils.SetConfigVariable("UI_PORT", strconv.Itoa(uiPort.Int()))
-	integrationtestutils.SetConfigVariable("HEC_PORT", strconv.Itoa(hecPort.Int()))
-	integrationtestutils.SetConfigVariable("MANAGEMENT_PORT", strconv.Itoa(managementPort.Int()))
+	integrationtestutils.SetConfigVariable("UI_PORT", uiPort.Port())
+	integrationtestutils.SetConfigVariable("HEC_PORT", hecPort.Port())
+	integrationtestutils.SetConfigVariable("MANAGEMENT_PORT", managementPort.Port())
 	cfg := splunkContainerConfig{
 		conCtx:    conContext,
 		container: container,

@@ -89,6 +89,15 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
+				Name: "on_error_drop",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Field = newBodyField("key")
+					cfg.OnError = "drop"
+					return cfg
+				}(),
+			},
+			{
 				Name:            "invalid_empty_field",
 				ExpectBuildErrs: []error{errMissingField},
 			},

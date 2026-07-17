@@ -7,31 +7,72 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 )
 
 var separator = string([]byte{0x0, 0x1})
 
-type batchTraces struct {
-	attrKeys []string
-	next     consumer.Traces
+// Option configures a batch consumer created by this package.
+type Option func(*options)
+
+type options struct {
+	injectMetadata bool
 }
 
-func NewBatchPerResourceTraces(attrKey string, next consumer.Traces) consumer.Traces {
-	return &batchTraces{
-		attrKeys: []string{attrKey},
-		next:     next,
+// WithMetadataInjection enables injecting the batched resource attribute
+// values as client.Metadata into the context before forwarding each
+// sub-batch to the next consumer. This allows downstream components (e.g.
+// an exporterhelper batcher with Partition.MetadataKeys configured) to
+// partition requests by the same keys used for batching.
+func WithMetadataInjection() Option {
+	return func(o *options) {
+		o.injectMetadata = true
 	}
 }
 
-func NewMultiBatchPerResourceTraces(attrKeys []string, next consumer.Traces) consumer.Traces {
+// injectAttrMetadata returns a new context with client.Metadata populated
+// from the given attribute map for the specified keys. Keys absent from the
+// map are omitted. If no keys are found the original context is returned.
+func injectAttrMetadata(ctx context.Context, attrs pcommon.Map, attrKeys []string) context.Context {
+	meta := map[string][]string{}
+	for _, k := range attrKeys {
+		if v, ok := attrs.Get(k); ok {
+			meta[k] = []string{v.Str()}
+		}
+	}
+	if len(meta) == 0 {
+		return ctx
+	}
+	return client.NewContext(ctx, client.Info{Metadata: client.NewMetadata(meta)})
+}
+
+type batchTraces struct {
+	attrKeys       []string
+	injectMetadata bool
+	next           consumer.Traces
+}
+
+func NewBatchPerResourceTraces(attrKey string, next consumer.Traces, opts ...Option) consumer.Traces {
+	return NewMultiBatchPerResourceTraces([]string{attrKey}, next, opts...)
+}
+
+func NewMultiBatchPerResourceTraces(attrKeys []string, next consumer.Traces, opts ...Option) consumer.Traces {
+	o := options{}
+	for _, opt := range opts {
+		opt(&o)
+	}
 	return &batchTraces{
-		attrKeys: attrKeys,
-		next:     next,
+		attrKeys:       attrKeys,
+		injectMetadata: o.injectMetadata,
+		next:           next,
 	}
 }
 
@@ -45,6 +86,9 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) erro
 	lenRss := rss.Len()
 	// If zero or one resource spans just call next.
 	if lenRss <= 1 {
+		if bt.injectMetadata && lenRss == 1 {
+			ctx = injectAttrMetadata(ctx, rss.At(0).Resource().Attributes(), bt.attrKeys)
+		}
 		return bt.next.ConsumeTraces(ctx, td)
 	}
 
@@ -63,6 +107,9 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) erro
 	}
 	// If there is a single attribute value, then call next.
 	if len(indicesByAttr) <= 1 {
+		if bt.injectMetadata {
+			ctx = injectAttrMetadata(ctx, rss.At(0).Resource().Attributes(), bt.attrKeys)
+		}
 		return bt.next.ConsumeTraces(ctx, td)
 	}
 
@@ -74,27 +121,34 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) erro
 			rs := rss.At(i)
 			rs.CopyTo(tracesForAttr.ResourceSpans().AppendEmpty())
 		}
-		errs = multierr.Append(errs, bt.next.ConsumeTraces(ctx, tracesForAttr))
+		callCtx := ctx
+		if bt.injectMetadata {
+			callCtx = injectAttrMetadata(ctx, rss.At(indices[0]).Resource().Attributes(), bt.attrKeys)
+		}
+		errs = multierr.Append(errs, bt.next.ConsumeTraces(callCtx, tracesForAttr))
 	}
 	return errs
 }
 
 type batchMetrics struct {
-	attrKeys []string
-	next     consumer.Metrics
+	attrKeys       []string
+	injectMetadata bool
+	next           consumer.Metrics
 }
 
-func NewBatchPerResourceMetrics(attrKey string, next consumer.Metrics) consumer.Metrics {
-	return &batchMetrics{
-		attrKeys: []string{attrKey},
-		next:     next,
+func NewBatchPerResourceMetrics(attrKey string, next consumer.Metrics, opts ...Option) consumer.Metrics {
+	return NewMultiBatchPerResourceMetrics([]string{attrKey}, next, opts...)
+}
+
+func NewMultiBatchPerResourceMetrics(attrKeys []string, next consumer.Metrics, opts ...Option) consumer.Metrics {
+	o := options{}
+	for _, opt := range opts {
+		opt(&o)
 	}
-}
-
-func NewMultiBatchPerResourceMetrics(attrKeys []string, next consumer.Metrics) consumer.Metrics {
 	return &batchMetrics{
-		attrKeys: attrKeys,
-		next:     next,
+		attrKeys:       attrKeys,
+		injectMetadata: o.injectMetadata,
+		next:           next,
 	}
 }
 
@@ -108,6 +162,9 @@ func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) 
 	lenRms := rms.Len()
 	// If zero or one resource metrics just call next.
 	if lenRms <= 1 {
+		if bt.injectMetadata && lenRms == 1 {
+			ctx = injectAttrMetadata(ctx, rms.At(0).Resource().Attributes(), bt.attrKeys)
+		}
 		return bt.next.ConsumeMetrics(ctx, td)
 	}
 
@@ -124,6 +181,9 @@ func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) 
 	}
 	// If there is a single attribute value, then call next.
 	if len(indicesByAttr) <= 1 {
+		if bt.injectMetadata {
+			ctx = injectAttrMetadata(ctx, rms.At(0).Resource().Attributes(), bt.attrKeys)
+		}
 		return bt.next.ConsumeMetrics(ctx, td)
 	}
 
@@ -135,27 +195,34 @@ func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) 
 			rm := rms.At(i)
 			rm.CopyTo(metricsForAttr.ResourceMetrics().AppendEmpty())
 		}
-		errs = multierr.Append(errs, bt.next.ConsumeMetrics(ctx, metricsForAttr))
+		callCtx := ctx
+		if bt.injectMetadata {
+			callCtx = injectAttrMetadata(ctx, rms.At(indices[0]).Resource().Attributes(), bt.attrKeys)
+		}
+		errs = multierr.Append(errs, bt.next.ConsumeMetrics(callCtx, metricsForAttr))
 	}
 	return errs
 }
 
 type batchLogs struct {
-	attrKeys []string
-	next     consumer.Logs
+	attrKeys       []string
+	injectMetadata bool
+	next           consumer.Logs
 }
 
-func NewBatchPerResourceLogs(attrKey string, next consumer.Logs) consumer.Logs {
-	return &batchLogs{
-		attrKeys: []string{attrKey},
-		next:     next,
+func NewBatchPerResourceLogs(attrKey string, next consumer.Logs, opts ...Option) consumer.Logs {
+	return NewMultiBatchPerResourceLogs([]string{attrKey}, next, opts...)
+}
+
+func NewMultiBatchPerResourceLogs(attrKeys []string, next consumer.Logs, opts ...Option) consumer.Logs {
+	o := options{}
+	for _, opt := range opts {
+		opt(&o)
 	}
-}
-
-func NewMultiBatchPerResourceLogs(attrKeys []string, next consumer.Logs) consumer.Logs {
 	return &batchLogs{
-		attrKeys: attrKeys,
-		next:     next,
+		attrKeys:       attrKeys,
+		injectMetadata: o.injectMetadata,
+		next:           next,
 	}
 }
 
@@ -169,6 +236,9 @@ func (bt *batchLogs) ConsumeLogs(ctx context.Context, td plog.Logs) error {
 	lenRls := rls.Len()
 	// If zero or one resource logs just call next.
 	if lenRls <= 1 {
+		if bt.injectMetadata && lenRls == 1 {
+			ctx = injectAttrMetadata(ctx, rls.At(0).Resource().Attributes(), bt.attrKeys)
+		}
 		return bt.next.ConsumeLogs(ctx, td)
 	}
 
@@ -185,6 +255,9 @@ func (bt *batchLogs) ConsumeLogs(ctx context.Context, td plog.Logs) error {
 	}
 	// If there is a single attribute value, then call next.
 	if len(indicesByAttr) <= 1 {
+		if bt.injectMetadata {
+			ctx = injectAttrMetadata(ctx, rls.At(0).Resource().Attributes(), bt.attrKeys)
+		}
 		return bt.next.ConsumeLogs(ctx, td)
 	}
 
@@ -196,7 +269,84 @@ func (bt *batchLogs) ConsumeLogs(ctx context.Context, td plog.Logs) error {
 			rl := rls.At(i)
 			rl.CopyTo(logsForAttr.ResourceLogs().AppendEmpty())
 		}
-		errs = multierr.Append(errs, bt.next.ConsumeLogs(ctx, logsForAttr))
+		callCtx := ctx
+		if bt.injectMetadata {
+			callCtx = injectAttrMetadata(ctx, rls.At(indices[0]).Resource().Attributes(), bt.attrKeys)
+		}
+		errs = multierr.Append(errs, bt.next.ConsumeLogs(callCtx, logsForAttr))
+	}
+	return errs
+}
+
+func NewMultiBatchPerResourceProfiles(attrKeys []string, next xconsumer.Profiles, opts ...Option) xconsumer.Profiles {
+	o := options{}
+	for _, opt := range opts {
+		opt(&o)
+	}
+	return &batchProfiles{
+		attrKeys:       attrKeys,
+		injectMetadata: o.injectMetadata,
+		next:           next,
+	}
+}
+
+type batchProfiles struct {
+	attrKeys       []string
+	injectMetadata bool
+	next           xconsumer.Profiles
+}
+
+// Capabilities returns the capabilities of the next consumer because batchProfiles doesn't mutate data itself.
+func (bt *batchProfiles) Capabilities() consumer.Capabilities {
+	return bt.next.Capabilities()
+}
+
+func (bt *batchProfiles) ConsumeProfiles(ctx context.Context, pp pprofile.Profiles) error {
+	rls := pp.ResourceProfiles()
+	lenRls := rls.Len()
+	// If zero or one resource profiles, just call next.
+	if lenRls <= 1 {
+		if bt.injectMetadata && lenRls == 1 {
+			ctx = injectAttrMetadata(ctx, rls.At(0).Resource().Attributes(), bt.attrKeys)
+		}
+		return bt.next.ConsumeProfiles(ctx, pp)
+	}
+
+	indicesByAttr := make(map[string][]int)
+	for i := range lenRls {
+		rl := rls.At(i)
+		var attrVal string
+		for _, k := range bt.attrKeys {
+			if attributeValue, ok := rl.Resource().Attributes().Get(k); ok {
+				attrVal = fmt.Sprintf("%s%s%s", attrVal, separator, attributeValue.Str())
+			}
+		}
+		indicesByAttr[attrVal] = append(indicesByAttr[attrVal], i)
+	}
+	// If there is a single attribute value, then call next.
+	if len(indicesByAttr) <= 1 {
+		if bt.injectMetadata {
+			ctx = injectAttrMetadata(ctx, rls.At(0).Resource().Attributes(), bt.attrKeys)
+		}
+		return bt.next.ConsumeProfiles(ctx, pp)
+	}
+
+	// Build the resource profiles for each attribute value using CopyTo and call next for each one.
+	// The shared Dictionary must be copied to every sub-batch because ResourceProfiles.CopyTo
+	// only copies the resource element, not the parent-level dictionary.
+	var errs error
+	for _, indices := range indicesByAttr {
+		profilesForAttr := pprofile.NewProfiles()
+		pp.Dictionary().CopyTo(profilesForAttr.Dictionary())
+		for _, i := range indices {
+			rl := rls.At(i)
+			rl.CopyTo(profilesForAttr.ResourceProfiles().AppendEmpty())
+		}
+		callCtx := ctx
+		if bt.injectMetadata {
+			callCtx = injectAttrMetadata(ctx, rls.At(indices[0]).Resource().Attributes(), bt.attrKeys)
+		}
+		errs = multierr.Append(errs, bt.next.ConsumeProfiles(callCtx, profilesForAttr))
 	}
 	return errs
 }

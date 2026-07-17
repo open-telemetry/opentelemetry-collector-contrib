@@ -1,4 +1,8 @@
-type: filestats
+display_name: File Stats Receiver
+type: file_stats
+deprecated_type: filestats
+
+description: The File Stats receiver collects metrics from files specified with a glob pattern.
 
 status:
   class: receiver
@@ -21,61 +25,63 @@ resource_attributes:
     type: string
 
 attributes:
+  file.include:
+    description: The glob pattern configured via the `include` option that produced this count.
+    requirement_level: opt_in
+    type: string
   file.permissions:
     description: the permissions associated with the file, using an octal format.
+    requirement_level: recommended
     type: string
 
 metrics:
   file.atime:
     description: Elapsed time since last access of the file or folder, in seconds since Epoch.
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
-      
+
     unit: "s"
   file.count:
     description: The number of files matched
     enabled: false
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
-      
+
     unit: "{file}"
+    attributes:
+      - file.include
   file.ctime:
     description: Elapsed time since the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
-      
+
     unit: "s"
     attributes:
       - file.permissions
   file.mtime:
     description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
-      
+
     unit: "s"
   file.size:
     description: The size of the file or folder, in bytes.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
-      
+
     unit: "b"

@@ -80,14 +80,12 @@ func (ipp *inProcessCollector) Start(StartParams) error {
 		return err
 	}
 
-	ipp.wg.Add(1)
-	go func() {
-		defer ipp.wg.Done()
+	ipp.wg.Go(func() {
 		if appErr := ipp.svc.Run(context.Background()); appErr != nil {
 			// TODO: Pass this to the error handler.
 			panic(appErr)
 		}
-	}()
+	})
 
 	for {
 		switch state := ipp.svc.GetState(); state {

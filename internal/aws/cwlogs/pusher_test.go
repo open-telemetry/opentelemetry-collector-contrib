@@ -7,7 +7,9 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
+	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -277,4 +279,44 @@ func TestMultiStreamPusher(t *testing.T) {
 
 	assert.Equal(t, int32(2), mockCwAPI.createLogStreamCount.Load())
 	assert.Equal(t, int32(4), mockCwAPI.putLogEventsCount.Load())
+}
+
+func TestLogPusherConcurrentAddAndFlush(t *testing.T) {
+	p := newLogPusher(StreamKey{
+		LogGroupName:  logGroup,
+		LogStreamName: logStreamName,
+	}, Client{svc: &mockCloudWatchClient{
+		putLogEvents: func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+			return &cloudwatchlogs.PutLogEventsOutput{}, nil
+		},
+	}}, zap.NewNop())
+	ctx := t.Context()
+
+	var wg sync.WaitGroup
+	for range 50 {
+		wg.Go(func() {
+			event := NewEvent(time.Now().UnixMilli(), "concurrent test message")
+			event.GeneratedTime = time.Now()
+			_ = p.AddLogEntry(ctx, event)
+		})
+		wg.Go(func() {
+			_ = p.ForceFlush(ctx)
+		})
+	}
+	wg.Wait()
+}
+
+func TestByTimestampLessNilTimestamp(t *testing.T) {
+	events := ByTimestamp{
+		{Timestamp: aws.Int64(1000), Message: aws.String("a")},
+		{Timestamp: nil, Message: aws.String("b")},
+		{Timestamp: aws.Int64(2000), Message: aws.String("c")},
+	}
+
+	assert.NotPanics(t, func() {
+		sort.Sort(events)
+	})
+	assert.Equal(t, int64(1000), *events[0].Timestamp)
+	assert.Equal(t, int64(2000), *events[1].Timestamp)
+	assert.Nil(t, events[2].Timestamp)
 }

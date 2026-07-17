@@ -4,12 +4,17 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
@@ -20,48 +25,278 @@ var (
 	tracesJSON = []byte(`{"resourceSpans":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"FilterModule"}},{"key":"service.instance.id","value":{"stringValue":"7020adec-62a0-4cc6-9878-876fec16e961"}},{"key":"telemetry.sdk.name","value":{"stringValue":"opentelemetry"}},{"key":"telemetry.sdk.language","value":{"stringValue":"dotnet"}},{"key":"telemetry.sdk.version","value":{"stringValue":"1.2.0.268"}}]},"scopeSpans":[{"scope":{"name":"IoTSample.FilterModule"},"spans":[{"traceId":"b8c21a8a5aeb50b98f38d548cedc7068","spanId":"4951aca774f96da6","parentSpanId":"c4ad1e000ef8bb19","name":"Upstream","kind":"SPAN_KIND_CLIENT","startTimeUnixNano":"1645750319674336500","endTimeUnixNano":"1645750319678074800","status":{}},{"traceId":"b8c21a8a5aeb50b98f38d548cedc7068","spanId":"c4ad1e000ef8bb19","parentSpanId":"22ba720ac011163b","name":"FilterTemperature","kind":"SPAN_KIND_SERVER","startTimeUnixNano":"1645750319674157400","endTimeUnixNano":"1645750319678086500","attributes":[{"key":"MessageString","value":{"stringValue":"{\"machine\":{\"temperature\":100.2142046553614,\"pressure\":10.024403062003197},\"ambient\":{\"temperature\":20.759989948598662,\"humidity\":24},\"timeCreated\":\"2022-02-25T00:51:59.6685152Z\"}"}},{"key":"MachineTemperature","value":{"doubleValue":100.2142046553614}},{"key":"TemperatureThreshhold","value":{"intValue":"25"}}],"events":[{"timeUnixNano":"1645750319674315300","name":"Machine temperature 100.2142046553614 exceeds threshold 25"},{"timeUnixNano":"1645750319674324100","name":"Message passed threshold"}],"status":{}}]}]}]}`)
 )
 
+var testModes = []string{"eventhub", "polling"}
+
 func TestNewReceiver(t *testing.T) {
-	receiver, err := getBlobReceiver(t)
+	for _, mode := range testModes {
+		t.Run(mode, func(tt *testing.T) {
+			receiver, err := getBlobReceiver(tt, mode)
 
-	require.NoError(t, err)
+			require.NoError(tt, err)
 
-	assert.NotNil(t, receiver)
+			assert.NotNil(tt, receiver)
+		})
+	}
 }
 
 func TestConsumeLogsJSON(t *testing.T) {
-	receiver, _ := getBlobReceiver(t)
+	for _, mode := range testModes {
+		t.Run(mode, func(tt *testing.T) {
+			receiver, _ := getBlobReceiver(tt, mode)
 
-	logsSink := new(consumertest.LogsSink)
-	logsConsumer, ok := receiver.(logsDataConsumer)
-	require.True(t, ok)
+			logsSink := new(consumertest.LogsSink)
+			logsConsumer, ok := receiver.(logsDataConsumer)
+			require.True(tt, ok)
 
-	logsConsumer.setNextLogsConsumer(logsSink)
+			logsConsumer.setNextLogsConsumer(logsSink)
 
-	err := logsConsumer.consumeLogsJSON(t.Context(), logsJSON)
-	require.NoError(t, err)
-	assert.Equal(t, 1, logsSink.LogRecordCount())
+			err := logsConsumer.consumeLogs(tt.Context(), logsJSON)
+			require.NoError(tt, err)
+			assert.Equal(tt, 1, logsSink.LogRecordCount())
+		})
+	}
 }
 
 func TestConsumeTracesJSON(t *testing.T) {
-	receiver, _ := getBlobReceiver(t)
+	for _, mode := range testModes {
+		t.Run(mode, func(tt *testing.T) {
+			receiver, _ := getBlobReceiver(tt, mode)
 
-	tracesSink := new(consumertest.TracesSink)
-	tracesConsumer, ok := receiver.(tracesDataConsumer)
-	require.True(t, ok)
+			tracesSink := new(consumertest.TracesSink)
+			tracesConsumer, ok := receiver.(tracesDataConsumer)
+			require.True(tt, ok)
 
-	tracesConsumer.setNextTracesConsumer(tracesSink)
+			tracesConsumer.setNextTracesConsumer(tracesSink)
 
-	err := tracesConsumer.consumeTracesJSON(t.Context(), tracesJSON)
-	require.NoError(t, err)
-	assert.Equal(t, 2, tracesSink.SpanCount())
+			err := tracesConsumer.consumeTraces(tt.Context(), tracesJSON)
+			require.NoError(tt, err)
+			assert.Equal(tt, 2, tracesSink.SpanCount())
+		})
+	}
 }
 
-func getBlobReceiver(t *testing.T) (component.Component, error) {
+func TestConsumeLogsProto(t *testing.T) {
+	jsonUnmarshaler := &plog.JSONUnmarshaler{}
+	protoMarshaler := &plog.ProtoMarshaler{}
+
+	logs, err := jsonUnmarshaler.UnmarshalLogs(logsJSON)
+	require.NoError(t, err)
+	logsProto, err := protoMarshaler.MarshalLogs(logs)
+	require.NoError(t, err)
+
+	for _, mode := range testModes {
+		t.Run(mode, func(tt *testing.T) {
+			receiver, _ := getBlobReceiverWithEncodings(tt, mode, EncodingOTLPProto, EncodingOTLPJSON)
+
+			logsSink := new(consumertest.LogsSink)
+			logsConsumer, ok := receiver.(logsDataConsumer)
+			require.True(tt, ok)
+
+			logsConsumer.setNextLogsConsumer(logsSink)
+
+			err := logsConsumer.consumeLogs(tt.Context(), logsProto)
+			require.NoError(tt, err)
+			assert.Equal(tt, 1, logsSink.LogRecordCount())
+		})
+	}
+}
+
+func TestConsumeTracesProto(t *testing.T) {
+	jsonUnmarshaler := &ptrace.JSONUnmarshaler{}
+	protoMarshaler := &ptrace.ProtoMarshaler{}
+
+	traces, err := jsonUnmarshaler.UnmarshalTraces(tracesJSON)
+	require.NoError(t, err)
+	tracesProto, err := protoMarshaler.MarshalTraces(traces)
+	require.NoError(t, err)
+
+	for _, mode := range testModes {
+		t.Run(mode, func(tt *testing.T) {
+			receiver, _ := getBlobReceiverWithEncodings(tt, mode, EncodingOTLPJSON, EncodingOTLPProto)
+
+			tracesSink := new(consumertest.TracesSink)
+			tracesConsumer, ok := receiver.(tracesDataConsumer)
+			require.True(tt, ok)
+
+			tracesConsumer.setNextTracesConsumer(tracesSink)
+
+			err := tracesConsumer.consumeTraces(tt.Context(), tracesProto)
+			require.NoError(tt, err)
+			assert.Equal(tt, 2, tracesSink.SpanCount())
+		})
+	}
+}
+
+func TestConsumeLogsEncoding(t *testing.T) {
+	jsonUnmarshaler := &plog.JSONUnmarshaler{}
+	protoMarshaler := &plog.ProtoMarshaler{}
+
+	logs, err := jsonUnmarshaler.UnmarshalLogs(logsJSON)
+	require.NoError(t, err)
+	logsProto, err := protoMarshaler.MarshalLogs(logs)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name      string
+		encoding  string
+		payload   []byte
+		expectErr bool
+	}{
+		{name: "json encoding accepts json", encoding: EncodingOTLPJSON, payload: logsJSON, expectErr: false},
+		{name: "json encoding rejects proto", encoding: EncodingOTLPJSON, payload: logsProto, expectErr: true},
+		{name: "proto encoding accepts proto", encoding: EncodingOTLPProto, payload: logsProto, expectErr: false},
+		{name: "proto encoding rejects json", encoding: EncodingOTLPProto, payload: logsJSON, expectErr: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			receiver, err := getBlobReceiverWithEncodings(t, "polling", tc.encoding, EncodingOTLPJSON)
+			require.NoError(t, err)
+
+			logsSink := new(consumertest.LogsSink)
+			logsConsumer := receiver.(logsDataConsumer)
+			logsConsumer.setNextLogsConsumer(logsSink)
+
+			err = logsConsumer.consumeLogs(t.Context(), tc.payload)
+			if tc.expectErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, 1, logsSink.LogRecordCount())
+			}
+		})
+	}
+}
+
+func TestUnknownEncodingExtension(t *testing.T) {
+	tests := []struct {
+		name           string
+		logsEncoding   string
+		tracesEncoding string
+	}{
+		{name: "missing logs encoding extension", logsEncoding: "missing_extension", tracesEncoding: EncodingOTLPJSON},
+		{name: "missing traces encoding extension", logsEncoding: EncodingOTLPJSON, tracesEncoding: "missing_extension"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// The referenced extension is not registered with the host, so
+			// resolution fails.
+			_, err := getBlobReceiverWithEncodings(t, "polling", tc.logsEncoding, tc.tracesEncoding)
+			require.ErrorContains(t, err, "not found")
+		})
+	}
+}
+
+func TestWrongExtensionType(t *testing.T) {
+	host := &hostWithExtensions{
+		extensions: map[component.ID]component.Component{
+			component.MustNewID("not_an_unmarshaler"): &nonUnmarshalerExtension{},
+		},
+	}
+
+	_, err := getBlobReceiverWithHost(t, "polling", "not_an_unmarshaler", EncodingOTLPJSON, host)
+	require.ErrorContains(t, err, "is not a logs unmarshaler")
+}
+
+func TestConsumeWithEncodingExtension(t *testing.T) {
+	encID := component.MustNewID("fake_encoding")
+	host := &hostWithExtensions{
+		extensions: map[component.ID]component.Component{
+			encID: &fakeUnmarshalerExtension{},
+		},
+	}
+
+	receiver, err := getBlobReceiverWithHost(t, "polling", encID.String(), encID.String(), host)
+	require.NoError(t, err)
+
+	logsSink := new(consumertest.LogsSink)
+	logsConsumer := receiver.(logsDataConsumer)
+	logsConsumer.setNextLogsConsumer(logsSink)
+	require.NoError(t, logsConsumer.consumeLogs(t.Context(), []byte("anything")))
+	assert.Equal(t, 1, logsSink.LogRecordCount())
+
+	tracesSink := new(consumertest.TracesSink)
+	tracesConsumer := receiver.(tracesDataConsumer)
+	tracesConsumer.setNextTracesConsumer(tracesSink)
+	require.NoError(t, tracesConsumer.consumeTraces(t.Context(), []byte("anything")))
+	assert.Equal(t, 1, tracesSink.SpanCount())
+}
+
+// TestStartShutdown exercises the full lifecycle, including unmarshaler
+// resolution and the blob poller started by Start.
+func TestStartShutdown(t *testing.T) {
+	receiver, err := getBlobReceiver(t, "polling")
+	require.NoError(t, err)
+
+	require.NoError(t, receiver.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, receiver.Shutdown(t.Context()))
+}
+
+// hostWithExtensions is a component.Host that exposes a fixed set of extensions.
+type hostWithExtensions struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (h *hostWithExtensions) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+// nonUnmarshalerExtension is an extension that does not implement any
+// unmarshaler interface.
+type nonUnmarshalerExtension struct{}
+
+func (nonUnmarshalerExtension) Start(context.Context, component.Host) error { return nil }
+func (nonUnmarshalerExtension) Shutdown(context.Context) error              { return nil }
+
+// fakeUnmarshalerExtension is an encoding extension that unmarshals any input
+// into a single log record and a single span.
+type fakeUnmarshalerExtension struct{}
+
+func (fakeUnmarshalerExtension) Start(context.Context, component.Host) error { return nil }
+func (fakeUnmarshalerExtension) Shutdown(context.Context) error              { return nil }
+
+func (fakeUnmarshalerExtension) UnmarshalLogs([]byte) (plog.Logs, error) {
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	return logs, nil
+}
+
+func (fakeUnmarshalerExtension) UnmarshalTraces([]byte) (ptrace.Traces, error) {
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	return traces, nil
+}
+
+func getBlobReceiver(t *testing.T, mode string) (component.Component, error) {
+	return getBlobReceiverWithEncodings(t, mode, EncodingOTLPJSON, EncodingOTLPJSON)
+}
+
+func getBlobReceiverWithEncodings(t *testing.T, mode, logsEncoding, tracesEncoding string) (component.Component, error) {
+	return getBlobReceiverWithHost(t, mode, logsEncoding, tracesEncoding, componenttest.NewNopHost())
+}
+
+// getBlobReceiverWithHost builds a receiver and resolves its unmarshalers
+// against host, the same way Start does, but without starting the blob poller.
+func getBlobReceiverWithHost(t *testing.T, mode, logsEncoding, tracesEncoding string, host component.Host) (component.Component, error) {
 	set := receivertest.NewNopSettings(metadata.Type)
+	var blobEventHandler eventHandler
+	switch mode {
+	case "eventhub":
+		blobEventHandler = getEventHubEventHandler(t, newMockBlobClient())
+	case "polling":
+		blobEventHandler = getBlobEventHandler(t, newMockBlobClient())
+	default:
+		return nil, errors.New("invalid mode")
+	}
 
-	blobClient := newMockBlobClient()
-	blobEventHandler := getBlobEventHandler(t, blobClient)
-
-	getBlobEventHandler(t, blobClient)
-	return newReceiver(set, blobEventHandler)
+	r, err := newReceiver(set, blobEventHandler, logsEncoding, tracesEncoding)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.(*blobReceiver).resolveUnmarshalers(host); err != nil {
+		return r, err
+	}
+	return r, nil
 }

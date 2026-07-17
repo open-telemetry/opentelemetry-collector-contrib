@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -154,6 +155,7 @@ func TestWAL_persist(t *testing.T) {
 	})
 
 	require.NoError(t, pwal.persistToWAL(ctx, reqL))
+	require.Len(t, pwal.rNotify, 1)
 
 	// 2. Read all the entries from the WAL itself, guided by the indices available,
 	// and ensure that they are exactly in order as we'd expect them.
@@ -179,7 +181,8 @@ func TestWAL_persist(t *testing.T) {
 func TestExportWithWALEnabled(t *testing.T) {
 	cfg := &Config{
 		WAL: configoptional.Some(WALConfig{
-			Directory: t.TempDir(),
+			Directory:  t.TempDir(),
+			BufferSize: 1,
 		}),
 		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
 	}
@@ -190,7 +193,10 @@ func TestExportWithWALEnabled(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo = buildInfo
 
+	requestsReceived := &atomic.Int64{}
 	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		requestsReceived.Add(1)
+		assert.LessOrEqual(t, requestsReceived.Load(), int64(2), "Only two requests should be received")
 		body, err := io.ReadAll(r.Body)
 		assert.NoError(t, err)
 		assert.NotNil(t, body)
@@ -205,12 +211,23 @@ func TestExportWithWALEnabled(t *testing.T) {
 		assert.NoError(t, ok)
 
 		assert.Len(t, writeReq.Timeseries, 1)
+		ts := writeReq.Timeseries[0]
+		assert.Len(t, ts.Labels, 1)
+		l := ts.Labels[0]
+		assert.Equal(t, "__name__", l.Name)
+		assert.Equal(t, "test_metric", l.Value)
+
+		assert.Len(t, ts.Samples, 1)
+		assert.Equal(t, 100*requestsReceived.Load(), ts.Samples[0].Timestamp)
 	}))
 	defer server.Close()
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
 	cfg.ClientConfig = clientConfig
+
+	// Pickup any defaults applied during validation
+	require.NoError(t, cfg.Validate())
 
 	prwe, err := newPRWExporter(cfg, set)
 	assert.NoError(t, err)
@@ -225,8 +242,18 @@ func TestExportWithWALEnabled(t *testing.T) {
 			Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
 		},
 	}
-	err = prwe.handleExport(t.Context(), metrics, nil)
-	assert.NoError(t, err)
+	assert.NoError(t, prwe.handleExport(t.Context(), metrics, nil))
+
+	assert.EventuallyWithT(t, func(t *assert.CollectT) {
+		assert.Equal(t, int64(1), requestsReceived.Load())
+	}, 5*time.Second, 10*time.Millisecond, "First metric was not received")
+
+	metrics["test_metric"].Samples[0].Timestamp = 200
+	assert.NoError(t, prwe.handleExport(t.Context(), metrics, nil))
+
+	assert.EventuallyWithT(t, func(t *assert.CollectT) {
+		assert.Equal(t, int64(2), requestsReceived.Load())
+	}, 5*time.Second, 10*time.Millisecond, "Second metric was not received")
 
 	// While on Unix systems, t.TempDir() would easily close the WAL files,
 	// on Windows, it doesn't. So we need to close it manually to avoid flaky tests.

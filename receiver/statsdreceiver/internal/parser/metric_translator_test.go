@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 func TestBuildCounterMetric(t *testing.T) {
@@ -21,23 +23,132 @@ func TestBuildCounterMetric(t *testing.T) {
 		attrs: attribute.NewSet(attribute.String("mykey", "myvalue")),
 	}
 
-	parsedMetric := statsDMetric{
-		description: metricDescription,
-		asFloat:     32,
-		unit:        "meter",
+	tests := []struct {
+		name        string
+		counterType protocol.CounterType
+		checkValue  func(t *testing.T, dp pmetric.NumberDataPoint)
+	}{
+		{
+			name:        "int",
+			counterType: protocol.CounterTypeInt,
+			checkValue: func(t *testing.T, dp pmetric.NumberDataPoint) {
+				assert.Equal(t, int64(32), dp.IntValue())
+			},
+		},
+		{
+			name:        "float",
+			counterType: protocol.CounterTypeFloat,
+			checkValue: func(t *testing.T, dp pmetric.NumberDataPoint) {
+				assert.Equal(t, 32.0, dp.DoubleValue())
+			},
+		},
+		{
+			name:        "stochastic_int",
+			counterType: protocol.CounterTypeStochasticInt,
+			checkValue: func(t *testing.T, dp pmetric.NumberDataPoint) {
+				// Whole number input, so stochasticRound(32.0) == 32 deterministically
+				assert.Equal(t, int64(32), dp.IntValue())
+			},
+		},
 	}
-	isMonotonicCounter := false
-	metric := buildCounterMetric(parsedMetric, isMonotonicCounter)
-	expectedMetrics := pmetric.NewScopeMetrics()
-	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
-	expectedMetric.SetName("testCounter")
-	expectedMetric.SetUnit("meter")
-	expectedMetric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
-	expectedMetric.Sum().SetIsMonotonic(isMonotonicCounter)
-	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
-	dp.SetIntValue(32)
-	dp.Attributes().PutStr("mykey", "myvalue")
-	assert.Equal(t, expectedMetrics, metric)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parsedMetric := statsDMetric{
+				description: metricDescription,
+				asFloat:     32,
+				unit:        "meter",
+			}
+			isMonotonicCounter := false
+			metric := buildCounterMetric(parsedMetric, isMonotonicCounter, tt.counterType)
+
+			m := metric.Metrics().At(0)
+			assert.Equal(t, "testCounter", m.Name())
+			assert.Equal(t, "meter", m.Unit())
+			assert.Equal(t, pmetric.AggregationTemporalityDelta, m.Sum().AggregationTemporality())
+			assert.Equal(t, isMonotonicCounter, m.Sum().IsMonotonic())
+
+			dp := m.Sum().DataPoints().At(0)
+			val, ok := dp.Attributes().Get("mykey")
+			assert.True(t, ok)
+			assert.Equal(t, "myvalue", val.Str())
+			tt.checkValue(t, dp)
+		})
+	}
+}
+
+func TestBuildCounterMetricWithFractionalValue(t *testing.T) {
+	metricDescription := statsDMetricDescription{
+		name:  "testFractionalCounter",
+		attrs: attribute.NewSet(attribute.String("mykey", "myvalue")),
+	}
+
+	tests := []struct {
+		name          string
+		asFloat       float64
+		expectedValue float64
+		sampleRate    float64
+	}{
+		{
+			name:          "small_fraction",
+			asFloat:       0.01,
+			expectedValue: 0.01, // Now preserves the fractional value
+			sampleRate:    0,
+		},
+		{
+			name:          "large_fraction",
+			asFloat:       0.9,
+			expectedValue: 0.9, // Now preserves the fractional value
+			sampleRate:    0,
+		},
+		{
+			name:          "fraction_with_sample_rate",
+			asFloat:       0.5,
+			expectedValue: 5.0, // When adjusted by sample rate (0.1), value becomes 5.0
+			sampleRate:    0.1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parsedMetric := statsDMetric{
+				description: metricDescription,
+				asFloat:     tt.asFloat,
+				sampleRate:  tt.sampleRate,
+			}
+
+			isMonotonicCounter := false
+			metric := buildCounterMetric(parsedMetric, isMonotonicCounter, protocol.CounterTypeFloat)
+
+			// Verify the actual float64 value after conversion
+			actualValue := metric.Metrics().At(0).Sum().DataPoints().At(0).DoubleValue()
+			assert.Equal(t, tt.expectedValue, actualValue, "Expected fractional value %v to convert to %v", tt.asFloat, tt.expectedValue)
+		})
+	}
+
+	// Test stochastic_int with fractional values: result should be floor or floor+1
+	t.Run("stochastic_int_fractional", func(t *testing.T) {
+		parsedMetric := statsDMetric{
+			description: metricDescription,
+			asFloat:     0.7,
+		}
+		metric := buildCounterMetric(parsedMetric, false, protocol.CounterTypeStochasticInt)
+		val := metric.Metrics().At(0).Sum().DataPoints().At(0).IntValue()
+		assert.True(t, val == 0 || val == 1,
+			"stochastic round of 0.7 should produce 0 or 1, got %d", val)
+	})
+
+	t.Run("stochastic_int_with_sample_rate", func(t *testing.T) {
+		parsedMetric := statsDMetric{
+			description: metricDescription,
+			asFloat:     0.5,
+			sampleRate:  0.1,
+		}
+		// counterValue() = 0.5 / 0.1 = 5.0, whole number so deterministic
+		metric := buildCounterMetric(parsedMetric, false, protocol.CounterTypeStochasticInt)
+		val := metric.Metrics().At(0).Sum().DataPoints().At(0).IntValue()
+		assert.Equal(t, int64(5), val)
+	})
 }
 
 func TestSetTimestampsForCounterMetric(t *testing.T) {
@@ -46,7 +157,7 @@ func TestSetTimestampsForCounterMetric(t *testing.T) {
 
 	parsedMetric := statsDMetric{}
 	isMonotonicCounter := false
-	metric := buildCounterMetric(parsedMetric, isMonotonicCounter)
+	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, protocol.CounterTypeInt)
 	setTimestampsForCounterMetric(metric, lastUpdateInterval, timeNow)
 
 	expectedMetrics := pmetric.NewScopeMetrics()

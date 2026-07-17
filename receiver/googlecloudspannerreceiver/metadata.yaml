@@ -1,4 +1,6 @@
-type: googlecloudspanner
+display_name: Google Cloud Spanner Receiver
+type: google_cloud_spanner
+deprecated_type: googlecloudspanner
 
 status:
   class: receiver

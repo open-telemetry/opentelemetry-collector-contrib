@@ -1,9 +1,9 @@
-otlpjsonfile:
+otlp_json_file:
   include:
     - "/var/log/*.log"
   exclude:
     - "/var/log/example.log"
-otlpjsonfile/all:
+otlp_json_file/all:
   include_file_name: true
   include_file_path: true
   include_file_name_resolved: true
@@ -13,6 +13,7 @@ otlpjsonfile/all:
   max_log_size: 10000
   max_concurrent_files: 4
   encoding: "UTF-8"
+  on_truncate: "ignore"
   multiline:
     line_start_pattern: "<"
     line_end_pattern: ">"

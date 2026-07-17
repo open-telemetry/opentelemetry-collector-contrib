@@ -142,6 +142,10 @@ func (r *fakeRows) Scan(dest ...any) error {
 	return nil
 }
 
+func (*fakeRows) Close() error {
+	return nil
+}
+
 type fakeCol struct {
 	name string
 }

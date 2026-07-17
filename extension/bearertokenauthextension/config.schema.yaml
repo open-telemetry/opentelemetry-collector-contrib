@@ -1,0 +1,20 @@
+description: Config specifies how the Per-RPC bearer token based authentication data should be obtained.
+type: object
+properties:
+  filename:
+    description: Filename points to a file that contains the bearer token(s) to use for every RPC.
+    type: string
+  header:
+    description: Header specifies the auth-header for the token. Defaults to "Authorization"
+    type: string
+  scheme:
+    description: Scheme specifies the auth-scheme for the token. Defaults to "Bearer"
+    type: string
+  token:
+    description: BearerToken specifies the bearer token to use for every RPC.
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  tokens:
+    description: Tokens specifies multiple bearer tokens to use for every RPC.
+    type: array
+    items:
+      $ref: go.opentelemetry.io/collector/config/configopaque.string

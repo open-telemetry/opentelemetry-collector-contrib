@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Name }}
+    spec:
+      serviceAccountName: {{ .Name }}-sa
+      containers:
+        - name: ec2-metadata-mock
+          image: public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock:v1.13.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 1338
+              name: metadata
+        - name: otelcol
+          image: otelcontribcol:latest
+          imagePullPolicy: Never
+          env:
+            - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
+              value: "http://localhost:1338"
+            - name: AWS_REGION
+              value: "us-east-1"
+          args:
+            - "--config=/conf/relay"
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Name }}-config
+            items:
+              - key: relay
+                path: relay

@@ -4,7 +4,9 @@
 package logs
 
 import (
+	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +28,61 @@ func TestAsSeverity(t *testing.T) {
 
 	for input, expected := range tests {
 		t.Run(input, func(t *testing.T) {
-			assert.Equal(t, expected, asSeverity(input))
+			assert.Equal(t, expected, asSeverity(json.Number(input)))
+		})
+	}
+}
+
+func TestParseUnixTimestamp(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		want    time.Time
+		wantErr bool
+	}{
+		{
+			name:  "valid epoch (zero)",
+			input: "0",
+			want:  time.Unix(0, 0).UTC(),
+		},
+		{
+			name:  "valid epoch (2024-01-01)",
+			input: "1704067200",
+			want:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			name:  "valid epoch (negative, before 1970)",
+			input: "-86400",
+			want:  time.Date(1969, 12, 31, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			name:    "empty string",
+			input:   "",
+			wantErr: true,
+		},
+		{
+			name:    "non-numeric string",
+			input:   "not-a-timestamp",
+			wantErr: true,
+		},
+		{
+			name:    "floating point value",
+			input:   "1704067200.5",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseUnixTimestamp(tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
 		})
 	}
 }
@@ -110,6 +166,274 @@ func TestAttrPutTLSProtoIf(t *testing.T) {
 			err := want.FromRaw(tt.wantRaw)
 			require.NoError(t, err)
 			assert.Equal(t, want.AsRaw(), got.AsRaw())
+		})
+	}
+}
+
+func TestAttrPutHTTPProtoIf(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		httpProtocol string
+		wantRaw      map[string]any
+	}{
+		{
+			name:         "valid HTTP 0.9 proto",
+			httpProtocol: httpVersion09,
+			wantRaw: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "0.9",
+			},
+		},
+		{
+			name:         "valid HTTP 1.0 proto",
+			httpProtocol: httpVersion10,
+			wantRaw: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "1.0",
+			},
+		},
+		{
+			name:         "valid HTTP 1.1 proto",
+			httpProtocol: httpVersion11,
+			wantRaw: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "1.1",
+			},
+		},
+		{
+			name:         "valid HTTP 2.0 proto",
+			httpProtocol: httpVersion20,
+			wantRaw: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "2.0",
+			},
+		},
+		{
+			name:         "valid HTTP 3.0 proto",
+			httpProtocol: httpVersion30,
+			wantRaw: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "3.0",
+			},
+		},
+		{
+			name:         "HTTP proto without version",
+			httpProtocol: "HTTP",
+			wantRaw: map[string]any{
+				attributeNetworkProtocolOriginal: "HTTP",
+			},
+		},
+		{
+			name:         "HTTP proto with extra data",
+			httpProtocol: "HTTP/1.0 something",
+			wantRaw: map[string]any{
+				attributeNetworkProtocolOriginal: "HTTP/1.0 something",
+			},
+		},
+		{
+			name:         "unknown HTTP",
+			httpProtocol: "ABC 3.4",
+			wantRaw: map[string]any{
+				attributeNetworkProtocolOriginal: "ABC 3.4",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := pcommon.NewMap()
+			attrPutHTTPProtoIf(got, tt.httpProtocol)
+			want := pcommon.NewMap()
+			err := want.FromRaw(tt.wantRaw)
+			require.NoError(t, err)
+			assert.Equal(t, want.AsRaw(), got.AsRaw())
+		})
+	}
+}
+
+func TestConvertInvalidSingleQuotedJSON(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    []byte
+		expected []byte
+	}{
+		{
+			name:     "empty input",
+			input:    []byte{},
+			expected: []byte{},
+		},
+		{
+			name:     "single quoted JSON as a string",
+			input:    []byte(`{'key':'value'}`),
+			expected: []byte(`{"key":"value"}`),
+		},
+		{
+			name:     "invalid single quoted JSON",
+			input:    []byte(`'key':'value'`),
+			expected: []byte(`"key":"value"`),
+		},
+		{
+			name:     "single quoted JSON with escaped single quote",
+			input:    []byte(`{'key':'val\'ue'}`),
+			expected: []byte(`{"key":"val'ue"}`),
+		},
+		{
+			name:     "single quoted JSON with double escaped single quote",
+			input:    []byte(`{'key':'val\\'ue'}`),
+			expected: []byte(`{"key":"val\\'ue"}`),
+		},
+		{
+			name:     "valid, double quoted JSON",
+			input:    []byte(`{"key":"value"}`),
+			expected: []byte(`{"key":"value"}`),
+		},
+		{
+			name:     "mixed quotes",
+			input:    []byte(`{"key":'value'}`),
+			expected: []byte(`{"key":"value"}`),
+		},
+		{
+			name:     "no quotes at all",
+			input:    []byte(`{key:value}`),
+			expected: []byte(`{key:value}`),
+		},
+		{
+			name:     "single quoted with spaces",
+			input:    []byte(`{  'key' : 'value'  }`),
+			expected: []byte(`{  "key" : "value"  }`),
+		},
+		{
+			name:     "single quoted with numbers",
+			input:    []byte(`{'key': 3.14}`),
+			expected: []byte(`{"key": 3.14}`),
+		},
+		{
+			name:     "all-in-one case",
+			input:    []byte(`{ 'a\'': "it's John's", "today's": '"forecast\"', 'pi': 3.14 }`),
+			expected: []byte(`{ "a'": "it's John's", "today's": "\"forecast\"", "pi": 3.14 }`),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := convertInvalidSingleQuotedJSON(tt.input)
+			assert.Equal(t, string(tt.expected), string(got))
+		})
+	}
+}
+
+func TestUnmarshalStringOrObjectJSON(t *testing.T) {
+	t.Parallel()
+
+	type simple struct {
+		Key   string `json:"key"`
+		Count int    `json:"count"`
+	}
+
+	tests := []struct {
+		name        string
+		input       []byte
+		expected    simple
+		expectError bool
+	}{
+		{
+			name:     "JSON object",
+			input:    []byte(`{"key":"value","count":42}`),
+			expected: simple{Key: "value", Count: 42},
+		},
+		{
+			name:     "stringified JSON object",
+			input:    []byte(`"{\"key\":\"value\",\"count\":42}"`),
+			expected: simple{Key: "value", Count: 42},
+		},
+		{
+			name:        "non-JSON string payload",
+			input:       []byte(`"not-json"`),
+			expectError: true,
+		},
+		{
+			name:        "empty string",
+			input:       []byte(`""`),
+			expectError: true,
+		},
+		{
+			name:        "invalid JSON",
+			input:       []byte(`{invalid`),
+			expectError: true,
+		},
+		{
+			name:     "null value",
+			input:    []byte(`null`),
+			expected: simple{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var got simple
+			err := unmarshalStringOrObjectJSON(tt.input, &got)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expected, got)
+			}
+		})
+	}
+}
+
+func Test_stringToNumber(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  json.Number
+	}{
+		{
+			name:  "empty string",
+			input: "",
+			want:  json.Number(""),
+		},
+		{
+			name:  "dash",
+			input: "-",
+			want:  json.Number(""),
+		},
+		{
+			name:  "valid integer string",
+			input: "123",
+			want:  json.Number("123"),
+		},
+		{
+			name:  "valid float string",
+			input: "3.14",
+			want:  json.Number("3.14"),
+		},
+		{
+			name:  "valid scientific float string",
+			input: "3.1415926535E+00",
+			want:  json.Number("3.1415926535E+00"),
+		},
+		{
+			name:  "whitespace string",
+			input: " ",
+			want:  json.Number(""),
+		},
+		{
+			name:  "invalid string",
+			input: "abc",
+			want:  json.Number(""),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := convertStringToJSONNumber(tt.input)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

@@ -4,20 +4,26 @@
 package yanggrpcreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver"
 
 import (
+	"context"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver/internal/metadata"
 )
 
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithMetrics(func(ctx context.Context, settings receiver.Settings, config component.Config, metrics consumer.Metrics) (receiver.Metrics, error) {
+			return createMetricsReceiver(ctx, settings, config, metrics), nil
+		}, metadata.MetricsStability),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 

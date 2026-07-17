@@ -1,4 +1,5 @@
 type: mezmo
+display_name: Mezmo Exporter
 
 status:
   class: exporter

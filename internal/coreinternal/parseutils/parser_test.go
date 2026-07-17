@@ -296,3 +296,55 @@ func Test_ParseKeyValuePairs(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkSplitString(b *testing.B) {
+	benchCases := []struct {
+		name      string
+		input     string
+		delimiter string
+	}{
+		{
+			name:      "simple_short",
+			input:     "a b c",
+			delimiter: " ",
+		},
+		{
+			name:      "quoted_values",
+			input:     `name="John Doe" age=30 city="New York"`,
+			delimiter: " ",
+		},
+		{
+			name:      "multi_char_delimiter",
+			input:     "key1=val1!@!key2=val2!@!key3=val3!@!key4=val4",
+			delimiter: "!@!",
+		},
+		{
+			name:      "many_fields",
+			input:     `a=1 b=2 c=3 d=4 e=5 f=6 g=7 h=8 i=9 j=10 k=11 l=12 m=13 n=14 o=15 p=16`,
+			delimiter: " ",
+		},
+		{
+			name:      "long_quoted_value",
+			input:     `key1="this is a very long quoted value that contains many words and spaces" key2="another long value here"`,
+			delimiter: " ",
+		},
+		{
+			name:      "escaped_quotes",
+			input:     `a="hello \"world\"" b='it\'s cool' c="test \"value\""`,
+			delimiter: " ",
+		},
+		{
+			name:      "leading_trailing_delimiters",
+			input:     "   name=ottl        func=key_value   hello=world   foo=bar   ",
+			delimiter: " ",
+		},
+	}
+
+	for _, bc := range benchCases {
+		b.Run(bc.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_, _ = SplitString(bc.input, bc.delimiter)
+			}
+		})
+	}
+}

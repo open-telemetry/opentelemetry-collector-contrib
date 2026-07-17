@@ -6,6 +6,7 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -14,8 +15,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
+
+// tzAbbrRegex matches 2-5 consecutive uppercase ASCII letters (timezone abbreviations like IST, NZST, PDT)
+var tzAbbrRegex = regexp.MustCompile(`\b([A-Z]{2,5})\b`)
 
 // StrptimeKey is literally "strptime", and is the default layout type
 const StrptimeKey = "strptime"
@@ -38,12 +42,15 @@ func NewTimeParser() TimeParser {
 
 // TimeParser is a helper that parses time onto an entry.
 type TimeParser struct {
-	ParseFrom  *entry.Field `mapstructure:"parse_from"`
-	Layout     string       `mapstructure:"layout"`
-	LayoutType string       `mapstructure:"layout_type"`
-	Location   string       `mapstructure:"location"`
+	ParseFrom         *entry.Field      `mapstructure:"parse_from"`
+	Layout            string            `mapstructure:"layout"`
+	LayoutType        string            `mapstructure:"layout_type"`
+	Location          string            `mapstructure:"location"`
+	TimeZoneLocations map[string]string `mapstructure:"time_zone_locations"` // optional: abbreviation → IANA location name
 
-	location *time.Location
+	strptimeParser *timeutils.StrptimeParser
+	location       *time.Location
+	locationMap    map[string]*time.Location // compiled from TimeZoneLocations at Validate() time
 }
 
 // Unmarshal starting from default settings
@@ -73,6 +80,8 @@ func (t *TimeParser) Validate() error {
 		return errors.New("missing required configuration parameter `layout`")
 	}
 
+	timezoneDirective := "MST"
+
 	switch t.LayoutType {
 	case NativeKey: // ok
 	case GotimeKey:
@@ -80,34 +89,35 @@ func (t *TimeParser) Validate() error {
 			return fmt.Errorf("invalid gotime layout: %w", err)
 		}
 	case StrptimeKey:
-		if err := timeutils.ValidateStrptime(t.Layout); err != nil {
+		parser, err := timeutils.NewStrptimeParser(t.Layout)
+		if err != nil {
 			return fmt.Errorf("invalid strptime layout: %w", err)
 		}
-		var err error
-		t.Layout, err = timeutils.StrptimeToGotime(t.Layout)
-		if err != nil {
-			return fmt.Errorf("parse strptime layout: %w", err)
-		}
-		t.LayoutType = GotimeKey
+		t.strptimeParser = parser
+		timezoneDirective = "%Z"
 	case EpochKey:
 		switch t.Layout {
 		case "s", "ms", "us", "ns", "s.ms", "s.us", "s.ns": // ok
 		default:
-			return stanza_errors.NewError(
+			return stanzaerrors.NewError(
 				"invalid `layout` for `epoch` type",
 				"specify 's', 'ms', 'us', 'ns', 's.ms', 's.us', or 's.ns'",
 			)
 		}
 	default:
-		return stanza_errors.NewError(
+		return stanzaerrors.NewError(
 			fmt.Sprintf("unsupported layout_type %s", t.LayoutType),
 			"valid values are 'strptime', 'gotime', and 'epoch'",
 		)
 	}
 
-	if t.LayoutType == GotimeKey { // also covers StrptimeKey because it was remapped above
+	if t.LayoutType == GotimeKey || t.LayoutType == StrptimeKey {
 		if err := t.setLocation(); err != nil {
 			return fmt.Errorf("invalid 'location': %w", err)
+		}
+
+		if len(t.TimeZoneLocations) > 0 && !strings.Contains(t.Layout, timezoneDirective) {
+			return fmt.Errorf("'time_zone_locations' requires the layout to contain a timezone abbreviation directive (%%Z for strptime / MST for gotime), but layout %q has none", t.Layout)
 		}
 	}
 
@@ -115,31 +125,64 @@ func (t *TimeParser) Validate() error {
 }
 
 func (t *TimeParser) setLocation() error {
-	if t.Location != "" {
+	switch {
+	case t.Location != "":
 		// If "location" is specified, it must be in the local timezone database
 		loc, err := time.LoadLocation(t.Location)
 		if err != nil {
 			return fmt.Errorf("failed to load location %s: %w", t.Location, err)
 		}
 		t.location = loc
-		return nil
-	}
-
-	if strings.HasSuffix(t.Layout, "Z") {
-		// If a timestamp ends with 'Z', it should be interpretted at Zulu (UTC) time
+	case strings.HasSuffix(t.Layout, "Z"):
+		// If a timestamp ends with 'Z', it should be interpreted at Zulu (UTC) time
 		t.location = time.UTC
-		return nil
+	default:
+		t.location = time.Local
 	}
 
-	t.location = time.Local
+	// Compile time_zone_locations at startup so LoadLocation is never called per log line
+	if len(t.TimeZoneLocations) > 0 {
+		t.locationMap = make(map[string]*time.Location, len(t.TimeZoneLocations))
+		for abbr, ianaName := range t.TimeZoneLocations {
+			loc, err := time.LoadLocation(ianaName)
+			if err != nil {
+				return fmt.Errorf("invalid time_zone_locations entry %q: failed to load location %q: %w", abbr, ianaName, err)
+			}
+			t.locationMap[abbr] = loc
+		}
+	}
+
 	return nil
+}
+
+// resolveLocation returns the *time.Location to use for parsing a given value.
+// If time_zone_locations is configured, it scans the value for a known timezone abbreviation
+// and returns the corresponding location. Falls back to t.location if not found.
+func (t *TimeParser) resolveLocation(value any) *time.Location {
+	if len(t.locationMap) == 0 {
+		return t.location
+	}
+
+	str, ok := value.(string)
+	if !ok {
+		return t.location
+	}
+
+	// Find the first uppercase token that matches a configured abbreviation
+	for _, match := range tzAbbrRegex.FindAllString(str, -1) {
+		if loc, found := t.locationMap[match]; found {
+			return loc
+		}
+	}
+
+	return t.location
 }
 
 // Parse will parse time from a field and attach it to the entry
 func (t *TimeParser) Parse(entry *entry.Entry) error {
 	value, ok := entry.Get(t.ParseFrom)
 	if !ok {
-		return stanza_errors.NewError(
+		return stanzaerrors.NewError(
 			"log entry does not have the expected parse_from field",
 			"ensure that all entries forwarded to this parser contain the parse_from field",
 			"parse_from", t.ParseFrom.String(),
@@ -154,11 +197,18 @@ func (t *TimeParser) Parse(entry *entry.Entry) error {
 		}
 		entry.Timestamp = timeutils.SetTimestampYear(timeValue)
 	case GotimeKey:
-		timeValue, err := timeutils.ParseGotime(t.Layout, value, t.location)
+		timeValue, err := timeutils.ParseGotime(t.Layout, value, t.resolveLocation(value))
 		if err != nil {
 			return err
 		}
 		// timeutils.ParseGotime calls timeutils.SetTimestampYear before returning the timeValue
+		entry.Timestamp = timeValue
+	case StrptimeKey:
+		timeValue, err := t.strptimeParser.Parse(value, t.resolveLocation(value))
+		if err != nil {
+			return err
+		}
+		// Parse calls timeutils.SetTimestampYear before returning the timeValue
 		entry.Timestamp = timeValue
 	case EpochKey:
 		timeValue, err := t.parseEpochTime(value)

@@ -95,19 +95,24 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	require.NotNil(t, logExp)
 
 	assert.NoError(t, exp.Shutdown(t.Context()))
+	assert.NoError(t, logExp.Shutdown(t.Context()))
 }
 
 func TestCreateMetrics_CustomConfig(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Timeout = 2 * time.Second
+	clientConfig.Headers = configopaque.MapList{
+		{Name: "added-entry", Value: "added value"},
+		{Name: "dot.test", Value: "test"},
+	}
 	config := &Config{
-		AccessToken: "testToken",
-		Realm:       "us1",
-		ClientConfig: confighttp.ClientConfig{
-			Timeout: 2 * time.Second,
-			Headers: configopaque.MapList{
-				{Name: "added-entry", Value: "added value"},
-				{Name: "dot.test", Value: "test"},
-			},
-		},
+		AccessToken:  "testToken",
+		Realm:        "us1",
+		ClientConfig: clientConfig,
 	}
 
 	te, err := createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
@@ -197,6 +202,53 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, int64(10e9), *dps[0].Value.IntValue)
 }
 
+func TestDefaultTranslationRules_MemoryTotalIncludesInactive(t *testing.T) {
+	rules := defaultTranslationRules
+	require.NotNil(t, rules, "rules are nil")
+	tr, err := translation.NewMetricTranslator(rules, 1, make(chan struct{}))
+	require.NoError(t, err)
+
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "", false, true)
+	require.NoError(t, err)
+
+	md := pmetric.NewMetrics()
+	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("system.memory.usage")
+	m.SetDescription("Bytes of memory in use")
+	m.SetUnit("bytes")
+	g := m.SetEmptyGauge().DataPoints()
+
+	add := func(state string, value int64) {
+		dp := g.AppendEmpty()
+		dp.Attributes().PutStr("state", state)
+		dp.Attributes().PutStr("host", "host0")
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
+		dp.SetIntValue(value)
+	}
+
+	add("used", 6)
+	add("free", 2)
+	add("inactive", 2)
+
+	translated := c.MetricsToSignalFxV2(md)
+	require.NotNil(t, translated)
+
+	metrics := make(map[string][]*sfxpb.DataPoint)
+	for _, pt := range translated {
+		metrics[pt.Metric] = append(metrics[pt.Metric], pt)
+	}
+
+	total, ok := metrics["memory.total"]
+	require.True(t, ok, "memory.total metric not found")
+	require.Len(t, total, 1)
+	require.EqualValues(t, 10, *total[0].Value.IntValue)
+
+	util, ok := metrics["memory.utilization"]
+	require.True(t, ok, "memory.utilization metric not found")
+	require.Len(t, util, 1)
+	require.Equal(t, 60.0, *util[0].Value.DoubleValue)
+}
+
 func requireDimension(t *testing.T, dims []*sfxpb.Dimension, key, val string) {
 	var found bool
 	for _, dim := range dims {
@@ -207,6 +259,12 @@ func requireDimension(t *testing.T, dims []*sfxpb.Dimension, key, val string) {
 		require.Equal(t, val, dim.Value)
 	}
 	require.True(t, found, `missing dimension: %s`, key)
+}
+
+func requireNoDimension(t *testing.T, dims []*sfxpb.Dimension, key string) {
+	for _, dim := range dims {
+		require.NotEqual(t, key, dim.Key)
+	}
 }
 
 func testMetricsData(addHistogram bool) pmetric.Metrics {
@@ -510,17 +568,29 @@ func TestDefaultCPUTranslations(t *testing.T) {
 		require.Equal(t, 66, int(*pt.Value.DoubleValue))
 	}
 
-	cpuUtilPerCore := m["cpu.utilization_per_core"]
-	require.Len(t, cpuUtilPerCore, 8)
-
 	cpuNumProcessors := m["cpu.num_processors"]
 	require.Len(t, cpuNumProcessors, 1)
+	require.Equal(t, 8, int(*cpuNumProcessors[0].Value.IntValue))
+
+	cpuIdle := m["cpu.idle"]
+	require.Len(t, cpuIdle, 1)
 
 	cpuStateMetrics := []string{"cpu.idle", "cpu.interrupt", "cpu.system", "cpu.user"}
 	for _, metric := range cpuStateMetrics {
 		dps, ok := m[metric]
 		require.Truef(t, ok, "%s metrics not found", metric)
-		require.Len(t, dps, 9)
+		require.Len(t, dps, 1)
+	}
+
+	for metric, dps := range m {
+		switch metric {
+		case "cpu.num_processors", "cpu.utilization", "cpu.idle", "cpu.interrupt", "cpu.nice",
+			"cpu.softirq", "cpu.steal", "cpu.system", "cpu.user", "cpu.wait":
+			require.Len(t, dps, 1)
+			for _, dp := range dps {
+				requireNoDimension(t, dp.Dimensions, "cpu")
+			}
+		}
 	}
 }
 
@@ -577,13 +647,10 @@ func TestDefaultExcludesTranslated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 9, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 8, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 
-	// the default cpu.utilization metric is added after applying the default translations
-	// (because cpu.utilization_per_core is supplied) and should not be excluded
-	require.Len(t, dps, 1)
-	require.Equal(t, "cpu.utilization", dps[0].Metric)
+	require.Empty(t, dps)
 }
 
 func TestDefaultExcludes_not_translated(t *testing.T) {

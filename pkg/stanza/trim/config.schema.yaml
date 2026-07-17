@@ -1,0 +1,8 @@
+$defs:
+  config:
+    type: object
+    properties:
+      preserve_leading_whitespaces:
+        type: boolean
+      preserve_trailing_whitespaces:
+        type: boolean

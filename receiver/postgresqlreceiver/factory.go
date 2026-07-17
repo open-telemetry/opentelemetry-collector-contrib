@@ -64,13 +64,14 @@ func createDefaultConfig() component.Config {
 			Insecure:           false,
 			InsecureSkipVerify: true,
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		QuerySampleCollection: QuerySampleCollection{
 			MaxRowsPerQuery: 1000,
 		},
 		TopQueryCollection: TopQueryCollection{
-			TopNQuery:              1000,
+			CollectionInterval:     time.Minute,
+			TopNQuery:              200,
 			MaxRowsPerQuery:        1000,
 			MaxExplainEachInterval: 1000,
 			QueryPlanCacheSize:     1000,
@@ -88,13 +89,16 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	var clientFactory postgreSQLClientFactory
-	if connectionPoolGate.IsEnabled() {
+	if metadata.ReceiverPostgresqlConnectionPoolFeatureGate.IsEnabled() {
 		clientFactory = newPoolClientFactory(cfg)
 	} else {
 		clientFactory = newDefaultClientFactory(cfg)
 	}
 
-	ns := newPostgreSQLScraper(params, cfg, clientFactory, newCache(1), newTTLCache[string](1, time.Second))
+	ns, err := newPostgreSQLScraper(params, cfg, clientFactory, newCache(1), newTTLCache[string](1, time.Second))
+	if err != nil {
+		return nil, err
+	}
 	s, err := scraper.NewMetrics(ns.scrape, scraper.WithShutdown(ns.shutdown))
 	if err != nil {
 		return nil, err
@@ -102,7 +106,7 @@ func createMetricsReceiver(
 
 	return scraperhelper.NewMetricsController(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraper(metadata.Type, s),
+		scraperhelper.AddMetricsScraper(metadata.Type, s),
 	)
 }
 
@@ -116,7 +120,7 @@ func createLogsReceiver(
 	cfg := receiverCfg.(*Config)
 
 	var clientFactory postgreSQLClientFactory
-	if connectionPoolGate.IsEnabled() {
+	if metadata.ReceiverPostgresqlConnectionPoolFeatureGate.IsEnabled() {
 		clientFactory = newPoolClientFactory(cfg)
 	} else {
 		clientFactory = newDefaultClientFactory(cfg)
@@ -127,7 +131,10 @@ func createLogsReceiver(
 	if cfg.Events.DbServerQuerySample.Enabled {
 		// query sample collection does not need cache, but we do not want to make it
 		// nil, so create one size 1 cache as a placeholder.
-		ns := newPostgreSQLScraper(params, cfg, clientFactory, newCache(1), newTTLCache[string](1, time.Second))
+		ns, err := newPostgreSQLScraper(params, cfg, clientFactory, newCache(1), newTTLCache[string](1, time.Second))
+		if err != nil {
+			return nil, err
+		}
 		s, err := scraper.NewLogs(func(ctx context.Context) (plog.Logs, error) {
 			return ns.scrapeQuerySamples(ctx, cfg.QuerySampleCollection.MaxRowsPerQuery)
 		}, scraper.WithShutdown(ns.shutdown))
@@ -144,9 +151,12 @@ func createLogsReceiver(
 
 	if cfg.Events.DbServerTopQuery.Enabled {
 		// we have 10 updated only attributes. so we set the cache size accordingly.
-		ns := newPostgreSQLScraper(params, cfg, clientFactory, newCache(int(cfg.TopNQuery*10*2)), newTTLCache[string](cfg.QueryPlanCacheSize, cfg.QueryPlanCacheTTL))
+		ns, err := newPostgreSQLScraper(params, cfg, clientFactory, newCache(int(cfg.TopNQuery*10*2)), newTTLCache[string](cfg.QueryPlanCacheSize, cfg.QueryPlanCacheTTL))
+		if err != nil {
+			return nil, err
+		}
 		s, err := scraper.NewLogs(func(ctx context.Context) (plog.Logs, error) {
-			return ns.scrapeTopQuery(ctx, cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopNQuery, cfg.MaxExplainEachInterval)
+			return ns.scrapeTopQuery(ctx, cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopNQuery, cfg.MaxExplainEachInterval, cfg.TopQueryCollection.CollectionInterval)
 		}, scraper.WithShutdown(ns.shutdown))
 		if err != nil {
 			return nil, err

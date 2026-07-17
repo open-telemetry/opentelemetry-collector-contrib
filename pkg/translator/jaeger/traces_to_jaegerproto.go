@@ -7,7 +7,7 @@ import (
 	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
@@ -146,6 +146,12 @@ func spanToJaegerProto(span ptrace.Span, libraryTags pcommon.InstrumentationScop
 	jReferences := makeJaegerProtoReferences(span.Links(), spanIDToJaegerProto(span.ParentSpanID()), traceID)
 
 	startTime := span.StartTimestamp().AsTime()
+
+	var flags model.Flags
+	if span.Flags()&spanFlagsSampled != 0 {
+		flags.SetSampled()
+	}
+
 	return &model.Span{
 		TraceID:       traceID,
 		SpanID:        spanIDToJaegerProto(span.SpanID()),
@@ -155,6 +161,7 @@ func spanToJaegerProto(span ptrace.Span, libraryTags pcommon.InstrumentationScop
 		Duration:      span.EndTimestamp().AsTime().Sub(startTime),
 		Tags:          getJaegerProtoSpanTags(span, libraryTags),
 		Logs:          spanEventsToJaegerProtoLogs(span.Events()),
+		Flags:         flags,
 	}
 }
 

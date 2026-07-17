@@ -205,6 +205,68 @@ func TestAddSpanEventsToSpan(t *testing.T) {
 	verifyAttributes(t, attrs, event.Attributes())
 }
 
+func TestAddSpanEventsToSpan_IntegerTypeHandling(t *testing.T) {
+	logger := zap.NewNop()
+	now := time.Now()
+
+	tests := []struct {
+		name      string
+		events    []libhoneyevent.LibhoneyEvent
+		checkFunc func(t *testing.T, s ptrace.Span)
+	}{
+		{
+			name: "int64 attribute in span event",
+			events: []libhoneyevent.LibhoneyEvent{
+				{
+					Data: map[string]any{
+						"name":     "event1",
+						"int_attr": int64(42),
+					},
+					MsgPackTimestamp: &now,
+				},
+			},
+			checkFunc: func(t *testing.T, s ptrace.Span) {
+				assert.Equal(t, 1, s.Events().Len())
+				event := s.Events().At(0)
+				val, ok := event.Attributes().Get("int_attr")
+				assert.True(t, ok, "int_attr should exist")
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+		{
+			name: "uint64 attribute in span event",
+			events: []libhoneyevent.LibhoneyEvent{
+				{
+					Data: map[string]any{
+						"name":      "event1",
+						"uint_attr": uint64(42),
+					},
+					MsgPackTimestamp: &now,
+				},
+			},
+			checkFunc: func(t *testing.T, s ptrace.Span) {
+				assert.Equal(t, 1, s.Events().Len())
+				event := s.Events().At(0)
+				val, ok := event.Attributes().Get("uint_attr")
+				assert.True(t, ok, "uint_attr should exist")
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := ptrace.NewSpan()
+			s.SetName("test-span")
+			s.SetSpanID([8]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+			s.SetTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+
+			addSpanEventsToSpan(s, tt.events, []string{}, logger)
+			tt.checkFunc(t, s)
+		})
+	}
+}
+
 func TestAddSpanLinksToSpan(t *testing.T) {
 	logger := zap.NewNop()
 
@@ -257,4 +319,73 @@ func TestAddSpanLinksToSpan(t *testing.T) {
 	// Verify attributes
 	attrs := link.Attributes()
 	verifyAttributes(t, attrs, link.Attributes())
+}
+
+func TestAddSpanLinksToSpan_IntegerTypeHandling(t *testing.T) {
+	logger := zap.NewNop()
+
+	// Create test trace and span IDs for the link
+	linkTraceIDHex := make([]byte, 16)
+	linkSpanIDHex := make([]byte, 8)
+	_, err := hex.Decode(linkTraceIDHex, []byte("abcdef1234567890abcdef1234567890"))
+	require.NoError(t, err)
+	_, err = hex.Decode(linkSpanIDHex, []byte("abcdef1234567890"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		name      string
+		links     []libhoneyevent.LibhoneyEvent
+		checkFunc func(t *testing.T, s ptrace.Span)
+	}{
+		{
+			name: "int64 attribute in span link",
+			links: []libhoneyevent.LibhoneyEvent{
+				{
+					Data: map[string]any{
+						"trace.link.trace_id": hex.EncodeToString(linkTraceIDHex),
+						"trace.link.span_id":  hex.EncodeToString(linkSpanIDHex),
+						"int_attr":            int64(42),
+					},
+				},
+			},
+			checkFunc: func(t *testing.T, s ptrace.Span) {
+				assert.Equal(t, 1, s.Links().Len())
+				link := s.Links().At(0)
+				val, ok := link.Attributes().Get("int_attr")
+				assert.True(t, ok, "int_attr should exist")
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+		{
+			name: "uint64 attribute in span link",
+			links: []libhoneyevent.LibhoneyEvent{
+				{
+					Data: map[string]any{
+						"trace.link.trace_id": hex.EncodeToString(linkTraceIDHex),
+						"trace.link.span_id":  hex.EncodeToString(linkSpanIDHex),
+						"uint_attr":           uint64(42),
+					},
+				},
+			},
+			checkFunc: func(t *testing.T, s ptrace.Span) {
+				assert.Equal(t, 1, s.Links().Len())
+				link := s.Links().At(0)
+				val, ok := link.Attributes().Get("uint_attr")
+				assert.True(t, ok, "uint_attr should exist")
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := ptrace.NewSpan()
+			s.SetName("test-span")
+			s.SetSpanID([8]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+			s.SetTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+
+			addSpanLinksToSpan(s, tt.links, []string{}, logger)
+			tt.checkFunc(t, s)
+		})
+	}
 }

@@ -5,7 +5,6 @@ package basicauthextension // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -14,18 +13,21 @@ import (
 	"strings"
 
 	"github.com/tg123/go-htpasswd"
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.uber.org/zap"
 	creds "google.golang.org/grpc/credentials"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
 )
 
 var (
-	errNoAuth              = errors.New("no basic auth provided")
-	errInvalidCredentials  = errors.New("invalid credentials")
-	errInvalidSchemePrefix = errors.New("invalid authorization scheme prefix")
-	errInvalidFormat       = errors.New("invalid authorization format")
+	errNoAuth              = basicauth.ErrNoAuth
+	errInvalidCredentials  = basicauth.ErrInvalidCredentials
+	errInvalidSchemePrefix = basicauth.ErrInvalidSchemePrefix
+	errInvalidFormat       = basicauth.ErrInvalidFormat
 )
 
 func newClientAuthExtension(cfg *Config) *basicAuthClient {
@@ -82,126 +84,7 @@ func (ba *basicAuthServer) Start(_ context.Context, _ component.Host) error {
 }
 
 func (ba *basicAuthServer) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	auth := getAuthHeader(headers)
-	if auth == "" {
-		return ctx, errNoAuth
-	}
-
-	authData, err := parseBasicAuth(auth)
-	if err != nil {
-		return ctx, err
-	}
-
-	if !ba.matchFunc(authData.username, authData.password) {
-		return ctx, errInvalidCredentials
-	}
-
-	cl := client.FromContext(ctx)
-	cl.Auth = authData
-	return client.NewContext(ctx, cl), nil
-}
-
-func getAuthHeader(h map[string][]string) string {
-	const (
-		canonicalHeaderKey = "Authorization"
-		metadataKey        = "authorization"
-	)
-
-	authHeaders, ok := h[canonicalHeaderKey]
-
-	if !ok {
-		authHeaders, ok = h[metadataKey]
-	}
-
-	if !ok {
-		for k, v := range h {
-			if strings.EqualFold(k, metadataKey) {
-				authHeaders = v
-				break
-			}
-		}
-	}
-
-	if len(authHeaders) == 0 {
-		return ""
-	}
-
-	return authHeaders[0]
-}
-
-// See: https://github.com/golang/go/blob/1a8b4e05b1ff7a52c6d40fad73bcad612168d094/src/net/http/request.go#L950
-func parseBasicAuth(auth string) (*authData, error) {
-	const prefix = "Basic "
-	if len(auth) < len(prefix) || !strings.EqualFold(auth[:len(prefix)], prefix) {
-		return nil, errInvalidSchemePrefix
-	}
-
-	encoded := auth[len(prefix):]
-	decodedBytes, err := base64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		return nil, errInvalidFormat
-	}
-	decoded := string(decodedBytes)
-
-	before, after, ok := strings.Cut(decoded, ":")
-	if !ok {
-		return nil, errInvalidFormat
-	}
-
-	return &authData{
-		username: before,
-		password: after,
-		raw:      encoded,
-	}, nil
-}
-
-var _ client.AuthData = (*authData)(nil)
-
-type authData struct {
-	username string
-	password string
-	raw      string
-}
-
-func (a *authData) GetAttribute(name string) any {
-	switch name {
-	case "username":
-		return a.username
-	case "raw":
-		return a.raw
-	default:
-		return nil
-	}
-}
-
-func (*authData) GetAttributeNames() []string {
-	return []string{"username", "raw"}
-}
-
-// perRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.
-type perRPCAuth struct {
-	metadata map[string]string
-}
-
-// GetRequestMetadata returns the request metadata to be used with the RPC.
-func (p *perRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
-	return p.metadata, nil
-}
-
-// RequireTransportSecurity always returns true for this implementation.
-func (*perRPCAuth) RequireTransportSecurity() bool {
-	return true
-}
-
-type basicAuthRoundTripper struct {
-	base     http.RoundTripper
-	authData *ClientAuthSettings
-}
-
-func (b *basicAuthRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
-	newRequest := request.Clone(request.Context())
-	newRequest.SetBasicAuth(b.authData.Username, string(b.authData.Password))
-	return b.base.RoundTrip(newRequest)
+	return basicauth.Authenticate(ctx, headers, ba.matchFunc)
 }
 
 var (
@@ -211,30 +94,75 @@ var (
 )
 
 type basicAuthClient struct {
-	component.StartFunc
-	component.ShutdownFunc
+	clientAuth       *ClientAuthSettings
+	logger           *zap.Logger
+	usernameResolver credentialsfile.ValueResolver
+	passwordResolver credentialsfile.ValueResolver
+}
 
-	clientAuth *ClientAuthSettings
+func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
+	if ba.clientAuth == nil {
+		return errNoCredentialSource
+	}
+	ca := ba.clientAuth
+	if ca.Username != "" || ca.UsernameFile != "" {
+		r, err := credentialsfile.NewValueResolver(ca.Username, ca.UsernameFile, ba.logger)
+		if err != nil {
+			return err
+		}
+		if err := r.Start(ctx); err != nil {
+			return err
+		}
+		ba.usernameResolver = r
+	}
+	if string(ca.Password) != "" || ca.PasswordFile != "" {
+		r, err := credentialsfile.NewValueResolver(string(ca.Password), ca.PasswordFile, ba.logger)
+		if err != nil {
+			return err
+		}
+		if err := r.Start(ctx); err != nil {
+			return err
+		}
+		ba.passwordResolver = r
+	}
+	return nil
+}
+
+func (ba *basicAuthClient) Shutdown(_ context.Context) error {
+	var errs []error
+	if ba.usernameResolver != nil {
+		errs = append(errs, ba.usernameResolver.Shutdown())
+	}
+	if ba.passwordResolver != nil {
+		errs = append(errs, ba.passwordResolver.Shutdown())
+	}
+	return errors.Join(errs...)
+}
+
+func (ba *basicAuthClient) Username() string {
+	if ba.usernameResolver != nil {
+		return ba.usernameResolver.Value()
+	}
+	if ba.clientAuth != nil {
+		return ba.clientAuth.Username
+	}
+	return ""
+}
+
+func (ba *basicAuthClient) Password() string {
+	if ba.passwordResolver != nil {
+		return ba.passwordResolver.Value()
+	}
+	if ba.clientAuth != nil {
+		return string(ba.clientAuth.Password)
+	}
+	return ""
 }
 
 func (ba *basicAuthClient) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
-	if strings.Contains(ba.clientAuth.Username, ":") {
-		return nil, errInvalidFormat
-	}
-	return &basicAuthRoundTripper{
-		base:     base,
-		authData: ba.clientAuth,
-	}, nil
+	return basicauth.NewRoundTripper(base, ba)
 }
 
 func (ba *basicAuthClient) PerRPCCredentials() (creds.PerRPCCredentials, error) {
-	if strings.Contains(ba.clientAuth.Username, ":") {
-		return nil, errInvalidFormat
-	}
-	encoded := base64.StdEncoding.EncodeToString([]byte(ba.clientAuth.Username + ":" + string(ba.clientAuth.Password)))
-	return &perRPCAuth{
-		metadata: map[string]string{
-			"authorization": fmt.Sprintf("Basic %s", encoded),
-		},
-	}, nil
+	return basicauth.NewPerRPCCredentials(ba)
 }

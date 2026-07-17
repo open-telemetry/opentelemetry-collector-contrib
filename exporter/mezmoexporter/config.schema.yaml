@@ -1,0 +1,15 @@
+description: Config defines configuration for Mezmo exporter.
+type: object
+properties:
+  ingest_key:
+    description: Token is the authentication token provided by Mezmo.
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  ingest_url:
+    description: IngestURL is the URL to send telemetry to.
+    type: string
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

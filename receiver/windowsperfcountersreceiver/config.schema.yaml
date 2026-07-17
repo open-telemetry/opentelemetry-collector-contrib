@@ -1,0 +1,66 @@
+$defs:
+  counter_config:
+    description: CounterConfig defines the individual counter in an object.
+    type: object
+    properties:
+      name:
+        type: string
+      recreate_query:
+        type: boolean
+    allOf:
+      - $ref: metric_rep
+  metric_config:
+    description: MetricsConfig defines the configuration for a metric to be created.
+    type: object
+    properties:
+      description:
+        type: string
+      gauge:
+        $ref: gauge_metric
+      sum:
+        $ref: sum_metric
+      unit:
+        type: string
+  metric_rep:
+    type: object
+    properties:
+      attributes:
+        type: object
+        additionalProperties:
+          type: string
+      metric:
+        type: string
+  object_config:
+    description: ObjectConfig defines configuration for a perf counter object.
+    type: object
+    properties:
+      counters:
+        type: array
+        items:
+          $ref: counter_config
+      instances:
+        type: array
+        items:
+          type: string
+      object:
+        type: string
+  sum_metric:
+    type: object
+    properties:
+      aggregation:
+        type: string
+      monotonic:
+        type: boolean
+description: Config defines configuration for WindowsPerfCounters receiver.
+type: object
+properties:
+  metrics:
+    type: object
+    additionalProperties:
+      $ref: metric_config
+  perfcounters:
+    type: array
+    items:
+      $ref: object_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config

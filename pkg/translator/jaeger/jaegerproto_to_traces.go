@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -202,6 +202,10 @@ func jSpanToInternal(span *model.Span, dest ptrace.Span) {
 	dest.SetName(span.OperationName)
 	dest.SetStartTimestamp(pcommon.NewTimestampFromTime(span.StartTime))
 	dest.SetEndTimestamp(pcommon.NewTimestampFromTime(span.StartTime.Add(span.Duration)))
+
+	if span.Flags.IsSampled() {
+		dest.SetFlags(dest.Flags() | spanFlagsSampled)
+	}
 
 	parentSpanID := span.ParentSpanID()
 	if parentSpanID != model.SpanID(0) {

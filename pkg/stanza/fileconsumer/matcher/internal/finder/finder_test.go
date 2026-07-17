@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 )
 
 func TestValidate(t *testing.T) {
@@ -195,9 +197,9 @@ func TestFindFiles(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Chdir(t.TempDir())
 			if tc.caseInsensitiveFeaturegate {
-				require.NoError(t, featuregate.GlobalRegistry().Set("filelog.windows.caseInsensitive", true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsCaseInsensitiveFeatureGate.ID(), true))
 				t.Cleanup(func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set("filelog.windows.caseInsensitive", false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsCaseInsensitiveFeatureGate.ID(), false))
 				})
 			}
 			for _, f := range tc.files {

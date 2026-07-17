@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -58,10 +59,18 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			serverConfig := confighttp.NewDefaultServerConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			serverConfig.WriteTimeout = 0
+			serverConfig.ReadHeaderTimeout = 0
+			serverConfig.IdleTimeout = 0
+			serverConfig.KeepAlivesEnabled = false
+			serverConfig.NetAddr = confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  tt.args.address,
+			}
 			cfg := &Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: tt.args.address,
-				},
+				ServerConfig: serverConfig,
 			}
 			got, err := newReceiver(cfg, tt.args.nextConsumer, receivertest.NewNopSettings(metadata.Type))
 			require.Equal(t, tt.wantErr, err)
@@ -80,10 +89,18 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	defer l.Close()
 	_, portStr, err := net.SplitHostPort(l.Addr().String())
 	require.NoError(t, err, "failed to split listener address: %v", err)
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:" + portStr,
+	}
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:" + portStr,
-		},
+		ServerConfig: serverConfig,
 	}
 	traceReceiver, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err, "Failed to create receiver: %v", err)
@@ -128,10 +145,18 @@ func TestStartTraceReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
+			serverConfig := confighttp.NewDefaultServerConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			serverConfig.WriteTimeout = 0
+			serverConfig.ReadHeaderTimeout = 0
+			serverConfig.IdleTimeout = 0
+			serverConfig.KeepAlivesEnabled = false
+			serverConfig.NetAddr = confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "localhost:0",
+			}
 			cfg := &Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:0",
-				},
+				ServerConfig: serverConfig,
 			}
 			zr, err := newReceiver(cfg, sink, receivertest.NewNopSettings(metadata.Type))
 			require.NoError(t, err)
@@ -219,10 +244,18 @@ func TestReceiverContentTypes(t *testing.T) {
 			r.Header.Add("content-encoding", test.encoding)
 
 			next := new(consumertest.TracesSink)
+			serverConfig := confighttp.NewDefaultServerConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			serverConfig.WriteTimeout = 0
+			serverConfig.ReadHeaderTimeout = 0
+			serverConfig.IdleTimeout = 0
+			serverConfig.KeepAlivesEnabled = false
+			serverConfig.NetAddr = confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "",
+			}
 			cfg := &Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "",
-				},
+				ServerConfig: serverConfig,
 			}
 			zr, err := newReceiver(cfg, next, receivertest.NewNopSettings(metadata.Type))
 			require.NoError(t, err)
@@ -246,10 +279,18 @@ func TestReceiverInvalidContentType(t *testing.T) {
 		bytes.NewBuffer([]byte(body)))
 	r.Header.Add("content-type", "application/json")
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "",
+	}
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "",
-		},
+		ServerConfig: serverConfig,
 	}
 	zr, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
@@ -268,10 +309,18 @@ func TestReceiverConsumerError(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPost, "/api/v2/spans", bytes.NewBuffer(body))
 	r.Header.Add("content-type", "application/json")
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:9411",
+	}
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:9411",
-		},
+		ServerConfig: serverConfig,
 	}
 	zr, err := newReceiver(cfg, consumertest.NewErr(errors.New("consumer error")), receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
@@ -290,10 +339,18 @@ func TestReceiverConsumerPermanentError(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPost, "/api/v2/spans", bytes.NewBuffer(body))
 	r.Header.Add("content-type", "application/json")
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:9411",
+	}
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:9411",
-		},
+		ServerConfig: serverConfig,
 	}
 	zr, err := newReceiver(cfg, consumertest.NewErr(consumererror.NewPermanent(errors.New("consumer error"))), receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
@@ -416,10 +473,18 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	next := new(consumertest.TracesSink)
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "",
+	}
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "",
-		},
+		ServerConfig:    serverConfig,
 		ParseStringTags: true,
 	}
 	zr, err := newReceiver(cfg, next, receivertest.NewNopSettings(metadata.Type))
@@ -438,16 +503,16 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 
 	expected := map[string]any{
-		"cache_hit":            true,
-		"ping_count":           int64(25),
-		"timeout":              12.3,
-		"clnt/finagle.version": "6.45.0",
-		"http.path":            "/api",
-		"http.status_code":     int64(500),
-		"net.host.ip":          "7::80:807f",
-		"peer.service":         "backend",
-		"net.peer.ip":          "192.168.99.101",
-		"net.peer.port":        int64(9000),
+		"cache_hit":             true,
+		"ping_count":            int64(25),
+		"timeout":               12.3,
+		"clnt/finagle.version":  "6.45.0",
+		"http.path":             "/api",
+		"http.status_code":      int64(500),
+		"network.local.address": "7::80:807f",
+		"service.peer.name":     "backend",
+		"network.peer.address":  "192.168.99.101",
+		"net.peer.port":         int64(9000),
 	}
 
 	assert.Equal(t, expected, span.Attributes().AsRaw())
@@ -457,10 +522,18 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 	noTimestampBytes, err := os.ReadFile(zipkinV2NoTimestamp)
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "",
+	}
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "",
-		},
+		ServerConfig:    serverConfig,
 		ParseStringTags: true,
 	}
 	zi, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings(metadata.Type))

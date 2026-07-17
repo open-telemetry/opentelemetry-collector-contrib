@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package sematextexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter"
 
@@ -41,13 +41,17 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Timeout = 5 * time.Second
+	clientConfig.Headers = configopaque.MapList{
+		{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
+	}
 	cfg := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Timeout: 5 * time.Second,
-			Headers: configopaque.MapList{
-				{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
-			},
-		},
+		ClientConfig:  clientConfig,
 		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		MetricsConfig: MetricsConfig{
 			MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),

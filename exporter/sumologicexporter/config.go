@@ -53,6 +53,9 @@ type Config struct {
 	// Decompose OTLP Histograms into individual metrics, similar to how they're represented in Prometheus format
 	DecomposeOtlpHistograms bool `mapstructure:"decompose_otlp_histograms"`
 
+	// Decompose OTLP Summaries into individual metrics (quantiles as gauges, count/sum as counters)
+	DecomposeOtlpSummaries bool `mapstructure:"decompose_otlp_summaries"`
+
 	// Sumo specific options
 	// Name of the client
 	Client string `mapstructure:"client"`
@@ -187,4 +190,10 @@ const (
 	DefaultDropRoutingAttribute string = ""
 	// DefaultStickySessionEnabled defines default StickySessionEnabled value
 	DefaultStickySessionEnabled bool = false
+	// DefaultRetryOnFailureMultiplier defines default retry_on_failure multiplier value
+	DefaultRetryOnFailureMultiplier float64 = 1.2
+	// DefaultRetryOnFailureMaxInterval defines default retry_on_failure max_interval value
+	DefaultRetryOnFailureMaxInterval time.Duration = 5 * time.Minute
+	// DefaultRetryOnFailureMaxElapsedTime defines default retry_on_failure max_elapsed_time value
+	DefaultRetryOnFailureMaxElapsedTime time.Duration = 1 * time.Hour
 )

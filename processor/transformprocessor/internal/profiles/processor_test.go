@@ -1245,7 +1245,7 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		name             string
 		statements       []common.ContextStatements
 		wantErrorWith    string
-		profileFunctions map[string]ottl.Factory[ottlprofile.TransformContext]
+		profileFunctions map[string]ottl.Factory[*ottlprofile.TransformContext]
 	}
 
 	tests := []testCase{
@@ -1257,9 +1257,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
 				},
 			},
-			profileFunctions: map[string]ottl.Factory[ottlprofile.TransformContext]{
+			profileFunctions: map[string]ottl.Factory[*ottlprofile.TransformContext]{
 				"set":             DefaultProfileFunctions["set"],
-				"TestProfileFunc": NewTestProfileFuncFactory[ottlprofile.TransformContext](),
+				"TestProfileFunc": NewTestProfileFuncFactory[*ottlprofile.TransformContext](),
 			},
 		},
 		{

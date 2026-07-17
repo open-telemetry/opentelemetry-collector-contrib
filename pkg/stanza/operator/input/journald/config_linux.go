@@ -6,6 +6,7 @@
 package journald // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/journald"
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
@@ -40,15 +42,16 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	newCmdFunc, err := c.buildNewCmdFunc()
+	newCmdFunc, err := c.buildNewCmdFunc(inputOperator.Logger())
 	if err != nil {
 		return nil, err
 	}
 
 	return &Input{
-		InputOperator:       inputOperator,
-		newCmd:              newCmdFunc,
-		convertMessageBytes: c.ConvertMessageBytes,
+		InputOperator:            inputOperator,
+		newCmd:                   newCmdFunc,
+		convertMessageBytes:      c.ConvertMessageBytes,
+		includeLogRecordOriginal: c.IncludeLogRecordOriginal,
 	}, nil
 }
 
@@ -94,6 +97,8 @@ func (c Config) buildArgs() ([]string, error) {
 
 	if c.StartAt == "beginning" {
 		args = append(args, "--no-tail")
+	} else {
+		args = append(args, "--lines=0")
 	}
 
 	for _, unit := range c.Units {
@@ -185,7 +190,7 @@ func (c Config) buildMatchesConfig() ([]string, error) {
 	return matches, nil
 }
 
-func (c Config) buildNewCmdFunc() (func(ctx context.Context, cursor []byte) cmd, error) {
+func (c Config) buildNewCmdFunc(logger *zap.Logger) (func(ctx context.Context, cursor []byte) cmd, error) {
 	args, err := c.buildArgs()
 	if err != nil {
 		return nil, err
@@ -194,7 +199,7 @@ func (c Config) buildNewCmdFunc() (func(ctx context.Context, cursor []byte) cmd,
 	return func(ctx context.Context, cursor []byte) cmd {
 		// Copy args and if needed, add the cursor flag
 		journalArgs := append([]string{}, args...)
-		if cursor != nil {
+		if len(bytes.TrimSpace(cursor)) > 0 {
 			journalArgs = append(journalArgs, "--after-cursor", string(cursor))
 		}
 		cmd := exec.CommandContext(ctx, c.JournalctlPath, journalArgs...) // #nosec - ...
@@ -204,6 +209,16 @@ func (c Config) buildNewCmdFunc() (func(ctx context.Context, cursor []byte) cmd,
 				Chroot: c.RootPath,
 			}
 		}
+
+		logCmd := fmt.Sprintf("Journalctl command: '%s %s'.",
+			c.JournalctlPath,
+			strings.Join(journalArgs, " "))
+
+		if c.RootPath != "" {
+			logCmd = fmt.Sprintf("%s Chroot: %q", logCmd, c.RootPath)
+		}
+
+		logger.Info(logCmd)
 		return cmd
 	}, nil
 }

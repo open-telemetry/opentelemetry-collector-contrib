@@ -86,7 +86,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+			metricsBuilderConfig := metadata.NewDefaultMetricsBuilderConfig()
 			if runtime.GOOS == "darwin" {
 				// disable darwin unsupported default metric
 				metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
@@ -388,11 +388,11 @@ func getMetricSlice(t *testing.T, rm pmetric.ResourceMetrics) pmetric.MetricSlic
 func TestScrapeMetrics_NewError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	_, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{Include: MatchConfig{Names: []string{"test"}}, MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
+	_, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{Include: MatchConfig{Names: []string{"test"}}, MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process include filters:", err.Error())
 
-	_, err = newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{Exclude: MatchConfig{Names: []string{"test"}}, MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
+	_, err = newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{Exclude: MatchConfig{Names: []string{"test"}}, MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process exclude filters:", err.Error())
 }
@@ -400,7 +400,7 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
+	scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()})
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
 
 	scraper.getProcessHandles = func(context.Context) (processHandles, error) { return nil, errors.New("err1") }
@@ -489,6 +489,11 @@ func (p *processHandleMock) NumThreadsWithContext(ctx context.Context) (int32, e
 	return args.Get(0).(int32), args.Error(1)
 }
 
+func (p *processHandleMock) ThreadsWithContext(ctx context.Context) (map[int32]*cpu.TimesStat, error) {
+	args := p.MethodCalled("ThreadsWithContext", ctx)
+	return args.Get(0).(map[int32]*cpu.TimesStat), args.Error(1)
+}
+
 func (p *processHandleMock) CreateTimeWithContext(ctx context.Context) (int64, error) {
 	args := p.MethodCalled("CreateTimeWithContext", ctx)
 	return args.Get(0).(int64), args.Error(1)
@@ -554,6 +559,9 @@ func initDefaultsHandleMock(t mock.TestingT, handleMock *processHandleMock) {
 	}
 	if !handleMock.IsMethodCallable(t, "NumThreadsWithContext", mock.Anything) {
 		handleMock.On("NumThreadsWithContext", mock.Anything).Return(int32(0), nil)
+	}
+	if !handleMock.IsMethodCallable(t, "ThreadsWithContext", mock.Anything) {
+		handleMock.On("ThreadsWithContext", mock.Anything).Return(map[int32]*cpu.TimesStat{}, nil)
 	}
 	if !handleMock.IsMethodCallable(t, "PageFaultsWithContext", mock.Anything) {
 		handleMock.On("PageFaultsWithContext", mock.Anything).Return(&process.PageFaultsStat{}, nil)
@@ -657,7 +665,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			scrapeProcessDelay, _ := time.ParseDuration(test.scrapeProcessDelay)
-			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+			metricsBuilderConfig := metadata.NewDefaultMetricsBuilderConfig()
 			enableLinuxOnlyMetrics(&metricsBuilderConfig.Metrics)
 
 			config := &Config{
@@ -745,6 +753,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		pageFaultsError     error
 		numThreadsError     error
 		numCtxSwitchesError error
+		threadsError        error
 		numFDsError         error
 		handleCountError    error
 		rlimitError         error
@@ -827,10 +836,16 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError:   `error reading thread info for process "test" (pid 1): err8`,
 		},
 		{
-			name:                "Context Switches Error",
-			osFilter:            []string{"darwin"},
-			numCtxSwitchesError: errors.New("err9"),
-			expectedError:       `error reading context switch counts for process "test" (pid 1): err9`,
+			name:          "Threads Error",
+			osFilter:      []string{"darwin", "windows"},
+			threadsError:  errors.New("err12"),
+			expectedError: `error reading context switch counts for process "test" (pid 1): err12`,
+		},
+		{
+			name:            "Context Switches Error",
+			osFilter:        []string{"darwin", "windows"},
+			numThreadsError: errors.New("err9"),
+			expectedError:   `error reading thread info for process "test" (pid 1): err9`,
 		},
 		{
 			name:          "File Descriptors Error",
@@ -862,6 +877,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			ioCountersError:     errors.New("err7"),
 			pageFaultsError:     errors.New("err-paging"),
 			numThreadsError:     errors.New("err8"),
+			threadsError:        errors.New("err12"),
 			numCtxSwitchesError: errors.New("err9"),
 			numFDsError:         errors.New("err10"),
 			cgroupError:         errors.New("err11"),
@@ -877,7 +893,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				`error reading disk usage for process "test" (pid 1): err7; ` +
 				`error reading memory paging info for process "test" (pid 1): err-paging; ` +
 				`error reading thread info for process "test" (pid 1): err8; ` +
-				`error reading context switch counts for process "test" (pid 1): err9; ` +
+				handleContextSwitchErrorMessageIfSupportedOnPlatform() +
 				`error reading open file descriptor count for process "test" (pid 1): err10; ` +
 				handleCountErrorMessageIfSupportedOnPlatform() +
 				`error reading pending signals for process "test" (pid 1): err-rlimit; ` +
@@ -902,13 +918,19 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				}
 			}
 
-			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+			metricsBuilderConfig := metadata.NewDefaultMetricsBuilderConfig()
 			if runtime.GOOS != "darwin" {
 				enableOptionalMetrics(&metricsBuilderConfig.Metrics)
 			} else {
 				// disable darwin unsupported default metric
 				metricsBuilderConfig.Metrics.ProcessUptime.Enabled = true
 				metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
+			}
+
+			// If not on Linux, don't bother collecting a metric that
+			// is guaranteed to produce an error.
+			if runtime.GOOS != "linux" {
+				metricsBuilderConfig.Metrics.ProcessContextSwitches.Enabled = false
 			}
 
 			scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsBuilderConfig})
@@ -935,6 +957,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("CreateTimeWithContext", mock.Anything).Return(int64(0), test.createTimeError)
 			handleMock.On("PpidWithContext", mock.Anything).Return(int32(2), test.parentPidError)
 			handleMock.On("NumThreadsWithContext", mock.Anything).Return(int32(0), test.numThreadsError)
+			handleMock.On("ThreadsWithContext", mock.Anything).Return(map[int32]*cpu.TimesStat{}, test.threadsError)
 			handleMock.On("PageFaultsWithContext", mock.Anything).Return(&process.PageFaultsStat{}, test.pageFaultsError)
 			handleMock.On("NumCtxSwitchesWithContext", mock.Anything).Return(&process.NumCtxSwitchesStat{}, test.numCtxSwitchesError)
 			handleMock.On("NumFDsWithContext", mock.Anything).Return(int32(0), test.numFDsError)
@@ -958,7 +981,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				executableError = test.cmdlineError
 			}
 
-			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.handleCountError, test.rlimitError, test.createTimeError)
+			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.threadsError, test.numCtxSwitchesError, test.numFDsError, test.handleCountError, test.rlimitError, test.createTimeError)
 			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
 
@@ -966,7 +989,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)
 			if isPartial {
-				expectedFailures := getExpectedScrapeFailures(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.handleCountError, test.rlimitError, test.createTimeError)
+				expectedFailures := getExpectedScrapeFailures(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.threadsError, test.numCtxSwitchesError, test.numFDsError, test.handleCountError, test.rlimitError, test.createTimeError)
 				var scraperErr scrapererror.PartialScrapeError
 				require.ErrorAs(t, err, &scraperErr)
 				assert.Equal(t, expectedFailures, scraperErr.Failed)
@@ -975,7 +998,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, uptimeError error) (int, int) {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, threadsError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, uptimeError error) (int, int) {
 	if runtime.GOOS == "windows" && exeError != nil {
 		return 0, 0
 	}
@@ -1010,7 +1033,7 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	if threadError == nil && runtime.GOOS != "darwin" {
 		expectedLen += threadMetricsLen
 	}
-	if contextSwitchError == nil && runtime.GOOS != "darwin" {
+	if runtime.GOOS == "linux" && threadsError == nil && contextSwitchError == nil {
 		expectedLen += contextSwitchMetricsLen
 	}
 	if fileDescriptorError == nil && runtime.GOOS != "darwin" {
@@ -1026,7 +1049,7 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	return 1, expectedLen
 }
 
-func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, uptimeError error) int {
+func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, threadsError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, uptimeError error) int {
 	if runtime.GOOS == "windows" && exeError != nil {
 		return 2
 	}
@@ -1034,12 +1057,17 @@ func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPerc
 	if nameError != nil || exeError != nil {
 		return 1
 	}
-	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, uptimeError)
+	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, threadsError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, uptimeError)
 
 	// excluding unsupported metrics from darwin 'metricsLen'
 	if runtime.GOOS == "darwin" {
 		darwinMetricsLen := cpuMetricsLen + memoryMetricsLen + uptimeMetricsLen
 		return darwinMetricsLen - expectedMetricsLen
+	}
+
+	// Exclude context switch metrics when on Windows.
+	if runtime.GOOS == "windows" {
+		return metricsLen - contextSwitchMetricsLen - expectedMetricsLen
 	}
 
 	return metricsLen - expectedMetricsLen
@@ -1180,7 +1208,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			if test.skipTestCase {
 				t.Skipf("skipping test %v on %v", test.name, runtime.GOOS)
 			}
-			config := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+			config := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 			if !test.omitConfigField {
 				config.MuteProcessNameError = test.muteProcessNameError
 				config.MuteProcessExeError = test.muteProcessExeError
@@ -1248,7 +1276,7 @@ func newErroringHandleMock() *processHandleMock {
 func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+	metricsBuilderConfig := metadata.NewDefaultMetricsBuilderConfig()
 
 	metricsBuilderConfig.Metrics.ProcessCPUTime.Enabled = false
 	metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
@@ -1317,7 +1345,7 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 	for i := range testCases {
 		testCase := testCases[i]
 		t.Run(testCase.name, func(t *testing.T) {
-			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+			metricsBuilderConfig := metadata.NewDefaultMetricsBuilderConfig()
 
 			metricsBuilderConfig.Metrics.ProcessCPUTime.Enabled = testCase.processCPUTimes
 			metricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled = testCase.processCPUUtilization
@@ -1381,6 +1409,13 @@ func handleCGroupErrorMessageIfSupportedOnPlatform() string {
 func handleCountErrorMessageIfSupportedOnPlatform() string {
 	if handleCountErr := handleCountErrorIfSupportedOnPlatform(); handleCountErr != nil {
 		return fmt.Errorf("error reading handle count for process \"test\" (pid 1): %w; ", handleCountErr).Error()
+	}
+	return ""
+}
+
+func handleContextSwitchErrorMessageIfSupportedOnPlatform() string {
+	if runtime.GOOS == "linux" {
+		return `error reading context switch counts for process "test" (pid 1): err12; `
 	}
 	return ""
 }

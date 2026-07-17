@@ -51,14 +51,28 @@ var apiDict = map[string]string{
 	`SplunkLicenses`:                    `/services/licenser/licenses?output_mode=json`,
 }
 
+// Struct containing information relating to search based metrics
 type searchResponse struct {
-	search     string
-	Jobid      *string `xml:"sid"`
-	Return     int
-	count      int
-	offset     int
+	// search job being run
+	search string
+
+	// id of job running the search
+	Jobid *string `xml:"sid"`
+
+	// response code
+	Return int
+
+	// number of responses per page
+	count int
+
+	// offset of first result value in a page
+	offset int
+
+	// total number of responses for the query results
 	TotalCount metaField `xml:"meta>fieldOrder>field"`
-	Fields     []*field  `xml:"result>field"`
+
+	// returned results
+	Fields []*field `xml:"result>field"`
 }
 
 type metaField struct {

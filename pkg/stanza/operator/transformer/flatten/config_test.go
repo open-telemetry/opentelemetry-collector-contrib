@@ -70,6 +70,16 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 				ExpectUnmarshalErr: false,
 			},
+			{
+				Name: "on_error_drop",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Field = entry.NewBodyField("nested")
+					cfg.OnError = "drop"
+					return cfg
+				}(),
+				ExpectUnmarshalErr: false,
+			},
 		},
 	}.Run(t)
 }

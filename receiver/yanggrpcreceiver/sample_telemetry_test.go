@@ -6,14 +6,17 @@ package yanggrpcreceiver
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -57,12 +60,9 @@ func TestSampleTelemetryData(t *testing.T) {
 	}
 
 	ctx := t.Context()
-	rcvr, err := createMetricsReceiver(ctx, settings, config, consumer)
-	if err != nil {
-		t.Fatalf("Failed to create receiver: %v", err)
-	}
+	rcvr := createMetricsReceiver(ctx, settings, config, consumer)
 
-	err = rcvr.Start(ctx, componenttest.NewNopHost())
+	err := rcvr.Start(ctx, componenttest.NewNopHost())
 	if err != nil {
 		t.Fatalf("Failed to start receiver: %v", err)
 	}
@@ -70,7 +70,16 @@ func TestSampleTelemetryData(t *testing.T) {
 		assert.NoError(t, rcvr.Shutdown(ctx))
 	}()
 
-	time.Sleep(50 * time.Millisecond)
+	// Wait until the gRPC server is ready to accept connections instead of using
+	// a fixed sleep, which is unreliable on slow or loaded CI machines.
+	require.Eventually(t, func() bool {
+		conn, err := net.DialTimeout(string(config.NetAddr.Transport), config.NetAddr.Endpoint, 100*time.Millisecond)
+		if err != nil {
+			return false
+		}
+		conn.Close()
+		return true
+	}, 5*time.Second, 10*time.Millisecond, "receiver did not start accepting connections in time")
 
 	// Load sample data (either from file or use built-in sample)
 	sampleData := getSampleTelemetryData(t)
@@ -268,7 +277,7 @@ func sendInterfaceTelemetryData(endpoint, nodeID, subscription, encodingPath str
 	}
 
 	_, err = stream.Recv()
-	if err != nil && err.Error() != "EOF" {
+	if !errors.Is(err, io.EOF) {
 		return fmt.Errorf("unexpected error receiving response: %w", err)
 	}
 

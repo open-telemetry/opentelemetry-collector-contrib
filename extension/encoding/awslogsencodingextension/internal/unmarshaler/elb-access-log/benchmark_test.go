@@ -51,7 +51,7 @@ func createELBAccessLogContent(b *testing.B, filename string, nLogs int) []byte 
 }
 
 func BenchmarkUnmarshalAWSLogs(b *testing.B) {
-	u := &elbAccessLogUnmarshaler{
+	u := &ElbAccessLogUnmarshaler{
 		buildInfo: component.BuildInfo{},
 		logger:    zap.NewNop(),
 	}

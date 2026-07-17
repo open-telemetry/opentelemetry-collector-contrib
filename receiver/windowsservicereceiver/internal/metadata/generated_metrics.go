@@ -11,6 +11,13 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
+)
+
 // AttributeStartupMode specifies the value startup_mode attribute.
 type AttributeStartupMode int
 
@@ -51,7 +58,8 @@ var MapAttributeStartupMode = map[string]AttributeStartupMode{
 
 var MetricsInfo = metricsInfo{
 	WindowsServiceStatus: metricInfo{
-		Name: "windows.service.status",
+		Name:       "windows.service.status",
+		Attributes: []string{"name", "startup_mode"},
 	},
 }
 
@@ -60,13 +68,14 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricWindowsServiceStatus struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   WindowsServiceStatusMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills windows.service.status metric with initial data.
@@ -106,8 +115,9 @@ func (m *metricWindowsServiceStatus) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricWindowsServiceStatus(cfg MetricConfig) metricWindowsServiceStatus {
+func newMetricWindowsServiceStatus(cfg WindowsServiceStatusMetricConfig) metricWindowsServiceStatus {
 	m := metricWindowsServiceStatus{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

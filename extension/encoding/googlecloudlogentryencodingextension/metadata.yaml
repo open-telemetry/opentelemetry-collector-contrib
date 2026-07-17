@@ -1,4 +1,10 @@
-type: googlecloudlogentry_encoding
+display_name: Google Cloud LogEntry Encoding Extension
+type: google_cloud_logentry_encoding
+deprecated_type: googlecloudlogentry_encoding
+
+description: >
+  This extension can be used to unmarshall a
+  [Cloud Logging LogEntry](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry) message type.
 
 status:
   disable_codecov_badge: true
@@ -9,6 +15,16 @@ status:
   codeowners:
     active: [ constanca-m ]
     emeritus: [ alexvanboxel ]
+
+feature_gates:
+  - id: extension.encoding.googlecloudlogentryencoding.DontEmitV0RPCConventions
+    stage: alpha
+    description: >-
+      When enabled, audit log parser no longer emits the deprecated
+      semconv v1.38.0 attributes rpc.jsonrpc.error_code and rpc.jsonrpc.error_message.
+    from_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095
+    skip_strict_validation: true
 
 tests:
   config:

@@ -1,0 +1,26 @@
+$defs:
+  dimension:
+    description: Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
+    type: object
+    properties:
+      default:
+        x-pointer: true
+        type: string
+      name:
+        type: string
+  exemplars:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+description: Config defines the configuration options for exceptionsconnector
+type: object
+properties:
+  dimensions:
+    description: 'Dimensions defines the list of additional dimensions on top of the provided: - service.name - span.name - span.kind - status.code The dimensions will be fetched from the span''s attributes. Examples of some conventionally used attributes: https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.'
+    type: array
+    items:
+      $ref: dimension
+  exemplars:
+    description: Exemplars defines the configuration for exemplars.
+    $ref: exemplars

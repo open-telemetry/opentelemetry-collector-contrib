@@ -1,3 +1,4 @@
+display_name: AWS X-Ray Receiver
 type: awsxray
 
 status:

@@ -1,4 +1,4 @@
-metricstransform:
+metrics_transform:
   transforms:
     - include: old[\da
       match_type: regexp

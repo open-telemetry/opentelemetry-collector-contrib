@@ -17,6 +17,8 @@ all_set:
       enabled: true
     k8s.cluster.name:
       enabled: true
+    oracle_cloud.realm:
+      enabled: true
 none_set:
   resource_attributes:
     cloud.availability_zone:
@@ -34,4 +36,6 @@ none_set:
     host.type:
       enabled: false
     k8s.cluster.name:
+      enabled: false
+    oracle_cloud.realm:
       enabled: false

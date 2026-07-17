@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/oraclecloud"
@@ -66,6 +66,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	d.rb.SetHostType(compute.HostType)
 
 	d.rb.SetK8sClusterName(compute.Metadata.OKEClusterDisplayName)
+
+	d.rb.SetOracleCloudRealm(compute.Metadata.Realm)
 
 	res := d.rb.Emit()
 

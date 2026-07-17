@@ -7,9 +7,11 @@ import (
 	"context"
 	"errors"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -24,9 +26,11 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"
@@ -38,9 +42,9 @@ func TestNewOpampAgent(t *testing.T) {
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
-	assert.Equal(t, "otelcoltest", o.agentType)
-	assert.Equal(t, "test version", o.agentVersion)
-	assert.NotEmpty(t, o.instanceID.String())
+	assert.Equal(t, "otelcoltest", o.serviceName)
+	assert.Equal(t, "test version", o.serviceVersion)
+	assert.NotEmpty(t, o.instanceUID.String())
 	assert.True(t, o.capabilities.ReportsEffectiveConfig)
 	assert.True(t, o.capabilities.ReportsHealth)
 	assert.Empty(t, o.effectiveConfig)
@@ -57,9 +61,9 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	set.Resource.Attributes().PutStr("service.instance.id", "f8999bc1-4c9b-4619-9bae-7f009d2411ec")
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
-	assert.Equal(t, "otelcol-distro", o.agentType)
-	assert.Equal(t, "distro.0", o.agentVersion)
-	assert.Equal(t, "f8999bc1-4c9b-4619-9bae-7f009d2411ec", o.instanceID.String())
+	assert.Equal(t, "otelcol-distro", o.serviceName)
+	assert.Equal(t, "distro.0", o.serviceVersion)
+	assert.Equal(t, "f8999bc1-4c9b-4619-9bae-7f009d2411ec", o.serviceInstanceID)
 	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
@@ -193,14 +197,14 @@ func TestUpdateAgentIdentity(t *testing.T) {
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 
-	olduid := o.instanceID
+	olduid := o.instanceUID
 	assert.NotEmpty(t, olduid.String())
 
 	uid := uuid.Must(uuid.NewV7())
 	assert.NotEqual(t, uid, olduid)
 
 	o.updateAgentIdentity(uid)
-	assert.Equal(t, o.instanceID, uid)
+	assert.Equal(t, o.instanceUID, uid)
 	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
@@ -775,6 +779,115 @@ func TestOpAMPAgent_Dependencies(t *testing.T) {
 	})
 }
 
+func TestOpAMPAgent_onCommand(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows since SIGHUP isn't a recognized signal")
+	}
+
+	t.Run("restart capability not enabled", func(t *testing.T) {
+		agent := opampAgent{
+			logger: zaptest.NewLogger(t),
+			capabilities: Capabilities{
+				AcceptsRestartCommand: false,
+			},
+		}
+
+		ctx, cancel := context.WithCancel(t.Context())
+		t.Cleanup(cancel)
+
+		sighupReceived := make(chan bool, 1)
+		setupSignalHandler(ctx, t, func() {
+			sighupReceived <- true
+		})
+
+		require.NoError(t, agent.onCommand(ctx, &protobufs.ServerToAgentCommand{
+			Type: protobufs.CommandType_CommandType_Restart,
+		}))
+
+		select {
+		case <-sighupReceived:
+			t.Error("shouldn't have received SIGHUP")
+		case <-time.After(250 * time.Millisecond):
+			// success
+		}
+	})
+	t.Run("happy path - not restart command", func(t *testing.T) {
+		agent := opampAgent{
+			logger: zaptest.NewLogger(t),
+		}
+
+		ctx, cancel := context.WithCancel(t.Context())
+		t.Cleanup(cancel)
+
+		sighupReceived := make(chan bool, 1)
+		setupSignalHandler(ctx, t, func() {
+			sighupReceived <- true
+		})
+
+		require.NoError(t, agent.onCommand(ctx, &protobufs.ServerToAgentCommand{
+			Type: 13,
+		}))
+
+		select {
+		case <-sighupReceived:
+			t.Error("shouldn't have received SIGHUP")
+		case <-time.After(250 * time.Millisecond):
+			// success
+		}
+	})
+	t.Run("happy path", func(t *testing.T) {
+		agent := opampAgent{
+			logger: zaptest.NewLogger(t),
+			capabilities: Capabilities{
+				AcceptsRestartCommand: true,
+			},
+		}
+
+		ctx, cancel := context.WithCancel(t.Context())
+		t.Cleanup(cancel)
+
+		sighupReceived := make(chan bool, 1)
+		setupSignalHandler(ctx, t, func() {
+			sighupReceived <- true
+		})
+
+		require.NoError(t, agent.onCommand(ctx, &protobufs.ServerToAgentCommand{
+			Type: protobufs.CommandType_CommandType_Restart,
+		}))
+
+		select {
+		case <-sighupReceived:
+			// Success
+		case <-time.After(250 * time.Millisecond):
+			t.Error("should have received SIGHUP")
+		}
+	})
+}
+
+func setupSignalHandler(ctx context.Context, tb testing.TB, signalCallback func()) {
+	tb.Helper()
+
+	sigChan := make(chan os.Signal, 1)
+	// Notify sigChan when SIGHUP is received
+	signal.Notify(sigChan, syscall.SIGHUP)
+	tb.Cleanup(func() {
+		signal.Stop(sigChan)
+	})
+
+	go func() {
+		for {
+			select {
+			case sig := <-sigChan:
+				if sig == syscall.SIGHUP {
+					signalCallback()
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+}
+
 type mockStatusAggregator struct {
 	statusChan     chan *status.AggregateStatus
 	receivedEvents []eventSourcePair
@@ -873,14 +986,18 @@ func (m mockStatusEvent) Timestamp() time.Time {
 	return m.timestamp
 }
 
+func (mockStatusEvent) Attributes() pcommon.Map {
+	return pcommon.NewMap()
+}
+
 func newTestOpampAgent(cfg *Config, set extension.Settings, mockOpampClient *mockOpAMPClient, sa *mockStatusAggregator) *opampAgent {
 	uid := uuid.New()
 	o := &opampAgent{
 		cfg:                      cfg,
 		logger:                   set.Logger,
-		agentType:                set.BuildInfo.Command,
-		agentVersion:             set.BuildInfo.Version,
-		instanceID:               uid,
+		serviceName:              set.BuildInfo.Command,
+		serviceVersion:           set.BuildInfo.Version,
+		instanceUID:              uid,
 		capabilities:             cfg.Capabilities,
 		opampClient:              mockOpampClient,
 		statusSubscriptionWg:     &sync.WaitGroup{},

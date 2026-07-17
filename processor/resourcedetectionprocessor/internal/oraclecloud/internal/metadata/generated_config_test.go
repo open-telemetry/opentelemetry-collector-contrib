@@ -32,6 +32,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				HostName:              ResourceAttributeConfig{Enabled: true},
 				HostType:              ResourceAttributeConfig{Enabled: true},
 				K8sClusterName:        ResourceAttributeConfig{Enabled: true},
+				OracleCloudRealm:      ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -45,6 +46,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				HostName:              ResourceAttributeConfig{Enabled: false},
 				HostType:              ResourceAttributeConfig{Enabled: false},
 				K8sClusterName:        ResourceAttributeConfig{Enabled: false},
+				OracleCloudRealm:      ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

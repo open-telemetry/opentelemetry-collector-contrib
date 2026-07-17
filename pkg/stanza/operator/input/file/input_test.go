@@ -32,6 +32,7 @@ func TestAddFileResolvedFields(t *testing.T) {
 		cfg.IncludeFilePathResolved = true
 		cfg.IncludeFileOwnerName = runtime.GOOS != "windows"
 		cfg.IncludeFileOwnerGroupName = runtime.GOOS != "windows"
+		cfg.IncludeFilePermissions = runtime.GOOS != "windows"
 	})
 
 	// Create temp dir with log file
@@ -70,6 +71,7 @@ func TestAddFileResolvedFields(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		require.NotNil(t, e.Attributes["log.file.owner.name"])
 		require.NotNil(t, e.Attributes["log.file.owner.group.name"])
+		require.NotNil(t, e.Attributes["log.file.permissions"])
 	}
 }
 

@@ -75,6 +75,7 @@ type ComputeMetadata struct {
 
 type InstanceMetadata struct {
 	OKEClusterDisplayName string `json:"oke-cluster-display-name"`
+	Realm                 string `json:"realm"`
 }
 
 // Metadata queries a given endpoint and parses the output to the OracleCloud IMDS format

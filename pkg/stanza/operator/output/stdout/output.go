@@ -31,9 +31,10 @@ func (o *Output) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 }
 
 // Process will log entries received.
-func (o *Output) Process(_ context.Context, entry *entry.Entry) error {
+func (o *Output) Process(_ context.Context, e *entry.Entry) error {
 	o.mux.Lock()
-	err := o.encoder.Encode(entry)
+	defer entry.Put(e)
+	err := o.encoder.Encode(e)
 	if err != nil {
 		o.mux.Unlock()
 		o.Logger().Error("Failed to process entry", zap.Error(err))

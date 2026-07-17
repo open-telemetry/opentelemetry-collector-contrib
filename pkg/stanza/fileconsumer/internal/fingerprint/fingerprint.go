@@ -12,7 +12,6 @@ import (
 	"io"
 	"os"
 
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/compression"
@@ -22,19 +21,11 @@ const DefaultSize = 1000 // bytes
 
 const MinSize = 16 // bytes
 
-var DecompressedFingerprintFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"filelog.decompressFingerprint",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("Computes fingerprint for compressed files by decompressing its data"),
-	featuregate.WithRegisterFromVersion("v0.128.0"),
-	featuregate.WithRegisterToVersion("v0.142.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40256"),
-)
-
 // Fingerprint is used to identify a file
 // A file's fingerprint is the first N bytes of the file
 type Fingerprint struct {
 	firstBytes []byte
+	key        string
 }
 
 func New(first []byte) *Fingerprint {
@@ -45,23 +36,26 @@ func New(first []byte) *Fingerprint {
 // Set decompressData to true to compute fingerprint of compressed files by decompressing its data first
 func NewFromFile(file *os.File, size int, decompressData bool, logger *zap.Logger) (*Fingerprint, error) {
 	buf := make([]byte, size)
-	if DecompressedFingerprintFeatureGate.IsEnabled() {
-		if decompressData {
-			if compression.IsGzipFile(file, logger) {
-				// If the file is of compressed type, uncompress the data before creating its fingerprint
-				uncompressedData, err := gzip.NewReader(file)
-				if err != nil {
-					return nil, fmt.Errorf("error uncompressing gzip file: %w", err)
-				}
-				defer uncompressedData.Close()
-
-				n, err := uncompressedData.Read(buf)
-				if err != nil && !errors.Is(err, io.EOF) {
-					return nil, fmt.Errorf("error reading fingerprint bytes: %w", err)
-				}
-				return New(buf[:n]), nil
-			}
+	if decompressData && compression.IsGzipFile(file, logger) {
+		fileInfo, err := file.Stat()
+		if err != nil {
+			return nil, fmt.Errorf("error getting file info: %w", err)
 		}
+
+		sectionReader := io.NewSectionReader(file, 0, fileInfo.Size())
+
+		// If the file is of compressed type, uncompress the data before creating its fingerprint
+		uncompressedData, err := gzip.NewReader(sectionReader)
+		if err != nil {
+			return nil, fmt.Errorf("error uncompressing gzip file: %w", err)
+		}
+		defer uncompressedData.Close()
+
+		n, err := uncompressedData.Read(buf)
+		if err != nil && !errors.Is(err, io.EOF) {
+			return nil, fmt.Errorf("error reading fingerprint bytes: %w", err)
+		}
+		return New(buf[:n]), nil
 	}
 
 	n, err := file.ReadAt(buf, 0)
@@ -75,11 +69,21 @@ func NewFromFile(file *os.File, size int, decompressData bool, logger *zap.Logge
 func (f Fingerprint) Copy() *Fingerprint {
 	buf := make([]byte, len(f.firstBytes), cap(f.firstBytes))
 	n := copy(buf, f.firstBytes)
-	return New(buf[:n])
+	return &Fingerprint{firstBytes: buf[:n]}
 }
 
 func (f *Fingerprint) Len() int {
 	return len(f.firstBytes)
+}
+
+func (f *Fingerprint) Key() string {
+	if f == nil || len(f.firstBytes) == 0 {
+		return ""
+	}
+	if f.key == "" {
+		f.key = string(f.firstBytes)
+	}
+	return f.key
 }
 
 // Equal returns true if the fingerprints have the same FirstBytes,
@@ -87,17 +91,7 @@ func (f *Fingerprint) Len() int {
 // because the primary purpose of a fingerprint is to convey a unique
 // identity, and only the FirstBytes field contributes to this goal.
 func (f Fingerprint) Equal(other *Fingerprint) bool {
-	l0 := len(other.firstBytes)
-	l1 := len(f.firstBytes)
-	if l0 != l1 {
-		return false
-	}
-	for i := range l0 {
-		if other.firstBytes[i] != f.firstBytes[i] {
-			return false
-		}
-	}
-	return true
+	return bytes.Equal(f.firstBytes, other.firstBytes)
 }
 
 // StartsWith returns true if the fingerprints are the same
@@ -134,4 +128,11 @@ func (f *Fingerprint) UnmarshalJSON(data []byte) error {
 
 type marshal struct {
 	FirstBytes []byte `json:"first_bytes"`
+}
+
+// Bytes returns a copy of the raw fingerprint bytes.
+func (f *Fingerprint) Bytes() []byte {
+	buf := make([]byte, len(f.firstBytes))
+	copy(buf, f.firstBytes)
+	return buf
 }

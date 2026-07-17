@@ -320,7 +320,7 @@ func Test_NewBoolExprForProfile(t *testing.T) {
 			profileBoolExpr, err := NewBoolExprForProfile(tt.conditions, StandardProfileFuncs(), ottl.PropagateError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 			assert.NotNil(t, profileBoolExpr)
-			result, err := profileBoolExpr.Eval(t.Context(), ottlprofile.TransformContext{})
+			result, err := profileBoolExpr.Eval(t.Context(), &ottlprofile.TransformContext{})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})
@@ -333,7 +333,7 @@ func Test_NewBoolExprForProfileWithOptions(t *testing.T) {
 		StandardProfileFuncs(),
 		ottl.PropagateError,
 		componenttest.NewNopTelemetrySettings(),
-		[]ottl.Option[ottlprofile.TransformContext]{ottlprofile.EnablePathContextNames()},
+		[]ottl.Option[*ottlprofile.TransformContext]{ottlprofile.EnablePathContextNames()},
 	)
 	assert.NoError(t, err)
 }

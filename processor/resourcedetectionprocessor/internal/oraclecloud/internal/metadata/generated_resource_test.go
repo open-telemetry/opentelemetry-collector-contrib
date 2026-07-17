@@ -21,15 +21,16 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetHostName("host.name-val")
 			rb.SetHostType("host.type-val")
 			rb.SetK8sClusterName("k8s.cluster.name-val")
+			rb.SetOracleCloudRealm("oracle_cloud.realm-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 8, res.Attributes().Len())
+				assert.Equal(t, 9, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 8, res.Attributes().Len())
+				assert.Equal(t, 9, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -40,42 +41,47 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("cloud.availability_zone")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.availability_zone-val", val.Str())
+				assert.Equal(t, "cloud.availability_zone-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("cloud.platform")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.platform-val", val.Str())
+				assert.Equal(t, "cloud.platform-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.provider-val", val.Str())
+				assert.Equal(t, "cloud.provider-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("cloud.region")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.region-val", val.Str())
+				assert.Equal(t, "cloud.region-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "host.id-val", val.Str())
+				assert.Equal(t, "host.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "host.name-val", val.Str())
+				assert.Equal(t, "host.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.type")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "host.type-val", val.Str())
+				assert.Equal(t, "host.type-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.cluster.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.cluster.name-val", val.Str())
+				assert.Equal(t, "k8s.cluster.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("oracle_cloud.realm")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "oracle_cloud.realm-val", val.Str())
 			}
 		})
 	}

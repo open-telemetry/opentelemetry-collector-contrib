@@ -13,10 +13,12 @@ import (
 	"io"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	gojson "github.com/goccy/go-json"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -30,11 +32,12 @@ type Input struct {
 
 	newCmd func(ctx context.Context, cursor []byte) cmd
 
-	persister           operator.Persister
-	convertMessageBytes bool
-	cancel              context.CancelFunc
-	wg                  sync.WaitGroup
-	errChan             chan error
+	persister                operator.Persister
+	convertMessageBytes      bool
+	cancel                   context.CancelFunc
+	wg                       sync.WaitGroup
+	errChan                  chan error
+	includeLogRecordOriginal bool
 }
 
 type cmd interface {
@@ -146,10 +149,7 @@ func (operator *Input) runJournalctl(ctx context.Context, jctl *journalctl) erro
 	// This goroutine reads the stderr from the journalctl process. If the
 	// process exits for any reason, then the stderr will be closed, this
 	// goroutine will get an EOF error and exit.
-	operator.wg.Add(1)
-	go func() {
-		defer operator.wg.Done()
-
+	operator.wg.Go(func() {
 		stderrBuf := bufio.NewReader(jctl.stderr)
 
 		for {
@@ -162,17 +162,14 @@ func (operator *Input) runJournalctl(ctx context.Context, jctl *journalctl) erro
 			}
 			operator.Logger().Error("Received from journalctl stderr", zap.ByteString("stderr", line))
 		}
-	}()
+	})
 
 	// Start the reader goroutine.
 	// This goroutine reads the stdout from the journalctl process, parses
 	// the data, and writes to output. If the journalctl process exits for
 	// any reason, then the stdout will be closed, this goroutine will get
 	// an EOF error and exits.
-	operator.wg.Add(1)
-	go func() {
-		defer operator.wg.Done()
-
+	operator.wg.Go(func() {
 		stdoutBuf := bufio.NewReader(jctl.stdout)
 
 		for {
@@ -196,7 +193,7 @@ func (operator *Input) runJournalctl(ctx context.Context, jctl *journalctl) erro
 				operator.Logger().Error("failed to write entry", zap.Error(err))
 			}
 		}
-	}()
+	})
 
 	// we wait for the reader goroutines to exit before calling Cmd.Wait().
 	// As per documentation states, "It is thus incorrect to call Wait before all reads from the pipe have completed".
@@ -260,6 +257,11 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 	}
 
 	entry.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
+
+	if operator.includeLogRecordOriginal {
+		entry.AddAttribute(string(semconv.LogRecordOriginalKey), strings.TrimSpace(string(line)))
+	}
+
 	return entry, cursorString, nil
 }
 

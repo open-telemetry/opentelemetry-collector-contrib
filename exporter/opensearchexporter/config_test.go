@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 )
@@ -80,6 +81,7 @@ func TestLoadConfig(t *testing.T) {
 				MappingsSettings: MappingsSettings{
 					Mode: "ss4o",
 				},
+				QueueConfig: configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
 			},
 			configValidateAssert: assert.NoError,
 		},
@@ -125,17 +127,7 @@ func TestLoadConfig(t *testing.T) {
 			}),
 			configValidateAssert: assert.NoError,
 		},
-		{
-			id: component.NewIDWithName(metadata.Type, "invalid_dynamic_log_indexing"),
-			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
-				config.LogsIndex = "otel-logs-%{service.name}-%{invalid.placeholder}"
-				config.LogsIndexFallback = "default-service"
-			}),
-			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
-				return assert.ErrorContains(t, err, errLogsIndexInvalidPlaceholder.Error())
-			},
-		},
+
 		{
 			id: component.NewIDWithName(metadata.Type, "log_index_time_format_valid"),
 			expected: withDefaultConfig(func(config *Config) {
@@ -202,17 +194,7 @@ func TestLoadConfig(t *testing.T) {
 			}),
 			configValidateAssert: assert.NoError,
 		},
-		{
-			id: component.NewIDWithName(metadata.Type, "traces_index_invalid_placeholder"),
-			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
-				config.TracesIndex = "otel-traces-%{service.name}-%{invalid.placeholder}"
-				config.TracesIndexFallback = "default-service"
-			}),
-			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
-				return assert.ErrorContains(t, err, errTracesIndexInvalidPlaceholder.Error())
-			},
-		},
+
 		{
 			id: component.NewIDWithName(metadata.Type, "traces_index_time_format_valid"),
 			expected: withDefaultConfig(func(config *Config) {
@@ -245,6 +227,33 @@ func TestLoadConfig(t *testing.T) {
 				return assert.ErrorContains(t, err, errTracesIndexTimeFormatInvalid.Error())
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "pipeline"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.Pipeline = "my-pipeline"
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "otel_v1"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.Mode = "otel-v1"
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "otel_v1_with_dataset"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.Dataset = "ngnix"
+				config.Mode = "otel-v1"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, errOTelV1DatasetNamespaceUnused.Error())
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -263,6 +272,31 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
+// TestQueueConfigDefaults verifies that sending_queue gets proper defaults when only batch is configured
+func TestQueueConfigDefaults(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "sending_queue_with_batch").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	actualCfg := cfg.(*Config)
+
+	// Verify QueueConfig has the expected defaults
+	require.True(t, actualCfg.QueueConfig.HasValue(), "QueueConfig should have a value")
+	queueCfg := actualCfg.QueueConfig.Get()
+	assert.Equal(t, 10, queueCfg.NumConsumers, "NumConsumers should default to 10")
+	assert.Equal(t, int64(1000), queueCfg.QueueSize, "QueueSize should default to 1000")
+	assert.True(t, queueCfg.Batch.HasValue(), "Batch should be configured")
+
+	// Verify config is valid (no crash)
+	require.NoError(t, actualCfg.Validate())
+}
+
 // withDefaultConfig create a new default configuration
 // and applies provided functions to it.
 func withDefaultConfig(fns ...func(*Config)) *Config {
@@ -279,4 +313,49 @@ func withDefaultHTTPClientConfig(fns ...func(config *confighttp.ClientConfig)) c
 		fn(&cfg)
 	}
 	return cfg
+}
+
+func TestOTelV1MappingModeValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		mode        string
+		manageTpl   bool
+		expectError string
+	}{
+		{
+			name: "otel-v1 mode valid",
+			mode: "otel-v1",
+		},
+		{
+			name:      "otel-v1 with manage_index_template true",
+			mode:      "otel-v1",
+			manageTpl: true,
+		},
+		{
+			name:        "ss4o with manage_index_template true is invalid",
+			mode:        "ss4o",
+			manageTpl:   true,
+			expectError: errManageIndexTemplateInvalidMode.Error(),
+		},
+		{
+			name: "ss4o with manage_index_template false is valid",
+			mode: "ss4o",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := withDefaultConfig(func(config *Config) {
+				config.Endpoint = "http://localhost:9200"
+				config.Mode = tt.mode
+				config.ManageIndexTemplate = tt.manageTpl
+			})
+			err := cfg.Validate()
+			if tt.expectError != "" {
+				assert.ErrorContains(t, err, tt.expectError)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

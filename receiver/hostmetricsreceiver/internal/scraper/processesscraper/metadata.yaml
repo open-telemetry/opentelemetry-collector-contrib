@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [dmitryax, braydonk]
+    active: [dmitryax, braydonk, rogercoll]
 
 sem_conv_version: 1.9.0
 
@@ -15,14 +15,14 @@ attributes:
     description: Breakdown status of the processes.
     type: string
     enum: [blocked, daemon, detached, idle, locked, orphan, paging, running, sleeping, stopped, system, unknown, zombies]
+    requirement_level: recommended
 
 metrics:
   system.processes.count:
     enabled: true
     description: Total number of processes in each state.
     unit: "{processes}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -30,10 +30,9 @@ metrics:
     attributes: [status]
   system.processes.created:
     enabled: true
-    description: Total number of created processes.
+    description: Total number of created processes. Supported on Linux and OpenBSD.
     unit: "{processes}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative

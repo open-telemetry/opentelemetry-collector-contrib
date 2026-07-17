@@ -1,0 +1,41 @@
+$defs:
+  log_format_type:
+    description: LogFormatType represents log_format
+    type: string
+  metric_format_type:
+    description: MetricFormatType represents metric_format
+    type: string
+description: Config defines configuration for Sumo Logic exporter.
+type: object
+properties:
+  client:
+    description: Sumo specific options Name of the client
+    type: string
+  compress_encoding:
+    description: 'Compression encoding format, either empty string, gzip or deflate (default gzip) Empty string means no compression NOTE: CompressEncoding is deprecated and will be removed in an upcoming release'
+    x-pointer: true
+    $ref: go.opentelemetry.io/collector/config/configcompression.type
+  decompose_otlp_histograms:
+    description: Decompose OTLP Histograms into individual metrics, similar to how they're represented in Prometheus format
+    type: boolean
+  decompose_otlp_summaries:
+    description: Decompose OTLP Summaries into individual metrics (quantiles as gauges, count/sum as counters)
+    type: boolean
+  log_format:
+    description: 'Logs related configuration Format to post logs into Sumo. (default json) * text - Logs will appear in Sumo Logic in text format. * json - Logs will appear in Sumo Logic in json format. * otlp - Logs will be send in otlp format and will appear in Sumo Logic: * in json format if record level attributes exists * in text format in case of no level attributes See Sumo Logic documentation for more details: https://help.sumologic.com/docs/send-data/opentelemetry-collector/data-source-configurations/mapping-records-resources/'
+    $ref: log_format_type
+  max_request_body_size:
+    description: Max HTTP request body size in bytes before compression (if applied). By default 1MB is recommended.
+    type: integer
+  metric_format:
+    description: Metrics related configuration The format of metrics you will be sending, either otlp or prometheus (Default is otlp)
+    $ref: metric_format_type
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  sticky_session_enabled:
+    description: StickySessionEnabled defines if sticky session support is enable. By default this is false.
+    type: boolean
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

@@ -49,6 +49,7 @@ func TestDetect(t *testing.T) {
 				AvailabilityDomain: "AD-1",
 				Metadata: oraclecloud.InstanceMetadata{
 					OKEClusterDisplayName: "my-oke-cluster",
+					Realm:                 "oc1",
 				},
 			},
 		}
@@ -74,6 +75,7 @@ func TestDetect(t *testing.T) {
 			"host.name":               "my-instance",
 			"host.type":               "VM.Standard.E4.Flex",
 			"k8s.cluster.name":        "my-oke-cluster",
+			"oracle_cloud.realm":      "oc1",
 		}
 		assert.Equal(t, expected, res.Attributes().AsRaw())
 	})
@@ -127,6 +129,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 				AvailabilityDomain: "AD-1",
 				Metadata: oraclecloud.InstanceMetadata{
 					OKEClusterDisplayName: "my-oke-cluster",
+					Realm:                 "oc1",
 				},
 			},
 		}
@@ -149,6 +152,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 			"host.id":                 "ocid1.instance.oc1..aaaaaaa",
 			"host.name":               "my-instance",
 			"host.type":               "VM.Standard.E4.Flex",
+			"oracle_cloud.realm":      "oc1",
 			// K8S attributes omitted as they are disabled
 		}
 		assert.Equal(t, expected, res.Attributes().AsRaw())

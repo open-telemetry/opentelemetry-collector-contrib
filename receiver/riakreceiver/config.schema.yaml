@@ -1,0 +1,12 @@
+description: Config defines the configuration for the various elements of the receiver agent.
+type: object
+properties:
+  metrics:
+    $ref: ./internal/metadata.metrics_builder_config
+  password:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  username:
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config

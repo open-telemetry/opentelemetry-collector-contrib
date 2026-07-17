@@ -8,8 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -17,16 +17,6 @@ import (
 )
 
 const defaultPort = 13133
-
-// Feature gate that switches the extension to the shared healthcheck implementation
-var useComponentStatusGate = featuregate.GlobalRegistry().MustRegister(
-	"extension.healthcheck.useComponentStatus",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Switch to the shared healthcheck implementation powered by component status events"),
-	featuregate.WithRegisterFromVersion("v0.142.0"),
-	featuregate.WithRegisterToVersion("v0.147.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42256"),
-)
 
 // NewFactory creates a factory for HealthCheck extension.
 func NewFactory() extension.Factory {
@@ -39,13 +29,21 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  testutil.EndpointForPort(defaultPort),
+	}
 	return &Config{
 		Config: healthcheck.Config{
 			LegacyConfig: healthcheck.HTTPLegacyConfig{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.EndpointForPort(defaultPort),
-				},
-				Path: "/",
+				ServerConfig: serverConfig,
+				Path:         "/",
 				CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
 					Enabled:                  false,
 					Interval:                 "5m",
@@ -56,10 +54,10 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createExtension(ctx context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	config := cfg.(*Config)
 
-	if useComponentStatusGate.IsEnabled() {
+	if metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.IsEnabled() {
 		// When feature gate is enabled, use v2 implementation directly.
 		// The feature gate controls behavior, not the presence of v2 config fields.
 		config.UseV2 = true
@@ -84,7 +82,7 @@ func createExtension(ctx context.Context, set extension.Settings, cfg component.
 			}
 		}
 
-		return healthcheck.NewHealthCheckExtension(ctx, config.Config, set), nil
+		return healthcheck.NewHealthCheckExtension(config.Config, set), nil
 	}
 
 	// Feature gate disabled: use legacy implementation.

@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"gopkg.in/yaml.v3"
@@ -56,11 +57,19 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	defer cancel()
 
 	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:8787",
+	}
 	exporterCfg := &Config{
-		Namespace: "test",
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:8787",
-		},
+		Namespace:        "test",
+		ServerConfig:     serverConfig,
 		SendTimestamps:   true,
 		MetricExpiration: 2 * time.Hour,
 	}
@@ -101,7 +110,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	// 4. Scrape from the Prometheus receiver to ensure that we export summary metrics
 	wg.Wait()
 
-	res, err := http.Get("http://" + exporterCfg.Endpoint + "/metrics")
+	res, err := http.Get("http://" + exporterCfg.NetAddr.Endpoint + "/metrics")
 	require.NoError(t, err, "Failed to scrape from the exporter")
 	prometheusExporterScrape, err := io.ReadAll(res.Body)
 	res.Body.Close()
