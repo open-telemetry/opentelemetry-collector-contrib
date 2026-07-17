@@ -1,0 +1,21 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: datadogreceiver
+
+# A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add support for Datadog Agent v3 series metrics endpoint `/api/intake/metrics/v3/series` to prevent silent data loss with Datadog Agent 7.81.0+
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [REPLACE_WITH_ISSUE_NUMBER]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Datadog Agent 7.81.0+ defaults to sending series metrics to `/api/intake/metrics/v3/series`.
+  Without this fix, metrics from agents >= 7.81.0 were silently discarded (returned 200 OK but not processed).
+  The v3 endpoint now uses the same payload format and translation logic as v2.

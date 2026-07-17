@@ -157,15 +157,16 @@ Format example can be found [here](./internal/translator/traces_translator_test.
 
 **Metrics**
 
-| Datadog API Endpoint        | Status      | Notes                      |
-|-----------------------------|-------------|----------------------------|
-| /api/v1/series              | Development |                            |
-| /api/v2/series              | Development |                            |
-| /api/v1/check_run           | Development |                            |
-| /api/v1/sketches            | Development |                            |
-| /api/beta/sketches          | Development |                            |
-| /api/v1/distribution_points | Development |                            |
-| /intake                     | Development | Support for proxying calls |
+| Datadog API Endpoint              | Status      | Notes                      |
+|-----------------------------------|-------------|----------------------------|
+| /api/v1/series                    | Development |                            |
+| /api/v2/series                    | Development |                            |
+| /api/intake/metrics/v3/series     | Development | Added in v0.157.0          |
+| /api/v1/check_run                 | Development |                            |
+| /api/v1/sketches                  | Development |                            |
+| /api/beta/sketches                | Development |                            |
+| /api/v1/distribution_points       | Development |                            |
+| /intake                           | Development | Support for proxying calls |
 
 **Logs**
 
