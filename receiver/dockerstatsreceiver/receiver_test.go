@@ -56,6 +56,7 @@ var (
 		cfg.ContainerCPUUsageTotal.Enabled = true
 		cfg.ContainerCPUUsageUsermode.Enabled = true
 		cfg.ContainerCPULogicalCount.Enabled = true
+		cfg.ContainerDiskIo.Enabled = true
 		cfg.ContainerMemoryAvailable.Enabled = true
 		cfg.ContainerMemoryActiveAnon.Enabled = true
 		cfg.ContainerMemoryActiveFile.Enabled = true
@@ -97,6 +98,7 @@ var (
 		cfg.ContainerMemoryUsageLimit.Enabled = true
 		cfg.ContainerMemoryUsageMax.Enabled = true
 		cfg.ContainerMemoryUsageTotal.Enabled = true
+		cfg.ContainerMemoryWorkingSet.Enabled = true
 		cfg.ContainerMemoryWriteback.Enabled = true
 		cfg.ContainerNetworkIo.Enabled = true
 		cfg.ContainerNetworkIoUsageRxBytes.Enabled = true

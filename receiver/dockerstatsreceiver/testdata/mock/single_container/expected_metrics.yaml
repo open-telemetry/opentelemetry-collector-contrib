@@ -389,6 +389,33 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: container.cpu.utilization
             unit: "1"
+          - description: Disk bytes for the container.
+            name: container.disk.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2502656"
+                  attributes:
+                    - key: disk.io.direction
+                      value:
+                        stringValue: read
+                    - key: system.device
+                      value:
+                        stringValue: "254:0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: disk.io.direction
+                      value:
+                        stringValue: write
+                    - key: system.device
+                      value:
+                        stringValue: "254:0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
           - description: The amount of anonymous memory that has been identified as active by the kernel.
             name: container.memory.active_anon
             sum:
@@ -718,7 +745,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "724992"
+                - asInt: "2887680"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -742,6 +769,15 @@ resourceMetrics:
             unit: By
           - description: Memory usage of the container. This excludes the cache.
             name: container.memory.usage.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "724992"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Container memory working set.
+            name: container.memory.working_set
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -919,7 +955,7 @@ resourceMetrics:
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 1.226360962551118e+08
+                - asDouble: 1.273170398199028e+08
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime

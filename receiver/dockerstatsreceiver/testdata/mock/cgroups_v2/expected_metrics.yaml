@@ -177,6 +177,33 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: container.cpu.utilization
             unit: "1"
+          - description: Disk bytes for the container.
+            name: container.disk.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "167936"
+                  attributes:
+                    - key: disk.io.direction
+                      value:
+                        stringValue: read
+                    - key: system.device
+                      value:
+                        stringValue: "8:0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: disk.io.direction
+                      value:
+                        stringValue: write
+                    - key: system.device
+                      value:
+                        stringValue: "8:0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
           - description: The amount of anonymous memory that has been identified as active by the kernel.
             name: container.memory.active_anon
             sum:
@@ -326,6 +353,15 @@ resourceMetrics:
             unit: By
           - description: Memory usage of the container. This excludes the cache.
             name: container.memory.usage.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "234647552"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Container memory working set.
+            name: container.memory.working_set
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -503,7 +539,7 @@ resourceMetrics:
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 9.729798278213394e+07
+                - asDouble: 1.0197892635032994e+08
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime

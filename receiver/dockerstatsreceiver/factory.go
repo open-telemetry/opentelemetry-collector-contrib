@@ -68,6 +68,8 @@ func createMetricsReceiver(
 			dockerConfig.Metrics.ContainerMemoryUsage.Enabled = true
 		}
 		dockerConfig.Metrics.ContainerMemoryAvailable.Enabled = true
+		dockerConfig.Metrics.ContainerMemoryWorkingSet.Enabled = true
+		dockerConfig.Metrics.ContainerDiskIo.Enabled = true
 		if dockerConfig.Metrics.ContainerMemoryTotalPgfault.Enabled {
 			dockerConfig.Metrics.ContainerMemoryTotalPgfault.Enabled = false
 			dockerConfig.Metrics.ContainerMemoryPagingFaults.Enabled = true

@@ -192,7 +192,11 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *ctypes.MemoryStats) {
 	totalUsage := calculateMemUsageNoCache(memoryStats)
 	r.mb.RecordContainerMemoryUsageTotalDataPoint(now, int64(totalUsage))
-	r.mb.RecordContainerMemoryUsageDataPoint(now, int64(totalUsage))
+	// The cache-excluded usage (totalUsage) is the working set, per the container
+	// semantic conventions, while container.memory.usage is the raw memory usage
+	// (including cache).
+	r.mb.RecordContainerMemoryWorkingSetDataPoint(now, int64(totalUsage))
+	r.mb.RecordContainerMemoryUsageDataPoint(now, int64(memoryStats.Usage))
 
 	r.mb.RecordContainerMemoryUsageLimitDataPoint(now, int64(memoryStats.Limit))
 	r.mb.RecordContainerMemoryAvailableDataPoint(now, int64(memoryStats.Limit-totalUsage))
@@ -255,6 +259,7 @@ func (r *metricsReceiver) recordBlkioMetrics(now pcommon.Timestamp, blkioStats *
 	recordSingleBlkioStat(now, blkioStats.IoMergedRecursive, r.mb.RecordContainerBlockioIoMergedRecursiveDataPoint)
 	recordSingleBlkioStat(now, blkioStats.IoQueuedRecursive, r.mb.RecordContainerBlockioIoQueuedRecursiveDataPoint)
 	recordSingleBlkioStat(now, blkioStats.IoServiceBytesRecursive, r.mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.IoServiceBytesRecursive, r.recordContainerDiskIo)
 	recordSingleBlkioStat(now, blkioStats.IoServiceTimeRecursive, r.mb.RecordContainerBlockioIoServiceTimeRecursiveDataPoint)
 	recordSingleBlkioStat(now, blkioStats.IoServicedRecursive, r.mb.RecordContainerBlockioIoServicedRecursiveDataPoint)
 	recordSingleBlkioStat(now, blkioStats.IoTimeRecursive, r.mb.RecordContainerBlockioIoTimeRecursiveDataPoint)
@@ -271,6 +276,16 @@ func recordSingleBlkioStat(now pcommon.Timestamp, statEntries []ctypes.BlkioStat
 			strconv.FormatUint(stat.Minor, 10),
 			strings.ToLower(stat.Op))
 	}
+}
+
+// recordContainerDiskIo records the container.disk.io metric from a block IO
+// stat entry. It only covers the read/write directions per the semantic
+// conventions; the other operations (sync, async, discard, total) are skipped.
+func (r *metricsReceiver) recordContainerDiskIo(now pcommon.Timestamp, val int64, devMaj, devMin, operation string) {
+	if operation != "read" && operation != "write" {
+		return
+	}
+	r.mb.RecordContainerDiskIoDataPoint(now, val, devMaj+":"+devMin, operation)
 }
 
 func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, networks *map[string]ctypes.NetworkStats) {

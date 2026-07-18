@@ -52,6 +52,9 @@ all_set:
       enabled: true
     container.cpu.utilization:
       enabled: true
+    container.disk.io:
+      enabled: true
+      attributes: ["system.device","disk.io.direction"]
     container.memory.active_anon:
       enabled: true
     container.memory.active_file:
@@ -133,6 +136,8 @@ all_set:
     container.memory.usage.max:
       enabled: true
     container.memory.usage.total:
+      enabled: true
+    container.memory.working_set:
       enabled: true
     container.memory.writeback:
       enabled: true
@@ -239,6 +244,9 @@ reaggregate_set:
       enabled: true
     container.cpu.utilization:
       enabled: true
+    container.disk.io:
+      enabled: true
+      attributes: []
     container.memory.active_anon:
       enabled: true
     container.memory.active_file:
@@ -320,6 +328,8 @@ reaggregate_set:
     container.memory.usage.max:
       enabled: true
     container.memory.usage.total:
+      enabled: true
+    container.memory.working_set:
       enabled: true
     container.memory.writeback:
       enabled: true
@@ -426,6 +436,9 @@ none_set:
       enabled: false
     container.cpu.utilization:
       enabled: false
+    container.disk.io:
+      enabled: false
+      attributes: ["system.device","disk.io.direction"]
     container.memory.active_anon:
       enabled: false
     container.memory.active_file:
@@ -507,6 +520,8 @@ none_set:
     container.memory.usage.max:
       enabled: false
     container.memory.usage.total:
+      enabled: false
+    container.memory.working_set:
       enabled: false
     container.memory.writeback:
       enabled: false

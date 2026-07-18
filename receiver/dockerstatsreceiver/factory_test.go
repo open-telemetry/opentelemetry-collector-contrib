@@ -57,6 +57,8 @@ func TestEnableSemConvMetricsFeatureGate(t *testing.T) {
 	assert.True(t, config.Metrics.ContainerCPUTime.Enabled)
 	assert.False(t, config.Metrics.ContainerMemoryUsageTotal.Enabled)
 	assert.True(t, config.Metrics.ContainerMemoryUsage.Enabled)
+	assert.True(t, config.Metrics.ContainerMemoryWorkingSet.Enabled)
+	assert.True(t, config.Metrics.ContainerDiskIo.Enabled)
 
 	t.Cleanup(func() {
 		err := featuregate.GlobalRegistry().Set("receiver.dockerstatsreceiver.enableSemConvMetrics", false)
@@ -83,6 +85,8 @@ func TestDisableSemConvMetricsFeatureGate(t *testing.T) {
 	assert.False(t, config.Metrics.ContainerCPUTime.Enabled)
 	assert.True(t, config.Metrics.ContainerMemoryUsageTotal.Enabled)
 	assert.False(t, config.Metrics.ContainerMemoryUsage.Enabled)
+	assert.False(t, config.Metrics.ContainerMemoryWorkingSet.Enabled)
+	assert.False(t, config.Metrics.ContainerDiskIo.Enabled)
 
 	t.Cleanup(func() {
 		err := featuregate.GlobalRegistry().Set("receiver.dockerstatsreceiver.enableSemConvMetrics", false)

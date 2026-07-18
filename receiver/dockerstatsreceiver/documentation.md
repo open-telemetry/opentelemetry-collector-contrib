@@ -384,6 +384,21 @@ Note this is the usage for the system, not the container.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ns | Sum | Int | Cumulative | true | Development |
 
+### container.disk.io
+
+Disk bytes for the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| system.device | The disk device identifier (major:minor). | Any Str | Recommended | - |
+| disk.io.direction | The disk IO operation direction. | Any Str | Recommended | - |
+
 ### container.memory.active_anon
 
 The amount of anonymous memory that has been identified as active by the kernel.
@@ -681,6 +696,14 @@ Memory usage of the container.
 ### container.memory.usage.max
 
 Maximum memory usage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### container.memory.working_set
+
+Container memory working set.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
