@@ -272,6 +272,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
+          - description: Container’s CPU usage, measured in cpus. Range from 0 to the number of allocatable CPUs.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: container.cpu.usage
+            unit: '{cpu}'
           - description: Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
             name: container.cpu.usage.kernelmode
             sum:
@@ -900,7 +908,7 @@ resourceMetrics:
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 1.2681152487066685e+08
+                - asDouble: 1.2681222787278484e+08
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime
@@ -1181,6 +1189,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
+          - description: Container’s CPU usage, measured in cpus. Range from 0 to the number of allocatable CPUs.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: container.cpu.usage
+            unit: '{cpu}'
           - description: Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
             name: container.cpu.usage.kernelmode
             sum:
@@ -1809,7 +1825,7 @@ resourceMetrics:
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 1.2681146889605223e+08
+                - asDouble: 1.2681217189817023e+08
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime

@@ -39,6 +39,8 @@ all_set:
       enabled: true
     container.cpu.time:
       enabled: true
+    container.cpu.usage:
+      enabled: true
     container.cpu.usage.kernelmode:
       enabled: true
     container.cpu.usage.percpu:
@@ -231,6 +233,8 @@ reaggregate_set:
       enabled: true
     container.cpu.time:
       enabled: true
+    container.cpu.usage:
+      enabled: true
     container.cpu.usage.kernelmode:
       enabled: true
     container.cpu.usage.percpu:
@@ -422,6 +426,8 @@ none_set:
     container.cpu.throttling_data.throttled_time:
       enabled: false
     container.cpu.time:
+      enabled: false
+    container.cpu.usage:
       enabled: false
     container.cpu.usage.kernelmode:
       enabled: false

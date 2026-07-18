@@ -360,6 +360,14 @@ Total CPU time consumed.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | cpu.mode | The CPU mode for this data point. | Any Str | Conditionally Required | - |
 
+### container.cpu.usage
+
+Container’s CPU usage, measured in cpus. Range from 0 to the number of allocatable CPUs.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cpu} | Gauge | Double | Development |
+
 ### container.cpu.usage.percpu
 
 Per-core CPU usage by the container (Only available with cgroups v1).

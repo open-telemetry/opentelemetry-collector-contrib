@@ -280,6 +280,13 @@ metrics:
       aggregation_temporality: cumulative
     attributes:
       - cpu.mode
+  container.cpu.usage:
+    enabled: false
+    stability: development
+    description: "Container’s CPU usage, measured in cpus. Range from 0 to the number of allocatable CPUs."
+    unit: "{cpu}"
+    gauge:
+      value_type: double
   container.cpu.usage.kernelmode:
     enabled: true
     stability: development

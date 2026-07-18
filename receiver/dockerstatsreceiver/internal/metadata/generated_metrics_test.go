@@ -163,6 +163,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerCPUTimeDataPoint(ts, 1, WithCPUModeMetricAttribute("cpu.mode-val"))
+
+			allMetricsCount++
+			mb.RecordContainerCPUUsageDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageKernelmodeDataPoint(ts, 1)
@@ -970,6 +973,18 @@ func TestMetricsBuilder(t *testing.T) {
 					cpuModeAttrVal, ok := dp.Attributes().Get("cpu.mode")
 					assert.True(t, ok)
 					assert.Equal(t, "cpu.mode-val", cpuModeAttrVal.Str())
+				case "container.cpu.usage":
+					assert.False(t, validatedMetrics["container.cpu.usage"], "Found a duplicate in the metrics slice: container.cpu.usage")
+					validatedMetrics["container.cpu.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container’s CPU usage, measured in cpus. Range from 0 to the number of allocatable CPUs.", mi.Description())
+					assert.Equal(t, "{cpu}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "container.cpu.usage.kernelmode":
 					assert.False(t, validatedMetrics["container.cpu.usage.kernelmode"], "Found a duplicate in the metrics slice: container.cpu.usage.kernelmode")
 					validatedMetrics["container.cpu.usage.kernelmode"] = true

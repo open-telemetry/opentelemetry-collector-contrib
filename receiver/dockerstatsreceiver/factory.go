@@ -63,6 +63,10 @@ func createMetricsReceiver(
 			dockerConfig.Metrics.ContainerCPUUsageKernelmode.Enabled = false
 			dockerConfig.Metrics.ContainerCPUTime.Enabled = true
 		}
+		if dockerConfig.Metrics.ContainerCPUUtilization.Enabled {
+			dockerConfig.Metrics.ContainerCPUUtilization.Enabled = false
+			dockerConfig.Metrics.ContainerCPUUsage.Enabled = true
+		}
 		if dockerConfig.Metrics.ContainerMemoryUsageTotal.Enabled {
 			dockerConfig.Metrics.ContainerMemoryUsageTotal.Enabled = false
 			dockerConfig.Metrics.ContainerMemoryUsage.Enabled = true
@@ -94,6 +98,9 @@ func createMetricsReceiver(
 		}
 		if dockerConfig.Metrics.ContainerCPUUsageKernelmode.Enabled {
 			params.Logger.Warn("The default container.cpu.usage.kernelmode metric is being replaced by the container.cpu.time{cpu.mode=kernel} metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
+		}
+		if dockerConfig.Metrics.ContainerCPUUtilization.Enabled {
+			params.Logger.Warn("The default container.cpu.utilization metric is being replaced by the container.cpu.usage metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
 		}
 		if dockerConfig.Metrics.ContainerMemoryUsageTotal.Enabled {
 			params.Logger.Warn("The default container.memory.usage.total metric is being replaced by the container.memory.usage metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")

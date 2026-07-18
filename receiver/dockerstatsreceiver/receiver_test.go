@@ -50,6 +50,7 @@ var (
 		cfg.ContainerCPUThrottlingDataThrottledPeriods.Enabled = true
 		cfg.ContainerCPUThrottlingDataThrottledTime.Enabled = true
 		cfg.ContainerCPUTime.Enabled = true
+		cfg.ContainerCPUUsage.Enabled = true
 		cfg.ContainerCPUUsageKernelmode.Enabled = true
 		cfg.ContainerCPUUsagePercpu.Enabled = true
 		cfg.ContainerCPUUsageSystem.Enabled = true

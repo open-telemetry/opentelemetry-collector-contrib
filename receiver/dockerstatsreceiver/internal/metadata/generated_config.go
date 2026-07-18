@@ -549,6 +549,26 @@ func (ms *ContainerCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// ContainerCPUUsageMetricConfig provides config for the container.cpu.usage metric.
+type ContainerCPUUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerCPUUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ContainerCPUUsageKernelmodeMetricConfig provides config for the container.cpu.usage.kernelmode metric.
 type ContainerCPUUsageKernelmodeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2136,6 +2156,7 @@ type MetricsConfig struct {
 	ContainerCPUThrottlingDataThrottledPeriods ContainerCPUThrottlingDataThrottledPeriodsMetricConfig `mapstructure:"container.cpu.throttling_data.throttled_periods"`
 	ContainerCPUThrottlingDataThrottledTime    ContainerCPUThrottlingDataThrottledTimeMetricConfig    `mapstructure:"container.cpu.throttling_data.throttled_time"`
 	ContainerCPUTime                           ContainerCPUTimeMetricConfig                           `mapstructure:"container.cpu.time"`
+	ContainerCPUUsage                          ContainerCPUUsageMetricConfig                          `mapstructure:"container.cpu.usage"`
 	ContainerCPUUsageKernelmode                ContainerCPUUsageKernelmodeMetricConfig                `mapstructure:"container.cpu.usage.kernelmode"`
 	ContainerCPUUsagePercpu                    ContainerCPUUsagePercpuMetricConfig                    `mapstructure:"container.cpu.usage.percpu"`
 	ContainerCPUUsageSystem                    ContainerCPUUsageSystemMetricConfig                    `mapstructure:"container.cpu.usage.system"`
@@ -2262,6 +2283,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerCPUTime: ContainerCPUTimeMetricConfig{
+			Enabled: false,
+		},
+		ContainerCPUUsage: ContainerCPUUsageMetricConfig{
 			Enabled: false,
 		},
 		ContainerCPUUsageKernelmode: ContainerCPUUsageKernelmodeMetricConfig{
