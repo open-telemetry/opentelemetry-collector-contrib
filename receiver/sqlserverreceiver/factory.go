@@ -82,6 +82,14 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
 	}
 
+	if isWorkerThreadsQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerWorkerThreadsQuery(cfg.InstanceName))
+	}
+
+	if isIndexPhysicalStatsQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName))
+	}
+
 	return queries
 }
 
@@ -259,24 +267,40 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		return false
 	}
 
-	return metrics.SqlserverBatchRequestRate.Enabled ||
+	return metrics.SqlserverAccessScanRate.Enabled ||
+		metrics.SqlserverAttentionRate.Enabled ||
+		metrics.SqlserverBatchRequestRate.Enabled ||
 		metrics.SqlserverBatchSQLCompilationRate.Enabled ||
 		metrics.SqlserverBatchSQLRecompilationRate.Enabled ||
+		metrics.SqlserverClrExecutionTime.Enabled ||
+		metrics.SqlserverConnectionResetRate.Enabled ||
+		metrics.SqlserverCursorCount.Enabled ||
+		metrics.SqlserverCursorMemoryUsage.Enabled ||
+		metrics.SqlserverCursorPlanCount.Enabled ||
+		metrics.SqlserverCursorRequestRate.Enabled ||
 		metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled ||
 		metrics.SqlserverDatabaseExecutionErrors.Enabled ||
 		metrics.SqlserverDatabaseFullScanRate.Enabled ||
 		metrics.SqlserverDatabaseTempdbSpace.Enabled ||
 		metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled ||
 		metrics.SqlserverDeadlockRate.Enabled ||
+		metrics.SqlserverErrorRate.Enabled ||
+		metrics.SqlserverExtentOperationRate.Enabled ||
+		metrics.SqlserverGhostRecordSkippedRate.Enabled ||
 		metrics.SqlserverIndexSearchRate.Enabled ||
 		metrics.SqlserverLatchSuperlatchCount.Enabled ||
 		metrics.SqlserverLatchSuperlatchTransitionRate.Enabled ||
 		metrics.SqlserverLatchWaitRate.Enabled ||
 		metrics.SqlserverLatchWaitTimeAvg.Enabled ||
 		metrics.SqlserverLatchWaitTimeTotal.Enabled ||
+		metrics.SqlserverLockBlockCount.Enabled ||
+		metrics.SqlserverLockEscalationRate.Enabled ||
+		metrics.SqlserverLockMemory.Enabled ||
+		metrics.SqlserverLockRequestRate.Enabled ||
 		metrics.SqlserverLockTimeoutRate.Enabled ||
 		metrics.SqlserverLockWaitCount.Enabled ||
 		metrics.SqlserverLockWaitRate.Enabled ||
+		metrics.SqlserverLockWaitTimeTotal.Enabled ||
 		metrics.SqlserverLoginRate.Enabled ||
 		metrics.SqlserverLogoutRate.Enabled ||
 		metrics.SqlserverMemoryArea.Enabled ||
@@ -284,22 +308,29 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverMemoryGrantsPendingCount.Enabled ||
 		metrics.SqlserverMemoryPageCount.Enabled ||
 		metrics.SqlserverMemoryUsage.Enabled ||
+		metrics.SqlserverPageAllocationRate.Enabled ||
 		metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled ||
 		metrics.SqlserverPageBufferCacheHitRatio.Enabled ||
+		metrics.SqlserverPageCompressionRate.Enabled ||
 		metrics.SqlserverPageLookupRate.Enabled ||
-		metrics.SqlserverProcessesBlocked.Enabled ||
-		metrics.SqlserverReplicaDataRate.Enabled ||
-		metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled ||
-		metrics.SqlserverResourcePoolDiskOperations.Enabled ||
-		metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled ||
-		metrics.SqlserverAttentionRate.Enabled ||
+		metrics.SqlserverPageReadAheadRate.Enabled ||
 		metrics.SqlserverParameterizationRate.Enabled ||
 		metrics.SqlserverPlanExecutionRate.Enabled ||
+		metrics.SqlserverProcessesBlocked.Enabled ||
 		metrics.SqlserverRecompilationRatio.Enabled ||
+		metrics.SqlserverReplicaDataRate.Enabled ||
+		metrics.SqlserverResourcePoolDiskOperations.Enabled ||
+		metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled ||
+		metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled ||
+		metrics.SqlserverScanPointRevalidationRate.Enabled ||
+		metrics.SqlserverStoredProcedureInvocationRate.Enabled ||
 		metrics.SqlserverTableCount.Enabled ||
+		metrics.SqlserverTaskCount.Enabled ||
+		metrics.SqlserverTaskRate.Enabled ||
 		metrics.SqlserverTransactionDelay.Enabled ||
 		metrics.SqlserverTransactionMirrorWriteRate.Enabled ||
-		metrics.SqlserverUserConnectionCount.Enabled
+		metrics.SqlserverUserConnectionCount.Enabled ||
+		metrics.SqlserverWorktableCacheHitRatio.Enabled
 }
 
 func isWaitStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
@@ -308,4 +339,25 @@ func isWaitStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
 	}
 
 	return metrics.SqlserverOsWaitDuration.Enabled
+}
+
+func isWorkerThreadsQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverWorkerRequestCount.Enabled ||
+		metrics.SqlserverWorkerThreadCount.Enabled
+}
+
+func isIndexPhysicalStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverIndexFragmentation.Enabled ||
+		metrics.SqlserverIndexPageCount.Enabled ||
+		metrics.SqlserverIndexPageUtilization.Enabled ||
+		metrics.SqlserverIndexRecordCount.Enabled ||
+		metrics.SqlserverIndexSize.Enabled
 }

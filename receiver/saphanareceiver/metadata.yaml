@@ -1,6 +1,5 @@
 display_name: SAP HANA Receiver
 type: saphana
-reaggregation_enabled: true
 
 description: |
   This receiver can fetch stats from a SAP HANA instance. It leverages the [driver](https://github.com/SAP/go-hdb)

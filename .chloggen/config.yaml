@@ -13,7 +13,6 @@ components:
     - cmd/opampsupervisor
     - cmd/otelcontribcol
     - cmd/oteltestbedcol
-    - cmd/schemagen
     - cmd/telemetrygen
     - connector/count
     - connector/datadog
@@ -185,15 +184,16 @@ components:
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
-    - processor/awsecsattributes
+    - processor/aws_ecs_attributes
     - processor/azuredetector
     - processor/cardinality_guardian
     - processor/coralogix
-    - processor/cumulativetodelta
+    - processor/cumulative_to_delta
     - processor/deltatocumulative
     - processor/deltatorate
     - processor/digitaloceandetector
     - processor/drain
+    - processor/dynamic_sampling
     - processor/dynatracedetector
     - processor/filter
     - processor/gen_ai_normalizer
@@ -236,11 +236,12 @@ components:
     - provider/s3
     - provider/secretsmanager
     - receiver/active_directory_ds
+    - receiver/active_directory_inv
     - receiver/aerospike
     - receiver/apache
     - receiver/apache_spark
+    - receiver/aws_cloudwatch
     - receiver/aws_lambda
-    - receiver/awscloudwatch
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
@@ -265,7 +266,7 @@ components:
     - receiver/faro
     - receiver/file_log
     - receiver/file_stats
-    - receiver/flinkmetrics
+    - receiver/flink_metrics
     - receiver/fluent_forward
     - receiver/github
     - receiver/gitlab
@@ -281,7 +282,6 @@ components:
     - receiver/iis
     - receiver/influxdb
     - receiver/jaeger
-    - receiver/jmx
     - receiver/journald
     - receiver/k8s_cluster
     - receiver/k8s_events
@@ -325,8 +325,8 @@ components:
     - receiver/snmp
     - receiver/snowflake
     - receiver/solace
+    - receiver/splunk_enterprise
     - receiver/splunk_hec
-    - receiver/splunkenterprise
     - receiver/sqlquery
     - receiver/sqlserver
     - receiver/ssh_check

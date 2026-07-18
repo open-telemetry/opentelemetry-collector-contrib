@@ -28,6 +28,42 @@ telemetry:
         value_type: int
         monotonic: true
 
+    processor_spanpruning_bytes_emitted:
+      enabled: false
+      description: Total bytes of serialized traces emitted after pruning
+      unit: "By"
+      stability: development
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_spanpruning_bytes_processed_input:
+      enabled: false
+      description: Total bytes of traces that matched pruning conditions (entire trace when any span matches), measured before pruning
+      unit: "By"
+      stability: development
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_spanpruning_bytes_processed_output:
+      enabled: false
+      description: Total bytes of traces that matched pruning conditions (entire trace when any span matches), measured after pruning
+      unit: "By"
+      stability: development
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_spanpruning_bytes_received:
+      enabled: false
+      description: Total bytes of serialized traces received before pruning
+      unit: "By"
+      stability: development
+      sum:
+        value_type: int
+        monotonic: true
+
     processor_spanpruning_leaf_attribute_diversity_loss:
       enabled: false
       description: Attribute values lost due to diversity per leaf aggregation
@@ -45,6 +81,33 @@ telemetry:
       histogram:
         value_type: int
         bucket_boundaries: [0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20]
+
+    processor_spanpruning_outliers_correlations_detected:
+      enabled: true
+      description: Groups where outliers had correlated attributes
+      unit: "{groups}"
+      stability: development
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_spanpruning_outliers_detected:
+      enabled: true
+      description: Spans identified as outliers by analysis
+      unit: "{spans}"
+      stability: development
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_spanpruning_outliers_preserved:
+      enabled: true
+      description: Outlier spans kept (excluded from aggregation)
+      unit: "{spans}"
+      stability: development
+      sum:
+        value_type: int
+        monotonic: true
 
     processor_spanpruning_parent_attribute_diversity_loss:
       enabled: false

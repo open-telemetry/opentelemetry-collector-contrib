@@ -1,4 +1,10 @@
 $defs:
+  critical_path_config:
+    description: CriticalPathConfig holds configuration for critical path processing.
+    type: object
+    properties:
+      enabled:
+        type: boolean
   transactions_config:
     description: TransactionsConfig holds configuration for transactions.
     type: object
@@ -8,3 +14,4 @@ $defs:
 type: object
 allOf:
   - $ref: transactions_config
+  - $ref: critical_path_config

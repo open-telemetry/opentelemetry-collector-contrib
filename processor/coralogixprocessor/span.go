@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/criticalpath"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/transactions"
 )
 
@@ -38,15 +40,37 @@ func newCoralogixProcessor(ctx context.Context, set processor.Settings, cfg *Con
 }
 
 func (sp *coralogixProcessor) processTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	//nolint:staticcheck // QF1008: Keeping embedded field for clarity
+	if !sp.config.TransactionsConfig.Enabled && !sp.config.CriticalPathConfig.Enabled {
+		return td, nil
+	}
+	if td.SpanCount() == 0 {
+		return td, nil
+	}
+
+	spansByTraceID := traceutil.GroupSpansByTraceID(td)
+	if sp.config.TransactionsConfig.Enabled && sp.config.CriticalPathConfig.Enabled {
+		transactionLogger := sp.logger.With(zap.String("feature", "transactions"))
+		criticalPathLogger := sp.logger.With(zap.String("feature", "critical_path"))
+		for traceID, spans := range spansByTraceID {
+			tree := traceutil.BuildTraceTree(spans)
+			transactions.ApplyTransactionAttributesToTree(tree, transactionLogger)
+			criticalpath.ApplyCriticalPathAttributesToTree(traceID, tree, criticalPathLogger)
+		}
+		return td, nil
+	}
+
 	if sp.config.TransactionsConfig.Enabled {
-		tracesWithTransactions, err := transactions.ApplyTransactionsAttributes(
-			td,
+		transactions.ApplyTransactionsAttributesByTraceID(
+			spansByTraceID,
 			sp.logger.With(zap.String("feature", "transactions")),
 		)
-		if err != nil {
-			return tracesWithTransactions, err
-		}
+	}
+
+	if sp.config.CriticalPathConfig.Enabled {
+		criticalpath.ApplyCriticalPathAttributesByTraceID(
+			spansByTraceID,
+			sp.logger.With(zap.String("feature", "critical_path")),
+		)
 	}
 
 	return td, nil

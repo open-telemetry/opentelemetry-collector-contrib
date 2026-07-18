@@ -68,11 +68,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 	for _, ent := range entries {
 		skip, err := p.Skip(ctx, ent)
 		if err != nil {
-			if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
-				if !p.isQuietMode() {
-					errs = append(errs, handleErr)
-				}
-			}
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
 			continue
 		}
 		if skip {
@@ -88,11 +84,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 			var bytes []byte
 			bytes, err = toBytes(ent.Body)
 			if err != nil {
-				if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
-					if !p.isQuietMode() {
-						errs = append(errs, handleErr)
-					}
-				}
+				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
 				continue
 			}
 			if p.shouldSkipPriorityValues(bytes) {
@@ -101,18 +93,14 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 		}
 
 		if err = p.ParseWith(ctx, ent, p.parse, write); err != nil {
-			if !p.isQuietMode() {
+			if !errors.Is(err, helper.ErrEntryHandled) {
 				errs = append(errs, err)
 			}
 			continue
 		}
 
 		if err = callback(ent); err != nil {
-			if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
-				if !p.isQuietMode() {
-					errs = append(errs, handleErr)
-				}
-			}
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
 			continue
 		}
 
@@ -134,11 +122,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	if !p.enableOctetCounting && p.allowSkipPriHeader {
 		bytes, err := toBytes(entry.Body)
 		if err != nil {
-			handleErr := p.HandleEntryError(ctx, entry, err)
-			if p.isQuietMode() {
-				return nil
-			}
-			return handleErr
+			return p.HandleEntryError(ctx, entry, err)
 		}
 
 		if p.shouldSkipPriorityValues(bytes) {
@@ -183,6 +167,10 @@ func (p *Parser) parse(value any) (any, error) {
 func (p *Parser) buildParseFunc() (parseFunc, error) {
 	switch p.protocol {
 	case RFC3164:
+		// Octet Counting Parsing RFC6587 with RFC3164 message format
+		if p.enableOctetCounting {
+			return newOctetCountingRFC3164ParseFunc(p.location, p.maxOctets), nil
+		}
 		return func(input []byte) (sl.Message, error) {
 			if p.allowSkipPriHeader && !priRegex.Match(input) {
 				input = append([]byte("<0>"), input...)
@@ -493,7 +481,30 @@ func newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) p
 	}
 }
 
-// isQuietMode returns true if the operator is configured to use quiet mode
-func (p *Parser) isQuietMode() bool {
-	return p.OnError == helper.DropOnErrorQuiet || p.OnError == helper.SendOnErrorQuiet
+// newOctetCountingRFC3164ParseFunc returns a parse function that handles
+// RFC6587 octet counting framing with RFC3164 message format.
+func newOctetCountingRFC3164ParseFunc(location *time.Location, maxOctets int) parseFunc {
+	return func(input []byte) (message sl.Message, err error) {
+		listener := func(res *sl.Result) {
+			message = res.Message
+			err = res.Error
+		}
+
+		parserOpts := []sl.ParserOption{
+			sl.WithBestEffort(),
+			sl.WithListener(listener),
+			// Match the non-octet-counting RFC3164 path: honor the configured
+			// timezone and accept single-space-padded days.
+			sl.WithMachineOptions(rfc3164.WithLocaleTimezone(location), rfc3164.WithLenientDay()),
+		}
+
+		if maxOctets > 0 {
+			parserOpts = append(parserOpts, sl.WithMaxMessageLength(maxOctets))
+		}
+
+		parser := octetcounting.NewParserRFC3164(parserOpts...)
+		reader := bytes.NewReader(input)
+		parser.Parse(reader)
+		return message, err
+	}
 }
