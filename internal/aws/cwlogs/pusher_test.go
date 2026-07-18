@@ -387,7 +387,7 @@ func TestPusher_perPusherMaxEventPayloadBytes(t *testing.T) {
 
 		body := strings.Repeat("c", 400*1024)
 		var rolledOut int
-		for i := 0; i < 2; i++ {
+		for range 2 {
 			prev := p.addLogEvent(NewEvent(timestampMs, body))
 			if prev != nil {
 				rolledOut++
