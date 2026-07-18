@@ -234,7 +234,7 @@ var nfsdV4Operations = []string{
 	"REMOVEXATTR",
 }
 
-func getOSNfsStats() (*NfsStats, error) {
+func getOSNfsStats() (*nfsStats, error) {
 	/* for testing: (nfsProcFileOut from nfs_scraper_linux_test.go)
 	data := strings.NewReader(nfsProcFileOut)
 
@@ -245,7 +245,9 @@ func getOSNfsStats() (*NfsStats, error) {
 
 	f, err := os.Open(nfsProcFile)
 	if err != nil {
-		return nil, err
+		// If /proc/net/rpc/nfs is unavailable (e.g., NFS not configured), do not return an error.
+		// Return an empty nfsStats so the scraper treats it as no data rather than a scrape error.
+		return &nfsStats{}, nil
 	}
 
 	defer f.Close()
@@ -264,7 +266,8 @@ func getOSNfsdStats() (*nfsdStats, error) {
 
 	f, err := os.Open(nfsdProcFile)
 	if err != nil {
-		return nil, err
+		// If /proc/net/rpc/nfsd is unavailable (e.g., NFS server not running), return empty stats instead of error.
+		return &nfsdStats{}, nil
 	}
 
 	defer f.Close()
@@ -397,8 +400,8 @@ func parseNfsCallStats(nfsVersion int64, names []string, values []uint64) ([]cal
 	return stats, nil
 }
 
-func parseNfsStats(f io.Reader) (*NfsStats, error) {
-	nfsStats := &NfsStats{}
+func parseNfsStats(f io.Reader) (*nfsStats, error) {
+	nfsStats := &nfsStats{}
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
