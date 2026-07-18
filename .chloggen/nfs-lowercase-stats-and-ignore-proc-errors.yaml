@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/hostmetricsreceiver/internal/scraper/nfsscraper
+component: scraper/nfs
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Linux implementation no longer errors if NFS /proc files are unavailable, as this is expected when the client and/or server is inactive
