@@ -55,9 +55,9 @@ type Config struct {
 	// Optional.
 	GroupsClaim string `mapstructure:"groups_claim"`
 
-	// Deprecated: use Providers[].SupportedSigningAlgs instead.
 	// List of signing algorithms the ID token is expected to be signed with.
 	// Optional.
+	SupportedSigningAlgs []string `mapstructure:"supported_signing_algs"`
 
 	// Providers allows configuring multiple OIDC providers.
 	// Use the getProviderConfigs() method to get the full list of providers, including the legacy configuration.
