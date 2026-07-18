@@ -71,7 +71,6 @@ func (cfg *Config) getLegacyProviderConfig() *ProviderCfg {
 		cfg.IssuerCAPath != "" ||
 		cfg.UsernameClaim != "" ||
 		cfg.GroupsClaim != "" ||
-		(len(cfg.SupportedSigningAlgs) > 0 && !slices.Equal(cfg.SupportedSigningAlgs, []string{"RS256"})) {
 		return &ProviderCfg{
 			IssuerURL:            cfg.IssuerURL,
 			Audience:             cfg.Audience,
