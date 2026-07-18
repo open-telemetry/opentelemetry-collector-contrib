@@ -208,7 +208,7 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: ./.github/actions/setup-go-tools
         with:
-          go-version: 1.25.11 # TODO: revert to oldstable when actions/setup-go reliably resolves oldstable to 1.25.11
+          go-version: oldstable
       - name: Run `govulncheck`
         run: make gogovulncheck GROUP=${{ matrix.group }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
@@ -243,6 +243,10 @@ jobs:
           - read-only-checks
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      # Disable git's automatic maintenance to avoid go-git issues.
+      # Workaround for https://github.com/go-git/go-git/issues/2242
+      - name: Disable git auto maintenance
+        run: git config --global maintenance.auto false
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -607,7 +611,7 @@ jobs:
           docker run otel/opentelemetry-collector-contrib-dev:"$GITHUB_SHA" --version
           docker run otel/opentelemetry-collector-contrib-dev:latest --version
       - name: Login to Docker Hub
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
