@@ -240,6 +240,7 @@ type Agent struct {
 	OpAMPServerPort             int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs             bool              `mapstructure:"passthrough_logs"`
 	CollectorCrashLogSnippetKiB int               `mapstructure:"collector_crash_log_snippet_kib"`
+	AutomaticConfigRollback     bool              `mapstructure:"automatic_config_rollback"`
 	UseHUPConfigReload          bool              `mapstructure:"use_hup_config_reload"`
 	ValidateConfig              bool              `mapstructure:"validate_config"`
 	ConfigFiles                 []string          `mapstructure:"config_files"`
