@@ -36,7 +36,7 @@ func TestDefaultS3LogsDecoder_NewLogsDecoder(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			decoder := NewDefaultS3LogsDecoder()
+			decoder := NewDefaultBlobDecoder()
 			logsDecoder, err := decoder.NewLogsDecoder(tt.input())
 			require.NoError(t, err)
 			require.NotNil(t, logsDecoder)

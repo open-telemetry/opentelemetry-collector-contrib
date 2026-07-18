@@ -5,6 +5,7 @@ package internal
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -45,7 +46,7 @@ func TestHTTPServerPush(t *testing.T) {
 	}
 	require.NoError(t, srv.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		require.NoError(t, srv.Shutdown(t.Context()))
+		require.NoError(t, srv.Shutdown(context.WithoutCancel(t.Context())))
 	})
 
 	pprofBody := generatePprofBody(t)
@@ -75,6 +76,10 @@ func TestHTTPServerPush(t *testing.T) {
 	resp.Body.Close()
 	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	assert.NotEmpty(t, sink.AllProfiles(), "expected profiles to be consumed")
+	profiles := sink.AllProfiles()
+	sp := profiles[0].ResourceProfiles().At(0).ScopeProfiles().At(0)
+	assert.Equal(t, metadata.ScopeName+"/httpserver", sp.Scope().Name())
+	assert.Equal(t, "latest", sp.Scope().Version())
 
 	// invalid body returns 400
 	resp = doRequest(http.MethodPost, []byte("not pprof"))
@@ -102,7 +107,7 @@ func TestHTTPServerPush_BodySizeLimit(t *testing.T) {
 	}
 	require.NoError(t, srv.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		require.NoError(t, srv.Shutdown(t.Context()))
+		require.NoError(t, srv.Shutdown(context.WithoutCancel(t.Context())))
 	})
 
 	url := fmt.Sprintf("http://%s%s", addr, PushPath)

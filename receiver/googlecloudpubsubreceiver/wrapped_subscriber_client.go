@@ -56,6 +56,9 @@ func generateClientOptions(config *Config, userAgent string) ([]option.ClientOpt
 	if userAgent != "" {
 		copts = append(copts, option.WithUserAgent(userAgent))
 	}
+	if config.UniverseDomain != "" {
+		copts = append(copts, option.WithUniverseDomain(config.UniverseDomain))
+	}
 	if config.Endpoint != "" {
 		if config.Insecure {
 			var dialOpts []grpc.DialOption

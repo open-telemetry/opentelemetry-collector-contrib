@@ -130,10 +130,12 @@ var MapAttributePacketType = map[string]AttributePacketType{
 
 var MetricsInfo = metricsInfo{
 	NsxtNodeCPUUtilization: metricInfo{
-		Name: "nsxt.node.cpu.utilization",
+		Name:       "nsxt.node.cpu.utilization",
+		Attributes: []string{"class"},
 	},
 	NsxtNodeFilesystemUsage: metricInfo{
-		Name: "nsxt.node.filesystem.usage",
+		Name:       "nsxt.node.filesystem.usage",
+		Attributes: []string{"disk_state"},
 	},
 	NsxtNodeFilesystemUtilization: metricInfo{
 		Name: "nsxt.node.filesystem.utilization",
@@ -145,10 +147,12 @@ var MetricsInfo = metricsInfo{
 		Name: "nsxt.node.memory.usage",
 	},
 	NsxtNodeNetworkIo: metricInfo{
-		Name: "nsxt.node.network.io",
+		Name:       "nsxt.node.network.io",
+		Attributes: []string{"direction"},
 	},
 	NsxtNodeNetworkPacketCount: metricInfo{
-		Name: "nsxt.node.network.packet.count",
+		Name:       "nsxt.node.network.packet.count",
+		Attributes: []string{"direction", "packet.type"},
 	},
 }
 
@@ -163,7 +167,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricNsxtNodeCPUUtilization struct {
@@ -406,7 +411,7 @@ type metricNsxtNodeMemoryCacheUsage struct {
 func (m *metricNsxtNodeMemoryCacheUsage) init() {
 	m.data.SetName("nsxt.node.memory.cache.usage")
 	m.data.SetDescription("The size of the node's memory cache.")
-	m.data.SetUnit("KBy")
+	m.data.SetUnit("kBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -458,7 +463,7 @@ type metricNsxtNodeMemoryUsage struct {
 func (m *metricNsxtNodeMemoryUsage) init() {
 	m.data.SetName("nsxt.node.memory.usage")
 	m.data.SetDescription("The memory usage of the node.")
-	m.data.SetUnit("KBy")
+	m.data.SetUnit("kBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

@@ -4,6 +4,7 @@ k8s_objects:
     - name: pods
       mode: pull
       interval: 1h
+      initial_delay: 10m
       label_selector: environment in (production),tier in (frontend)
       field_selector: status.phase=Running
     - name: events
@@ -17,6 +18,7 @@ k8s_objects/pull_with_resource:
     - name: pods
       mode: pull
       interval: 1h
+      initial_delay: 5m
       resource_version: "1"
     - name: events
       mode: pull

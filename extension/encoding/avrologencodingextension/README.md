@@ -3,7 +3,6 @@
 
 The `avrolog` encoding extension is used to unmarshal AVRO and insert it into the body of a log record. Marshalling is not supported.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]  |

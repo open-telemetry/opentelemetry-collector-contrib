@@ -146,6 +146,12 @@ func spanToJaegerProto(span ptrace.Span, libraryTags pcommon.InstrumentationScop
 	jReferences := makeJaegerProtoReferences(span.Links(), spanIDToJaegerProto(span.ParentSpanID()), traceID)
 
 	startTime := span.StartTimestamp().AsTime()
+
+	var flags model.Flags
+	if span.Flags()&spanFlagsSampled != 0 {
+		flags.SetSampled()
+	}
+
 	return &model.Span{
 		TraceID:       traceID,
 		SpanID:        spanIDToJaegerProto(span.SpanID()),
@@ -155,6 +161,7 @@ func spanToJaegerProto(span ptrace.Span, libraryTags pcommon.InstrumentationScop
 		Duration:      span.EndTimestamp().AsTime().Sub(startTime),
 		Tags:          getJaegerProtoSpanTags(span, libraryTags),
 		Logs:          spanEventsToJaegerProtoLogs(span.Events()),
+		Flags:         flags,
 	}
 }
 

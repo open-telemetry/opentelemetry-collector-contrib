@@ -17,7 +17,7 @@ type Publisher struct {
 }
 
 // Open will open the publisher handle using the supplied provider.
-func (p *Publisher) Open(provider string) error {
+func (p *Publisher) Open(provider string, logFilePath *string) error {
 	if p.handle != 0 {
 		return errors.New("publisher handle is already open")
 	}
@@ -27,7 +27,15 @@ func (p *Publisher) Open(provider string) error {
 		return fmt.Errorf("failed to convert the provider name %q to utf16: %w", provider, err)
 	}
 
-	handle, err := evtOpenPublisherMetadata(0, utf16, nil, 0, 0)
+	var logFilepathPtr *uint16
+	if logFilePath != nil {
+		logFilepathPtr, err = syscall.UTF16PtrFromString(*logFilePath)
+		if err != nil {
+			return fmt.Errorf("failed to convert the log file path %q to utf16: %w", *logFilePath, err)
+		}
+	}
+
+	handle, err := evtOpenPublisherMetadata(0, utf16, logFilepathPtr, 0, 0)
 	if err != nil {
 		return fmt.Errorf("failed to open the metadata for the %q provider: %w", provider, err)
 	}

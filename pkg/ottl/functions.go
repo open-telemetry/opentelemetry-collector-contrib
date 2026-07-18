@@ -13,6 +13,9 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"go.uber.org/zap/zapcore"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
 // PathExpressionParser is how a context provides OTTL access to all its Paths.
@@ -75,14 +78,24 @@ func buildOriginalKeysText(keys []key) string {
 	return builder.String()
 }
 
-func (p *Parser[K]) newPath(path *path) (*basePath[K], error) {
+func (p *parseContext[K]) newPath(path *path) (*basePath[K], error) {
 	if len(path.Fields) == 0 {
 		return nil, errors.New("cannot make a path from zero fields")
 	}
 
-	pathContext, fields, err := p.parsePathContext(path)
-	if err != nil {
-		return nil, err
+	var err error
+	var pathContext string
+	var fields []field
+	var localIdentifier bool
+
+	if path.inScope(p.localScopes) {
+		fields = path.dottedSegments()
+		localIdentifier = true
+	} else {
+		pathContext, fields, err = p.parsePathContext(path)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	originalText := buildOriginalText(path)
@@ -93,11 +106,12 @@ func (p *Parser[K]) newPath(path *path) (*basePath[K], error) {
 			return nil, err
 		}
 		current = &basePath[K]{
-			context:      pathContext,
-			name:         fields[i].Name,
-			keys:         keys,
-			nextPath:     current,
-			originalText: originalText,
+			context:         pathContext,
+			name:            fields[i].Name,
+			keys:            keys,
+			nextPath:        current,
+			originalText:    originalText,
+			localIdentifier: localIdentifier,
 		}
 	}
 	current.fetched = true
@@ -105,14 +119,14 @@ func (p *Parser[K]) newPath(path *path) (*basePath[K], error) {
 	return current, nil
 }
 
-func (p *Parser[K]) parsePathContext(path *path) (string, []field, error) {
+func (p *parseContext[K]) parsePathContext(path *path) (string, []field, error) {
 	hasPathContextNames := len(p.pathContextNames) > 0
 	if path.Context != "" {
 		// no pathContextNames means the Parser isn't handling the grammar path's context yet,
 		// so it falls back to the previous behavior with the path.Context value as the first
 		// path's segment.
 		if !hasPathContextNames {
-			return "", append([]field{{Name: path.Context}}, path.Fields...), nil
+			return "", path.dottedSegments(), nil
 		}
 
 		if _, ok := p.pathContextNames[path.Context]; !ok {
@@ -139,7 +153,7 @@ func (p *Parser[K]) buildPathContextNamesText(path string) string {
 
 	i := 0
 	for ctx := range p.pathContextNames {
-		builder.WriteString(fmt.Sprintf(`"%s%s"`, ctx, suffix))
+		fmt.Fprintf(&builder, `"%s%s"`, ctx, suffix)
 		if i != len(p.pathContextNames)-1 {
 			builder.WriteString(", ")
 		}
@@ -173,13 +187,14 @@ type Path[K any] interface {
 var _ Path[any] = &basePath[any]{}
 
 type basePath[K any] struct {
-	context      string
-	name         string
-	keys         []Key[K]
-	nextPath     *basePath[K]
-	fetched      bool
-	fetchedKeys  bool
-	originalText string
+	context         string
+	name            string
+	keys            []Key[K]
+	nextPath        *basePath[K]
+	fetched         bool
+	fetchedKeys     bool
+	originalText    string
+	localIdentifier bool
 }
 
 func (p *basePath[K]) Context() string {
@@ -223,7 +238,25 @@ func (p *basePath[K]) isComplete() error {
 	return p.nextPath.isComplete()
 }
 
-func (p *Parser[K]) newKeys(keys []key) ([]Key[K], error) {
+func (p *basePath[K]) validate(pc *parseContext[K]) error {
+	if p.localIdentifier {
+		if p.nextPath != nil {
+			return fmt.Errorf(`local identifier %q cannot use "." to access nested fields`, p.originalText)
+		}
+		if pc.telemetrySettings.Logger.Core().Enabled(zapcore.DebugLevel) {
+			if _, ok := pc.pathContextNames[p.name]; ok {
+				pc.telemetrySettings.Logger.Debug(fmt.Sprintf("in-scope local identifier %q shadows OTTL context %q", p.name, p.name))
+			} else {
+				if _, err := pc.pathParser(p); err == nil {
+					pc.telemetrySettings.Logger.Debug(fmt.Sprintf("in-scope local identifier shadows the OTTL context path %q", p.name))
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (p *parseContext[K]) newKeys(keys []key) ([]Key[K], error) {
 	if len(keys) == 0 {
 		return nil, nil
 	}
@@ -303,7 +336,11 @@ func (k *baseKey[K]) ExpressionGetter(_ context.Context, _ K) (Getter[K], error)
 	return k.g, nil
 }
 
-func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
+func (p *parseContext[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
+	if ip.localIdentifier {
+		return p.newLocalIdentifierGetter(ip)
+	}
+
 	g, err := p.pathParser(ip)
 	if err != nil {
 		return nil, err
@@ -315,7 +352,7 @@ func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
 	return g, nil
 }
 
-func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
+func (p *parseContext[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	f, ok := p.functions[ed.Function]
 	if !ok {
 		return Expr[K]{}, fmt.Errorf("undefined function %q", ed.Function)
@@ -348,7 +385,7 @@ func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	return Expr[K]{exprFunc: fn}, err
 }
 
-func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
+func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 	requiredArgs := 0
 	seenNamed := false
 
@@ -423,6 +460,8 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			val = StandardFunctionGetter[K]{FCtx: FunctionContext{Set: p.telemetrySettings}, Fact: f}
 		case fieldType.Kind() == reflect.Slice:
 			val, err = p.buildSliceArg(arg.Value, fieldType)
+		case fieldType.Kind() == reflect.Pointer:
+			val, err = p.buildArg(arg.Value, fieldType.Elem())
 		default:
 			val, err = p.buildArg(arg.Value, fieldType)
 		}
@@ -439,7 +478,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 	return nil
 }
 
-func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, error) {
+func (p *parseContext[K]) buildSliceArg(argVal value, argType reflect.Type) (any, error) {
 	name := argType.Elem().Name()
 	switch {
 	case name == reflect.Uint8.String():
@@ -536,8 +575,12 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 	}
 }
 
-func (p *Parser[K]) buildGetSetterFromPath(path *path) (GetSetter[K], error) {
+func (p *parseContext[K]) buildGetSetterFromPath(path *path) (GetSetter[K], error) {
 	np, err := p.newPath(path)
+	if err != nil {
+		return nil, err
+	}
+	err = np.validate(p)
 	if err != nil {
 		return nil, err
 	}
@@ -549,7 +592,7 @@ func (p *Parser[K]) buildGetSetterFromPath(path *path) (GetSetter[K], error) {
 }
 
 // Handle interfaces that can be passed as arguments to OTTL functions.
-func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
+func (p *parseContext[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 	name := argType.Name()
 	switch {
 	case strings.HasPrefix(name, "Setter"),
@@ -687,6 +730,15 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, errors.New("must be a bool")
 		}
 		return bool(*argVal.Bool), nil
+	case strings.HasPrefix(name, "LambdaExpression"):
+		if argVal.Lambda == nil {
+			return nil, errors.New("must be a lambda expression")
+		}
+		lambExpr, err := p.newLambdaExpression(argVal.Lambda)
+		if err != nil {
+			return nil, err
+		}
+		return lambExpr, nil
 	default:
 		return nil, fmt.Errorf("unsupported argument type: %s", name)
 	}
@@ -717,6 +769,58 @@ func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc
 	}
 
 	return vals, nil
+}
+
+var errLambdaExpressionDisable = fmt.Errorf(
+	"lambda expression arguments require the `%s` feature gate to be enabled",
+	metadata.OttlFunctionsEnableLambdaFeatureGate.ID(),
+)
+
+func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*LambdaExpression[K], error) {
+	if !metadata.OttlFunctionsEnableLambdaFeatureGate.IsEnabled() {
+		return nil, errLambdaExpressionDisable
+	}
+
+	formals := make([]LocalIdentifierDecl, len(l.Params))
+	validFormals := make(localScopeFrame, len(l.Params))
+	for i, param := range l.Params {
+		name := param.Name()
+		if !param.IsBlank() {
+			if _, exists := validFormals[name]; exists {
+				return nil, fmt.Errorf("duplicate local identifier %q", name)
+			}
+			validFormals[name] = struct{}{}
+		}
+		formals[i] = &param
+	}
+
+	var result *LambdaExpression[K]
+	err := p.withLocalScope(validFormals, func() error {
+		switch {
+		case l.Body.Expr != nil && l.Body.Value != nil:
+			return errors.New("lambda cannot have both an expression and a value body, this is a programming error in OTTL")
+		case l.Body.Expr != nil:
+			bodyExpr, err := p.newBoolExpr(l.Body.Expr)
+			if err != nil {
+				return err
+			}
+			result = newLambdaExpression[K](formals, nil, bodyExpr)
+			return nil
+		case l.Body.Value != nil:
+			body, err := p.newGetter(*l.Body.Value)
+			if err != nil {
+				return err
+			}
+			result = newLambdaExpression[K](formals, body, nil)
+			return nil
+		default:
+			return errors.New("lambda requires a valid body after =>")
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // optionalManager provides a way for the parser to handle Optional[T] structs

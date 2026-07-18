@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.41.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -431,6 +431,14 @@ func withWaitForMetadataTimeout(timeout time.Duration) option {
 func withWatchSyncPeriod(duration time.Duration) option {
 	return func(p *kubernetesprocessor) error {
 		p.watchSyncPeriod = duration
+		return nil
+	}
+}
+
+// withPodDeleteGracePeriod allows specifying the grace period for pod deletion.
+func withPodDeleteGracePeriod(duration time.Duration) option {
+	return func(p *kubernetesprocessor) error {
+		p.podDeleteGracePeriod = duration
 		return nil
 	}
 }

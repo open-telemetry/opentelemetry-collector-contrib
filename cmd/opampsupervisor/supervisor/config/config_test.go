@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -40,10 +41,26 @@ func TestValidate(t *testing.T) {
 	// Cases that exercise a non-HealthCheck failure path still need a
 	// HealthCheck with a valid transport so confmap.Validate doesn't trip on
 	// the empty default before reaching the field under test.
+	defaultHealthCheckServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	defaultHealthCheckServerConfig.WriteTimeout = 0
+	defaultHealthCheckServerConfig.ReadHeaderTimeout = 0
+	defaultHealthCheckServerConfig.IdleTimeout = 0
+	defaultHealthCheckServerConfig.KeepAlivesEnabled = false
+	defaultHealthCheckServerConfig.NetAddr = confignet.AddrConfig{Transport: confignet.TransportTypeTCP}
 	defaultHealthCheck := HealthCheck{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{Transport: confignet.TransportTypeTCP},
-		},
+		ServerConfig: defaultHealthCheckServerConfig,
+	}
+
+	invalidPortServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	invalidPortServerConfig.WriteTimeout = 0
+	invalidPortServerConfig.ReadHeaderTimeout = 0
+	invalidPortServerConfig.IdleTimeout = 0
+	invalidPortServerConfig.KeepAlivesEnabled = false
+	invalidPortServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:-1",
 	}
 
 	testCases := []struct {
@@ -62,11 +79,12 @@ func TestValidate(t *testing.T) {
 					TLS: tlsConfig,
 				},
 				Agent: Agent{
-					Executable:              "${file_path}",
-					OrphanDetectionInterval: 5 * time.Second,
-					ConfigApplyTimeout:      2 * time.Second,
-					BootstrapTimeout:        5 * time.Second,
-					UseHUPConfigReload:      false,
+					Executable:                  "${file_path}",
+					OrphanDetectionInterval:     5 * time.Second,
+					ConfigApplyTimeout:          2 * time.Second,
+					BootstrapTimeout:            5 * time.Second,
+					CollectorCrashLogSnippetKiB: 0,
+					UseHUPConfigReload:          false,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -251,6 +269,58 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedErrorFunc: simpleError("agent::orphan_detection_interval must be positive"),
+		},
+		{
+			name: "Invalid collector crash log snippet KiB",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:                  "${file_path}",
+					OrphanDetectionInterval:     5 * time.Second,
+					ConfigApplyTimeout:          2 * time.Second,
+					BootstrapTimeout:            5 * time.Second,
+					CollectorCrashLogSnippetKiB: -1,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("agent::collector_crash_log_snippet_kib must be non-negative"),
+		},
+		{
+			name: "collector crash log snippet KiB too large",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:                  "${file_path}",
+					OrphanDetectionInterval:     5 * time.Second,
+					ConfigApplyTimeout:          2 * time.Second,
+					BootstrapTimeout:            5 * time.Second,
+					CollectorCrashLogSnippetKiB: 1025,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("agent::collector_crash_log_snippet_kib must be less than or equal to 1024"),
 		},
 		{
 			name: "Zero value health check port number",
@@ -538,15 +608,54 @@ func TestValidate(t *testing.T) {
 					Directory: "/etc/opamp-supervisor/storage",
 				},
 				HealthCheck: HealthCheck{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  "localhost:-1",
-						},
-					},
+					ServerConfig: invalidPortServerConfig,
 				},
 			},
 			expectedErrorFunc: simpleError("healthcheck::endpoint must contain a valid port number, got -1"),
+		},
+		{
+			name: "Package with unsupported verifier type (cosign not yet supported)",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					TLS:      tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					Package: AgentPackage{
+						Verifier: Verifier{Type: "cosign"},
+					},
+				},
+				Capabilities: Capabilities{AcceptsRemoteConfig: true},
+				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
+				HealthCheck:  defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("unsupported verifier type"),
+		},
+		{
+			name: "Package with unsupported verifier type (cosign not yet supported)",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					TLS:      tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					Package: AgentPackage{
+						Verifier: Verifier{Type: "cosign"},
+					},
+				},
+				Capabilities: Capabilities{AcceptsRemoteConfig: true},
+				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
+				HealthCheck:  defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("unsupported verifier type"),
 		},
 	}
 
@@ -674,10 +783,15 @@ func TestSupervisor_TopLevelValidate(t *testing.T) {
 	cfg := DefaultSupervisor()
 	// HealthCheck endpoint with an invalid port produces a Validate() error
 	// from the HealthCheck substruct via reflection.
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{Endpoint: "localhost:99999"}
 	cfg.HealthCheck = HealthCheck{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{Endpoint: "localhost:99999"},
-		},
+		ServerConfig: serverConfig,
 	}
 
 	err := confmap.Validate(cfg)
@@ -789,6 +903,63 @@ func TestOpAMPServer_OpaqueHeaders(t *testing.T) {
 	}
 }
 
+func TestAgent_validateFallbackConfigsWithColBinUsesAgentArguments(t *testing.T) {
+	validateStub := writeFeatureGateValidateStub(t)
+	profilesConfigPath := filepath.Join("..", "..", "testdata", "collector", "profiles_pipeline.yaml")
+	agent := Agent{
+		Executable:             validateStub,
+		Arguments:              []string{"--feature-gates=+service.profilesSupport"},
+		StartupFallbackConfigs: []string{profilesConfigPath},
+	}
+
+	require.NoError(t, agent.validateFallbackConfigsWithColBin())
+}
+
+func writeFeatureGateValidateStub(t *testing.T) string {
+	t.Helper()
+
+	const (
+		featureGateName  = "--feature-gates"
+		featureGateValue = "+service.profilesSupport"
+		featureGateArg   = featureGateName + "=" + featureGateValue
+	)
+
+	tempDir := t.TempDir()
+	if runtime.GOOS == "windows" {
+		path := filepath.Join(tempDir, "validate-stub.bat")
+		script := []string{
+			"@echo off",
+			"if not \"%1\"==\"validate\" exit /b 11",
+			"if not \"%2\"==\"--config\" exit /b 12",
+			// cmd.exe uses "=" as a delimiter when assigning batch parameters.
+			"if not \"%4\"==\"" + featureGateName + "\" exit /b 13",
+			"if not \"%5\"==\"" + featureGateValue + "\" exit /b 14",
+			"findstr /C:\"profiles:\" \"%3\" >nul",
+			"if errorlevel 1 exit /b 15",
+			"findstr /C:\"processors:\" \"%3\" >nul",
+			"if not errorlevel 1 exit /b 16",
+			"exit /b 0",
+		}
+		require.NoError(t, os.WriteFile(path, []byte(strings.Join(script, "\r\n")+"\r\n"), 0o600))
+		return path
+	}
+
+	path := filepath.Join(tempDir, "validate-stub.sh")
+	script := []string{
+		"#!/bin/sh",
+		"[ \"$1\" = 'validate' ] || exit 1",
+		"[ \"$2\" = '--config' ] || exit 1",
+		"[ \"$4\" = '" + featureGateArg + "' ] || exit 1",
+		"grep -q 'profiles:' \"$3\" || exit 1",
+		"grep -q 'processors:' \"$3\" && exit 1",
+		"exit 0",
+	}
+	require.NoError(t, os.WriteFile(path, []byte(strings.Join(script, "\n")+"\n"), 0o600))
+	require.NoError(t, os.Chmod(path, 0o700))
+
+	return path
+}
+
 func TestCapabilities_SupportedCapabilities(t *testing.T) {
 	testCases := []struct {
 		name                      string
@@ -895,11 +1066,13 @@ agent:
 					Capabilities: DefaultSupervisor().Capabilities,
 					Storage:      DefaultSupervisor().Storage,
 					Agent: Agent{
-						Executable:              executablePath,
-						OrphanDetectionInterval: DefaultSupervisor().Agent.OrphanDetectionInterval,
-						ConfigApplyTimeout:      DefaultSupervisor().Agent.ConfigApplyTimeout,
-						BootstrapTimeout:        DefaultSupervisor().Agent.BootstrapTimeout,
-						ValidateConfig:          DefaultSupervisor().Agent.ValidateConfig,
+						Executable:                  executablePath,
+						OrphanDetectionInterval:     DefaultSupervisor().Agent.OrphanDetectionInterval,
+						ConfigApplyTimeout:          DefaultSupervisor().Agent.ConfigApplyTimeout,
+						BootstrapTimeout:            DefaultSupervisor().Agent.BootstrapTimeout,
+						CollectorCrashLogSnippetKiB: DefaultSupervisor().Agent.CollectorCrashLogSnippetKiB,
+						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
+						Package:                     DefaultSupervisor().Agent.Package,
 					},
 					Telemetry:   DefaultSupervisor().Telemetry,
 					HealthCheck: DefaultSupervisor().HealthCheck,
@@ -934,6 +1107,7 @@ storage:
 agent:
   executable: %s
   description:
+    include_resource_attributes: true
     identifying_attributes:
       "service.name": "io.opentelemetry.collector"
     non_identifying_attributes:
@@ -943,12 +1117,15 @@ agent:
   bootstrap_timeout: 8s
   opamp_server_port: 8090
   passthrough_logs: true
+  automatic_config_rollback: true
+  collector_crash_log_snippet_kib: 100
 
 telemetry:
   logs:
     level: warn
     error_output_paths: ["stderr"]
     output_paths: ["stdout"]
+    encoding: console
 `
 				config = fmt.Sprintf(config, filepath.Join(tmpDir, "storage"), executablePath)
 
@@ -977,6 +1154,7 @@ telemetry:
 					Agent: Agent{
 						Executable: executablePath,
 						Description: AgentDescription{
+							IncludeResourceAttributes: true,
 							IdentifyingAttributes: map[string]string{
 								"service.name": "io.opentelemetry.collector",
 							},
@@ -984,18 +1162,22 @@ telemetry:
 								"os.type": "darwin",
 							},
 						},
-						OrphanDetectionInterval: 10 * time.Second,
-						ConfigApplyTimeout:      8 * time.Second,
-						BootstrapTimeout:        8 * time.Second,
-						OpAMPServerPort:         8090,
-						PassthroughLogs:         true,
-						ValidateConfig:          DefaultSupervisor().Agent.ValidateConfig,
+						OrphanDetectionInterval:     10 * time.Second,
+						ConfigApplyTimeout:          8 * time.Second,
+						BootstrapTimeout:            8 * time.Second,
+						OpAMPServerPort:             8090,
+						PassthroughLogs:             true,
+						CollectorCrashLogSnippetKiB: 100,
+						AutomaticConfigRollback:     true,
+						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
+						Package:                     DefaultSupervisor().Agent.Package,
 					},
 					Telemetry: Telemetry{
 						Logs: Logs{
 							Level:            zapcore.WarnLevel,
 							OutputPaths:      []string{"stdout"},
 							ErrorOutputPaths: []string{"stderr"},
+							Encoding:         "console",
 						},
 					},
 					HealthCheck: DefaultSupervisor().HealthCheck,
@@ -1022,11 +1204,13 @@ agent:
 					Capabilities: DefaultSupervisor().Capabilities,
 					Storage:      DefaultSupervisor().Storage,
 					Agent: Agent{
-						Executable:              executablePath,
-						OrphanDetectionInterval: DefaultSupervisor().Agent.OrphanDetectionInterval,
-						ConfigApplyTimeout:      DefaultSupervisor().Agent.ConfigApplyTimeout,
-						BootstrapTimeout:        DefaultSupervisor().Agent.BootstrapTimeout,
-						ValidateConfig:          DefaultSupervisor().Agent.ValidateConfig,
+						Executable:                  executablePath,
+						OrphanDetectionInterval:     DefaultSupervisor().Agent.OrphanDetectionInterval,
+						ConfigApplyTimeout:          DefaultSupervisor().Agent.ConfigApplyTimeout,
+						BootstrapTimeout:            DefaultSupervisor().Agent.BootstrapTimeout,
+						CollectorCrashLogSnippetKiB: DefaultSupervisor().Agent.CollectorCrashLogSnippetKiB,
+						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
+						Package:                     DefaultSupervisor().Agent.Package,
 					},
 					Telemetry:   DefaultSupervisor().Telemetry,
 					HealthCheck: DefaultSupervisor().HealthCheck,

@@ -4,12 +4,18 @@ type: gen_ai_normalizer
 status:
   class: processor
   stability:
-    development: [traces]
-  distributions: []
+    alpha: [traces]
+  distributions: [contrib]
   codeowners:
-    active: [TylerHelmuth]
+    active: [TylerHelmuth, kylehounslow]
 
 tests:
   config:
     sources:
       - name: openinference
+      - name: my_vendor
+        mappings:
+          my_vendor.op: gen_ai.operation.name
+        value_mappings:
+          gen_ai.operation.name:
+            chat_completion: chat
