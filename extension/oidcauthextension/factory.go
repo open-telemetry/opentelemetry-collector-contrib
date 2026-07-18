@@ -29,7 +29,7 @@ func NewFactory() extension.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Attribute:            defaultAttribute,
-		SupportedSigningAlgs: []string{"RS256"},
+		SupportedSigningAlgs: []string{},
 	}
 }
 
