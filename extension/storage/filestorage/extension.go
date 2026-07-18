@@ -94,7 +94,7 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 
 	// return if compaction is not required
 	if lfs.cfg.Compaction.OnStart {
-		compactionErr := client.Compact(lfs.cfg.Compaction.Directory, lfs.cfg.Timeout, lfs.cfg.Compaction.MaxTransactionSize)
+		compactionErr := lfs.compactWithPanicRecovery(client, absoluteName)
 		if compactionErr != nil {
 			lfs.logger.Error("compaction on start failed", zap.Error(compactionErr))
 		}
@@ -140,6 +140,24 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 	// Try to create the client normally first
 	client, err = newClient(lfs.logger, absoluteName, lfs.cfg)
 	return client, err
+}
+
+// compactWithPanicRecovery wraps the Compact call with panic recovery to handle
+// database corruption that may occur during compaction (e.g., after unexpected power loss).
+// This prevents collector crashes but does not automatically recreate the database.
+func (lfs *localFileStorage) compactWithPanicRecovery(client *fileStorageClient, absoluteName string) (err error) {
+	// Handle panics during compaction
+	defer func() {
+		if r := recover(); r != nil {
+			lfs.logger.Error("panic during compaction, database may be corrupted",
+				zap.String("file", absoluteName),
+				zap.Any("panic", r))
+			err = fmt.Errorf("compaction failed due to panic, database may be corrupted: %v", r)
+		}
+	}()
+
+	// Attempt compaction
+	return client.Compact(lfs.cfg.Compaction.Directory, lfs.cfg.Timeout, lfs.cfg.Compaction.MaxTransactionSize)
 }
 
 func kindString(k component.Kind) string {
