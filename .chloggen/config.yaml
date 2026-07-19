@@ -184,15 +184,16 @@ components:
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
-    - processor/awsecsattributes
+    - processor/aws_ecs_attributes
     - processor/azuredetector
     - processor/cardinality_guardian
     - processor/coralogix
-    - processor/cumulativetodelta
+    - processor/cumulative_to_delta
     - processor/deltatocumulative
     - processor/deltatorate
     - processor/digitaloceandetector
     - processor/drain
+    - processor/dynamic_sampling
     - processor/dynatracedetector
     - processor/filter
     - processor/gen_ai_normalizer
@@ -239,8 +240,8 @@ components:
     - receiver/aerospike
     - receiver/apache
     - receiver/apache_spark
+    - receiver/aws_cloudwatch
     - receiver/aws_lambda
-    - receiver/awscloudwatch
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
@@ -281,7 +282,6 @@ components:
     - receiver/iis
     - receiver/influxdb
     - receiver/jaeger
-    - receiver/jmx
     - receiver/journald
     - receiver/k8s_cluster
     - receiver/k8s_events

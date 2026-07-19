@@ -30,6 +30,6 @@ Time in seconds until certificate expiry, as specified by `NotAfter` field in th
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| tlscheck.target | Endpoint or file path at which the certificate was accessed. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| tlscheck.target | Endpoint or file path at which the certificate was accessed. | Any Str | true | - | - |

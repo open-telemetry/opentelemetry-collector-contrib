@@ -477,6 +477,10 @@ component_management:
     name: processor_drain
     paths:
     - processor/drainprocessor/**
+  - component_id: processor_dynamicsampling
+    name: processor_dynamicsampling
+    paths:
+    - processor/dynamicsamplingprocessor/**
   - component_id: processor_filter
     name: processor_filter
     paths:
@@ -769,10 +773,6 @@ component_management:
     name: receiver_jaeger
     paths:
     - receiver/jaegerreceiver/**
-  - component_id: receiver_jmx
-    name: receiver_jmx
-    paths:
-    - receiver/jmxreceiver/**
   - component_id: receiver_journald
     name: receiver_journald
     paths:
