@@ -2,7 +2,7 @@
 
 Status: v1
 
-The OpAMP supervisor is a reliable control plane runtime for data collection Agents.  
+The OpAMP Supervisor is a reliable control plane runtime for data collection Agents.
 
 It enables users to remotely manage large fleets of Agents with operations such as configuration updates, restarts and upgrades. It transforms a set of Agents into a managed, observable fleet while preserving local autonomy and safety. 
 
@@ -36,7 +36,7 @@ The Supervisor is not required to expose any UI or dashboards. Any visual manage
 
 ### Telemetry Processing
 
-The Supervisor does not touch or alter the telemetry data that the Collector collects and processes. Its job is managing the agent’s configuration and lifecycle \- all tracing / metrics / logging pipelines remain defined in the Collector configuration.
+The Supervisor does not touch or alter the telemetry data that the Collector collects and processes. Its job is managing the agent’s configuration and lifecycle - all tracing / metrics / logging pipelines remain defined in the Collector configuration.
 
 ### Orchestration
 
@@ -54,7 +54,7 @@ The Supervisor must be secure by default because it can change Collector configu
 
 ### Reliability and Safety
 
-The Supervisor needs to be highly stable, so we need to keep its complexity and functionality to a minimum. It should never compromise the Collector’s uptime or the telemetry data flow. Changes must be applied safely \- for example, if the new config is invalid or causes the Collector to crash, the Supervisor should detect this and revert to the last good state (gracefully restarting the Collector with the previous config). Similarly, for upgrades, it should verify package integrity (e.g. checksum or signature) and support rollback if a new binary fails. 
+The Supervisor needs to be highly stable, so we need to keep its complexity and functionality to a minimum. It should never compromise the Collector’s uptime or the telemetry data flow. Changes must be applied safely - for example, if the new config is invalid or causes the Collector to crash, the Supervisor should detect this and revert to the last good state (gracefully restarting the Collector with the previous config). Similarly, for upgrades, it should verify package integrity (e.g. checksum or signature) and support rollback if a new binary fails.
 
 ### Standardization
 
@@ -66,7 +66,7 @@ The Supervisor is a critical component that itself must be observable. It must e
 
 ### Ease of Use
 
-The Supervisor should be simple to deploy and use \- requiring minimal configuration itself to connect to an OpAMP Server and perform supported operations. The documentation to get started and use at scale should be easy to follow.
+The Supervisor should be simple to deploy and use - requiring minimal configuration itself to connect to an OpAMP Server and perform supported operations. The documentation to get started and use at scale should be easy to follow.
 
 ### Pluggability / Extensibility
 
