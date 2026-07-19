@@ -240,6 +240,7 @@ type Agent struct {
 	OpAMPServerPort             int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs             bool              `mapstructure:"passthrough_logs"`
 	CollectorCrashLogSnippetKiB int               `mapstructure:"collector_crash_log_snippet_kib"`
+	AutomaticConfigRollback     bool              `mapstructure:"automatic_config_rollback"`
 	UseHUPConfigReload          bool              `mapstructure:"use_hup_config_reload"`
 	ValidateConfig              bool              `mapstructure:"validate_config"`
 	ConfigFiles                 []string          `mapstructure:"config_files"`
@@ -248,6 +249,8 @@ type Agent struct {
 	// StartupFallbackConfigs is an ordered list of fallback configuration files to use
 	// when the OpAMP server is unreachable. Configs are merged in order.
 	StartupFallbackConfigs []string `mapstructure:"startup_fallback_configs"`
+	// Package configures how collector executable updates are formatted and verified.
+	Package AgentPackage `mapstructure:"package"`
 }
 
 func (a Agent) Validate() error {
@@ -337,6 +340,8 @@ func (a Agent) validateFallbackConfigsWithColBin() error {
 	for _, cfgPath := range a.StartupFallbackConfigs {
 		cfgValidateCommand = append(cfgValidateCommand, "--config", cfgPath)
 	}
+	cfgValidateCommand = append(cfgValidateCommand, a.Arguments...)
+
 	cmd := exec.Command(cfgValidateCommand[0], cfgValidateCommand[1:]...) // #nosec G204
 
 	cmd.Stdout = os.Stdout
@@ -482,6 +487,9 @@ func DefaultSupervisor() Supervisor {
 			PassthroughLogs:             false,
 			CollectorCrashLogSnippetKiB: 0,
 			ValidateConfig:              false,
+			Package: AgentPackage{
+				Verifier: Verifier{Type: VerifierTypeNone},
+			},
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{
