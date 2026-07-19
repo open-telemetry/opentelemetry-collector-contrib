@@ -75,6 +75,22 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
 		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
+		// Session, JVM & OS resource v$sysstat rows
+		{"NAME": sessionNonIdleWaitCount, "VALUE": "98765"},
+		{"NAME": sessionNonIdleWaitTime, "VALUE": "4500"}, // cs -> 45 s
+		{"NAME": sessionStoredProcedureSpace, "VALUE": "262144"},
+		{"NAME": javaCallHeapUsedSize, "VALUE": "2097152"},
+		{"NAME": javaCallHeapTotalSize, "VALUE": "4194304"},
+		{"NAME": javaCallHeapLiveSize, "VALUE": "1048576"},
+		{"NAME": osSwaps, "VALUE": "17"},
+		// Transactions, Locks & Recovery v$sysstat rows
+		{"NAME": transactionRollbacks, "VALUE": "4521"},
+		{"NAME": transactionLockBackgroundTime, "VALUE": "350"},  // cs -> 3.5 s
+		{"NAME": transactionLockForegroundTime, "VALUE": "1200"}, // cs -> 12 s
+		{"NAME": recoveryBlocksRead, "VALUE": "8800"},
+		{"NAME": smonInstanceRecoveryPosts, "VALUE": "12"},
+		{"NAME": smonTxnRecoveryPosts, "VALUE": "7"},
+		{"NAME": gcCurrentBlockReceiveTime, "VALUE": "640"}, // cs -> 6.4 s
 		// Workload analysis v$sysstat rows
 		{"NAME": tableScansDirectReadStat, "VALUE": "100"},
 		{"NAME": tableScansLongTablesStat, "VALUE": "200"},
@@ -162,6 +178,13 @@ var queryResponses = map[string][]metricRow{
 		{"METRIC_NAME": "Redo Allocation Hit Ratio", "VALUE": "97.80"},
 		{"METRIC_NAME": "Parse Failure Count Per Sec", "VALUE": "0.25"},
 		{"METRIC_NAME": "Execute Without Parse Ratio", "VALUE": "75.30"},
+		{"METRIC_NAME": "Average Active Sessions", "VALUE": "2.50"},
+		{"METRIC_NAME": "Average Synchronous Single-Block Read Latency", "VALUE": "8.50"},
+		{"METRIC_NAME": "Response Time Per Txn", "VALUE": "12.34"},
+		{"METRIC_NAME": "Cursor Cache Hit Ratio", "VALUE": "96.40"},
+		{"METRIC_NAME": "PGA Cache Hit %", "VALUE": "92.10"},
+		{"METRIC_NAME": "CPU Usage Per Sec", "VALUE": "150.00"},
+		{"METRIC_NAME": "Host CPU Usage Per Sec", "VALUE": "320.00"},
 	},
 }
 
@@ -395,6 +418,120 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbJvmMemoryCommitted.Enabled = true
+	cfg.Metrics.OracledbJvmMemoryLive.Enabled = true
+	cfg.Metrics.OracledbJvmMemoryUsed.Enabled = true
+	cfg.Metrics.OracledbOsSwaps.Enabled = true
+	cfg.Metrics.OracledbSessionStoredProcedureMemory.Enabled = true
+	cfg.Metrics.OracledbSessionWaitTime.Enabled = true
+	cfg.Metrics.OracledbSessionWaits.Enabled = true
+
+	m := scrapeWithConfig(t, cfg)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		switch me.Name() {
+		case "oracledb.jvm.memory.committed":
+			seen++
+			assert.Equal(t, int64(4194304), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.jvm.memory.live":
+			seen++
+			assert.Equal(t, int64(1048576), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.jvm.memory.used":
+			seen++
+			assert.Equal(t, int64(2097152), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.os.swaps":
+			seen++
+			assert.Equal(t, int64(17), me.Sum().DataPoints().At(0).IntValue())
+		case "oracledb.session.stored_procedure.memory":
+			seen++
+			assert.Equal(t, int64(262144), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.session.wait.time":
+			seen++
+			dp := me.Sum().DataPoints().At(0)
+			state, _ := dp.Attributes().Get("oracledb.session.wait.state")
+			assert.Equal(t, "non_idle", state.Str())
+			assert.InDelta(t, 45.0, dp.DoubleValue(), 1e-9) // 4500 cs ÷ 100
+		case "oracledb.session.waits":
+			seen++
+			dp := me.Sum().DataPoints().At(0)
+			state, _ := dp.Attributes().Get("oracledb.session.wait.state")
+			assert.Equal(t, "non_idle", state.Str())
+			assert.Equal(t, int64(98765), dp.IntValue())
+		}
+	}
+	assert.Equal(t, 7, seen)
+}
+
+func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbGcCurrentBlockTime.Enabled = true
+	cfg.Metrics.OracledbLockTime.Enabled = true
+	cfg.Metrics.OracledbRecoveryBlocks.Enabled = true
+	cfg.Metrics.OracledbSmonPosts.Enabled = true
+	cfg.Metrics.OracledbTransactionRollbacks.Enabled = true
+
+	m := scrapeWithConfig(t, cfg)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Type() != pmetric.MetricTypeSum {
+			continue
+		}
+		dps := me.Sum().DataPoints()
+		switch me.Name() {
+		case "oracledb.gc.current_block.time":
+			seen++
+			gcDir, _ := dps.At(0).Attributes().Get("network.io.direction")
+			assert.Equal(t, "receive", gcDir.Str())
+			assert.InDelta(t, 6.4, dps.At(0).DoubleValue(), 1e-9)
+		case "oracledb.lock.time":
+			seen++
+			// one data point per oracledb.session.type; raw centiseconds are divided by 100
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				sessionType, _ := dp.Attributes().Get("oracledb.session.type")
+				switch sessionType.Str() {
+				case "background":
+					assert.InDelta(t, 3.5, dp.DoubleValue(), 1e-9)
+				case "foreground":
+					assert.InDelta(t, 12.0, dp.DoubleValue(), 1e-9)
+				default:
+					t.Errorf("unexpected oracledb.session.type %q", sessionType.Str())
+				}
+			}
+		case "oracledb.recovery.blocks":
+			seen++
+			assert.Equal(t, int64(8800), dps.At(0).IntValue())
+		case "oracledb.smon.posts":
+			seen++
+			// one data point per oracledb.smon.type
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				smonType, _ := dp.Attributes().Get("oracledb.smon.type")
+				switch smonType.Str() {
+				case "instance":
+					assert.Equal(t, int64(12), dp.IntValue())
+				case "transaction":
+					assert.Equal(t, int64(7), dp.IntValue())
+				default:
+					t.Errorf("unexpected oracledb.smon.type %q", smonType.Str())
+				}
+			}
+		case "oracledb.transaction.rollbacks":
+			seen++
+			assert.Equal(t, int64(4521), dps.At(0).IntValue())
+		}
+	}
+	assert.Equal(t, 5, seen)
 }
 
 func TestScraper_ScrapeOSStat(t *testing.T) {
@@ -1310,6 +1447,13 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			cfg.Metrics.OracledbRedoAllocationUtilization.Enabled = true
 			cfg.Metrics.OracledbParseRate.Enabled = true
 			cfg.Metrics.OracledbExecutionUtilization.Enabled = true
+			cfg.Metrics.OracledbCPUUsageRate.Enabled = true
+			cfg.Metrics.OracledbCursorCacheUtilization.Enabled = true
+			cfg.Metrics.OracledbHostCPUUsageRate.Enabled = true
+			cfg.Metrics.OracledbIoSingleBlockReadLatency.Enabled = true
+			cfg.Metrics.OracledbPgaCacheUtilization.Enabled = true
+			cfg.Metrics.OracledbSessionAverage.Enabled = true
+			cfg.Metrics.OracledbTransactionResponseTime.Enabled = true
 
 			scrpr := oracleScraper{
 				logger: zap.NewNop(),
@@ -1339,10 +1483,16 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 
 			metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			metricMap := make(map[string]float64)
+			intMetricMap := make(map[string]int64)
 			for i := 0; i < metrics.Len(); i++ {
 				metric := metrics.At(i)
 				if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
-					metricMap[metric.Name()] = metric.Gauge().DataPoints().At(0).DoubleValue()
+					dp := metric.Gauge().DataPoints().At(0)
+					if dp.ValueType() == pmetric.NumberDataPointValueTypeInt {
+						intMetricMap[metric.Name()] = dp.IntValue()
+					} else {
+						metricMap[metric.Name()] = dp.DoubleValue()
+					}
 				}
 			}
 
@@ -1358,6 +1508,17 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			assert.InDelta(t, 97.80, metricMap["oracledb.redo_allocation.utilization"], floatDelta)
 			assert.InDelta(t, 0.25, metricMap["oracledb.parse.rate"], floatDelta)
 			assert.InDelta(t, 75.30, metricMap["oracledb.execution.utilization"], floatDelta)
+			assert.InDelta(t, 2.50, metricMap["oracledb.session.average"], floatDelta)
+			// 0.85 ms -> 0.00085 s
+			assert.InDelta(t, 0.0085, metricMap["oracledb.io.single_block.read.latency"], floatDelta)
+			// 12.34 cs -> 0.1234 s
+			assert.InDelta(t, 0.1234, metricMap["oracledb.transaction.response.time"], floatDelta)
+			assert.InDelta(t, 96.40, metricMap["oracledb.cursor.cache.utilization"], floatDelta)
+			assert.InDelta(t, 92.10, metricMap["oracledb.pga.cache.utilization"], floatDelta)
+			// 150 cs/s -> 1.5 CPU cores
+			assert.InDelta(t, 1.50, metricMap["oracledb.cpu.usage.rate"], floatDelta)
+			// 320 cs/s -> 3.2 CPU cores
+			assert.InDelta(t, 3.20, metricMap["oracledb.host.cpu.usage.rate"], floatDelta)
 		})
 	}
 }
