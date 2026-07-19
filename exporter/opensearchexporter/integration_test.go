@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -454,5 +455,106 @@ func TestOpenSearchOTelV1_CustomIndex(t *testing.T) {
 	require.NoError(t, exporter.ConsumeTraces(t.Context(), traces))
 
 	assert.Equal(t, "my-custom-traces", bulkIndex)
+	require.NoError(t, exporter.Shutdown(t.Context()))
+}
+
+func TestOpenSearchOTelV1_ManageIndexTemplate(t *testing.T) {
+	var templateRequests []string
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodHead && strings.Contains(r.URL.Path, "_index_template") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if r.Method == http.MethodPut && strings.Contains(r.URL.Path, "_index_template") {
+			templateRequests = append(templateRequests, r.URL.Path)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"acknowledged": true}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		response, _ := os.ReadFile("testdata/opensearch-response-no-error.json")
+		_, _ = w.Write(response)
+	}))
+	defer ts.Close()
+
+	cfg := withDefaultConfig(func(config *Config) {
+		config.Endpoint = ts.URL
+		config.TimeoutSettings.Timeout = 0
+		config.Mode = "otel-v1"
+		config.ManageIndexTemplate = true
+	})
+
+	f := NewFactory()
+	exporter, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	require.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
+
+	assert.Len(t, templateRequests, 2)
+	assert.Contains(t, templateRequests[0], "otel-v1-apm-span-index-template")
+	assert.Contains(t, templateRequests[1], "otel-v1-logs-index-template")
+
+	require.NoError(t, exporter.Shutdown(t.Context()))
+}
+
+func TestOpenSearchOTelV1_ManageIndexTemplate_Disabled(t *testing.T) {
+	var templateRequests []string
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "_index_template") {
+			templateRequests = append(templateRequests, r.URL.Path)
+		}
+		w.WriteHeader(http.StatusOK)
+		response, _ := os.ReadFile("testdata/opensearch-response-no-error.json")
+		_, _ = w.Write(response)
+	}))
+	defer ts.Close()
+
+	cfg := withDefaultConfig(func(config *Config) {
+		config.Endpoint = ts.URL
+		config.TimeoutSettings.Timeout = 0
+		config.Mode = "otel-v1"
+		config.ManageIndexTemplate = false
+	})
+
+	f := NewFactory()
+	exporter, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	require.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
+
+	assert.Empty(t, templateRequests)
+	require.NoError(t, exporter.Shutdown(t.Context()))
+}
+
+func TestOpenSearchOTelV1_ManageIndexTemplate_AlreadyExists(t *testing.T) {
+	var putRequests []string
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodHead && strings.Contains(r.URL.Path, "_index_template") {
+			w.WriteHeader(http.StatusOK) // already exists
+			return
+		}
+		if r.Method == http.MethodPut && strings.Contains(r.URL.Path, "_index_template") {
+			putRequests = append(putRequests, r.URL.Path)
+		}
+		w.WriteHeader(http.StatusOK)
+		response, _ := os.ReadFile("testdata/opensearch-response-no-error.json")
+		_, _ = w.Write(response)
+	}))
+	defer ts.Close()
+
+	cfg := withDefaultConfig(func(config *Config) {
+		config.Endpoint = ts.URL
+		config.TimeoutSettings.Timeout = 0
+		config.Mode = "otel-v1"
+		config.ManageIndexTemplate = true
+	})
+
+	f := NewFactory()
+	exporter, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	require.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
+
+	assert.Empty(t, putRequests)
 	require.NoError(t, exporter.Shutdown(t.Context()))
 }
