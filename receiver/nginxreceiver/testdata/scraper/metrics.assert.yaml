@@ -7,14 +7,14 @@ resources:
           metrics:
             - name: nginx.connections_accepted
               type: sum
-              unit: connections
+              unit: '{connections}'
               temporality: cumulative
               monotonic: true
               datapoints:
                 - value: 16630948
             - name: nginx.connections_current
               type: sum
-              unit: connections
+              unit: '{connections}'
               temporality: cumulative
               monotonic: false
               datapoints:
@@ -32,14 +32,14 @@ resources:
                   value: 179
             - name: nginx.connections_handled
               type: sum
-              unit: connections
+              unit: '{connections}'
               temporality: cumulative
               monotonic: true
               datapoints:
                 - value: 16630946
             - name: nginx.requests
               type: sum
-              unit: requests
+              unit: '{requests}'
               temporality: cumulative
               monotonic: true
               datapoints:
