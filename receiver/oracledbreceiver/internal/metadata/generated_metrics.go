@@ -446,6 +446,28 @@ var MapAttributeOracledbSessionType = map[string]AttributeOracledbSessionType{
 	"foreground": AttributeOracledbSessionTypeForeground,
 }
 
+// AttributeOracledbSessionWaitState specifies the value oracledb.session.wait.state attribute.
+type AttributeOracledbSessionWaitState int
+
+const (
+	_ AttributeOracledbSessionWaitState = iota
+	AttributeOracledbSessionWaitStateNonIdle
+)
+
+// String returns the string representation of the AttributeOracledbSessionWaitState.
+func (av AttributeOracledbSessionWaitState) String() string {
+	switch av {
+	case AttributeOracledbSessionWaitStateNonIdle:
+		return "non_idle"
+	}
+	return ""
+}
+
+// MapAttributeOracledbSessionWaitState is a helper map of string to AttributeOracledbSessionWaitState attribute value.
+var MapAttributeOracledbSessionWaitState = map[string]AttributeOracledbSessionWaitState{
+	"non_idle": AttributeOracledbSessionWaitStateNonIdle,
+}
+
 // AttributeOracledbSgaComponentName specifies the value oracledb.sga.component.name attribute.
 type AttributeOracledbSgaComponentName int
 
@@ -680,6 +702,15 @@ var MetricsInfo = metricsInfo{
 	OracledbIoSingleBlockReadLatency: metricInfo{
 		Name: "oracledb.io.single_block.read.latency",
 	},
+	OracledbJvmMemoryCommitted: metricInfo{
+		Name: "oracledb.jvm.memory.committed",
+	},
+	OracledbJvmMemoryLive: metricInfo{
+		Name: "oracledb.jvm.memory.live",
+	},
+	OracledbJvmMemoryUsed: metricInfo{
+		Name: "oracledb.jvm.memory.used",
+	},
 	OracledbLibraryCacheUtilization: metricInfo{
 		Name: "oracledb.library_cache.utilization",
 	},
@@ -696,6 +727,9 @@ var MetricsInfo = metricsInfo{
 	},
 	OracledbLogons: metricInfo{
 		Name: "oracledb.logons",
+	},
+	OracledbOsSwaps: metricInfo{
+		Name: "oracledb.os.swaps",
 	},
 	OracledbParallelOperationsDowngraded1To25Pct: metricInfo{
 		Name: "oracledb.parallel_operations_downgraded_1_to_25_pct",
@@ -817,6 +851,17 @@ var MetricsInfo = metricsInfo{
 	OracledbSessionAverage: metricInfo{
 		Name:       "oracledb.session.average",
 		Attributes: []string{"session_status"},
+	},
+	OracledbSessionStoredProcedureMemory: metricInfo{
+		Name: "oracledb.session.stored_procedure.memory",
+	},
+	OracledbSessionWaitTime: metricInfo{
+		Name:       "oracledb.session.wait.time",
+		Attributes: []string{"oracledb.session.wait.state"},
+	},
+	OracledbSessionWaits: metricInfo{
+		Name:       "oracledb.session.waits",
+		Attributes: []string{"oracledb.session.wait.state"},
 	},
 	OracledbSessionsLimit: metricInfo{
 		Name: "oracledb.sessions.limit",
@@ -940,11 +985,15 @@ type metricsInfo struct {
 	OracledbHostCPUUsageRate                      metricInfo
 	OracledbHostCPUUtilization                    metricInfo
 	OracledbIoSingleBlockReadLatency              metricInfo
+	OracledbJvmMemoryCommitted                    metricInfo
+	OracledbJvmMemoryLive                         metricInfo
+	OracledbJvmMemoryUsed                         metricInfo
 	OracledbLibraryCacheUtilization               metricInfo
 	OracledbLobOperations                         metricInfo
 	OracledbLockTime                              metricInfo
 	OracledbLogicalReads                          metricInfo
 	OracledbLogons                                metricInfo
+	OracledbOsSwaps                               metricInfo
 	OracledbParallelOperationsDowngraded1To25Pct  metricInfo
 	OracledbParallelOperationsDowngraded25To50Pct metricInfo
 	OracledbParallelOperationsDowngraded50To75Pct metricInfo
@@ -982,6 +1031,9 @@ type metricsInfo struct {
 	OracledbScanCount                             metricInfo
 	OracledbScanTableRows                         metricInfo
 	OracledbSessionAverage                        metricInfo
+	OracledbSessionStoredProcedureMemory          metricInfo
+	OracledbSessionWaitTime                       metricInfo
+	OracledbSessionWaits                          metricInfo
 	OracledbSessionsLimit                         metricInfo
 	OracledbSessionsUsage                         metricInfo
 	OracledbSgaLimit                              metricInfo
@@ -3239,6 +3291,156 @@ func newMetricOracledbIoSingleBlockReadLatency(cfg OracledbIoSingleBlockReadLate
 	return m
 }
 
+type metricOracledbJvmMemoryCommitted struct {
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   OracledbJvmMemoryCommittedMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.jvm.memory.committed metric with initial data.
+func (m *metricOracledbJvmMemoryCommitted) init() {
+	m.data.SetName("oracledb.jvm.memory.committed")
+	m.data.SetDescription("Committed (total) size of Oracle's in-database JVM (OJVM) call heap.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricOracledbJvmMemoryCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbJvmMemoryCommitted) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbJvmMemoryCommitted) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbJvmMemoryCommitted(cfg OracledbJvmMemoryCommittedMetricConfig) metricOracledbJvmMemoryCommitted {
+	m := metricOracledbJvmMemoryCommitted{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbJvmMemoryLive struct {
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   OracledbJvmMemoryLiveMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.jvm.memory.live metric with initial data.
+func (m *metricOracledbJvmMemoryLive) init() {
+	m.data.SetName("oracledb.jvm.memory.live")
+	m.data.SetDescription("Size of live objects in Oracle's in-database JVM (OJVM) call heap.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricOracledbJvmMemoryLive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbJvmMemoryLive) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbJvmMemoryLive) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbJvmMemoryLive(cfg OracledbJvmMemoryLiveMetricConfig) metricOracledbJvmMemoryLive {
+	m := metricOracledbJvmMemoryLive{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbJvmMemoryUsed struct {
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   OracledbJvmMemoryUsedMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.jvm.memory.used metric with initial data.
+func (m *metricOracledbJvmMemoryUsed) init() {
+	m.data.SetName("oracledb.jvm.memory.used")
+	m.data.SetDescription("Used size of Oracle's in-database JVM (OJVM) call heap.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricOracledbJvmMemoryUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbJvmMemoryUsed) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbJvmMemoryUsed) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbJvmMemoryUsed(cfg OracledbJvmMemoryUsedMetricConfig) metricOracledbJvmMemoryUsed {
+	m := metricOracledbJvmMemoryUsed{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricOracledbLibraryCacheUtilization struct {
 	data     pmetric.Metric                              // data buffer for generated metric.
 	config   OracledbLibraryCacheUtilizationMetricConfig // metric config provided by user.
@@ -3567,6 +3769,58 @@ func (m *metricOracledbLogons) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbLogons(cfg OracledbLogonsMetricConfig) metricOracledbLogons {
 	m := metricOracledbLogons{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbOsSwaps struct {
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   OracledbOsSwapsMetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.os.swaps metric with initial data.
+func (m *metricOracledbOsSwaps) init() {
+	m.data.SetName("oracledb.os.swaps")
+	m.data.SetDescription("Number of OS swap operations.")
+	m.data.SetUnit("{swap}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbOsSwaps) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbOsSwaps) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbOsSwaps) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbOsSwaps(cfg OracledbOsSwapsMetricConfig) metricOracledbOsSwaps {
+	m := metricOracledbOsSwaps{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5882,6 +6136,238 @@ func newMetricOracledbSessionAverage(cfg OracledbSessionAverageMetricConfig) met
 	return m
 }
 
+type metricOracledbSessionStoredProcedureMemory struct {
+	data     pmetric.Metric                                   // data buffer for generated metric.
+	config   OracledbSessionStoredProcedureMemoryMetricConfig // metric config provided by user.
+	capacity int                                              // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.session.stored_procedure.memory metric with initial data.
+func (m *metricOracledbSessionStoredProcedureMemory) init() {
+	m.data.SetName("oracledb.session.stored_procedure.memory")
+	m.data.SetDescription("Memory currently allocated for stored procedures in the session.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricOracledbSessionStoredProcedureMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbSessionStoredProcedureMemory) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbSessionStoredProcedureMemory) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbSessionStoredProcedureMemory(cfg OracledbSessionStoredProcedureMemoryMetricConfig) metricOracledbSessionStoredProcedureMemory {
+	m := metricOracledbSessionStoredProcedureMemory{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbSessionWaitTime struct {
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        OracledbSessionWaitTimeMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
+}
+
+// init fills oracledb.session.wait.time metric with initial data.
+func (m *metricOracledbSessionWaitTime) init() {
+	m.data.SetName("oracledb.session.wait.time")
+	m.data.SetDescription("Cumulative time sessions spent in waits.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricOracledbSessionWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbSessionWaitStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbSessionWaitTimeMetricAttributeKeyOracledbSessionWaitState) {
+		dp.Attributes().PutStr("oracledb.session.wait.state", oracledbSessionWaitStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbSessionWaitTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbSessionWaitTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbSessionWaitTime(cfg OracledbSessionWaitTimeMetricConfig) metricOracledbSessionWaitTime {
+	m := metricOracledbSessionWaitTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbSessionWaits struct {
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        OracledbSessionWaitsMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+}
+
+// init fills oracledb.session.waits metric with initial data.
+func (m *metricOracledbSessionWaits) init() {
+	m.data.SetName("oracledb.session.waits")
+	m.data.SetDescription("Cumulative number of waits across sessions.")
+	m.data.SetUnit("{wait}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricOracledbSessionWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbSessionWaitStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbSessionWaitsMetricAttributeKeyOracledbSessionWaitState) {
+		dp.Attributes().PutStr("oracledb.session.wait.state", oracledbSessionWaitStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbSessionWaits) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbSessionWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbSessionWaits(cfg OracledbSessionWaitsMetricConfig) metricOracledbSessionWaits {
+	m := metricOracledbSessionWaits{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricOracledbSessionsLimit struct {
 	data     pmetric.Metric                    // data buffer for generated metric.
 	config   OracledbSessionsLimitMetricConfig // metric config provided by user.
@@ -7463,11 +7949,15 @@ type MetricsBuilder struct {
 	metricOracledbHostCPUUsageRate                      metricOracledbHostCPUUsageRate
 	metricOracledbHostCPUUtilization                    metricOracledbHostCPUUtilization
 	metricOracledbIoSingleBlockReadLatency              metricOracledbIoSingleBlockReadLatency
+	metricOracledbJvmMemoryCommitted                    metricOracledbJvmMemoryCommitted
+	metricOracledbJvmMemoryLive                         metricOracledbJvmMemoryLive
+	metricOracledbJvmMemoryUsed                         metricOracledbJvmMemoryUsed
 	metricOracledbLibraryCacheUtilization               metricOracledbLibraryCacheUtilization
 	metricOracledbLobOperations                         metricOracledbLobOperations
 	metricOracledbLockTime                              metricOracledbLockTime
 	metricOracledbLogicalReads                          metricOracledbLogicalReads
 	metricOracledbLogons                                metricOracledbLogons
+	metricOracledbOsSwaps                               metricOracledbOsSwaps
 	metricOracledbParallelOperationsDowngraded1To25Pct  metricOracledbParallelOperationsDowngraded1To25Pct
 	metricOracledbParallelOperationsDowngraded25To50Pct metricOracledbParallelOperationsDowngraded25To50Pct
 	metricOracledbParallelOperationsDowngraded50To75Pct metricOracledbParallelOperationsDowngraded50To75Pct
@@ -7505,6 +7995,9 @@ type MetricsBuilder struct {
 	metricOracledbScanCount                             metricOracledbScanCount
 	metricOracledbScanTableRows                         metricOracledbScanTableRows
 	metricOracledbSessionAverage                        metricOracledbSessionAverage
+	metricOracledbSessionStoredProcedureMemory          metricOracledbSessionStoredProcedureMemory
+	metricOracledbSessionWaitTime                       metricOracledbSessionWaitTime
+	metricOracledbSessionWaits                          metricOracledbSessionWaits
 	metricOracledbSessionsLimit                         metricOracledbSessionsLimit
 	metricOracledbSessionsUsage                         metricOracledbSessionsUsage
 	metricOracledbSgaLimit                              metricOracledbSgaLimit
@@ -7593,11 +8086,15 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbHostCPUUsageRate:                      newMetricOracledbHostCPUUsageRate(mbc.Metrics.OracledbHostCPUUsageRate),
 		metricOracledbHostCPUUtilization:                    newMetricOracledbHostCPUUtilization(mbc.Metrics.OracledbHostCPUUtilization),
 		metricOracledbIoSingleBlockReadLatency:              newMetricOracledbIoSingleBlockReadLatency(mbc.Metrics.OracledbIoSingleBlockReadLatency),
+		metricOracledbJvmMemoryCommitted:                    newMetricOracledbJvmMemoryCommitted(mbc.Metrics.OracledbJvmMemoryCommitted),
+		metricOracledbJvmMemoryLive:                         newMetricOracledbJvmMemoryLive(mbc.Metrics.OracledbJvmMemoryLive),
+		metricOracledbJvmMemoryUsed:                         newMetricOracledbJvmMemoryUsed(mbc.Metrics.OracledbJvmMemoryUsed),
 		metricOracledbLibraryCacheUtilization:               newMetricOracledbLibraryCacheUtilization(mbc.Metrics.OracledbLibraryCacheUtilization),
 		metricOracledbLobOperations:                         newMetricOracledbLobOperations(mbc.Metrics.OracledbLobOperations),
 		metricOracledbLockTime:                              newMetricOracledbLockTime(mbc.Metrics.OracledbLockTime),
 		metricOracledbLogicalReads:                          newMetricOracledbLogicalReads(mbc.Metrics.OracledbLogicalReads),
 		metricOracledbLogons:                                newMetricOracledbLogons(mbc.Metrics.OracledbLogons),
+		metricOracledbOsSwaps:                               newMetricOracledbOsSwaps(mbc.Metrics.OracledbOsSwaps),
 		metricOracledbParallelOperationsDowngraded1To25Pct:  newMetricOracledbParallelOperationsDowngraded1To25Pct(mbc.Metrics.OracledbParallelOperationsDowngraded1To25Pct),
 		metricOracledbParallelOperationsDowngraded25To50Pct: newMetricOracledbParallelOperationsDowngraded25To50Pct(mbc.Metrics.OracledbParallelOperationsDowngraded25To50Pct),
 		metricOracledbParallelOperationsDowngraded50To75Pct: newMetricOracledbParallelOperationsDowngraded50To75Pct(mbc.Metrics.OracledbParallelOperationsDowngraded50To75Pct),
@@ -7635,6 +8132,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbScanCount:                             newMetricOracledbScanCount(mbc.Metrics.OracledbScanCount),
 		metricOracledbScanTableRows:                         newMetricOracledbScanTableRows(mbc.Metrics.OracledbScanTableRows),
 		metricOracledbSessionAverage:                        newMetricOracledbSessionAverage(mbc.Metrics.OracledbSessionAverage),
+		metricOracledbSessionStoredProcedureMemory:          newMetricOracledbSessionStoredProcedureMemory(mbc.Metrics.OracledbSessionStoredProcedureMemory),
+		metricOracledbSessionWaitTime:                       newMetricOracledbSessionWaitTime(mbc.Metrics.OracledbSessionWaitTime),
+		metricOracledbSessionWaits:                          newMetricOracledbSessionWaits(mbc.Metrics.OracledbSessionWaits),
 		metricOracledbSessionsLimit:                         newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
 		metricOracledbSessionsUsage:                         newMetricOracledbSessionsUsage(mbc.Metrics.OracledbSessionsUsage),
 		metricOracledbSgaLimit:                              newMetricOracledbSgaLimit(mbc.Metrics.OracledbSgaLimit),
@@ -7830,11 +8330,15 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbHostCPUUsageRate.emit(ils.Metrics())
 	mb.metricOracledbHostCPUUtilization.emit(ils.Metrics())
 	mb.metricOracledbIoSingleBlockReadLatency.emit(ils.Metrics())
+	mb.metricOracledbJvmMemoryCommitted.emit(ils.Metrics())
+	mb.metricOracledbJvmMemoryLive.emit(ils.Metrics())
+	mb.metricOracledbJvmMemoryUsed.emit(ils.Metrics())
 	mb.metricOracledbLibraryCacheUtilization.emit(ils.Metrics())
 	mb.metricOracledbLobOperations.emit(ils.Metrics())
 	mb.metricOracledbLockTime.emit(ils.Metrics())
 	mb.metricOracledbLogicalReads.emit(ils.Metrics())
 	mb.metricOracledbLogons.emit(ils.Metrics())
+	mb.metricOracledbOsSwaps.emit(ils.Metrics())
 	mb.metricOracledbParallelOperationsDowngraded1To25Pct.emit(ils.Metrics())
 	mb.metricOracledbParallelOperationsDowngraded25To50Pct.emit(ils.Metrics())
 	mb.metricOracledbParallelOperationsDowngraded50To75Pct.emit(ils.Metrics())
@@ -7872,6 +8376,9 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbScanCount.emit(ils.Metrics())
 	mb.metricOracledbScanTableRows.emit(ils.Metrics())
 	mb.metricOracledbSessionAverage.emit(ils.Metrics())
+	mb.metricOracledbSessionStoredProcedureMemory.emit(ils.Metrics())
+	mb.metricOracledbSessionWaitTime.emit(ils.Metrics())
+	mb.metricOracledbSessionWaits.emit(ils.Metrics())
 	mb.metricOracledbSessionsLimit.emit(ils.Metrics())
 	mb.metricOracledbSessionsUsage.emit(ils.Metrics())
 	mb.metricOracledbSgaLimit.emit(ils.Metrics())
@@ -8247,6 +8754,36 @@ func (mb *MetricsBuilder) RecordOracledbIoSingleBlockReadLatencyDataPoint(ts pco
 	mb.metricOracledbIoSingleBlockReadLatency.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordOracledbJvmMemoryCommittedDataPoint adds a data point to oracledb.jvm.memory.committed metric.
+func (mb *MetricsBuilder) RecordOracledbJvmMemoryCommittedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbJvmMemoryCommitted, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbJvmMemoryCommitted.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbJvmMemoryLiveDataPoint adds a data point to oracledb.jvm.memory.live metric.
+func (mb *MetricsBuilder) RecordOracledbJvmMemoryLiveDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbJvmMemoryLive, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbJvmMemoryLive.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbJvmMemoryUsedDataPoint adds a data point to oracledb.jvm.memory.used metric.
+func (mb *MetricsBuilder) RecordOracledbJvmMemoryUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbJvmMemoryUsed, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbJvmMemoryUsed.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordOracledbLibraryCacheUtilizationDataPoint adds a data point to oracledb.library_cache.utilization metric.
 func (mb *MetricsBuilder) RecordOracledbLibraryCacheUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricOracledbLibraryCacheUtilization.recordDataPoint(mb.startTime, ts, val)
@@ -8284,6 +8821,16 @@ func (mb *MetricsBuilder) RecordOracledbLogonsDataPoint(ts pcommon.Timestamp, in
 		return fmt.Errorf("failed to parse int64 for OracledbLogons, value was %s: %w", inputVal, err)
 	}
 	mb.metricOracledbLogons.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbOsSwapsDataPoint adds a data point to oracledb.os.swaps metric.
+func (mb *MetricsBuilder) RecordOracledbOsSwapsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbOsSwaps, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbOsSwaps.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
@@ -8610,6 +9157,31 @@ func (mb *MetricsBuilder) RecordOracledbScanTableRowsDataPoint(ts pcommon.Timest
 // RecordOracledbSessionAverageDataPoint adds a data point to oracledb.session.average metric.
 func (mb *MetricsBuilder) RecordOracledbSessionAverageDataPoint(ts pcommon.Timestamp, val float64, sessionStatusAttributeValue string) {
 	mb.metricOracledbSessionAverage.recordDataPoint(mb.startTime, ts, val, sessionStatusAttributeValue)
+}
+
+// RecordOracledbSessionStoredProcedureMemoryDataPoint adds a data point to oracledb.session.stored_procedure.memory metric.
+func (mb *MetricsBuilder) RecordOracledbSessionStoredProcedureMemoryDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbSessionStoredProcedureMemory, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbSessionStoredProcedureMemory.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbSessionWaitTimeDataPoint adds a data point to oracledb.session.wait.time metric.
+func (mb *MetricsBuilder) RecordOracledbSessionWaitTimeDataPoint(ts pcommon.Timestamp, val float64, oracledbSessionWaitStateAttributeValue AttributeOracledbSessionWaitState) {
+	mb.metricOracledbSessionWaitTime.recordDataPoint(mb.startTime, ts, val, oracledbSessionWaitStateAttributeValue.String())
+}
+
+// RecordOracledbSessionWaitsDataPoint adds a data point to oracledb.session.waits metric.
+func (mb *MetricsBuilder) RecordOracledbSessionWaitsDataPoint(ts pcommon.Timestamp, inputVal string, oracledbSessionWaitStateAttributeValue AttributeOracledbSessionWaitState) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbSessionWaits, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbSessionWaits.recordDataPoint(mb.startTime, ts, val, oracledbSessionWaitStateAttributeValue.String())
+	return nil
 }
 
 // RecordOracledbSessionsLimitDataPoint adds a data point to oracledb.sessions.limit metric.
