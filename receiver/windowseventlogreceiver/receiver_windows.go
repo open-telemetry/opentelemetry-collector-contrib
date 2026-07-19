@@ -92,9 +92,15 @@ func createLogsReceiver(
 			hostCfg.InputConfig.Remote = rc
 			r, err := stanzaFactory.CreateLogs(ctx, set, &hostCfg, enrichedConsumer)
 			if err != nil {
-				return nil, fmt.Errorf("failed to create receiver for remote host %q: %w", rc.Server, err)
+				set.Logger.Error("failed to create receiver for remote host, skipping",
+					zap.String("host", rc.Server),
+					zap.Error(err))
+				continue
 			}
 			receivers = append(receivers, r)
+		}
+		if len(receivers) == 0 {
+			return nil, errors.New("failed to create receiver for any configured remote host")
 		}
 		return &multiLogsReceiver{receivers: receivers}, nil
 	}
