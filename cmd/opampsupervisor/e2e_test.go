@@ -361,6 +361,44 @@ func writeSupervisorConfigFile(t *testing.T, serverAddr, storageDir string, conf
 	return writeTempConfigFile(t, buf.String())
 }
 
+func writeCountingCollectorWrapper(t *testing.T, invocationsFile string) string {
+	t.Helper()
+
+	var extension string
+	if runtime.GOOS == "windows" {
+		extension = ".exe"
+	}
+	collectorPath, err := filepath.Abs("../../bin/otelcontribcol_" + runtime.GOOS + "_" + runtime.GOARCH + extension)
+	require.NoError(t, err)
+
+	wrapperPath := filepath.Join(t.TempDir(), "otelcontribcol-wrapper")
+	if runtime.GOOS == "windows" {
+		wrapperPath += ".bat"
+		script := fmt.Sprintf("@echo off\r\necho %%* >> %q\r\n%q %%*\r\nexit /b %%ERRORLEVEL%%\r\n", invocationsFile, collectorPath)
+		require.NoError(t, os.WriteFile(wrapperPath, []byte(script), 0o600))
+		return wrapperPath
+	}
+
+	script := fmt.Sprintf("#!/bin/sh\nprintf '%%s\\n' \"$*\" >> %q\nexec %q \"$@\"\n", invocationsFile, collectorPath)
+	require.NoError(t, os.WriteFile(wrapperPath, []byte(script), 0o700))
+	return wrapperPath
+}
+
+func collectorInvocationCount(t *testing.T, invocationsFile string) int {
+	t.Helper()
+
+	content, err := os.ReadFile(invocationsFile)
+	if errors.Is(err, os.ErrNotExist) {
+		return 0
+	}
+	require.NoError(t, err)
+	trimmed := strings.TrimSpace(string(content))
+	if trimmed == "" {
+		return 0
+	}
+	return len(strings.Split(trimmed, "\n"))
+}
+
 func waitForEffectiveConfigMessage(t *testing.T, effectiveConfig *atomic.Value) string {
 	t.Helper()
 
@@ -416,6 +454,22 @@ func TestValidateFallbackConfigsWithColBin_E2E(t *testing.T) {
 
 		cfg, err := config.Load(cfgFile.Name())
 		require.NoError(t, err)
+		_, err = supervisor.NewSupervisor(t.Context(), zap.NewNop(), cfg)
+		require.NoError(t, err)
+	})
+
+	t.Run("Valid profiles fallback config using agent feature gates", func(t *testing.T) {
+		profilesConfigPath := filepath.Join("testdata", "collector", "profiles_pipeline.yaml")
+		cfgFile := getSupervisorConfig(t, "fallback", map[string]string{
+			"url":                     "localhost:12345",
+			"storage_dir":             t.TempDir(),
+			"agent_argument":          "--feature-gates=+service.profilesSupport",
+			"startup_fallback_config": escapePathStringForWin(profilesConfigPath),
+		})
+
+		cfg, err := config.Load(cfgFile.Name())
+		require.NoError(t, err)
+		require.Equal(t, []string{"--feature-gates=+service.profilesSupport"}, cfg.Agent.Arguments)
 		_, err = supervisor.NewSupervisor(t.Context(), zap.NewNop(), cfg)
 		require.NoError(t, err)
 	})
@@ -508,6 +562,11 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 
 				return n != 0
 			}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+
+			require.Never(t, func() bool {
+				_, err := os.Stat(filepath.Join(storageDir, "last_working_remote_config.dat"))
+				return err == nil
+			}, time.Second, 100*time.Millisecond, "Last working remote config should not be persisted when automatic rollback is disabled")
 		})
 	}
 }
@@ -851,6 +910,355 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 			waitForSupervisorConnection(server.supervisorConnected, true)
 
 			require.True(t, connected.Load(), "Supervisor failed to connect")
+		})
+	}
+}
+
+func TestSupervisorRestartsWithLastWorkingRemoteConfigAfterFailedConfig(t *testing.T) {
+	modes := getTestModes()
+
+	for _, mode := range modes {
+		t.Run(mode.name, func(t *testing.T) {
+			storageDir := t.TempDir()
+			var firstRemoteConfigStatus atomic.Value
+			firstServer := newOpAMPServer(
+				t,
+				defaultConnectingHandler,
+				types.ConnectionCallbacks{
+					OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+						if message.RemoteConfigStatus != nil {
+							firstRemoteConfigStatus.Store(message.RemoteConfigStatus)
+						}
+						return &protobufs.ServerToAgent{}
+					},
+				},
+			)
+
+			extraConfigData := map[string]string{
+				"url":                       firstServer.addr,
+				"storage_dir":               storageDir,
+				"automatic_config_rollback": "true",
+			}
+			if mode.UseHUPConfigReload {
+				extraConfigData["use_hup_config_reload"] = "true"
+			}
+
+			firstSupervisor, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			require.True(t, supervisorCfg.Agent.AutomaticConfigRollback)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
+
+			require.NoError(t, firstSupervisor.Start(t.Context()))
+			waitForSupervisorConnection(firstServer.supervisorConnected, true)
+
+			workingCfg, workingHash, healthcheckPort := createHealthCheckCollectorConf(t, true)
+			firstServer.sendToSupervisor(&protobufs.ServerToAgent{
+				RemoteConfig: &protobufs.AgentRemoteConfig{
+					Config: &protobufs.AgentConfigMap{
+						ConfigMap: map[string]*protobufs.AgentConfigFile{
+							"": {Body: workingCfg.Bytes()},
+						},
+					},
+					ConfigHash: workingHash,
+				},
+			})
+
+			require.EventuallyWithT(t, func(c *assert.CollectT) {
+				resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+				if err != nil {
+					c.Errorf("failed healthcheck: %v", err)
+					return
+				}
+				require.NoError(c, resp.Body.Close())
+				require.GreaterOrEqual(c, resp.StatusCode, 200)
+				require.True(c, resp.StatusCode >= 200 && resp.StatusCode < 300)
+			}, 10*time.Second, 100*time.Millisecond, "Collector did not become healthy with the working config")
+
+			require.Eventually(t, func() bool {
+				status, ok := firstRemoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+				return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED && bytes.Equal(status.LastRemoteConfigHash, workingHash)
+			}, 15*time.Second, 100*time.Millisecond, "Working remote config was not reported as applied")
+
+			badCfg, badHash := createBadCollectorConf(t)
+			firstServer.sendToSupervisor(&protobufs.ServerToAgent{
+				RemoteConfig: &protobufs.AgentRemoteConfig{
+					Config: &protobufs.AgentConfigMap{
+						ConfigMap: map[string]*protobufs.AgentConfigFile{
+							"": {Body: badCfg.Bytes()},
+						},
+					},
+					ConfigHash: badHash,
+				},
+			})
+
+			require.Eventually(t, func() bool {
+				status, ok := firstRemoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+				return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED && bytes.Equal(status.LastRemoteConfigHash, badHash)
+			}, 15*time.Second, 100*time.Millisecond, "Failed remote config status was not reported")
+
+			firstSupervisor.Shutdown()
+			firstServer.shutdown()
+			require.EventuallyWithT(t, func(c *assert.CollectT) {
+				resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+				if err != nil {
+					return
+				}
+				require.NoError(c, resp.Body.Close())
+				c.Errorf("healthcheck endpoint still responding with status %d", resp.StatusCode)
+			}, 5*time.Second, 100*time.Millisecond, "Previous collector instance did not shut down")
+			time.Sleep(250 * time.Millisecond)
+
+			var restartedFallbackStatusReported atomic.Bool
+			restartServer := newOpAMPServer(
+				t,
+				defaultConnectingHandler,
+				types.ConnectionCallbacks{
+					OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+						if status := message.RemoteConfigStatus; status != nil &&
+							status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED &&
+							bytes.Equal(status.LastRemoteConfigHash, workingHash) {
+							restartedFallbackStatusReported.Store(true)
+						}
+						return &protobufs.ServerToAgent{}
+					},
+				},
+			)
+
+			restartedSupervisor, restartedSupervisorCfg := newSupervisor(t, "basic", map[string]string{
+				"url":                       restartServer.addr,
+				"storage_dir":               storageDir,
+				"automatic_config_rollback": "true",
+				"use_hup_config_reload": func() string {
+					if mode.UseHUPConfigReload {
+						return "true"
+					}
+					return ""
+				}(),
+			})
+			require.True(t, restartedSupervisorCfg.Agent.AutomaticConfigRollback)
+			if mode.UseHUPConfigReload {
+				require.True(t, restartedSupervisorCfg.Agent.UseHUPConfigReload)
+			}
+
+			require.NoError(t, restartedSupervisor.Start(t.Context()))
+			defer restartedSupervisor.Shutdown()
+
+			waitForSupervisorConnection(restartServer.supervisorConnected, true)
+
+			require.EventuallyWithT(t, func(c *assert.CollectT) {
+				resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+				if err != nil {
+					c.Errorf("failed healthcheck: %v", err)
+					return
+				}
+				require.NoError(c, resp.Body.Close())
+				require.True(c, resp.StatusCode >= 200 && resp.StatusCode < 300)
+			}, 10*time.Second, 100*time.Millisecond, "Collector did not restart with the last working config")
+
+			require.Never(t, restartedFallbackStatusReported.Load, time.Second, 100*time.Millisecond, "Last working remote config status should not be reported during restart fallback")
+		})
+	}
+}
+
+func TestSupervisorRestoresLastWorkingRemoteConfigAtRuntimeAfterFailedConfig(t *testing.T) {
+	storageDir := t.TempDir()
+	var remoteConfigStatus atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.RemoteConfigStatus != nil {
+					remoteConfigStatus.Store(message.RemoteConfigStatus)
+				}
+				return &protobufs.ServerToAgent{}
+			},
+		},
+	)
+
+	s, supervisorCfg := newSupervisor(t, "basic", map[string]string{
+		"url":                       server.addr,
+		"storage_dir":               storageDir,
+		"automatic_config_rollback": "true",
+	})
+	require.True(t, supervisorCfg.Agent.AutomaticConfigRollback)
+
+	require.NoError(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	workingCfg, workingHash, healthcheckPort := createHealthCheckCollectorConf(t, true)
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: workingCfg.Bytes()},
+				},
+			},
+			ConfigHash: workingHash,
+		},
+	})
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+		if err != nil {
+			c.Errorf("failed healthcheck: %v", err)
+			return
+		}
+		require.NoError(c, resp.Body.Close())
+		require.True(c, resp.StatusCode >= 200 && resp.StatusCode < 300)
+	}, 10*time.Second, 100*time.Millisecond, "Collector did not become healthy with the working config")
+
+	require.Eventually(t, func() bool {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED && bytes.Equal(status.LastRemoteConfigHash, workingHash)
+	}, 15*time.Second, 100*time.Millisecond, "Working remote config was not reported as applied")
+
+	badCfg, badHash := createBadCollectorConf(t)
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: badCfg.Bytes()},
+				},
+			},
+			ConfigHash: badHash,
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED && bytes.Equal(status.LastRemoteConfigHash, badHash)
+	}, 15*time.Second, 100*time.Millisecond, "Failed remote config status was not reported")
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+		if err != nil {
+			c.Errorf("failed healthcheck: %v", err)
+			return
+		}
+		require.NoError(c, resp.Body.Close())
+		require.True(c, resp.StatusCode >= 200 && resp.StatusCode < 300)
+	}, 10*time.Second, 100*time.Millisecond, "Collector did not restore the last working config at runtime")
+
+	require.Eventually(t, func() bool {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED && bytes.Equal(status.LastRemoteConfigHash, workingHash)
+	}, 15*time.Second, 100*time.Millisecond, "Restored last working remote config was not reported as applied")
+}
+
+func TestSupervisorDoesNotTightlyLoopWhenRestoredLastWorkingRemoteConfigFails(t *testing.T) {
+	for _, mode := range getTestModes() {
+		t.Run(mode.name, func(t *testing.T) {
+			storageDir := t.TempDir()
+			workingPort, err := findRandomPort()
+			require.NoError(t, err)
+			workingCfg, workingHash := createHealthCheckCollectorConfWithPort(t, strconv.Itoa(workingPort))
+			badCfg, badHash := createBadCollectorConf(t)
+			collectorInvocationsFile := filepath.Join(t.TempDir(), "collector-invocations.txt")
+			collectorWrapper := writeCountingCollectorWrapper(t, collectorInvocationsFile)
+
+			server := newOpAMPServer(
+				t,
+				defaultConnectingHandler,
+				types.ConnectionCallbacks{
+					OnMessage: func(context.Context, types.Connection, *protobufs.AgentToServer) *protobufs.ServerToAgent {
+						return &protobufs.ServerToAgent{}
+					},
+				},
+			)
+
+			cfgFile := writeTempConfigFile(t, fmt.Sprintf(`
+server:
+  endpoint: %q
+
+capabilities:
+  reports_effective_config: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+
+storage:
+  directory: %q
+
+agent:
+  executable: %q
+  bootstrap_timeout: 10s
+  automatic_config_rollback: true
+  use_hup_config_reload: %v
+`, "ws://"+server.addr+"/v1/opamp", storageDir, collectorWrapper, mode.UseHUPConfigReload))
+
+			s, supervisorCfg := newSupervisorFromConfigFile(t, cfgFile)
+			require.True(t, supervisorCfg.Agent.AutomaticConfigRollback)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
+
+			require.NoError(t, s.Start(t.Context()))
+			t.Cleanup(s.Shutdown)
+
+			waitForSupervisorConnection(server.supervisorConnected, true)
+
+			server.sendToSupervisor(&protobufs.ServerToAgent{
+				RemoteConfig: &protobufs.AgentRemoteConfig{
+					Config: &protobufs.AgentConfigMap{
+						ConfigMap: map[string]*protobufs.AgentConfigFile{
+							"": {Body: workingCfg.Bytes()},
+						},
+					},
+					ConfigHash: workingHash,
+				},
+			})
+
+			require.Eventually(t, func() bool {
+				return healthCheckOK(workingPort)
+			}, 10*time.Second, 100*time.Millisecond, "Collector did not become healthy with the working config")
+			require.Eventually(t, func() bool {
+				_, err := os.Stat(filepath.Join(storageDir, "last_working_remote_config.dat"))
+				return err == nil
+			}, 15*time.Second, 100*time.Millisecond, "Working remote config was not saved as last working")
+
+			invocationsBeforeBadConfig := collectorInvocationCount(t, collectorInvocationsFile)
+			claimedWorkingPortCh := claimPortWhenFree(t, workingPort)
+			server.sendToSupervisor(&protobufs.ServerToAgent{
+				RemoteConfig: &protobufs.AgentRemoteConfig{
+					Config: &protobufs.AgentConfigMap{
+						ConfigMap: map[string]*protobufs.AgentConfigFile{
+							"": {Body: badCfg.Bytes()},
+						},
+					},
+					ConfigHash: badHash,
+				},
+			})
+
+			select {
+			case claimedWorkingPort := <-claimedWorkingPortCh:
+				require.NotNil(t, claimedWorkingPort)
+				t.Cleanup(func() {
+					require.NoError(t, claimedWorkingPort.Close())
+				})
+			case <-time.After(10 * time.Second):
+				t.Fatal("did not claim the last working config port after the collector stopped")
+			}
+
+			// In process-restart mode the bad config and the restored last working
+			// config each start a new collector process. In HUP mode the bad config
+			// is reloaded in-place, so whether it adds an invocation depends on when
+			// the collector exits; only the restored config is guaranteed to start a
+			// new process.
+			minInvocations := 2
+			if mode.UseHUPConfigReload {
+				minInvocations = 1
+			}
+			require.Eventually(t, func() bool {
+				return collectorInvocationCount(t, collectorInvocationsFile) >= invocationsBeforeBadConfig+minInvocations
+			}, 15*time.Second, 100*time.Millisecond, "Restored last working config was not started after the bad config")
+
+			require.Never(t, func() bool {
+				return collectorInvocationCount(t, collectorInvocationsFile) > invocationsBeforeBadConfig+2
+			}, 2*time.Second, 100*time.Millisecond, "Restored last working remote config failed repeatedly without waiting for restart backoff")
 		})
 	}
 }
@@ -1811,6 +2219,31 @@ func healthCheckOK(port int) bool {
 	}
 	defer resp.Body.Close()
 	return resp.StatusCode >= 200 && resp.StatusCode < 300
+}
+
+func claimPortWhenFree(t *testing.T, port int) <-chan net.Listener {
+	t.Helper()
+
+	claimed := make(chan net.Listener, 1)
+	go func() {
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
+
+		for {
+			listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+			if err == nil {
+				claimed <- listener
+				return
+			}
+
+			select {
+			case <-t.Context().Done():
+				return
+			case <-ticker.C:
+			}
+		}
+	}()
+	return claimed
 }
 
 // Wait for the Supervisor to connect to or disconnect from the OpAMP server
