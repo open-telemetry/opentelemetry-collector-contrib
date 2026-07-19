@@ -12,6 +12,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -82,6 +83,34 @@ func TestConfigBuildIgnoresParseFromParseTo(t *testing.T) {
 	require.Equal(t, "value", e.Attributes["extra"])
 }
 
+// TestConfigBuildIgnoresTimestampSeverityScopeName asserts timestamp,
+// severity, trace, and scope_name are forced to nil by Build().
+func TestConfigBuildIgnoresTimestampSeverityScopeName(t *testing.T) {
+	cfg := NewConfigWithID("test")
+
+	parseField := entry.NewBodyField("some_other_field")
+	cfg.TimeParser = &helper.TimeParser{ParseFrom: &parseField, LayoutType: "epoch", Layout: "s"}
+	severityParser := helper.NewSeverityConfig()
+	severityParser.ParseFrom = &parseField
+	cfg.SeverityConfig = &severityParser
+	cfg.TraceParser = &helper.TraceParser{}
+	scopeNameParser := helper.NewScopeNameParser()
+	scopeNameParser.ParseFrom = parseField
+	cfg.ScopeNameParser = &scopeNameParser
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	parser, ok := op.(*Parser)
+	require.True(t, ok)
+
+	require.Nil(t, parser.TimeParser)
+	require.Nil(t, parser.SeverityParser)
+	require.Nil(t, parser.TraceParser)
+	require.Nil(t, parser.ScopeNameParser)
+}
+
 func TestParseInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse(12345)
@@ -120,46 +149,41 @@ func TestParseConsoleLineInvalid(t *testing.T) {
 
 func TestSplitConsoleMessageAndFields(t *testing.T) {
 	cases := []struct {
-		name          string
-		rest          string
-		wantMsg       string
-		wantFields    map[string]any
-		wantMalformed bool
+		name       string
+		rest       string
+		wantMsg    string
+		wantFields map[string]any
 	}{
 		{
-			name:          "no_trailing_fields",
-			rest:          "Collector started",
-			wantMsg:       "Collector started",
-			wantFields:    nil,
-			wantMalformed: false,
+			name:       "no_trailing_fields",
+			rest:       "Collector started",
+			wantMsg:    "Collector started",
+			wantFields: nil,
 		},
 		{
-			name:          "simple_trailing_fields",
-			rest:          `Failed to scrape endpoint {"otelcol.component.id":"receiver_creator"}`,
-			wantMsg:       "Failed to scrape endpoint",
-			wantFields:    map[string]any{"otelcol.component.id": "receiver_creator"},
-			wantMalformed: false,
+			name:       "simple_trailing_fields",
+			rest:       `Failed to scrape endpoint {"otelcol.component.id":"receiver_creator"}`,
+			wantMsg:    "Failed to scrape endpoint",
+			wantFields: map[string]any{"otelcol.component.id": "receiver_creator"},
 		},
 		{
-			name:          "nested_trailing_fields",
-			rest:          `Failed to scrape endpoint {"resource":{"k8s.pod.name":"otel-agent-qkvqj"}}`,
-			wantMsg:       "Failed to scrape endpoint",
-			wantFields:    map[string]any{"resource": map[string]any{"k8s.pod.name": "otel-agent-qkvqj"}},
-			wantMalformed: false,
+			name:       "nested_trailing_fields",
+			rest:       `Failed to scrape endpoint {"resource":{"k8s.pod.name":"otel-agent-qkvqj"}}`,
+			wantMsg:    "Failed to scrape endpoint",
+			wantFields: map[string]any{"resource": map[string]any{"k8s.pod.name": "otel-agent-qkvqj"}},
 		},
 		{
-			name:          "brace_in_message_before_real_fields",
-			rest:          `Config value for pool {default} is missing {"resource":{"k8s.pod.name":"otel-agent-qkvqj"}}`,
-			wantMsg:       "Config value for pool {default} is missing",
-			wantFields:    map[string]any{"resource": map[string]any{"k8s.pod.name": "otel-agent-qkvqj"}},
-			wantMalformed: false,
+			name:       "brace_in_message_before_real_fields",
+			rest:       `Config value for pool {default} is missing {"resource":{"k8s.pod.name":"otel-agent-qkvqj"}}`,
+			wantMsg:    "Config value for pool {default} is missing",
+			wantFields: map[string]any{"resource": map[string]any{"k8s.pod.name": "otel-agent-qkvqj"}},
 		},
 		{
-			name:          "empty_object_in_message_before_real_fields",
-			rest:          `Cache miss for key {} retrying {"otelcol.signal":"logs"}`,
-			wantMsg:       "Cache miss for key {} retrying",
-			wantFields:    map[string]any{"otelcol.signal": "logs"},
-			wantMalformed: false,
+			// "{}" alone is valid JSON, so this checks the scan doesn't stop early on it.
+			name:       "empty_object_in_message_before_real_fields",
+			rest:       `Cache miss for key {} retrying {"otelcol.signal":"logs"}`,
+			wantMsg:    "Cache miss for key {} retrying",
+			wantFields: map[string]any{"otelcol.signal": "logs"},
 		},
 		{
 			name: "many_braces_before_real_fields",
@@ -170,45 +194,33 @@ func TestSplitConsoleMessageAndFields(t *testing.T) {
 				"resource":             map[string]any{"k8s.pod.name": "otel-agent-qkvqj"},
 				"otelcol.component.id": "receiver_creator",
 			},
-			wantMalformed: false,
 		},
 		{
-			// A brace in the message with no trailing JSON at all, and the
-			// line does NOT end in "}" - this is ordinary message text, not
-			// an attempt at structured fields, so it must NOT be flagged.
-			name:          "brace_in_message_not_at_end_no_real_fields",
-			rest:          "Config value for pool {default} is missing",
-			wantMsg:       "Config value for pool {default} is missing",
-			wantFields:    nil,
-			wantMalformed: false,
+			name:       "brace_in_message_no_real_fields",
+			rest:       "Value set to {ok}",
+			wantMsg:    "Value set to {ok}",
+			wantFields: nil,
 		},
 		{
-			// A brace in the message with no real trailing JSON, but the
-			// line DOES end in "}" - this looks like an attempt at
-			// structured fields that never resolved, so it is flagged.
-			name:          "brace_in_message_no_real_fields",
-			rest:          "Value set to {ok}",
-			wantMsg:       "Value set to {ok}",
-			wantFields:    nil,
-			wantMalformed: true,
+			// Does not end in "}", so this exercises the early-exit path.
+			name:       "brace_in_message_not_at_end",
+			rest:       "Config value for pool {default} is missing",
+			wantMsg:    "Config value for pool {default} is missing",
+			wantFields: nil,
 		},
 		{
-			// Malformed trailing JSON degrades gracefully rather than
-			// erroring, but is flagged as malformed so the loss is visible.
-			name:          "malformed_trailing_fields",
-			rest:          `broken message {"resource": invalid}`,
-			wantMsg:       `broken message {"resource": invalid}`,
-			wantFields:    nil,
-			wantMalformed: true,
+			name:       "malformed_trailing_fields",
+			rest:       `broken message {"resource": invalid}`,
+			wantMsg:    `broken message {"resource": invalid}`,
+			wantFields: nil,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			msg, fields, malformed := splitConsoleMessageAndFields(tc.rest)
+			msg, fields := splitConsoleMessageAndFields(tc.rest)
 			require.Equal(t, tc.wantMsg, msg)
 			require.Equal(t, tc.wantFields, fields)
-			require.Equal(t, tc.wantMalformed, malformed)
 		})
 	}
 }
@@ -221,7 +233,6 @@ func TestProcess(t *testing.T) {
 	consoleLineNoFields := "2026-07-06T22:56:21.989Z\tinfo\tCollector started"
 	consoleLineBraceInMessage := "2026-07-06T22:56:21.989Z\twarn\tConfig value for pool {default} is missing\t" +
 		`{"resource":{"k8s.pod.name":"otel-agent-qkvqj"}}`
-	consoleLineBraceInMessageNoFields := "2026-07-06T22:56:21.989Z\twarn\tConfig value for pool {default} is missing"
 	consoleLineMalformedFields := "2026-07-06T22:56:21.989Z\twarn\tbroken message\t{\"resource\": invalid}"
 
 	wantTimestamp := time.Date(2026, time.July, 6, 22, 56, 21, 989000000, time.UTC)
@@ -316,25 +327,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			// Checkbox: a brace in ordinary message text, with no trailing
-			// JSON at all, must NOT be flagged as malformed - the line
-			// doesn't end in "}", so there was never an attempt at
-			// structured fields to fail.
-			name:   "console_brace_in_message_not_flagged",
-			format: formatConsole,
-			input:  &entry.Entry{Body: consoleLineBraceInMessageNoFields},
-			expect: &entry.Entry{
-				Timestamp:    wantTimestamp,
-				Severity:     entry.Warn,
-				SeverityText: "warn",
-				Body:         "Config value for pool {default} is missing",
-				Attributes:   map[string]any{},
-			},
-		},
-		{
-			// Checkbox: malformed trailing JSON surfaces as an attribute on
-			// the final entry, not just internally in the split function.
-			name:   "console_malformed_fields_attribute",
+			name:   "console_malformed_fields_degrades_gracefully",
 			format: formatConsole,
 			input:  &entry.Entry{Body: consoleLineMalformedFields},
 			expect: &entry.Entry{
@@ -342,7 +335,7 @@ func TestProcess(t *testing.T) {
 				Severity:     entry.Warn,
 				SeverityText: "warn",
 				Body:         "broken message\t{\"resource\": invalid}",
-				Attributes:   map[string]any{malformedTrailingFieldsAttr: true},
+				Attributes:   map[string]any{},
 			},
 		},
 	}

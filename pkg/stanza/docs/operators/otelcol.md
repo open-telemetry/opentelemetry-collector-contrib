@@ -168,7 +168,45 @@ Configuration:
 </tr>
 </table>
 
-#### Malformed trailing fields in a console-encoded line
+#### A message that legitimately contains a brace
+
+Configuration:
+```yaml
+- type: otelcol
+```
+
+<table>
+<tr><td> Input body </td> <td> Output entry</td></tr>
+<tr>
+<td>
+
+```json
+{
+  "body": "2026-07-06T22:56:21Z\twarn\tConfig value for pool {default} is missing\t{\"resource\":{\"k8s.pod.name\":\"otel-agent\"}}"
+}
+```
+
+</td>
+<td>
+
+```json
+{
+  "timestamp": "2026-07-06T22:56:21Z",
+  "severity": "warn",
+  "body": "Config value for pool {default} is missing",
+  "resource": {
+    "k8s.pod.name": "otel-agent"
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
+A `{` appearing in the message itself (not as the start of real trailing JSON) does not get mistaken for structured fields, and the real trailing `resource` object further along the line is still found and promoted correctly.
+
+#### Trailing text that looks like JSON but isn't valid
 
 Configuration:
 ```yaml
@@ -193,10 +231,7 @@ Configuration:
 {
   "timestamp": "2026-07-06T22:56:21Z",
   "severity": "warn",
-  "body": "broken message\t{\"resource\": invalid}",
-  "attributes": {
-    "otelcol.self_log.malformed_trailing_json": true
-  }
+  "body": "broken message\t{\"resource\": invalid}"
 }
 ```
 
@@ -204,4 +239,4 @@ Configuration:
 </tr>
 </table>
 
-The line is not dropped or errored on - the raw trailing text is preserved as-is in `body`, and the attribute above signals that the loss is visible rather than silent. This is the only case where malformed input does not follow the operator's normal [on_error](../types/on_error.md) behavior; any other unparseable line (e.g. invalid full-line JSON in `json` mode, or a line that doesn't match the `console` shape at all) still triggers `on_error` as usual.
+The line is not dropped or errored on: the message itself is still valid content, and only the optional trailing metadata failed to parse, so the raw remaining text is kept as-is in `body` rather than discarded. This is the one case where unparseable input does not raise `on_error` - any other failure (e.g. invalid full-line JSON in `json` mode, or a line that doesn't match the `console` shape at all) still triggers `on_error` as usual.

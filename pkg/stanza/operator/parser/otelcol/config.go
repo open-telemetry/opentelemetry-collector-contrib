@@ -42,8 +42,14 @@ type Config struct {
 
 // Build will build an otelcol parser operator.
 func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
+	// Schema is fixed, so none of these are user-configurable.
 	c.ParseFrom = entry.NewBodyField()
 	c.ParseTo = entry.RootableField{Field: entry.NewAttributeField()}
+	c.BodyField = nil
+	c.TimeParser = nil
+	c.SeverityConfig = nil
+	c.TraceParser = nil
+	c.ScopeNameParser = nil
 
 	parserOperator, err := c.ParserConfig.Build(set)
 	if err != nil {
