@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
@@ -28,13 +27,6 @@ const (
 	defaultThriftBinaryEndpoint  = "localhost:6832"
 )
 
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"receiver.jaeger.DisableRemoteSampling",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, the Jaeger Receiver will fail to start when it is configured with remote_sampling config. When disabled, the receiver will start and the remote_sampling config will be no-op."),
-	featuregate.WithRegisterToVersion("v0.152.0"),
-)
-
 // NewFactory creates a new Jaeger receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -45,6 +37,16 @@ func NewFactory() receiver.Factory {
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
 func createDefaultConfig() component.Config {
+	thriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	thriftHTTPServerConfig.WriteTimeout = 0
+	thriftHTTPServerConfig.ReadHeaderTimeout = 0
+	thriftHTTPServerConfig.IdleTimeout = 0
+	thriftHTTPServerConfig.KeepAlivesEnabled = false
+	thriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  defaultHTTPEndpoint,
+		Transport: confignet.TransportTypeTCP,
+	}
 	return &Config{
 		Protocols: Protocols{
 			GRPC: configoptional.Default(configgrpc.ServerConfig{
@@ -53,12 +55,7 @@ func createDefaultConfig() component.Config {
 					Transport: confignet.TransportTypeTCP,
 				},
 			}),
-			ThriftHTTP: configoptional.Default(confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  defaultHTTPEndpoint,
-					Transport: confignet.TransportTypeTCP,
-				},
-			}),
+			ThriftHTTP: configoptional.Default(thriftHTTPServerConfig),
 			ThriftBinaryUDP: configoptional.Default(ProtocolUDP{
 				Endpoint:        defaultThriftBinaryEndpoint,
 				ServerConfigUDP: defaultServerConfigUDP(),

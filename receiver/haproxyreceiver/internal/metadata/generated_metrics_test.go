@@ -67,7 +67,7 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["HaproxyRequestsTotal"] = mb.metricHaproxyRequestsTotal.config.AggregationStrategy
+			aggMap["haproxy.requests.total"] = mb.metricHaproxyRequestsTotal.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -82,11 +82,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordHaproxyBackupDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyBytesInputDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyBytesOutputDataPoint(ts, "1")
@@ -108,15 +106,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordHaproxyConnectionsAverageTimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyConnectionsErrorsDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyConnectionsRateDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyConnectionsRetriesDataPoint(ts, "1")
@@ -132,27 +127,21 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordHaproxyRequestsAverageTimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyRequestsDeniedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyRequestsErrorsDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyRequestsQueuedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyRequestsRateDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyRequestsRedispatchedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyRequestsTotalDataPoint(ts, "1", AttributeStatusCode1xx)
@@ -162,30 +151,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordHaproxyResponsesAverageTimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyResponsesDeniedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyResponsesErrorsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyServerSelectedTotalDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxySessionsAverageDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxySessionsCountDataPoint(ts, "1")
 
 			allMetricsCount++
 			mb.RecordHaproxySessionsLimitDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxySessionsRateDataPoint(ts, "1")
@@ -262,7 +245,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Bytes in. Corresponds to HAProxy's `bin` metric.", mi.Description())
-					assert.Equal(t, "by", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -276,7 +259,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Bytes out. Corresponds to HAProxy's `bout` metric.", mi.Description())
-					assert.Equal(t, "by", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -304,7 +287,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Number of bytes that bypassed the HTTP compressor (CPU/BW limit). Corresponds to HAProxy's `comp_byp` metric.", mi.Description())
-					assert.Equal(t, "by", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -332,7 +315,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Number of HTTP response bytes fed to the compressor. Corresponds to HAProxy's `comp_in` metric.", mi.Description())
-					assert.Equal(t, "by", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -346,7 +329,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Number of HTTP response bytes emitted by the compressor. Corresponds to HAProxy's `comp_out` metric.", mi.Description())
-					assert.Equal(t, "by", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)

@@ -10,6 +10,15 @@ extensions:
     ppid_poll_interval: {{.PPIDPollInterval}}
     capabilities:
       reports_available_components: {{.ReportsAvailableComponents}}
+{{- if .IncludeResourceAttributes}}
+    agent_description:
+      include_resource_attributes: true
+{{- end}}
 
 service:
   extensions: [opamp]
+  telemetry:
+    resource:
+      attributes:
+        - name: service.instance.id
+          value: "{{.InstanceUid}}"

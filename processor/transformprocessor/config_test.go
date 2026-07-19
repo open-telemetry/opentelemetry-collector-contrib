@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
@@ -30,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				TraceStatements: []common.ContextStatements{
 					{
 						Context: "span",
@@ -95,7 +96,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "with_conditions"),
 			expected: &Config{
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				TraceStatements: []common.ContextStatements{
 					{
 						Context:    "span",
@@ -186,7 +187,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_path_context"),
 			expected: &Config{
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				TraceStatements: []common.ContextStatements{
 					{
 						Context:    "span",
@@ -216,7 +217,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_inferred_context"),
 			expected: &Config{
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				TraceStatements: []common.ContextStatements{
 					{
 						Statements: []string{
@@ -254,7 +255,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "flat_configuration"),
 			expected: &Config{
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				TraceStatements: []common.ContextStatements{
 					{
 						Statements: []string{
@@ -404,4 +405,26 @@ func Test_MixedConfigurationStyles(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "mixed_configuration_styles").String())
 	require.NoError(t, err)
 	assert.ErrorContains(t, sub.Unmarshal(cfg), "configuring multiple configuration styles is not supported")
+}
+
+func Test_EmptyStatementListItem(t *testing.T) {
+	t.Parallel()
+
+	for _, fieldName := range []string{
+		"trace_statements",
+		"metric_statements",
+		"log_statements",
+		"profile_statements",
+	} {
+		t.Run(fieldName, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := NewFactory().CreateDefaultConfig()
+			conf := confmap.NewFromStringMap(map[string]any{
+				fieldName: []any{nil},
+			})
+
+			require.ErrorContains(t, conf.Unmarshal(cfg), "invalid "+fieldName+" item: empty statement list items are not supported")
+		})
+	}
 }

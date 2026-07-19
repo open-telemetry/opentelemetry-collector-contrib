@@ -114,7 +114,8 @@ var MapAttributeRecord = map[string]AttributeRecord{
 
 var MetricsInfo = metricsInfo{
 	FlinkJobCheckpointCount: metricInfo{
-		Name: "flink.job.checkpoint.count",
+		Name:       "flink.job.checkpoint.count",
+		Attributes: []string{"checkpoint"},
 	},
 	FlinkJobCheckpointInProgress: metricInfo{
 		Name: "flink.job.checkpoint.in_progress",
@@ -138,10 +139,12 @@ var MetricsInfo = metricsInfo{
 		Name: "flink.jvm.cpu.time",
 	},
 	FlinkJvmGcCollectionsCount: metricInfo{
-		Name: "flink.jvm.gc.collections.count",
+		Name:       "flink.jvm.gc.collections.count",
+		Attributes: []string{"garbage_collector_name"},
 	},
 	FlinkJvmGcCollectionsTime: metricInfo{
-		Name: "flink.jvm.gc.collections.time",
+		Name:       "flink.jvm.gc.collections.time",
+		Attributes: []string{"garbage_collector_name"},
 	},
 	FlinkJvmMemoryDirectTotalCapacity: metricInfo{
 		Name: "flink.jvm.memory.direct.total_capacity",
@@ -192,13 +195,16 @@ var MetricsInfo = metricsInfo{
 		Name: "flink.memory.managed.used",
 	},
 	FlinkOperatorRecordCount: metricInfo{
-		Name: "flink.operator.record.count",
+		Name:       "flink.operator.record.count",
+		Attributes: []string{"operator_name", "record"},
 	},
 	FlinkOperatorWatermarkOutput: metricInfo{
-		Name: "flink.operator.watermark.output",
+		Name:       "flink.operator.watermark.output",
+		Attributes: []string{"operator_name"},
 	},
 	FlinkTaskRecordCount: metricInfo{
-		Name: "flink.task.record.count",
+		Name:       "flink.task.record.count",
+		Attributes: []string{"record"},
 	},
 }
 
@@ -235,7 +241,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricFlinkJobCheckpointCount struct {

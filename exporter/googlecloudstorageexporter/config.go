@@ -10,7 +10,10 @@ import (
 	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 var (
@@ -20,8 +23,31 @@ var (
 )
 
 type Config struct {
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	RetrySettings   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+
 	Encoding *component.ID `mapstructure:"encoding"`
 	Bucket   bucketConfig  `mapstructure:"bucket"`
+
+	// UniverseDomain is the universe domain for the Google Cloud Storage service.
+	// Defaults to "googleapis.com". Set to support Sovereign Cloud regions.
+	// See https://pkg.go.dev/google.golang.org/api/option#WithUniverseDomain
+	UniverseDomain string `mapstructure:"universe_domain"`
+
+	// ResourceAttrsToGCS maps GCS upload configuration values to resource attribute values.
+	ResourceAttrsToGCS ResourceAttrsToGCS `mapstructure:"resource_attrs_to_gcs"`
+}
+
+// ResourceAttrsToGCS maps GCS upload configuration values to resource attribute values.
+type ResourceAttrsToGCS struct {
+	// Prefix names the resource attribute whose value (from the first resource of each batch)
+	// is inserted as a partition segment between bucket.partition.prefix and the time format,
+	// e.g. prefix "storage" + attribute "serviceA" -> "storage/serviceA/<time>/...".
+	Prefix string `mapstructure:"prefix"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type bucketConfig struct {
@@ -85,6 +111,9 @@ var _ xconfmap.Validator = (*Config)(nil)
 
 func createDefaultConfig() component.Config {
 	return &Config{
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+		QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+		RetrySettings:   configretry.NewDefaultBackOffConfig(),
 		Bucket: bucketConfig{
 			ReuseIfExists: false,
 			FilePrefix:    "logs",

@@ -48,11 +48,15 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	}))
 	defer cst.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = cst.URL
 	cfg := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: cst.URL,
-		},
-		Format: "json",
+		ClientConfig: clientConfig,
+		Format:       "json",
 	}
 	zexp, err := NewFactory().CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
@@ -66,13 +70,18 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	addr := testutil.GetAvailableLocalAddress(t)
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  addr,
+	}
 	recvCfg := &zipkinreceiver.Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  addr,
-			},
-		},
+		ServerConfig: serverConfig,
 	}
 	zi, err := zipkinreceiver.NewFactory().CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), recvCfg, zexp)
 	assert.NoError(t, err)
@@ -275,11 +284,15 @@ const zipkinSpansJSONJavaLibrary = `
 `
 
 func TestZipkinExporter_invalidFormat(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = "1.2.3.4"
 	config := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "1.2.3.4",
-		},
-		Format: "foobar",
+		ClientConfig: clientConfig,
+		Format:       "foobar",
 	}
 	f := NewFactory()
 	set := exportertest.NewNopSettings(metadata.Type)
@@ -299,11 +312,15 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	}))
 	defer cst.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = cst.URL
 	cfg := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: cst.URL,
-		},
-		Format: "proto",
+		ClientConfig: clientConfig,
+		Format:       "proto",
 	}
 	zexp, err := NewFactory().CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
@@ -318,13 +335,18 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	addr := testutil.GetAvailableLocalAddress(t)
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  addr,
+		Transport: "tcp",
+	}
 	recvCfg := &zipkinreceiver.Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Endpoint:  addr,
-				Transport: "tcp",
-			},
-		},
+		ServerConfig: serverConfig,
 	}
 	zi, err := zipkinreceiver.NewFactory().CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), recvCfg, zexp)
 	require.NoError(t, err)

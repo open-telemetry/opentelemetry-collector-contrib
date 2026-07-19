@@ -157,6 +157,7 @@ func (rcvr *cesReceiver) listMetricDefinitions(ctx context.Context) ([]model.Met
 		},
 		func(err error) bool { return strings.Contains(err.Error(), requestThrottledErrMsg) },
 		internal.NewExponentialBackOff(&rcvr.config.BackOffConfig),
+		rcvr.config.BackOffConfig.MaxElapsedTime,
 	)
 	if err != nil {
 		return []model.MetricInfoList{}, err
@@ -239,7 +240,7 @@ func (rcvr *cesReceiver) listDataPointsForMetric(ctx context.Context, from, to t
 				Dim1:       internal.GetDimension(infoList.Dimensions, 1),
 				Dim2:       internal.GetDimension(infoList.Dimensions, 2),
 				Dim3:       internal.GetDimension(infoList.Dimensions, 3),
-				Period:     rcvr.config.Period,
+				Period:     validPeriods[rcvr.config.Period],
 				Filter:     validFilters[rcvr.config.Filter],
 				From:       from.UnixMilli(),
 				To:         to.UnixMilli(),
@@ -247,6 +248,7 @@ func (rcvr *cesReceiver) listDataPointsForMetric(ctx context.Context, from, to t
 		},
 		func(err error) bool { return strings.Contains(err.Error(), requestThrottledErrMsg) },
 		internal.NewExponentialBackOff(&rcvr.config.BackOffConfig),
+		rcvr.config.BackOffConfig.MaxElapsedTime,
 	)
 }
 

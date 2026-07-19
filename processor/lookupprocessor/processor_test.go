@@ -5,6 +5,7 @@ package lookupprocessor
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/metadata"
@@ -20,13 +23,10 @@ import (
 )
 
 func TestProcessorLookup(t *testing.T) {
-	// Create a mock source with test mappings
 	mappings := map[string]any{
-		"user001":      "Alice Johnson",
-		"user002":      "Bob Smith",
-		"user003":      "Charlie Brown",
-		"svc-frontend": "Frontend Web App",
-		"svc-backend":  "Backend API Service",
+		"key1":  "val1",
+		"key2":  "val2",
+		"rsrc1": "rsrcval1",
 	}
 
 	factory := NewFactoryWithOptions(WithSources(mockMapSourceFactory(mappings)))
@@ -34,20 +34,17 @@ func TestProcessorLookup(t *testing.T) {
 		Source: SourceConfig{Type: "mockmap"},
 		Lookups: []LookupConfig{
 			{
-				Key:     `log.attributes["user.id"]`,
+				Key:     `log.attributes["k"]`,
 				Context: ContextRecord,
 				Attributes: []AttributeMapping{
-					{
-						Destination: "user.name",
-						Default:     "Unknown User",
-					},
+					{Destination: "out", Default: "default"},
 				},
 			},
 			{
-				Key:     `resource.attributes["service.name"]`,
+				Key:     `resource.attributes["rk"]`,
 				Context: ContextResource,
 				Attributes: []AttributeMapping{
-					{Destination: "service.display_name"},
+					{Destination: "rout"},
 				},
 			},
 		},
@@ -65,21 +62,12 @@ func TestProcessorLookup(t *testing.T) {
 
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutStr("service.name", "svc-frontend")
+	rl.Resource().Attributes().PutStr("rk", "rsrc1")
 
 	sl := rl.ScopeLogs().AppendEmpty()
-
-	log1 := sl.LogRecords().AppendEmpty()
-	log1.Body().SetStr("User logged in")
-	log1.Attributes().PutStr("user.id", "user001")
-
-	log2 := sl.LogRecords().AppendEmpty()
-	log2.Body().SetStr("User performed action")
-	log2.Attributes().PutStr("user.id", "user999")
-
-	log3 := sl.LogRecords().AppendEmpty()
-	log3.Body().SetStr("User logged out")
-	log3.Attributes().PutStr("user.id", "user002")
+	sl.LogRecords().AppendEmpty().Attributes().PutStr("k", "key1")
+	sl.LogRecords().AppendEmpty().Attributes().PutStr("k", "missing")
+	sl.LogRecords().AppendEmpty().Attributes().PutStr("k", "key2")
 
 	err = proc.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
@@ -87,25 +75,300 @@ func TestProcessorLookup(t *testing.T) {
 	require.Len(t, sink.AllLogs(), 1)
 	processedLogs := sink.AllLogs()[0]
 
-	resource := processedLogs.ResourceLogs().At(0).Resource()
-	serviceName, ok := resource.Attributes().Get("service.display_name")
-	assert.True(t, ok, "service.display_name should be set")
-	assert.Equal(t, "Frontend Web App", serviceName.Str())
-
-	logRecords := processedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	require.Equal(t, 3, logRecords.Len())
-
-	userName1, ok := logRecords.At(0).Attributes().Get("user.name")
+	rout, ok := processedLogs.ResourceLogs().At(0).Resource().Attributes().Get("rout")
 	assert.True(t, ok)
-	assert.Equal(t, "Alice Johnson", userName1.Str())
+	assert.Equal(t, "rsrcval1", rout.Str())
 
-	userName2, ok := logRecords.At(1).Attributes().Get("user.name")
-	assert.True(t, ok)
-	assert.Equal(t, "Unknown User", userName2.Str())
+	records := processedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	require.Equal(t, 3, records.Len())
 
-	userName3, ok := logRecords.At(2).Attributes().Get("user.name")
+	out1, ok := records.At(0).Attributes().Get("out")
 	assert.True(t, ok)
-	assert.Equal(t, "Bob Smith", userName3.Str())
+	assert.Equal(t, "val1", out1.Str())
+
+	out2, ok := records.At(1).Attributes().Get("out")
+	assert.True(t, ok)
+	assert.Equal(t, "default", out2.Str())
+
+	out3, ok := records.At(2).Attributes().Get("out")
+	assert.True(t, ok)
+	assert.Equal(t, "val2", out3.Str())
+}
+
+func TestProcessorTracesLookup(t *testing.T) {
+	mappings := map[string]any{
+		"key1":  "val1",
+		"key2":  "val2",
+		"rsrc1": "rsrcval1",
+	}
+
+	factory := NewFactoryWithOptions(WithSources(mockMapSourceFactory(mappings)))
+	cfg := &Config{
+		Source: SourceConfig{Type: "mockmap"},
+		Lookups: []LookupConfig{
+			{
+				Key:     `span.attributes["k"]`,
+				Context: ContextRecord,
+				Attributes: []AttributeMapping{
+					{Destination: "out", Default: "default"},
+				},
+			},
+			{
+				Key:     `resource.attributes["rk"]`,
+				Context: ContextResource,
+				Attributes: []AttributeMapping{
+					{Destination: "rout"},
+				},
+			},
+		},
+	}
+
+	sink := &consumertest.TracesSink{}
+	settings := processortest.NewNopSettings(metadata.Type)
+
+	proc, err := factory.CreateTraces(t.Context(), settings, cfg, sink)
+	require.NoError(t, err)
+
+	host := componenttest.NewNopHost()
+	require.NoError(t, proc.Start(t.Context(), host))
+	defer func() { _ = proc.Shutdown(t.Context()) }()
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("rk", "rsrc1")
+
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Spans().AppendEmpty().Attributes().PutStr("k", "key1")
+	ss.Spans().AppendEmpty().Attributes().PutStr("k", "missing")
+	ss.Spans().AppendEmpty().Attributes().PutStr("k", "key2")
+
+	err = proc.ConsumeTraces(t.Context(), traces)
+	require.NoError(t, err)
+
+	require.Len(t, sink.AllTraces(), 1)
+	processedTraces := sink.AllTraces()[0]
+
+	rout, ok := processedTraces.ResourceSpans().At(0).Resource().Attributes().Get("rout")
+	assert.True(t, ok)
+	assert.Equal(t, "rsrcval1", rout.Str())
+
+	spans := processedTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+	require.Equal(t, 3, spans.Len())
+
+	out1, ok := spans.At(0).Attributes().Get("out")
+	assert.True(t, ok)
+	assert.Equal(t, "val1", out1.Str())
+
+	out2, ok := spans.At(1).Attributes().Get("out")
+	assert.True(t, ok)
+	assert.Equal(t, "default", out2.Str())
+
+	out3, ok := spans.At(2).Attributes().Get("out")
+	assert.True(t, ok)
+	assert.Equal(t, "val2", out3.Str())
+}
+
+func TestProcessorMetricsLookup(t *testing.T) {
+	mappings := map[string]any{
+		"key1":  "val1",
+		"key2":  "val2",
+		"rsrc1": "rsrcval1",
+	}
+
+	factory := NewFactoryWithOptions(WithSources(mockMapSourceFactory(mappings)))
+	cfg := &Config{
+		Source: SourceConfig{Type: "mockmap"},
+		Lookups: []LookupConfig{
+			{
+				Key:     `datapoint.attributes["k"]`,
+				Context: ContextRecord,
+				Attributes: []AttributeMapping{
+					{Destination: "out", Default: "default"},
+				},
+			},
+			{
+				Key:     `resource.attributes["rk"]`,
+				Context: ContextResource,
+				Attributes: []AttributeMapping{
+					{Destination: "rout"},
+				},
+			},
+		},
+	}
+
+	sink := &consumertest.MetricsSink{}
+	settings := processortest.NewNopSettings(metadata.Type)
+
+	proc, err := factory.CreateMetrics(t.Context(), settings, cfg, sink)
+	require.NoError(t, err)
+
+	host := componenttest.NewNopHost()
+	require.NoError(t, proc.Start(t.Context(), host))
+	defer func() { _ = proc.Shutdown(t.Context()) }()
+
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("rk", "rsrc1")
+	sm := rm.ScopeMetrics().AppendEmpty()
+
+	gaugeMetric := sm.Metrics().AppendEmpty()
+	gaugeMetric.SetName("gauge")
+	gaugeMetric.SetEmptyGauge().DataPoints().AppendEmpty().Attributes().PutStr("k", "key1")
+	gaugeMetric.Gauge().DataPoints().AppendEmpty().Attributes().PutStr("k", "missing")
+
+	sumMetric := sm.Metrics().AppendEmpty()
+	sumMetric.SetName("sum")
+	sumMetric.SetEmptySum().DataPoints().AppendEmpty().Attributes().PutStr("k", "key2")
+
+	histMetric := sm.Metrics().AppendEmpty()
+	histMetric.SetName("hist")
+	histMetric.SetEmptyHistogram().DataPoints().AppendEmpty().Attributes().PutStr("k", "key1")
+
+	expHistMetric := sm.Metrics().AppendEmpty()
+	expHistMetric.SetName("exphist")
+	expHistMetric.SetEmptyExponentialHistogram().DataPoints().AppendEmpty().Attributes().PutStr("k", "key2")
+
+	summaryMetric := sm.Metrics().AppendEmpty()
+	summaryMetric.SetName("summary")
+	summaryMetric.SetEmptySummary().DataPoints().AppendEmpty().Attributes().PutStr("k", "key1")
+
+	err = proc.ConsumeMetrics(t.Context(), md)
+	require.NoError(t, err)
+
+	require.Len(t, sink.AllMetrics(), 1)
+	processedMetrics := sink.AllMetrics()[0]
+
+	rout, ok := processedMetrics.ResourceMetrics().At(0).Resource().Attributes().Get("rout")
+	assert.True(t, ok)
+	assert.Equal(t, "rsrcval1", rout.Str())
+
+	metrics := processedMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	require.Equal(t, 5, metrics.Len())
+
+	out, ok := metrics.At(0).Gauge().DataPoints().At(0).Attributes().Get("out")
+	assert.True(t, ok)
+	assert.Equal(t, "val1", out.Str())
+
+	out, ok = metrics.At(0).Gauge().DataPoints().At(1).Attributes().Get("out")
+	assert.True(t, ok)
+	assert.Equal(t, "default", out.Str())
+
+	out, ok = metrics.At(1).Sum().DataPoints().At(0).Attributes().Get("out")
+	assert.True(t, ok)
+	assert.Equal(t, "val2", out.Str())
+
+	out, ok = metrics.At(2).Histogram().DataPoints().At(0).Attributes().Get("out")
+	assert.True(t, ok)
+	assert.Equal(t, "val1", out.Str())
+
+	out, ok = metrics.At(3).ExponentialHistogram().DataPoints().At(0).Attributes().Get("out")
+	assert.True(t, ok)
+	assert.Equal(t, "val2", out.Str())
+
+	out, ok = metrics.At(4).Summary().DataPoints().At(0).Attributes().Get("out")
+	assert.True(t, ok)
+	assert.Equal(t, "val1", out.Str())
+}
+
+func TestProcessorLookupError(t *testing.T) {
+	errSource := lookupsource.NewSourceFactory(
+		"errsource",
+		func() lookupsource.SourceConfig { return &mockSourceConfig{} },
+		func(_ context.Context, _ lookupsource.CreateSettings, _ lookupsource.SourceConfig) (lookupsource.Source, error) {
+			return lookupsource.NewSource(
+				func(_ context.Context, _ string) (any, bool, error) {
+					return nil, false, errors.New("source error")
+				},
+				func() string { return "errsource" },
+				nil,
+				nil,
+			), nil
+		},
+	)
+
+	factory := NewFactoryWithOptions(WithSources(errSource))
+	cfg := &Config{
+		Source: SourceConfig{Type: "errsource"},
+		Lookups: []LookupConfig{
+			{
+				Key:        `log.attributes["k"]`,
+				Attributes: []AttributeMapping{{Destination: "out"}},
+			},
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	settings := processortest.NewNopSettings(metadata.Type)
+
+	proc, err := factory.CreateLogs(t.Context(), settings, cfg, sink)
+	require.NoError(t, err)
+
+	host := componenttest.NewNopHost()
+	require.NoError(t, proc.Start(t.Context(), host))
+	defer func() { _ = proc.Shutdown(t.Context()) }()
+
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr("k", "anything")
+
+	require.NoError(t, proc.ConsumeLogs(t.Context(), logs))
+
+	records := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	_, ok := records.At(0).Attributes().Get("out")
+	assert.False(t, ok, "out should not be set when lookup errors")
+}
+
+func TestProcessorMultipleResourcesAndScopes(t *testing.T) {
+	mappings := map[string]any{
+		"key1": "val1",
+		"key2": "val2",
+	}
+
+	factory := NewFactoryWithOptions(WithSources(mockMapSourceFactory(mappings)))
+	cfg := &Config{
+		Source: SourceConfig{Type: "mockmap"},
+		Lookups: []LookupConfig{
+			{
+				Key:        `log.attributes["k"]`,
+				Attributes: []AttributeMapping{{Destination: "out"}},
+			},
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	settings := processortest.NewNopSettings(metadata.Type)
+
+	proc, err := factory.CreateLogs(t.Context(), settings, cfg, sink)
+	require.NoError(t, err)
+
+	host := componenttest.NewNopHost()
+	require.NoError(t, proc.Start(t.Context(), host))
+	defer func() { _ = proc.Shutdown(t.Context()) }()
+
+	logs := plog.NewLogs()
+
+	rl1 := logs.ResourceLogs().AppendEmpty()
+	rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr("k", "key1")
+	rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr("k", "key2")
+
+	rl2 := logs.ResourceLogs().AppendEmpty()
+	rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr("k", "key1")
+
+	require.NoError(t, proc.ConsumeLogs(t.Context(), logs))
+
+	processedLogs := sink.AllLogs()[0]
+	require.Equal(t, 2, processedLogs.ResourceLogs().Len())
+
+	out, ok := processedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("out")
+	assert.True(t, ok)
+	assert.Equal(t, "val1", out.Str())
+
+	out, ok = processedLogs.ResourceLogs().At(0).ScopeLogs().At(1).LogRecords().At(0).Attributes().Get("out")
+	assert.True(t, ok)
+	assert.Equal(t, "val2", out.Str())
+
+	out, ok = processedLogs.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("out")
+	assert.True(t, ok)
+	assert.Equal(t, "val1", out.Str())
 }
 
 func TestProcessorMapResult(t *testing.T) {

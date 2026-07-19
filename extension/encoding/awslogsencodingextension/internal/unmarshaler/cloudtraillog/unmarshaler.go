@@ -507,14 +507,19 @@ func (u *CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *C
 		attrs.PutStr(string(conventions.RPCMethodKey), record.EventName)
 	}
 
-	attrs.PutStr(string(conventionsv138.RPCSystemKey), record.EventType)
+	if !metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.IsEnabled() {
+		attrs.PutStr(string(conventionsv138.RPCSystemKey), record.EventType)
+		if record.EventSource != "" {
+			attrs.PutStr(string(conventionsv138.RPCServiceKey), record.EventSource)
+		}
+	}
+
+	if metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.IsEnabled() {
+		attrs.PutStr(string(conventions.RPCSystemNameKey), record.EventType)
+	}
 
 	if record.APIVersion != "" {
 		attrs.PutStr("aws.cloudtrail.api_version", record.APIVersion)
-	}
-
-	if record.EventSource != "" {
-		attrs.PutStr(string(conventionsv138.RPCServiceKey), record.EventSource)
 	}
 
 	if record.RequestID != "" {
@@ -671,7 +676,7 @@ func enrichWithSessionContext(attrs pcommon.Map, sessionContext *SessionContext)
 }
 
 // defaultAttributes is the legacy helper to add UserIdentity elements
-// todo : remove when feature gate constants.CloudTrailEnableUserIdentityPrefixID is deprecated
+// todo : remove when feature gate extension.awslogsencoding.cloudtrail.enable.user.identity.prefix is deprecated
 func defaultAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
 	if record.UserIdentity.AccountID != "" {
 		attrs.PutStr("aws.user_identity.account_id", record.UserIdentity.AccountID)
@@ -705,7 +710,7 @@ func defaultAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
 }
 
 // withUserIdentityPrefix is a helper to add UserIdentity details with aws.user_identity prefix.
-// todo : remove when feature gate constants.CloudTrailEnableUserIdentityPrefixID is deprecated & move to caller
+// todo : remove when feature gate extension.awslogsencoding.cloudtrail.enable.user.identity.prefix is deprecated & move to caller
 func withUserIdentityPrefix(attrs pcommon.Map, record *CloudTrailRecord) {
 	if record.UserIdentity.AccountID != "" {
 		attrs.PutStr("aws.user_identity.account_id", record.UserIdentity.AccountID)

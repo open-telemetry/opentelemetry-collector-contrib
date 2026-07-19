@@ -1,0 +1,230 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.account.id
+          value:
+            stringValue: "123456789012"
+        - key: cloud.region
+          value:
+            stringValue: us-east-1
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "5"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-0abc1234def567890
+              - key: source.port
+                value:
+                  intValue: "49152"
+              - key: destination.port
+                value:
+                  intValue: "22"
+              - key: network.protocol.name
+                value:
+                  stringValue: tcp
+              - key: aws.vpc.flow.packets
+                value:
+                  intValue: "15"
+              - key: aws.vpc.flow.bytes
+                value:
+                  intValue: "3500"
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1700000000"
+              - key: aws.vpc.flow.action
+                value:
+                  stringValue: ACCEPT
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: OK
+              - key: aws.vpc.id
+                value:
+                  stringValue: vpc-0aaa1111bbbb2222c
+              - key: aws.vpc.subnet.id
+                value:
+                  stringValue: subnet-0ddd3333eeee4444f
+              - key: host.id
+                value:
+                  stringValue: i-0abcdef1234567890
+              - key: network.tcp.flags
+                value:
+                  stringValue: "2"
+              - key: aws.az.id
+                value:
+                  stringValue: use1-az1
+              - key: network.type
+                value:
+                  stringValue: ipv4
+              - key: aws.vpc.flow.traffic_path
+                value:
+                  stringValue: "1"
+              - key: source.address
+                value:
+                  stringValue: 203.0.113.50
+              - key: network.local.address
+                value:
+                  stringValue: 10.0.1.100
+              - key: destination.address
+                value:
+                  stringValue: 10.0.2.200
+            body: {}
+            timeUnixNano: "1700000060000000000"
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "5"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-0abc1234def567890
+              - key: source.port
+                value:
+                  intValue: "55000"
+              - key: destination.port
+                value:
+                  intValue: "53"
+              - key: network.protocol.name
+                value:
+                  stringValue: udp
+              - key: aws.vpc.flow.packets
+                value:
+                  intValue: "2"
+              - key: aws.vpc.flow.bytes
+                value:
+                  intValue: "140"
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1700000010"
+              - key: aws.vpc.flow.action
+                value:
+                  stringValue: REJECT
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: OK
+              - key: aws.vpc.id
+                value:
+                  stringValue: vpc-0aaa1111bbbb2222c
+              - key: aws.vpc.subnet.id
+                value:
+                  stringValue: subnet-0ddd3333eeee4444f
+              - key: host.id
+                value:
+                  stringValue: i-0abcdef1234567890
+              - key: aws.az.id
+                value:
+                  stringValue: use1-az1
+              - key: network.type
+                value:
+                  stringValue: ipv4
+              - key: aws.vpc.flow.traffic_path
+                value:
+                  stringValue: "1"
+              - key: source.address
+                value:
+                  stringValue: 10.0.1.100
+              - key: destination.address
+                value:
+                  stringValue: 10.0.3.53
+            body: {}
+            timeUnixNano: "1700000070000000000"
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "5"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-0fff9999aaaa8888b
+              - key: source.port
+                value:
+                  intValue: "443"
+              - key: destination.port
+                value:
+                  intValue: "60000"
+              - key: network.protocol.name
+                value:
+                  stringValue: tcp
+              - key: aws.vpc.flow.packets
+                value:
+                  intValue: "100"
+              - key: aws.vpc.flow.bytes
+                value:
+                  intValue: "50000"
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1700000020"
+              - key: aws.vpc.flow.action
+                value:
+                  stringValue: ACCEPT
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: OK
+              - key: aws.vpc.id
+                value:
+                  stringValue: vpc-0aaa1111bbbb2222c
+              - key: aws.vpc.subnet.id
+                value:
+                  stringValue: subnet-0eee5555ffff6666a
+              - key: host.id
+                value:
+                  stringValue: i-0fedcba0987654321
+              - key: network.tcp.flags
+                value:
+                  stringValue: "19"
+              - key: aws.az.id
+                value:
+                  stringValue: use1-az2
+              - key: network.type
+                value:
+                  stringValue: ipv4
+              - key: aws.vpc.flow.traffic_path
+                value:
+                  stringValue: "2"
+              - key: source.address
+                value:
+                  stringValue: 203.0.113.50
+              - key: network.local.address
+                value:
+                  stringValue: 192.168.1.50
+              - key: destination.address
+                value:
+                  stringValue: 192.168.2.100
+            body: {}
+            timeUnixNano: "1700000080000000000"
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "5"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-0fff9999aaaa8888b
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1700000030"
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+              - key: aws.vpc.id
+                value:
+                  stringValue: vpc-0aaa1111bbbb2222c
+              - key: aws.vpc.subnet.id
+                value:
+                  stringValue: subnet-0eee5555ffff6666a
+              - key: host.id
+                value:
+                  stringValue: i-0fedcba0987654321
+              - key: aws.az.id
+                value:
+                  stringValue: use1-az2
+            body: {}
+            timeUnixNano: "1700000090000000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.vpcflow
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

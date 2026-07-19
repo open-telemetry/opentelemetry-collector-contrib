@@ -1,6 +1,12 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.computer.name
           value:
             stringValue: CustomServer
@@ -138,7 +144,7 @@ resourceMetrics:
                   startTimeUnixNano: "1679438452573063800"
                   timeUnixNano: "1679438452575044500"
             name: sqlserver.transaction_log.flush.data.rate
-            unit: By/s
+            unit: 'By/s'
           - description: Number of log flushes.
             gauge:
               dataPoints:

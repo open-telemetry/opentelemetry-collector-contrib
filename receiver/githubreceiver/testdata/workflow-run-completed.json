@@ -33,11 +33,11 @@
     "referenced_workflows": [],
     "run_started_at": "2025-04-16T21:08:53Z",
     "triggering_actor": {
-      "login": "adrielp",
+      "login": "username",
       "id": 25961386,
       "node_id": "MDQ6VXNlcjI1OTYxMzg2",
-      "url": "https://api.github.com/users/adrielp",
-      "html_url": "https://github.com/adrielp",
+      "url": "https://api.github.com/users/username",
+      "html_url": "https://github.com/username",
       "site_admin": false
     },
     "jobs_url": "https://api.github.com/repos/open-telemetry/open-telemetry-otel-collector/actions/runs/14460881260/jobs",

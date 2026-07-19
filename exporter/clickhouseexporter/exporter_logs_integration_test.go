@@ -34,7 +34,7 @@ func newTestLogsExporter(t *testing.T, dsn string, testSchemaFeatures bool, fns 
 	// Tests the schema feature flags by disabling newer columns. The insert logic should adapt.
 	if testSchemaFeatures {
 		exporter.schemaFeatures.EventName = false
-		exporter.renderInsertLogsSQL()
+		require.NoError(t, exporter.renderInsertLogsSQL())
 	}
 
 	t.Cleanup(func() { _ = exporter.shutdown(t.Context()) })
@@ -54,7 +54,6 @@ func verifyExportLogs(t *testing.T, exporter *logsExporter, mapBody, testSchemaF
 
 	type log struct {
 		Timestamp          time.Time         `ch:"Timestamp"`
-		TimestampTime      time.Time         `ch:"TimestampTime"`
 		TraceID            string            `ch:"TraceId"`
 		SpanID             string            `ch:"SpanId"`
 		TraceFlags         uint8             `ch:"TraceFlags"`
@@ -74,7 +73,6 @@ func verifyExportLogs(t *testing.T, exporter *logsExporter, mapBody, testSchemaF
 
 	expectedLog := log{
 		Timestamp:         telemetryTimestamp,
-		TimestampTime:     telemetryTimestamp,
 		TraceID:           "01020300000000000000000000000000",
 		SpanID:            "0102030000000000",
 		SeverityText:      "error",

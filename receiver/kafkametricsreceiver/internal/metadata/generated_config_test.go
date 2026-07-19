@@ -20,7 +20,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -207,13 +207,192 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestKafkaBrokerLogRetentionPeriodMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaBrokerLogRetentionPeriod
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaBrokerLogRetentionPeriodMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.broker.log_retention_period doesn't have an attribute invalid, valid attributes: [broker]")
+
+	cfg = DefaultMetricsConfig().KafkaBrokerLogRetentionPeriod
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestKafkaConsumerGroupLagMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaConsumerGroupLag
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaConsumerGroupLagMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.consumer_group.lag doesn't have an attribute invalid, valid attributes: [group, topic, partition]")
+
+	cfg = DefaultMetricsConfig().KafkaConsumerGroupLag
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestKafkaConsumerGroupLagSumMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaConsumerGroupLagSum
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaConsumerGroupLagSumMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.consumer_group.lag_sum doesn't have an attribute invalid, valid attributes: [group, topic]")
+
+	cfg = DefaultMetricsConfig().KafkaConsumerGroupLagSum
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestKafkaConsumerGroupMembersMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaConsumerGroupMembers
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaConsumerGroupMembersMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.consumer_group.members doesn't have an attribute invalid, valid attributes: [group]")
+
+	cfg = DefaultMetricsConfig().KafkaConsumerGroupMembers
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestKafkaConsumerGroupOffsetMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaConsumerGroupOffset
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaConsumerGroupOffsetMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.consumer_group.offset doesn't have an attribute invalid, valid attributes: [group, topic, partition]")
+
+	cfg = DefaultMetricsConfig().KafkaConsumerGroupOffset
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestKafkaConsumerGroupOffsetSumMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaConsumerGroupOffsetSum
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaConsumerGroupOffsetSumMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.consumer_group.offset_sum doesn't have an attribute invalid, valid attributes: [group, topic]")
+
+	cfg = DefaultMetricsConfig().KafkaConsumerGroupOffsetSum
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestKafkaPartitionCurrentOffsetMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaPartitionCurrentOffset
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaPartitionCurrentOffsetMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.partition.current_offset doesn't have an attribute invalid, valid attributes: [topic, partition]")
+
+	cfg = DefaultMetricsConfig().KafkaPartitionCurrentOffset
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestKafkaPartitionOldestOffsetMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaPartitionOldestOffset
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaPartitionOldestOffsetMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.partition.oldest_offset doesn't have an attribute invalid, valid attributes: [topic, partition]")
+
+	cfg = DefaultMetricsConfig().KafkaPartitionOldestOffset
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestKafkaPartitionReplicasMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaPartitionReplicas
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaPartitionReplicasMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.partition.replicas doesn't have an attribute invalid, valid attributes: [topic, partition]")
+
+	cfg = DefaultMetricsConfig().KafkaPartitionReplicas
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestKafkaPartitionReplicasInSyncMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaPartitionReplicasInSync
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaPartitionReplicasInSyncMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.partition.replicas_in_sync doesn't have an attribute invalid, valid attributes: [topic, partition]")
+
+	cfg = DefaultMetricsConfig().KafkaPartitionReplicasInSync
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestKafkaTopicLogRetentionPeriodMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaTopicLogRetentionPeriod
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaTopicLogRetentionPeriodMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.topic.log_retention_period doesn't have an attribute invalid, valid attributes: [topic]")
+
+	cfg = DefaultMetricsConfig().KafkaTopicLogRetentionPeriod
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestKafkaTopicLogRetentionSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaTopicLogRetentionSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaTopicLogRetentionSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.topic.log_retention_size doesn't have an attribute invalid, valid attributes: [topic]")
+
+	cfg = DefaultMetricsConfig().KafkaTopicLogRetentionSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestKafkaTopicMinInsyncReplicasMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaTopicMinInsyncReplicas
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaTopicMinInsyncReplicasMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.topic.min_insync_replicas doesn't have an attribute invalid, valid attributes: [topic]")
+
+	cfg = DefaultMetricsConfig().KafkaTopicMinInsyncReplicas
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestKafkaTopicPartitionsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaTopicPartitions
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaTopicPartitionsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.topic.partitions doesn't have an attribute invalid, valid attributes: [topic]")
+
+	cfg = DefaultMetricsConfig().KafkaTopicPartitions
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestKafkaTopicReplicationFactorMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().KafkaTopicReplicationFactor
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []KafkaTopicReplicationFactorMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric kafka.topic.replication_factor doesn't have an attribute invalid, valid attributes: [topic]")
+
+	cfg = DefaultMetricsConfig().KafkaTopicReplicationFactor
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

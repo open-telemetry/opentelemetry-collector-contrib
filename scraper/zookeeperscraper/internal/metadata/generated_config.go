@@ -3,17 +3,375 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// ZookeeperConnectionActiveMetricConfig provides config for the zookeeper.connection.active metric.
+type ZookeeperConnectionActiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ZookeeperConnectionActiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ZookeeperDataTreeEphemeralNodeCountMetricConfig provides config for the zookeeper.data_tree.ephemeral_node.count metric.
+type ZookeeperDataTreeEphemeralNodeCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ZookeeperDataTreeEphemeralNodeCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ZookeeperDataTreeSizeMetricConfig provides config for the zookeeper.data_tree.size metric.
+type ZookeeperDataTreeSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ZookeeperDataTreeSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ZookeeperFileDescriptorLimitMetricConfig provides config for the zookeeper.file_descriptor.limit metric.
+type ZookeeperFileDescriptorLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ZookeeperFileDescriptorLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ZookeeperFileDescriptorOpenMetricConfig provides config for the zookeeper.file_descriptor.open metric.
+type ZookeeperFileDescriptorOpenMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ZookeeperFileDescriptorOpenMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ZookeeperFollowerCountMetricAttributeKey specifies the key of an attribute for the zookeeper.follower.count metric.
+type ZookeeperFollowerCountMetricAttributeKey string
+
+const (
+	ZookeeperFollowerCountMetricAttributeKeyState ZookeeperFollowerCountMetricAttributeKey = "state"
+)
+
+// ZookeeperFollowerCountMetricConfig provides config for the zookeeper.follower.count metric.
+type ZookeeperFollowerCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ZookeeperFollowerCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ZookeeperFollowerCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ZookeeperFollowerCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ZookeeperFollowerCountMetricAttributeKeyState:
+		default:
+			return fmt.Errorf("metric zookeeper.follower.count doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ZookeeperFsyncExceededThresholdCountMetricConfig provides config for the zookeeper.fsync.exceeded_threshold.count metric.
+type ZookeeperFsyncExceededThresholdCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ZookeeperFsyncExceededThresholdCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ZookeeperLatencyAvgMetricConfig provides config for the zookeeper.latency.avg metric.
+type ZookeeperLatencyAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ZookeeperLatencyAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ZookeeperLatencyMaxMetricConfig provides config for the zookeeper.latency.max metric.
+type ZookeeperLatencyMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ZookeeperLatencyMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ZookeeperLatencyMinMetricConfig provides config for the zookeeper.latency.min metric.
+type ZookeeperLatencyMinMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ZookeeperLatencyMinMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ZookeeperPacketCountMetricAttributeKey specifies the key of an attribute for the zookeeper.packet.count metric.
+type ZookeeperPacketCountMetricAttributeKey string
+
+const (
+	ZookeeperPacketCountMetricAttributeKeyDirection ZookeeperPacketCountMetricAttributeKey = "direction"
+)
+
+// ZookeeperPacketCountMetricConfig provides config for the zookeeper.packet.count metric.
+type ZookeeperPacketCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ZookeeperPacketCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ZookeeperPacketCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ZookeeperPacketCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ZookeeperPacketCountMetricAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric zookeeper.packet.count doesn't have an attribute %v, valid attributes: [direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ZookeeperRequestActiveMetricConfig provides config for the zookeeper.request.active metric.
+type ZookeeperRequestActiveMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ZookeeperRequestActiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ZookeeperRuokMetricConfig provides config for the zookeeper.ruok metric.
+type ZookeeperRuokMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ZookeeperRuokMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ZookeeperSyncPendingMetricConfig provides config for the zookeeper.sync.pending metric.
+type ZookeeperSyncPendingMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ZookeeperSyncPendingMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ZookeeperWatchCountMetricConfig provides config for the zookeeper.watch.count metric.
+type ZookeeperWatchCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ZookeeperWatchCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ZookeeperZnodeCountMetricConfig provides config for the zookeeper.znode.count metric.
+type ZookeeperZnodeCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ZookeeperZnodeCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,72 +387,76 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for zookeeper metrics.
 type MetricsConfig struct {
-	ZookeeperConnectionActive            MetricConfig `mapstructure:"zookeeper.connection.active"`
-	ZookeeperDataTreeEphemeralNodeCount  MetricConfig `mapstructure:"zookeeper.data_tree.ephemeral_node.count"`
-	ZookeeperDataTreeSize                MetricConfig `mapstructure:"zookeeper.data_tree.size"`
-	ZookeeperFileDescriptorLimit         MetricConfig `mapstructure:"zookeeper.file_descriptor.limit"`
-	ZookeeperFileDescriptorOpen          MetricConfig `mapstructure:"zookeeper.file_descriptor.open"`
-	ZookeeperFollowerCount               MetricConfig `mapstructure:"zookeeper.follower.count"`
-	ZookeeperFsyncExceededThresholdCount MetricConfig `mapstructure:"zookeeper.fsync.exceeded_threshold.count"`
-	ZookeeperLatencyAvg                  MetricConfig `mapstructure:"zookeeper.latency.avg"`
-	ZookeeperLatencyMax                  MetricConfig `mapstructure:"zookeeper.latency.max"`
-	ZookeeperLatencyMin                  MetricConfig `mapstructure:"zookeeper.latency.min"`
-	ZookeeperPacketCount                 MetricConfig `mapstructure:"zookeeper.packet.count"`
-	ZookeeperRequestActive               MetricConfig `mapstructure:"zookeeper.request.active"`
-	ZookeeperRuok                        MetricConfig `mapstructure:"zookeeper.ruok"`
-	ZookeeperSyncPending                 MetricConfig `mapstructure:"zookeeper.sync.pending"`
-	ZookeeperWatchCount                  MetricConfig `mapstructure:"zookeeper.watch.count"`
-	ZookeeperZnodeCount                  MetricConfig `mapstructure:"zookeeper.znode.count"`
+	ZookeeperConnectionActive            ZookeeperConnectionActiveMetricConfig            `mapstructure:"zookeeper.connection.active"`
+	ZookeeperDataTreeEphemeralNodeCount  ZookeeperDataTreeEphemeralNodeCountMetricConfig  `mapstructure:"zookeeper.data_tree.ephemeral_node.count"`
+	ZookeeperDataTreeSize                ZookeeperDataTreeSizeMetricConfig                `mapstructure:"zookeeper.data_tree.size"`
+	ZookeeperFileDescriptorLimit         ZookeeperFileDescriptorLimitMetricConfig         `mapstructure:"zookeeper.file_descriptor.limit"`
+	ZookeeperFileDescriptorOpen          ZookeeperFileDescriptorOpenMetricConfig          `mapstructure:"zookeeper.file_descriptor.open"`
+	ZookeeperFollowerCount               ZookeeperFollowerCountMetricConfig               `mapstructure:"zookeeper.follower.count"`
+	ZookeeperFsyncExceededThresholdCount ZookeeperFsyncExceededThresholdCountMetricConfig `mapstructure:"zookeeper.fsync.exceeded_threshold.count"`
+	ZookeeperLatencyAvg                  ZookeeperLatencyAvgMetricConfig                  `mapstructure:"zookeeper.latency.avg"`
+	ZookeeperLatencyMax                  ZookeeperLatencyMaxMetricConfig                  `mapstructure:"zookeeper.latency.max"`
+	ZookeeperLatencyMin                  ZookeeperLatencyMinMetricConfig                  `mapstructure:"zookeeper.latency.min"`
+	ZookeeperPacketCount                 ZookeeperPacketCountMetricConfig                 `mapstructure:"zookeeper.packet.count"`
+	ZookeeperRequestActive               ZookeeperRequestActiveMetricConfig               `mapstructure:"zookeeper.request.active"`
+	ZookeeperRuok                        ZookeeperRuokMetricConfig                        `mapstructure:"zookeeper.ruok"`
+	ZookeeperSyncPending                 ZookeeperSyncPendingMetricConfig                 `mapstructure:"zookeeper.sync.pending"`
+	ZookeeperWatchCount                  ZookeeperWatchCountMetricConfig                  `mapstructure:"zookeeper.watch.count"`
+	ZookeeperZnodeCount                  ZookeeperZnodeCountMetricConfig                  `mapstructure:"zookeeper.znode.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		ZookeeperConnectionActive: MetricConfig{
+		ZookeeperConnectionActive: ZookeeperConnectionActiveMetricConfig{
 			Enabled: true,
 		},
-		ZookeeperDataTreeEphemeralNodeCount: MetricConfig{
+		ZookeeperDataTreeEphemeralNodeCount: ZookeeperDataTreeEphemeralNodeCountMetricConfig{
 			Enabled: true,
 		},
-		ZookeeperDataTreeSize: MetricConfig{
+		ZookeeperDataTreeSize: ZookeeperDataTreeSizeMetricConfig{
 			Enabled: true,
 		},
-		ZookeeperFileDescriptorLimit: MetricConfig{
+		ZookeeperFileDescriptorLimit: ZookeeperFileDescriptorLimitMetricConfig{
 			Enabled: true,
 		},
-		ZookeeperFileDescriptorOpen: MetricConfig{
+		ZookeeperFileDescriptorOpen: ZookeeperFileDescriptorOpenMetricConfig{
 			Enabled: true,
 		},
-		ZookeeperFollowerCount: MetricConfig{
+		ZookeeperFollowerCount: ZookeeperFollowerCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ZookeeperFollowerCountMetricAttributeKey{ZookeeperFollowerCountMetricAttributeKeyState},
+		},
+		ZookeeperFsyncExceededThresholdCount: ZookeeperFsyncExceededThresholdCountMetricConfig{
 			Enabled: true,
 		},
-		ZookeeperFsyncExceededThresholdCount: MetricConfig{
+		ZookeeperLatencyAvg: ZookeeperLatencyAvgMetricConfig{
 			Enabled: true,
 		},
-		ZookeeperLatencyAvg: MetricConfig{
+		ZookeeperLatencyMax: ZookeeperLatencyMaxMetricConfig{
 			Enabled: true,
 		},
-		ZookeeperLatencyMax: MetricConfig{
+		ZookeeperLatencyMin: ZookeeperLatencyMinMetricConfig{
 			Enabled: true,
 		},
-		ZookeeperLatencyMin: MetricConfig{
+		ZookeeperPacketCount: ZookeeperPacketCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ZookeeperPacketCountMetricAttributeKey{ZookeeperPacketCountMetricAttributeKeyDirection},
+		},
+		ZookeeperRequestActive: ZookeeperRequestActiveMetricConfig{
 			Enabled: true,
 		},
-		ZookeeperPacketCount: MetricConfig{
+		ZookeeperRuok: ZookeeperRuokMetricConfig{
 			Enabled: true,
 		},
-		ZookeeperRequestActive: MetricConfig{
+		ZookeeperSyncPending: ZookeeperSyncPendingMetricConfig{
 			Enabled: true,
 		},
-		ZookeeperRuok: MetricConfig{
+		ZookeeperWatchCount: ZookeeperWatchCountMetricConfig{
 			Enabled: true,
 		},
-		ZookeeperSyncPending: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperWatchCount: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperZnodeCount: MetricConfig{
+		ZookeeperZnodeCount: ZookeeperZnodeCountMetricConfig{
 			Enabled: true,
 		},
 	}
@@ -149,9 +511,14 @@ type MetricsBuilderConfig struct {
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

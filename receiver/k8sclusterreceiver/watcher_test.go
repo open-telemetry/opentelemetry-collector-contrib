@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -36,6 +37,8 @@ var commonPodMetadata = map[string]string{
 	"k8s.pod.label.foo1":     "",
 	"pod.creation_timestamp": "0001-01-01T00:00:00Z",
 }
+
+const entityEventsSpecificationFeatureGateID = "pkg.experimentalmetricmetadata.useEntityEventsSpecification"
 
 func TestSetupMetadataExporters(t *testing.T) {
 	type fields struct {
@@ -250,13 +253,13 @@ func TestConditionalInformerSetup(t *testing.T) {
 	}{
 		{
 			name:   "default_config_no_pv_pvc",
-			config: &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
+			config: &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()},
 			wantPV: false, wantPVC: false,
 		},
 		{
 			name: "pv_phase_metric_enabled",
 			config: func() *Config {
-				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 				cfg.Metrics.K8sPersistentvolumeStatusPhase.Enabled = true
 				return cfg
 			}(),
@@ -265,7 +268,7 @@ func TestConditionalInformerSetup(t *testing.T) {
 		{
 			name: "pv_capacity_metric_enabled",
 			config: func() *Config {
-				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 				cfg.Metrics.K8sPersistentvolumeStorageCapacity.Enabled = true
 				return cfg
 			}(),
@@ -274,7 +277,7 @@ func TestConditionalInformerSetup(t *testing.T) {
 		{
 			name: "pvc_phase_metric_enabled",
 			config: func() *Config {
-				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 				cfg.Metrics.K8sPersistentvolumeclaimStatusPhase.Enabled = true
 				return cfg
 			}(),
@@ -283,7 +286,7 @@ func TestConditionalInformerSetup(t *testing.T) {
 		{
 			name: "pvc_capacity_metric_enabled",
 			config: func() *Config {
-				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 				cfg.Metrics.K8sPersistentvolumeclaimStorageCapacity.Enabled = true
 				return cfg
 			}(),
@@ -292,7 +295,7 @@ func TestConditionalInformerSetup(t *testing.T) {
 		{
 			name: "pvc_request_metric_enabled",
 			config: func() *Config {
-				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 				cfg.Metrics.K8sPersistentvolumeclaimStorageRequest.Enabled = true
 				return cfg
 			}(),
@@ -301,14 +304,14 @@ func TestConditionalInformerSetup(t *testing.T) {
 		{
 			name: "metadata_exporters_configured",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				MetadataExporters:    []string{"signalfx"},
 			},
 			wantPV: true, wantPVC: true,
 		},
 		{
 			name:           "entity_log_consumer_set",
-			config:         &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
+			config:         &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()},
 			entityConsumer: consumertest.NewNop(),
 			wantPV:         true, wantPVC: true,
 		},
@@ -424,6 +427,48 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	}
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step5, step6)
+}
+
+func TestSyncMetadataAndEmitEntityEventsWithEntityEventsSpecificationFeatureGate(t *testing.T) {
+	setEntityEventsSpecificationFeatureGate(t, true)
+
+	client := newFakeClientWithAllResources()
+
+	logsConsumer := new(consumertest.LogsSink)
+	pods := createPods(t, client, 1, false)
+	pod := pods[0]
+
+	rw := newResourceWatcher(receivertest.NewNopSettings(metadata.Type), &Config{MetadataCollectionInterval: 2 * time.Hour}, metadata.NewStore())
+	rw.entityLogConsumer = logsConsumer
+
+	step1 := time.Now()
+	rw.syncMetadataUpdate(nil, rw.objMetadata(pod))
+	step2 := time.Now()
+
+	rw.syncMetadataUpdate(rw.objMetadata(pod), nil)
+	step3 := time.Now()
+
+	require.Equal(t, 2, logsConsumer.LogRecordCount())
+
+	lr := logsConsumer.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	expected := map[string]any{
+		"entity.report.interval": int64(7200), // 2h in seconds
+		"entity.type":            "k8s.pod",
+		"entity.id":              map[string]any{"k8s.pod.uid": "pod0"},
+		"entity.description":     map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z", "k8s.pod.phase": "Unknown", "k8s.namespace.name": "test", "k8s.pod.name": "0", "k8s.node.name": "test-node"},
+	}
+	assert.Equal(t, "entity.state", lr.EventName())
+	assert.Equal(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
+
+	lr = logsConsumer.AllLogs()[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	expected = map[string]any{
+		"entity.type": "k8s.pod",
+		"entity.id":   map[string]any{"k8s.pod.uid": "pod0"},
+	}
+	assert.Equal(t, "entity.delete", lr.EventName())
+	assert.Equal(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
 }
 
 func TestSyncMetadataAndEmitEntityEventsForPV(t *testing.T) {
@@ -876,4 +921,23 @@ func podWithAdditionalLabels(labels map[string]string, pod *corev1.Pod) any {
 	maps0.Copy(pod.Labels, labels)
 
 	return pod
+}
+
+func setEntityEventsSpecificationFeatureGate(t *testing.T, enabled bool) {
+	t.Helper()
+
+	previous := false
+	found := false
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == entityEventsSpecificationFeatureGateID {
+			previous = gate.IsEnabled()
+			found = true
+		}
+	})
+	require.True(t, found, "feature gate %q is not registered", entityEventsSpecificationFeatureGateID)
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(entityEventsSpecificationFeatureGateID, enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(entityEventsSpecificationFeatureGateID, previous))
+	})
 }
