@@ -9,6 +9,6 @@ This component has the following feature gates:
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion` | alpha | Enables the Prometheus created-timestamps-zero-injection feature. Created timestamps are injected as 0-valued samples when appropriate. This is disabled by default due to worse CPU performance with higher metric volumes. | v0.113.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40355) |
-| `receiver.prometheusreceiver.IgnoreScopeInfoMetric` | alpha | When enabled, the `otel_scope_info` metric is ignored for scope attribute extraction. | v0.148.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41502) |
+| `receiver.prometheusreceiver.IgnoreScopeInfoMetric` | beta | When enabled, the `otel_scope_info` metric is ignored for scope attribute extraction. | v0.148.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41502) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

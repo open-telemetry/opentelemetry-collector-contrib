@@ -2651,3 +2651,28 @@ func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 		assert.Contains(t, string(p), e)
 	}
 }
+
+func TestBuildHTTPHeaders(t *testing.T) {
+	buildInfo := component.BuildInfo{Version: "1.2.3"}
+
+	t.Run("splunk_app_version set explicitly", func(t *testing.T) {
+		cfg := &Config{
+			Token:            "test-token",
+			SplunkAppName:    "myapp",
+			SplunkAppVersion: "9.9.9",
+		}
+		headers := buildHTTPHeaders(cfg, buildInfo)
+		assert.Equal(t, "9.9.9", headers["__splunk_app_version"])
+		assert.Equal(t, "myapp/9.9.9", headers["User-Agent"])
+	})
+
+	t.Run("splunk_app_version unset falls back to build version", func(t *testing.T) {
+		cfg := &Config{
+			Token:         "test-token",
+			SplunkAppName: "myapp",
+		}
+		headers := buildHTTPHeaders(cfg, buildInfo)
+		assert.Equal(t, "1.2.3", headers["__splunk_app_version"])
+		assert.Equal(t, "myapp/1.2.3", headers["User-Agent"])
+	})
+}

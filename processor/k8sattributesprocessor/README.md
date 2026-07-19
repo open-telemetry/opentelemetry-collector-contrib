@@ -7,6 +7,7 @@ The Kubernetes Attributes Processor allows adding k8s metadata to resource attri
 | ------------- |-----------|
 | Stability     | [development]: profiles   |
 |               | [beta]: logs, metrics, traces   |
+| Semantic Conventions Version | 1.42.0 |
 | Distributions | [contrib], [k8s] |
 | Warnings      | [Memory consumption, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fk8sattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fk8sattributes) |
@@ -1106,7 +1107,7 @@ Feature gates can be enabled using the `--feature-gates` flag:
 
 ## Semantic Conventions Compatibility
 
-The processor is moving towards the latest [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/registry/attributes/k8s/)
+The processor is compatible with the latest `stable` [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/registry/attributes/k8s/)
 through the following feature gates:
 - `processor.k8sattributes.DontEmitV0K8sConventions`
 - `processor.k8sattributes.EmitV1K8sConventions`
@@ -1123,7 +1124,7 @@ The breaking changes between the 2 schemas are the following:
 - `k8s.namespace.annotations.<key>` -> `k8s.namespace.annotation.<key>`
 
 All attributes emitted through the `processor.k8sattributes.EmitV1K8sConventions` feature gate
-are currently in `release_candidate` stability and are actively moving towards `stable` stability.
+are currently in `stable` stability.
 
 ## Available Benchmarks
 

@@ -4,6 +4,7 @@ display_name: ClickHouse Exporter
 status:
   class: exporter
   stability:
+    development: [profiles]
     alpha: [metrics]
     beta: [traces, logs]
   distributions: [contrib]
