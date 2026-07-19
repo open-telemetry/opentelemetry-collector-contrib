@@ -1274,7 +1274,7 @@ func TestRecordWorkerThreadMetrics(t *testing.T) {
 	cfg.Metrics.SqlserverWorkerThreadCount.Enabled = true
 	cfg.Metrics.SqlserverWorkerRequestCount.Enabled = true
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
 
 	var workerScraper *sqlServerScraperHelper
@@ -1288,7 +1288,11 @@ func TestRecordWorkerThreadMetrics(t *testing.T) {
 
 	err := workerScraper.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
-	defer assert.NoError(t, workerScraper.Shutdown(t.Context()))
+	defer func() {
+		assert.NoError(t, workerScraper.Shutdown(t.Context()))
+		// The receiver owns the shared pool; close it here in the test.
+		assert.NoError(t, provider.close())
+	}()
 
 	workerScraper.client = mockClient{
 		instanceName: workerScraper.config.InstanceName,
