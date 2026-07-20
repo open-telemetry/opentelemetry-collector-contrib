@@ -60,6 +60,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	d.rb.SetCloudPlatform(conventions.CloudPlatformOracleCloudOKE.Value.AsString())
 
 	d.rb.SetCloudRegion(compute.RegionID)
+	d.rb.SetCloudResourceID(compute.HostID)
 	d.rb.SetCloudAvailabilityZone(compute.AvailabilityDomain)
 	d.rb.SetHostID(compute.HostID)
 	d.rb.SetHostName(compute.HostDisplayName)

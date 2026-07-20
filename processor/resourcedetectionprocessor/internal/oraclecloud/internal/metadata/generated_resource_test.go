@@ -17,6 +17,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetCloudPlatform("cloud.platform-val")
 			rb.SetCloudProvider("cloud.provider-val")
 			rb.SetCloudRegion("cloud.region-val")
+			rb.SetCloudResourceID("cloud.resource_id-val")
 			rb.SetHostID("host.id-val")
 			rb.SetHostName("host.name-val")
 			rb.SetHostType("host.type-val")
@@ -28,9 +29,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 9, res.Attributes().Len())
+				assert.Equal(t, 10, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 9, res.Attributes().Len())
+				assert.Equal(t, 10, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -57,6 +58,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "cloud.region-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("cloud.resource_id")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "cloud.resource_id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.id")
 			assert.True(t, ok)

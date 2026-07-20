@@ -24,6 +24,10 @@ resource_attributes:
     description: The Oracle Cloud region identifier for this instance (e.g., "us-phoenix-1").
     type: string
     enabled: true
+  cloud.resource_id:
+    description: The OCID (Oracle Cloud Identifier) of the host instance (unique per compute instance).
+    type: string
+    enabled: true
   host.id:
     description: The OCID (Oracle Cloud Identifier) of the host instance (unique per compute instance).
     type: string
