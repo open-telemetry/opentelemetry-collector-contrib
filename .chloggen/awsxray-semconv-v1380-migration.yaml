@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/awsxray
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add feature gates to migrate semantic conventions from v1.12.0 to v1.38.0
+note: Add feature gates to migrate semantic conventions from v1.12.0 to v1.40.0
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46537]
@@ -17,9 +17,9 @@ issues: [46537]
 # Use pipe (|) for multiline entries.
 subtext: |
   Four new alpha feature gates control the migration:
-  - `exporter.awsxray.EmitV1HTTPNetworkConventions`: reads HTTP/network span attributes using semconv v1.38.0 keys (e.g. http.request.method, server.address, server.port, client.address).
+  - `exporter.awsxray.EmitV1HTTPNetworkConventions`: reads HTTP/network span attributes using semconv v1.40.0 keys (e.g. http.request.method, server.address, server.port, client.address).
   - `exporter.awsxray.DontEmitV0HTTPNetworkConventions`: stops reading deprecated v1.12.0 HTTP/network attribute keys. Requires EmitV1HTTPNetworkConventions to also be enabled.
-  - `exporter.awsxray.EmitV1DBConventions`: reads database span attributes using semconv v1.38.0 keys (db.namespace, db.system.name, db.query.text, user.name).
+  - `exporter.awsxray.EmitV1DBConventions`: reads database span attributes using semconv v1.40.0 keys (db.namespace, db.system.name, db.query.text, user.name).
   - `exporter.awsxray.DontEmitV0DBConventions`: stops reading deprecated v1.12.0 database attribute keys. Requires EmitV1DBConventions to also be enabled.
   All gates default to disabled, preserving existing behavior. Enable the EmitV1 gate first for dual-read, then enable the DontEmitV0 gate once upstream instrumentation has migrated.
 
