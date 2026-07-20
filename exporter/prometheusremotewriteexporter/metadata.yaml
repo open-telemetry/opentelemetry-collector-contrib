@@ -23,6 +23,12 @@ feature_gates:
     from_version: v0.101.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/31924
     skip_strict_validation: true
+  - id: exporter.prometheusremotewritexporter.UseHTTPConfigField
+    stage: alpha
+    description: "When enabled, the Prometheus remote write exporter uses the 'http' config field. When disabled, the exporter uses the flat config fields (backward compatible)."
+    from_version: v0.157.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/35888
+    skip_strict_validation: true    
   - id: exporter.prometheusremotewritexporter.enableSendingRW2
     description: When enabled, the Prometheus remote write exporter will support sending rw2. Extra configuration is still required besides enabling this feature gate.
     stage: alpha

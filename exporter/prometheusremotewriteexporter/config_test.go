@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -216,6 +217,11 @@ func TestDisabledTargetInfo(t *testing.T) {
 }
 
 func TestHTTPOverridesFlatConfig(t *testing.T) {
+	_ = featuregate.GlobalRegistry().Set(metadata.ExporterPrometheusremotewritexporterUseHTTPConfigFieldFeatureGate.ID(), true)
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(metadata.ExporterPrometheusremotewritexporterUseHTTPConfigFieldFeatureGate.ID(), false)
+	})
+
 	flatEndpoint := "http://flat.example.com"
 	httpEndpoint := "http://http.example.com"
 	flatTimeout := 5 * time.Second
@@ -230,7 +236,7 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 			Endpoint: flatEndpoint,
 			Timeout:  flatTimeout,
 		},
-		HTTP: &confighttp.ClientConfig{
+		HTTP: confighttp.ClientConfig{
 			Endpoint: httpEndpoint,
 			Timeout:  httpTimeout,
 		},
@@ -243,32 +249,6 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 	err := cfg.Unmarshal(sub)
 	require.NoError(t, err)
 	// HTTP should override flat ClientConfig
-	require.Equal(t, httpEndpoint, cfg.ClientConfig.Endpoint)
-	require.Equal(t, httpTimeout, cfg.ClientConfig.Timeout)
-}
-
-func TestHTTPOnlyConfig(t *testing.T) {
-	httpEndpoint := "http://http.example.com"
-	httpTimeout := 10 * time.Second
-
-	cfg := &Config{
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-		BackOffConfig: configretry.BackOffConfig{
-			Enabled: false,
-		},
-		HTTP: &confighttp.ClientConfig{
-			Endpoint: httpEndpoint,
-			Timeout:  httpTimeout,
-		},
-	}
-
-	// Create a minimal confmap to test Unmarshal
-	cm, _ := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	sub, _ := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
-
-	err := cfg.Unmarshal(sub)
-	require.NoError(t, err)
-	// HTTP should set ClientConfig
 	require.Equal(t, httpEndpoint, cfg.ClientConfig.Endpoint)
 	require.Equal(t, httpTimeout, cfg.ClientConfig.Timeout)
 }

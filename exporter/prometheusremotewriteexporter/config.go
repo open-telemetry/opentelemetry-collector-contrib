@@ -36,9 +36,11 @@ type Config struct {
 	ExternalLabels map[string]string `mapstructure:"external_labels"`
 
 	ClientConfig confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+
 	// HTTP defines the HTTP client configuration in a nested block.
 	// This field takes precedence over the squashed ClientConfig.
-	HTTP *confighttp.ClientConfig `mapstructure:"http"`
+	HTTP confighttp.ClientConfig `mapstructure:"http"`
+
 	// maximum size in bytes of time series batch sent to remote storage
 	MaxBatchSizeBytes int `mapstructure:"max_batch_size_bytes"`
 
@@ -130,8 +132,8 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	// Handle HTTP config precedence: if HTTP is set, use it for ClientConfig
-	if cfg.HTTP != nil {
-		cfg.ClientConfig = *cfg.HTTP
+	if metadata.ExporterPrometheusremotewritexporterUseHTTPConfigFieldFeatureGate.IsEnabled() {
+		cfg.ClientConfig = cfg.HTTP
 	}
 
 	return nil

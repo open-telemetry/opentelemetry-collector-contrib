@@ -21,33 +21,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
-var retryOn429FeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusremotewritexporter.RetryOn429",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.101.0"),
-	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will retry 429 http status code. Requires exporter.prometheusremotewritexporter.metrics.RetryOn429 to be enabled."),
-)
-
-var enableMultipleWorkersFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusremotewritexporter.EnableMultipleWorkers",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled and settings configured, the Prometheus remote exporter will"+
-		" spawn multiple workers/goroutines to handle incoming metrics batches concurrently"),
-)
-
-var enableSendingRW2FeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusremotewritexporter.enableSendingRW2",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.125.0"),
-	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will support sending rw2. Extra configuration is still required besides enabling this feature gate."),
-)
-
-var useHTTPConfigFieldFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusremotewritexporter.UseHTTPConfigField",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter uses the 'http' config field. When disabled, the exporter uses the flat config fields (backward compatible)."),
-)
-
 // NewFactory creates a new Prometheus Remote Write exporter.
 func NewFactory() exporter.Factory {
 	return xexporter.NewFactory(
@@ -113,6 +86,12 @@ func createDefaultConfig() component.Config {
 	retrySettings := configretry.NewDefaultBackOffConfig()
 	retrySettings.InitialInterval = 50 * time.Millisecond
 	clientConfig := confighttp.NewDefaultClientConfig()
+
+	var httpClientConfig confighttp.ClientConfig
+	if metadata.ExporterPrometheusremotewritexporterUseHTTPConfigFieldFeatureGate.IsEnabled() {
+		httpClientConfig = confighttp.NewDefaultClientConfig()
+	}
+
 	clientConfig.Endpoint = "http://some.url:9411/api/prom/push"
 	// We almost read 0 bytes, so no need to tune ReadBufferSize.
 	clientConfig.ReadBufferSize = 0
@@ -145,5 +124,6 @@ func createDefaultConfig() component.Config {
 		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
+		HTTP: httpClientConfig,
 	}
 }

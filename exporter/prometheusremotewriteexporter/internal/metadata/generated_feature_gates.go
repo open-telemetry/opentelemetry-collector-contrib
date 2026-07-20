@@ -22,6 +22,14 @@ var ExporterPrometheusremotewritexporterRetryOn429FeatureGate = featuregate.Glob
 	featuregate.WithRegisterFromVersion("v0.101.0"),
 )
 
+var ExporterPrometheusremotewritexporterUseHTTPConfigFieldFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewritexporter.UseHTTPConfigField",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter uses the 'http' config field. When disabled, the exporter uses the flat config fields (backward compatible)."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/35888"),
+	featuregate.WithRegisterFromVersion("v0.157.0"),
+)
+
 var ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.prometheusremotewritexporter.enableSendingRW2",
 	featuregate.StageAlpha,
