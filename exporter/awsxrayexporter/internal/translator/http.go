@@ -124,11 +124,6 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 				urlParts[key] = strconv.FormatInt(value.Int(), 10)
 			}
 		case string(conventions.HostNameKey):
-			// TODO: Remove when exporter.awsxray.DontEmitV0HTTPNetworkConventions is removed.
-			if metadata.ExporterAwsxrayDontEmitV0HTTPNetworkConventionsFeatureGate.IsEnabled() {
-				filtered[key] = value
-				break
-			}
 			urlParts[key] = value.Str()
 			hasHTTPRequestURLAttributes = true
 		case string("net.host.name"):

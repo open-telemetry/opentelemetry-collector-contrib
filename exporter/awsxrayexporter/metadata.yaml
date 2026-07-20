@@ -48,7 +48,7 @@ feature_gates:
       When enabled, the AWS X-Ray exporter reads HTTP and network span
       attributes using semconv v1.38.0 keys (e.g. http.request.method,
       server.address, server.port, client.address,
-      messaging.destination.address, messaging.message.body.size) instead
+      messaging.destination.name, messaging.message.body.size) instead
       of the deprecated v1.12.0 keys.
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46533
