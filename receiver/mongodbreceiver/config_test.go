@@ -456,14 +456,13 @@ func TestValidateTopQueryCollection(t *testing.T) {
 			errSubstr: "top_query_collection.max_query_sample_count must be greater than 0",
 		},
 		{
-			desc:      "max_explain_each_interval zero is invalid",
-			mutate:    func(c *TopQueryCollection) { c.MaxExplainEachInterval = 0 },
-			errSubstr: "top_query_collection.max_explain_each_interval must be greater than 0",
+			desc:   "max_explain_each_interval zero is valid (disables explain)",
+			mutate: func(c *TopQueryCollection) { c.MaxExplainEachInterval = 0 },
 		},
 		{
 			desc:      "max_explain_each_interval negative is invalid",
 			mutate:    func(c *TopQueryCollection) { c.MaxExplainEachInterval = -1 },
-			errSubstr: "top_query_collection.max_explain_each_interval must be greater than 0",
+			errSubstr: "top_query_collection.max_explain_each_interval must not be negative",
 		},
 		{
 			desc:   "query_plan_cache_size zero is valid (disables caching)",

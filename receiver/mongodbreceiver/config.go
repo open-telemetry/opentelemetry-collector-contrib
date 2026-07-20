@@ -100,8 +100,8 @@ func (c *Config) Validate() error {
 		if c.TopQueryCollection.MaxQuerySampleCount <= 0 {
 			err = multierr.Append(err, errors.New("top_query_collection.max_query_sample_count must be greater than 0"))
 		}
-		if c.TopQueryCollection.MaxExplainEachInterval <= 0 {
-			err = multierr.Append(err, errors.New("top_query_collection.max_explain_each_interval must be greater than 0"))
+		if c.TopQueryCollection.MaxExplainEachInterval < 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.max_explain_each_interval must not be negative"))
 		}
 		if c.TopQueryCollection.QueryPlanCacheSize < 0 {
 			err = multierr.Append(err, errors.New("top_query_collection.query_plan_cache_size must not be negative"))
