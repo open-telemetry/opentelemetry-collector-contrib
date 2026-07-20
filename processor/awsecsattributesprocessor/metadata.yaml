@@ -12,3 +12,14 @@ tests:
   config:
     container_id:
       sources: [container.id]
+  goleak:
+    ignore:
+      top:
+        # Background goroutines from the Docker client's HTTP transport, exercised
+        # by the component lifecycle test.
+        - "net/http.(*persistConn).writeLoop"
+        - "internal/poll.runtime_pollWait"
+      any:
+        # Process-global Windows named-pipe I/O completion handler started by the
+        # Docker client (github.com/Microsoft/go-winio); it never exits.
+        - "github.com/Microsoft/go-winio.ioCompletionProcessor"
