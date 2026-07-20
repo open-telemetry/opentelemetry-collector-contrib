@@ -200,7 +200,7 @@ func (r *metricsReceiver) recordContainerStats(
 
 	r.statusMX.Lock()
 	// increment counter of container status
-	containerStatus[string(container.State.Status)] += 1
+	containerStatus[string(container.State.Status)]++
 	r.statusMX.Unlock()
 
 	r.mb.EmitForResource(metadata.WithResource(resource))
