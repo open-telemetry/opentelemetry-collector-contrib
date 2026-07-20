@@ -314,3 +314,48 @@ func withDefaultHTTPClientConfig(fns ...func(config *confighttp.ClientConfig)) c
 	}
 	return cfg
 }
+
+func TestOTelV1MappingModeValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		mode        string
+		manageTpl   bool
+		expectError string
+	}{
+		{
+			name: "otel-v1 mode valid",
+			mode: "otel-v1",
+		},
+		{
+			name:      "otel-v1 with manage_index_template true",
+			mode:      "otel-v1",
+			manageTpl: true,
+		},
+		{
+			name:        "ss4o with manage_index_template true is invalid",
+			mode:        "ss4o",
+			manageTpl:   true,
+			expectError: errManageIndexTemplateInvalidMode.Error(),
+		},
+		{
+			name: "ss4o with manage_index_template false is valid",
+			mode: "ss4o",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := withDefaultConfig(func(config *Config) {
+				config.Endpoint = "http://localhost:9200"
+				config.Mode = tt.mode
+				config.ManageIndexTemplate = tt.manageTpl
+			})
+			err := cfg.Validate()
+			if tt.expectError != "" {
+				assert.ErrorContains(t, err, tt.expectError)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
