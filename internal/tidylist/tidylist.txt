@@ -144,6 +144,7 @@ exporter/sumologicexporter
 exporter/tencentcloudlogserviceexporter
 exporter/tinybirdexporter
 extension/asapauthextension
+extension/awscredentialsproviderextension
 internal/aws/proxy
 extension/awsproxy
 extension/azureauthextension
