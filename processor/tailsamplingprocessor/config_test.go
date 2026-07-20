@@ -85,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 					sharedPolicyCfg: sharedPolicyCfg{
 						Name:            "test-policy-7",
 						Type:            RateLimiting,
-						RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
+						RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35, BurstCapacity: 70},
 					},
 				},
 				{
@@ -146,6 +146,21 @@ func TestLoadConfig(t *testing.T) {
 									Name:               "test-and-policy-2",
 									Type:               StringAttribute,
 									StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+								},
+							},
+							{
+								sharedPolicyCfg: sharedPolicyCfg{
+									Name: "test-and-policy-3",
+									Type: Not,
+								},
+								NotCfg: NotCfg{
+									SubPolicy: NotSubPolicyCfg{
+										sharedPolicyCfg: sharedPolicyCfg{
+											Name:       "test-and-policy-3-not-sub-policy",
+											Type:       Latency,
+											LatencyCfg: LatencyCfg{ThresholdMs: 1000},
+										},
+									},
 								},
 							},
 						},

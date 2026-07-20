@@ -652,6 +652,462 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestVcenterClusterHostCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterClusterHostCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterClusterHostCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.cluster.host.count doesn't have an attribute invalid, valid attributes: [effective]")
+
+	cfg = DefaultMetricsConfig().VcenterClusterHostCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterClusterVMCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterClusterVMCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterClusterVMCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.cluster.vm.count doesn't have an attribute invalid, valid attributes: [power_state]")
+
+	cfg = DefaultMetricsConfig().VcenterClusterVMCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterClusterVsanLatencyAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterClusterVsanLatencyAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterClusterVsanLatencyAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.cluster.vsan.latency.avg doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterClusterVsanLatencyAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterClusterVsanOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterClusterVsanOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterClusterVsanOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.cluster.vsan.operations doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterClusterVsanOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterClusterVsanThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterClusterVsanThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterClusterVsanThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.cluster.vsan.throughput doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().VcenterClusterVsanThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterDatacenterClusterCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterDatacenterClusterCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterDatacenterClusterCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.datacenter.cluster.count doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().VcenterDatacenterClusterCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterDatacenterDiskSpaceMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterDatacenterDiskSpace
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterDatacenterDiskSpaceMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.datacenter.disk.space doesn't have an attribute invalid, valid attributes: [disk_state]")
+
+	cfg = DefaultMetricsConfig().VcenterDatacenterDiskSpace
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterDatacenterHostCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterDatacenterHostCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterDatacenterHostCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.datacenter.host.count doesn't have an attribute invalid, valid attributes: [status, power_state]")
+
+	cfg = DefaultMetricsConfig().VcenterDatacenterHostCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterDatacenterVMCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterDatacenterVMCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterDatacenterVMCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.datacenter.vm.count doesn't have an attribute invalid, valid attributes: [status, power_state]")
+
+	cfg = DefaultMetricsConfig().VcenterDatacenterVMCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterDatastoreDiskUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterDatastoreDiskUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterDatastoreDiskUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.datastore.disk.usage doesn't have an attribute invalid, valid attributes: [disk_state]")
+
+	cfg = DefaultMetricsConfig().VcenterDatastoreDiskUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostCPUReservedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostCPUReserved
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostCPUReservedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.cpu.reserved doesn't have an attribute invalid, valid attributes: [cpu_reservation_type]")
+
+	cfg = DefaultMetricsConfig().VcenterHostCPUReserved
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostDiskLatencyAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostDiskLatencyAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostDiskLatencyAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.disk.latency.avg doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostDiskLatencyAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostDiskLatencyMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostDiskLatencyMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostDiskLatencyMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.disk.latency.max doesn't have an attribute invalid, valid attributes: [object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostDiskLatencyMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostDiskThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostDiskThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostDiskThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.disk.throughput doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostDiskThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostNetworkPacketDropRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostNetworkPacketDropRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostNetworkPacketDropRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.network.packet.drop.rate doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostNetworkPacketDropRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostNetworkPacketErrorRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostNetworkPacketErrorRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostNetworkPacketErrorRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.network.packet.error.rate doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostNetworkPacketErrorRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostNetworkPacketRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostNetworkPacketRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostNetworkPacketRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.network.packet.rate doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostNetworkPacketRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostNetworkThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostNetworkThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostNetworkThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.network.throughput doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostNetworkThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostNetworkUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostNetworkUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostNetworkUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.network.usage doesn't have an attribute invalid, valid attributes: [object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostNetworkUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostVsanLatencyAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostVsanLatencyAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostVsanLatencyAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.vsan.latency.avg doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterHostVsanLatencyAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostVsanOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostVsanOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostVsanOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.vsan.operations doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterHostVsanOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostVsanThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostVsanThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostVsanThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.vsan.throughput doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().VcenterHostVsanThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterResourcePoolMemoryGrantedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterResourcePoolMemoryGranted
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterResourcePoolMemoryGrantedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.resource_pool.memory.granted doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterResourcePoolMemoryGranted
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterResourcePoolMemoryUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterResourcePoolMemoryUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterResourcePoolMemoryUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.resource_pool.memory.usage doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterResourcePoolMemoryUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMCPUTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMCPUTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMCPUTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.cpu.time doesn't have an attribute invalid, valid attributes: [cpu_state, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMCPUTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMDiskLatencyAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMDiskLatencyAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMDiskLatencyAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.disk.latency.avg doesn't have an attribute invalid, valid attributes: [direction, disk_type, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMDiskLatencyAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMDiskLatencyMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMDiskLatencyMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMDiskLatencyMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.disk.latency.max doesn't have an attribute invalid, valid attributes: [object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMDiskLatencyMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMDiskThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMDiskThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMDiskThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.disk.throughput doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMDiskThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMDiskUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMDiskUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMDiskUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.disk.usage doesn't have an attribute invalid, valid attributes: [disk_state]")
+
+	cfg = DefaultMetricsConfig().VcenterVMDiskUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMNetworkBroadcastPacketRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMNetworkBroadcastPacketRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMNetworkBroadcastPacketRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.network.broadcast.packet.rate doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMNetworkBroadcastPacketRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMNetworkMulticastPacketRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMNetworkMulticastPacketRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMNetworkMulticastPacketRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.network.multicast.packet.rate doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMNetworkMulticastPacketRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMNetworkPacketDropRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMNetworkPacketDropRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMNetworkPacketDropRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.network.packet.drop.rate doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMNetworkPacketDropRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMNetworkPacketRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMNetworkPacketRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMNetworkPacketRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.network.packet.rate doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMNetworkPacketRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMNetworkThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMNetworkThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMNetworkThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.network.throughput doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMNetworkThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMNetworkUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMNetworkUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMNetworkUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.network.usage doesn't have an attribute invalid, valid attributes: [object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMNetworkUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMVsanLatencyAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMVsanLatencyAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMVsanLatencyAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.vsan.latency.avg doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterVMVsanLatencyAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMVsanOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMVsanOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMVsanOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.vsan.operations doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterVMVsanOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMVsanThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMVsanThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMVsanThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.vsan.throughput doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().VcenterVMVsanThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

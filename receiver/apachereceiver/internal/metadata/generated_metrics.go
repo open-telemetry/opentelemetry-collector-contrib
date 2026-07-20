@@ -198,13 +198,15 @@ var MapAttributeWorkersState = map[string]AttributeWorkersState{
 
 var MetricsInfo = metricsInfo{
 	ApacheConnectionsAsync: metricInfo{
-		Name: "apache.connections.async",
+		Name:       "apache.connections.async",
+		Attributes: []string{"connection_state"},
 	},
 	ApacheCPULoad: metricInfo{
 		Name: "apache.cpu.load",
 	},
 	ApacheCPUTime: metricInfo{
-		Name: "apache.cpu.time",
+		Name:       "apache.cpu.time",
+		Attributes: []string{"cpu_level", "cpu_mode"},
 	},
 	ApacheCurrentConnections: metricInfo{
 		Name: "apache.current_connections",
@@ -225,7 +227,8 @@ var MetricsInfo = metricsInfo{
 		Name: "apache.requests",
 	},
 	ApacheScoreboard: metricInfo{
-		Name: "apache.scoreboard",
+		Name:       "apache.scoreboard",
+		Attributes: []string{"scoreboard_state"},
 	},
 	ApacheTraffic: metricInfo{
 		Name: "apache.traffic",
@@ -234,7 +237,8 @@ var MetricsInfo = metricsInfo{
 		Name: "apache.uptime",
 	},
 	ApacheWorkers: metricInfo{
-		Name: "apache.workers",
+		Name:       "apache.workers",
+		Attributes: []string{"workers_state"},
 	},
 }
 
@@ -255,7 +259,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricApacheConnectionsAsync struct {

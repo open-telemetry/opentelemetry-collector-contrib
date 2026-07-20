@@ -29,16 +29,21 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  testutil.EndpointForPort(defaultPort),
+	}
 	return &Config{
 		Config: healthcheck.Config{
 			LegacyConfig: healthcheck.HTTPLegacyConfig{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  testutil.EndpointForPort(defaultPort),
-					},
-				},
-				Path: "/",
+				ServerConfig: serverConfig,
+				Path:         "/",
 				CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
 					Enabled:                  false,
 					Interval:                 "5m",
@@ -49,7 +54,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createExtension(ctx context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	config := cfg.(*Config)
 
 	if metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.IsEnabled() {
@@ -77,7 +82,7 @@ func createExtension(ctx context.Context, set extension.Settings, cfg component.
 			}
 		}
 
-		return healthcheck.NewHealthCheckExtension(ctx, config.Config, set), nil
+		return healthcheck.NewHealthCheckExtension(config.Config, set), nil
 	}
 
 	// Feature gate disabled: use legacy implementation.

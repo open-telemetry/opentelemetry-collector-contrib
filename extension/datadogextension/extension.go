@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
+	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
 	ddMetrics "github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/google/uuid"
@@ -359,6 +359,25 @@ func (e *datadogExtension) GetSerializer() agentcomponents.SerializerWithForward
 	return e.serializer
 }
 
+// buildAgentConfig constructs the Datadog agent config component from the extension config.
+// Extracted to allow unit testing of option propagation independently of the full extension lifecycle.
+func buildAgentConfig(cfg *Config) coreconfig.Component {
+	ddConfig := &datadogconfig.Config{
+		API:          cfg.API,
+		ClientConfig: cfg.ClientConfig,
+	}
+	return agentcomponents.NewConfigComponent(
+		agentcomponents.WithAPIConfig(ddConfig),
+		agentcomponents.WithForwarderConfig(),
+		agentcomponents.WithPayloadsConfig(),
+		// Use ClientConfig proxy and TLS settings instead of environment variables
+		agentcomponents.WithProxy(ddConfig),
+		agentcomponents.WithTLSSetting(ddConfig),
+		// logging_frequency required to be set to avoid "divide by zero" error
+		agentcomponents.WithLoggingConfig(),
+	)
+}
+
 func newExtension(
 	ctx context.Context,
 	cfg *Config,
@@ -366,36 +385,24 @@ func newExtension(
 	hostProvider source.Provider,
 	uuidProvider uuidProvider,
 ) (*datadogExtension, error) {
-	// Create configuration for agent components
-	// Convert datadogextension.Config to datadogconfig.Config
-	ddConfig := &datadogconfig.Config{
-		API:          cfg.API,
-		ClientConfig: cfg.ClientConfig,
-	}
-	host, err := hostProvider.Source(context.Background())
-	if err != nil {
-		return nil, err
-	}
+	var host source.Source
 	var hostnameSource string
 	if cfg.Hostname != "" {
+		// Hostname is already known from config; skip the source provider to avoid
+		// unnecessary cloud metadata probes (e.g. GCP metadata server on non-GCP hosts).
 		hostnameSource = "config"
+		host = source.Source{Kind: source.HostnameKind, Identifier: cfg.Hostname}
 	} else {
 		hostnameSource = "inferred"
-	}
-
-	// Create agent components with proxy configuration from ClientConfig
-	configOptions := []agentcomponents.ConfigOption{
-		agentcomponents.WithAPIConfig(ddConfig),
-		agentcomponents.WithForwarderConfig(),
-		agentcomponents.WithPayloadsConfig(),
-		// Use ClientConfig proxy settings instead of environment variables
-		agentcomponents.WithProxy(ddConfig),
-		// logging_frequency required to be set to avoid "divide by zero" error
-		agentcomponents.WithCustomConfig("logging_frequency", 1, pkgconfigmodel.SourceDefault),
+		var err error
+		host, err = hostProvider.Source(context.Background())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Create agent components
-	configComponent := agentcomponents.NewConfigComponent(configOptions...)
+	configComponent := buildAgentConfig(cfg)
 	logComponent := agentcomponents.NewLogComponent(set.TelemetrySettings)
 	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, host.Identifier)
 

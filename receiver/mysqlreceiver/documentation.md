@@ -697,6 +697,7 @@ This provides real-time visibility into active queries, helping users monitor da
 | mysql.threads.processlist_state | An action, event, or state that indicates what the thread is doing. | Any Str | - |
 | db.query.text | The SQL statement text for the event. | Any Str | - |
 | mysql.events_statements_current.digest | The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no. | Any Str | - |
+| mysql.query_plan | The query plan for the statement, if available. | Any Str | - |
 | mysql.query_plan.hash | This attribute is set to the same value as mysql.events_statements_summary_by_digest.digest (query digest) by design. | Any Str | - |
 | mysql.event_id | The thread associated with the event and the thread current event number when the event starts. | Any Int | - |
 | mysql.wait_type | The name of the instrument that produced the event. | Any Str | - |
@@ -729,6 +730,11 @@ This provides insights into query performance and resource usage, helping users 
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| db.system.name | The database product of the instance. Examples include "mysql" and "mariadb". | Any Str | false | - | - |
+| db.system.version | The database version of the instance. Examples include "8.0.34" and "10.11.7-MariaDB". | Any Str | false | - | - |
+| mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - | - |
+| service.instance.id | A unique identifier of the MySQL instance as a UUID v5, derived from the endpoint using the OTel namespace. | Any Str | true | - | - |
+| service.name | Logical name of the service. When enabled, defaults to unknown_service:mysql. | Any Str | false | - | - |
+| service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |

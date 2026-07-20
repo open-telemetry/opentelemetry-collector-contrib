@@ -23,10 +23,10 @@ The TCP Log Receiver receives logs over TCP.
 | `max_log_size`            | `1MiB`               | The maximum size of a log entry to read before failing. Protects against reading large amounts of data into memory |
 | `listen_address`          | required             | A listen address of the form `<ip>:<port>`                                                                         |
 | `tls`                     | nil                  | An optional `TLS` configuration (see the TLS configuration section)                                                |
-| `attributes`              | {}                   | A map of `key: value` pairs to add to the entry's attributes                                                       |
+| `attributes`              | {}                   | A map of `key: value` pairs to add to the entry's attributes. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string. |
 | `one_log_per_packet`      | false                | Skip log tokenization, set to true if logs contains one log per record and multiline is not used.  This will improve performance.                                                 |
-| `resource`                | {}                   | A map of `key: value` pairs to add to the entry's resource                                                         |
-| `add_attributes`          | false                | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/semantic-conventions/blob/main/docs/registry/attributes/network.md#network-attributes] |
+| `resource`                | {}                   | A map of `key: value` pairs to add to the entry's resource. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string. |
+| `add_attributes`          | false                | Adds `net.*` attributes according to [semantic convention](https://github.com/open-telemetry/semantic-conventions/blob/v1.42.0/docs/registry/attributes/network.md#deprecated-network-attributes) |
 | `multiline`               |                      | A `multiline` configuration block. See below for details                                                           |
 | `encoding`                | `utf-8`              | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `operators`               | []                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |

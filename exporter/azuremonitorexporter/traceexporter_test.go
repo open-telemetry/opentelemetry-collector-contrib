@@ -159,6 +159,6 @@ func getExporter(config *Config, transportChannel appinsights.TelemetryChannel) 
 		transportChannel,
 		exportertest.NewNopSettings(metadata.Type).TelemetrySettings,
 		zap.NewNop(),
-		newMetricPacker(zap.NewNop()),
+		newMetricPacker(zap.NewNop(), nil),
 	}
 }

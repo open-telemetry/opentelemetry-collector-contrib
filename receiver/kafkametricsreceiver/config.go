@@ -29,7 +29,6 @@ type Config struct {
 
 	// Cluster metadata refresh frequency
 	// Configures the refresh frequency to update cached cluster metadata
-	// Defaults to 10 minutes from Sarama library
 	//
 	// If Metadata.RefreshInterval is set, this will be ignored.
 	//

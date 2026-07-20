@@ -31,10 +31,12 @@ feature_gates:
       This is disabled by default due to worse CPU performance with higher metric volumes.
     from_version: v0.113.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40355
+    skip_strict_validation: true
 
   - id: receiver.prometheusreceiver.IgnoreScopeInfoMetric
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the `otel_scope_info` metric is ignored for scope attribute extraction.
     from_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41502
+    skip_strict_validation: true

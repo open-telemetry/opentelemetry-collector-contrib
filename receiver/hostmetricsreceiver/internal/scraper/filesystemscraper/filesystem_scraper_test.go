@@ -455,17 +455,20 @@ func TestScrape(t *testing.T) {
 				m,
 				test.expectedDeviceDataPoints*fileSystemStatesLen,
 				test.expectedDeviceAttributes,
+				fileSystemStatesLen,
 			)
 
 			if isUnix() {
 				assertFileSystemUsageMetricHasUnixSpecificStateLabels(t, m)
 				m, err = findMetricByName(metrics, "system.filesystem.inodes.usage")
 				assert.NoError(t, err)
+				inodeStatesLen := 2 // we have 2 states for inodes, free and used
 				assertFileSystemUsageMetricValid(
 					t,
 					m,
 					test.expectedDeviceDataPoints*2,
 					test.expectedDeviceAttributes,
+					inodeStatesLen,
 				)
 			}
 
@@ -488,6 +491,7 @@ func assertFileSystemUsageMetricValid(
 	metric pmetric.Metric,
 	expectedDeviceDataPoints int,
 	expectedDeviceAttributes []map[string]pcommon.Value,
+	minDataPoints int,
 ) {
 	for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 		for _, label := range []string{"device", "type", "mode", "mountpoint"} {
@@ -512,7 +516,7 @@ func assertFileSystemUsageMetricValid(
 			}
 		}
 	} else {
-		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), fileSystemStatesLen)
+		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), minDataPoints)
 	}
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state",
 		pcommon.NewValueStr(metadata.AttributeStateUsed.String()))
@@ -552,6 +556,84 @@ func TestScrape_UtilizationExcludesReservedBlocks(t *testing.T) {
 
 	actual := m.Gauge().DataPoints().At(0).DoubleValue()
 	assert.Equal(t, 0.63, actual, "utilization should be Used/(Used+Free), not Used/Total")
+}
+
+func TestTranslateMountpoint(t *testing.T) {
+	tests := []struct {
+		name       string
+		rootPath   string
+		mountpoint string
+		env        common.EnvMap
+		expected   string
+	}{
+		{
+			name:       "empty rootPath",
+			rootPath:   "",
+			mountpoint: "/data",
+			expected:   "/data",
+		},
+		{
+			name:       "rootPath is filesystem root",
+			rootPath:   "/",
+			mountpoint: "/data",
+			expected:   "/data",
+		},
+		{
+			name:       "rootPath prepended to mountpoint",
+			rootPath:   "/hostfs",
+			mountpoint: "/data",
+			expected:   "/hostfs/data",
+		},
+		{
+			name:       "mountpoint already has rootPath prefix",
+			rootPath:   "/hostfs",
+			mountpoint: "/hostfs/data",
+			expected:   "/hostfs/data",
+		},
+		{
+			name:       "mountpoint already has rootPath prefix, rootPath has trailing slash",
+			rootPath:   "/hostfs/",
+			mountpoint: "/hostfs/data",
+			expected:   "/hostfs/data",
+		},
+		{
+			name:       "mountpoint equals rootPath",
+			rootPath:   "/hostfs",
+			mountpoint: "/hostfs",
+			expected:   "/hostfs",
+		},
+		{
+			name:       "mountpoint has rootPath as partial prefix",
+			rootPath:   "/host",
+			mountpoint: "/hostdata",
+			expected:   "/host/hostdata",
+		},
+		{
+			name:       "HOST_PROC_MOUNTINFO set skips translation",
+			rootPath:   "/hostfs",
+			mountpoint: "/data",
+			env: common.EnvMap{
+				common.HostProcMountinfo: "/proc/1/mountinfo",
+			},
+			expected: "/data",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := make(common.EnvMap, len(tt.env))
+			for k, v := range tt.env {
+				env[k] = filepath.FromSlash(v)
+			}
+			ctx := context.WithValue(t.Context(), common.EnvKey, env)
+
+			// translateMountpoint() runs conditionally filepath.Join(), which runs filepath.Clean(),
+			// which replaces / with the platform-specific path separator.
+			// Therefore, use filepath.FromSlash() here to account for differences in path separator between platforms.
+			result := translateMountpoint(ctx, filepath.FromSlash(tt.rootPath), filepath.FromSlash(tt.mountpoint))
+			assert.Equal(t, filepath.FromSlash(tt.expected), result)
+		})
+	}
 }
 
 func isUnix() bool {

@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: processor/metrics_transform
+
+note: Fix submatch_case config option having no effect at runtime by copying the field into the internal transform struct during config building.
+
+issues: [49171]
+
+change_logs: [user]

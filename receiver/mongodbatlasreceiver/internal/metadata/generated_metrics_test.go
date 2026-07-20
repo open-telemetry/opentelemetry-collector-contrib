@@ -67,58 +67,58 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["MongodbatlasDbCounts"] = mb.metricMongodbatlasDbCounts.config.AggregationStrategy
-			aggMap["MongodbatlasDbSize"] = mb.metricMongodbatlasDbSize.config.AggregationStrategy
-			aggMap["MongodbatlasDiskPartitionIopsAverage"] = mb.metricMongodbatlasDiskPartitionIopsAverage.config.AggregationStrategy
-			aggMap["MongodbatlasDiskPartitionIopsMax"] = mb.metricMongodbatlasDiskPartitionIopsMax.config.AggregationStrategy
-			aggMap["MongodbatlasDiskPartitionLatencyAverage"] = mb.metricMongodbatlasDiskPartitionLatencyAverage.config.AggregationStrategy
-			aggMap["MongodbatlasDiskPartitionLatencyMax"] = mb.metricMongodbatlasDiskPartitionLatencyMax.config.AggregationStrategy
-			aggMap["MongodbatlasDiskPartitionSpaceAverage"] = mb.metricMongodbatlasDiskPartitionSpaceAverage.config.AggregationStrategy
-			aggMap["MongodbatlasDiskPartitionSpaceMax"] = mb.metricMongodbatlasDiskPartitionSpaceMax.config.AggregationStrategy
-			aggMap["MongodbatlasDiskPartitionThroughput"] = mb.metricMongodbatlasDiskPartitionThroughput.config.AggregationStrategy
-			aggMap["MongodbatlasDiskPartitionUsageAverage"] = mb.metricMongodbatlasDiskPartitionUsageAverage.config.AggregationStrategy
-			aggMap["MongodbatlasDiskPartitionUsageMax"] = mb.metricMongodbatlasDiskPartitionUsageMax.config.AggregationStrategy
-			aggMap["MongodbatlasProcessAsserts"] = mb.metricMongodbatlasProcessAsserts.config.AggregationStrategy
-			aggMap["MongodbatlasProcessCacheIo"] = mb.metricMongodbatlasProcessCacheIo.config.AggregationStrategy
-			aggMap["MongodbatlasProcessCacheRatio"] = mb.metricMongodbatlasProcessCacheRatio.config.AggregationStrategy
-			aggMap["MongodbatlasProcessCacheSize"] = mb.metricMongodbatlasProcessCacheSize.config.AggregationStrategy
-			aggMap["MongodbatlasProcessCPUChildrenNormalizedUsageAverage"] = mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage.config.AggregationStrategy
-			aggMap["MongodbatlasProcessCPUChildrenNormalizedUsageMax"] = mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageMax.config.AggregationStrategy
-			aggMap["MongodbatlasProcessCPUChildrenUsageAverage"] = mb.metricMongodbatlasProcessCPUChildrenUsageAverage.config.AggregationStrategy
-			aggMap["MongodbatlasProcessCPUChildrenUsageMax"] = mb.metricMongodbatlasProcessCPUChildrenUsageMax.config.AggregationStrategy
-			aggMap["MongodbatlasProcessCPUNormalizedUsageAverage"] = mb.metricMongodbatlasProcessCPUNormalizedUsageAverage.config.AggregationStrategy
-			aggMap["MongodbatlasProcessCPUNormalizedUsageMax"] = mb.metricMongodbatlasProcessCPUNormalizedUsageMax.config.AggregationStrategy
-			aggMap["MongodbatlasProcessCPUUsageAverage"] = mb.metricMongodbatlasProcessCPUUsageAverage.config.AggregationStrategy
-			aggMap["MongodbatlasProcessCPUUsageMax"] = mb.metricMongodbatlasProcessCPUUsageMax.config.AggregationStrategy
-			aggMap["MongodbatlasProcessCursors"] = mb.metricMongodbatlasProcessCursors.config.AggregationStrategy
-			aggMap["MongodbatlasProcessDbDocumentRate"] = mb.metricMongodbatlasProcessDbDocumentRate.config.AggregationStrategy
-			aggMap["MongodbatlasProcessDbOperationsRate"] = mb.metricMongodbatlasProcessDbOperationsRate.config.AggregationStrategy
-			aggMap["MongodbatlasProcessDbOperationsTime"] = mb.metricMongodbatlasProcessDbOperationsTime.config.AggregationStrategy
-			aggMap["MongodbatlasProcessDbQueryExecutorScanned"] = mb.metricMongodbatlasProcessDbQueryExecutorScanned.config.AggregationStrategy
-			aggMap["MongodbatlasProcessDbQueryTargetingScannedPerReturned"] = mb.metricMongodbatlasProcessDbQueryTargetingScannedPerReturned.config.AggregationStrategy
-			aggMap["MongodbatlasProcessDbStorage"] = mb.metricMongodbatlasProcessDbStorage.config.AggregationStrategy
-			aggMap["MongodbatlasProcessGlobalLock"] = mb.metricMongodbatlasProcessGlobalLock.config.AggregationStrategy
-			aggMap["MongodbatlasProcessIndexCounters"] = mb.metricMongodbatlasProcessIndexCounters.config.AggregationStrategy
-			aggMap["MongodbatlasProcessMemoryUsage"] = mb.metricMongodbatlasProcessMemoryUsage.config.AggregationStrategy
-			aggMap["MongodbatlasProcessNetworkIo"] = mb.metricMongodbatlasProcessNetworkIo.config.AggregationStrategy
-			aggMap["MongodbatlasProcessOplogTime"] = mb.metricMongodbatlasProcessOplogTime.config.AggregationStrategy
-			aggMap["MongodbatlasProcessPageFaults"] = mb.metricMongodbatlasProcessPageFaults.config.AggregationStrategy
-			aggMap["MongodbatlasProcessTickets"] = mb.metricMongodbatlasProcessTickets.config.AggregationStrategy
-			aggMap["MongodbatlasSystemCPUNormalizedUsageAverage"] = mb.metricMongodbatlasSystemCPUNormalizedUsageAverage.config.AggregationStrategy
-			aggMap["MongodbatlasSystemCPUNormalizedUsageMax"] = mb.metricMongodbatlasSystemCPUNormalizedUsageMax.config.AggregationStrategy
-			aggMap["MongodbatlasSystemCPUUsageAverage"] = mb.metricMongodbatlasSystemCPUUsageAverage.config.AggregationStrategy
-			aggMap["MongodbatlasSystemCPUUsageMax"] = mb.metricMongodbatlasSystemCPUUsageMax.config.AggregationStrategy
-			aggMap["MongodbatlasSystemFtsCPUNormalizedUsage"] = mb.metricMongodbatlasSystemFtsCPUNormalizedUsage.config.AggregationStrategy
-			aggMap["MongodbatlasSystemFtsCPUUsage"] = mb.metricMongodbatlasSystemFtsCPUUsage.config.AggregationStrategy
-			aggMap["MongodbatlasSystemFtsMemoryUsage"] = mb.metricMongodbatlasSystemFtsMemoryUsage.config.AggregationStrategy
-			aggMap["MongodbatlasSystemMemoryUsageAverage"] = mb.metricMongodbatlasSystemMemoryUsageAverage.config.AggregationStrategy
-			aggMap["MongodbatlasSystemMemoryUsageMax"] = mb.metricMongodbatlasSystemMemoryUsageMax.config.AggregationStrategy
-			aggMap["MongodbatlasSystemNetworkIoAverage"] = mb.metricMongodbatlasSystemNetworkIoAverage.config.AggregationStrategy
-			aggMap["MongodbatlasSystemNetworkIoMax"] = mb.metricMongodbatlasSystemNetworkIoMax.config.AggregationStrategy
-			aggMap["MongodbatlasSystemPagingIoAverage"] = mb.metricMongodbatlasSystemPagingIoAverage.config.AggregationStrategy
-			aggMap["MongodbatlasSystemPagingIoMax"] = mb.metricMongodbatlasSystemPagingIoMax.config.AggregationStrategy
-			aggMap["MongodbatlasSystemPagingUsageAverage"] = mb.metricMongodbatlasSystemPagingUsageAverage.config.AggregationStrategy
-			aggMap["MongodbatlasSystemPagingUsageMax"] = mb.metricMongodbatlasSystemPagingUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.db.counts"] = mb.metricMongodbatlasDbCounts.config.AggregationStrategy
+			aggMap["mongodbatlas.db.size"] = mb.metricMongodbatlasDbSize.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.iops.average"] = mb.metricMongodbatlasDiskPartitionIopsAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.iops.max"] = mb.metricMongodbatlasDiskPartitionIopsMax.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.latency.average"] = mb.metricMongodbatlasDiskPartitionLatencyAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.latency.max"] = mb.metricMongodbatlasDiskPartitionLatencyMax.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.space.average"] = mb.metricMongodbatlasDiskPartitionSpaceAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.space.max"] = mb.metricMongodbatlasDiskPartitionSpaceMax.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.throughput"] = mb.metricMongodbatlasDiskPartitionThroughput.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.usage.average"] = mb.metricMongodbatlasDiskPartitionUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.usage.max"] = mb.metricMongodbatlasDiskPartitionUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.process.asserts"] = mb.metricMongodbatlasProcessAsserts.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cache.io"] = mb.metricMongodbatlasProcessCacheIo.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cache.ratio"] = mb.metricMongodbatlasProcessCacheRatio.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cache.size"] = mb.metricMongodbatlasProcessCacheSize.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.children.normalized.usage.average"] = mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.children.normalized.usage.max"] = mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.children.usage.average"] = mb.metricMongodbatlasProcessCPUChildrenUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.children.usage.max"] = mb.metricMongodbatlasProcessCPUChildrenUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.normalized.usage.average"] = mb.metricMongodbatlasProcessCPUNormalizedUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.normalized.usage.max"] = mb.metricMongodbatlasProcessCPUNormalizedUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.usage.average"] = mb.metricMongodbatlasProcessCPUUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.usage.max"] = mb.metricMongodbatlasProcessCPUUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cursors"] = mb.metricMongodbatlasProcessCursors.config.AggregationStrategy
+			aggMap["mongodbatlas.process.db.document.rate"] = mb.metricMongodbatlasProcessDbDocumentRate.config.AggregationStrategy
+			aggMap["mongodbatlas.process.db.operations.rate"] = mb.metricMongodbatlasProcessDbOperationsRate.config.AggregationStrategy
+			aggMap["mongodbatlas.process.db.operations.time"] = mb.metricMongodbatlasProcessDbOperationsTime.config.AggregationStrategy
+			aggMap["mongodbatlas.process.db.query_executor.scanned"] = mb.metricMongodbatlasProcessDbQueryExecutorScanned.config.AggregationStrategy
+			aggMap["mongodbatlas.process.db.query_targeting.scanned_per_returned"] = mb.metricMongodbatlasProcessDbQueryTargetingScannedPerReturned.config.AggregationStrategy
+			aggMap["mongodbatlas.process.db.storage"] = mb.metricMongodbatlasProcessDbStorage.config.AggregationStrategy
+			aggMap["mongodbatlas.process.global_lock"] = mb.metricMongodbatlasProcessGlobalLock.config.AggregationStrategy
+			aggMap["mongodbatlas.process.index.counters"] = mb.metricMongodbatlasProcessIndexCounters.config.AggregationStrategy
+			aggMap["mongodbatlas.process.memory.usage"] = mb.metricMongodbatlasProcessMemoryUsage.config.AggregationStrategy
+			aggMap["mongodbatlas.process.network.io"] = mb.metricMongodbatlasProcessNetworkIo.config.AggregationStrategy
+			aggMap["mongodbatlas.process.oplog.time"] = mb.metricMongodbatlasProcessOplogTime.config.AggregationStrategy
+			aggMap["mongodbatlas.process.page_faults"] = mb.metricMongodbatlasProcessPageFaults.config.AggregationStrategy
+			aggMap["mongodbatlas.process.tickets"] = mb.metricMongodbatlasProcessTickets.config.AggregationStrategy
+			aggMap["mongodbatlas.system.cpu.normalized.usage.average"] = mb.metricMongodbatlasSystemCPUNormalizedUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.cpu.normalized.usage.max"] = mb.metricMongodbatlasSystemCPUNormalizedUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.system.cpu.usage.average"] = mb.metricMongodbatlasSystemCPUUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.cpu.usage.max"] = mb.metricMongodbatlasSystemCPUUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.system.fts.cpu.normalized.usage"] = mb.metricMongodbatlasSystemFtsCPUNormalizedUsage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.fts.cpu.usage"] = mb.metricMongodbatlasSystemFtsCPUUsage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.fts.memory.usage"] = mb.metricMongodbatlasSystemFtsMemoryUsage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.memory.usage.average"] = mb.metricMongodbatlasSystemMemoryUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.memory.usage.max"] = mb.metricMongodbatlasSystemMemoryUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.system.network.io.average"] = mb.metricMongodbatlasSystemNetworkIoAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.network.io.max"] = mb.metricMongodbatlasSystemNetworkIoMax.config.AggregationStrategy
+			aggMap["mongodbatlas.system.paging.io.average"] = mb.metricMongodbatlasSystemPagingIoAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.paging.io.max"] = mb.metricMongodbatlasSystemPagingIoMax.config.AggregationStrategy
+			aggMap["mongodbatlas.system.paging.usage.average"] = mb.metricMongodbatlasSystemPagingUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.paging.usage.max"] = mb.metricMongodbatlasSystemPagingUsageMax.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -127,42 +127,36 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDbCountsDataPoint(ts, 1, AttributeObjectTypeCollection)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDbCountsDataPoint(ts, 3, AttributeObjectTypeIndex)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDbSizeDataPoint(ts, 1, AttributeObjectTypeCollection)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDbSizeDataPoint(ts, 3, AttributeObjectTypeIndex)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, 1, AttributeDiskDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, 3, AttributeDiskDirectionWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, 1, AttributeDiskDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, 3, AttributeDiskDirectionWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, 1, AttributeDiskDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, 3, AttributeDiskDirectionWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, 1, AttributeDiskDirectionRead)
@@ -172,14 +166,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionQueueDepthDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, 1, AttributeDiskStatusFree)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, 3, AttributeDiskStatusUsed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts, 1, AttributeDiskStatusFree)
@@ -192,40 +184,33 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionThroughputDataPoint(ts, 3, AttributeDiskDirectionWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts, 1, AttributeDiskStatusFree)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts, 3, AttributeDiskStatusUsed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts, 1, AttributeDiskStatusFree)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts, 3, AttributeDiskStatusUsed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessAssertsDataPoint(ts, 1, AttributeAssertTypeRegular)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessAssertsDataPoint(ts, 3, AttributeAssertTypeWarning)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessBackgroundFlushDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCacheIoDataPoint(ts, 1, AttributeCacheDirectionReadInto)
@@ -238,302 +223,255 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCacheRatioDataPoint(ts, 3, AttributeCacheRatioTypeDirtyFill)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, 1, AttributeCacheStatusDirty)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, 3, AttributeCacheStatusUsed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessConnectionsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCursorsDataPoint(ts, 1, AttributeCursorStateTimedOut)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCursorsDataPoint(ts, 3, AttributeCursorStateOpen)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, 1, AttributeDocumentStatusReturned)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, 3, AttributeDocumentStatusInserted)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, 1, AttributeOperationCmd, AttributeClusterRolePrimary)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, 3, AttributeOperationQuery, AttributeClusterRoleReplica)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, 1, AttributeExecutionTypeReads)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, 3, AttributeExecutionTypeWrites)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts, 1, AttributeScannedTypeIndexItems)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts, 3, AttributeScannedTypeObjects)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts, 1, AttributeScannedTypeIndexItems)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts, 3, AttributeScannedTypeObjects)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, 1, AttributeStorageStatusTotal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, 3, AttributeStorageStatusDataSize)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, 1, AttributeGlobalLockStateCurrentQueueTotal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, 3, AttributeGlobalLockStateCurrentQueueReaders)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, 1, AttributeBtreeCounterTypeAccesses)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, 3, AttributeBtreeCounterTypeHits)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessJournalingCommitsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessJournalingDataFilesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessJournalingWrittenDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, 1, AttributeMemoryStateResident)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, 3, AttributeMemoryStateVirtual)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessNetworkIoDataPoint(ts, 1, AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessNetworkIoDataPoint(ts, 3, AttributeDirectionTransmit)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessNetworkRequestsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessOplogRateDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, 1, AttributeOplogTypeSlaveLagMasterTime)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, 3, AttributeOplogTypeMasterTime)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, 1, AttributeMemoryIssueTypeExtraInfo)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, 3, AttributeMemoryIssueTypeGlobalAccessesNotInMemory)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessRestartsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessTicketsDataPoint(ts, 1, AttributeTicketTypeAvailableReads)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessTicketsDataPoint(ts, 3, AttributeTicketTypeAvailableWrites)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts, 3, AttributeCPUStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts, 3, AttributeCPUStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, 1, AttributeMemoryStateResident)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, 3, AttributeMemoryStateVirtual)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, 1, AttributeMemoryStatusAvailable)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, 3, AttributeMemoryStatusBuffers)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, 1, AttributeMemoryStatusAvailable)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, 3, AttributeMemoryStatusBuffers)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts, 1, AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts, 3, AttributeDirectionTransmit)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts, 1, AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts, 3, AttributeDirectionTransmit)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts, 1, AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts, 3, AttributeDirectionTransmit)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts, 1, AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts, 3, AttributeDirectionTransmit)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts, 1, AttributeMemoryStateResident)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts, 3, AttributeMemoryStateVirtual)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 1, AttributeMemoryStateResident)
