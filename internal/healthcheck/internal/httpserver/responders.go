@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package http // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/http"
+package httpserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/httpserver"
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componentstatus"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/common"
+	hcconfig "github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
@@ -65,7 +65,7 @@ func defaultResponder(startTimestamp *time.Time, includeAttributes bool) respond
 
 func componentHealthResponder(
 	startTimestamp *time.Time,
-	config *common.ComponentHealthConfig,
+	config *hcconfig.ComponentHealthConfig,
 	includeAttributes bool,
 ) responderFunc {
 	healthyFunc := func(now *time.Time) func(status.Event) bool {
