@@ -1119,6 +1119,7 @@ func TestDatadogLogsV2_SingleLog_EndToEnd(t *testing.T) {
 	assert.Equal(t, "i-abc123", resourceAttrs["host.name"])
 	assert.Equal(t, "agent", resourceAttrs["service.name"])
 	assert.Equal(t, "gcr.io/datadoghq/agent", resourceAttrs["container.image.name"])
+	assert.Equal(t, "datadog-agent", resourceAttrs["app.kubernetes.io/instance"])
 
 	theRecord := got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	assert.Equal(t, message, theRecord.Body().Str())
@@ -1130,7 +1131,6 @@ func TestDatadogLogsV2_SingleLog_EndToEnd(t *testing.T) {
 	// ddsource and non-reserved unknown tags become log record attributes.
 	attributes := theRecord.Attributes().AsRaw()
 	assert.Equal(t, "agent", attributes["datadog.ddsource"])
-	assert.Equal(t, "datadog-agent", attributes["kube_app_instance"])
 	assert.Equal(t, "running", attributes["pod_phase"])
 }
 
