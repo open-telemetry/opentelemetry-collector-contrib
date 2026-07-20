@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/ptraceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlotelcol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
@@ -73,6 +74,20 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 					td.CopyTo(matched)
 				default:
 					// all traces are routed
+					td.MoveTo(matched)
+				}
+			}
+		case "otelcol":
+			otx := ottlotelcol.NewTransformContextPtr()
+			_, isMatch, err := route.otelcolStatement.Execute(ctx, otx)
+			otx.Close()
+			if err != nil {
+				errs = errors.Join(errs, err)
+			} else if isMatch {
+				switch route.action {
+				case Copy:
+					td.CopyTo(matched)
+				default:
 					td.MoveTo(matched)
 				}
 			}

@@ -6,6 +6,22 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var ExtensionAwslogsencodingCloudtrailEnableUserIdentityPrefixFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"extension.awslogsencoding.cloudtrail.enable.user.identity.prefix",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, CloudTrail log userIdentity attributes will use 'aws.user_identity' prefix. This helps to preserve the attribute origin."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/45459"),
+	featuregate.WithRegisterFromVersion("v0.145.0"),
+)
+
+var ExtensionAwslogsencodingVpcflowStartIso8601FeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"extension.awslogsencoding.vpcflow.start.iso8601",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, aws.vpc.flow.start field will be formatted as ISO-8601 string instead of seconds since epoch integer."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43390"),
+	featuregate.WithRegisterFromVersion("v0.138.0"),
+)
+
 var ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"extension.encoding.awslogsencoding.DontEmitV0RPCConventions",
 	featuregate.StageAlpha,

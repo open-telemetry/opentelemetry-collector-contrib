@@ -65,15 +65,19 @@ func createDefaultConfig() component.Config {
 	netAddr := confignet.NewDefaultAddrConfig()
 	netAddr.Transport = confignet.TransportTypeTCP
 	netAddr.Endpoint = defaultEndpoint
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = netAddr
+	serverConfig.ReadTimeout = defaultReadTimeout
+	serverConfig.WriteTimeout = defaultWriteTimeout
 	return &Config{
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		WebHook: WebHook{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr:      netAddr,
-				ReadTimeout:  defaultReadTimeout,
-				WriteTimeout: defaultWriteTimeout,
-			},
+			ServerConfig: serverConfig,
 			GitHubHeaders: GitHubHeaders{
 				Customizable: map[string]string{
 					defaultUserAgentHeader: "",

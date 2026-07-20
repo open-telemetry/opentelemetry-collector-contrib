@@ -6,6 +6,9 @@ package webhookeventreceiver
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -18,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -27,6 +31,61 @@ import (
 
 func TestCreateNewLogReceiver(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
+
+	userDefinedServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	userDefinedServerConfig.WriteTimeout = 0
+	userDefinedServerConfig.ReadHeaderTimeout = 0
+	userDefinedServerConfig.IdleTimeout = 0
+	userDefinedServerConfig.KeepAlivesEnabled = false
+	userDefinedServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
+
+	headerRegexServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	headerRegexServerConfig.WriteTimeout = 0
+	headerRegexServerConfig.ReadHeaderTimeout = 0
+	headerRegexServerConfig.IdleTimeout = 0
+	headerRegexServerConfig.KeepAlivesEnabled = false
+	headerRegexServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
+
+	readTimeoutServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	readTimeoutServerConfig.WriteTimeout = 0
+	readTimeoutServerConfig.ReadHeaderTimeout = 0
+	readTimeoutServerConfig.IdleTimeout = 0
+	readTimeoutServerConfig.KeepAlivesEnabled = false
+	readTimeoutServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
+
+	writeTimeoutServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	writeTimeoutServerConfig.WriteTimeout = 0
+	writeTimeoutServerConfig.ReadHeaderTimeout = 0
+	writeTimeoutServerConfig.IdleTimeout = 0
+	writeTimeoutServerConfig.KeepAlivesEnabled = false
+	writeTimeoutServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
+
+	regexCompileServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	regexCompileServerConfig.WriteTimeout = 0
+	regexCompileServerConfig.ReadHeaderTimeout = 0
+	regexCompileServerConfig.IdleTimeout = 0
+	regexCompileServerConfig.KeepAlivesEnabled = false
+	regexCompileServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
 
 	tests := []struct {
 		desc     string
@@ -43,12 +102,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 		{
 			desc: "User defined config success",
 			cfg: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
-				},
+				ServerConfig: userDefinedServerConfig,
 				ReadTimeout:  "5s",
 				WriteTimeout: "5s",
 				Path:         "/event",
@@ -63,12 +117,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 		{
 			desc: "User defined config success with header_attribute_regex supplied",
 			cfg: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
-				},
+				ServerConfig: headerRegexServerConfig,
 				ReadTimeout:  "5s",
 				WriteTimeout: "5s",
 				Path:         "/event",
@@ -84,12 +133,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 		{
 			desc: "User defined read timeout exceeds max value",
 			cfg: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
-				},
+				ServerConfig: readTimeoutServerConfig,
 				ReadTimeout:  "11s",
 				WriteTimeout: "5s",
 				Path:         "/event",
@@ -105,12 +149,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 		{
 			desc: "User defined write timeout exceeds max value",
 			cfg: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
-				},
+				ServerConfig: writeTimeoutServerConfig,
 				ReadTimeout:  "5s",
 				WriteTimeout: "11s",
 				Path:         "/event",
@@ -126,12 +165,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 		{
 			desc: "User defined regex fails to compile",
 			cfg: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
-				},
+				ServerConfig: regexCompileServerConfig,
 				ReadTimeout:  "5s",
 				WriteTimeout: "5s",
 				Path:         "/event",
@@ -326,6 +360,225 @@ func TestFailedReq(t *testing.T) {
 
 			response := w.Result()
 			require.Equal(t, test.status, response.StatusCode)
+		})
+	}
+}
+
+// computeHMACSHA256 is a test helper that computes an HMAC-SHA256 hex digest.
+func computeHMACSHA256(secret, payload string) string {
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(payload))
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+func TestHMACSignatureSuccess(t *testing.T) {
+	secret := "webhook-secret"
+	body := `{"event": "push", "ref": "refs/heads/main"}`
+	signature := "sha256=" + computeHMACSHA256(secret, body)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.NetAddr.Endpoint = "localhost:0"
+	cfg.HMACSignature = HMACSignature{
+		Secret: "webhook-secret",
+		Header: "X-Hub-Signature-256",
+		Prefix: "sha256=",
+	}
+
+	consumer := consumertest.NewNop()
+	receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), *cfg, consumer)
+	require.NoError(t, err)
+
+	r := receiver.(*eventReceiver)
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, r.Shutdown(t.Context()))
+	}()
+
+	req := httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(body))
+	req.Header.Set("X-Hub-Signature-256", signature)
+
+	w := httptest.NewRecorder()
+	r.handleReq(w, req, httprouter.ParamsFromContext(t.Context()))
+	require.Equal(t, http.StatusOK, w.Result().StatusCode)
+}
+
+func TestHMACSignatureWithFingerprintPrefix(t *testing.T) {
+	secret := "fp-secret"
+	body := `{"requestId": "abc123"}`
+	signature := "v1=" + computeHMACSHA256(secret, body)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.NetAddr.Endpoint = "localhost:0"
+	cfg.HMACSignature = HMACSignature{
+		Secret: "fp-secret",
+		Header: "fpjs-event-signature",
+		Prefix: "v1=",
+	}
+
+	consumer := consumertest.NewNop()
+	receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), *cfg, consumer)
+	require.NoError(t, err)
+
+	r := receiver.(*eventReceiver)
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, r.Shutdown(t.Context()))
+	}()
+
+	req := httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(body))
+	req.Header.Set("fpjs-event-signature", signature)
+
+	w := httptest.NewRecorder()
+	r.handleReq(w, req, httprouter.ParamsFromContext(t.Context()))
+	require.Equal(t, http.StatusOK, w.Result().StatusCode)
+}
+
+func TestHMACSignatureWithGzipBody(t *testing.T) {
+	secret := "webhook-secret"
+
+	// Build a gzip-compressed JSON payload.
+	msgStruct := struct {
+		Field1 string
+		Field2 int
+		Field3 string
+	}{
+		Field1: "hello",
+		Field2: 42,
+		Field3: "world",
+	}
+	msgJSON, err := json.Marshal(msgStruct)
+	require.NoError(t, err, "failed to marshall message into valid json")
+
+	var msg bytes.Buffer
+	gzipWriter := gzip.NewWriter(&msg)
+	_, err = gzipWriter.Write(msgJSON)
+	require.NoError(t, err, "Gzip writer failed")
+	require.NoError(t, gzipWriter.Close(), "Gzip writer failed to close")
+
+	compressed := msg.Bytes()
+	// Webhook providers sign the raw (compressed) bytes that are sent on the wire,
+	// so the signature must be computed over the gzipped payload.
+	signature := "sha256=" + computeHMACSHA256(secret, string(compressed))
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.NetAddr.Endpoint = "localhost:0"
+	cfg.HMACSignature = HMACSignature{
+		Secret: configopaque.String(secret),
+		Header: "X-Hub-Signature-256",
+		Prefix: "sha256=",
+	}
+
+	consumer := consumertest.NewNop()
+	receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), *cfg, consumer)
+	require.NoError(t, err)
+
+	r := receiver.(*eventReceiver)
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, r.Shutdown(t.Context()))
+	}()
+
+	req := httptest.NewRequest(http.MethodPost, "http://localhost/events", bytes.NewReader(compressed))
+	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("X-Hub-Signature-256", signature)
+
+	w := httptest.NewRecorder()
+	r.handleReq(w, req, httprouter.ParamsFromContext(t.Context()))
+	require.Equal(t, http.StatusOK, w.Result().StatusCode)
+}
+
+func TestHMACSignatureFailures(t *testing.T) {
+	secret := "webhook-secret"
+	body := `{"event": "push"}`
+	validSig := "sha256=" + computeHMACSHA256(secret, body)
+
+	hmacCfg := func() Config {
+		cfg := createDefaultConfig().(*Config)
+		cfg.NetAddr.Endpoint = "localhost:0"
+		cfg.HMACSignature = HMACSignature{
+			Secret: "webhook-secret",
+			Header: "X-Hub-Signature-256",
+			Prefix: "sha256=",
+		}
+		return *cfg
+	}
+
+	tests := []struct {
+		desc   string
+		cfg    Config
+		req    *http.Request
+		status int
+		errMsg string
+	}{
+		{
+			desc:   "Missing signature header",
+			cfg:    hmacCfg(),
+			req:    httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(body)),
+			status: http.StatusUnauthorized,
+			errMsg: "missing HMAC signature header",
+		},
+		{
+			desc: "Invalid signature prefix",
+			cfg:  hmacCfg(),
+			req: func() *http.Request {
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(body))
+				req.Header.Set("X-Hub-Signature-256", "md5=abc123")
+				return req
+			}(),
+			status: http.StatusUnauthorized,
+			errMsg: "invalid prefix",
+		},
+		{
+			desc: "Invalid hex encoding",
+			cfg:  hmacCfg(),
+			req: func() *http.Request {
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(body))
+				req.Header.Set("X-Hub-Signature-256", "sha256=nothex!!!")
+				return req
+			}(),
+			status: http.StatusUnauthorized,
+			errMsg: "hex encoding is invalid",
+		},
+		{
+			desc: "Wrong secret produces signature mismatch",
+			cfg:  hmacCfg(),
+			req: func() *http.Request {
+				wrongSig := "sha256=" + computeHMACSHA256("wrong-secret", body)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(body))
+				req.Header.Set("X-Hub-Signature-256", wrongSig)
+				return req
+			}(),
+			status: http.StatusUnauthorized,
+			errMsg: "does not match",
+		},
+		{
+			desc: "Tampered body produces signature mismatch",
+			cfg:  hmacCfg(),
+			req: func() *http.Request {
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(`{"event": "tampered"}`))
+				req.Header.Set("X-Hub-Signature-256", validSig)
+				return req
+			}(),
+			status: http.StatusUnauthorized,
+			errMsg: "does not match",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			consumer := consumertest.NewNop()
+			receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), test.cfg, consumer)
+			require.NoError(t, err)
+
+			r := receiver.(*eventReceiver)
+			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, r.Shutdown(t.Context()))
+			}()
+
+			w := httptest.NewRecorder()
+			r.handleReq(w, test.req, httprouter.ParamsFromContext(t.Context()))
+			require.Equal(t, test.status, w.Result().StatusCode)
 		})
 	}
 }

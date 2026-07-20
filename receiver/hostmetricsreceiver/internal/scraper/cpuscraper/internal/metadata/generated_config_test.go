@@ -29,7 +29,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUFrequency: SystemCPUFrequencyMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPU},
+						EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPUFrequency},
 					},
 					SystemCPULogicalCount: SystemCPULogicalCountMetricConfig{
 						Enabled: true,
@@ -57,7 +57,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUFrequency: SystemCPUFrequencyMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPU},
+						EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPUFrequency},
 					},
 					SystemCPULogicalCount: SystemCPULogicalCountMetricConfig{
 						Enabled: false,
@@ -86,6 +86,41 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+func TestSystemCPUFrequencyMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemCPUFrequency
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemCPUFrequencyMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.cpu.frequency doesn't have an attribute invalid, valid attributes: [cpu]")
+
+	cfg = DefaultMetricsConfig().SystemCPUFrequency
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemCPUTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemCPUTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemCPUTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.cpu.time doesn't have an attribute invalid, valid attributes: [cpu, state]")
+
+	cfg = DefaultMetricsConfig().SystemCPUTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemCPUUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemCPUUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemCPUUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.cpu.utilization doesn't have an attribute invalid, valid attributes: [cpu, state]")
+
+	cfg = DefaultMetricsConfig().SystemCPUUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
