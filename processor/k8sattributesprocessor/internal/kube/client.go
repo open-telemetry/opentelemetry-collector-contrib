@@ -62,7 +62,6 @@ type WatchClient struct {
 	Rules                     ExtractionRules
 	Filters                   Filters
 	Associations              []Association
-	hasContainerIDAssociation bool
 	Exclude                   Excludes
 
 	// A map containing Namespace related data, used to associate them with resources.
@@ -149,7 +148,6 @@ func New(
 		Rules:                     rules,
 		Filters:                   filters,
 		Associations:              associations,
-		hasContainerIDAssociation: hasContainerIDAssociation(associations),
 		Exclude:                   exclude,
 		cronJobRegex:              cronJobRegex,
 		stopCh:                    make(chan struct{}),
@@ -1701,13 +1699,14 @@ func (c *WatchClient) staleIdentifierDeleteRequestsLocked(oldPod, newPod *Pod) [
 
 	newIdentifiers := c.getIdentifiersFromAssoc(newPod)
 	newIDSet := make(map[PodIdentifier]struct{}, len(newIdentifiers))
-	for _, id := range newIdentifiers {
-		newIDSet[id] = struct{}{}
+	for i := range newIdentifiers {
+		newIDSet[newIdentifiers[i]] = struct{}{}
 	}
 
 	oldIdentifiers := c.getIdentifiersFromAssoc(oldPod)
 	var requests []deleteRequest
-	for _, id := range oldIdentifiers {
+	for i := range oldIdentifiers {
+		id := oldIdentifiers[i]
 		if _, isActive := newIDSet[id]; isActive {
 			continue
 		}
@@ -1716,66 +1715,6 @@ func (c *WatchClient) staleIdentifierDeleteRequestsLocked(oldPod, newPod *Pod) [
 		}
 	}
 	return requests
-}
-
-func (c *WatchClient) staleContainerIDDeleteRequestsLocked(oldPod, newPod *Pod) []deleteRequest {
-	staleContainerIDs := staleContainerIDs(oldPod, newPod)
-	if len(staleContainerIDs) == 0 {
-		return nil
-	}
-
-	identifiers := c.getIdentifiersFromAssoc(oldPod)
-	requests := make([]deleteRequest, 0, len(staleContainerIDs))
-	for i := range identifiers {
-		id := identifiers[i]
-		if !podIdentifierHasContainerID(id, staleContainerIDs) {
-			continue
-		}
-		if p, ok := c.Pods[id]; ok && p.PodUID == oldPod.PodUID {
-			requests = append(requests, deleteRequest{id: id, podUID: oldPod.PodUID})
-		}
-	}
-	return requests
-}
-
-func staleContainerIDs(oldPod, newPod *Pod) map[string]struct{} {
-	if oldPod == nil || newPod == nil || oldPod.PodUID == "" || oldPod.PodUID != newPod.PodUID {
-		return nil
-	}
-
-	staleContainerIDs := map[string]struct{}{}
-	for containerID := range oldPod.Containers.ByID {
-		if containerID == "" {
-			continue
-		}
-		if _, ok := newPod.Containers.ByID[containerID]; !ok {
-			staleContainerIDs[containerID] = struct{}{}
-		}
-	}
-	return staleContainerIDs
-}
-
-func podIdentifierHasContainerID(id PodIdentifier, containerIDs map[string]struct{}) bool {
-	for i := range id {
-		attr := id[i]
-		if attr.Source.From == ResourceSource && attr.Source.Name == string(conventions.ContainerIDKey) {
-			if _, ok := containerIDs[attr.Value]; ok {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func hasContainerIDAssociation(associations []Association) bool {
-	for _, assoc := range associations {
-		for _, source := range assoc.Sources {
-			if source.From == ResourceSource && source.Name == string(conventions.ContainerIDKey) {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func podUIDIdentifier(podUID string) PodIdentifier {
@@ -1797,18 +1736,19 @@ func (c *WatchClient) cancelDeleteRequests(ids []PodIdentifier, podUID string) {
 		return
 	}
 	idSet := make(map[PodIdentifier]struct{}, len(ids))
-	for _, id := range ids {
-		idSet[id] = struct{}{}
+	for i := range ids {
+		idSet[ids[i]] = struct{}{}
 	}
 	c.deleteMut.Lock()
 	newQueue := c.deleteQueue[:0]
-	for _, d := range c.deleteQueue {
+	for i := range c.deleteQueue {
+		d := &c.deleteQueue[i]
 		if d.podUID == podUID {
 			if _, ok := idSet[d.id]; ok {
 				continue // Cancel this delete request
 			}
 		}
-		newQueue = append(newQueue, d)
+		newQueue = append(newQueue, *d)
 	}
 	c.deleteQueue = newQueue
 	c.deleteMut.Unlock()
