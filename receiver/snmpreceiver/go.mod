@@ -12,7 +12,6 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.156.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/config/configopaque v1.62.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/confmap v1.62.1-0.20260720131437-2ab65ae99cb1
-	go.opentelemetry.io/collector/confmap/xconfmap v0.156.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/consumer v1.62.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/consumer/consumertest v0.156.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.156.1-0.20260720131437-2ab65ae99cb1
@@ -99,6 +98,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.62.1-0.20260720131437-2ab65ae99cb1 // indirect
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v1.62.1-0.20260720131437-2ab65ae99cb1 // indirect
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.62.1-0.20260720131437-2ab65ae99cb1 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect
 	go.opentelemetry.io/collector/connector v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect
 	go.opentelemetry.io/collector/connector/connectortest v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect

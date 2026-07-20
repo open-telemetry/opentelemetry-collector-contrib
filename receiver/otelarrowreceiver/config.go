@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 )
@@ -71,7 +70,7 @@ type Config struct {
 
 var (
 	_ component.Config   = (*Config)(nil)
-	_ xconfmap.Validator = (*ArrowConfig)(nil)
+	_ confmap.Validator = (*ArrowConfig)(nil)
 )
 
 func (cfg *ArrowConfig) Validate() error {

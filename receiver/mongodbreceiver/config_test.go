@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
@@ -115,7 +115,7 @@ func TestValidate(t *testing.T) {
 			MetricsBuilderConfig:  metadata.NewDefaultMetricsBuilderConfig(),
 			QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: 0},
 		}
-		err := xconfmap.Validate(cfg)
+		err := confmap.Validate(cfg)
 		require.ErrorContains(t, err, "query_sample_collection.max_rows_per_query must be greater than 0")
 	})
 	for _, tc := range testCases {
@@ -137,7 +137,7 @@ func TestValidate(t *testing.T) {
 				MetricsBuilderConfig:  metadata.NewDefaultMetricsBuilderConfig(),
 				QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: defaultMaxRowsPerQuery},
 			}
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			if tc.expected == nil {
 				require.NoError(t, err)
 			} else {
@@ -191,7 +191,7 @@ func TestBadTLSConfigs(t *testing.T) {
 				MetricsBuilderConfig:  metadata.NewDefaultMetricsBuilderConfig(),
 				QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: defaultMaxRowsPerQuery},
 			}
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			if tc.expectError {
 				require.Error(t, err)
 			} else {

@@ -20,7 +20,6 @@ require (
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.156.0
 	go.opentelemetry.io/collector/component/componenttest v0.156.1-0.20260720131437-2ab65ae99cb1
-	go.opentelemetry.io/collector/confmap/xconfmap v0.156.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/consumer/consumertest v0.156.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/featuregate v1.62.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/pipeline v1.62.1-0.20260720131437-2ab65ae99cb1

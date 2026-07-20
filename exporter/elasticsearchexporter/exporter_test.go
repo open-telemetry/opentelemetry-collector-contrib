@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -1101,7 +1101,7 @@ func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 		cfg.Mapping.Mode = "ecs"
 	})
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	f := NewFactory()
 	exp, err := f.CreateLogs(t.Context(), params, cfg)
@@ -3489,7 +3489,7 @@ func newUnstartedTestTracesExporter(t *testing.T, url string, fns ...func(*Confi
 		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -3513,7 +3513,7 @@ func newUnstartedTestProfilesExporter(t *testing.T, url string, fns ...func(*Con
 		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateProfiles(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -3536,7 +3536,7 @@ func newUnstartedTestMetricsExporter(t *testing.T, url string, fns ...func(*Conf
 		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -3560,7 +3560,7 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 		// Batch is defined as default configuration
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp

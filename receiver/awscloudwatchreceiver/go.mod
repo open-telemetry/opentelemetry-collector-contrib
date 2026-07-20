@@ -16,7 +16,6 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.156.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/config/configoptional v1.62.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/confmap v1.62.1-0.20260720131437-2ab65ae99cb1
-	go.opentelemetry.io/collector/confmap/xconfmap v0.156.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/consumer v1.62.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/consumer/consumertest v0.156.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/extension/xextension v0.156.1-0.20260720131437-2ab65ae99cb1
@@ -73,6 +72,7 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/valyala/fastjson v1.6.10 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect
 	go.opentelemetry.io/collector/extension v1.62.1-0.20260720131437-2ab65ae99cb1 // indirect

@@ -13,7 +13,6 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.156.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/config/configcompression v1.62.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/confmap v1.62.1-0.20260720131437-2ab65ae99cb1
-	go.opentelemetry.io/collector/confmap/xconfmap v0.156.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/consumer v1.62.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/exporter v1.62.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.156.1-0.20260720131437-2ab65ae99cb1
@@ -24,7 +23,10 @@ require (
 	go.uber.org/zap v1.28.0
 )
 
-require github.com/cenkalti/backoff/v7 v7.0.0 // indirect
+require (
+	github.com/cenkalti/backoff/v7 v7.0.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect
+)
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.12.0 // indirect

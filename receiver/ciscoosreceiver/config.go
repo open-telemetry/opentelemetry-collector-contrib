@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -39,7 +38,7 @@ type Config struct {
 }
 
 var (
-	_ xconfmap.Validator  = (*Config)(nil)
+	_ confmap.Validator  = (*Config)(nil)
 	_ confmap.Unmarshaler = (*Config)(nil)
 )
 

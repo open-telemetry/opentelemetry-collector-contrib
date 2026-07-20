@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
@@ -35,7 +35,7 @@ func TestValidateCredentials(t *testing.T) {
 
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.Username = "user"
-				require.ErrorIs(t, xconfmap.Validate(cfg), errPasswordNotSpecified)
+				require.ErrorIs(t, confmap.Validate(cfg), errPasswordNotSpecified)
 			},
 		},
 		{
@@ -45,7 +45,7 @@ func TestValidateCredentials(t *testing.T) {
 
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.Password = "pass"
-				require.ErrorIs(t, xconfmap.Validate(cfg), errUsernameNotSpecified)
+				require.ErrorIs(t, confmap.Validate(cfg), errUsernameNotSpecified)
 			},
 		},
 		{
@@ -56,7 +56,7 @@ func TestValidateCredentials(t *testing.T) {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.Username = "user"
 				cfg.Password = "pass"
-				require.NoError(t, xconfmap.Validate(cfg))
+				require.NoError(t, confmap.Validate(cfg))
 			},
 		},
 		{
@@ -65,7 +65,7 @@ func TestValidateCredentials(t *testing.T) {
 				t.Parallel()
 
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				require.NoError(t, xconfmap.Validate(cfg))
+				require.NoError(t, confmap.Validate(cfg))
 			},
 		},
 	}
@@ -126,7 +126,7 @@ func TestValidateEndpoint(t *testing.T) {
 			cfg := NewFactory().CreateDefaultConfig().(*Config)
 			cfg.Endpoint = testCase.rawURL
 
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 
 			switch {
 			case testCase.expectedErr != nil:
@@ -188,7 +188,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			if diff := cmp.Diff(
 				tt.expected,
 				cfg,

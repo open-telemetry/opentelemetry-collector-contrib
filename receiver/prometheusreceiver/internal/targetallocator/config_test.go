@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -33,7 +32,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 		sub, err := cm.Sub("target_allocator")
 		require.NoError(t, err)
 		require.NoError(t, sub.Unmarshal(cfg))
-		require.NoError(t, xconfmap.Validate(cfg))
+		require.NoError(t, confmap.Validate(cfg))
 
 		assert.Equal(t, "http://localhost:8080", cfg.Endpoint)
 		assert.Equal(t, 5*time.Second, cfg.Timeout)
@@ -62,33 +61,33 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 
 func TestPromHTTPClientConfigValidateAuthorization(t *testing.T) {
 	cfg := PromHTTPClientConfig{}
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	cfg.Authorization = &promConfig.Authorization{}
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	cfg.Authorization.CredentialsFile = "none"
-	require.Error(t, xconfmap.Validate(cfg))
+	require.Error(t, confmap.Validate(cfg))
 	cfg.Authorization.CredentialsFile = filepath.Join("testdata", "dummy-tls-cert-file")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func TestPromHTTPClientConfigValidateTLSConfig(t *testing.T) {
 	cfg := PromHTTPClientConfig{}
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	cfg.TLSConfig.CertFile = "none"
-	require.Error(t, xconfmap.Validate(cfg))
+	require.Error(t, confmap.Validate(cfg))
 	cfg.TLSConfig.CertFile = filepath.Join("testdata", "dummy-tls-cert-file")
 	cfg.TLSConfig.KeyFile = "none"
-	require.Error(t, xconfmap.Validate(cfg))
+	require.Error(t, confmap.Validate(cfg))
 	cfg.TLSConfig.KeyFile = filepath.Join("testdata", "dummy-tls-key-file")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func TestPromHTTPClientConfigValidateMain(t *testing.T) {
 	cfg := PromHTTPClientConfig{}
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	cfg.BearerToken = "foo"
 	cfg.BearerTokenFile = filepath.Join("testdata", "dummy-tls-key-file")
-	require.Error(t, xconfmap.Validate(cfg))
+	require.Error(t, confmap.Validate(cfg))
 }
 
 func TestConfigValidate_InvalidEndpoint(t *testing.T) {
@@ -137,7 +136,7 @@ func TestConfigValidate_InvalidEndpoint(t *testing.T) {
 				Interval:    30 * time.Second,
 			}
 			cfg.Endpoint = tt.endpoint
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -182,7 +181,7 @@ func TestConfigValidate_InvalidInterval(t *testing.T) {
 				CollectorID: "collector-1",
 			}
 			cfg.Endpoint = "http://localhost:8080"
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -289,7 +288,7 @@ func TestCheckTLSConfig(t *testing.T) {
 				},
 			}
 			cfg.Endpoint = "http://localhost:8080"
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {

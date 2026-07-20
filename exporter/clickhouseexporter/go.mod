@@ -16,7 +16,6 @@ require (
 	go.opentelemetry.io/collector/config/configretry v1.62.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/config/configtls v1.62.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/confmap v1.62.1-0.20260720131437-2ab65ae99cb1
-	go.opentelemetry.io/collector/confmap/xconfmap v0.156.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/exporter v1.62.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.156.1-0.20260720131437-2ab65ae99cb1
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.156.1-0.20260720131437-2ab65ae99cb1
@@ -96,6 +95,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.62.1-0.20260720131437-2ab65ae99cb1 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect
 	go.opentelemetry.io/collector/consumer v1.62.1-0.20260720131437-2ab65ae99cb1 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect
