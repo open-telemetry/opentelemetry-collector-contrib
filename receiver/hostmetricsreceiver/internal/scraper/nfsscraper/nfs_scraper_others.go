@@ -6,11 +6,11 @@
 package nfsscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper"
 
 func getOSNfsStats() (*nfsStats, error) {
-	return &nfsStats{}, nil
+	return nil, nil
 }
 
 func getOSNfsdStats() (*nfsdStats, error) {
-	return &nfsdStats{}, nil
+	return nil, nil
 }
 
 func CanScrapeAll() bool {

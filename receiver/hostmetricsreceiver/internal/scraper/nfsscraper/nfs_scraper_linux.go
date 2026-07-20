@@ -245,9 +245,8 @@ func getOSNfsStats() (*nfsStats, error) {
 
 	f, err := os.Open(nfsProcFile)
 	if err != nil {
-		// If /proc/net/rpc/nfs is unavailable (e.g., NFS not configured), do not return an error.
-		// Return an empty nfsStats so the scraper treats it as no data rather than a scrape error.
-		return &nfsStats{}, nil
+		// If /proc/net/rpc/nfs is unavailable (e.g., NFS not configured), return nil, and nil error
+		return nil, nil
 	}
 
 	defer f.Close()
@@ -266,8 +265,8 @@ func getOSNfsdStats() (*nfsdStats, error) {
 
 	f, err := os.Open(nfsdProcFile)
 	if err != nil {
-		// If /proc/net/rpc/nfsd is unavailable (e.g., NFS server not running), return empty stats instead of error.
-		return &nfsdStats{}, nil
+		// If /proc/net/rpc/nfsd is unavailable (e.g., NFS server not running), return nil, and nil error.
+		return nil, nil
 	}
 
 	defer f.Close()
