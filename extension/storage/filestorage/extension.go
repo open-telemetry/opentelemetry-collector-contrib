@@ -24,7 +24,7 @@ import (
 type localFileStorage struct {
 	cfg    *Config
 	logger *zap.Logger
-} 
+}
 
 // Ensure this storage extension implements the appropriate interface
 var _ storage.Extension = (*localFileStorage)(nil)
