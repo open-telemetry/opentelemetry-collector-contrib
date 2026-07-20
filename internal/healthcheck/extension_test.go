@@ -111,11 +111,11 @@ func TestComponentStatus(t *testing.T) {
 
 func TestNotifyConfig(t *testing.T) {
 	confMap, err := confmaptest.LoadConf(
-		filepath.Join("internal", "http", "testdata", "config.yaml"),
+		filepath.Join("internal", "httpserver", "testdata", "config.yaml"),
 	)
 	require.NoError(t, err)
 	confJSON, err := os.ReadFile(
-		filepath.Clean(filepath.Join("internal", "http", "testdata", "config.json")),
+		filepath.Clean(filepath.Join("internal", "httpserver", "testdata", "config.json")),
 	)
 	require.NoError(t, err)
 

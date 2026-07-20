@@ -184,11 +184,11 @@ components:
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
-    - processor/awsecsattributes
+    - processor/aws_ecs_attributes
     - processor/azuredetector
     - processor/cardinality_guardian
     - processor/coralogix
-    - processor/cumulativetodelta
+    - processor/cumulative_to_delta
     - processor/deltatocumulative
     - processor/deltatorate
     - processor/digitaloceandetector
@@ -222,7 +222,7 @@ components:
     - processor/scalewaydetector
     - processor/schema
     - processor/span
-    - processor/spanpruning
+    - processor/span_pruning
     - processor/sumologic
     - processor/tail_sampling
     - processor/tencentcvmdetector
@@ -282,7 +282,6 @@ components:
     - receiver/iis
     - receiver/influxdb
     - receiver/jaeger
-    - receiver/jmx
     - receiver/journald
     - receiver/k8s_cluster
     - receiver/k8s_events

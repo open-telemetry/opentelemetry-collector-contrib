@@ -40,9 +40,12 @@ This processor is useful for reducing trace data volume while preserving meaning
 
 ## Configuration
 
+> **Note:** This processor was renamed from `spanpruning` to `span_pruning` to match the snake_case naming convention.
+> The deprecated component type `spanpruning` is still accepted as an alias and will log a deprecation warning.
+
 ```yaml
 processors:
-  spanpruning:
+  span_pruning:
     # Attributes to use for grouping similar leaf spans (supports glob patterns)
     # Spans with the same name AND same values for matching attributes will be grouped
     # Examples:
@@ -82,6 +85,14 @@ processors:
     # Range: 0.0 (disabled) to 1.0 (always)
     # Default: 0 (disabled)
     attribute_loss_exemplar_sample_rate: 0.01
+
+    # Enable measurement of serialized trace sizes before and after pruning
+    # When enabled, records bytes_received, bytes_processed_input,
+    # bytes_processed_output, and bytes_emitted metrics
+    # This serializes each batch (full batch plus matched subset before/after pruning)
+    # and is expensive for large batches
+    # Default: false
+    enable_bytes_metrics: false
 
     # Enable IQR or MAD outlier detection and attribute correlation
     # When enabled, adds duration_median_ns and outlier_correlated_attributes
@@ -164,6 +175,7 @@ processors:
 | `aggregation_histogram_buckets` | []time.Duration | `[5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]` | Upper bounds for latency histogram buckets |
 | `enable_attribute_loss_analysis` | bool | false | Enable attribute loss analysis (records attribute-loss metrics and adds summary span loss attributes) |
 | `attribute_loss_exemplar_sample_rate` | float64 | 0 (disabled) | Fraction of attribute-loss metric recordings with exemplars (0.0-1.0). Only applies when `enable_attribute_loss_analysis` is true. |
+| `enable_bytes_metrics` | bool | false | Enable measurement of serialized trace sizes (bytes_received/bytes_processed_input/bytes_processed_output/bytes_emitted metrics) |
 | `enable_outlier_analysis` | bool | false | Enable outlier detection and correlation analysis |
 | `outlier_analysis.method` | string | "iqr" | Statistical method: "iqr" or "mad" |
 | `outlier_analysis.iqr_multiplier` | float64 | 1.5 | IQR threshold multiplier (when method=iqr) |
@@ -344,7 +356,7 @@ The processor supports two statistical methods for outlier detection:
 
 ```yaml
 processors:
-  spanpruning:
+  span_pruning:
     enable_outlier_analysis: true
     outlier_analysis:
       method: iqr                # or "mad" for more robustness
@@ -401,7 +413,7 @@ When `outlier_analysis.preserve_outliers: true`, detected outlier spans are **ke
 
 ```yaml
 processors:
-  spanpruning:
+  span_pruning:
     enable_outlier_analysis: true
     outlier_analysis:
       preserve_outliers: true         # Keep outliers as individual spans
@@ -465,7 +477,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [groupbytrace, spanpruning, batch]
+      processors: [groupbytrace, span_pruning, batch]
       exporters: [otlp]
 ```
 
@@ -476,7 +488,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [tail_sampling, spanpruning, batch]
+      processors: [tail_sampling, span_pruning, batch]
       exporters: [otlp]
 ```
 
@@ -607,6 +619,37 @@ The processor emits the following metrics to help monitor its operation:
 | `otelcol_processor_spanpruning_outliers_detected` | Total spans identified as outliers by analysis (when `enable_outlier_analysis: true`) |
 | `otelcol_processor_spanpruning_outliers_preserved` | Total outlier spans kept as individual spans (when `preserve_outliers: true`) |
 | `otelcol_processor_spanpruning_outliers_correlations_detected` | Total aggregation groups where outliers had correlated attributes |
+| `otelcol_processor_spanpruning_bytes_received` | Total bytes of serialized traces received before pruning (when `enable_bytes_metrics: true`) |
+| `otelcol_processor_spanpruning_bytes_processed_input` | Total bytes of serialized traces in the matched subset, measured before pruning (when `enable_bytes_metrics: true`) |
+| `otelcol_processor_spanpruning_bytes_processed_output` | Total bytes of serialized traces in the matched subset, measured after pruning (when `enable_bytes_metrics: true`) |
+| `otelcol_processor_spanpruning_bytes_emitted` | Total bytes of serialized traces emitted after pruning (when `enable_bytes_metrics: true`) |
+
+### Byte metrics semantics
+
+When `enable_bytes_metrics` is enabled, the processor serializes trace data with
+`ptrace.ProtoMarshaler` on each batch. This adds CPU overhead because it measures:
+
+- Full batch bytes before pruning (`bytes_received`)
+- Matched subset bytes before pruning (`bytes_processed_input`)
+- Matched subset bytes after pruning (`bytes_processed_output`)
+- Full batch bytes after pruning (`bytes_emitted`)
+
+**Current behavior (no `conditions` support yet):** the matched subset is the full
+batch, so `bytes_processed_input == bytes_received` and
+`bytes_processed_output == bytes_emitted`.
+
+**Forward-looking note:** once `conditions` support is added, the matched subset may
+be smaller than the full batch.
+
+| Comparison | Valid now? | Future with `conditions` |
+|------------|------------|--------------------------|
+| `bytes_processed_input` vs `bytes_processed_output` | Yes | Yes |
+| `bytes_received` vs `bytes_emitted` | Yes | Yes |
+| `bytes_emitted` vs `bytes_processed_input` | Same scope today (full batch), but values are equal only if pruning does not change serialized size | Not a like-for-like comparison (full batch vs matched subset) |
+
+After aggregation, `bytes_processed_output` can exceed `bytes_processed_input` when
+summary spans are larger than the leaf spans they replace, so matched-byte savings
+can be negative even when pruning is functioning correctly.
 
 ### Histograms
 
@@ -618,5 +661,6 @@ The processor emits the following metrics to help monitor its operation:
 These metrics can be used to:
 - Monitor the effectiveness of span pruning (compare `spans_received` vs `spans_pruned`)
 - Track the compression ratio achieved by aggregation
+- Track byte changes (`bytes_received`/`bytes_emitted`, and currently equivalent `bytes_processed_input`/`bytes_processed_output`)
 - Identify processing bottlenecks via `processing_duration`
 - Understand aggregation patterns via `aggregation_group_size`

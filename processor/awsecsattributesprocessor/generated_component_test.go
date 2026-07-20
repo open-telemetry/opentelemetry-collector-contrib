@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
-var typ = component.MustNewType("awsecsattributes")
+var typ = component.MustNewType("aws_ecs_attributes")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())
