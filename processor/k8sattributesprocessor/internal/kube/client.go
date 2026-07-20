@@ -58,11 +58,11 @@ type WatchClient struct {
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
-	Pods                      map[PodIdentifier]*Pod
-	Rules                     ExtractionRules
-	Filters                   Filters
-	Associations              []Association
-	Exclude                   Excludes
+	Pods         map[PodIdentifier]*Pod
+	Rules        ExtractionRules
+	Filters      Filters
+	Associations []Association
+	Exclude      Excludes
 
 	// A map containing Namespace related data, used to associate them with resources.
 	// Key is namespace name
@@ -144,18 +144,18 @@ func New(
 	}
 
 	c := &WatchClient{
-		logger:                    set.Logger,
-		Rules:                     rules,
-		Filters:                   filters,
-		Associations:              associations,
-		Exclude:                   exclude,
-		cronJobRegex:              cronJobRegex,
-		stopCh:                    make(chan struct{}),
-		telemetryBuilder:          telemetryBuilder,
-		waitForMetadata:           waitForMetadata,
-		waitForMetadataTimeout:    waitForMetadataTimeout,
-		watchSyncPeriod:           watchSyncPeriod,
-		podDeleteGracePeriod:      podDeleteGracePeriod,
+		logger:                 set.Logger,
+		Rules:                  rules,
+		Filters:                filters,
+		Associations:           associations,
+		Exclude:                exclude,
+		cronJobRegex:           cronJobRegex,
+		stopCh:                 make(chan struct{}),
+		telemetryBuilder:       telemetryBuilder,
+		waitForMetadata:        waitForMetadata,
+		waitForMetadataTimeout: waitForMetadataTimeout,
+		watchSyncPeriod:        watchSyncPeriod,
+		podDeleteGracePeriod:   podDeleteGracePeriod,
 	}
 
 	c.Pods = map[PodIdentifier]*Pod{}
