@@ -214,9 +214,10 @@ func TestOpAMPServer_GetTLSConfig(t *testing.T) {
 
 func TestConfig_Validate(t *testing.T) {
 	type fields struct {
-		Server       *OpAMPServer
-		InstanceUID  string
-		Capabilities Capabilities
+		Server           *OpAMPServer
+		InstanceUID      string
+		Capabilities     Capabilities
+		ReportsRawConfig bool
 	}
 	tests := []struct {
 		name    string
@@ -361,8 +362,8 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "reports_raw_config without reports_effective_config",
 			fields: fields{
+				ReportsRawConfig: true,
 				Capabilities: Capabilities{
-					ReportsRawConfig:       true,
 					ReportsEffectiveConfig: false,
 				},
 				Server: &OpAMPServer{
@@ -381,8 +382,8 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "reports_raw_config with reports_effective_config",
 			fields: fields{
+				ReportsRawConfig: true,
 				Capabilities: Capabilities{
-					ReportsRawConfig:       true,
 					ReportsEffectiveConfig: true,
 				},
 				Server: &OpAMPServer{
@@ -400,9 +401,10 @@ func TestConfig_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				Server:       tt.fields.Server,
-				InstanceUID:  tt.fields.InstanceUID,
-				Capabilities: tt.fields.Capabilities,
+				Server:           tt.fields.Server,
+				InstanceUID:      tt.fields.InstanceUID,
+				Capabilities:     tt.fields.Capabilities,
+				ReportsRawConfig: tt.fields.ReportsRawConfig,
 			}
 			tt.wantErr(t, cfg.Validate())
 		})

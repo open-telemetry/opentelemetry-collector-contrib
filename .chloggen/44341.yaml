@@ -7,7 +7,7 @@ change_type: enhancement
 component: extension/opamp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add an opt-in `reports_raw_config` capability to additionally report the raw, unexpanded configuration alongside the effective configuration
+note: Add an opt-in `reports_raw_config` setting to additionally report the raw, unexpanded configuration alongside the effective configuration
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44341]
@@ -16,14 +16,18 @@ issues: [44341]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  When `reports_raw_config` is enabled (default: false, and requires
-  `reports_effective_config`), the extension reports the raw configuration as
-  authored, before environment variable and other provider references are
-  expanded, under the `raw` key of the effective config map. The fully expanded
-  effective configuration is unchanged and remains under the `""` (empty) key.
-  This is disabled by default because raw configuration files may contain
-  hardcoded secrets; secrets sourced from providers such as `${env:TOKEN}` are
-  redacted, but literal secrets written into the configuration are not.
+  When `reports_raw_config` is enabled (default: false, and requires the
+  `reports_effective_config` capability), the extension reports the raw
+  configuration as authored, before environment variable and other provider
+  references are expanded, under the `raw` key of the effective config map. The
+  fully expanded effective configuration is unchanged and remains under the
+  `""` (empty) key. This is disabled by default because raw configuration files
+  may contain secrets written directly into them. Values sourced from provider
+  references such as `${env:TOKEN}` retain their unexpanded form in the raw
+  configuration, so they are not exposed, and fields using types meant for
+  opaque information (such as `configopaque.String`, commonly used for password
+  fields) are redacted; consult your components' documentation or source to
+  verify which fields are automatically redacted.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

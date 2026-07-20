@@ -38,6 +38,27 @@ type Config struct {
 	// Capabilities contains options to enable a particular OpAMP capability
 	Capabilities Capabilities `mapstructure:"capabilities"`
 
+	// ReportsRawConfig additionally reports the raw, unexpanded Collector
+	// configuration (before environment variable and other provider references
+	// are expanded) alongside the effective configuration. (default: false)
+	//
+	// The raw configuration is reported under the "raw" key of the OpAMP
+	// effective config map; the fully expanded effective configuration is left
+	// unchanged under the "" (empty) key. Requires the
+	// reports_effective_config capability.
+	//
+	// WARNING: the raw configuration can expose secrets that are written
+	// directly in the configuration files. Values sourced from provider
+	// references (for example ${env:TOKEN}) retain their unexpanded form in
+	// the raw configuration, so they are not exposed. Configuration fields
+	// using types meant for opaque information (such as configopaque.String,
+	// commonly used for password fields) are redacted; consult your
+	// components' documentation or source to verify which fields are
+	// automatically redacted. Only enable this if you trust the OpAMP server
+	// with the full contents of your configuration files. It is disabled by
+	// default for this reason.
+	ReportsRawConfig bool `mapstructure:"reports_raw_config"`
+
 	// Agent descriptions contains options to modify the AgentDescription message
 	AgentDescription AgentDescription `mapstructure:"agent_description"`
 
@@ -69,21 +90,6 @@ type Capabilities struct {
 	ReportsAvailableComponents bool `mapstructure:"reports_available_components"`
 	// AcceptsRestartCommand enables the OpAMP AcceptsRestartCommand Capability (default: false)
 	AcceptsRestartCommand bool `mapstructure:"accepts_restart_command"`
-	// ReportsRawConfig additionally reports the raw, unexpanded Collector
-	// configuration (before environment variable and other provider references
-	// are expanded) alongside the effective configuration. (default: false)
-	//
-	// The raw configuration is reported under the "raw" key of the OpAMP
-	// effective config map; the fully expanded effective configuration is left
-	// unchanged under the "" (empty) key. Requires reports_effective_config.
-	//
-	// WARNING: the raw configuration can expose secrets that are hardcoded
-	// directly in the configuration files. Secrets sourced from providers (for
-	// example ${env:TOKEN}) are redacted, but literal secrets written into the
-	// configuration are not. Only enable this if you trust the OpAMP server with
-	// the full contents of your configuration files. It is disabled by default
-	// for this reason.
-	ReportsRawConfig bool `mapstructure:"reports_raw_config"`
 }
 
 func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
@@ -243,7 +249,7 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.Capabilities.ReportsRawConfig && !cfg.Capabilities.ReportsEffectiveConfig {
+	if cfg.ReportsRawConfig && !cfg.Capabilities.ReportsEffectiveConfig {
 		return errors.New("reports_raw_config requires reports_effective_config to be enabled")
 	}
 

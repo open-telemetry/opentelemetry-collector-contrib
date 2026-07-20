@@ -72,9 +72,11 @@ type opampAgent struct {
 	eclk            sync.RWMutex
 	effectiveConfig *confmap.Conf
 	// rawConfig holds the unexpanded configuration reported alongside the
-	// effective config when Capabilities.ReportsRawConfig is enabled. It is nil
-	// when raw config reporting is disabled or unavailable.
+	// effective config when reportsRawConfig is enabled. It is nil when raw
+	// config reporting is disabled or unavailable.
 	rawConfig *confmap.Conf
+	// reportsRawConfig mirrors Config.ReportsRawConfig.
+	reportsRawConfig bool
 
 	// lifetimeCtx is canceled on Stop of the component
 	lifetimeCtx       context.Context
@@ -251,7 +253,7 @@ func (o *opampAgent) NotifyConfigSnapshot(ctx context.Context, configSnapshot ex
 	}
 
 	var rawConfig *confmap.Conf
-	if o.capabilities.ReportsRawConfig {
+	if o.reportsRawConfig {
 		rawConfig = configSnapshot.Unexpanded()
 	}
 	o.updateEffectiveConfig(configSnapshot.Effective(), rawConfig)
@@ -353,6 +355,7 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		serviceInstanceID:        serviceInstanceID,
 		instanceUID:              uid,
 		capabilities:             cfg.Capabilities,
+		reportsRawConfig:         cfg.ReportsRawConfig,
 		opampClient:              opampClient,
 		resourceAttrs:            resourceAttrs,
 		statusSubscriptionWg:     &sync.WaitGroup{},
@@ -473,7 +476,7 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 	// When enabled, additionally report the raw (unexpanded) config under a
 	// distinct key. A failure to marshal the raw config must not drop the
 	// effective config reported under the "" key.
-	if o.capabilities.ReportsRawConfig && o.rawConfig != nil {
+	if o.reportsRawConfig && o.rawConfig != nil {
 		rawConf, err := yaml.Marshal(o.rawConfig.ToStringMap())
 		if err != nil {
 			o.logger.Error("cannot marshal raw config", zap.Any("conf", o.rawConfig), zap.Error(err))

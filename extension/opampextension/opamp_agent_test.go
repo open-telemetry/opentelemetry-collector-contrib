@@ -238,7 +238,7 @@ func TestComposeEffectiveConfig(t *testing.T) {
 
 func TestComposeEffectiveConfigWithRawConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Capabilities.ReportsRawConfig = true
+	cfg.ReportsRawConfig = true
 	set := extensiontest.NewNopSettings(extensiontest.NopType)
 	o, err := newOpampAgent(cfg, set)
 	require.NoError(t, err)
@@ -301,7 +301,7 @@ func TestNotifyConfigSnapshot(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.Capabilities.ReportsRawConfig = tt.reportsRaw
+			cfg.ReportsRawConfig = tt.reportsRaw
 			set := extensiontest.NewNopSettings(extensiontest.NopType)
 			o, err := newOpampAgent(cfg, set)
 			require.NoError(t, err)
