@@ -279,6 +279,22 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 	// now instead of being a span level attribute.
 	groupByService := make(map[string]ptrace.SpanSlice)
 
+	// Datadog splits a 128-bit trace ID into the 64-bit TraceID field plus the _dd.p.tid tag
+	// (upper 64 bits, hex), and only the chunk-local root span carries _dd.p.tid. Spans within a
+	// chunk are not ordered root-first, so reconstruct the full IDs for the whole payload before
+	// building spans; otherwise a span processed ahead of its root keeps the 64-bit (zero-padded)
+	// ID and no longer correlates with the rest of its trace. The shared cache additionally carries
+	// the mapping across payloads whose spans are flushed in separate requests.
+	if traceIDCache != nil {
+		for _, traceChunk := range payload.GetChunks() {
+			for _, span := range traceChunk.GetSpans() {
+				if _, err := traceID64to128(span, traceIDCache); err != nil {
+					logger.Error("error reconstructing 128-bit trace ID", zap.Error(err))
+				}
+			}
+		}
+	}
+
 	for _, traceChunk := range payload.GetChunks() {
 		samplingPriority, hasSamplingPriority := traceChunkSamplingPriority(traceChunk)
 		for _, span := range traceChunk.GetSpans() {

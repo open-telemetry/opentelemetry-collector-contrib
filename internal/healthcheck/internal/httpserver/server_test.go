@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package http
+package httpserver
 
 import (
 	"encoding/json"
@@ -27,7 +27,7 @@ import (
 	"go.uber.org/goleak"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/common"
+	hcconfig "github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/config"
 	internalhelpers "github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/testhelpers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"
@@ -316,7 +316,7 @@ func TestStatus(t *testing.T) {
 		name                  string
 		config                *Config
 		legacyConfig          LegacyConfig
-		componentHealthConfig *common.ComponentHealthConfig
+		componentHealthConfig *hcconfig.ComponentHealthConfig
 		teststeps             []teststep
 	}{
 		{
@@ -965,7 +965,7 @@ func TestStatus(t *testing.T) {
 					Path:    "/status",
 				},
 			},
-			componentHealthConfig: &common.ComponentHealthConfig{
+			componentHealthConfig: &hcconfig.ComponentHealthConfig{
 				IncludePermanent:   false,
 				IncludeRecoverable: true,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -1187,7 +1187,7 @@ func TestStatus(t *testing.T) {
 					Path:    "/status",
 				},
 			},
-			componentHealthConfig: &common.ComponentHealthConfig{
+			componentHealthConfig: &hcconfig.ComponentHealthConfig{
 				IncludePermanent:   false,
 				IncludeRecoverable: true,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -1551,7 +1551,7 @@ func TestStatus(t *testing.T) {
 					Path:    "/status",
 				},
 			},
-			componentHealthConfig: &common.ComponentHealthConfig{
+			componentHealthConfig: &hcconfig.ComponentHealthConfig{
 				IncludePermanent: true,
 			},
 			teststeps: []teststep{
@@ -1770,7 +1770,7 @@ func TestStatus(t *testing.T) {
 					Path:    "/status",
 				},
 			},
-			componentHealthConfig: &common.ComponentHealthConfig{
+			componentHealthConfig: &hcconfig.ComponentHealthConfig{
 				IncludePermanent: true,
 			},
 			teststeps: []teststep{
@@ -2132,7 +2132,7 @@ func TestStatus(t *testing.T) {
 					Path:    "/status",
 				},
 			},
-			componentHealthConfig: &common.ComponentHealthConfig{
+			componentHealthConfig: &hcconfig.ComponentHealthConfig{
 				IncludePermanent:   true,
 				IncludeRecoverable: true,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -2354,7 +2354,7 @@ func TestStatus(t *testing.T) {
 					Path:    "/status",
 				},
 			},
-			componentHealthConfig: &common.ComponentHealthConfig{
+			componentHealthConfig: &hcconfig.ComponentHealthConfig{
 				IncludePermanent:   true,
 				IncludeRecoverable: true,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -3311,7 +3311,7 @@ func TestConfig(t *testing.T) {
 			server = NewServer(
 				tc.config,
 				LegacyConfig{UseV2: true},
-				&common.ComponentHealthConfig{},
+				&hcconfig.ComponentHealthConfig{},
 				componenttest.NewNopTelemetrySettings(),
 				status.NewAggregator(status.PriorityPermanent),
 			)
