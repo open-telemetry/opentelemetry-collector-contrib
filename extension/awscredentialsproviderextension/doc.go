@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package awscredentialsproviderextension resolves AWS credentials and exposes them to other
 // components through the Provider interface. AWS-SDK-based components (e.g. the
