@@ -800,12 +800,12 @@ func TestCompactionOnStartWithCorruption(t *testing.T) {
 	// 2. Panic during compaction (caught by our recovery) - for certain corruption types
 	// 3. Succeed after recreating the database
 	client2, err := se2.GetClient(ctx, component.KindReceiver, newTestEntity("my_component"), "")
-	
+
 	if err != nil {
 		// Severe corruption detected during open - this is acceptable behavior
 		// The panic recovery is for cases where open succeeds but compaction panics
 		t.Logf("Database corruption detected during open (expected): %v", err)
-		
+
 		// Verify a backup was created by the createClientWithPanicRecovery
 		files, err := os.ReadDir(tempDir)
 		require.NoError(t, err)
