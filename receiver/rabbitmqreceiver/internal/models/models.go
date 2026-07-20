@@ -118,3 +118,20 @@ type Node struct {
 	QueueDeleted      int64   `json:"queue_deleted"`
 	QueueDeletedRate  float64 `json:"queue_deleted_details.rate"`
 }
+
+// Exchange represents a RabbitMQ exchange in the API response
+type Exchange struct {
+	// Identifiers
+	Name  string `json:"name"`
+	VHost string `json:"vhost"`
+	Type  string `json:"type"`
+
+	// Metrics
+	MessageStats ExchangeMessageStats `json:"message_stats"`
+}
+
+// ExchangeMessageStats holds the message flow statistics for an exchange.
+type ExchangeMessageStats struct {
+	PublishIn  int64 `json:"publish_in"`
+	PublishOut int64 `json:"publish_out"`
+}

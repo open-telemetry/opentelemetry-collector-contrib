@@ -470,11 +470,11 @@ Examples:
 
 ### truncate_all
 
-`truncate_all(target, limit, Optional[utf8_safe])`
+`truncate_all(target, limit, Optional[utf8_safe], Optional[truncation_marker])`
 
 The `truncate_all` function truncates all string values in a `pcommon.Map` so that none are longer than the limit.
 
-`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer representing the maximum number of bytes. `utf8_safe` is an optional boolean (default: `true`) that enables UTF-8 aware truncation.
+`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer representing the maximum number of bytes. `utf8_safe` is an optional boolean (default: `true`) that enables UTF-8 aware truncation. `truncation_marker` is an optional string (default: `""`) that is appended to values that are truncated.
 
 The map will be mutated such that the number of bytes in all string values is less than or equal to the limit. Non-string values are ignored.
 
@@ -482,10 +482,14 @@ This function treats input as valid UTF-8. Truncation is done only at UTF-8 char
 
 When `utf8_safe` is set to `false`, truncation is applied at the byte limit only. Multi-byte UTF-8 characters may be split and the result can be invalid UTF-8. This mode is faster but should only be used when preserving valid UTF-8 is not required.
 
+`truncation_marker` is a string that will be appended to any value that has been truncated. The marker counts against the `limit` so the result (including the marker) never exceeds it. If the length of `truncation_marker` is larger than `limit`, `truncate_all` will return an error.
+
 Examples:
 
 - `truncate_all(log.attributes, 100)`
 - `truncate_all(resource.attributes, 50, false)`
+- `truncate_all(resource.attributes, 50, false, "(...)")`
+- `truncate_all(log.attributes, 100, truncation_marker = "(truncated)")` 
 
 ## Converters
 
@@ -513,6 +517,7 @@ Available Converters:
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
 - [Filter](#filter)
+- [Find](#find)
 - [FNV](#fnv)
 - [Format](#format)
 - [FormatTime](#formattime)
@@ -527,6 +532,7 @@ Available Converters:
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
+- [IsEmpty](#isempty)
 - [IsInCIDR](#isincidr)
 - [IsInt](#isint)
 - [IsRootSpan](#isrootspan)
@@ -539,6 +545,7 @@ Available Converters:
 - [Log](#log)
 - [IsValidLuhn](#isvalidluhn)
 - [MapEach](#mapeach)
+- [MapKeys](#mapkeys)
 - [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
@@ -558,6 +565,7 @@ Available Converters:
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
 - [ProfileID](#profileid)
+- [Reduce](#reduce)
 - [RemoveXML](#removexml)
 - [Second](#second)
 - [Seconds](#seconds)
@@ -1096,6 +1104,52 @@ Store the filtered result:
 
 - `set(log.attributes["prod_tags"], Filter(log.attributes["tags"], (_, v) => v == "prod"))`
 
+### Find
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Find(source, predicate, Optional[mapper])`
+
+The `Find` converter returns the value of the first element in `source` for which `predicate` evaluates to `true`. 
+If no element matches, it returns `nil`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`predicate` is a lambda expression with exactly two parameters and a boolean result. 
+The first parameter is the element index when searching a slice (`int64`), or the element 
+key when searching a map (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+`mapper` is an optional lambda expression with exactly two parameters. When provided, 
+it transforms the matched element before returning it. The first parameter is the found element 
+index or key, and the second parameter is the element value. When omitted, the matched value 
+is returned as-is.
+
+If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
+
+Examples:
+
+Find a slice element by value:
+
+- `Find(log.attributes["tags"], (_, v) => v == "prod")`
+
+Find a map element by key:
+
+- `Find(log.attributes, (k, _) => k == "http.method")`
+
+Find a map element key instead of value:
+
+- `Find(log.attributes, (_, v) => v == "prod", (k, _) => k)`
+
+Transform the found element:
+
+- `Find(log.attributes, (_, v) => v == "prod", (_, v) => String(v))`
+
+Store the found value:
+
+- `set(log.attributes["first_prod"], Find(log.attributes["tags"], (_, v) => v == "prod"))`
+
 ### FNV
 
 `FNV(value)`
@@ -1441,6 +1495,32 @@ Examples:
 
 - `IsDouble(log.attributes["maybe a double"])`
 
+### IsEmpty
+
+`IsEmpty(value)`
+
+The `IsEmpty` Converter returns `true` if the given `value` is considered empty.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+Specifically, it will return `true` if the provided `value` is one of the following:
+
+1. `nil`.
+2. An empty `pcommon.Value` (`pcommon.ValueTypeEmpty`).
+3. A `pcommon.Map` or native map with no entries.
+4. A `pcommon.Slice` or native slice (including `[]byte`) with no elements.
+5. Any other value equal to its type's zero value (for example, `""`, `0`, `false`, or an unset all-zero `pcommon.TraceID`/`pcommon.SpanID`).
+
+Otherwise, it will return `false`.
+
+Examples:
+
+- `IsEmpty(log.body)`
+
+- `IsEmpty(resource.attributes["maybe empty"])`
+
+- `IsEmpty("")`
+
 ### IsInCIDR
 
 `IsInCIDR(target, networks[])`
@@ -1664,6 +1744,40 @@ Stringify map values:
 Store the mapped result:
 
 - `set(log.attributes["doubled"], MapEach(log.attributes["counts"], (_, v) => Int(v)))`
+
+### MapKeys
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`MapKeys(source, keyMapper)`
+
+The `MapKeys` converter returns a new `pcommon.Map` with each key transformed by `keyMapper`. Values are unchanged.
+
+`source` is a path expression or another getter that resolves to a map.
+
+`keyMapper` is a lambda expression with exactly two parameters that returns a `string`.
+The first parameter is the element key (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+If `keyMapper` produces duplicate keys, only one value is retained and which one is unspecified. 
+Keys are processed in the order they appear in the `source` map, though this is not guaranteed.
+
+If `source` is not a map, or if `keyMapper` does not return a `string`, it returns an error.
+
+Examples:
+
+Prefix map keys:
+
+- `MapKeys(log.attributes, (k, _) => Concat(["http.", k], ""))`
+
+Derive keys from key and value:
+
+- `MapKeys(log.attributes, (k, v) => Concat([k, ":", String(v)], ""))`
+
+Store the result:
+
+- `set(log.attributes["prefixed"], MapKeys(log.attributes, (k, _) => Concat(["http.", k], "")))`
 
 ### MD5
 
@@ -2181,6 +2295,46 @@ Examples:
 
 - `ProfileID(0x00112233445566778899aabbccddeeff)`
 - `ProfileID("a389023abaa839283293ed323892389d")`
+
+### Reduce
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Reduce(source, seed, accumulator)`
+
+The `Reduce` converter folds `source` into a single value, starting from `seed` and applying `accumulator` to each element.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`seed` is the initial accumulator value.
+
+`accumulator` is a lambda expression with exactly three parameters. 
+The first parameter is the current accumulator value. 
+The second parameter is the element index when reducing a slice (`int64`), or the element 
+key when reducing a map (`string`). The third parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+An empty slice or map returns `seed` unchanged.
+
+For maps, element processing order follows map iteration and is not guaranteed to be stable. 
+This matters when `accumulator` is not commutative.
+
+If `source` is not a slice or map, it returns an error.
+
+Examples:
+
+Sum a slice of numbers:
+
+- `Reduce(log.attributes["counts"], 0, (acc, _, v) => acc + Int(v))`
+
+Build a semicolon-separated key=value string:
+
+- `Reduce(log.attributes["labels"], "", (acc, k, v) => Concat([acc, k, "=", String(v), ";"], ""))`
+
+Store the result:
+
+- `set(log.attributes["total"], Reduce(log.attributes["counts"], 0, (acc, _, v) => acc + Int(v)))`
 
 ### RemoveXML
 
