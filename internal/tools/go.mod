@@ -282,15 +282,15 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.30.1-0.20260702202003-335e29c1ae8a // indirect
 	go.opentelemetry.io/build-tools/issuegenerator v0.30.0 // indirect
 	go.opentelemetry.io/build-tools/multimod v0.30.0 // indirect
-	go.opentelemetry.io/collector/cmd/builder v0.156.1-0.20260715151533-47267b188b26 // indirect
-	go.opentelemetry.io/collector/cmd/mdatagen v0.156.1-0.20260715151533-47267b188b26 // indirect
-	go.opentelemetry.io/collector/component v1.62.1-0.20260715151533-47267b188b26 // indirect
-	go.opentelemetry.io/collector/confmap v1.62.1-0.20260715151533-47267b188b26 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.62.1-0.20260715151533-47267b188b26 // indirect
-	go.opentelemetry.io/collector/featuregate v1.62.1-0.20260715151533-47267b188b26 // indirect
-	go.opentelemetry.io/collector/filter v0.156.1-0.20260715151533-47267b188b26 // indirect
-	go.opentelemetry.io/collector/internal/schemagen v0.156.1-0.20260715151533-47267b188b26 // indirect
-	go.opentelemetry.io/collector/pdata v1.62.1-0.20260715151533-47267b188b26 // indirect
+	go.opentelemetry.io/collector/cmd/builder v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect
+	go.opentelemetry.io/collector/cmd/mdatagen v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect
+	go.opentelemetry.io/collector/component v1.62.1-0.20260720131437-2ab65ae99cb1 // indirect
+	go.opentelemetry.io/collector/confmap v1.62.1-0.20260720131437-2ab65ae99cb1 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.62.1-0.20260720131437-2ab65ae99cb1 // indirect
+	go.opentelemetry.io/collector/featuregate v1.62.1-0.20260720131437-2ab65ae99cb1 // indirect
+	go.opentelemetry.io/collector/filter v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect
+	go.opentelemetry.io/collector/internal/schemagen v0.156.1-0.20260720131437-2ab65ae99cb1 // indirect
+	go.opentelemetry.io/collector/pdata v1.62.1-0.20260720131437-2ab65ae99cb1 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
