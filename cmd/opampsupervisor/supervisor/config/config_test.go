@@ -981,10 +981,9 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
 		},
 		{
-			name: "Package capabilities are reported",
+			name: "AcceptsPackages enables both package capabilities",
 			capabilities: Capabilities{
-				AcceptsPackages:        true,
-				ReportsPackageStatuses: true,
+				AcceptsPackages: true,
 			},
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages |
@@ -1005,7 +1004,6 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				ReportsAvailableComponents:     true,
 				ReportsHeartbeat:               true,
 				AcceptsPackages:                true,
-				ReportsPackageStatuses:         true,
 			},
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
