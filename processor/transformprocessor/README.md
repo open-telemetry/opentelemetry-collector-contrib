@@ -766,14 +766,14 @@ The `ParseELF` function returns a `pcommon.Map` that is the result of parsing th
 
 The returned map contains the following keys:
 
-* `version` — value of the `#Version` directive (required).
-* `software` — value of `#Software` (omitted if not present).
-* `date` — value of `#Date` (omitted if not present).
-* `start_date` — value of `#Start-Date` (omitted if not present).
-* `end_date` — value of `#End-Date` (omitted if not present).
-* `remark` — value of `#Remark` (omitted if not present).
-* `fields` — string slice of field names from the last `#Fields` directive.
-* `entries` — slice of maps, one per data line, keyed by field name. Missing values are represented as `"-"`.
+* `elf.version` — value of the `#Version` directive (required).
+* `elf.software` — value of `#Software` (omitted if not present).
+* `elf.date` — value of `#Date` (omitted if not present).
+* `elf.start_date` — value of `#Start-Date` (omitted if not present).
+* `elf.end_date` — value of `#End-Date` (omitted if not present).
+* `elf.remark` — value of `#Remark` (omitted if not present).
+* `elf.fields` — string slice of field names from the last `#Fields` directive.
+* `elf.entries` — slice of maps, one per data line, keyed by field name. Missing values are represented as `"-"`.
 
 Multiple `#Fields` directives within a single block are supported; each directive applies to subsequent data lines until the next `#Fields` directive is encountered. Double-quoted field values (as produced by Microsoft IIS) are handled correctly.
 

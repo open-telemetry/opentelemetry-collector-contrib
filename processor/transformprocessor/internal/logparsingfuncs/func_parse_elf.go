@@ -81,7 +81,7 @@ func nextLine(s string, offset int) (line string, next int, ok bool) {
 //   - elf.end_date   – value of #End-Date (omitted if not present)
 //   - elf.remark     – value of #Remark (omitted if not present)
 //   - elf.fields     – string slice from the last #Fields directive seen
-//   - elf.entries    – slice of maps, one per data line, keyed by "elf.<field>"
+//   - elf.entries    – slice of maps, one per data line, keyed by field name
 //
 // Multiple #Fields directives are supported; each applies to subsequent data lines.
 func parseELFMessage(input string, logger *zap.Logger) (pcommon.Map, error) {
@@ -90,7 +90,6 @@ func parseELFMessage(input string, logger *zap.Logger) (pcommon.Map, error) {
 
 	var hasVersion bool
 	var currentFields []string
-	var currentKeys []string // currentFields prefixed with "elf.", built once per #Fields
 	var lastFields []string
 	var values []string // scratch buffer reused across data lines
 
@@ -121,10 +120,6 @@ func parseELFMessage(input string, logger *zap.Logger) (pcommon.Map, error) {
 			case strings.EqualFold(key, "fields"):
 				currentFields = strings.Fields(value)
 				lastFields = currentFields
-				currentKeys = make([]string, len(currentFields))
-				for i, f := range currentFields {
-					currentKeys[i] = "elf." + f
-				}
 			case strings.EqualFold(key, "software"):
 				result.PutStr("elf.software", value)
 			case strings.EqualFold(key, "date"):
@@ -150,16 +145,16 @@ func parseELFMessage(input string, logger *zap.Logger) (pcommon.Map, error) {
 		}
 		m := entriesSlice.AppendEmpty().SetEmptyMap()
 		m.EnsureCapacity(len(currentFields))
-		for i, key := range currentKeys {
+		for i, field := range currentFields {
 			if i < len(values) {
-				m.PutStr(key, values[i])
+				m.PutStr(field, values[i])
 			} else {
 				logger.Warn("ELF data line has fewer values than fields; substituting '-'",
-					zap.String("field", currentFields[i]),
+					zap.String("field", field),
 					zap.Int("field_count", len(currentFields)),
 					zap.Int("value_count", len(values)),
 				)
-				m.PutStr(key, "-")
+				m.PutStr(field, "-")
 			}
 		}
 		if len(values) > len(currentFields) {
