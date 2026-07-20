@@ -1,4 +1,4 @@
-change_type: breaking_change
+change_type: breaking
 component: connector/signal_to_metrics
 note: The default error mode has been changed from `propagate` to `ignore` to ensure valid OTLP payload is not dropped
 issues: [48419]
