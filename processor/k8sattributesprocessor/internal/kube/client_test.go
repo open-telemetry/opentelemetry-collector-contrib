@@ -447,7 +447,6 @@ func TestPodUpdateQueuesStaleContainerIDAssociation(t *testing.T) {
 			Name: "container.id",
 		}},
 	}}
-	c.hasContainerIDAssociation = hasContainerIDAssociation(c.Associations)
 
 	oldID := newPodIdentifier(ResourceSource, "container.id", "old-container-id")
 	newID := newPodIdentifier(ResourceSource, "container.id", "new-container-id")
