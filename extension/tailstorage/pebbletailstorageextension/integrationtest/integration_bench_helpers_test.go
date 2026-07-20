@@ -114,7 +114,7 @@ func (p benchmarkPolicy) yaml() string {
 	case benchmarkPolicyOTTLCondition:
 		var spanConditions strings.Builder
 		for _, cond := range p.ottlSpanConditions {
-			spanConditions.WriteString(fmt.Sprintf("          - %q\n", cond))
+			fmt.Fprintf(&spanConditions, "          - %q\n", cond)
 		}
 		return fmt.Sprintf(`        type: ottl_condition
         ottl_condition:

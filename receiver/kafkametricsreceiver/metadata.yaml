@@ -24,7 +24,6 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41480
     skip_strict_validation: true
 
-reaggregation_enabled: true
 resource_attributes:
   kafka.cluster.alias:
     description: The alias name (string) of the cluster

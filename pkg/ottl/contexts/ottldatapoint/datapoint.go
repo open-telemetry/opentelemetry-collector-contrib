@@ -55,18 +55,7 @@ func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) er
 	err := encoder.AddObject("resource", logging.Resource(tCtx.GetResource()))
 	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.GetInstrumentationScope())))
 	err = errors.Join(err, encoder.AddObject("metric", logging.Metric(tCtx.metric)))
-
-	switch dp := tCtx.dataPoint.(type) {
-	case pmetric.NumberDataPoint:
-		err = encoder.AddObject("datapoint", logging.NumberDataPoint(dp))
-	case pmetric.HistogramDataPoint:
-		err = encoder.AddObject("datapoint", logging.HistogramDataPoint(dp))
-	case pmetric.ExponentialHistogramDataPoint:
-		err = encoder.AddObject("datapoint", logging.ExponentialHistogramDataPoint(dp))
-	case pmetric.SummaryDataPoint:
-		err = encoder.AddObject("datapoint", logging.SummaryDataPoint(dp))
-	}
-
+	err = errors.Join(err, encoder.AddObject("datapoint", logging.DataPoint(tCtx.dataPoint)))
 	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
 	return err
 }

@@ -158,6 +158,10 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "v1_no_translation"),
 			errorMessage: "translation strategy NoTranslation requires Prometheus Remote Write 2.0",
 		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "negative_max_batch_size_bytes"),
+			errorMessage: "max_batch_size_bytes must be greater than 0",
+		},
 	}
 
 	for _, tt := range tests {

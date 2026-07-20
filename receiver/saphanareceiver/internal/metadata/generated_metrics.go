@@ -536,37 +536,46 @@ var MapAttributeVolumeOperationType = map[string]AttributeVolumeOperationType{
 
 var MetricsInfo = metricsInfo{
 	SaphanaAlertCount: metricInfo{
-		Name: "saphana.alert.count",
+		Name:       "saphana.alert.count",
+		Attributes: []string{"alert_rating"},
 	},
 	SaphanaBackupLatest: metricInfo{
 		Name: "saphana.backup.latest",
 	},
 	SaphanaColumnMemoryUsed: metricInfo{
-		Name: "saphana.column.memory.used",
+		Name:       "saphana.column.memory.used",
+		Attributes: []string{"column_memory_type", "column_memory_subtype"},
 	},
 	SaphanaComponentMemoryUsed: metricInfo{
-		Name: "saphana.component.memory.used",
+		Name:       "saphana.component.memory.used",
+		Attributes: []string{"component"},
 	},
 	SaphanaConnectionCount: metricInfo{
-		Name: "saphana.connection.count",
+		Name:       "saphana.connection.count",
+		Attributes: []string{"connection_status"},
 	},
 	SaphanaCPUUsed: metricInfo{
-		Name: "saphana.cpu.used",
+		Name:       "saphana.cpu.used",
+		Attributes: []string{"cpu_type"},
 	},
 	SaphanaDiskSizeCurrent: metricInfo{
-		Name: "saphana.disk.size.current",
+		Name:       "saphana.disk.size.current",
+		Attributes: []string{"path", "disk_usage_type", "disk_state_used_free"},
 	},
 	SaphanaHostMemoryCurrent: metricInfo{
-		Name: "saphana.host.memory.current",
+		Name:       "saphana.host.memory.current",
+		Attributes: []string{"memory_state_used_free"},
 	},
 	SaphanaHostSwapCurrent: metricInfo{
-		Name: "saphana.host.swap.current",
+		Name:       "saphana.host.swap.current",
+		Attributes: []string{"host_swap_state"},
 	},
 	SaphanaInstanceCodeSize: metricInfo{
 		Name: "saphana.instance.code_size",
 	},
 	SaphanaInstanceMemoryCurrent: metricInfo{
-		Name: "saphana.instance.memory.current",
+		Name:       "saphana.instance.memory.current",
+		Attributes: []string{"memory_state_used_free"},
 	},
 	SaphanaInstanceMemorySharedAllocated: metricInfo{
 		Name: "saphana.instance.memory.shared.allocated",
@@ -575,100 +584,130 @@ var MetricsInfo = metricsInfo{
 		Name: "saphana.instance.memory.used.peak",
 	},
 	SaphanaLicenseExpirationTime: metricInfo{
-		Name: "saphana.license.expiration.time",
+		Name:       "saphana.license.expiration.time",
+		Attributes: []string{"system", "product"},
 	},
 	SaphanaLicenseLimit: metricInfo{
-		Name: "saphana.license.limit",
+		Name:       "saphana.license.limit",
+		Attributes: []string{"system", "product"},
 	},
 	SaphanaLicensePeak: metricInfo{
-		Name: "saphana.license.peak",
+		Name:       "saphana.license.peak",
+		Attributes: []string{"system", "product"},
 	},
 	SaphanaNetworkRequestAverageTime: metricInfo{
 		Name: "saphana.network.request.average_time",
 	},
 	SaphanaNetworkRequestCount: metricInfo{
-		Name: "saphana.network.request.count",
+		Name:       "saphana.network.request.count",
+		Attributes: []string{"active_pending_request_state"},
 	},
 	SaphanaNetworkRequestFinishedCount: metricInfo{
-		Name: "saphana.network.request.finished.count",
+		Name:       "saphana.network.request.finished.count",
+		Attributes: []string{"internal_external_request_type"},
 	},
 	SaphanaReplicationAverageTime: metricInfo{
-		Name: "saphana.replication.average_time",
+		Name:       "saphana.replication.average_time",
+		Attributes: []string{"primary_host", "secondary_host", "port", "replication_mode"},
 	},
 	SaphanaReplicationBacklogSize: metricInfo{
-		Name: "saphana.replication.backlog.size",
+		Name:       "saphana.replication.backlog.size",
+		Attributes: []string{"primary_host", "secondary_host", "port", "replication_mode"},
 	},
 	SaphanaReplicationBacklogTime: metricInfo{
-		Name: "saphana.replication.backlog.time",
+		Name:       "saphana.replication.backlog.time",
+		Attributes: []string{"primary_host", "secondary_host", "port", "replication_mode"},
 	},
 	SaphanaRowStoreMemoryUsed: metricInfo{
-		Name: "saphana.row_store.memory.used",
+		Name:       "saphana.row_store.memory.used",
+		Attributes: []string{"row_memory_type"},
 	},
 	SaphanaSchemaMemoryUsedCurrent: metricInfo{
-		Name: "saphana.schema.memory.used.current",
+		Name:       "saphana.schema.memory.used.current",
+		Attributes: []string{"schema", "schema_memory_type"},
 	},
 	SaphanaSchemaMemoryUsedMax: metricInfo{
-		Name: "saphana.schema.memory.used.max",
+		Name:       "saphana.schema.memory.used.max",
+		Attributes: []string{"schema"},
 	},
 	SaphanaSchemaOperationCount: metricInfo{
-		Name: "saphana.schema.operation.count",
+		Name:       "saphana.schema.operation.count",
+		Attributes: []string{"schema", "schema_operation_type"},
 	},
 	SaphanaSchemaRecordCompressedCount: metricInfo{
-		Name: "saphana.schema.record.compressed.count",
+		Name:       "saphana.schema.record.compressed.count",
+		Attributes: []string{"schema"},
 	},
 	SaphanaSchemaRecordCount: metricInfo{
-		Name: "saphana.schema.record.count",
+		Name:       "saphana.schema.record.count",
+		Attributes: []string{"schema", "schema_record_type"},
 	},
 	SaphanaServiceCodeSize: metricInfo{
-		Name: "saphana.service.code_size",
+		Name:       "saphana.service.code_size",
+		Attributes: []string{"service"},
 	},
 	SaphanaServiceCount: metricInfo{
-		Name: "saphana.service.count",
+		Name:       "saphana.service.count",
+		Attributes: []string{"service_status"},
 	},
 	SaphanaServiceMemoryCompactorsAllocated: metricInfo{
-		Name: "saphana.service.memory.compactors.allocated",
+		Name:       "saphana.service.memory.compactors.allocated",
+		Attributes: []string{"service"},
 	},
 	SaphanaServiceMemoryCompactorsFreeable: metricInfo{
-		Name: "saphana.service.memory.compactors.freeable",
+		Name:       "saphana.service.memory.compactors.freeable",
+		Attributes: []string{"service"},
 	},
 	SaphanaServiceMemoryEffectiveLimit: metricInfo{
-		Name: "saphana.service.memory.effective_limit",
+		Name:       "saphana.service.memory.effective_limit",
+		Attributes: []string{"service"},
 	},
 	SaphanaServiceMemoryHeapCurrent: metricInfo{
-		Name: "saphana.service.memory.heap.current",
+		Name:       "saphana.service.memory.heap.current",
+		Attributes: []string{"service", "memory_state_used_free"},
 	},
 	SaphanaServiceMemoryLimit: metricInfo{
-		Name: "saphana.service.memory.limit",
+		Name:       "saphana.service.memory.limit",
+		Attributes: []string{"service"},
 	},
 	SaphanaServiceMemorySharedCurrent: metricInfo{
-		Name: "saphana.service.memory.shared.current",
+		Name:       "saphana.service.memory.shared.current",
+		Attributes: []string{"service", "memory_state_used_free"},
 	},
 	SaphanaServiceMemoryUsed: metricInfo{
-		Name: "saphana.service.memory.used",
+		Name:       "saphana.service.memory.used",
+		Attributes: []string{"service", "service_memory_used_type"},
 	},
 	SaphanaServiceStackSize: metricInfo{
-		Name: "saphana.service.stack_size",
+		Name:       "saphana.service.stack_size",
+		Attributes: []string{"service"},
 	},
 	SaphanaServiceThreadCount: metricInfo{
-		Name: "saphana.service.thread.count",
+		Name:       "saphana.service.thread.count",
+		Attributes: []string{"thread_status"},
 	},
 	SaphanaTransactionBlocked: metricInfo{
 		Name: "saphana.transaction.blocked",
 	},
 	SaphanaTransactionCount: metricInfo{
-		Name: "saphana.transaction.count",
+		Name:       "saphana.transaction.count",
+		Attributes: []string{"transaction_type"},
 	},
 	SaphanaUptime: metricInfo{
-		Name: "saphana.uptime",
+		Name:       "saphana.uptime",
+		Attributes: []string{"system", "database"},
 	},
 	SaphanaVolumeOperationCount: metricInfo{
-		Name: "saphana.volume.operation.count",
+		Name:       "saphana.volume.operation.count",
+		Attributes: []string{"path", "disk_usage_type", "volume_operation_type"},
 	},
 	SaphanaVolumeOperationSize: metricInfo{
-		Name: "saphana.volume.operation.size",
+		Name:       "saphana.volume.operation.size",
+		Attributes: []string{"path", "disk_usage_type", "volume_operation_type"},
 	},
 	SaphanaVolumeOperationTime: metricInfo{
-		Name: "saphana.volume.operation.time",
+		Name:       "saphana.volume.operation.time",
+		Attributes: []string{"path", "disk_usage_type", "volume_operation_type"},
 	},
 }
 
@@ -721,7 +760,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSaphanaAlertCount struct {

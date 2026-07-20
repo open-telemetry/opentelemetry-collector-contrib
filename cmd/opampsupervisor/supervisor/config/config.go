@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -230,19 +231,26 @@ func (o OpAMPServer) Validate() error {
 }
 
 type Agent struct {
-	Executable              string            `mapstructure:"executable"`
-	InstanceID              string            `mapstructure:"instance_id"`
-	OrphanDetectionInterval time.Duration     `mapstructure:"orphan_detection_interval"`
-	Description             AgentDescription  `mapstructure:"description"`
-	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`
-	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
-	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
-	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
-	UseHUPConfigReload      bool              `mapstructure:"use_hup_config_reload"`
-	ValidateConfig          bool              `mapstructure:"validate_config"`
-	ConfigFiles             []string          `mapstructure:"config_files"`
-	Arguments               []string          `mapstructure:"args"`
-	Env                     map[string]string `mapstructure:"env"`
+	Executable                  string            `mapstructure:"executable"`
+	InstanceID                  string            `mapstructure:"instance_id"`
+	OrphanDetectionInterval     time.Duration     `mapstructure:"orphan_detection_interval"`
+	Description                 AgentDescription  `mapstructure:"description"`
+	ConfigApplyTimeout          time.Duration     `mapstructure:"config_apply_timeout"`
+	BootstrapTimeout            time.Duration     `mapstructure:"bootstrap_timeout"`
+	OpAMPServerPort             int               `mapstructure:"opamp_server_port"`
+	PassthroughLogs             bool              `mapstructure:"passthrough_logs"`
+	CollectorCrashLogSnippetKiB int               `mapstructure:"collector_crash_log_snippet_kib"`
+	AutomaticConfigRollback     bool              `mapstructure:"automatic_config_rollback"`
+	UseHUPConfigReload          bool              `mapstructure:"use_hup_config_reload"`
+	ValidateConfig              bool              `mapstructure:"validate_config"`
+	ConfigFiles                 []string          `mapstructure:"config_files"`
+	Arguments                   []string          `mapstructure:"args"`
+	Env                         map[string]string `mapstructure:"env"`
+	// StartupFallbackConfigs is an ordered list of fallback configuration files to use
+	// when the OpAMP server is unreachable. Configs are merged in order.
+	StartupFallbackConfigs []string `mapstructure:"startup_fallback_configs"`
+	// Package configures how collector executable updates are formatted and verified.
+	Package AgentPackage `mapstructure:"package"`
 }
 
 func (a Agent) Validate() error {
@@ -256,6 +264,14 @@ func (a Agent) Validate() error {
 
 	if a.OpAMPServerPort < 0 || a.OpAMPServerPort > 65535 {
 		return errors.New("agent::opamp_server_port must be a valid port number")
+	}
+
+	if a.CollectorCrashLogSnippetKiB < 0 {
+		return errors.New("agent::collector_crash_log_snippet_kib must be non-negative")
+	}
+
+	if a.CollectorCrashLogSnippetKiB > 1024 {
+		return errors.New("agent::collector_crash_log_snippet_kib must be less than or equal to 1024")
 	}
 
 	if a.InstanceID != "" {
@@ -290,7 +306,56 @@ func (a Agent) Validate() error {
 		return errors.New("agent::use_hup_config_reload is not supported on Windows")
 	}
 
+	if err := a.validateFallbackConfigs(); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (a Agent) validateFallbackConfigs() error {
+	// If no fallback configs are specified, no validation is needed.
+	if len(a.StartupFallbackConfigs) == 0 {
+		return nil
+	}
+
+	// Validate that the fallback config files exist.
+	for i, cfgPath := range a.StartupFallbackConfigs {
+		if cfgPath == "" {
+			return fmt.Errorf("agent::startup_fallback_configs[%d] cannot be empty", i)
+		}
+		if _, err := os.Stat(cfgPath); err != nil {
+			return fmt.Errorf("could not stat agent::startup_fallback_configs[%d] path %q: %w", i, cfgPath, err)
+		}
+	}
+	if err := a.validateFallbackConfigsWithColBin(); err != nil {
+		return fmt.Errorf("could not validate startup fallback configs with agent::executable: %w", err)
+	}
+
+	return nil
+}
+
+func (a Agent) validateFallbackConfigsWithColBin() error {
+	cfgValidateCommand := []string{a.Executable, "validate"}
+	for _, cfgPath := range a.StartupFallbackConfigs {
+		cfgValidateCommand = append(cfgValidateCommand, "--config", cfgPath)
+	}
+	cfgValidateCommand = append(cfgValidateCommand, a.Arguments...)
+
+	cmd := exec.Command(cfgValidateCommand[0], cfgValidateCommand[1:]...) // #nosec G204
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// FallbackEnabled returns true if fallback configuration is enabled.
+func (a Agent) FallbackEnabled() bool {
+	return len(a.StartupFallbackConfigs) > 0
 }
 
 type SpecialConfigFile string
@@ -308,8 +373,9 @@ var SpecialConfigFiles = []SpecialConfigFile{
 }
 
 type AgentDescription struct {
-	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
-	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
+	IdentifyingAttributes     map[string]string `mapstructure:"identifying_attributes"`
+	NonIdentifyingAttributes  map[string]string `mapstructure:"non_identifying_attributes"`
+	IncludeResourceAttributes bool              `mapstructure:"include_resource_attributes"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -325,8 +391,6 @@ type Telemetry struct {
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
-
-type ResourceConfig = otelconftelemetry.ResourceConfig
 
 type HealthCheck struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
@@ -358,6 +422,9 @@ type Logs struct {
 	Level            zapcore.Level `mapstructure:"level"`
 	ErrorOutputPaths []string      `mapstructure:"error_output_paths"`
 	OutputPaths      []string      `mapstructure:"output_paths"`
+	// Encoding sets the logger's encoding. Valid values are "json" and "console".
+	// Defaults to "json".
+	Encoding string `mapstructure:"encoding"`
 	// Processors allow configuration of log record processors to emit logs to
 	// any number of supported backends.
 	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
@@ -385,6 +452,15 @@ func DefaultSupervisor() Supervisor {
 		defaultStorageDir = filepath.Join(programDataDir, "Otelcol", "Supervisor")
 	}
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+	}
 	return Supervisor{
 		Capabilities: Capabilities{
 			AcceptsRemoteConfig:            false,
@@ -405,11 +481,15 @@ func DefaultSupervisor() Supervisor {
 			Directory: defaultStorageDir,
 		},
 		Agent: Agent{
-			OrphanDetectionInterval: 5 * time.Second,
-			ConfigApplyTimeout:      5 * time.Second,
-			BootstrapTimeout:        3 * time.Second,
-			PassthroughLogs:         false,
-			ValidateConfig:          false,
+			OrphanDetectionInterval:     5 * time.Second,
+			ConfigApplyTimeout:          5 * time.Second,
+			BootstrapTimeout:            3 * time.Second,
+			PassthroughLogs:             false,
+			CollectorCrashLogSnippetKiB: 0,
+			ValidateConfig:              false,
+			Package: AgentPackage{
+				Verifier: Verifier{Type: VerifierTypeNone},
+			},
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{
@@ -419,11 +499,7 @@ func DefaultSupervisor() Supervisor {
 			},
 		},
 		HealthCheck: HealthCheck{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-				},
-			},
+			ServerConfig: serverConfig,
 		},
 	}
 }

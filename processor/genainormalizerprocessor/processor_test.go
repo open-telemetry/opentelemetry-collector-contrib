@@ -302,6 +302,64 @@ func TestNormalizeAttributes_ReportsWrote(t *testing.T) {
 	})
 }
 
+func TestNormalizeAttributes_AggregatorRunsBeforeRenames(t *testing.T) {
+	_, span := newSpan()
+	attrs := span.Attributes()
+	attrs.PutStr("llm.input_messages.0.message.role", "user")
+	attrs.PutStr("llm.input_messages.0.message.content", "hello")
+	attrs.PutStr("llm.model_name", "gpt-4")
+
+	sn := sourceNormalizer{
+		lookupTable:     openinference.LookupTable,
+		transformValue:  openinference.Transform,
+		aggregators:     []attributeAggregator{openinference.MessageAggregator{}},
+		removeOriginals: true,
+		overwrite:       false,
+	}
+
+	wrote := sn.normalizeAttributes(attrs)
+	require.True(t, wrote)
+
+	v, ok := attrs.Get("gen_ai.input.messages")
+	require.True(t, ok)
+	assert.Contains(t, v.AsString(), `"role":"user"`)
+
+	_, ok = attrs.Get("llm.input_messages.0.message.role")
+	assert.False(t, ok)
+
+	model, ok := attrs.Get("gen_ai.request.model")
+	require.True(t, ok)
+	assert.Equal(t, "gpt-4", model.Str())
+}
+
+func TestNormalizeAttributes_AggregatorReportsWrote(t *testing.T) {
+	t.Run("returns true when aggregator writes", func(t *testing.T) {
+		_, span := newSpan()
+		attrs := span.Attributes()
+		attrs.PutStr("llm.input_messages.0.message.role", "user")
+		attrs.PutStr("llm.input_messages.0.message.content", "hi")
+
+		sn := sourceNormalizer{
+			aggregators:     []attributeAggregator{openinference.MessageAggregator{}},
+			lookupTable:     map[string]string{},
+			removeOriginals: true,
+		}
+		assert.True(t, sn.normalizeAttributes(attrs))
+	})
+
+	t.Run("returns false when aggregator has nothing to do", func(t *testing.T) {
+		_, span := newSpan()
+		span.Attributes().PutStr("http.method", "GET")
+
+		sn := sourceNormalizer{
+			aggregators:     []attributeAggregator{openinference.MessageAggregator{}},
+			lookupTable:     map[string]string{},
+			removeOriginals: true,
+		}
+		assert.False(t, sn.normalizeAttributes(span.Attributes()))
+	})
+}
+
 func TestProcessTraces_AppliesToSpans(t *testing.T) {
 	p := &genaiNormalizerProcessor{
 		sources: []sourceNormalizer{
@@ -337,6 +395,27 @@ func TestProcessTraces_StampsSchemaURLWhenMappingFires(t *testing.T) {
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.40.0", ss.SchemaUrl())
 }
 
+func TestProcessTraces_StampsSchemaURLWhenAggregatorFires(t *testing.T) {
+	p := &genaiNormalizerProcessor{
+		sources: []sourceNormalizer{{
+			lookupTable:     openinference.LookupTable,
+			transformValue:  openinference.Transform,
+			aggregators:     []attributeAggregator{openinference.MessageAggregator{}},
+			removeOriginals: true,
+		}},
+	}
+
+	td, span := newSpan()
+	span.Attributes().PutStr("llm.input_messages.0.message.role", "user")
+	span.Attributes().PutStr("llm.input_messages.0.message.content", "hi")
+
+	_, err := p.processTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	ss := td.ResourceSpans().At(0).ScopeSpans().At(0)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.40.0", ss.SchemaUrl())
+}
+
 func TestProcessTraces_LeavesSchemaURLWhenNoMappingFires(t *testing.T) {
 	p := &genaiNormalizerProcessor{
 		sources: []sourceNormalizer{
@@ -352,6 +431,25 @@ func TestProcessTraces_LeavesSchemaURLWhenNoMappingFires(t *testing.T) {
 
 	ss := td.ResourceSpans().At(0).ScopeSpans().At(0)
 	assert.Empty(t, ss.SchemaUrl(), "schema_url must not be set when no mapping fires")
+}
+
+func TestProcessTraces_LeavesExistingSchemaURLWhenOverwriteEnabledButNoMappingFires(t *testing.T) {
+	p := &genaiNormalizerProcessor{
+		overwriteSchemaURL: true,
+		sources: []sourceNormalizer{
+			newNormalizer(map[string]string{"src.model": "dst.model"}, true, false),
+		},
+	}
+
+	td, span := newSpan()
+	td.ResourceSpans().At(0).ScopeSpans().At(0).SetSchemaUrl("https://opentelemetry.io/schemas/1.38.0")
+	span.Attributes().PutStr("http.method", "GET")
+
+	_, err := p.processTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	ss := td.ResourceSpans().At(0).ScopeSpans().At(0)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.38.0", ss.SchemaUrl())
 }
 
 func TestProcessTraces_PreservesExistingSchemaURL(t *testing.T) {
@@ -376,8 +474,30 @@ func TestProcessTraces_PreservesExistingSchemaURL(t *testing.T) {
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.38.0", ss.SchemaUrl())
 }
 
+func TestProcessTraces_OverwritesExistingSchemaURLWhenEnabled(t *testing.T) {
+	p := newGenaiNormalizerProcessor(&Config{
+		OverwriteSchemaURL: true,
+		Sources: []Source{{
+			Name:            "test",
+			RemoveOriginals: true,
+			Mappings:        map[string]string{"src.model": "dst.model"},
+		}},
+	})
+
+	td, span := newSpan()
+	td.ResourceSpans().At(0).ScopeSpans().At(0).SetSchemaUrl("https://opentelemetry.io/schemas/1.38.0")
+	span.Attributes().PutStr("src.model", "m")
+
+	_, err := p.processTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	ss := td.ResourceSpans().At(0).ScopeSpans().At(0)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.40.0", ss.SchemaUrl())
+}
+
 func TestProcessTraces_DoesNotModifyResourceSchemaURL(t *testing.T) {
 	p := &genaiNormalizerProcessor{
+		overwriteSchemaURL: true,
 		sources: []sourceNormalizer{
 			newNormalizer(map[string]string{"src.model": "dst.model"}, true, false),
 		},
@@ -566,6 +686,257 @@ func TestNormalize_OpenLLMetry_OperationNameFolding(t *testing.T) {
 
 	_, ok = out.Get("traceloop.span.kind")
 	assert.False(t, ok, "original must be removed")
+}
+
+// TestNormalize_Custom_RenamesUserDefinedAttribute exercises a custom
+// rename for a key that no built-in source covers, end-to-end through
+// ConsumeTraces.
+func TestNormalize_Custom_RenamesUserDefinedAttribute(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{
+			Name:            "my_vendor",
+			RemoveOriginals: true,
+			Mappings: map[string]string{
+				"my_vendor.model": "gen_ai.request.model",
+			},
+		}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutStr("my_vendor.model", "claude-sonnet-4")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.request.model")
+	require.True(t, ok, "gen_ai.request.model must be set")
+	assert.Equal(t, "claude-sonnet-4", v.Str())
+
+	_, ok = out.Get("my_vendor.model")
+	assert.False(t, ok, "original must be removed")
+}
+
+// TestNormalize_Custom_CoercesOntoTypedTarget asserts that a custom
+// rename onto a typed gen_ai.* target runs the same Coerce path as
+// built-in sources, e.g. string-form numeric -> int64.
+func TestNormalize_Custom_CoercesOntoTypedTarget(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{
+			Name:            "my_vendor",
+			RemoveOriginals: true,
+			Mappings: map[string]string{
+				"my_vendor.tokens.in": "gen_ai.usage.input_tokens",
+			},
+		}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutStr("my_vendor.tokens.in", "100")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.usage.input_tokens")
+	require.True(t, ok)
+	require.Equal(t, pcommon.ValueTypeInt, v.Type())
+	assert.Equal(t, int64(100), v.Int())
+}
+
+// TestNormalize_Custom_PassesThroughOnNonGenAITarget asserts that a custom
+// rename onto a target outside the gen_ai.* namespace bypasses Coerce's
+// typed enforcement and passes the source value through verbatim.
+func TestNormalize_Custom_PassesThroughOnNonGenAITarget(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{
+			Name:            "my_vendor",
+			RemoveOriginals: true,
+			Mappings: map[string]string{
+				"my_vendor.cost": "internal.cost",
+			},
+		}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutDouble("my_vendor.cost", 0.42)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("internal.cost")
+	require.True(t, ok)
+	require.Equal(t, pcommon.ValueTypeDouble, v.Type())
+	assert.Equal(t, 0.42, v.Double())
+}
+
+// TestNormalize_Custom_ComposesWithBuiltIn asserts that built-in and
+// custom sources fire in config order on the same span.
+func TestNormalize_Custom_ComposesWithBuiltIn(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{
+			{Name: SourceOpenInference, RemoveOriginals: true},
+			{
+				Name:            "my_vendor",
+				RemoveOriginals: true,
+				Mappings: map[string]string{
+					"my_vendor.cost": "internal.cost",
+				},
+			},
+		},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutStr("llm.model_name", "claude-sonnet-4")
+	span.Attributes().PutDouble("my_vendor.cost", 0.42)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	model, ok := out.Get("gen_ai.request.model")
+	require.True(t, ok)
+	assert.Equal(t, "claude-sonnet-4", model.Str())
+
+	cost, ok := out.Get("internal.cost")
+	require.True(t, ok)
+	assert.Equal(t, 0.42, cost.Double())
+
+	_, ok = out.Get("llm.model_name")
+	assert.False(t, ok)
+	_, ok = out.Get("my_vendor.cost")
+	assert.False(t, ok)
+}
+
+// TestNormalize_Custom_TwoBlocksAppliedInOrder asserts that two custom
+// source blocks targeting the same destination apply in config order;
+// the second block with overwrite=true wins.
+func TestNormalize_Custom_TwoBlocksAppliedInOrder(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{
+			{
+				Name:            "vendor_a",
+				RemoveOriginals: true,
+				Mappings:        map[string]string{"vendor_a.model": "gen_ai.request.model"},
+			},
+			{
+				Name:            "vendor_b",
+				RemoveOriginals: true,
+				Overwrite:       true,
+				Mappings:        map[string]string{"vendor_b.model": "gen_ai.request.model"},
+			},
+		},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutStr("vendor_a.model", "from-a")
+	span.Attributes().PutStr("vendor_b.model", "from-b")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.request.model")
+	require.True(t, ok)
+	assert.Equal(t, "from-b", v.Str())
+}
+
+// TestNormalize_Custom_OverwriteFalseSkipsExistingTarget asserts that the
+// shared overwrite=false semantics apply to custom sources too.
+func TestNormalize_Custom_OverwriteFalseSkipsExistingTarget(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{
+			Name:            "my_vendor",
+			RemoveOriginals: true,
+			Mappings:        map[string]string{"my_vendor.model": "gen_ai.request.model"},
+		}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutStr("my_vendor.model", "new")
+	span.Attributes().PutStr("gen_ai.request.model", "existing")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.request.model")
+	require.True(t, ok)
+	assert.Equal(t, "existing", v.Str())
+}
+
+// TestNormalize_Custom_ValueMappingFoldsEnum asserts that a custom
+// rename plus a value_mappings rule keyed on the post-rename target
+// folds the source value onto the configured enum value.
+func TestNormalize_Custom_ValueMappingFoldsEnum(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{
+			Name:            "my_vendor",
+			RemoveOriginals: true,
+			Mappings:        map[string]string{"my_vendor.op": "gen_ai.operation.name"},
+			ValueMappings: map[string]map[string]string{
+				"gen_ai.operation.name": {"chat_completion": "chat"},
+			},
+		}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutStr("my_vendor.op", "chat_completion")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.operation.name")
+	require.True(t, ok)
+	assert.Equal(t, "chat", v.Str())
+
+	_, ok = out.Get("my_vendor.op")
+	assert.False(t, ok)
+}
+
+// TestNormalize_Custom_ValueMappingMissPassesThrough asserts that a
+// source value not covered by value_mappings is renamed but copied
+// verbatim.
+func TestNormalize_Custom_ValueMappingMissPassesThrough(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{
+			Name:            "my_vendor",
+			RemoveOriginals: true,
+			Mappings:        map[string]string{"my_vendor.op": "gen_ai.operation.name"},
+			ValueMappings: map[string]map[string]string{
+				"gen_ai.operation.name": {"chat_completion": "chat"},
+			},
+		}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutStr("my_vendor.op", "something_else")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.operation.name")
+	require.True(t, ok)
+	assert.Equal(t, "something_else", v.Str())
 }
 
 // TestNormalize_OpenLLMetry_StructuredMessagesPassThrough asserts that a

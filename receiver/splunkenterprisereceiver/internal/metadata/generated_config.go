@@ -2566,7 +2566,7 @@ func (ms *SplunkTypingQueueRatioMetricConfig) Validate() error {
 	return nil
 }
 
-// MetricsConfig provides config for splunkenterprise metrics.
+// MetricsConfig provides config for splunk_enterprise metrics.
 type MetricsConfig struct {
 	SplunkAggregationQueueRatio                 SplunkAggregationQueueRatioMetricConfig                 `mapstructure:"splunk.aggregation.queue.ratio"`
 	SplunkBucketsSearchableStatus               SplunkBucketsSearchableStatusMetricConfig               `mapstructure:"splunk.buckets.searchable.status"`
@@ -2881,7 +2881,7 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for splunkenterprise metrics builder.
+// MetricsBuilderConfig is a configuration for splunk_enterprise metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }

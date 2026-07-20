@@ -14,6 +14,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
+// ValidateMetrics reports semantic errors in md (Metrics Data).
+// Currently it checks:
+//   - No two datapoints within the same metric share identical attribute sets.
+//   - No two metrics share the same name under the same scope.
+//   - No two ScopeMetrics share the same scope (name + version) under the same resource.
+//   - No two ResourceMetrics share the same resource attributes.
+//
+// It returns nil if no violations are found.
 func ValidateMetrics(md pmetric.Metrics) error {
 	var errs error
 
@@ -41,10 +49,18 @@ func ValidateMetrics(md pmetric.Metrics) error {
 			}
 		}
 
-		// TODO (PR 4): Check for multiple ScopeMetrics with equal scope under the same resource
+		// Check for duplicate scope names within this resource.
+		if err := validateDuplicateScopes(sms); err != nil {
+			errPrefix := fmt.Sprintf(`resource "%v"`,
+				rm.Resource().Attributes().AsRaw())
+			errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, err))
+		}
 	}
 
-	// TODO (PR 3): Check for multiple ResourceMetrics with equal resource attributes
+	// Check for multiple ResourceMetrics with equal resource attributes.
+	if err := validateDuplicateResources(rms); err != nil {
+		errs = multierr.Append(errs, err)
+	}
 
 	return errs
 }
@@ -129,6 +145,53 @@ func validateDuplicateMetricNames(ms pmetric.MetricSlice) error {
 			))
 		} else {
 			seen[name] = i
+		}
+	}
+
+	return errs
+}
+
+// validateDuplicateResources checks that no two ResourceMetrics in rms share
+// the same resource attributes. Each resource should appear at most once.
+func validateDuplicateResources(rms pmetric.ResourceMetricsSlice) error {
+	seen := make(map[[16]byte]int, rms.Len()) // resource attributes hash to first-seen index
+	var errs error
+
+	for i := 0; i < rms.Len(); i++ {
+		h := pdatautil.MapHash(rms.At(i).Resource().Attributes())
+		if firstIdx, exists := seen[h]; exists {
+			errs = multierr.Append(errs, fmt.Errorf(
+				"resource %v at index %d is a duplicate of resource at index %d",
+				rms.At(i).Resource().Attributes().AsRaw(), i, firstIdx,
+			))
+		} else {
+			seen[h] = i
+		}
+	}
+
+	return errs
+}
+
+// validateDuplicateScopes checks that no two ScopeMetrics in sms share the
+// same scope identity (name + version). Each scope should appear at most once
+// per resource.
+func validateDuplicateScopes(sms pmetric.ScopeMetricsSlice) error {
+	type scopeKey struct {
+		name, version string
+	}
+	seen := make(map[scopeKey]int, sms.Len()) // scope key to first-seen index
+	var errs error
+
+	for i := 0; i < sms.Len(); i++ {
+		sc := sms.At(i).Scope()
+		key := scopeKey{name: sc.Name(), version: sc.Version()}
+		if firstIdx, exists := seen[key]; exists {
+			errs = multierr.Append(errs, fmt.Errorf(
+				"scope %q (version %q) at index %d is a duplicate of scope at index %d",
+				sc.Name(), sc.Version(), i, firstIdx,
+			))
+		} else {
+			seen[key] = i
 		}
 	}
 

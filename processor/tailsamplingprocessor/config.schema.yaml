@@ -30,6 +30,9 @@ $defs:
       name:
         description: Name given to the instance of the policy to make easy to identify it in metrics and logs.
         type: string
+      not:
+        description: Configs for defining not policy under and policy.
+        $ref: not_cfg
       numeric_attribute:
         description: Configs for numeric attribute filter sampling policy evaluator.
         $ref: numeric_attribute_cfg

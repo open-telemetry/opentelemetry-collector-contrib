@@ -66,7 +66,7 @@ func TestNoSeparatorLargeMessage(t *testing.T) {
 	codec := &textLogCodec{decoder: enc.NewDecoder()}
 
 	// Create a message larger than bufio.Scanner's default 4096 byte buffer
-	largeMessage := make([]byte, 16384)
+	largeMessage := make([]byte, 10*1024*1024)
 	for i := range largeMessage {
 		largeMessage[i] = byte('a' + (i % 26))
 	}

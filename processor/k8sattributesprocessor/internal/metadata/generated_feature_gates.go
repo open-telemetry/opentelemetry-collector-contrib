@@ -6,15 +6,6 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var K8sattrLabelsAnnotationsSingularAllowFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"k8sattr.labelsAnnotationsSingular.allow",
-	featuregate.StageDeprecated,
-	featuregate.WithRegisterDescription("When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39774"),
-	featuregate.WithRegisterFromVersion("v0.125.0"),
-	featuregate.WithRegisterToVersion("v0.145.0"),
-)
-
 var ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.k8sattributes.DontEmitV0K8sConventions",
 	featuregate.StageAlpha,

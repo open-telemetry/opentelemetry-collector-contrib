@@ -677,6 +677,17 @@ $defs:
           enabled:
             type: boolean
             default: false
+  events_config:
+    description: EventsConfig provides config for mongodb events.
+    type: object
+    properties:
+      db.server.query_sample:
+        description: EventConfig provides common config for a  db.server.query_sample event.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for mongodb resource attributes.
     type: object
@@ -698,6 +709,16 @@ $defs:
             type: array
             items:
               $ref: go.opentelemetry.io/collector/filter.config
+          events_include:
+            description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_exclude:
+            description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
       server.port:
         description: ResourceAttributeConfig provides common config for a server.port resource attribute.
         type: object
@@ -712,6 +733,16 @@ $defs:
               $ref: go.opentelemetry.io/collector/filter.config
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_include:
+            description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_exclude:
+            description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
             type: array
             items:
               $ref: go.opentelemetry.io/collector/filter.config
@@ -732,11 +763,29 @@ $defs:
             type: array
             items:
               $ref: go.opentelemetry.io/collector/filter.config
+          events_include:
+            description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_exclude:
+            description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
   metrics_builder_config:
     description: MetricsBuilderConfig is a configuration for mongodb metrics builder.
     type: object
     properties:
       metrics:
         $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  logs_builder_config:
+    description: LogsBuilderConfig is a configuration for mongodb logs builder.
+    type: object
+    properties:
+      events:
+        $ref: events_config
       resource_attributes:
         $ref: resource_attributes_config

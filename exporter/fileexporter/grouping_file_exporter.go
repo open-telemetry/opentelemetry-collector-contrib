@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -245,6 +246,9 @@ func cleanPathPrefix(pathPrefix string) string {
 }
 
 func (e *groupingFileExporter) fullPath(pathSegment string) string {
+	// Normalize to forward slashes on Windows to match path package behavior
+	pathSegment = filepath.ToSlash(pathSegment)
+
 	if strings.HasPrefix(pathSegment, "./") {
 		pathSegment = pathSegment[1:]
 	} else if strings.HasPrefix(pathSegment, "../") {
@@ -297,12 +301,12 @@ func (e *groupingFileExporter) Start(_ context.Context, host component.Host) err
 
 	pathParts := strings.Split(e.conf.Path, "*")
 
-	e.pathPrefix = cleanPathPrefix(pathParts[0])
+	e.pathPrefix = filepath.ToSlash(cleanPathPrefix(pathParts[0]))
 	e.attribute = e.conf.GroupBy.ResourceAttribute
-	e.pathSuffix = pathParts[1]
+	e.pathSuffix = filepath.ToSlash(pathParts[1])
 	e.maxOpenFiles = e.conf.GroupBy.MaxOpenFiles
 	e.newFileWriter = func(path string) (*fileWriter, error) {
-		return newFileWriter(path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export)
+		return newFileWriter(path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export, e.conf.Compression, int(e.conf.CompressionParams.Level))
 	}
 
 	writers, err := simplelru.NewLRU(e.conf.GroupBy.MaxOpenFiles, e.onEvict)
