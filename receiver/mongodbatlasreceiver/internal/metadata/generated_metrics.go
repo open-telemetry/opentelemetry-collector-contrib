@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -10,6 +11,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+)
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 
 // AttributeAssertType specifies the value assert_type attribute.
@@ -764,40 +772,51 @@ var MapAttributeTicketType = map[string]AttributeTicketType{
 
 var MetricsInfo = metricsInfo{
 	MongodbatlasDbCounts: metricInfo{
-		Name: "mongodbatlas.db.counts",
+		Name:       "mongodbatlas.db.counts",
+		Attributes: []string{"object_type"},
 	},
 	MongodbatlasDbSize: metricInfo{
-		Name: "mongodbatlas.db.size",
+		Name:       "mongodbatlas.db.size",
+		Attributes: []string{"object_type"},
 	},
 	MongodbatlasDiskPartitionIopsAverage: metricInfo{
-		Name: "mongodbatlas.disk.partition.iops.average",
+		Name:       "mongodbatlas.disk.partition.iops.average",
+		Attributes: []string{"disk_direction"},
 	},
 	MongodbatlasDiskPartitionIopsMax: metricInfo{
-		Name: "mongodbatlas.disk.partition.iops.max",
+		Name:       "mongodbatlas.disk.partition.iops.max",
+		Attributes: []string{"disk_direction"},
 	},
 	MongodbatlasDiskPartitionLatencyAverage: metricInfo{
-		Name: "mongodbatlas.disk.partition.latency.average",
+		Name:       "mongodbatlas.disk.partition.latency.average",
+		Attributes: []string{"disk_direction"},
 	},
 	MongodbatlasDiskPartitionLatencyMax: metricInfo{
-		Name: "mongodbatlas.disk.partition.latency.max",
+		Name:       "mongodbatlas.disk.partition.latency.max",
+		Attributes: []string{"disk_direction"},
 	},
 	MongodbatlasDiskPartitionQueueDepth: metricInfo{
 		Name: "mongodbatlas.disk.partition.queue.depth",
 	},
 	MongodbatlasDiskPartitionSpaceAverage: metricInfo{
-		Name: "mongodbatlas.disk.partition.space.average",
+		Name:       "mongodbatlas.disk.partition.space.average",
+		Attributes: []string{"disk_status"},
 	},
 	MongodbatlasDiskPartitionSpaceMax: metricInfo{
-		Name: "mongodbatlas.disk.partition.space.max",
+		Name:       "mongodbatlas.disk.partition.space.max",
+		Attributes: []string{"disk_status"},
 	},
 	MongodbatlasDiskPartitionThroughput: metricInfo{
-		Name: "mongodbatlas.disk.partition.throughput",
+		Name:       "mongodbatlas.disk.partition.throughput",
+		Attributes: []string{"disk_direction"},
 	},
 	MongodbatlasDiskPartitionUsageAverage: metricInfo{
-		Name: "mongodbatlas.disk.partition.usage.average",
+		Name:       "mongodbatlas.disk.partition.usage.average",
+		Attributes: []string{"disk_status"},
 	},
 	MongodbatlasDiskPartitionUsageMax: metricInfo{
-		Name: "mongodbatlas.disk.partition.usage.max",
+		Name:       "mongodbatlas.disk.partition.usage.max",
+		Attributes: []string{"disk_status"},
 	},
 	MongodbatlasDiskPartitionUtilizationAverage: metricInfo{
 		Name: "mongodbatlas.disk.partition.utilization.average",
@@ -806,76 +825,97 @@ var MetricsInfo = metricsInfo{
 		Name: "mongodbatlas.disk.partition.utilization.max",
 	},
 	MongodbatlasProcessAsserts: metricInfo{
-		Name: "mongodbatlas.process.asserts",
+		Name:       "mongodbatlas.process.asserts",
+		Attributes: []string{"assert_type"},
 	},
 	MongodbatlasProcessBackgroundFlush: metricInfo{
 		Name: "mongodbatlas.process.background_flush",
 	},
 	MongodbatlasProcessCacheIo: metricInfo{
-		Name: "mongodbatlas.process.cache.io",
+		Name:       "mongodbatlas.process.cache.io",
+		Attributes: []string{"cache_direction"},
 	},
 	MongodbatlasProcessCacheRatio: metricInfo{
-		Name: "mongodbatlas.process.cache.ratio",
+		Name:       "mongodbatlas.process.cache.ratio",
+		Attributes: []string{"cache_ratio_type"},
 	},
 	MongodbatlasProcessCacheSize: metricInfo{
-		Name: "mongodbatlas.process.cache.size",
+		Name:       "mongodbatlas.process.cache.size",
+		Attributes: []string{"cache_status"},
 	},
 	MongodbatlasProcessConnections: metricInfo{
 		Name: "mongodbatlas.process.connections",
 	},
 	MongodbatlasProcessCPUChildrenNormalizedUsageAverage: metricInfo{
-		Name: "mongodbatlas.process.cpu.children.normalized.usage.average",
+		Name:       "mongodbatlas.process.cpu.children.normalized.usage.average",
+		Attributes: []string{"cpu_state"},
 	},
 	MongodbatlasProcessCPUChildrenNormalizedUsageMax: metricInfo{
-		Name: "mongodbatlas.process.cpu.children.normalized.usage.max",
+		Name:       "mongodbatlas.process.cpu.children.normalized.usage.max",
+		Attributes: []string{"cpu_state"},
 	},
 	MongodbatlasProcessCPUChildrenUsageAverage: metricInfo{
-		Name: "mongodbatlas.process.cpu.children.usage.average",
+		Name:       "mongodbatlas.process.cpu.children.usage.average",
+		Attributes: []string{"cpu_state"},
 	},
 	MongodbatlasProcessCPUChildrenUsageMax: metricInfo{
-		Name: "mongodbatlas.process.cpu.children.usage.max",
+		Name:       "mongodbatlas.process.cpu.children.usage.max",
+		Attributes: []string{"cpu_state"},
 	},
 	MongodbatlasProcessCPUNormalizedUsageAverage: metricInfo{
-		Name: "mongodbatlas.process.cpu.normalized.usage.average",
+		Name:       "mongodbatlas.process.cpu.normalized.usage.average",
+		Attributes: []string{"cpu_state"},
 	},
 	MongodbatlasProcessCPUNormalizedUsageMax: metricInfo{
-		Name: "mongodbatlas.process.cpu.normalized.usage.max",
+		Name:       "mongodbatlas.process.cpu.normalized.usage.max",
+		Attributes: []string{"cpu_state"},
 	},
 	MongodbatlasProcessCPUUsageAverage: metricInfo{
-		Name: "mongodbatlas.process.cpu.usage.average",
+		Name:       "mongodbatlas.process.cpu.usage.average",
+		Attributes: []string{"cpu_state"},
 	},
 	MongodbatlasProcessCPUUsageMax: metricInfo{
-		Name: "mongodbatlas.process.cpu.usage.max",
+		Name:       "mongodbatlas.process.cpu.usage.max",
+		Attributes: []string{"cpu_state"},
 	},
 	MongodbatlasProcessCursors: metricInfo{
-		Name: "mongodbatlas.process.cursors",
+		Name:       "mongodbatlas.process.cursors",
+		Attributes: []string{"cursor_state"},
 	},
 	MongodbatlasProcessDbDocumentRate: metricInfo{
-		Name: "mongodbatlas.process.db.document.rate",
+		Name:       "mongodbatlas.process.db.document.rate",
+		Attributes: []string{"document_status"},
 	},
 	MongodbatlasProcessDbOperationsRate: metricInfo{
-		Name: "mongodbatlas.process.db.operations.rate",
+		Name:       "mongodbatlas.process.db.operations.rate",
+		Attributes: []string{"operation", "cluster_role"},
 	},
 	MongodbatlasProcessDbOperationsTime: metricInfo{
-		Name: "mongodbatlas.process.db.operations.time",
+		Name:       "mongodbatlas.process.db.operations.time",
+		Attributes: []string{"execution_type"},
 	},
 	MongodbatlasProcessDbQueryExecutorScanned: metricInfo{
-		Name: "mongodbatlas.process.db.query_executor.scanned",
+		Name:       "mongodbatlas.process.db.query_executor.scanned",
+		Attributes: []string{"scanned_type"},
 	},
 	MongodbatlasProcessDbQueryTargetingScannedPerReturned: metricInfo{
-		Name: "mongodbatlas.process.db.query_targeting.scanned_per_returned",
+		Name:       "mongodbatlas.process.db.query_targeting.scanned_per_returned",
+		Attributes: []string{"scanned_type"},
 	},
 	MongodbatlasProcessDbStorage: metricInfo{
-		Name: "mongodbatlas.process.db.storage",
+		Name:       "mongodbatlas.process.db.storage",
+		Attributes: []string{"storage_status"},
 	},
 	MongodbatlasProcessGlobalLock: metricInfo{
-		Name: "mongodbatlas.process.global_lock",
+		Name:       "mongodbatlas.process.global_lock",
+		Attributes: []string{"global_lock_state"},
 	},
 	MongodbatlasProcessIndexBtreeMissRatio: metricInfo{
 		Name: "mongodbatlas.process.index.btree_miss_ratio",
 	},
 	MongodbatlasProcessIndexCounters: metricInfo{
-		Name: "mongodbatlas.process.index.counters",
+		Name:       "mongodbatlas.process.index.counters",
+		Attributes: []string{"btree_counter_type"},
 	},
 	MongodbatlasProcessJournalingCommits: metricInfo{
 		Name: "mongodbatlas.process.journaling.commits",
@@ -887,10 +927,12 @@ var MetricsInfo = metricsInfo{
 		Name: "mongodbatlas.process.journaling.written",
 	},
 	MongodbatlasProcessMemoryUsage: metricInfo{
-		Name: "mongodbatlas.process.memory.usage",
+		Name:       "mongodbatlas.process.memory.usage",
+		Attributes: []string{"memory_state"},
 	},
 	MongodbatlasProcessNetworkIo: metricInfo{
-		Name: "mongodbatlas.process.network.io",
+		Name:       "mongodbatlas.process.network.io",
+		Attributes: []string{"direction"},
 	},
 	MongodbatlasProcessNetworkRequests: metricInfo{
 		Name: "mongodbatlas.process.network.requests",
@@ -899,64 +941,82 @@ var MetricsInfo = metricsInfo{
 		Name: "mongodbatlas.process.oplog.rate",
 	},
 	MongodbatlasProcessOplogTime: metricInfo{
-		Name: "mongodbatlas.process.oplog.time",
+		Name:       "mongodbatlas.process.oplog.time",
+		Attributes: []string{"oplog_type"},
 	},
 	MongodbatlasProcessPageFaults: metricInfo{
-		Name: "mongodbatlas.process.page_faults",
+		Name:       "mongodbatlas.process.page_faults",
+		Attributes: []string{"memory_issue_type"},
 	},
 	MongodbatlasProcessRestarts: metricInfo{
 		Name: "mongodbatlas.process.restarts",
 	},
 	MongodbatlasProcessTickets: metricInfo{
-		Name: "mongodbatlas.process.tickets",
+		Name:       "mongodbatlas.process.tickets",
+		Attributes: []string{"ticket_type"},
 	},
 	MongodbatlasSystemCPUNormalizedUsageAverage: metricInfo{
-		Name: "mongodbatlas.system.cpu.normalized.usage.average",
+		Name:       "mongodbatlas.system.cpu.normalized.usage.average",
+		Attributes: []string{"cpu_state"},
 	},
 	MongodbatlasSystemCPUNormalizedUsageMax: metricInfo{
-		Name: "mongodbatlas.system.cpu.normalized.usage.max",
+		Name:       "mongodbatlas.system.cpu.normalized.usage.max",
+		Attributes: []string{"cpu_state"},
 	},
 	MongodbatlasSystemCPUUsageAverage: metricInfo{
-		Name: "mongodbatlas.system.cpu.usage.average",
+		Name:       "mongodbatlas.system.cpu.usage.average",
+		Attributes: []string{"cpu_state"},
 	},
 	MongodbatlasSystemCPUUsageMax: metricInfo{
-		Name: "mongodbatlas.system.cpu.usage.max",
+		Name:       "mongodbatlas.system.cpu.usage.max",
+		Attributes: []string{"cpu_state"},
 	},
 	MongodbatlasSystemFtsCPUNormalizedUsage: metricInfo{
-		Name: "mongodbatlas.system.fts.cpu.normalized.usage",
+		Name:       "mongodbatlas.system.fts.cpu.normalized.usage",
+		Attributes: []string{"cpu_state"},
 	},
 	MongodbatlasSystemFtsCPUUsage: metricInfo{
-		Name: "mongodbatlas.system.fts.cpu.usage",
+		Name:       "mongodbatlas.system.fts.cpu.usage",
+		Attributes: []string{"cpu_state"},
 	},
 	MongodbatlasSystemFtsDiskUsed: metricInfo{
 		Name: "mongodbatlas.system.fts.disk.used",
 	},
 	MongodbatlasSystemFtsMemoryUsage: metricInfo{
-		Name: "mongodbatlas.system.fts.memory.usage",
+		Name:       "mongodbatlas.system.fts.memory.usage",
+		Attributes: []string{"memory_state"},
 	},
 	MongodbatlasSystemMemoryUsageAverage: metricInfo{
-		Name: "mongodbatlas.system.memory.usage.average",
+		Name:       "mongodbatlas.system.memory.usage.average",
+		Attributes: []string{"memory_status"},
 	},
 	MongodbatlasSystemMemoryUsageMax: metricInfo{
-		Name: "mongodbatlas.system.memory.usage.max",
+		Name:       "mongodbatlas.system.memory.usage.max",
+		Attributes: []string{"memory_status"},
 	},
 	MongodbatlasSystemNetworkIoAverage: metricInfo{
-		Name: "mongodbatlas.system.network.io.average",
+		Name:       "mongodbatlas.system.network.io.average",
+		Attributes: []string{"direction"},
 	},
 	MongodbatlasSystemNetworkIoMax: metricInfo{
-		Name: "mongodbatlas.system.network.io.max",
+		Name:       "mongodbatlas.system.network.io.max",
+		Attributes: []string{"direction"},
 	},
 	MongodbatlasSystemPagingIoAverage: metricInfo{
-		Name: "mongodbatlas.system.paging.io.average",
+		Name:       "mongodbatlas.system.paging.io.average",
+		Attributes: []string{"direction"},
 	},
 	MongodbatlasSystemPagingIoMax: metricInfo{
-		Name: "mongodbatlas.system.paging.io.max",
+		Name:       "mongodbatlas.system.paging.io.max",
+		Attributes: []string{"direction"},
 	},
 	MongodbatlasSystemPagingUsageAverage: metricInfo{
-		Name: "mongodbatlas.system.paging.usage.average",
+		Name:       "mongodbatlas.system.paging.usage.average",
+		Attributes: []string{"memory_state"},
 	},
 	MongodbatlasSystemPagingUsageMax: metricInfo{
-		Name: "mongodbatlas.system.paging.usage.max",
+		Name:       "mongodbatlas.system.paging.usage.max",
+		Attributes: []string{"memory_state"},
 	},
 }
 
@@ -1029,13 +1089,15 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricMongodbatlasDbCounts struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        MongodbatlasDbCountsMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.db.counts metric with initial data.
@@ -1045,17 +1107,48 @@ func (m *metricMongodbatlasDbCounts) init() {
 	m.data.SetUnit("{objects}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasDbCounts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, objectTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasDbCountsMetricAttributeKeyObjectType) {
+		dp.Attributes().PutStr("object_type", objectTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("object_type", objectTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1068,13 +1161,18 @@ func (m *metricMongodbatlasDbCounts) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasDbCounts) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasDbCounts(cfg MetricConfig) metricMongodbatlasDbCounts {
+func newMetricMongodbatlasDbCounts(cfg MongodbatlasDbCountsMetricConfig) metricMongodbatlasDbCounts {
 	m := metricMongodbatlasDbCounts{config: cfg}
 
 	if cfg.Enabled {
@@ -1085,9 +1183,10 @@ func newMetricMongodbatlasDbCounts(cfg MetricConfig) metricMongodbatlasDbCounts 
 }
 
 type metricMongodbatlasDbSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        MongodbatlasDbSizeMetricConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []float64                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.db.size metric with initial data.
@@ -1097,17 +1196,48 @@ func (m *metricMongodbatlasDbSize) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasDbSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, objectTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasDbSizeMetricAttributeKeyObjectType) {
+		dp.Attributes().PutStr("object_type", objectTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("object_type", objectTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1120,13 +1250,18 @@ func (m *metricMongodbatlasDbSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasDbSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasDbSize(cfg MetricConfig) metricMongodbatlasDbSize {
+func newMetricMongodbatlasDbSize(cfg MongodbatlasDbSizeMetricConfig) metricMongodbatlasDbSize {
 	m := metricMongodbatlasDbSize{config: cfg}
 
 	if cfg.Enabled {
@@ -1137,9 +1272,10 @@ func newMetricMongodbatlasDbSize(cfg MetricConfig) metricMongodbatlasDbSize {
 }
 
 type metricMongodbatlasDiskPartitionIopsAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                   // data buffer for generated metric.
+	config        MongodbatlasDiskPartitionIopsAverageMetricConfig // metric config provided by user.
+	capacity      int                                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.disk.partition.iops.average metric with initial data.
@@ -1149,17 +1285,48 @@ func (m *metricMongodbatlasDiskPartitionIopsAverage) init() {
 	m.data.SetUnit("{ops}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasDiskPartitionIopsAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasDiskPartitionIopsAverageMetricAttributeKeyDiskDirection) {
+		dp.Attributes().PutStr("disk_direction", diskDirectionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("disk_direction", diskDirectionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1172,13 +1339,18 @@ func (m *metricMongodbatlasDiskPartitionIopsAverage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasDiskPartitionIopsAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasDiskPartitionIopsAverage(cfg MetricConfig) metricMongodbatlasDiskPartitionIopsAverage {
+func newMetricMongodbatlasDiskPartitionIopsAverage(cfg MongodbatlasDiskPartitionIopsAverageMetricConfig) metricMongodbatlasDiskPartitionIopsAverage {
 	m := metricMongodbatlasDiskPartitionIopsAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -1189,9 +1361,10 @@ func newMetricMongodbatlasDiskPartitionIopsAverage(cfg MetricConfig) metricMongo
 }
 
 type metricMongodbatlasDiskPartitionIopsMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        MongodbatlasDiskPartitionIopsMaxMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.disk.partition.iops.max metric with initial data.
@@ -1201,17 +1374,48 @@ func (m *metricMongodbatlasDiskPartitionIopsMax) init() {
 	m.data.SetUnit("{ops}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasDiskPartitionIopsMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasDiskPartitionIopsMaxMetricAttributeKeyDiskDirection) {
+		dp.Attributes().PutStr("disk_direction", diskDirectionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("disk_direction", diskDirectionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1224,13 +1428,18 @@ func (m *metricMongodbatlasDiskPartitionIopsMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasDiskPartitionIopsMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasDiskPartitionIopsMax(cfg MetricConfig) metricMongodbatlasDiskPartitionIopsMax {
+func newMetricMongodbatlasDiskPartitionIopsMax(cfg MongodbatlasDiskPartitionIopsMaxMetricConfig) metricMongodbatlasDiskPartitionIopsMax {
 	m := metricMongodbatlasDiskPartitionIopsMax{config: cfg}
 
 	if cfg.Enabled {
@@ -1241,9 +1450,10 @@ func newMetricMongodbatlasDiskPartitionIopsMax(cfg MetricConfig) metricMongodbat
 }
 
 type metricMongodbatlasDiskPartitionLatencyAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                      // data buffer for generated metric.
+	config        MongodbatlasDiskPartitionLatencyAverageMetricConfig // metric config provided by user.
+	capacity      int                                                 // max observed number of data points added to the metric.
+	aggDataPoints []float64                                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.disk.partition.latency.average metric with initial data.
@@ -1253,17 +1463,48 @@ func (m *metricMongodbatlasDiskPartitionLatencyAverage) init() {
 	m.data.SetUnit("ms")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasDiskPartitionLatencyAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasDiskPartitionLatencyAverageMetricAttributeKeyDiskDirection) {
+		dp.Attributes().PutStr("disk_direction", diskDirectionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("disk_direction", diskDirectionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1276,13 +1517,18 @@ func (m *metricMongodbatlasDiskPartitionLatencyAverage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasDiskPartitionLatencyAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasDiskPartitionLatencyAverage(cfg MetricConfig) metricMongodbatlasDiskPartitionLatencyAverage {
+func newMetricMongodbatlasDiskPartitionLatencyAverage(cfg MongodbatlasDiskPartitionLatencyAverageMetricConfig) metricMongodbatlasDiskPartitionLatencyAverage {
 	m := metricMongodbatlasDiskPartitionLatencyAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -1293,9 +1539,10 @@ func newMetricMongodbatlasDiskPartitionLatencyAverage(cfg MetricConfig) metricMo
 }
 
 type metricMongodbatlasDiskPartitionLatencyMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                  // data buffer for generated metric.
+	config        MongodbatlasDiskPartitionLatencyMaxMetricConfig // metric config provided by user.
+	capacity      int                                             // max observed number of data points added to the metric.
+	aggDataPoints []float64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.disk.partition.latency.max metric with initial data.
@@ -1305,17 +1552,48 @@ func (m *metricMongodbatlasDiskPartitionLatencyMax) init() {
 	m.data.SetUnit("ms")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasDiskPartitionLatencyMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasDiskPartitionLatencyMaxMetricAttributeKeyDiskDirection) {
+		dp.Attributes().PutStr("disk_direction", diskDirectionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("disk_direction", diskDirectionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1328,13 +1606,18 @@ func (m *metricMongodbatlasDiskPartitionLatencyMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasDiskPartitionLatencyMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasDiskPartitionLatencyMax(cfg MetricConfig) metricMongodbatlasDiskPartitionLatencyMax {
+func newMetricMongodbatlasDiskPartitionLatencyMax(cfg MongodbatlasDiskPartitionLatencyMaxMetricConfig) metricMongodbatlasDiskPartitionLatencyMax {
 	m := metricMongodbatlasDiskPartitionLatencyMax{config: cfg}
 
 	if cfg.Enabled {
@@ -1345,9 +1628,9 @@ func newMetricMongodbatlasDiskPartitionLatencyMax(cfg MetricConfig) metricMongod
 }
 
 type metricMongodbatlasDiskPartitionQueueDepth struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   MongodbatlasDiskPartitionQueueDepthMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
 }
 
 // init fills mongodbatlas.disk.partition.queue.depth metric with initial data.
@@ -1384,7 +1667,7 @@ func (m *metricMongodbatlasDiskPartitionQueueDepth) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricMongodbatlasDiskPartitionQueueDepth(cfg MetricConfig) metricMongodbatlasDiskPartitionQueueDepth {
+func newMetricMongodbatlasDiskPartitionQueueDepth(cfg MongodbatlasDiskPartitionQueueDepthMetricConfig) metricMongodbatlasDiskPartitionQueueDepth {
 	m := metricMongodbatlasDiskPartitionQueueDepth{config: cfg}
 
 	if cfg.Enabled {
@@ -1395,9 +1678,10 @@ func newMetricMongodbatlasDiskPartitionQueueDepth(cfg MetricConfig) metricMongod
 }
 
 type metricMongodbatlasDiskPartitionSpaceAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                    // data buffer for generated metric.
+	config        MongodbatlasDiskPartitionSpaceAverageMetricConfig // metric config provided by user.
+	capacity      int                                               // max observed number of data points added to the metric.
+	aggDataPoints []float64                                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.disk.partition.space.average metric with initial data.
@@ -1407,17 +1691,48 @@ func (m *metricMongodbatlasDiskPartitionSpaceAverage) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasDiskPartitionSpaceAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasDiskPartitionSpaceAverageMetricAttributeKeyDiskStatus) {
+		dp.Attributes().PutStr("disk_status", diskStatusAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("disk_status", diskStatusAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1430,13 +1745,18 @@ func (m *metricMongodbatlasDiskPartitionSpaceAverage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasDiskPartitionSpaceAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasDiskPartitionSpaceAverage(cfg MetricConfig) metricMongodbatlasDiskPartitionSpaceAverage {
+func newMetricMongodbatlasDiskPartitionSpaceAverage(cfg MongodbatlasDiskPartitionSpaceAverageMetricConfig) metricMongodbatlasDiskPartitionSpaceAverage {
 	m := metricMongodbatlasDiskPartitionSpaceAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -1447,9 +1767,10 @@ func newMetricMongodbatlasDiskPartitionSpaceAverage(cfg MetricConfig) metricMong
 }
 
 type metricMongodbatlasDiskPartitionSpaceMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        MongodbatlasDiskPartitionSpaceMaxMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []float64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.disk.partition.space.max metric with initial data.
@@ -1459,17 +1780,48 @@ func (m *metricMongodbatlasDiskPartitionSpaceMax) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasDiskPartitionSpaceMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasDiskPartitionSpaceMaxMetricAttributeKeyDiskStatus) {
+		dp.Attributes().PutStr("disk_status", diskStatusAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("disk_status", diskStatusAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1482,13 +1834,18 @@ func (m *metricMongodbatlasDiskPartitionSpaceMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasDiskPartitionSpaceMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasDiskPartitionSpaceMax(cfg MetricConfig) metricMongodbatlasDiskPartitionSpaceMax {
+func newMetricMongodbatlasDiskPartitionSpaceMax(cfg MongodbatlasDiskPartitionSpaceMaxMetricConfig) metricMongodbatlasDiskPartitionSpaceMax {
 	m := metricMongodbatlasDiskPartitionSpaceMax{config: cfg}
 
 	if cfg.Enabled {
@@ -1499,9 +1856,10 @@ func newMetricMongodbatlasDiskPartitionSpaceMax(cfg MetricConfig) metricMongodba
 }
 
 type metricMongodbatlasDiskPartitionThroughput struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                  // data buffer for generated metric.
+	config        MongodbatlasDiskPartitionThroughputMetricConfig // metric config provided by user.
+	capacity      int                                             // max observed number of data points added to the metric.
+	aggDataPoints []float64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.disk.partition.throughput metric with initial data.
@@ -1511,17 +1869,48 @@ func (m *metricMongodbatlasDiskPartitionThroughput) init() {
 	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasDiskPartitionThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasDiskPartitionThroughputMetricAttributeKeyDiskDirection) {
+		dp.Attributes().PutStr("disk_direction", diskDirectionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("disk_direction", diskDirectionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1534,13 +1923,18 @@ func (m *metricMongodbatlasDiskPartitionThroughput) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasDiskPartitionThroughput) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasDiskPartitionThroughput(cfg MetricConfig) metricMongodbatlasDiskPartitionThroughput {
+func newMetricMongodbatlasDiskPartitionThroughput(cfg MongodbatlasDiskPartitionThroughputMetricConfig) metricMongodbatlasDiskPartitionThroughput {
 	m := metricMongodbatlasDiskPartitionThroughput{config: cfg}
 
 	if cfg.Enabled {
@@ -1551,9 +1945,10 @@ func newMetricMongodbatlasDiskPartitionThroughput(cfg MetricConfig) metricMongod
 }
 
 type metricMongodbatlasDiskPartitionUsageAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                    // data buffer for generated metric.
+	config        MongodbatlasDiskPartitionUsageAverageMetricConfig // metric config provided by user.
+	capacity      int                                               // max observed number of data points added to the metric.
+	aggDataPoints []float64                                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.disk.partition.usage.average metric with initial data.
@@ -1563,17 +1958,48 @@ func (m *metricMongodbatlasDiskPartitionUsageAverage) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasDiskPartitionUsageAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasDiskPartitionUsageAverageMetricAttributeKeyDiskStatus) {
+		dp.Attributes().PutStr("disk_status", diskStatusAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("disk_status", diskStatusAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1586,13 +2012,18 @@ func (m *metricMongodbatlasDiskPartitionUsageAverage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasDiskPartitionUsageAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasDiskPartitionUsageAverage(cfg MetricConfig) metricMongodbatlasDiskPartitionUsageAverage {
+func newMetricMongodbatlasDiskPartitionUsageAverage(cfg MongodbatlasDiskPartitionUsageAverageMetricConfig) metricMongodbatlasDiskPartitionUsageAverage {
 	m := metricMongodbatlasDiskPartitionUsageAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -1603,9 +2034,10 @@ func newMetricMongodbatlasDiskPartitionUsageAverage(cfg MetricConfig) metricMong
 }
 
 type metricMongodbatlasDiskPartitionUsageMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        MongodbatlasDiskPartitionUsageMaxMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []float64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.disk.partition.usage.max metric with initial data.
@@ -1615,17 +2047,48 @@ func (m *metricMongodbatlasDiskPartitionUsageMax) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasDiskPartitionUsageMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasDiskPartitionUsageMaxMetricAttributeKeyDiskStatus) {
+		dp.Attributes().PutStr("disk_status", diskStatusAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("disk_status", diskStatusAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1638,13 +2101,18 @@ func (m *metricMongodbatlasDiskPartitionUsageMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasDiskPartitionUsageMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasDiskPartitionUsageMax(cfg MetricConfig) metricMongodbatlasDiskPartitionUsageMax {
+func newMetricMongodbatlasDiskPartitionUsageMax(cfg MongodbatlasDiskPartitionUsageMaxMetricConfig) metricMongodbatlasDiskPartitionUsageMax {
 	m := metricMongodbatlasDiskPartitionUsageMax{config: cfg}
 
 	if cfg.Enabled {
@@ -1655,9 +2123,9 @@ func newMetricMongodbatlasDiskPartitionUsageMax(cfg MetricConfig) metricMongodba
 }
 
 type metricMongodbatlasDiskPartitionUtilizationAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                          // data buffer for generated metric.
+	config   MongodbatlasDiskPartitionUtilizationAverageMetricConfig // metric config provided by user.
+	capacity int                                                     // max observed number of data points added to the metric.
 }
 
 // init fills mongodbatlas.disk.partition.utilization.average metric with initial data.
@@ -1694,7 +2162,7 @@ func (m *metricMongodbatlasDiskPartitionUtilizationAverage) emit(metrics pmetric
 	}
 }
 
-func newMetricMongodbatlasDiskPartitionUtilizationAverage(cfg MetricConfig) metricMongodbatlasDiskPartitionUtilizationAverage {
+func newMetricMongodbatlasDiskPartitionUtilizationAverage(cfg MongodbatlasDiskPartitionUtilizationAverageMetricConfig) metricMongodbatlasDiskPartitionUtilizationAverage {
 	m := metricMongodbatlasDiskPartitionUtilizationAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -1705,9 +2173,9 @@ func newMetricMongodbatlasDiskPartitionUtilizationAverage(cfg MetricConfig) metr
 }
 
 type metricMongodbatlasDiskPartitionUtilizationMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                      // data buffer for generated metric.
+	config   MongodbatlasDiskPartitionUtilizationMaxMetricConfig // metric config provided by user.
+	capacity int                                                 // max observed number of data points added to the metric.
 }
 
 // init fills mongodbatlas.disk.partition.utilization.max metric with initial data.
@@ -1744,7 +2212,7 @@ func (m *metricMongodbatlasDiskPartitionUtilizationMax) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricMongodbatlasDiskPartitionUtilizationMax(cfg MetricConfig) metricMongodbatlasDiskPartitionUtilizationMax {
+func newMetricMongodbatlasDiskPartitionUtilizationMax(cfg MongodbatlasDiskPartitionUtilizationMaxMetricConfig) metricMongodbatlasDiskPartitionUtilizationMax {
 	m := metricMongodbatlasDiskPartitionUtilizationMax{config: cfg}
 
 	if cfg.Enabled {
@@ -1755,9 +2223,10 @@ func newMetricMongodbatlasDiskPartitionUtilizationMax(cfg MetricConfig) metricMo
 }
 
 type metricMongodbatlasProcessAsserts struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        MongodbatlasProcessAssertsMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []float64                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.asserts metric with initial data.
@@ -1767,17 +2236,48 @@ func (m *metricMongodbatlasProcessAsserts) init() {
 	m.data.SetUnit("{assertions}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessAsserts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, assertTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessAssertsMetricAttributeKeyAssertType) {
+		dp.Attributes().PutStr("assert_type", assertTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("assert_type", assertTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1790,13 +2290,18 @@ func (m *metricMongodbatlasProcessAsserts) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessAsserts) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessAsserts(cfg MetricConfig) metricMongodbatlasProcessAsserts {
+func newMetricMongodbatlasProcessAsserts(cfg MongodbatlasProcessAssertsMetricConfig) metricMongodbatlasProcessAsserts {
 	m := metricMongodbatlasProcessAsserts{config: cfg}
 
 	if cfg.Enabled {
@@ -1807,9 +2312,9 @@ func newMetricMongodbatlasProcessAsserts(cfg MetricConfig) metricMongodbatlasPro
 }
 
 type metricMongodbatlasProcessBackgroundFlush struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                 // data buffer for generated metric.
+	config   MongodbatlasProcessBackgroundFlushMetricConfig // metric config provided by user.
+	capacity int                                            // max observed number of data points added to the metric.
 }
 
 // init fills mongodbatlas.process.background_flush metric with initial data.
@@ -1846,7 +2351,7 @@ func (m *metricMongodbatlasProcessBackgroundFlush) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricMongodbatlasProcessBackgroundFlush(cfg MetricConfig) metricMongodbatlasProcessBackgroundFlush {
+func newMetricMongodbatlasProcessBackgroundFlush(cfg MongodbatlasProcessBackgroundFlushMetricConfig) metricMongodbatlasProcessBackgroundFlush {
 	m := metricMongodbatlasProcessBackgroundFlush{config: cfg}
 
 	if cfg.Enabled {
@@ -1857,9 +2362,10 @@ func newMetricMongodbatlasProcessBackgroundFlush(cfg MetricConfig) metricMongodb
 }
 
 type metricMongodbatlasProcessCacheIo struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        MongodbatlasProcessCacheIoMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []float64                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.cache.io metric with initial data.
@@ -1869,17 +2375,48 @@ func (m *metricMongodbatlasProcessCacheIo) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessCacheIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cacheDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessCacheIoMetricAttributeKeyCacheDirection) {
+		dp.Attributes().PutStr("cache_direction", cacheDirectionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cache_direction", cacheDirectionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1892,13 +2429,18 @@ func (m *metricMongodbatlasProcessCacheIo) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessCacheIo) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessCacheIo(cfg MetricConfig) metricMongodbatlasProcessCacheIo {
+func newMetricMongodbatlasProcessCacheIo(cfg MongodbatlasProcessCacheIoMetricConfig) metricMongodbatlasProcessCacheIo {
 	m := metricMongodbatlasProcessCacheIo{config: cfg}
 
 	if cfg.Enabled {
@@ -1909,9 +2451,10 @@ func newMetricMongodbatlasProcessCacheIo(cfg MetricConfig) metricMongodbatlasPro
 }
 
 type metricMongodbatlasProcessCacheRatio struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        MongodbatlasProcessCacheRatioMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []float64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.cache.ratio metric with initial data.
@@ -1921,17 +2464,48 @@ func (m *metricMongodbatlasProcessCacheRatio) init() {
 	m.data.SetUnit("%")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessCacheRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cacheRatioTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessCacheRatioMetricAttributeKeyCacheRatioType) {
+		dp.Attributes().PutStr("cache_ratio_type", cacheRatioTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cache_ratio_type", cacheRatioTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1944,13 +2518,18 @@ func (m *metricMongodbatlasProcessCacheRatio) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessCacheRatio) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessCacheRatio(cfg MetricConfig) metricMongodbatlasProcessCacheRatio {
+func newMetricMongodbatlasProcessCacheRatio(cfg MongodbatlasProcessCacheRatioMetricConfig) metricMongodbatlasProcessCacheRatio {
 	m := metricMongodbatlasProcessCacheRatio{config: cfg}
 
 	if cfg.Enabled {
@@ -1961,9 +2540,10 @@ func newMetricMongodbatlasProcessCacheRatio(cfg MetricConfig) metricMongodbatlas
 }
 
 type metricMongodbatlasProcessCacheSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        MongodbatlasProcessCacheSizeMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.cache.size metric with initial data.
@@ -1975,17 +2555,48 @@ func (m *metricMongodbatlasProcessCacheSize) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessCacheSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cacheStatusAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessCacheSizeMetricAttributeKeyCacheStatus) {
+		dp.Attributes().PutStr("cache_status", cacheStatusAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cache_status", cacheStatusAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1998,13 +2609,18 @@ func (m *metricMongodbatlasProcessCacheSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessCacheSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessCacheSize(cfg MetricConfig) metricMongodbatlasProcessCacheSize {
+func newMetricMongodbatlasProcessCacheSize(cfg MongodbatlasProcessCacheSizeMetricConfig) metricMongodbatlasProcessCacheSize {
 	m := metricMongodbatlasProcessCacheSize{config: cfg}
 
 	if cfg.Enabled {
@@ -2015,9 +2631,9 @@ func newMetricMongodbatlasProcessCacheSize(cfg MetricConfig) metricMongodbatlasP
 }
 
 type metricMongodbatlasProcessConnections struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   MongodbatlasProcessConnectionsMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
 }
 
 // init fills mongodbatlas.process.connections metric with initial data.
@@ -2056,7 +2672,7 @@ func (m *metricMongodbatlasProcessConnections) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricMongodbatlasProcessConnections(cfg MetricConfig) metricMongodbatlasProcessConnections {
+func newMetricMongodbatlasProcessConnections(cfg MongodbatlasProcessConnectionsMetricConfig) metricMongodbatlasProcessConnections {
 	m := metricMongodbatlasProcessConnections{config: cfg}
 
 	if cfg.Enabled {
@@ -2067,9 +2683,10 @@ func newMetricMongodbatlasProcessConnections(cfg MetricConfig) metricMongodbatla
 }
 
 type metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                                   // data buffer for generated metric.
+	config        MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricConfig // metric config provided by user.
+	capacity      int                                                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.cpu.children.normalized.usage.average metric with initial data.
@@ -2079,17 +2696,48 @@ func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricAttributeKeyCPUState) {
+		dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2102,13 +2750,18 @@ func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage) updateCapac
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessCPUChildrenNormalizedUsageAverage(cfg MetricConfig) metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage {
+func newMetricMongodbatlasProcessCPUChildrenNormalizedUsageAverage(cfg MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricConfig) metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage {
 	m := metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -2119,9 +2772,10 @@ func newMetricMongodbatlasProcessCPUChildrenNormalizedUsageAverage(cfg MetricCon
 }
 
 type metricMongodbatlasProcessCPUChildrenNormalizedUsageMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                               // data buffer for generated metric.
+	config        MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricConfig // metric config provided by user.
+	capacity      int                                                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.cpu.children.normalized.usage.max metric with initial data.
@@ -2131,17 +2785,48 @@ func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageMax) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricAttributeKeyCPUState) {
+		dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2154,13 +2839,18 @@ func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageMax) updateCapacity(
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessCPUChildrenNormalizedUsageMax(cfg MetricConfig) metricMongodbatlasProcessCPUChildrenNormalizedUsageMax {
+func newMetricMongodbatlasProcessCPUChildrenNormalizedUsageMax(cfg MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricConfig) metricMongodbatlasProcessCPUChildrenNormalizedUsageMax {
 	m := metricMongodbatlasProcessCPUChildrenNormalizedUsageMax{config: cfg}
 
 	if cfg.Enabled {
@@ -2171,9 +2861,10 @@ func newMetricMongodbatlasProcessCPUChildrenNormalizedUsageMax(cfg MetricConfig)
 }
 
 type metricMongodbatlasProcessCPUChildrenUsageAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                         // data buffer for generated metric.
+	config        MongodbatlasProcessCPUChildrenUsageAverageMetricConfig // metric config provided by user.
+	capacity      int                                                    // max observed number of data points added to the metric.
+	aggDataPoints []float64                                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.cpu.children.usage.average metric with initial data.
@@ -2183,17 +2874,48 @@ func (m *metricMongodbatlasProcessCPUChildrenUsageAverage) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessCPUChildrenUsageAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessCPUChildrenUsageAverageMetricAttributeKeyCPUState) {
+		dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2206,13 +2928,18 @@ func (m *metricMongodbatlasProcessCPUChildrenUsageAverage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessCPUChildrenUsageAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessCPUChildrenUsageAverage(cfg MetricConfig) metricMongodbatlasProcessCPUChildrenUsageAverage {
+func newMetricMongodbatlasProcessCPUChildrenUsageAverage(cfg MongodbatlasProcessCPUChildrenUsageAverageMetricConfig) metricMongodbatlasProcessCPUChildrenUsageAverage {
 	m := metricMongodbatlasProcessCPUChildrenUsageAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -2223,9 +2950,10 @@ func newMetricMongodbatlasProcessCPUChildrenUsageAverage(cfg MetricConfig) metri
 }
 
 type metricMongodbatlasProcessCPUChildrenUsageMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                     // data buffer for generated metric.
+	config        MongodbatlasProcessCPUChildrenUsageMaxMetricConfig // metric config provided by user.
+	capacity      int                                                // max observed number of data points added to the metric.
+	aggDataPoints []float64                                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.cpu.children.usage.max metric with initial data.
@@ -2235,17 +2963,48 @@ func (m *metricMongodbatlasProcessCPUChildrenUsageMax) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessCPUChildrenUsageMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessCPUChildrenUsageMaxMetricAttributeKeyCPUState) {
+		dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2258,13 +3017,18 @@ func (m *metricMongodbatlasProcessCPUChildrenUsageMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessCPUChildrenUsageMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessCPUChildrenUsageMax(cfg MetricConfig) metricMongodbatlasProcessCPUChildrenUsageMax {
+func newMetricMongodbatlasProcessCPUChildrenUsageMax(cfg MongodbatlasProcessCPUChildrenUsageMaxMetricConfig) metricMongodbatlasProcessCPUChildrenUsageMax {
 	m := metricMongodbatlasProcessCPUChildrenUsageMax{config: cfg}
 
 	if cfg.Enabled {
@@ -2275,9 +3039,10 @@ func newMetricMongodbatlasProcessCPUChildrenUsageMax(cfg MetricConfig) metricMon
 }
 
 type metricMongodbatlasProcessCPUNormalizedUsageAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                           // data buffer for generated metric.
+	config        MongodbatlasProcessCPUNormalizedUsageAverageMetricConfig // metric config provided by user.
+	capacity      int                                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.cpu.normalized.usage.average metric with initial data.
@@ -2287,17 +3052,48 @@ func (m *metricMongodbatlasProcessCPUNormalizedUsageAverage) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessCPUNormalizedUsageAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessCPUNormalizedUsageAverageMetricAttributeKeyCPUState) {
+		dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2310,13 +3106,18 @@ func (m *metricMongodbatlasProcessCPUNormalizedUsageAverage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessCPUNormalizedUsageAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessCPUNormalizedUsageAverage(cfg MetricConfig) metricMongodbatlasProcessCPUNormalizedUsageAverage {
+func newMetricMongodbatlasProcessCPUNormalizedUsageAverage(cfg MongodbatlasProcessCPUNormalizedUsageAverageMetricConfig) metricMongodbatlasProcessCPUNormalizedUsageAverage {
 	m := metricMongodbatlasProcessCPUNormalizedUsageAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -2327,9 +3128,10 @@ func newMetricMongodbatlasProcessCPUNormalizedUsageAverage(cfg MetricConfig) met
 }
 
 type metricMongodbatlasProcessCPUNormalizedUsageMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                       // data buffer for generated metric.
+	config        MongodbatlasProcessCPUNormalizedUsageMaxMetricConfig // metric config provided by user.
+	capacity      int                                                  // max observed number of data points added to the metric.
+	aggDataPoints []float64                                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.cpu.normalized.usage.max metric with initial data.
@@ -2339,17 +3141,48 @@ func (m *metricMongodbatlasProcessCPUNormalizedUsageMax) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessCPUNormalizedUsageMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessCPUNormalizedUsageMaxMetricAttributeKeyCPUState) {
+		dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2362,13 +3195,18 @@ func (m *metricMongodbatlasProcessCPUNormalizedUsageMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessCPUNormalizedUsageMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessCPUNormalizedUsageMax(cfg MetricConfig) metricMongodbatlasProcessCPUNormalizedUsageMax {
+func newMetricMongodbatlasProcessCPUNormalizedUsageMax(cfg MongodbatlasProcessCPUNormalizedUsageMaxMetricConfig) metricMongodbatlasProcessCPUNormalizedUsageMax {
 	m := metricMongodbatlasProcessCPUNormalizedUsageMax{config: cfg}
 
 	if cfg.Enabled {
@@ -2379,9 +3217,10 @@ func newMetricMongodbatlasProcessCPUNormalizedUsageMax(cfg MetricConfig) metricM
 }
 
 type metricMongodbatlasProcessCPUUsageAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        MongodbatlasProcessCPUUsageAverageMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []float64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.cpu.usage.average metric with initial data.
@@ -2391,17 +3230,48 @@ func (m *metricMongodbatlasProcessCPUUsageAverage) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessCPUUsageAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessCPUUsageAverageMetricAttributeKeyCPUState) {
+		dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2414,13 +3284,18 @@ func (m *metricMongodbatlasProcessCPUUsageAverage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessCPUUsageAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessCPUUsageAverage(cfg MetricConfig) metricMongodbatlasProcessCPUUsageAverage {
+func newMetricMongodbatlasProcessCPUUsageAverage(cfg MongodbatlasProcessCPUUsageAverageMetricConfig) metricMongodbatlasProcessCPUUsageAverage {
 	m := metricMongodbatlasProcessCPUUsageAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -2431,9 +3306,10 @@ func newMetricMongodbatlasProcessCPUUsageAverage(cfg MetricConfig) metricMongodb
 }
 
 type metricMongodbatlasProcessCPUUsageMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        MongodbatlasProcessCPUUsageMaxMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.cpu.usage.max metric with initial data.
@@ -2443,17 +3319,48 @@ func (m *metricMongodbatlasProcessCPUUsageMax) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessCPUUsageMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessCPUUsageMaxMetricAttributeKeyCPUState) {
+		dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2466,13 +3373,18 @@ func (m *metricMongodbatlasProcessCPUUsageMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessCPUUsageMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessCPUUsageMax(cfg MetricConfig) metricMongodbatlasProcessCPUUsageMax {
+func newMetricMongodbatlasProcessCPUUsageMax(cfg MongodbatlasProcessCPUUsageMaxMetricConfig) metricMongodbatlasProcessCPUUsageMax {
 	m := metricMongodbatlasProcessCPUUsageMax{config: cfg}
 
 	if cfg.Enabled {
@@ -2483,9 +3395,10 @@ func newMetricMongodbatlasProcessCPUUsageMax(cfg MetricConfig) metricMongodbatla
 }
 
 type metricMongodbatlasProcessCursors struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        MongodbatlasProcessCursorsMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []float64                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.cursors metric with initial data.
@@ -2495,17 +3408,48 @@ func (m *metricMongodbatlasProcessCursors) init() {
 	m.data.SetUnit("{cursors}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessCursors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cursorStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessCursorsMetricAttributeKeyCursorState) {
+		dp.Attributes().PutStr("cursor_state", cursorStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cursor_state", cursorStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2518,13 +3462,18 @@ func (m *metricMongodbatlasProcessCursors) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessCursors) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessCursors(cfg MetricConfig) metricMongodbatlasProcessCursors {
+func newMetricMongodbatlasProcessCursors(cfg MongodbatlasProcessCursorsMetricConfig) metricMongodbatlasProcessCursors {
 	m := metricMongodbatlasProcessCursors{config: cfg}
 
 	if cfg.Enabled {
@@ -2535,9 +3484,10 @@ func newMetricMongodbatlasProcessCursors(cfg MetricConfig) metricMongodbatlasPro
 }
 
 type metricMongodbatlasProcessDbDocumentRate struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        MongodbatlasProcessDbDocumentRateMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []float64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.db.document.rate metric with initial data.
@@ -2547,17 +3497,48 @@ func (m *metricMongodbatlasProcessDbDocumentRate) init() {
 	m.data.SetUnit("{documents}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessDbDocumentRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, documentStatusAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessDbDocumentRateMetricAttributeKeyDocumentStatus) {
+		dp.Attributes().PutStr("document_status", documentStatusAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("document_status", documentStatusAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2570,13 +3551,18 @@ func (m *metricMongodbatlasProcessDbDocumentRate) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessDbDocumentRate) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessDbDocumentRate(cfg MetricConfig) metricMongodbatlasProcessDbDocumentRate {
+func newMetricMongodbatlasProcessDbDocumentRate(cfg MongodbatlasProcessDbDocumentRateMetricConfig) metricMongodbatlasProcessDbDocumentRate {
 	m := metricMongodbatlasProcessDbDocumentRate{config: cfg}
 
 	if cfg.Enabled {
@@ -2587,9 +3573,10 @@ func newMetricMongodbatlasProcessDbDocumentRate(cfg MetricConfig) metricMongodba
 }
 
 type metricMongodbatlasProcessDbOperationsRate struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                  // data buffer for generated metric.
+	config        MongodbatlasProcessDbOperationsRateMetricConfig // metric config provided by user.
+	capacity      int                                             // max observed number of data points added to the metric.
+	aggDataPoints []float64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.db.operations.rate metric with initial data.
@@ -2599,18 +3586,51 @@ func (m *metricMongodbatlasProcessDbOperationsRate) init() {
 	m.data.SetUnit("{operations}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessDbOperationsRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, operationAttributeValue string, clusterRoleAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessDbOperationsRateMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessDbOperationsRateMetricAttributeKeyClusterRole) {
+		dp.Attributes().PutStr("cluster_role", clusterRoleAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
-	dp.Attributes().PutStr("cluster_role", clusterRoleAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2623,13 +3643,18 @@ func (m *metricMongodbatlasProcessDbOperationsRate) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessDbOperationsRate) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessDbOperationsRate(cfg MetricConfig) metricMongodbatlasProcessDbOperationsRate {
+func newMetricMongodbatlasProcessDbOperationsRate(cfg MongodbatlasProcessDbOperationsRateMetricConfig) metricMongodbatlasProcessDbOperationsRate {
 	m := metricMongodbatlasProcessDbOperationsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -2640,9 +3665,10 @@ func newMetricMongodbatlasProcessDbOperationsRate(cfg MetricConfig) metricMongod
 }
 
 type metricMongodbatlasProcessDbOperationsTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                  // data buffer for generated metric.
+	config        MongodbatlasProcessDbOperationsTimeMetricConfig // metric config provided by user.
+	capacity      int                                             // max observed number of data points added to the metric.
+	aggDataPoints []float64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.db.operations.time metric with initial data.
@@ -2654,17 +3680,48 @@ func (m *metricMongodbatlasProcessDbOperationsTime) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessDbOperationsTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, executionTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessDbOperationsTimeMetricAttributeKeyExecutionType) {
+		dp.Attributes().PutStr("execution_type", executionTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("execution_type", executionTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2677,13 +3734,18 @@ func (m *metricMongodbatlasProcessDbOperationsTime) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessDbOperationsTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessDbOperationsTime(cfg MetricConfig) metricMongodbatlasProcessDbOperationsTime {
+func newMetricMongodbatlasProcessDbOperationsTime(cfg MongodbatlasProcessDbOperationsTimeMetricConfig) metricMongodbatlasProcessDbOperationsTime {
 	m := metricMongodbatlasProcessDbOperationsTime{config: cfg}
 
 	if cfg.Enabled {
@@ -2694,9 +3756,10 @@ func newMetricMongodbatlasProcessDbOperationsTime(cfg MetricConfig) metricMongod
 }
 
 type metricMongodbatlasProcessDbQueryExecutorScanned struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                        // data buffer for generated metric.
+	config        MongodbatlasProcessDbQueryExecutorScannedMetricConfig // metric config provided by user.
+	capacity      int                                                   // max observed number of data points added to the metric.
+	aggDataPoints []float64                                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.db.query_executor.scanned metric with initial data.
@@ -2706,17 +3769,48 @@ func (m *metricMongodbatlasProcessDbQueryExecutorScanned) init() {
 	m.data.SetUnit("{objects}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessDbQueryExecutorScanned) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, scannedTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessDbQueryExecutorScannedMetricAttributeKeyScannedType) {
+		dp.Attributes().PutStr("scanned_type", scannedTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("scanned_type", scannedTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2729,13 +3823,18 @@ func (m *metricMongodbatlasProcessDbQueryExecutorScanned) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessDbQueryExecutorScanned) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessDbQueryExecutorScanned(cfg MetricConfig) metricMongodbatlasProcessDbQueryExecutorScanned {
+func newMetricMongodbatlasProcessDbQueryExecutorScanned(cfg MongodbatlasProcessDbQueryExecutorScannedMetricConfig) metricMongodbatlasProcessDbQueryExecutorScanned {
 	m := metricMongodbatlasProcessDbQueryExecutorScanned{config: cfg}
 
 	if cfg.Enabled {
@@ -2746,9 +3845,10 @@ func newMetricMongodbatlasProcessDbQueryExecutorScanned(cfg MetricConfig) metric
 }
 
 type metricMongodbatlasProcessDbQueryTargetingScannedPerReturned struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                                    // data buffer for generated metric.
+	config        MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricConfig // metric config provided by user.
+	capacity      int                                                               // max observed number of data points added to the metric.
+	aggDataPoints []float64                                                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.db.query_targeting.scanned_per_returned metric with initial data.
@@ -2758,17 +3858,48 @@ func (m *metricMongodbatlasProcessDbQueryTargetingScannedPerReturned) init() {
 	m.data.SetUnit("{scanned}/{returned}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessDbQueryTargetingScannedPerReturned) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, scannedTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricAttributeKeyScannedType) {
+		dp.Attributes().PutStr("scanned_type", scannedTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("scanned_type", scannedTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2781,13 +3912,18 @@ func (m *metricMongodbatlasProcessDbQueryTargetingScannedPerReturned) updateCapa
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessDbQueryTargetingScannedPerReturned) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessDbQueryTargetingScannedPerReturned(cfg MetricConfig) metricMongodbatlasProcessDbQueryTargetingScannedPerReturned {
+func newMetricMongodbatlasProcessDbQueryTargetingScannedPerReturned(cfg MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricConfig) metricMongodbatlasProcessDbQueryTargetingScannedPerReturned {
 	m := metricMongodbatlasProcessDbQueryTargetingScannedPerReturned{config: cfg}
 
 	if cfg.Enabled {
@@ -2798,9 +3934,10 @@ func newMetricMongodbatlasProcessDbQueryTargetingScannedPerReturned(cfg MetricCo
 }
 
 type metricMongodbatlasProcessDbStorage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        MongodbatlasProcessDbStorageMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.db.storage metric with initial data.
@@ -2810,17 +3947,48 @@ func (m *metricMongodbatlasProcessDbStorage) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessDbStorage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, storageStatusAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessDbStorageMetricAttributeKeyStorageStatus) {
+		dp.Attributes().PutStr("storage_status", storageStatusAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("storage_status", storageStatusAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2833,13 +4001,18 @@ func (m *metricMongodbatlasProcessDbStorage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessDbStorage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessDbStorage(cfg MetricConfig) metricMongodbatlasProcessDbStorage {
+func newMetricMongodbatlasProcessDbStorage(cfg MongodbatlasProcessDbStorageMetricConfig) metricMongodbatlasProcessDbStorage {
 	m := metricMongodbatlasProcessDbStorage{config: cfg}
 
 	if cfg.Enabled {
@@ -2850,9 +4023,10 @@ func newMetricMongodbatlasProcessDbStorage(cfg MetricConfig) metricMongodbatlasP
 }
 
 type metricMongodbatlasProcessGlobalLock struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        MongodbatlasProcessGlobalLockMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []float64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.global_lock metric with initial data.
@@ -2862,17 +4036,48 @@ func (m *metricMongodbatlasProcessGlobalLock) init() {
 	m.data.SetUnit("{locks}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessGlobalLock) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, globalLockStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessGlobalLockMetricAttributeKeyGlobalLockState) {
+		dp.Attributes().PutStr("global_lock_state", globalLockStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("global_lock_state", globalLockStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2885,13 +4090,18 @@ func (m *metricMongodbatlasProcessGlobalLock) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessGlobalLock) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessGlobalLock(cfg MetricConfig) metricMongodbatlasProcessGlobalLock {
+func newMetricMongodbatlasProcessGlobalLock(cfg MongodbatlasProcessGlobalLockMetricConfig) metricMongodbatlasProcessGlobalLock {
 	m := metricMongodbatlasProcessGlobalLock{config: cfg}
 
 	if cfg.Enabled {
@@ -2902,9 +4112,9 @@ func newMetricMongodbatlasProcessGlobalLock(cfg MetricConfig) metricMongodbatlas
 }
 
 type metricMongodbatlasProcessIndexBtreeMissRatio struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                     // data buffer for generated metric.
+	config   MongodbatlasProcessIndexBtreeMissRatioMetricConfig // metric config provided by user.
+	capacity int                                                // max observed number of data points added to the metric.
 }
 
 // init fills mongodbatlas.process.index.btree_miss_ratio metric with initial data.
@@ -2941,7 +4151,7 @@ func (m *metricMongodbatlasProcessIndexBtreeMissRatio) emit(metrics pmetric.Metr
 	}
 }
 
-func newMetricMongodbatlasProcessIndexBtreeMissRatio(cfg MetricConfig) metricMongodbatlasProcessIndexBtreeMissRatio {
+func newMetricMongodbatlasProcessIndexBtreeMissRatio(cfg MongodbatlasProcessIndexBtreeMissRatioMetricConfig) metricMongodbatlasProcessIndexBtreeMissRatio {
 	m := metricMongodbatlasProcessIndexBtreeMissRatio{config: cfg}
 
 	if cfg.Enabled {
@@ -2952,9 +4162,10 @@ func newMetricMongodbatlasProcessIndexBtreeMissRatio(cfg MetricConfig) metricMon
 }
 
 type metricMongodbatlasProcessIndexCounters struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        MongodbatlasProcessIndexCountersMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.index.counters metric with initial data.
@@ -2964,17 +4175,48 @@ func (m *metricMongodbatlasProcessIndexCounters) init() {
 	m.data.SetUnit("{indexes}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessIndexCounters) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, btreeCounterTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessIndexCountersMetricAttributeKeyBtreeCounterType) {
+		dp.Attributes().PutStr("btree_counter_type", btreeCounterTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("btree_counter_type", btreeCounterTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2987,13 +4229,18 @@ func (m *metricMongodbatlasProcessIndexCounters) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessIndexCounters) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessIndexCounters(cfg MetricConfig) metricMongodbatlasProcessIndexCounters {
+func newMetricMongodbatlasProcessIndexCounters(cfg MongodbatlasProcessIndexCountersMetricConfig) metricMongodbatlasProcessIndexCounters {
 	m := metricMongodbatlasProcessIndexCounters{config: cfg}
 
 	if cfg.Enabled {
@@ -3004,9 +4251,9 @@ func newMetricMongodbatlasProcessIndexCounters(cfg MetricConfig) metricMongodbat
 }
 
 type metricMongodbatlasProcessJournalingCommits struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                   // data buffer for generated metric.
+	config   MongodbatlasProcessJournalingCommitsMetricConfig // metric config provided by user.
+	capacity int                                              // max observed number of data points added to the metric.
 }
 
 // init fills mongodbatlas.process.journaling.commits metric with initial data.
@@ -3043,7 +4290,7 @@ func (m *metricMongodbatlasProcessJournalingCommits) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricMongodbatlasProcessJournalingCommits(cfg MetricConfig) metricMongodbatlasProcessJournalingCommits {
+func newMetricMongodbatlasProcessJournalingCommits(cfg MongodbatlasProcessJournalingCommitsMetricConfig) metricMongodbatlasProcessJournalingCommits {
 	m := metricMongodbatlasProcessJournalingCommits{config: cfg}
 
 	if cfg.Enabled {
@@ -3054,9 +4301,9 @@ func newMetricMongodbatlasProcessJournalingCommits(cfg MetricConfig) metricMongo
 }
 
 type metricMongodbatlasProcessJournalingDataFiles struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                     // data buffer for generated metric.
+	config   MongodbatlasProcessJournalingDataFilesMetricConfig // metric config provided by user.
+	capacity int                                                // max observed number of data points added to the metric.
 }
 
 // init fills mongodbatlas.process.journaling.data_files metric with initial data.
@@ -3093,7 +4340,7 @@ func (m *metricMongodbatlasProcessJournalingDataFiles) emit(metrics pmetric.Metr
 	}
 }
 
-func newMetricMongodbatlasProcessJournalingDataFiles(cfg MetricConfig) metricMongodbatlasProcessJournalingDataFiles {
+func newMetricMongodbatlasProcessJournalingDataFiles(cfg MongodbatlasProcessJournalingDataFilesMetricConfig) metricMongodbatlasProcessJournalingDataFiles {
 	m := metricMongodbatlasProcessJournalingDataFiles{config: cfg}
 
 	if cfg.Enabled {
@@ -3104,9 +4351,9 @@ func newMetricMongodbatlasProcessJournalingDataFiles(cfg MetricConfig) metricMon
 }
 
 type metricMongodbatlasProcessJournalingWritten struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                   // data buffer for generated metric.
+	config   MongodbatlasProcessJournalingWrittenMetricConfig // metric config provided by user.
+	capacity int                                              // max observed number of data points added to the metric.
 }
 
 // init fills mongodbatlas.process.journaling.written metric with initial data.
@@ -3143,7 +4390,7 @@ func (m *metricMongodbatlasProcessJournalingWritten) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricMongodbatlasProcessJournalingWritten(cfg MetricConfig) metricMongodbatlasProcessJournalingWritten {
+func newMetricMongodbatlasProcessJournalingWritten(cfg MongodbatlasProcessJournalingWrittenMetricConfig) metricMongodbatlasProcessJournalingWritten {
 	m := metricMongodbatlasProcessJournalingWritten{config: cfg}
 
 	if cfg.Enabled {
@@ -3154,9 +4401,10 @@ func newMetricMongodbatlasProcessJournalingWritten(cfg MetricConfig) metricMongo
 }
 
 type metricMongodbatlasProcessMemoryUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        MongodbatlasProcessMemoryUsageMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.memory.usage metric with initial data.
@@ -3166,17 +4414,48 @@ func (m *metricMongodbatlasProcessMemoryUsage) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, memoryStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessMemoryUsageMetricAttributeKeyMemoryState) {
+		dp.Attributes().PutStr("memory_state", memoryStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("memory_state", memoryStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3189,13 +4468,18 @@ func (m *metricMongodbatlasProcessMemoryUsage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessMemoryUsage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessMemoryUsage(cfg MetricConfig) metricMongodbatlasProcessMemoryUsage {
+func newMetricMongodbatlasProcessMemoryUsage(cfg MongodbatlasProcessMemoryUsageMetricConfig) metricMongodbatlasProcessMemoryUsage {
 	m := metricMongodbatlasProcessMemoryUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -3206,9 +4490,10 @@ func newMetricMongodbatlasProcessMemoryUsage(cfg MetricConfig) metricMongodbatla
 }
 
 type metricMongodbatlasProcessNetworkIo struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        MongodbatlasProcessNetworkIoMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.network.io metric with initial data.
@@ -3218,17 +4503,48 @@ func (m *metricMongodbatlasProcessNetworkIo) init() {
 	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessNetworkIoMetricAttributeKeyDirection) {
+		dp.Attributes().PutStr("direction", directionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3241,13 +4557,18 @@ func (m *metricMongodbatlasProcessNetworkIo) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessNetworkIo) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessNetworkIo(cfg MetricConfig) metricMongodbatlasProcessNetworkIo {
+func newMetricMongodbatlasProcessNetworkIo(cfg MongodbatlasProcessNetworkIoMetricConfig) metricMongodbatlasProcessNetworkIo {
 	m := metricMongodbatlasProcessNetworkIo{config: cfg}
 
 	if cfg.Enabled {
@@ -3258,9 +4579,9 @@ func newMetricMongodbatlasProcessNetworkIo(cfg MetricConfig) metricMongodbatlasP
 }
 
 type metricMongodbatlasProcessNetworkRequests struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                 // data buffer for generated metric.
+	config   MongodbatlasProcessNetworkRequestsMetricConfig // metric config provided by user.
+	capacity int                                            // max observed number of data points added to the metric.
 }
 
 // init fills mongodbatlas.process.network.requests metric with initial data.
@@ -3299,7 +4620,7 @@ func (m *metricMongodbatlasProcessNetworkRequests) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricMongodbatlasProcessNetworkRequests(cfg MetricConfig) metricMongodbatlasProcessNetworkRequests {
+func newMetricMongodbatlasProcessNetworkRequests(cfg MongodbatlasProcessNetworkRequestsMetricConfig) metricMongodbatlasProcessNetworkRequests {
 	m := metricMongodbatlasProcessNetworkRequests{config: cfg}
 
 	if cfg.Enabled {
@@ -3310,9 +4631,9 @@ func newMetricMongodbatlasProcessNetworkRequests(cfg MetricConfig) metricMongodb
 }
 
 type metricMongodbatlasProcessOplogRate struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   MongodbatlasProcessOplogRateMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills mongodbatlas.process.oplog.rate metric with initial data.
@@ -3349,7 +4670,7 @@ func (m *metricMongodbatlasProcessOplogRate) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricMongodbatlasProcessOplogRate(cfg MetricConfig) metricMongodbatlasProcessOplogRate {
+func newMetricMongodbatlasProcessOplogRate(cfg MongodbatlasProcessOplogRateMetricConfig) metricMongodbatlasProcessOplogRate {
 	m := metricMongodbatlasProcessOplogRate{config: cfg}
 
 	if cfg.Enabled {
@@ -3360,9 +4681,10 @@ func newMetricMongodbatlasProcessOplogRate(cfg MetricConfig) metricMongodbatlasP
 }
 
 type metricMongodbatlasProcessOplogTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        MongodbatlasProcessOplogTimeMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.oplog.time metric with initial data.
@@ -3372,17 +4694,48 @@ func (m *metricMongodbatlasProcessOplogTime) init() {
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessOplogTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oplogTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessOplogTimeMetricAttributeKeyOplogType) {
+		dp.Attributes().PutStr("oplog_type", oplogTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("oplog_type", oplogTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3395,13 +4748,18 @@ func (m *metricMongodbatlasProcessOplogTime) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessOplogTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessOplogTime(cfg MetricConfig) metricMongodbatlasProcessOplogTime {
+func newMetricMongodbatlasProcessOplogTime(cfg MongodbatlasProcessOplogTimeMetricConfig) metricMongodbatlasProcessOplogTime {
 	m := metricMongodbatlasProcessOplogTime{config: cfg}
 
 	if cfg.Enabled {
@@ -3412,9 +4770,10 @@ func newMetricMongodbatlasProcessOplogTime(cfg MetricConfig) metricMongodbatlasP
 }
 
 type metricMongodbatlasProcessPageFaults struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        MongodbatlasProcessPageFaultsMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []float64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.page_faults metric with initial data.
@@ -3424,17 +4783,48 @@ func (m *metricMongodbatlasProcessPageFaults) init() {
 	m.data.SetUnit("{faults}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessPageFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, memoryIssueTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessPageFaultsMetricAttributeKeyMemoryIssueType) {
+		dp.Attributes().PutStr("memory_issue_type", memoryIssueTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("memory_issue_type", memoryIssueTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3447,13 +4837,18 @@ func (m *metricMongodbatlasProcessPageFaults) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessPageFaults) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessPageFaults(cfg MetricConfig) metricMongodbatlasProcessPageFaults {
+func newMetricMongodbatlasProcessPageFaults(cfg MongodbatlasProcessPageFaultsMetricConfig) metricMongodbatlasProcessPageFaults {
 	m := metricMongodbatlasProcessPageFaults{config: cfg}
 
 	if cfg.Enabled {
@@ -3464,9 +4859,9 @@ func newMetricMongodbatlasProcessPageFaults(cfg MetricConfig) metricMongodbatlas
 }
 
 type metricMongodbatlasProcessRestarts struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   MongodbatlasProcessRestartsMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills mongodbatlas.process.restarts metric with initial data.
@@ -3503,7 +4898,7 @@ func (m *metricMongodbatlasProcessRestarts) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricMongodbatlasProcessRestarts(cfg MetricConfig) metricMongodbatlasProcessRestarts {
+func newMetricMongodbatlasProcessRestarts(cfg MongodbatlasProcessRestartsMetricConfig) metricMongodbatlasProcessRestarts {
 	m := metricMongodbatlasProcessRestarts{config: cfg}
 
 	if cfg.Enabled {
@@ -3514,9 +4909,10 @@ func newMetricMongodbatlasProcessRestarts(cfg MetricConfig) metricMongodbatlasPr
 }
 
 type metricMongodbatlasProcessTickets struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        MongodbatlasProcessTicketsMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []float64                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.process.tickets metric with initial data.
@@ -3526,17 +4922,48 @@ func (m *metricMongodbatlasProcessTickets) init() {
 	m.data.SetUnit("{tickets}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasProcessTickets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, ticketTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasProcessTicketsMetricAttributeKeyTicketType) {
+		dp.Attributes().PutStr("ticket_type", ticketTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("ticket_type", ticketTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3549,13 +4976,18 @@ func (m *metricMongodbatlasProcessTickets) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasProcessTickets) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasProcessTickets(cfg MetricConfig) metricMongodbatlasProcessTickets {
+func newMetricMongodbatlasProcessTickets(cfg MongodbatlasProcessTicketsMetricConfig) metricMongodbatlasProcessTickets {
 	m := metricMongodbatlasProcessTickets{config: cfg}
 
 	if cfg.Enabled {
@@ -3566,9 +4998,10 @@ func newMetricMongodbatlasProcessTickets(cfg MetricConfig) metricMongodbatlasPro
 }
 
 type metricMongodbatlasSystemCPUNormalizedUsageAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                          // data buffer for generated metric.
+	config        MongodbatlasSystemCPUNormalizedUsageAverageMetricConfig // metric config provided by user.
+	capacity      int                                                     // max observed number of data points added to the metric.
+	aggDataPoints []float64                                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.cpu.normalized.usage.average metric with initial data.
@@ -3578,17 +5011,48 @@ func (m *metricMongodbatlasSystemCPUNormalizedUsageAverage) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemCPUNormalizedUsageAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemCPUNormalizedUsageAverageMetricAttributeKeyCPUState) {
+		dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3601,13 +5065,18 @@ func (m *metricMongodbatlasSystemCPUNormalizedUsageAverage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemCPUNormalizedUsageAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemCPUNormalizedUsageAverage(cfg MetricConfig) metricMongodbatlasSystemCPUNormalizedUsageAverage {
+func newMetricMongodbatlasSystemCPUNormalizedUsageAverage(cfg MongodbatlasSystemCPUNormalizedUsageAverageMetricConfig) metricMongodbatlasSystemCPUNormalizedUsageAverage {
 	m := metricMongodbatlasSystemCPUNormalizedUsageAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -3618,9 +5087,10 @@ func newMetricMongodbatlasSystemCPUNormalizedUsageAverage(cfg MetricConfig) metr
 }
 
 type metricMongodbatlasSystemCPUNormalizedUsageMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                      // data buffer for generated metric.
+	config        MongodbatlasSystemCPUNormalizedUsageMaxMetricConfig // metric config provided by user.
+	capacity      int                                                 // max observed number of data points added to the metric.
+	aggDataPoints []float64                                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.cpu.normalized.usage.max metric with initial data.
@@ -3630,17 +5100,48 @@ func (m *metricMongodbatlasSystemCPUNormalizedUsageMax) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemCPUNormalizedUsageMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemCPUNormalizedUsageMaxMetricAttributeKeyCPUState) {
+		dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3653,13 +5154,18 @@ func (m *metricMongodbatlasSystemCPUNormalizedUsageMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemCPUNormalizedUsageMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemCPUNormalizedUsageMax(cfg MetricConfig) metricMongodbatlasSystemCPUNormalizedUsageMax {
+func newMetricMongodbatlasSystemCPUNormalizedUsageMax(cfg MongodbatlasSystemCPUNormalizedUsageMaxMetricConfig) metricMongodbatlasSystemCPUNormalizedUsageMax {
 	m := metricMongodbatlasSystemCPUNormalizedUsageMax{config: cfg}
 
 	if cfg.Enabled {
@@ -3670,9 +5176,10 @@ func newMetricMongodbatlasSystemCPUNormalizedUsageMax(cfg MetricConfig) metricMo
 }
 
 type metricMongodbatlasSystemCPUUsageAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        MongodbatlasSystemCPUUsageAverageMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []float64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.cpu.usage.average metric with initial data.
@@ -3682,17 +5189,48 @@ func (m *metricMongodbatlasSystemCPUUsageAverage) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemCPUUsageAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemCPUUsageAverageMetricAttributeKeyCPUState) {
+		dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3705,13 +5243,18 @@ func (m *metricMongodbatlasSystemCPUUsageAverage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemCPUUsageAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemCPUUsageAverage(cfg MetricConfig) metricMongodbatlasSystemCPUUsageAverage {
+func newMetricMongodbatlasSystemCPUUsageAverage(cfg MongodbatlasSystemCPUUsageAverageMetricConfig) metricMongodbatlasSystemCPUUsageAverage {
 	m := metricMongodbatlasSystemCPUUsageAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -3722,9 +5265,10 @@ func newMetricMongodbatlasSystemCPUUsageAverage(cfg MetricConfig) metricMongodba
 }
 
 type metricMongodbatlasSystemCPUUsageMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        MongodbatlasSystemCPUUsageMaxMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []float64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.cpu.usage.max metric with initial data.
@@ -3734,17 +5278,48 @@ func (m *metricMongodbatlasSystemCPUUsageMax) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemCPUUsageMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemCPUUsageMaxMetricAttributeKeyCPUState) {
+		dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3757,13 +5332,18 @@ func (m *metricMongodbatlasSystemCPUUsageMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemCPUUsageMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemCPUUsageMax(cfg MetricConfig) metricMongodbatlasSystemCPUUsageMax {
+func newMetricMongodbatlasSystemCPUUsageMax(cfg MongodbatlasSystemCPUUsageMaxMetricConfig) metricMongodbatlasSystemCPUUsageMax {
 	m := metricMongodbatlasSystemCPUUsageMax{config: cfg}
 
 	if cfg.Enabled {
@@ -3774,9 +5354,10 @@ func newMetricMongodbatlasSystemCPUUsageMax(cfg MetricConfig) metricMongodbatlas
 }
 
 type metricMongodbatlasSystemFtsCPUNormalizedUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                      // data buffer for generated metric.
+	config        MongodbatlasSystemFtsCPUNormalizedUsageMetricConfig // metric config provided by user.
+	capacity      int                                                 // max observed number of data points added to the metric.
+	aggDataPoints []float64                                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.fts.cpu.normalized.usage metric with initial data.
@@ -3786,17 +5367,48 @@ func (m *metricMongodbatlasSystemFtsCPUNormalizedUsage) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemFtsCPUNormalizedUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemFtsCPUNormalizedUsageMetricAttributeKeyCPUState) {
+		dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3809,13 +5421,18 @@ func (m *metricMongodbatlasSystemFtsCPUNormalizedUsage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemFtsCPUNormalizedUsage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemFtsCPUNormalizedUsage(cfg MetricConfig) metricMongodbatlasSystemFtsCPUNormalizedUsage {
+func newMetricMongodbatlasSystemFtsCPUNormalizedUsage(cfg MongodbatlasSystemFtsCPUNormalizedUsageMetricConfig) metricMongodbatlasSystemFtsCPUNormalizedUsage {
 	m := metricMongodbatlasSystemFtsCPUNormalizedUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -3826,9 +5443,10 @@ func newMetricMongodbatlasSystemFtsCPUNormalizedUsage(cfg MetricConfig) metricMo
 }
 
 type metricMongodbatlasSystemFtsCPUUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        MongodbatlasSystemFtsCPUUsageMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []float64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.fts.cpu.usage metric with initial data.
@@ -3838,17 +5456,48 @@ func (m *metricMongodbatlasSystemFtsCPUUsage) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemFtsCPUUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemFtsCPUUsageMetricAttributeKeyCPUState) {
+		dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3861,13 +5510,18 @@ func (m *metricMongodbatlasSystemFtsCPUUsage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemFtsCPUUsage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemFtsCPUUsage(cfg MetricConfig) metricMongodbatlasSystemFtsCPUUsage {
+func newMetricMongodbatlasSystemFtsCPUUsage(cfg MongodbatlasSystemFtsCPUUsageMetricConfig) metricMongodbatlasSystemFtsCPUUsage {
 	m := metricMongodbatlasSystemFtsCPUUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -3878,9 +5532,9 @@ func newMetricMongodbatlasSystemFtsCPUUsage(cfg MetricConfig) metricMongodbatlas
 }
 
 type metricMongodbatlasSystemFtsDiskUsed struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   MongodbatlasSystemFtsDiskUsedMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills mongodbatlas.system.fts.disk.used metric with initial data.
@@ -3917,7 +5571,7 @@ func (m *metricMongodbatlasSystemFtsDiskUsed) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricMongodbatlasSystemFtsDiskUsed(cfg MetricConfig) metricMongodbatlasSystemFtsDiskUsed {
+func newMetricMongodbatlasSystemFtsDiskUsed(cfg MongodbatlasSystemFtsDiskUsedMetricConfig) metricMongodbatlasSystemFtsDiskUsed {
 	m := metricMongodbatlasSystemFtsDiskUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -3928,9 +5582,10 @@ func newMetricMongodbatlasSystemFtsDiskUsed(cfg MetricConfig) metricMongodbatlas
 }
 
 type metricMongodbatlasSystemFtsMemoryUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        MongodbatlasSystemFtsMemoryUsageMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.fts.memory.usage metric with initial data.
@@ -3942,17 +5597,48 @@ func (m *metricMongodbatlasSystemFtsMemoryUsage) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemFtsMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, memoryStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemFtsMemoryUsageMetricAttributeKeyMemoryState) {
+		dp.Attributes().PutStr("memory_state", memoryStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("memory_state", memoryStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3965,13 +5651,18 @@ func (m *metricMongodbatlasSystemFtsMemoryUsage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemFtsMemoryUsage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemFtsMemoryUsage(cfg MetricConfig) metricMongodbatlasSystemFtsMemoryUsage {
+func newMetricMongodbatlasSystemFtsMemoryUsage(cfg MongodbatlasSystemFtsMemoryUsageMetricConfig) metricMongodbatlasSystemFtsMemoryUsage {
 	m := metricMongodbatlasSystemFtsMemoryUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -3982,9 +5673,10 @@ func newMetricMongodbatlasSystemFtsMemoryUsage(cfg MetricConfig) metricMongodbat
 }
 
 type metricMongodbatlasSystemMemoryUsageAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                   // data buffer for generated metric.
+	config        MongodbatlasSystemMemoryUsageAverageMetricConfig // metric config provided by user.
+	capacity      int                                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.memory.usage.average metric with initial data.
@@ -3994,17 +5686,48 @@ func (m *metricMongodbatlasSystemMemoryUsageAverage) init() {
 	m.data.SetUnit("KiBy")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemMemoryUsageAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, memoryStatusAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemMemoryUsageAverageMetricAttributeKeyMemoryStatus) {
+		dp.Attributes().PutStr("memory_status", memoryStatusAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("memory_status", memoryStatusAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4017,13 +5740,18 @@ func (m *metricMongodbatlasSystemMemoryUsageAverage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemMemoryUsageAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemMemoryUsageAverage(cfg MetricConfig) metricMongodbatlasSystemMemoryUsageAverage {
+func newMetricMongodbatlasSystemMemoryUsageAverage(cfg MongodbatlasSystemMemoryUsageAverageMetricConfig) metricMongodbatlasSystemMemoryUsageAverage {
 	m := metricMongodbatlasSystemMemoryUsageAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -4034,9 +5762,10 @@ func newMetricMongodbatlasSystemMemoryUsageAverage(cfg MetricConfig) metricMongo
 }
 
 type metricMongodbatlasSystemMemoryUsageMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        MongodbatlasSystemMemoryUsageMaxMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.memory.usage.max metric with initial data.
@@ -4046,17 +5775,48 @@ func (m *metricMongodbatlasSystemMemoryUsageMax) init() {
 	m.data.SetUnit("KiBy")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemMemoryUsageMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, memoryStatusAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemMemoryUsageMaxMetricAttributeKeyMemoryStatus) {
+		dp.Attributes().PutStr("memory_status", memoryStatusAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("memory_status", memoryStatusAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4069,13 +5829,18 @@ func (m *metricMongodbatlasSystemMemoryUsageMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemMemoryUsageMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemMemoryUsageMax(cfg MetricConfig) metricMongodbatlasSystemMemoryUsageMax {
+func newMetricMongodbatlasSystemMemoryUsageMax(cfg MongodbatlasSystemMemoryUsageMaxMetricConfig) metricMongodbatlasSystemMemoryUsageMax {
 	m := metricMongodbatlasSystemMemoryUsageMax{config: cfg}
 
 	if cfg.Enabled {
@@ -4086,9 +5851,10 @@ func newMetricMongodbatlasSystemMemoryUsageMax(cfg MetricConfig) metricMongodbat
 }
 
 type metricMongodbatlasSystemNetworkIoAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        MongodbatlasSystemNetworkIoAverageMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []float64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.network.io.average metric with initial data.
@@ -4098,17 +5864,48 @@ func (m *metricMongodbatlasSystemNetworkIoAverage) init() {
 	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemNetworkIoAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemNetworkIoAverageMetricAttributeKeyDirection) {
+		dp.Attributes().PutStr("direction", directionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4121,13 +5918,18 @@ func (m *metricMongodbatlasSystemNetworkIoAverage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemNetworkIoAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemNetworkIoAverage(cfg MetricConfig) metricMongodbatlasSystemNetworkIoAverage {
+func newMetricMongodbatlasSystemNetworkIoAverage(cfg MongodbatlasSystemNetworkIoAverageMetricConfig) metricMongodbatlasSystemNetworkIoAverage {
 	m := metricMongodbatlasSystemNetworkIoAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -4138,9 +5940,10 @@ func newMetricMongodbatlasSystemNetworkIoAverage(cfg MetricConfig) metricMongodb
 }
 
 type metricMongodbatlasSystemNetworkIoMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        MongodbatlasSystemNetworkIoMaxMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.network.io.max metric with initial data.
@@ -4150,17 +5953,48 @@ func (m *metricMongodbatlasSystemNetworkIoMax) init() {
 	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemNetworkIoMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemNetworkIoMaxMetricAttributeKeyDirection) {
+		dp.Attributes().PutStr("direction", directionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4173,13 +6007,18 @@ func (m *metricMongodbatlasSystemNetworkIoMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemNetworkIoMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemNetworkIoMax(cfg MetricConfig) metricMongodbatlasSystemNetworkIoMax {
+func newMetricMongodbatlasSystemNetworkIoMax(cfg MongodbatlasSystemNetworkIoMaxMetricConfig) metricMongodbatlasSystemNetworkIoMax {
 	m := metricMongodbatlasSystemNetworkIoMax{config: cfg}
 
 	if cfg.Enabled {
@@ -4190,9 +6029,10 @@ func newMetricMongodbatlasSystemNetworkIoMax(cfg MetricConfig) metricMongodbatla
 }
 
 type metricMongodbatlasSystemPagingIoAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        MongodbatlasSystemPagingIoAverageMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []float64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.paging.io.average metric with initial data.
@@ -4202,17 +6042,48 @@ func (m *metricMongodbatlasSystemPagingIoAverage) init() {
 	m.data.SetUnit("{pages}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemPagingIoAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemPagingIoAverageMetricAttributeKeyDirection) {
+		dp.Attributes().PutStr("direction", directionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4225,13 +6096,18 @@ func (m *metricMongodbatlasSystemPagingIoAverage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemPagingIoAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemPagingIoAverage(cfg MetricConfig) metricMongodbatlasSystemPagingIoAverage {
+func newMetricMongodbatlasSystemPagingIoAverage(cfg MongodbatlasSystemPagingIoAverageMetricConfig) metricMongodbatlasSystemPagingIoAverage {
 	m := metricMongodbatlasSystemPagingIoAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -4242,9 +6118,10 @@ func newMetricMongodbatlasSystemPagingIoAverage(cfg MetricConfig) metricMongodba
 }
 
 type metricMongodbatlasSystemPagingIoMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        MongodbatlasSystemPagingIoMaxMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []float64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.paging.io.max metric with initial data.
@@ -4254,17 +6131,48 @@ func (m *metricMongodbatlasSystemPagingIoMax) init() {
 	m.data.SetUnit("{pages}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemPagingIoMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemPagingIoMaxMetricAttributeKeyDirection) {
+		dp.Attributes().PutStr("direction", directionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4277,13 +6185,18 @@ func (m *metricMongodbatlasSystemPagingIoMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemPagingIoMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemPagingIoMax(cfg MetricConfig) metricMongodbatlasSystemPagingIoMax {
+func newMetricMongodbatlasSystemPagingIoMax(cfg MongodbatlasSystemPagingIoMaxMetricConfig) metricMongodbatlasSystemPagingIoMax {
 	m := metricMongodbatlasSystemPagingIoMax{config: cfg}
 
 	if cfg.Enabled {
@@ -4294,9 +6207,10 @@ func newMetricMongodbatlasSystemPagingIoMax(cfg MetricConfig) metricMongodbatlas
 }
 
 type metricMongodbatlasSystemPagingUsageAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                   // data buffer for generated metric.
+	config        MongodbatlasSystemPagingUsageAverageMetricConfig // metric config provided by user.
+	capacity      int                                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.paging.usage.average metric with initial data.
@@ -4306,17 +6220,48 @@ func (m *metricMongodbatlasSystemPagingUsageAverage) init() {
 	m.data.SetUnit("KiBy")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemPagingUsageAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, memoryStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemPagingUsageAverageMetricAttributeKeyMemoryState) {
+		dp.Attributes().PutStr("memory_state", memoryStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("memory_state", memoryStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4329,13 +6274,18 @@ func (m *metricMongodbatlasSystemPagingUsageAverage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemPagingUsageAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemPagingUsageAverage(cfg MetricConfig) metricMongodbatlasSystemPagingUsageAverage {
+func newMetricMongodbatlasSystemPagingUsageAverage(cfg MongodbatlasSystemPagingUsageAverageMetricConfig) metricMongodbatlasSystemPagingUsageAverage {
 	m := metricMongodbatlasSystemPagingUsageAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -4346,9 +6296,10 @@ func newMetricMongodbatlasSystemPagingUsageAverage(cfg MetricConfig) metricMongo
 }
 
 type metricMongodbatlasSystemPagingUsageMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        MongodbatlasSystemPagingUsageMaxMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills mongodbatlas.system.paging.usage.max metric with initial data.
@@ -4358,17 +6309,48 @@ func (m *metricMongodbatlasSystemPagingUsageMax) init() {
 	m.data.SetUnit("KiBy")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMongodbatlasSystemPagingUsageMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, memoryStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbatlasSystemPagingUsageMaxMetricAttributeKeyMemoryState) {
+		dp.Attributes().PutStr("memory_state", memoryStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("memory_state", memoryStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4381,13 +6363,18 @@ func (m *metricMongodbatlasSystemPagingUsageMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbatlasSystemPagingUsageMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbatlasSystemPagingUsageMax(cfg MetricConfig) metricMongodbatlasSystemPagingUsageMax {
+func newMetricMongodbatlasSystemPagingUsageMax(cfg MongodbatlasSystemPagingUsageMaxMetricConfig) metricMongodbatlasSystemPagingUsageMax {
 	m := metricMongodbatlasSystemPagingUsageMax{config: cfg}
 
 	if cfg.Enabled {

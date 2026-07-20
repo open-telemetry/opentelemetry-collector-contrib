@@ -9,6 +9,9 @@ $defs:
         format: duration
       namespace:
         type: string
+      owner_account:
+        x-pointer: true
+        type: string
       port:
         x-pointer: true
         type: integer
@@ -86,7 +89,7 @@ properties:
   resolver:
     $ref: resolver_settings
   routing_attributes:
-    description: RoutingAttributes creates a composite routing key from the listed attributes. For traces, attributes can come from resource, scope, or span, plus the pseudo attributes "span.kind" and "span.name". For metrics, attributes can come from resource, scope, or datapoint attributes.
+    description: RoutingAttributes creates a composite routing key from the listed attributes. For traces, attributes can come from resource, scope, or span, plus the pseudo attributes "span.kind" and "span.name". For logs, attributes can come from resource, scope, or log record attributes, plus the pseudo attributes "log.severity" and "log.body". For metrics, attributes can come from resource, scope, or datapoint attributes. Keys are encoded as "name=value|name=value|" in the order configured. Missing attributes are encoded as "name=|". Non-string values are deterministically stringified.
     type: array
     items:
       type: string

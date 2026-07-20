@@ -45,6 +45,35 @@ The following settings can be optionally configured:
 - `shutdown_timeout` (default = 1s): Timeout to wait for graceful shutdown. Once exceeded, the component will shut down forcibly, dropping any element in queue.
 - `custom_events_enabled` (default = `false`): Enables export log record to custom events when there's attribute `microsoft.custom_event.name` or `APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE`.
 
+### Tag mappings (alpha)
+
+The optional `tag_mappings:` block overrides how selected Application Insights envelope tags are populated from OpenTelemetry resource attributes. Each field takes an ordered list of sources; the first one that resolves to a non-empty string wins.
+
+A source entry is interpreted as:
+- a **resource attribute key** when it contains a `.` (e.g. `service.instance.id`, `host.name`)
+- a **string literal terminal default** when it does not contain a `.` (e.g. `unknown-instance`)
+
+Defaults preserve the historical hardcoded behavior — when a field is unset, zero-config users see no change.
+
+| Mapping key           | Application Insights tag      | Default                  |
+| --------------------- | ----------------------------- | ------------------------ |
+| `cloud_role_instance` | `ai.cloud.roleInstance`       | `[service.instance.id]`  |
+| `application_version` | `ai.application.ver`          | `[service.version]`      |
+
+> The `cloud_role_name` tag (`ai.cloud.role`) is not yet configurable; its hardcoded `service.namespace`/`service.name` concatenation continues to apply.
+
+Example — Azure Container Apps, where `service.instance.id` is set to a random uuid and operators want the revision/replica hostname instead:
+
+```yaml
+exporters:
+  azuremonitor:
+    connection_string: "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/"
+    tag_mappings:
+      cloud_role_instance: [host.name, service.instance.id, unknown-instance]
+```
+
+Validation rejects an explicitly empty array (`cloud_role_instance: []`) at startup. The feature is alpha and the schema may evolve.
+
 Example:
 
 ```yaml

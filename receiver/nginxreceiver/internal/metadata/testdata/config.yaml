@@ -5,6 +5,18 @@ all_set:
       enabled: true
     nginx.connections_current:
       enabled: true
+      attributes: ["state"]
+    nginx.connections_handled:
+      enabled: true
+    nginx.requests:
+      enabled: true
+reaggregate_set:
+  metrics:
+    nginx.connections_accepted:
+      enabled: true
+    nginx.connections_current:
+      enabled: true
+      attributes: []
     nginx.connections_handled:
       enabled: true
     nginx.requests:
@@ -15,6 +27,7 @@ none_set:
       enabled: false
     nginx.connections_current:
       enabled: false
+      attributes: ["state"]
     nginx.connections_handled:
       enabled: false
     nginx.requests:

@@ -107,37 +107,40 @@ func (f *eventhubReceiverFactory) getReceiver(
 		var logsUnmarshaler eventLogsUnmarshaler
 		var metricsUnmarshaler eventMetricsUnmarshaler
 		var tracesUnmarshaler eventTracesUnmarshaler
-		switch signal {
-		case pipeline.SignalLogs:
-			if logFormat(receiverConfig.Format) == rawLogFormat {
-				logsUnmarshaler = newRawLogsUnmarshaler(settings.Logger)
-			} else {
-				logsUnmarshaler = newAzureResourceLogsUnmarshaler(settings.BuildInfo, settings.Logger, receiverConfig.ApplySemanticConventions, receiverConfig.TimeFormats.Logs)
+		// With an encoding extension, the unmarshaler is resolved from the host at Start time.
+		if receiverConfig.Encoding == nil {
+			switch signal {
+			case pipeline.SignalLogs:
+				if logFormat(receiverConfig.Format) == rawLogFormat {
+					logsUnmarshaler = newRawLogsUnmarshaler(settings.Logger)
+				} else {
+					logsUnmarshaler = newAzureResourceLogsUnmarshaler(settings.BuildInfo, settings.Logger, receiverConfig.ApplySemanticConventions, receiverConfig.TimeFormats.Logs)
+				}
+			case pipeline.SignalMetrics:
+				if logFormat(receiverConfig.Format) == rawLogFormat {
+					metricsUnmarshaler = nil
+					err = errors.New("raw format not supported for Metrics")
+				} else {
+					metricsUnmarshaler = newAzureResourceMetricsUnmarshaler(settings.BuildInfo, settings.Logger, receiverConfig)
+				}
+			case pipeline.SignalTraces:
+				if logFormat(receiverConfig.Format) == rawLogFormat {
+					tracesUnmarshaler = nil
+					err = errors.New("raw format not supported for Traces")
+				} else {
+					tracesUnmarshaler = newAzureTracesUnmarshaler(settings.BuildInfo, settings.Logger, receiverConfig.TimeFormats.Traces)
+				}
 			}
-		case pipeline.SignalMetrics:
-			if logFormat(receiverConfig.Format) == rawLogFormat {
-				metricsUnmarshaler = nil
-				err = errors.New("raw format not supported for Metrics")
-			} else {
-				metricsUnmarshaler = newAzureResourceMetricsUnmarshaler(settings.BuildInfo, settings.Logger, receiverConfig)
-			}
-		case pipeline.SignalTraces:
-			if logFormat(receiverConfig.Format) == rawLogFormat {
-				tracesUnmarshaler = nil
-				err = errors.New("raw format not supported for Traces")
-			} else {
-				tracesUnmarshaler = newAzureTracesUnmarshaler(settings.BuildInfo, settings.Logger, receiverConfig.TimeFormats.Traces)
-			}
-		}
 
-		if err != nil {
-			return nil
+			if err != nil {
+				return nil
+			}
 		}
 
 		eventHandler := newEventhubHandler(receiverConfig, settings)
 
 		var rcvr component.Component
-		rcvr, err = newReceiver(signal, logsUnmarshaler, metricsUnmarshaler, tracesUnmarshaler, eventHandler, settings)
+		rcvr, err = newReceiver(signal, receiverConfig.Encoding, logsUnmarshaler, metricsUnmarshaler, tracesUnmarshaler, eventHandler, settings)
 		return rcvr
 	})
 

@@ -24,6 +24,22 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
+	defaultServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	defaultServerConfig.WriteTimeout = 0
+	defaultServerConfig.ReadHeaderTimeout = 0
+	defaultServerConfig.IdleTimeout = 0
+	defaultServerConfig.KeepAlivesEnabled = false
+	defaultServerConfig.NetAddr = confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}
+
+	noAuthServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	noAuthServerConfig.WriteTimeout = 0
+	noAuthServerConfig.ReadHeaderTimeout = 0
+	noAuthServerConfig.IdleTimeout = 0
+	noAuthServerConfig.KeepAlivesEnabled = false
+	noAuthServerConfig.NetAddr = confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}
+
 	tests := []struct {
 		id                 component.ID
 		expected           component.Config
@@ -32,25 +48,59 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(metadata.Type),
 			expected: &Config{
-				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
+				HTTP: &defaultServerConfig,
 				Auth: component.MustNewID("azureauth"),
-				Logs: EncodingConfig{Encoding: component.MustNewID("azure_encoding")},
+				Triggers: &TriggersConfig{
+					EventHub: &EventHubTriggerConfig{
+						Logs: []LogsEncodingConfig{
+							{Name: "logs", Encoding: component.MustNewID("azure_encoding")},
+							{Name: "raw_logs", Encoding: component.MustNewID("azureresourcelogs_encoding")},
+						},
+						IncludeMetadata: true,
+					},
+				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "no_auth"),
 			expected: &Config{
-				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
-				Logs: EncodingConfig{Encoding: component.MustNewID("azure_encoding")},
+				HTTP: &noAuthServerConfig,
+				Triggers: &TriggersConfig{
+					EventHub: &EventHubTriggerConfig{
+						Logs: []LogsEncodingConfig{
+							{Name: "logs", Encoding: component.MustNewID("azure_encoding")},
+						},
+					},
+				},
 			},
 		},
 		{
-			id:                 component.NewIDWithName(metadata.Type, "no_http"),
+			id:                 component.NewIDWithName(metadata.Type, "no_http_config"),
 			expectedErrMessage: "missing http server settings",
 		},
 		{
-			id:                 component.NewIDWithName(metadata.Type, "missing_logs_encoding"),
-			expectedErrMessage: "logs.encoding must be set",
+			id:                 component.NewIDWithName(metadata.Type, "no_triggers"),
+			expectedErrMessage: "missing triggers configuration",
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "no_event_hub"),
+			expectedErrMessage: "at least one configured trigger with at least one binding is required",
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "empty_event_hub_logs"),
+			expectedErrMessage: "at least one configured trigger with at least one binding is required",
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "missing_binding_name"),
+			expectedErrMessage: "triggers.event_hub.logs[0].name must be set",
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "missing_binding_encoding"),
+			expectedErrMessage: "triggers.event_hub.logs[0].encoding must be set",
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "duplicate_binding_name"),
+			expectedErrMessage: `triggers.event_hub.logs: duplicate binding name "logs"`,
 		},
 	}
 	for _, tt := range tests {

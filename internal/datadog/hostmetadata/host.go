@@ -19,8 +19,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/provider"
 )
 
+// GetSourceProvider builds the hostname resolution chain.
 func GetSourceProvider(set component.TelemetrySettings, configHostname string, timeout time.Duration) (source.Provider, error) {
-	ecs, err := ecs.NewProvider(set)
+	ecsProvider, err := ecs.NewProvider(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build ECS Fargate provider: %w", err)
 	}
@@ -54,13 +55,14 @@ func GetSourceProvider(set component.TelemetrySettings, configHostname string, t
 		map[string]source.Provider{
 			"config":     provider.Config(configHostname),
 			"azure":      azureProvider,
-			"ecs":        ecs,
+			"ecs":        ecsProvider,
 			"ec2":        ec2Provider,
 			"gcp":        gcpProvider,
 			"kubernetes": k8sProvider,
 			"system":     system.NewProvider(set.Logger),
 		},
 		[]string{"config", "azure", "ecs", "ec2", "gcp", "kubernetes", "system"},
+		[]string{"kubernetes"},
 		timeout,
 	)
 	if err != nil {

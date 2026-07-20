@@ -14,7 +14,14 @@ COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 GROUP ?= all
-FOR_GROUP_TARGET=for-$(GROUP)-target
+# If GROUP contains a slash (e.g. "receiver/hostmetrics" or a space-separated list
+# of module paths emitted by compute-ci-scope.sh), invoke the per-module delegation
+# targets directly. Otherwise, map the group name to its for-<name>-target rule.
+ifneq ($(findstring /,$(GROUP)),)
+    FOR_GROUP_TARGET=$(GROUP)
+else
+    FOR_GROUP_TARGET=for-$(GROUP)-target
+endif
 
 FIND_MOD_ARGS=-type f -name "go.mod"
 TO_MOD_DIR=dirname {} \; | sort | grep -E '^./'
@@ -279,6 +286,17 @@ $(ALL_MODS):
 	@echo "Running target '$(TARGET)' in module '$@' as part of group '$(GROUP)'"
 	$(MAKE) --no-print-directory -C $@ $(TARGET)
 
+# datadogexporter and its integrationtest are the two heaviest modules to
+# type-check. Under `make -jN` they can run concurrently and the combined
+# memory peak OOM-kills the CI runner, so serialize them relative to each
+# other (each may still run alongside a lighter module). A plain prerequisite
+# is used so it works on the runner's GNU Make 4.3 (`.WAIT`/`.NOTPARALLEL`
+# prereqs need 4.4+).
+exporter/datadogexporter/integrationtest: exporter/datadogexporter
+pkg/datadog: exporter/datadogexporter/integrationtest
+extension/datadogextension: pkg/datadog
+connector/datadogconnector: extension/datadogextension
+
 # Trigger each module's delegation target
 .PHONY: for-all-target
 for-all-target: $(ALL_MODS)
@@ -395,10 +413,12 @@ docker-golden:
 
 GITHUBGEN_ARGS ?= -skipgithub
 
+# Updates CODEOWNERS and issue template component lists in .github
 .PHONY: gengithub
 gengithub:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS)
 
+# Updates distribution component lists and data in reports/distributions
 .PHONY: gendistributions
 gendistributions:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS) distributions
@@ -407,18 +427,22 @@ gendistributions:
 gencodecov:
 	cd $(SRC_ROOT)/cmd/codecovgen && go run . --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules '**/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**' --dir $(SRC_ROOT)
 
+# Regenerates all code, then updates CODEOWNERS, issue templates and component labels in .github
 .PHONY: update-codeowners
 update-codeowners: generate gengithub
 	$(MAKE) genlabels
 
+# Updates CODEOWNERS and issue template component lists in .github
 .PHONY: gencodeowners
 gencodeowners:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS)
 
+# Updates CODEOWNERS in .github
 .PHONY: codeowners
 codeowners:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS) codeowners
 
+# Updates chloggen component lists in .chloggen/config.yaml
 .PHONY: generate-chloggen-components
 generate-chloggen-components:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS) chloggen-components
@@ -711,7 +735,7 @@ SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*inter
 
 .PHONY: generate-schemas
 generate-schemas:
-	@$(foreach dir,$(SCHEMA_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(abspath $(dir)) -o $(abspath $(dir));)
+	@$(foreach dir,$(SCHEMA_DIRS), go run $(SCHEMAGEN_PKG) $(abspath $(dir)) -o $(abspath $(dir));)
 
 .PHONY: checks
 checks:

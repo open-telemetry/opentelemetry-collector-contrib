@@ -42,6 +42,12 @@ The following options can be customised:
     - `unix:///path/to/chrony.sock` (Please note the triple slash)
     - `unixgram:///path/to/chrony/sock`
   - The network type `unix` will be converted to `unixgram` but both are permissible
+- file_mount_path (optional) - the directory where the receiver creates a random Unix datagram reply socket
+  - Use it only when the collector and chronyd run in separate network namespaces (for example, different containers) but share a filesystem volume
+  - The directory should be dedicated to chronyd and the collector; do not share it with unrelated processes
+  - Prefer an ephemeral mount because ungraceful exits can leave stale `otel-chrony-*.sock` files behind
+  - When empty (default), Go's abstract socket autobind is used, which only works within the same network namespace
+  - Example: `/run/chrony`
 - timeout (optional) - The total amount of time allowed to read and process the data from chronyd
   - Recommendation: This value should be set above 1s to allow `chronyd` time to respond
 - collection_interval (optional) - how frequent this receiver should poll [chrony]
@@ -64,6 +70,35 @@ receivers:
       ntp.stratum:
         enabled: true
 ```
+
+### Cross-Container Deployment
+
+When the collector and chronyd run in separate containers with different Linux network namespaces
+but share a filesystem volume for the Unix socket, Go's default abstract socket autobind fails
+because abstract sockets are namespace-scoped. Use `file_mount_path` to place the client socket
+in a shared volume.
+
+The chronyd instance must be configured to listen on the same shared volume. In `chrony.conf`:
+
+```
+bindcmdaddress /run/chrony/chronyd.sock
+```
+
+The corresponding collector configuration:
+
+```yaml
+receivers:
+  chrony:
+    endpoint: unix:///run/chrony/chronyd.sock
+    file_mount_path: /run/chrony
+    timeout: 10s
+    collection_interval: 10s
+```
+
+Both containers must mount the `/run/chrony` directory as a shared volume. Use a directory that is
+writable only by chronyd and the collector. A randomly generated socket file will be created in
+`file_mount_path` and cleaned up when the collector shuts down normally. If the collector exits
+ungracefully, stale `otel-chrony-*.sock` files can remain, so prefer an ephemeral shared volume.
 
 The complete list of metrics emitted by this receiver is found in the [documentation].
 

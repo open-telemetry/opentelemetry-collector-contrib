@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/customottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
@@ -71,63 +72,124 @@ func (c *Config) Validate() error {
 		return errors.New("no configuration provided, at least one should be specified")
 	}
 	var multiError error // collect all errors at once
+	nopSettings := component.TelemetrySettings{Logger: zap.NewNop()}
 	if len(c.Spans) > 0 {
-		parser, err := ottlspan.NewParser(
-			customottl.SpanFuncs(),
-			component.TelemetrySettings{Logger: zap.NewNop()},
-		)
+		ottlParser, err := ottlspan.NewParser(customottl.SpanFuncs(), nopSettings, ottlspan.EnablePathContextNames())
 		if err != nil {
 			return fmt.Errorf("failed to create parser for OTTL spans: %w", err)
 		}
+		pc, err := ottl.NewParserCollection(
+			nopSettings,
+			ottl.EnableParserCollectionModifiedPathsLogging[*ottl.ValueExpression[*ottlspan.TransformContext]](true),
+			ottl.WithParserCollectionContext(
+				ottlspan.ContextName,
+				&ottlParser,
+				ottl.WithValueExpressionConverter(func(_ *ottl.ParserCollection[*ottl.ValueExpression[*ottlspan.TransformContext]], _ ottl.ValueExpressionsGetter, parsed []*ottl.ValueExpression[*ottlspan.TransformContext]) (*ottl.ValueExpression[*ottlspan.TransformContext], error) {
+					return parsed[0], nil
+				}),
+			),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create parser collection for OTTL spans: %w", err)
+		}
 		for i := range c.Spans {
 			span := &c.Spans[i]
-			if err := validateMetricInfo(span, parser); err != nil {
+			if err := validateMetricInfo(span, pc, ottlspan.ContextName); err != nil {
 				multiError = errors.Join(multiError, fmt.Errorf("failed to validate spans configuration: %w", err))
+				continue
+			}
+			if _, err := filterottl.NewBoolExprForSpanWithPathContextNames(span.Conditions, customottl.SpanFuncs(), ottl.PropagateError, nopSettings); err != nil {
+				multiError = errors.Join(multiError, fmt.Errorf("failed to validate spans configuration: failed to parse OTTL conditions: %w", err))
 			}
 		}
 	}
 	if len(c.Datapoints) > 0 {
-		parser, err := ottldatapoint.NewParser(
-			customottl.DatapointFuncs(),
-			component.TelemetrySettings{Logger: zap.NewNop()},
-		)
+		ottlParser, err := ottldatapoint.NewParser(customottl.DatapointFuncs(), nopSettings, ottldatapoint.EnablePathContextNames())
 		if err != nil {
 			return fmt.Errorf("failed to create parser for OTTL datapoints: %w", err)
 		}
+		pc, err := ottl.NewParserCollection(
+			nopSettings,
+			ottl.EnableParserCollectionModifiedPathsLogging[*ottl.ValueExpression[*ottldatapoint.TransformContext]](true),
+			ottl.WithParserCollectionContext(
+				ottldatapoint.ContextName,
+				&ottlParser,
+				ottl.WithValueExpressionConverter(func(_ *ottl.ParserCollection[*ottl.ValueExpression[*ottldatapoint.TransformContext]], _ ottl.ValueExpressionsGetter, parsed []*ottl.ValueExpression[*ottldatapoint.TransformContext]) (*ottl.ValueExpression[*ottldatapoint.TransformContext], error) {
+					return parsed[0], nil
+				}),
+			),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create parser collection for OTTL datapoints: %w", err)
+		}
 		for i := range c.Datapoints {
 			dp := &c.Datapoints[i]
-			if err := validateMetricInfo(dp, parser); err != nil {
+			if err := validateMetricInfo(dp, pc, ottldatapoint.ContextName); err != nil {
 				multiError = errors.Join(multiError, fmt.Errorf("failed to validate datapoints configuration: %w", err))
+				continue
+			}
+			if _, err := filterottl.NewBoolExprForDataPointWithPathContextNames(dp.Conditions, customottl.DatapointFuncs(), ottl.PropagateError, nopSettings); err != nil {
+				multiError = errors.Join(multiError, fmt.Errorf("failed to validate datapoints configuration: failed to parse OTTL conditions: %w", err))
 			}
 		}
 	}
 	if len(c.Logs) > 0 {
-		parser, err := ottllog.NewParser(
-			customottl.LogFuncs(),
-			component.TelemetrySettings{Logger: zap.NewNop()},
-		)
+		ottlParser, err := ottllog.NewParser(customottl.LogFuncs(), nopSettings, ottllog.EnablePathContextNames())
 		if err != nil {
 			return fmt.Errorf("failed to create parser for OTTL logs: %w", err)
 		}
+		pc, err := ottl.NewParserCollection(
+			nopSettings,
+			ottl.EnableParserCollectionModifiedPathsLogging[*ottl.ValueExpression[*ottllog.TransformContext]](true),
+			ottl.WithParserCollectionContext(
+				ottllog.ContextName,
+				&ottlParser,
+				ottl.WithValueExpressionConverter(func(_ *ottl.ParserCollection[*ottl.ValueExpression[*ottllog.TransformContext]], _ ottl.ValueExpressionsGetter, parsed []*ottl.ValueExpression[*ottllog.TransformContext]) (*ottl.ValueExpression[*ottllog.TransformContext], error) {
+					return parsed[0], nil
+				}),
+			),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create parser collection for OTTL logs: %w", err)
+		}
 		for i := range c.Logs {
 			log := &c.Logs[i]
-			if err := validateMetricInfo(log, parser); err != nil {
+			if err := validateMetricInfo(log, pc, ottllog.ContextName); err != nil {
 				multiError = errors.Join(multiError, fmt.Errorf("failed to validate logs configuration: %w", err))
+				continue
+			}
+			if _, err := filterottl.NewBoolExprForLogWithPathContextNames(log.Conditions, customottl.LogFuncs(), ottl.PropagateError, nopSettings); err != nil {
+				multiError = errors.Join(multiError, fmt.Errorf("failed to validate logs configuration: failed to parse OTTL conditions: %w", err))
 			}
 		}
 	}
 	if len(c.Profiles) > 0 {
-		parser, err := ottlprofile.NewParser(
-			customottl.ProfileFuncs(),
-			component.TelemetrySettings{Logger: zap.NewNop()},
-		)
+		ottlParser, err := ottlprofile.NewParser(customottl.ProfileFuncs(), nopSettings, ottlprofile.EnablePathContextNames())
 		if err != nil {
 			return fmt.Errorf("failed to create parser for OTTL profiles: %w", err)
 		}
+		pc, err := ottl.NewParserCollection(
+			nopSettings,
+			ottl.EnableParserCollectionModifiedPathsLogging[*ottl.ValueExpression[*ottlprofile.TransformContext]](true),
+			ottl.WithParserCollectionContext(
+				ottlprofile.ContextName,
+				&ottlParser,
+				ottl.WithValueExpressionConverter(func(_ *ottl.ParserCollection[*ottl.ValueExpression[*ottlprofile.TransformContext]], _ ottl.ValueExpressionsGetter, parsed []*ottl.ValueExpression[*ottlprofile.TransformContext]) (*ottl.ValueExpression[*ottlprofile.TransformContext], error) {
+					return parsed[0], nil
+				}),
+			),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create parser collection for OTTL profiles: %w", err)
+		}
 		for i := range c.Profiles {
 			profile := &c.Profiles[i]
-			if err := validateMetricInfo(profile, parser); err != nil {
+			if err := validateMetricInfo(profile, pc, ottlprofile.ContextName); err != nil {
 				multiError = errors.Join(multiError, fmt.Errorf("failed to validate profiles configuration: %w", err))
+				continue
+			}
+			if _, err := filterottl.NewBoolExprForProfileWithPathContextNames(profile.Conditions, customottl.ProfileFuncs(), ottl.PropagateError, nopSettings); err != nil {
+				multiError = errors.Join(multiError, fmt.Errorf("failed to validate profiles configuration: failed to parse OTTL conditions: %w", err))
 			}
 		}
 	}
@@ -249,7 +311,7 @@ func (mi *MetricInfo) ensureDefaults() {
 // validateAttributeConfigs validates a list of Attribute configs. Each entry
 // must have exactly one of Key or KeysExpression set. OTTL expressions are
 // parsed to verify syntax. The label parameter is used in error messages.
-func validateAttributeConfigs[K any](attrs []Attribute, parser ottl.Parser[K], label string) error {
+func validateAttributeConfigs[K any](attrs []Attribute, pc *ottl.ParserCollection[*ottl.ValueExpression[K]], contextName, label string) error {
 	tmp := pcommon.NewValueEmpty()
 	duplicate := map[string]struct{}{}
 	for _, attr := range attrs {
@@ -259,7 +321,7 @@ func validateAttributeConfigs[K any](attrs []Attribute, parser ottl.Parser[K], l
 			return fmt.Errorf("exactly one of key or keys_expression must be set for %s", label)
 		}
 		if hasExpr {
-			if _, err := parser.ParseValueExpression(attr.KeysExpression); err != nil {
+			if _, err := pc.ParseValueExpressionsWithContext(contextName, ottl.NewValueExpressionsGetter([]string{attr.KeysExpression}), true); err != nil {
 				return fmt.Errorf("failed to parse keys_expression for %s: %w", label, err)
 			}
 		}
@@ -325,14 +387,16 @@ func (mi *MetricInfo) validateGauge() error {
 
 // validateMetricInfo is an utility method validate all supported metric
 // types defined for the metric info including any ottl expressions.
-func validateMetricInfo[K any](mi *MetricInfo, parser ottl.Parser[K]) error {
+// Condition parsing is handled by the caller because it needs a
+// signal-specific filterottl helper that is not generic over K.
+func validateMetricInfo[K any](mi *MetricInfo, pc *ottl.ParserCollection[*ottl.ValueExpression[K]], contextName string) error {
 	if mi.Name == "" {
 		return errors.New("missing required metric name configuration")
 	}
-	if err := validateAttributeConfigs(mi.IncludeResourceAttributes, parser, "include_resource_attributes"); err != nil {
+	if err := validateAttributeConfigs(mi.IncludeResourceAttributes, pc, contextName, "include_resource_attributes"); err != nil {
 		return fmt.Errorf("include_resource_attributes validation failed: %w", err)
 	}
-	if err := validateAttributeConfigs(mi.Attributes, parser, "attributes"); err != nil {
+	if err := validateAttributeConfigs(mi.Attributes, pc, contextName, "attributes"); err != nil {
 		return fmt.Errorf("attributes validation failed: %w", err)
 	}
 	if err := mi.validateHistogram(); err != nil {
@@ -353,11 +417,11 @@ func validateMetricInfo[K any](mi *MetricInfo, parser ottl.Parser[K]) error {
 		metricsDefinedCount++
 		h := mi.Histogram.Get()
 		if h.Count != "" {
-			if _, err := parser.ParseValueExpression(h.Count); err != nil {
+			if _, err := pc.ParseValueExpressionsWithContext(contextName, ottl.NewValueExpressionsGetter([]string{h.Count}), true); err != nil {
 				return fmt.Errorf("failed to parse count OTTL expression for explicit histogram: %w", err)
 			}
 		}
-		if _, err := parser.ParseValueExpression(h.Value); err != nil {
+		if _, err := pc.ParseValueExpressionsWithContext(contextName, ottl.NewValueExpressionsGetter([]string{h.Value}), true); err != nil {
 			return fmt.Errorf("failed to parse value OTTL expression for explicit histogram: %w", err)
 		}
 	}
@@ -365,24 +429,24 @@ func validateMetricInfo[K any](mi *MetricInfo, parser ottl.Parser[K]) error {
 		metricsDefinedCount++
 		eh := mi.ExponentialHistogram.Get()
 		if eh.Count != "" {
-			if _, err := parser.ParseValueExpression(eh.Count); err != nil {
+			if _, err := pc.ParseValueExpressionsWithContext(contextName, ottl.NewValueExpressionsGetter([]string{eh.Count}), true); err != nil {
 				return fmt.Errorf("failed to parse count OTTL expression for exponential histogram: %w", err)
 			}
 		}
-		if _, err := parser.ParseValueExpression(eh.Value); err != nil {
+		if _, err := pc.ParseValueExpressionsWithContext(contextName, ottl.NewValueExpressionsGetter([]string{eh.Value}), true); err != nil {
 			return fmt.Errorf("failed to parse value OTTL expression for exponential histogram: %w", err)
 		}
 	}
 	if mi.Sum.HasValue() {
 		metricsDefinedCount++
-		if _, err := parser.ParseValueExpression(mi.Sum.Get().Value); err != nil {
+		if _, err := pc.ParseValueExpressionsWithContext(contextName, ottl.NewValueExpressionsGetter([]string{mi.Sum.Get().Value}), true); err != nil {
 			return fmt.Errorf("failed to parse value OTTL expression for summary: %w", err)
 		}
 	}
 	if mi.Gauge.HasValue() {
 		metricsDefinedCount++
 		g := mi.Gauge.Get()
-		if _, err := parser.ParseValueExpression(g.Value); err != nil {
+		if _, err := pc.ParseValueExpressionsWithContext(contextName, ottl.NewValueExpressionsGetter([]string{g.Value}), true); err != nil {
 			return fmt.Errorf("failed to parse value OTTL expression for gauge: %w", err)
 		}
 		// if ExtractGrokPatterns is used, validate the key selector
@@ -395,11 +459,6 @@ func validateMetricInfo[K any](mi *MetricInfo, parser ottl.Parser[K]) error {
 	}
 	if metricsDefinedCount != 1 {
 		return fmt.Errorf("exactly one of the metrics must be defined, %d found", metricsDefinedCount)
-	}
-
-	// validate OTTL conditions
-	if _, err := parser.ParseConditions(mi.Conditions); err != nil {
-		return fmt.Errorf("failed to parse OTTL conditions: %w", err)
 	}
 	return nil
 }

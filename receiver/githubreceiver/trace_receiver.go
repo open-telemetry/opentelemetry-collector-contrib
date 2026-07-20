@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/go-github/v84/github"
+	"github.com/google/go-github/v88/github"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -60,7 +60,10 @@ func newTracesReceiver(
 		return nil, err
 	}
 
-	client := github.NewClient(nil)
+	client, err := github.NewClient()
+	if err != nil {
+		return nil, err
+	}
 
 	gtr := &githubTracesReceiver{
 		traceConsumer: traceConsumer,
@@ -130,6 +133,14 @@ func (gtr *githubTracesReceiver) Shutdown(_ context.Context) error {
 // returns a 200 response code.
 func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Request) {
 	ctx := gtr.obsrecv.StartTracesOp(req.Context())
+
+	for k, v := range gtr.cfg.WebHook.RequiredHeaders {
+		if req.Header.Get(k) != string(v) {
+			gtr.logger.Sugar().Debugf("required header check failed", zap.String("header", k))
+			http.Error(w, "invalid request", http.StatusBadRequest)
+			return
+		}
+	}
 
 	p, err := github.ValidatePayload(req, []byte(gtr.cfg.WebHook.Secret))
 	if err != nil {

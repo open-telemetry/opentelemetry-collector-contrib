@@ -42,7 +42,7 @@ var (
 func (cfg *Config) Validate() error {
 	var err error
 	if len(cfg.Scrapers) == 0 {
-		err = errors.New("must specify at least one scraper when using hostmetrics receiver")
+		err = errors.New("must specify at least one scraper when using host_metrics receiver")
 	}
 	return multierr.Append(err, gopsutilenv.ValidateRootPath(cfg.RootPath))
 }

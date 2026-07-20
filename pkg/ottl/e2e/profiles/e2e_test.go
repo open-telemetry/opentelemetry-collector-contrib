@@ -294,6 +294,15 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `stringify_all(attributes)`,
+			want: func(t *testing.T, tCtx *ottlprofile.TransformContext) {
+				putProfileAttribute(t, tCtx, "conflict", `{"conflict1":{"conflict2":"pass"}}`)
+				putProfileAttribute(t, tCtx, "conflict.conflict1", `{"conflict2":"nopass"}`)
+				putProfileAttribute(t, tCtx, "foo", `{"bar":"pass","flags":"pass","nested":{"test":"pass"},"slice":["val"]}`)
+				putProfileAttribute(t, tCtx, "things", `[{"name":"foo","value":2},{"name":"bar","value":5}]`)
+			},
+		},
+		{
 			statement: `truncate_all(attributes, 100)`,
 			want:      func(_ *testing.T, _ *ottlprofile.TransformContext) {},
 		},

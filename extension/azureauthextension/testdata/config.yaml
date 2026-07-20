@@ -3,6 +3,22 @@ azure_auth:
 azure_auth/use_default:
   use_default: true
 
+azure_auth/valid_server_auth:
+  use_default: true
+  server:
+    issuer_url: https://login.microsoftonline.com/test/v2.0
+    audience: api://collector-ingest
+
+azure_auth/server_auth_empty_issuer:
+  use_default: true
+  server:
+    audience: api://collector-ingest
+
+azure_auth/server_auth_empty_audience:
+  use_default: true
+  server:
+    issuer_url: https://login.microsoftonline.com/test/v2.0
+
 azure_auth/valid_service_principal_secret:
   service_principal:
     client_id: test

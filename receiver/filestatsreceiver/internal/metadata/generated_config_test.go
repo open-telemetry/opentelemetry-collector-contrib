@@ -20,25 +20,29 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					FileAtime: MetricConfig{
+					FileAtime: FileAtimeMetricConfig{
 						Enabled: true,
 					},
-					FileCount: MetricConfig{
+					FileCount: FileCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []FileCountMetricAttributeKey{FileCountMetricAttributeKeyFileInclude},
+					},
+					FileCtime: FileCtimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []FileCtimeMetricAttributeKey{FileCtimeMetricAttributeKeyFilePermissions},
+					},
+					FileMtime: FileMtimeMetricConfig{
 						Enabled: true,
 					},
-					FileCtime: MetricConfig{
-						Enabled: true,
-					},
-					FileMtime: MetricConfig{
-						Enabled: true,
-					},
-					FileSize: MetricConfig{
+					FileSize: FileSizeMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -52,19 +56,23 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					FileAtime: MetricConfig{
+					FileAtime: FileAtimeMetricConfig{
 						Enabled: false,
 					},
-					FileCount: MetricConfig{
+					FileCount: FileCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []FileCountMetricAttributeKey{FileCountMetricAttributeKeyFileInclude},
+					},
+					FileCtime: FileCtimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []FileCtimeMetricAttributeKey{FileCtimeMetricAttributeKeyFilePermissions},
+					},
+					FileMtime: FileMtimeMetricConfig{
 						Enabled: false,
 					},
-					FileCtime: MetricConfig{
-						Enabled: false,
-					},
-					FileMtime: MetricConfig{
-						Enabled: false,
-					},
-					FileSize: MetricConfig{
+					FileSize: FileSizeMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -78,10 +86,34 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(FileAtimeMetricConfig{}, FileCountMetricConfig{}, FileCtimeMetricConfig{}, FileMtimeMetricConfig{}, FileSizeMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+
+func TestFileCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().FileCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []FileCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric file.count doesn't have an attribute invalid, valid attributes: [file.include]")
+
+	cfg = DefaultMetricsConfig().FileCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestFileCtimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().FileCtime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []FileCtimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric file.ctime doesn't have an attribute invalid, valid attributes: [file.permissions]")
+
+	cfg = DefaultMetricsConfig().FileCtime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -89,7 +121,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

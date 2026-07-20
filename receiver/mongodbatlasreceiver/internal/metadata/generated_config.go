@@ -3,17 +3,29 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// MongodbatlasDbCountsMetricAttributeKey specifies the key of an attribute for the mongodbatlas.db.counts metric.
+type MongodbatlasDbCountsMetricAttributeKey string
+
+const (
+	MongodbatlasDbCountsMetricAttributeKeyObjectType MongodbatlasDbCountsMetricAttributeKey = "object_type"
+)
+
+// MongodbatlasDbCountsMetricConfig provides config for the mongodbatlas.db.counts metric.
+type MongodbatlasDbCountsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasDbCountsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *MongodbatlasDbCountsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -27,271 +39,3102 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+func (ms *MongodbatlasDbCountsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasDbCountsMetricAttributeKeyObjectType:
+		default:
+			return fmt.Errorf("metric mongodbatlas.db.counts doesn't have an attribute %v, valid attributes: [object_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasDbSizeMetricAttributeKey specifies the key of an attribute for the mongodbatlas.db.size metric.
+type MongodbatlasDbSizeMetricAttributeKey string
+
+const (
+	MongodbatlasDbSizeMetricAttributeKeyObjectType MongodbatlasDbSizeMetricAttributeKey = "object_type"
+)
+
+// MongodbatlasDbSizeMetricConfig provides config for the mongodbatlas.db.size metric.
+type MongodbatlasDbSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasDbSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasDbSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasDbSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasDbSizeMetricAttributeKeyObjectType:
+		default:
+			return fmt.Errorf("metric mongodbatlas.db.size doesn't have an attribute %v, valid attributes: [object_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasDiskPartitionIopsAverageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.disk.partition.iops.average metric.
+type MongodbatlasDiskPartitionIopsAverageMetricAttributeKey string
+
+const (
+	MongodbatlasDiskPartitionIopsAverageMetricAttributeKeyDiskDirection MongodbatlasDiskPartitionIopsAverageMetricAttributeKey = "disk_direction"
+)
+
+// MongodbatlasDiskPartitionIopsAverageMetricConfig provides config for the mongodbatlas.disk.partition.iops.average metric.
+type MongodbatlasDiskPartitionIopsAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasDiskPartitionIopsAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasDiskPartitionIopsAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasDiskPartitionIopsAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasDiskPartitionIopsAverageMetricAttributeKeyDiskDirection:
+		default:
+			return fmt.Errorf("metric mongodbatlas.disk.partition.iops.average doesn't have an attribute %v, valid attributes: [disk_direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasDiskPartitionIopsMaxMetricAttributeKey specifies the key of an attribute for the mongodbatlas.disk.partition.iops.max metric.
+type MongodbatlasDiskPartitionIopsMaxMetricAttributeKey string
+
+const (
+	MongodbatlasDiskPartitionIopsMaxMetricAttributeKeyDiskDirection MongodbatlasDiskPartitionIopsMaxMetricAttributeKey = "disk_direction"
+)
+
+// MongodbatlasDiskPartitionIopsMaxMetricConfig provides config for the mongodbatlas.disk.partition.iops.max metric.
+type MongodbatlasDiskPartitionIopsMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasDiskPartitionIopsMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasDiskPartitionIopsMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasDiskPartitionIopsMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasDiskPartitionIopsMaxMetricAttributeKeyDiskDirection:
+		default:
+			return fmt.Errorf("metric mongodbatlas.disk.partition.iops.max doesn't have an attribute %v, valid attributes: [disk_direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasDiskPartitionLatencyAverageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.disk.partition.latency.average metric.
+type MongodbatlasDiskPartitionLatencyAverageMetricAttributeKey string
+
+const (
+	MongodbatlasDiskPartitionLatencyAverageMetricAttributeKeyDiskDirection MongodbatlasDiskPartitionLatencyAverageMetricAttributeKey = "disk_direction"
+)
+
+// MongodbatlasDiskPartitionLatencyAverageMetricConfig provides config for the mongodbatlas.disk.partition.latency.average metric.
+type MongodbatlasDiskPartitionLatencyAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasDiskPartitionLatencyAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasDiskPartitionLatencyAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasDiskPartitionLatencyAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasDiskPartitionLatencyAverageMetricAttributeKeyDiskDirection:
+		default:
+			return fmt.Errorf("metric mongodbatlas.disk.partition.latency.average doesn't have an attribute %v, valid attributes: [disk_direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasDiskPartitionLatencyMaxMetricAttributeKey specifies the key of an attribute for the mongodbatlas.disk.partition.latency.max metric.
+type MongodbatlasDiskPartitionLatencyMaxMetricAttributeKey string
+
+const (
+	MongodbatlasDiskPartitionLatencyMaxMetricAttributeKeyDiskDirection MongodbatlasDiskPartitionLatencyMaxMetricAttributeKey = "disk_direction"
+)
+
+// MongodbatlasDiskPartitionLatencyMaxMetricConfig provides config for the mongodbatlas.disk.partition.latency.max metric.
+type MongodbatlasDiskPartitionLatencyMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasDiskPartitionLatencyMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasDiskPartitionLatencyMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasDiskPartitionLatencyMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasDiskPartitionLatencyMaxMetricAttributeKeyDiskDirection:
+		default:
+			return fmt.Errorf("metric mongodbatlas.disk.partition.latency.max doesn't have an attribute %v, valid attributes: [disk_direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasDiskPartitionQueueDepthMetricConfig provides config for the mongodbatlas.disk.partition.queue.depth metric.
+type MongodbatlasDiskPartitionQueueDepthMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbatlasDiskPartitionQueueDepthMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbatlasDiskPartitionSpaceAverageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.disk.partition.space.average metric.
+type MongodbatlasDiskPartitionSpaceAverageMetricAttributeKey string
+
+const (
+	MongodbatlasDiskPartitionSpaceAverageMetricAttributeKeyDiskStatus MongodbatlasDiskPartitionSpaceAverageMetricAttributeKey = "disk_status"
+)
+
+// MongodbatlasDiskPartitionSpaceAverageMetricConfig provides config for the mongodbatlas.disk.partition.space.average metric.
+type MongodbatlasDiskPartitionSpaceAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasDiskPartitionSpaceAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasDiskPartitionSpaceAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasDiskPartitionSpaceAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasDiskPartitionSpaceAverageMetricAttributeKeyDiskStatus:
+		default:
+			return fmt.Errorf("metric mongodbatlas.disk.partition.space.average doesn't have an attribute %v, valid attributes: [disk_status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasDiskPartitionSpaceMaxMetricAttributeKey specifies the key of an attribute for the mongodbatlas.disk.partition.space.max metric.
+type MongodbatlasDiskPartitionSpaceMaxMetricAttributeKey string
+
+const (
+	MongodbatlasDiskPartitionSpaceMaxMetricAttributeKeyDiskStatus MongodbatlasDiskPartitionSpaceMaxMetricAttributeKey = "disk_status"
+)
+
+// MongodbatlasDiskPartitionSpaceMaxMetricConfig provides config for the mongodbatlas.disk.partition.space.max metric.
+type MongodbatlasDiskPartitionSpaceMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasDiskPartitionSpaceMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasDiskPartitionSpaceMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasDiskPartitionSpaceMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasDiskPartitionSpaceMaxMetricAttributeKeyDiskStatus:
+		default:
+			return fmt.Errorf("metric mongodbatlas.disk.partition.space.max doesn't have an attribute %v, valid attributes: [disk_status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasDiskPartitionThroughputMetricAttributeKey specifies the key of an attribute for the mongodbatlas.disk.partition.throughput metric.
+type MongodbatlasDiskPartitionThroughputMetricAttributeKey string
+
+const (
+	MongodbatlasDiskPartitionThroughputMetricAttributeKeyDiskDirection MongodbatlasDiskPartitionThroughputMetricAttributeKey = "disk_direction"
+)
+
+// MongodbatlasDiskPartitionThroughputMetricConfig provides config for the mongodbatlas.disk.partition.throughput metric.
+type MongodbatlasDiskPartitionThroughputMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasDiskPartitionThroughputMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasDiskPartitionThroughputMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasDiskPartitionThroughputMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasDiskPartitionThroughputMetricAttributeKeyDiskDirection:
+		default:
+			return fmt.Errorf("metric mongodbatlas.disk.partition.throughput doesn't have an attribute %v, valid attributes: [disk_direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasDiskPartitionUsageAverageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.disk.partition.usage.average metric.
+type MongodbatlasDiskPartitionUsageAverageMetricAttributeKey string
+
+const (
+	MongodbatlasDiskPartitionUsageAverageMetricAttributeKeyDiskStatus MongodbatlasDiskPartitionUsageAverageMetricAttributeKey = "disk_status"
+)
+
+// MongodbatlasDiskPartitionUsageAverageMetricConfig provides config for the mongodbatlas.disk.partition.usage.average metric.
+type MongodbatlasDiskPartitionUsageAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasDiskPartitionUsageAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasDiskPartitionUsageAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasDiskPartitionUsageAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasDiskPartitionUsageAverageMetricAttributeKeyDiskStatus:
+		default:
+			return fmt.Errorf("metric mongodbatlas.disk.partition.usage.average doesn't have an attribute %v, valid attributes: [disk_status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasDiskPartitionUsageMaxMetricAttributeKey specifies the key of an attribute for the mongodbatlas.disk.partition.usage.max metric.
+type MongodbatlasDiskPartitionUsageMaxMetricAttributeKey string
+
+const (
+	MongodbatlasDiskPartitionUsageMaxMetricAttributeKeyDiskStatus MongodbatlasDiskPartitionUsageMaxMetricAttributeKey = "disk_status"
+)
+
+// MongodbatlasDiskPartitionUsageMaxMetricConfig provides config for the mongodbatlas.disk.partition.usage.max metric.
+type MongodbatlasDiskPartitionUsageMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasDiskPartitionUsageMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasDiskPartitionUsageMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasDiskPartitionUsageMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasDiskPartitionUsageMaxMetricAttributeKeyDiskStatus:
+		default:
+			return fmt.Errorf("metric mongodbatlas.disk.partition.usage.max doesn't have an attribute %v, valid attributes: [disk_status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasDiskPartitionUtilizationAverageMetricConfig provides config for the mongodbatlas.disk.partition.utilization.average metric.
+type MongodbatlasDiskPartitionUtilizationAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbatlasDiskPartitionUtilizationAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbatlasDiskPartitionUtilizationMaxMetricConfig provides config for the mongodbatlas.disk.partition.utilization.max metric.
+type MongodbatlasDiskPartitionUtilizationMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbatlasDiskPartitionUtilizationMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbatlasProcessAssertsMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.asserts metric.
+type MongodbatlasProcessAssertsMetricAttributeKey string
+
+const (
+	MongodbatlasProcessAssertsMetricAttributeKeyAssertType MongodbatlasProcessAssertsMetricAttributeKey = "assert_type"
+)
+
+// MongodbatlasProcessAssertsMetricConfig provides config for the mongodbatlas.process.asserts metric.
+type MongodbatlasProcessAssertsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessAssertsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessAssertsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessAssertsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessAssertsMetricAttributeKeyAssertType:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.asserts doesn't have an attribute %v, valid attributes: [assert_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessBackgroundFlushMetricConfig provides config for the mongodbatlas.process.background_flush metric.
+type MongodbatlasProcessBackgroundFlushMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbatlasProcessBackgroundFlushMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbatlasProcessCacheIoMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.cache.io metric.
+type MongodbatlasProcessCacheIoMetricAttributeKey string
+
+const (
+	MongodbatlasProcessCacheIoMetricAttributeKeyCacheDirection MongodbatlasProcessCacheIoMetricAttributeKey = "cache_direction"
+)
+
+// MongodbatlasProcessCacheIoMetricConfig provides config for the mongodbatlas.process.cache.io metric.
+type MongodbatlasProcessCacheIoMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessCacheIoMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessCacheIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessCacheIoMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessCacheIoMetricAttributeKeyCacheDirection:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.cache.io doesn't have an attribute %v, valid attributes: [cache_direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessCacheRatioMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.cache.ratio metric.
+type MongodbatlasProcessCacheRatioMetricAttributeKey string
+
+const (
+	MongodbatlasProcessCacheRatioMetricAttributeKeyCacheRatioType MongodbatlasProcessCacheRatioMetricAttributeKey = "cache_ratio_type"
+)
+
+// MongodbatlasProcessCacheRatioMetricConfig provides config for the mongodbatlas.process.cache.ratio metric.
+type MongodbatlasProcessCacheRatioMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessCacheRatioMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessCacheRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessCacheRatioMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessCacheRatioMetricAttributeKeyCacheRatioType:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.cache.ratio doesn't have an attribute %v, valid attributes: [cache_ratio_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessCacheSizeMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.cache.size metric.
+type MongodbatlasProcessCacheSizeMetricAttributeKey string
+
+const (
+	MongodbatlasProcessCacheSizeMetricAttributeKeyCacheStatus MongodbatlasProcessCacheSizeMetricAttributeKey = "cache_status"
+)
+
+// MongodbatlasProcessCacheSizeMetricConfig provides config for the mongodbatlas.process.cache.size metric.
+type MongodbatlasProcessCacheSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessCacheSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessCacheSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessCacheSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessCacheSizeMetricAttributeKeyCacheStatus:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.cache.size doesn't have an attribute %v, valid attributes: [cache_status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessConnectionsMetricConfig provides config for the mongodbatlas.process.connections metric.
+type MongodbatlasProcessConnectionsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbatlasProcessConnectionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.cpu.children.normalized.usage.average metric.
+type MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricAttributeKey string
+
+const (
+	MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricAttributeKeyCPUState MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricAttributeKey = "cpu_state"
+)
+
+// MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricConfig provides config for the mongodbatlas.process.cpu.children.normalized.usage.average metric.
+type MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricAttributeKeyCPUState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.cpu.children.normalized.usage.average doesn't have an attribute %v, valid attributes: [cpu_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.cpu.children.normalized.usage.max metric.
+type MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricAttributeKey string
+
+const (
+	MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricAttributeKeyCPUState MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricAttributeKey = "cpu_state"
+)
+
+// MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricConfig provides config for the mongodbatlas.process.cpu.children.normalized.usage.max metric.
+type MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricAttributeKeyCPUState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.cpu.children.normalized.usage.max doesn't have an attribute %v, valid attributes: [cpu_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessCPUChildrenUsageAverageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.cpu.children.usage.average metric.
+type MongodbatlasProcessCPUChildrenUsageAverageMetricAttributeKey string
+
+const (
+	MongodbatlasProcessCPUChildrenUsageAverageMetricAttributeKeyCPUState MongodbatlasProcessCPUChildrenUsageAverageMetricAttributeKey = "cpu_state"
+)
+
+// MongodbatlasProcessCPUChildrenUsageAverageMetricConfig provides config for the mongodbatlas.process.cpu.children.usage.average metric.
+type MongodbatlasProcessCPUChildrenUsageAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessCPUChildrenUsageAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessCPUChildrenUsageAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessCPUChildrenUsageAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessCPUChildrenUsageAverageMetricAttributeKeyCPUState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.cpu.children.usage.average doesn't have an attribute %v, valid attributes: [cpu_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessCPUChildrenUsageMaxMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.cpu.children.usage.max metric.
+type MongodbatlasProcessCPUChildrenUsageMaxMetricAttributeKey string
+
+const (
+	MongodbatlasProcessCPUChildrenUsageMaxMetricAttributeKeyCPUState MongodbatlasProcessCPUChildrenUsageMaxMetricAttributeKey = "cpu_state"
+)
+
+// MongodbatlasProcessCPUChildrenUsageMaxMetricConfig provides config for the mongodbatlas.process.cpu.children.usage.max metric.
+type MongodbatlasProcessCPUChildrenUsageMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessCPUChildrenUsageMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessCPUChildrenUsageMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessCPUChildrenUsageMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessCPUChildrenUsageMaxMetricAttributeKeyCPUState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.cpu.children.usage.max doesn't have an attribute %v, valid attributes: [cpu_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessCPUNormalizedUsageAverageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.cpu.normalized.usage.average metric.
+type MongodbatlasProcessCPUNormalizedUsageAverageMetricAttributeKey string
+
+const (
+	MongodbatlasProcessCPUNormalizedUsageAverageMetricAttributeKeyCPUState MongodbatlasProcessCPUNormalizedUsageAverageMetricAttributeKey = "cpu_state"
+)
+
+// MongodbatlasProcessCPUNormalizedUsageAverageMetricConfig provides config for the mongodbatlas.process.cpu.normalized.usage.average metric.
+type MongodbatlasProcessCPUNormalizedUsageAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessCPUNormalizedUsageAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessCPUNormalizedUsageAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessCPUNormalizedUsageAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessCPUNormalizedUsageAverageMetricAttributeKeyCPUState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.cpu.normalized.usage.average doesn't have an attribute %v, valid attributes: [cpu_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessCPUNormalizedUsageMaxMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.cpu.normalized.usage.max metric.
+type MongodbatlasProcessCPUNormalizedUsageMaxMetricAttributeKey string
+
+const (
+	MongodbatlasProcessCPUNormalizedUsageMaxMetricAttributeKeyCPUState MongodbatlasProcessCPUNormalizedUsageMaxMetricAttributeKey = "cpu_state"
+)
+
+// MongodbatlasProcessCPUNormalizedUsageMaxMetricConfig provides config for the mongodbatlas.process.cpu.normalized.usage.max metric.
+type MongodbatlasProcessCPUNormalizedUsageMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessCPUNormalizedUsageMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessCPUNormalizedUsageMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessCPUNormalizedUsageMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessCPUNormalizedUsageMaxMetricAttributeKeyCPUState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.cpu.normalized.usage.max doesn't have an attribute %v, valid attributes: [cpu_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessCPUUsageAverageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.cpu.usage.average metric.
+type MongodbatlasProcessCPUUsageAverageMetricAttributeKey string
+
+const (
+	MongodbatlasProcessCPUUsageAverageMetricAttributeKeyCPUState MongodbatlasProcessCPUUsageAverageMetricAttributeKey = "cpu_state"
+)
+
+// MongodbatlasProcessCPUUsageAverageMetricConfig provides config for the mongodbatlas.process.cpu.usage.average metric.
+type MongodbatlasProcessCPUUsageAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessCPUUsageAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessCPUUsageAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessCPUUsageAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessCPUUsageAverageMetricAttributeKeyCPUState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.cpu.usage.average doesn't have an attribute %v, valid attributes: [cpu_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessCPUUsageMaxMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.cpu.usage.max metric.
+type MongodbatlasProcessCPUUsageMaxMetricAttributeKey string
+
+const (
+	MongodbatlasProcessCPUUsageMaxMetricAttributeKeyCPUState MongodbatlasProcessCPUUsageMaxMetricAttributeKey = "cpu_state"
+)
+
+// MongodbatlasProcessCPUUsageMaxMetricConfig provides config for the mongodbatlas.process.cpu.usage.max metric.
+type MongodbatlasProcessCPUUsageMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessCPUUsageMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessCPUUsageMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessCPUUsageMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessCPUUsageMaxMetricAttributeKeyCPUState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.cpu.usage.max doesn't have an attribute %v, valid attributes: [cpu_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessCursorsMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.cursors metric.
+type MongodbatlasProcessCursorsMetricAttributeKey string
+
+const (
+	MongodbatlasProcessCursorsMetricAttributeKeyCursorState MongodbatlasProcessCursorsMetricAttributeKey = "cursor_state"
+)
+
+// MongodbatlasProcessCursorsMetricConfig provides config for the mongodbatlas.process.cursors metric.
+type MongodbatlasProcessCursorsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessCursorsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessCursorsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessCursorsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessCursorsMetricAttributeKeyCursorState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.cursors doesn't have an attribute %v, valid attributes: [cursor_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessDbDocumentRateMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.db.document.rate metric.
+type MongodbatlasProcessDbDocumentRateMetricAttributeKey string
+
+const (
+	MongodbatlasProcessDbDocumentRateMetricAttributeKeyDocumentStatus MongodbatlasProcessDbDocumentRateMetricAttributeKey = "document_status"
+)
+
+// MongodbatlasProcessDbDocumentRateMetricConfig provides config for the mongodbatlas.process.db.document.rate metric.
+type MongodbatlasProcessDbDocumentRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessDbDocumentRateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessDbDocumentRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessDbDocumentRateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessDbDocumentRateMetricAttributeKeyDocumentStatus:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.db.document.rate doesn't have an attribute %v, valid attributes: [document_status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessDbOperationsRateMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.db.operations.rate metric.
+type MongodbatlasProcessDbOperationsRateMetricAttributeKey string
+
+const (
+	MongodbatlasProcessDbOperationsRateMetricAttributeKeyOperation   MongodbatlasProcessDbOperationsRateMetricAttributeKey = "operation"
+	MongodbatlasProcessDbOperationsRateMetricAttributeKeyClusterRole MongodbatlasProcessDbOperationsRateMetricAttributeKey = "cluster_role"
+)
+
+// MongodbatlasProcessDbOperationsRateMetricConfig provides config for the mongodbatlas.process.db.operations.rate metric.
+type MongodbatlasProcessDbOperationsRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessDbOperationsRateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessDbOperationsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessDbOperationsRateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessDbOperationsRateMetricAttributeKeyOperation, MongodbatlasProcessDbOperationsRateMetricAttributeKeyClusterRole:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.db.operations.rate doesn't have an attribute %v, valid attributes: [operation, cluster_role]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessDbOperationsTimeMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.db.operations.time metric.
+type MongodbatlasProcessDbOperationsTimeMetricAttributeKey string
+
+const (
+	MongodbatlasProcessDbOperationsTimeMetricAttributeKeyExecutionType MongodbatlasProcessDbOperationsTimeMetricAttributeKey = "execution_type"
+)
+
+// MongodbatlasProcessDbOperationsTimeMetricConfig provides config for the mongodbatlas.process.db.operations.time metric.
+type MongodbatlasProcessDbOperationsTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessDbOperationsTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessDbOperationsTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessDbOperationsTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessDbOperationsTimeMetricAttributeKeyExecutionType:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.db.operations.time doesn't have an attribute %v, valid attributes: [execution_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessDbQueryExecutorScannedMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.db.query_executor.scanned metric.
+type MongodbatlasProcessDbQueryExecutorScannedMetricAttributeKey string
+
+const (
+	MongodbatlasProcessDbQueryExecutorScannedMetricAttributeKeyScannedType MongodbatlasProcessDbQueryExecutorScannedMetricAttributeKey = "scanned_type"
+)
+
+// MongodbatlasProcessDbQueryExecutorScannedMetricConfig provides config for the mongodbatlas.process.db.query_executor.scanned metric.
+type MongodbatlasProcessDbQueryExecutorScannedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessDbQueryExecutorScannedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessDbQueryExecutorScannedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessDbQueryExecutorScannedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessDbQueryExecutorScannedMetricAttributeKeyScannedType:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.db.query_executor.scanned doesn't have an attribute %v, valid attributes: [scanned_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.db.query_targeting.scanned_per_returned metric.
+type MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricAttributeKey string
+
+const (
+	MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricAttributeKeyScannedType MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricAttributeKey = "scanned_type"
+)
+
+// MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricConfig provides config for the mongodbatlas.process.db.query_targeting.scanned_per_returned metric.
+type MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricAttributeKeyScannedType:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.db.query_targeting.scanned_per_returned doesn't have an attribute %v, valid attributes: [scanned_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessDbStorageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.db.storage metric.
+type MongodbatlasProcessDbStorageMetricAttributeKey string
+
+const (
+	MongodbatlasProcessDbStorageMetricAttributeKeyStorageStatus MongodbatlasProcessDbStorageMetricAttributeKey = "storage_status"
+)
+
+// MongodbatlasProcessDbStorageMetricConfig provides config for the mongodbatlas.process.db.storage metric.
+type MongodbatlasProcessDbStorageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessDbStorageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessDbStorageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessDbStorageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessDbStorageMetricAttributeKeyStorageStatus:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.db.storage doesn't have an attribute %v, valid attributes: [storage_status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessGlobalLockMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.global_lock metric.
+type MongodbatlasProcessGlobalLockMetricAttributeKey string
+
+const (
+	MongodbatlasProcessGlobalLockMetricAttributeKeyGlobalLockState MongodbatlasProcessGlobalLockMetricAttributeKey = "global_lock_state"
+)
+
+// MongodbatlasProcessGlobalLockMetricConfig provides config for the mongodbatlas.process.global_lock metric.
+type MongodbatlasProcessGlobalLockMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessGlobalLockMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessGlobalLockMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessGlobalLockMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessGlobalLockMetricAttributeKeyGlobalLockState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.global_lock doesn't have an attribute %v, valid attributes: [global_lock_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessIndexBtreeMissRatioMetricConfig provides config for the mongodbatlas.process.index.btree_miss_ratio metric.
+type MongodbatlasProcessIndexBtreeMissRatioMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbatlasProcessIndexBtreeMissRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbatlasProcessIndexCountersMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.index.counters metric.
+type MongodbatlasProcessIndexCountersMetricAttributeKey string
+
+const (
+	MongodbatlasProcessIndexCountersMetricAttributeKeyBtreeCounterType MongodbatlasProcessIndexCountersMetricAttributeKey = "btree_counter_type"
+)
+
+// MongodbatlasProcessIndexCountersMetricConfig provides config for the mongodbatlas.process.index.counters metric.
+type MongodbatlasProcessIndexCountersMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessIndexCountersMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessIndexCountersMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessIndexCountersMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessIndexCountersMetricAttributeKeyBtreeCounterType:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.index.counters doesn't have an attribute %v, valid attributes: [btree_counter_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessJournalingCommitsMetricConfig provides config for the mongodbatlas.process.journaling.commits metric.
+type MongodbatlasProcessJournalingCommitsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbatlasProcessJournalingCommitsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbatlasProcessJournalingDataFilesMetricConfig provides config for the mongodbatlas.process.journaling.data_files metric.
+type MongodbatlasProcessJournalingDataFilesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbatlasProcessJournalingDataFilesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbatlasProcessJournalingWrittenMetricConfig provides config for the mongodbatlas.process.journaling.written metric.
+type MongodbatlasProcessJournalingWrittenMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbatlasProcessJournalingWrittenMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbatlasProcessMemoryUsageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.memory.usage metric.
+type MongodbatlasProcessMemoryUsageMetricAttributeKey string
+
+const (
+	MongodbatlasProcessMemoryUsageMetricAttributeKeyMemoryState MongodbatlasProcessMemoryUsageMetricAttributeKey = "memory_state"
+)
+
+// MongodbatlasProcessMemoryUsageMetricConfig provides config for the mongodbatlas.process.memory.usage metric.
+type MongodbatlasProcessMemoryUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessMemoryUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessMemoryUsageMetricAttributeKeyMemoryState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.memory.usage doesn't have an attribute %v, valid attributes: [memory_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessNetworkIoMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.network.io metric.
+type MongodbatlasProcessNetworkIoMetricAttributeKey string
+
+const (
+	MongodbatlasProcessNetworkIoMetricAttributeKeyDirection MongodbatlasProcessNetworkIoMetricAttributeKey = "direction"
+)
+
+// MongodbatlasProcessNetworkIoMetricConfig provides config for the mongodbatlas.process.network.io metric.
+type MongodbatlasProcessNetworkIoMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessNetworkIoMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessNetworkIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessNetworkIoMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessNetworkIoMetricAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.network.io doesn't have an attribute %v, valid attributes: [direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessNetworkRequestsMetricConfig provides config for the mongodbatlas.process.network.requests metric.
+type MongodbatlasProcessNetworkRequestsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbatlasProcessNetworkRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbatlasProcessOplogRateMetricConfig provides config for the mongodbatlas.process.oplog.rate metric.
+type MongodbatlasProcessOplogRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbatlasProcessOplogRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbatlasProcessOplogTimeMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.oplog.time metric.
+type MongodbatlasProcessOplogTimeMetricAttributeKey string
+
+const (
+	MongodbatlasProcessOplogTimeMetricAttributeKeyOplogType MongodbatlasProcessOplogTimeMetricAttributeKey = "oplog_type"
+)
+
+// MongodbatlasProcessOplogTimeMetricConfig provides config for the mongodbatlas.process.oplog.time metric.
+type MongodbatlasProcessOplogTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessOplogTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessOplogTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessOplogTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessOplogTimeMetricAttributeKeyOplogType:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.oplog.time doesn't have an attribute %v, valid attributes: [oplog_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessPageFaultsMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.page_faults metric.
+type MongodbatlasProcessPageFaultsMetricAttributeKey string
+
+const (
+	MongodbatlasProcessPageFaultsMetricAttributeKeyMemoryIssueType MongodbatlasProcessPageFaultsMetricAttributeKey = "memory_issue_type"
+)
+
+// MongodbatlasProcessPageFaultsMetricConfig provides config for the mongodbatlas.process.page_faults metric.
+type MongodbatlasProcessPageFaultsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessPageFaultsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessPageFaultsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessPageFaultsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessPageFaultsMetricAttributeKeyMemoryIssueType:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.page_faults doesn't have an attribute %v, valid attributes: [memory_issue_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasProcessRestartsMetricConfig provides config for the mongodbatlas.process.restarts metric.
+type MongodbatlasProcessRestartsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbatlasProcessRestartsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbatlasProcessTicketsMetricAttributeKey specifies the key of an attribute for the mongodbatlas.process.tickets metric.
+type MongodbatlasProcessTicketsMetricAttributeKey string
+
+const (
+	MongodbatlasProcessTicketsMetricAttributeKeyTicketType MongodbatlasProcessTicketsMetricAttributeKey = "ticket_type"
+)
+
+// MongodbatlasProcessTicketsMetricConfig provides config for the mongodbatlas.process.tickets metric.
+type MongodbatlasProcessTicketsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasProcessTicketsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasProcessTicketsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasProcessTicketsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasProcessTicketsMetricAttributeKeyTicketType:
+		default:
+			return fmt.Errorf("metric mongodbatlas.process.tickets doesn't have an attribute %v, valid attributes: [ticket_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemCPUNormalizedUsageAverageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.cpu.normalized.usage.average metric.
+type MongodbatlasSystemCPUNormalizedUsageAverageMetricAttributeKey string
+
+const (
+	MongodbatlasSystemCPUNormalizedUsageAverageMetricAttributeKeyCPUState MongodbatlasSystemCPUNormalizedUsageAverageMetricAttributeKey = "cpu_state"
+)
+
+// MongodbatlasSystemCPUNormalizedUsageAverageMetricConfig provides config for the mongodbatlas.system.cpu.normalized.usage.average metric.
+type MongodbatlasSystemCPUNormalizedUsageAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemCPUNormalizedUsageAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemCPUNormalizedUsageAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemCPUNormalizedUsageAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemCPUNormalizedUsageAverageMetricAttributeKeyCPUState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.cpu.normalized.usage.average doesn't have an attribute %v, valid attributes: [cpu_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemCPUNormalizedUsageMaxMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.cpu.normalized.usage.max metric.
+type MongodbatlasSystemCPUNormalizedUsageMaxMetricAttributeKey string
+
+const (
+	MongodbatlasSystemCPUNormalizedUsageMaxMetricAttributeKeyCPUState MongodbatlasSystemCPUNormalizedUsageMaxMetricAttributeKey = "cpu_state"
+)
+
+// MongodbatlasSystemCPUNormalizedUsageMaxMetricConfig provides config for the mongodbatlas.system.cpu.normalized.usage.max metric.
+type MongodbatlasSystemCPUNormalizedUsageMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemCPUNormalizedUsageMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemCPUNormalizedUsageMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemCPUNormalizedUsageMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemCPUNormalizedUsageMaxMetricAttributeKeyCPUState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.cpu.normalized.usage.max doesn't have an attribute %v, valid attributes: [cpu_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemCPUUsageAverageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.cpu.usage.average metric.
+type MongodbatlasSystemCPUUsageAverageMetricAttributeKey string
+
+const (
+	MongodbatlasSystemCPUUsageAverageMetricAttributeKeyCPUState MongodbatlasSystemCPUUsageAverageMetricAttributeKey = "cpu_state"
+)
+
+// MongodbatlasSystemCPUUsageAverageMetricConfig provides config for the mongodbatlas.system.cpu.usage.average metric.
+type MongodbatlasSystemCPUUsageAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemCPUUsageAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemCPUUsageAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemCPUUsageAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemCPUUsageAverageMetricAttributeKeyCPUState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.cpu.usage.average doesn't have an attribute %v, valid attributes: [cpu_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemCPUUsageMaxMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.cpu.usage.max metric.
+type MongodbatlasSystemCPUUsageMaxMetricAttributeKey string
+
+const (
+	MongodbatlasSystemCPUUsageMaxMetricAttributeKeyCPUState MongodbatlasSystemCPUUsageMaxMetricAttributeKey = "cpu_state"
+)
+
+// MongodbatlasSystemCPUUsageMaxMetricConfig provides config for the mongodbatlas.system.cpu.usage.max metric.
+type MongodbatlasSystemCPUUsageMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemCPUUsageMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemCPUUsageMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemCPUUsageMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemCPUUsageMaxMetricAttributeKeyCPUState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.cpu.usage.max doesn't have an attribute %v, valid attributes: [cpu_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemFtsCPUNormalizedUsageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.fts.cpu.normalized.usage metric.
+type MongodbatlasSystemFtsCPUNormalizedUsageMetricAttributeKey string
+
+const (
+	MongodbatlasSystemFtsCPUNormalizedUsageMetricAttributeKeyCPUState MongodbatlasSystemFtsCPUNormalizedUsageMetricAttributeKey = "cpu_state"
+)
+
+// MongodbatlasSystemFtsCPUNormalizedUsageMetricConfig provides config for the mongodbatlas.system.fts.cpu.normalized.usage metric.
+type MongodbatlasSystemFtsCPUNormalizedUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemFtsCPUNormalizedUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemFtsCPUNormalizedUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemFtsCPUNormalizedUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemFtsCPUNormalizedUsageMetricAttributeKeyCPUState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.fts.cpu.normalized.usage doesn't have an attribute %v, valid attributes: [cpu_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemFtsCPUUsageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.fts.cpu.usage metric.
+type MongodbatlasSystemFtsCPUUsageMetricAttributeKey string
+
+const (
+	MongodbatlasSystemFtsCPUUsageMetricAttributeKeyCPUState MongodbatlasSystemFtsCPUUsageMetricAttributeKey = "cpu_state"
+)
+
+// MongodbatlasSystemFtsCPUUsageMetricConfig provides config for the mongodbatlas.system.fts.cpu.usage metric.
+type MongodbatlasSystemFtsCPUUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemFtsCPUUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemFtsCPUUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemFtsCPUUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemFtsCPUUsageMetricAttributeKeyCPUState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.fts.cpu.usage doesn't have an attribute %v, valid attributes: [cpu_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemFtsDiskUsedMetricConfig provides config for the mongodbatlas.system.fts.disk.used metric.
+type MongodbatlasSystemFtsDiskUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbatlasSystemFtsDiskUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbatlasSystemFtsMemoryUsageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.fts.memory.usage metric.
+type MongodbatlasSystemFtsMemoryUsageMetricAttributeKey string
+
+const (
+	MongodbatlasSystemFtsMemoryUsageMetricAttributeKeyMemoryState MongodbatlasSystemFtsMemoryUsageMetricAttributeKey = "memory_state"
+)
+
+// MongodbatlasSystemFtsMemoryUsageMetricConfig provides config for the mongodbatlas.system.fts.memory.usage metric.
+type MongodbatlasSystemFtsMemoryUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemFtsMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemFtsMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemFtsMemoryUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemFtsMemoryUsageMetricAttributeKeyMemoryState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.fts.memory.usage doesn't have an attribute %v, valid attributes: [memory_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemMemoryUsageAverageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.memory.usage.average metric.
+type MongodbatlasSystemMemoryUsageAverageMetricAttributeKey string
+
+const (
+	MongodbatlasSystemMemoryUsageAverageMetricAttributeKeyMemoryStatus MongodbatlasSystemMemoryUsageAverageMetricAttributeKey = "memory_status"
+)
+
+// MongodbatlasSystemMemoryUsageAverageMetricConfig provides config for the mongodbatlas.system.memory.usage.average metric.
+type MongodbatlasSystemMemoryUsageAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemMemoryUsageAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemMemoryUsageAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemMemoryUsageAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemMemoryUsageAverageMetricAttributeKeyMemoryStatus:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.memory.usage.average doesn't have an attribute %v, valid attributes: [memory_status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemMemoryUsageMaxMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.memory.usage.max metric.
+type MongodbatlasSystemMemoryUsageMaxMetricAttributeKey string
+
+const (
+	MongodbatlasSystemMemoryUsageMaxMetricAttributeKeyMemoryStatus MongodbatlasSystemMemoryUsageMaxMetricAttributeKey = "memory_status"
+)
+
+// MongodbatlasSystemMemoryUsageMaxMetricConfig provides config for the mongodbatlas.system.memory.usage.max metric.
+type MongodbatlasSystemMemoryUsageMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemMemoryUsageMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemMemoryUsageMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemMemoryUsageMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemMemoryUsageMaxMetricAttributeKeyMemoryStatus:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.memory.usage.max doesn't have an attribute %v, valid attributes: [memory_status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemNetworkIoAverageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.network.io.average metric.
+type MongodbatlasSystemNetworkIoAverageMetricAttributeKey string
+
+const (
+	MongodbatlasSystemNetworkIoAverageMetricAttributeKeyDirection MongodbatlasSystemNetworkIoAverageMetricAttributeKey = "direction"
+)
+
+// MongodbatlasSystemNetworkIoAverageMetricConfig provides config for the mongodbatlas.system.network.io.average metric.
+type MongodbatlasSystemNetworkIoAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemNetworkIoAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemNetworkIoAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemNetworkIoAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemNetworkIoAverageMetricAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.network.io.average doesn't have an attribute %v, valid attributes: [direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemNetworkIoMaxMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.network.io.max metric.
+type MongodbatlasSystemNetworkIoMaxMetricAttributeKey string
+
+const (
+	MongodbatlasSystemNetworkIoMaxMetricAttributeKeyDirection MongodbatlasSystemNetworkIoMaxMetricAttributeKey = "direction"
+)
+
+// MongodbatlasSystemNetworkIoMaxMetricConfig provides config for the mongodbatlas.system.network.io.max metric.
+type MongodbatlasSystemNetworkIoMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemNetworkIoMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemNetworkIoMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemNetworkIoMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemNetworkIoMaxMetricAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.network.io.max doesn't have an attribute %v, valid attributes: [direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemPagingIoAverageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.paging.io.average metric.
+type MongodbatlasSystemPagingIoAverageMetricAttributeKey string
+
+const (
+	MongodbatlasSystemPagingIoAverageMetricAttributeKeyDirection MongodbatlasSystemPagingIoAverageMetricAttributeKey = "direction"
+)
+
+// MongodbatlasSystemPagingIoAverageMetricConfig provides config for the mongodbatlas.system.paging.io.average metric.
+type MongodbatlasSystemPagingIoAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemPagingIoAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemPagingIoAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemPagingIoAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemPagingIoAverageMetricAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.paging.io.average doesn't have an attribute %v, valid attributes: [direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemPagingIoMaxMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.paging.io.max metric.
+type MongodbatlasSystemPagingIoMaxMetricAttributeKey string
+
+const (
+	MongodbatlasSystemPagingIoMaxMetricAttributeKeyDirection MongodbatlasSystemPagingIoMaxMetricAttributeKey = "direction"
+)
+
+// MongodbatlasSystemPagingIoMaxMetricConfig provides config for the mongodbatlas.system.paging.io.max metric.
+type MongodbatlasSystemPagingIoMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemPagingIoMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemPagingIoMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemPagingIoMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemPagingIoMaxMetricAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.paging.io.max doesn't have an attribute %v, valid attributes: [direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemPagingUsageAverageMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.paging.usage.average metric.
+type MongodbatlasSystemPagingUsageAverageMetricAttributeKey string
+
+const (
+	MongodbatlasSystemPagingUsageAverageMetricAttributeKeyMemoryState MongodbatlasSystemPagingUsageAverageMetricAttributeKey = "memory_state"
+)
+
+// MongodbatlasSystemPagingUsageAverageMetricConfig provides config for the mongodbatlas.system.paging.usage.average metric.
+type MongodbatlasSystemPagingUsageAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemPagingUsageAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemPagingUsageAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemPagingUsageAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemPagingUsageAverageMetricAttributeKeyMemoryState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.paging.usage.average doesn't have an attribute %v, valid attributes: [memory_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbatlasSystemPagingUsageMaxMetricAttributeKey specifies the key of an attribute for the mongodbatlas.system.paging.usage.max metric.
+type MongodbatlasSystemPagingUsageMaxMetricAttributeKey string
+
+const (
+	MongodbatlasSystemPagingUsageMaxMetricAttributeKeyMemoryState MongodbatlasSystemPagingUsageMaxMetricAttributeKey = "memory_state"
+)
+
+// MongodbatlasSystemPagingUsageMaxMetricConfig provides config for the mongodbatlas.system.paging.usage.max metric.
+type MongodbatlasSystemPagingUsageMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbatlasSystemPagingUsageMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbatlasSystemPagingUsageMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbatlasSystemPagingUsageMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbatlasSystemPagingUsageMaxMetricAttributeKeyMemoryState:
+		default:
+			return fmt.Errorf("metric mongodbatlas.system.paging.usage.max doesn't have an attribute %v, valid attributes: [memory_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for mongodb_atlas metrics.
 type MetricsConfig struct {
-	MongodbatlasDbCounts                                  MetricConfig `mapstructure:"mongodbatlas.db.counts"`
-	MongodbatlasDbSize                                    MetricConfig `mapstructure:"mongodbatlas.db.size"`
-	MongodbatlasDiskPartitionIopsAverage                  MetricConfig `mapstructure:"mongodbatlas.disk.partition.iops.average"`
-	MongodbatlasDiskPartitionIopsMax                      MetricConfig `mapstructure:"mongodbatlas.disk.partition.iops.max"`
-	MongodbatlasDiskPartitionLatencyAverage               MetricConfig `mapstructure:"mongodbatlas.disk.partition.latency.average"`
-	MongodbatlasDiskPartitionLatencyMax                   MetricConfig `mapstructure:"mongodbatlas.disk.partition.latency.max"`
-	MongodbatlasDiskPartitionQueueDepth                   MetricConfig `mapstructure:"mongodbatlas.disk.partition.queue.depth"`
-	MongodbatlasDiskPartitionSpaceAverage                 MetricConfig `mapstructure:"mongodbatlas.disk.partition.space.average"`
-	MongodbatlasDiskPartitionSpaceMax                     MetricConfig `mapstructure:"mongodbatlas.disk.partition.space.max"`
-	MongodbatlasDiskPartitionThroughput                   MetricConfig `mapstructure:"mongodbatlas.disk.partition.throughput"`
-	MongodbatlasDiskPartitionUsageAverage                 MetricConfig `mapstructure:"mongodbatlas.disk.partition.usage.average"`
-	MongodbatlasDiskPartitionUsageMax                     MetricConfig `mapstructure:"mongodbatlas.disk.partition.usage.max"`
-	MongodbatlasDiskPartitionUtilizationAverage           MetricConfig `mapstructure:"mongodbatlas.disk.partition.utilization.average"`
-	MongodbatlasDiskPartitionUtilizationMax               MetricConfig `mapstructure:"mongodbatlas.disk.partition.utilization.max"`
-	MongodbatlasProcessAsserts                            MetricConfig `mapstructure:"mongodbatlas.process.asserts"`
-	MongodbatlasProcessBackgroundFlush                    MetricConfig `mapstructure:"mongodbatlas.process.background_flush"`
-	MongodbatlasProcessCacheIo                            MetricConfig `mapstructure:"mongodbatlas.process.cache.io"`
-	MongodbatlasProcessCacheRatio                         MetricConfig `mapstructure:"mongodbatlas.process.cache.ratio"`
-	MongodbatlasProcessCacheSize                          MetricConfig `mapstructure:"mongodbatlas.process.cache.size"`
-	MongodbatlasProcessConnections                        MetricConfig `mapstructure:"mongodbatlas.process.connections"`
-	MongodbatlasProcessCPUChildrenNormalizedUsageAverage  MetricConfig `mapstructure:"mongodbatlas.process.cpu.children.normalized.usage.average"`
-	MongodbatlasProcessCPUChildrenNormalizedUsageMax      MetricConfig `mapstructure:"mongodbatlas.process.cpu.children.normalized.usage.max"`
-	MongodbatlasProcessCPUChildrenUsageAverage            MetricConfig `mapstructure:"mongodbatlas.process.cpu.children.usage.average"`
-	MongodbatlasProcessCPUChildrenUsageMax                MetricConfig `mapstructure:"mongodbatlas.process.cpu.children.usage.max"`
-	MongodbatlasProcessCPUNormalizedUsageAverage          MetricConfig `mapstructure:"mongodbatlas.process.cpu.normalized.usage.average"`
-	MongodbatlasProcessCPUNormalizedUsageMax              MetricConfig `mapstructure:"mongodbatlas.process.cpu.normalized.usage.max"`
-	MongodbatlasProcessCPUUsageAverage                    MetricConfig `mapstructure:"mongodbatlas.process.cpu.usage.average"`
-	MongodbatlasProcessCPUUsageMax                        MetricConfig `mapstructure:"mongodbatlas.process.cpu.usage.max"`
-	MongodbatlasProcessCursors                            MetricConfig `mapstructure:"mongodbatlas.process.cursors"`
-	MongodbatlasProcessDbDocumentRate                     MetricConfig `mapstructure:"mongodbatlas.process.db.document.rate"`
-	MongodbatlasProcessDbOperationsRate                   MetricConfig `mapstructure:"mongodbatlas.process.db.operations.rate"`
-	MongodbatlasProcessDbOperationsTime                   MetricConfig `mapstructure:"mongodbatlas.process.db.operations.time"`
-	MongodbatlasProcessDbQueryExecutorScanned             MetricConfig `mapstructure:"mongodbatlas.process.db.query_executor.scanned"`
-	MongodbatlasProcessDbQueryTargetingScannedPerReturned MetricConfig `mapstructure:"mongodbatlas.process.db.query_targeting.scanned_per_returned"`
-	MongodbatlasProcessDbStorage                          MetricConfig `mapstructure:"mongodbatlas.process.db.storage"`
-	MongodbatlasProcessGlobalLock                         MetricConfig `mapstructure:"mongodbatlas.process.global_lock"`
-	MongodbatlasProcessIndexBtreeMissRatio                MetricConfig `mapstructure:"mongodbatlas.process.index.btree_miss_ratio"`
-	MongodbatlasProcessIndexCounters                      MetricConfig `mapstructure:"mongodbatlas.process.index.counters"`
-	MongodbatlasProcessJournalingCommits                  MetricConfig `mapstructure:"mongodbatlas.process.journaling.commits"`
-	MongodbatlasProcessJournalingDataFiles                MetricConfig `mapstructure:"mongodbatlas.process.journaling.data_files"`
-	MongodbatlasProcessJournalingWritten                  MetricConfig `mapstructure:"mongodbatlas.process.journaling.written"`
-	MongodbatlasProcessMemoryUsage                        MetricConfig `mapstructure:"mongodbatlas.process.memory.usage"`
-	MongodbatlasProcessNetworkIo                          MetricConfig `mapstructure:"mongodbatlas.process.network.io"`
-	MongodbatlasProcessNetworkRequests                    MetricConfig `mapstructure:"mongodbatlas.process.network.requests"`
-	MongodbatlasProcessOplogRate                          MetricConfig `mapstructure:"mongodbatlas.process.oplog.rate"`
-	MongodbatlasProcessOplogTime                          MetricConfig `mapstructure:"mongodbatlas.process.oplog.time"`
-	MongodbatlasProcessPageFaults                         MetricConfig `mapstructure:"mongodbatlas.process.page_faults"`
-	MongodbatlasProcessRestarts                           MetricConfig `mapstructure:"mongodbatlas.process.restarts"`
-	MongodbatlasProcessTickets                            MetricConfig `mapstructure:"mongodbatlas.process.tickets"`
-	MongodbatlasSystemCPUNormalizedUsageAverage           MetricConfig `mapstructure:"mongodbatlas.system.cpu.normalized.usage.average"`
-	MongodbatlasSystemCPUNormalizedUsageMax               MetricConfig `mapstructure:"mongodbatlas.system.cpu.normalized.usage.max"`
-	MongodbatlasSystemCPUUsageAverage                     MetricConfig `mapstructure:"mongodbatlas.system.cpu.usage.average"`
-	MongodbatlasSystemCPUUsageMax                         MetricConfig `mapstructure:"mongodbatlas.system.cpu.usage.max"`
-	MongodbatlasSystemFtsCPUNormalizedUsage               MetricConfig `mapstructure:"mongodbatlas.system.fts.cpu.normalized.usage"`
-	MongodbatlasSystemFtsCPUUsage                         MetricConfig `mapstructure:"mongodbatlas.system.fts.cpu.usage"`
-	MongodbatlasSystemFtsDiskUsed                         MetricConfig `mapstructure:"mongodbatlas.system.fts.disk.used"`
-	MongodbatlasSystemFtsMemoryUsage                      MetricConfig `mapstructure:"mongodbatlas.system.fts.memory.usage"`
-	MongodbatlasSystemMemoryUsageAverage                  MetricConfig `mapstructure:"mongodbatlas.system.memory.usage.average"`
-	MongodbatlasSystemMemoryUsageMax                      MetricConfig `mapstructure:"mongodbatlas.system.memory.usage.max"`
-	MongodbatlasSystemNetworkIoAverage                    MetricConfig `mapstructure:"mongodbatlas.system.network.io.average"`
-	MongodbatlasSystemNetworkIoMax                        MetricConfig `mapstructure:"mongodbatlas.system.network.io.max"`
-	MongodbatlasSystemPagingIoAverage                     MetricConfig `mapstructure:"mongodbatlas.system.paging.io.average"`
-	MongodbatlasSystemPagingIoMax                         MetricConfig `mapstructure:"mongodbatlas.system.paging.io.max"`
-	MongodbatlasSystemPagingUsageAverage                  MetricConfig `mapstructure:"mongodbatlas.system.paging.usage.average"`
-	MongodbatlasSystemPagingUsageMax                      MetricConfig `mapstructure:"mongodbatlas.system.paging.usage.max"`
+	MongodbatlasDbCounts                                  MongodbatlasDbCountsMetricConfig                                  `mapstructure:"mongodbatlas.db.counts"`
+	MongodbatlasDbSize                                    MongodbatlasDbSizeMetricConfig                                    `mapstructure:"mongodbatlas.db.size"`
+	MongodbatlasDiskPartitionIopsAverage                  MongodbatlasDiskPartitionIopsAverageMetricConfig                  `mapstructure:"mongodbatlas.disk.partition.iops.average"`
+	MongodbatlasDiskPartitionIopsMax                      MongodbatlasDiskPartitionIopsMaxMetricConfig                      `mapstructure:"mongodbatlas.disk.partition.iops.max"`
+	MongodbatlasDiskPartitionLatencyAverage               MongodbatlasDiskPartitionLatencyAverageMetricConfig               `mapstructure:"mongodbatlas.disk.partition.latency.average"`
+	MongodbatlasDiskPartitionLatencyMax                   MongodbatlasDiskPartitionLatencyMaxMetricConfig                   `mapstructure:"mongodbatlas.disk.partition.latency.max"`
+	MongodbatlasDiskPartitionQueueDepth                   MongodbatlasDiskPartitionQueueDepthMetricConfig                   `mapstructure:"mongodbatlas.disk.partition.queue.depth"`
+	MongodbatlasDiskPartitionSpaceAverage                 MongodbatlasDiskPartitionSpaceAverageMetricConfig                 `mapstructure:"mongodbatlas.disk.partition.space.average"`
+	MongodbatlasDiskPartitionSpaceMax                     MongodbatlasDiskPartitionSpaceMaxMetricConfig                     `mapstructure:"mongodbatlas.disk.partition.space.max"`
+	MongodbatlasDiskPartitionThroughput                   MongodbatlasDiskPartitionThroughputMetricConfig                   `mapstructure:"mongodbatlas.disk.partition.throughput"`
+	MongodbatlasDiskPartitionUsageAverage                 MongodbatlasDiskPartitionUsageAverageMetricConfig                 `mapstructure:"mongodbatlas.disk.partition.usage.average"`
+	MongodbatlasDiskPartitionUsageMax                     MongodbatlasDiskPartitionUsageMaxMetricConfig                     `mapstructure:"mongodbatlas.disk.partition.usage.max"`
+	MongodbatlasDiskPartitionUtilizationAverage           MongodbatlasDiskPartitionUtilizationAverageMetricConfig           `mapstructure:"mongodbatlas.disk.partition.utilization.average"`
+	MongodbatlasDiskPartitionUtilizationMax               MongodbatlasDiskPartitionUtilizationMaxMetricConfig               `mapstructure:"mongodbatlas.disk.partition.utilization.max"`
+	MongodbatlasProcessAsserts                            MongodbatlasProcessAssertsMetricConfig                            `mapstructure:"mongodbatlas.process.asserts"`
+	MongodbatlasProcessBackgroundFlush                    MongodbatlasProcessBackgroundFlushMetricConfig                    `mapstructure:"mongodbatlas.process.background_flush"`
+	MongodbatlasProcessCacheIo                            MongodbatlasProcessCacheIoMetricConfig                            `mapstructure:"mongodbatlas.process.cache.io"`
+	MongodbatlasProcessCacheRatio                         MongodbatlasProcessCacheRatioMetricConfig                         `mapstructure:"mongodbatlas.process.cache.ratio"`
+	MongodbatlasProcessCacheSize                          MongodbatlasProcessCacheSizeMetricConfig                          `mapstructure:"mongodbatlas.process.cache.size"`
+	MongodbatlasProcessConnections                        MongodbatlasProcessConnectionsMetricConfig                        `mapstructure:"mongodbatlas.process.connections"`
+	MongodbatlasProcessCPUChildrenNormalizedUsageAverage  MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricConfig  `mapstructure:"mongodbatlas.process.cpu.children.normalized.usage.average"`
+	MongodbatlasProcessCPUChildrenNormalizedUsageMax      MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricConfig      `mapstructure:"mongodbatlas.process.cpu.children.normalized.usage.max"`
+	MongodbatlasProcessCPUChildrenUsageAverage            MongodbatlasProcessCPUChildrenUsageAverageMetricConfig            `mapstructure:"mongodbatlas.process.cpu.children.usage.average"`
+	MongodbatlasProcessCPUChildrenUsageMax                MongodbatlasProcessCPUChildrenUsageMaxMetricConfig                `mapstructure:"mongodbatlas.process.cpu.children.usage.max"`
+	MongodbatlasProcessCPUNormalizedUsageAverage          MongodbatlasProcessCPUNormalizedUsageAverageMetricConfig          `mapstructure:"mongodbatlas.process.cpu.normalized.usage.average"`
+	MongodbatlasProcessCPUNormalizedUsageMax              MongodbatlasProcessCPUNormalizedUsageMaxMetricConfig              `mapstructure:"mongodbatlas.process.cpu.normalized.usage.max"`
+	MongodbatlasProcessCPUUsageAverage                    MongodbatlasProcessCPUUsageAverageMetricConfig                    `mapstructure:"mongodbatlas.process.cpu.usage.average"`
+	MongodbatlasProcessCPUUsageMax                        MongodbatlasProcessCPUUsageMaxMetricConfig                        `mapstructure:"mongodbatlas.process.cpu.usage.max"`
+	MongodbatlasProcessCursors                            MongodbatlasProcessCursorsMetricConfig                            `mapstructure:"mongodbatlas.process.cursors"`
+	MongodbatlasProcessDbDocumentRate                     MongodbatlasProcessDbDocumentRateMetricConfig                     `mapstructure:"mongodbatlas.process.db.document.rate"`
+	MongodbatlasProcessDbOperationsRate                   MongodbatlasProcessDbOperationsRateMetricConfig                   `mapstructure:"mongodbatlas.process.db.operations.rate"`
+	MongodbatlasProcessDbOperationsTime                   MongodbatlasProcessDbOperationsTimeMetricConfig                   `mapstructure:"mongodbatlas.process.db.operations.time"`
+	MongodbatlasProcessDbQueryExecutorScanned             MongodbatlasProcessDbQueryExecutorScannedMetricConfig             `mapstructure:"mongodbatlas.process.db.query_executor.scanned"`
+	MongodbatlasProcessDbQueryTargetingScannedPerReturned MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricConfig `mapstructure:"mongodbatlas.process.db.query_targeting.scanned_per_returned"`
+	MongodbatlasProcessDbStorage                          MongodbatlasProcessDbStorageMetricConfig                          `mapstructure:"mongodbatlas.process.db.storage"`
+	MongodbatlasProcessGlobalLock                         MongodbatlasProcessGlobalLockMetricConfig                         `mapstructure:"mongodbatlas.process.global_lock"`
+	MongodbatlasProcessIndexBtreeMissRatio                MongodbatlasProcessIndexBtreeMissRatioMetricConfig                `mapstructure:"mongodbatlas.process.index.btree_miss_ratio"`
+	MongodbatlasProcessIndexCounters                      MongodbatlasProcessIndexCountersMetricConfig                      `mapstructure:"mongodbatlas.process.index.counters"`
+	MongodbatlasProcessJournalingCommits                  MongodbatlasProcessJournalingCommitsMetricConfig                  `mapstructure:"mongodbatlas.process.journaling.commits"`
+	MongodbatlasProcessJournalingDataFiles                MongodbatlasProcessJournalingDataFilesMetricConfig                `mapstructure:"mongodbatlas.process.journaling.data_files"`
+	MongodbatlasProcessJournalingWritten                  MongodbatlasProcessJournalingWrittenMetricConfig                  `mapstructure:"mongodbatlas.process.journaling.written"`
+	MongodbatlasProcessMemoryUsage                        MongodbatlasProcessMemoryUsageMetricConfig                        `mapstructure:"mongodbatlas.process.memory.usage"`
+	MongodbatlasProcessNetworkIo                          MongodbatlasProcessNetworkIoMetricConfig                          `mapstructure:"mongodbatlas.process.network.io"`
+	MongodbatlasProcessNetworkRequests                    MongodbatlasProcessNetworkRequestsMetricConfig                    `mapstructure:"mongodbatlas.process.network.requests"`
+	MongodbatlasProcessOplogRate                          MongodbatlasProcessOplogRateMetricConfig                          `mapstructure:"mongodbatlas.process.oplog.rate"`
+	MongodbatlasProcessOplogTime                          MongodbatlasProcessOplogTimeMetricConfig                          `mapstructure:"mongodbatlas.process.oplog.time"`
+	MongodbatlasProcessPageFaults                         MongodbatlasProcessPageFaultsMetricConfig                         `mapstructure:"mongodbatlas.process.page_faults"`
+	MongodbatlasProcessRestarts                           MongodbatlasProcessRestartsMetricConfig                           `mapstructure:"mongodbatlas.process.restarts"`
+	MongodbatlasProcessTickets                            MongodbatlasProcessTicketsMetricConfig                            `mapstructure:"mongodbatlas.process.tickets"`
+	MongodbatlasSystemCPUNormalizedUsageAverage           MongodbatlasSystemCPUNormalizedUsageAverageMetricConfig           `mapstructure:"mongodbatlas.system.cpu.normalized.usage.average"`
+	MongodbatlasSystemCPUNormalizedUsageMax               MongodbatlasSystemCPUNormalizedUsageMaxMetricConfig               `mapstructure:"mongodbatlas.system.cpu.normalized.usage.max"`
+	MongodbatlasSystemCPUUsageAverage                     MongodbatlasSystemCPUUsageAverageMetricConfig                     `mapstructure:"mongodbatlas.system.cpu.usage.average"`
+	MongodbatlasSystemCPUUsageMax                         MongodbatlasSystemCPUUsageMaxMetricConfig                         `mapstructure:"mongodbatlas.system.cpu.usage.max"`
+	MongodbatlasSystemFtsCPUNormalizedUsage               MongodbatlasSystemFtsCPUNormalizedUsageMetricConfig               `mapstructure:"mongodbatlas.system.fts.cpu.normalized.usage"`
+	MongodbatlasSystemFtsCPUUsage                         MongodbatlasSystemFtsCPUUsageMetricConfig                         `mapstructure:"mongodbatlas.system.fts.cpu.usage"`
+	MongodbatlasSystemFtsDiskUsed                         MongodbatlasSystemFtsDiskUsedMetricConfig                         `mapstructure:"mongodbatlas.system.fts.disk.used"`
+	MongodbatlasSystemFtsMemoryUsage                      MongodbatlasSystemFtsMemoryUsageMetricConfig                      `mapstructure:"mongodbatlas.system.fts.memory.usage"`
+	MongodbatlasSystemMemoryUsageAverage                  MongodbatlasSystemMemoryUsageAverageMetricConfig                  `mapstructure:"mongodbatlas.system.memory.usage.average"`
+	MongodbatlasSystemMemoryUsageMax                      MongodbatlasSystemMemoryUsageMaxMetricConfig                      `mapstructure:"mongodbatlas.system.memory.usage.max"`
+	MongodbatlasSystemNetworkIoAverage                    MongodbatlasSystemNetworkIoAverageMetricConfig                    `mapstructure:"mongodbatlas.system.network.io.average"`
+	MongodbatlasSystemNetworkIoMax                        MongodbatlasSystemNetworkIoMaxMetricConfig                        `mapstructure:"mongodbatlas.system.network.io.max"`
+	MongodbatlasSystemPagingIoAverage                     MongodbatlasSystemPagingIoAverageMetricConfig                     `mapstructure:"mongodbatlas.system.paging.io.average"`
+	MongodbatlasSystemPagingIoMax                         MongodbatlasSystemPagingIoMaxMetricConfig                         `mapstructure:"mongodbatlas.system.paging.io.max"`
+	MongodbatlasSystemPagingUsageAverage                  MongodbatlasSystemPagingUsageAverageMetricConfig                  `mapstructure:"mongodbatlas.system.paging.usage.average"`
+	MongodbatlasSystemPagingUsageMax                      MongodbatlasSystemPagingUsageMaxMetricConfig                      `mapstructure:"mongodbatlas.system.paging.usage.max"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		MongodbatlasDbCounts: MetricConfig{
-			Enabled: true,
+		MongodbatlasDbCounts: MongodbatlasDbCountsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasDbCountsMetricAttributeKey{MongodbatlasDbCountsMetricAttributeKeyObjectType},
 		},
-		MongodbatlasDbSize: MetricConfig{
-			Enabled: true,
+		MongodbatlasDbSize: MongodbatlasDbSizeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasDbSizeMetricAttributeKey{MongodbatlasDbSizeMetricAttributeKeyObjectType},
 		},
-		MongodbatlasDiskPartitionIopsAverage: MetricConfig{
-			Enabled: true,
+		MongodbatlasDiskPartitionIopsAverage: MongodbatlasDiskPartitionIopsAverageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasDiskPartitionIopsAverageMetricAttributeKey{MongodbatlasDiskPartitionIopsAverageMetricAttributeKeyDiskDirection},
 		},
-		MongodbatlasDiskPartitionIopsMax: MetricConfig{
-			Enabled: true,
+		MongodbatlasDiskPartitionIopsMax: MongodbatlasDiskPartitionIopsMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasDiskPartitionIopsMaxMetricAttributeKey{MongodbatlasDiskPartitionIopsMaxMetricAttributeKeyDiskDirection},
 		},
-		MongodbatlasDiskPartitionLatencyAverage: MetricConfig{
-			Enabled: true,
+		MongodbatlasDiskPartitionLatencyAverage: MongodbatlasDiskPartitionLatencyAverageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasDiskPartitionLatencyAverageMetricAttributeKey{MongodbatlasDiskPartitionLatencyAverageMetricAttributeKeyDiskDirection},
 		},
-		MongodbatlasDiskPartitionLatencyMax: MetricConfig{
-			Enabled: true,
+		MongodbatlasDiskPartitionLatencyMax: MongodbatlasDiskPartitionLatencyMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasDiskPartitionLatencyMaxMetricAttributeKey{MongodbatlasDiskPartitionLatencyMaxMetricAttributeKeyDiskDirection},
 		},
-		MongodbatlasDiskPartitionQueueDepth: MetricConfig{
+		MongodbatlasDiskPartitionQueueDepth: MongodbatlasDiskPartitionQueueDepthMetricConfig{
 			Enabled: false,
 		},
-		MongodbatlasDiskPartitionSpaceAverage: MetricConfig{
+		MongodbatlasDiskPartitionSpaceAverage: MongodbatlasDiskPartitionSpaceAverageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasDiskPartitionSpaceAverageMetricAttributeKey{MongodbatlasDiskPartitionSpaceAverageMetricAttributeKeyDiskStatus},
+		},
+		MongodbatlasDiskPartitionSpaceMax: MongodbatlasDiskPartitionSpaceMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasDiskPartitionSpaceMaxMetricAttributeKey{MongodbatlasDiskPartitionSpaceMaxMetricAttributeKeyDiskStatus},
+		},
+		MongodbatlasDiskPartitionThroughput: MongodbatlasDiskPartitionThroughputMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasDiskPartitionThroughputMetricAttributeKey{MongodbatlasDiskPartitionThroughputMetricAttributeKeyDiskDirection},
+		},
+		MongodbatlasDiskPartitionUsageAverage: MongodbatlasDiskPartitionUsageAverageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasDiskPartitionUsageAverageMetricAttributeKey{MongodbatlasDiskPartitionUsageAverageMetricAttributeKeyDiskStatus},
+		},
+		MongodbatlasDiskPartitionUsageMax: MongodbatlasDiskPartitionUsageMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasDiskPartitionUsageMaxMetricAttributeKey{MongodbatlasDiskPartitionUsageMaxMetricAttributeKeyDiskStatus},
+		},
+		MongodbatlasDiskPartitionUtilizationAverage: MongodbatlasDiskPartitionUtilizationAverageMetricConfig{
 			Enabled: true,
 		},
-		MongodbatlasDiskPartitionSpaceMax: MetricConfig{
+		MongodbatlasDiskPartitionUtilizationMax: MongodbatlasDiskPartitionUtilizationMaxMetricConfig{
 			Enabled: true,
 		},
-		MongodbatlasDiskPartitionThroughput: MetricConfig{
-			Enabled: false,
+		MongodbatlasProcessAsserts: MongodbatlasProcessAssertsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessAssertsMetricAttributeKey{MongodbatlasProcessAssertsMetricAttributeKeyAssertType},
 		},
-		MongodbatlasDiskPartitionUsageAverage: MetricConfig{
+		MongodbatlasProcessBackgroundFlush: MongodbatlasProcessBackgroundFlushMetricConfig{
 			Enabled: true,
 		},
-		MongodbatlasDiskPartitionUsageMax: MetricConfig{
+		MongodbatlasProcessCacheIo: MongodbatlasProcessCacheIoMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessCacheIoMetricAttributeKey{MongodbatlasProcessCacheIoMetricAttributeKeyCacheDirection},
+		},
+		MongodbatlasProcessCacheRatio: MongodbatlasProcessCacheRatioMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessCacheRatioMetricAttributeKey{MongodbatlasProcessCacheRatioMetricAttributeKeyCacheRatioType},
+		},
+		MongodbatlasProcessCacheSize: MongodbatlasProcessCacheSizeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MongodbatlasProcessCacheSizeMetricAttributeKey{MongodbatlasProcessCacheSizeMetricAttributeKeyCacheStatus},
+		},
+		MongodbatlasProcessConnections: MongodbatlasProcessConnectionsMetricConfig{
 			Enabled: true,
 		},
-		MongodbatlasDiskPartitionUtilizationAverage: MetricConfig{
+		MongodbatlasProcessCPUChildrenNormalizedUsageAverage: MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricAttributeKey{MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricAttributeKeyCPUState},
+		},
+		MongodbatlasProcessCPUChildrenNormalizedUsageMax: MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricAttributeKey{MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricAttributeKeyCPUState},
+		},
+		MongodbatlasProcessCPUChildrenUsageAverage: MongodbatlasProcessCPUChildrenUsageAverageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessCPUChildrenUsageAverageMetricAttributeKey{MongodbatlasProcessCPUChildrenUsageAverageMetricAttributeKeyCPUState},
+		},
+		MongodbatlasProcessCPUChildrenUsageMax: MongodbatlasProcessCPUChildrenUsageMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessCPUChildrenUsageMaxMetricAttributeKey{MongodbatlasProcessCPUChildrenUsageMaxMetricAttributeKeyCPUState},
+		},
+		MongodbatlasProcessCPUNormalizedUsageAverage: MongodbatlasProcessCPUNormalizedUsageAverageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessCPUNormalizedUsageAverageMetricAttributeKey{MongodbatlasProcessCPUNormalizedUsageAverageMetricAttributeKeyCPUState},
+		},
+		MongodbatlasProcessCPUNormalizedUsageMax: MongodbatlasProcessCPUNormalizedUsageMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessCPUNormalizedUsageMaxMetricAttributeKey{MongodbatlasProcessCPUNormalizedUsageMaxMetricAttributeKeyCPUState},
+		},
+		MongodbatlasProcessCPUUsageAverage: MongodbatlasProcessCPUUsageAverageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessCPUUsageAverageMetricAttributeKey{MongodbatlasProcessCPUUsageAverageMetricAttributeKeyCPUState},
+		},
+		MongodbatlasProcessCPUUsageMax: MongodbatlasProcessCPUUsageMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessCPUUsageMaxMetricAttributeKey{MongodbatlasProcessCPUUsageMaxMetricAttributeKeyCPUState},
+		},
+		MongodbatlasProcessCursors: MongodbatlasProcessCursorsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessCursorsMetricAttributeKey{MongodbatlasProcessCursorsMetricAttributeKeyCursorState},
+		},
+		MongodbatlasProcessDbDocumentRate: MongodbatlasProcessDbDocumentRateMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessDbDocumentRateMetricAttributeKey{MongodbatlasProcessDbDocumentRateMetricAttributeKeyDocumentStatus},
+		},
+		MongodbatlasProcessDbOperationsRate: MongodbatlasProcessDbOperationsRateMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessDbOperationsRateMetricAttributeKey{MongodbatlasProcessDbOperationsRateMetricAttributeKeyOperation, MongodbatlasProcessDbOperationsRateMetricAttributeKeyClusterRole},
+		},
+		MongodbatlasProcessDbOperationsTime: MongodbatlasProcessDbOperationsTimeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MongodbatlasProcessDbOperationsTimeMetricAttributeKey{MongodbatlasProcessDbOperationsTimeMetricAttributeKeyExecutionType},
+		},
+		MongodbatlasProcessDbQueryExecutorScanned: MongodbatlasProcessDbQueryExecutorScannedMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessDbQueryExecutorScannedMetricAttributeKey{MongodbatlasProcessDbQueryExecutorScannedMetricAttributeKeyScannedType},
+		},
+		MongodbatlasProcessDbQueryTargetingScannedPerReturned: MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricAttributeKey{MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricAttributeKeyScannedType},
+		},
+		MongodbatlasProcessDbStorage: MongodbatlasProcessDbStorageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessDbStorageMetricAttributeKey{MongodbatlasProcessDbStorageMetricAttributeKeyStorageStatus},
+		},
+		MongodbatlasProcessGlobalLock: MongodbatlasProcessGlobalLockMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessGlobalLockMetricAttributeKey{MongodbatlasProcessGlobalLockMetricAttributeKeyGlobalLockState},
+		},
+		MongodbatlasProcessIndexBtreeMissRatio: MongodbatlasProcessIndexBtreeMissRatioMetricConfig{
 			Enabled: true,
 		},
-		MongodbatlasDiskPartitionUtilizationMax: MetricConfig{
+		MongodbatlasProcessIndexCounters: MongodbatlasProcessIndexCountersMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessIndexCountersMetricAttributeKey{MongodbatlasProcessIndexCountersMetricAttributeKeyBtreeCounterType},
+		},
+		MongodbatlasProcessJournalingCommits: MongodbatlasProcessJournalingCommitsMetricConfig{
 			Enabled: true,
 		},
-		MongodbatlasProcessAsserts: MetricConfig{
+		MongodbatlasProcessJournalingDataFiles: MongodbatlasProcessJournalingDataFilesMetricConfig{
 			Enabled: true,
 		},
-		MongodbatlasProcessBackgroundFlush: MetricConfig{
+		MongodbatlasProcessJournalingWritten: MongodbatlasProcessJournalingWrittenMetricConfig{
 			Enabled: true,
 		},
-		MongodbatlasProcessCacheIo: MetricConfig{
+		MongodbatlasProcessMemoryUsage: MongodbatlasProcessMemoryUsageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessMemoryUsageMetricAttributeKey{MongodbatlasProcessMemoryUsageMetricAttributeKeyMemoryState},
+		},
+		MongodbatlasProcessNetworkIo: MongodbatlasProcessNetworkIoMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessNetworkIoMetricAttributeKey{MongodbatlasProcessNetworkIoMetricAttributeKeyDirection},
+		},
+		MongodbatlasProcessNetworkRequests: MongodbatlasProcessNetworkRequestsMetricConfig{
 			Enabled: true,
 		},
-		MongodbatlasProcessCacheRatio: MetricConfig{
-			Enabled: false,
-		},
-		MongodbatlasProcessCacheSize: MetricConfig{
+		MongodbatlasProcessOplogRate: MongodbatlasProcessOplogRateMetricConfig{
 			Enabled: true,
 		},
-		MongodbatlasProcessConnections: MetricConfig{
+		MongodbatlasProcessOplogTime: MongodbatlasProcessOplogTimeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessOplogTimeMetricAttributeKey{MongodbatlasProcessOplogTimeMetricAttributeKeyOplogType},
+		},
+		MongodbatlasProcessPageFaults: MongodbatlasProcessPageFaultsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessPageFaultsMetricAttributeKey{MongodbatlasProcessPageFaultsMetricAttributeKeyMemoryIssueType},
+		},
+		MongodbatlasProcessRestarts: MongodbatlasProcessRestartsMetricConfig{
 			Enabled: true,
 		},
-		MongodbatlasProcessCPUChildrenNormalizedUsageAverage: MetricConfig{
+		MongodbatlasProcessTickets: MongodbatlasProcessTicketsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasProcessTicketsMetricAttributeKey{MongodbatlasProcessTicketsMetricAttributeKeyTicketType},
+		},
+		MongodbatlasSystemCPUNormalizedUsageAverage: MongodbatlasSystemCPUNormalizedUsageAverageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasSystemCPUNormalizedUsageAverageMetricAttributeKey{MongodbatlasSystemCPUNormalizedUsageAverageMetricAttributeKeyCPUState},
+		},
+		MongodbatlasSystemCPUNormalizedUsageMax: MongodbatlasSystemCPUNormalizedUsageMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasSystemCPUNormalizedUsageMaxMetricAttributeKey{MongodbatlasSystemCPUNormalizedUsageMaxMetricAttributeKeyCPUState},
+		},
+		MongodbatlasSystemCPUUsageAverage: MongodbatlasSystemCPUUsageAverageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasSystemCPUUsageAverageMetricAttributeKey{MongodbatlasSystemCPUUsageAverageMetricAttributeKeyCPUState},
+		},
+		MongodbatlasSystemCPUUsageMax: MongodbatlasSystemCPUUsageMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasSystemCPUUsageMaxMetricAttributeKey{MongodbatlasSystemCPUUsageMaxMetricAttributeKeyCPUState},
+		},
+		MongodbatlasSystemFtsCPUNormalizedUsage: MongodbatlasSystemFtsCPUNormalizedUsageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasSystemFtsCPUNormalizedUsageMetricAttributeKey{MongodbatlasSystemFtsCPUNormalizedUsageMetricAttributeKeyCPUState},
+		},
+		MongodbatlasSystemFtsCPUUsage: MongodbatlasSystemFtsCPUUsageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasSystemFtsCPUUsageMetricAttributeKey{MongodbatlasSystemFtsCPUUsageMetricAttributeKeyCPUState},
+		},
+		MongodbatlasSystemFtsDiskUsed: MongodbatlasSystemFtsDiskUsedMetricConfig{
 			Enabled: true,
 		},
-		MongodbatlasProcessCPUChildrenNormalizedUsageMax: MetricConfig{
-			Enabled: true,
+		MongodbatlasSystemFtsMemoryUsage: MongodbatlasSystemFtsMemoryUsageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MongodbatlasSystemFtsMemoryUsageMetricAttributeKey{MongodbatlasSystemFtsMemoryUsageMetricAttributeKeyMemoryState},
 		},
-		MongodbatlasProcessCPUChildrenUsageAverage: MetricConfig{
-			Enabled: true,
+		MongodbatlasSystemMemoryUsageAverage: MongodbatlasSystemMemoryUsageAverageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasSystemMemoryUsageAverageMetricAttributeKey{MongodbatlasSystemMemoryUsageAverageMetricAttributeKeyMemoryStatus},
 		},
-		MongodbatlasProcessCPUChildrenUsageMax: MetricConfig{
-			Enabled: true,
+		MongodbatlasSystemMemoryUsageMax: MongodbatlasSystemMemoryUsageMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasSystemMemoryUsageMaxMetricAttributeKey{MongodbatlasSystemMemoryUsageMaxMetricAttributeKeyMemoryStatus},
 		},
-		MongodbatlasProcessCPUNormalizedUsageAverage: MetricConfig{
-			Enabled: true,
+		MongodbatlasSystemNetworkIoAverage: MongodbatlasSystemNetworkIoAverageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasSystemNetworkIoAverageMetricAttributeKey{MongodbatlasSystemNetworkIoAverageMetricAttributeKeyDirection},
 		},
-		MongodbatlasProcessCPUNormalizedUsageMax: MetricConfig{
-			Enabled: true,
+		MongodbatlasSystemNetworkIoMax: MongodbatlasSystemNetworkIoMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasSystemNetworkIoMaxMetricAttributeKey{MongodbatlasSystemNetworkIoMaxMetricAttributeKeyDirection},
 		},
-		MongodbatlasProcessCPUUsageAverage: MetricConfig{
-			Enabled: true,
+		MongodbatlasSystemPagingIoAverage: MongodbatlasSystemPagingIoAverageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasSystemPagingIoAverageMetricAttributeKey{MongodbatlasSystemPagingIoAverageMetricAttributeKeyDirection},
 		},
-		MongodbatlasProcessCPUUsageMax: MetricConfig{
-			Enabled: true,
+		MongodbatlasSystemPagingIoMax: MongodbatlasSystemPagingIoMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasSystemPagingIoMaxMetricAttributeKey{MongodbatlasSystemPagingIoMaxMetricAttributeKeyDirection},
 		},
-		MongodbatlasProcessCursors: MetricConfig{
-			Enabled: true,
+		MongodbatlasSystemPagingUsageAverage: MongodbatlasSystemPagingUsageAverageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasSystemPagingUsageAverageMetricAttributeKey{MongodbatlasSystemPagingUsageAverageMetricAttributeKeyMemoryState},
 		},
-		MongodbatlasProcessDbDocumentRate: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessDbOperationsRate: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessDbOperationsTime: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessDbQueryExecutorScanned: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessDbQueryTargetingScannedPerReturned: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessDbStorage: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessGlobalLock: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessIndexBtreeMissRatio: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessIndexCounters: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessJournalingCommits: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessJournalingDataFiles: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessJournalingWritten: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessMemoryUsage: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessNetworkIo: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessNetworkRequests: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessOplogRate: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessOplogTime: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessPageFaults: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessRestarts: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasProcessTickets: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemCPUNormalizedUsageAverage: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemCPUNormalizedUsageMax: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemCPUUsageAverage: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemCPUUsageMax: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemFtsCPUNormalizedUsage: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemFtsCPUUsage: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemFtsDiskUsed: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemFtsMemoryUsage: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemMemoryUsageAverage: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemMemoryUsageMax: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemNetworkIoAverage: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemNetworkIoMax: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemPagingIoAverage: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemPagingIoMax: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemPagingUsageAverage: MetricConfig{
-			Enabled: true,
-		},
-		MongodbatlasSystemPagingUsageMax: MetricConfig{
-			Enabled: true,
+		MongodbatlasSystemPagingUsageMax: MongodbatlasSystemPagingUsageMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbatlasSystemPagingUsageMaxMetricAttributeKey{MongodbatlasSystemPagingUsageMaxMetricAttributeKeyMemoryState},
 		},
 	}
 }
@@ -389,9 +3232,14 @@ type MetricsBuilderConfig struct {
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

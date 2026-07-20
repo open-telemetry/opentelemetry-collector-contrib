@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"

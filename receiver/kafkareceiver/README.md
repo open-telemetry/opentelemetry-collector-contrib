@@ -5,7 +5,6 @@ The Kafka Receiver receives telemetry data from Kafka, with configurable topics 
 with the `kafkaexporter` configured with `include_metadata_keys`, The Kafka Receiver will also propagate the Kafka
 headers to the downstream pipeline, giving access to the rest of the pipeline to arbitrary metadata keys and values.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: profiles   |
@@ -13,7 +12,8 @@ headers to the downstream pipeline, giving access to the rest of the pipeline to
 | Distributions | [core], [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fkafka%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fkafka) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fkafka%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fkafka) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_kafka)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_kafka&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy), [@axw](https://www.github.com/axw), [@paulojmdias](https://www.github.com/paulojmdias) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy), [@paulojmdias](https://www.github.com/paulojmdias) |
+| Emeritus      | [@axw](https://www.github.com/axw) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -81,11 +81,13 @@ The following settings can be optionally configured:
 - `initial_offset` (default = latest): The initial offset to use if no offset was previously committed. Must be `latest` or `earliest`.
 - `session_timeout` (default = `10s`): The request timeout for detecting client failures when using Kafka’s group management facilities.
 - `heartbeat_interval` (default = `3s`): The expected time between heartbeats to the consumer coordinator when using Kafka’s group management facilities.
-- `group_rebalance_strategy` (default = `cooperative-sticky`): This strategy is used to assign partitions to consumers within a consumer group. This setting determines how Kafka distributes topic partitions among the consumers in the group during rebalances. Supported strategies are:
-  - `range`: This strategy assigns partitions to consumers based on a range. It aims to distribute partitions evenly across consumers, but it can lead to uneven distribution if the number of partitions is not a multiple of the number of consumers. For more information, refer to the Kafka RangeAssignor documentation, see [RangeAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/RangeAssignor.html).
-  - `roundrobin`: This strategy assigns partitions to consumers in a round-robin fashion. It ensures a more even distribution of partitions across consumers, especially when the number of partitions is not a multiple of the number of consumers. For more information, refer to the Kafka RoundRobinAssignor documentation, see [RoundRobinAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/RoundRobinAssignor.html).
-  - `sticky`: This strategy aims to maintain the same partition assignments during rebalances as much as possible. It minimizes the number of partition movements, which can be beneficial for stateful consumers. For more information, refer to the Kafka StickyAssignor documentation, see [StickyAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/StickyAssignor.html).
-  - `cooperative-sticky`: This strategy is similar to `sticky`, but it supports cooperative rebalancing. It allows consumers to incrementally adjust their partition assignments without requiring a full rebalance, which can reduce downtime during rebalances. For more information, refer to the Kafka CooperativeStickyAssignor documentation, see [CooperativeStickyAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/CooperativeStickyAssignor.html).
+- `group_rebalance_strategies`: Ordered list of strategies to advertise to Kafka. Kafka selects the first advertised strategy supported by every member of the consumer group. When omitted, the franz-go default applies, currently `cooperative-sticky`. This field is mutually exclusive with `group_rebalance_strategy`; setting both fails validation. This can be used for rolling migrations between assignment protocols. Built-in values are:
+  - `range`: Assigns partitions per topic based on a contiguous range. See [RangeAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/RangeAssignor.html).
+  - `roundrobin`: Assigns partitions across all topics in a round-robin fashion. See [RoundRobinAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/RoundRobinAssignor.html).
+  - `sticky`: Minimises partition movement across rebalances. See [StickyAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/StickyAssignor.html).
+  - `cooperative-sticky`: Like `sticky`, but uses cooperative (incremental) rebalancing to avoid a full stop-the-world rebalance. See [CooperativeStickyAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/CooperativeStickyAssignor.html).
+  - Any other value is interpreted as the component ID of a registered extension that implements `kgo.GroupBalancer`, which allows a custom partition-assignment strategy to be plugged in.
+- `group_rebalance_strategy` (default = `cooperative-sticky`, Deprecated [v0.154.0]: use `group_rebalance_strategies` instead): The strategy used to assign partitions to consumers within a consumer group during rebalances. Accepts the same values as `group_rebalance_strategies`. Setting this value logs a deprecation warning on startup. It is mutually exclusive with `group_rebalance_strategies`; setting both fails validation.
 - `group_instance_id`: A unique identifier for the consumer instance within a consumer group.
   - If set to a non-empty string, the consumer is treated as a static member of the group. This means that the consumer will maintain its partition assignments across restarts and rebalances, as long as it rejoins the group with the same `group_instance_id`.
   - If set to an empty string (or not set), the consumer is treated as a dynamic member. In this case, the consumer's partition assignments may change during rebalances.
@@ -102,9 +104,10 @@ The following settings can be optionally configured:
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use.
-    - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, or PLAIN)
+    - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER, or PLAIN)
     - `aws_msk`
       - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
+    - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client` or `azure_auth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
   - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
   - `kerberos`
     - `service_name`: Kerberos service name
@@ -129,9 +132,9 @@ The following settings can be optionally configured:
 - `message_marking`:
   - `after`: (default = false) If true, the messages are marked after the pipeline execution
   - `on_error`: (default = false) If false, only the successfully processed messages are marked. This applies to non-permanent errors.
-    **Note: this can block the entire partition in case a message processing returns a non-permanent error**
+    **Note: when `error_backoff` is enabled, the failed record is automatically retried on the next poll cycle once all retries are exhausted. Without `error_backoff`, the partition remains paused until a rebalance occurs.**
   - `on_permanent_error`: (default = value of `on_error`) If false, messages that generate permanent errors are not marked. If true, messages that generate permanent errors are marked.
-    **Note: this can block the entire partition in case a message processing returns a permanent error**
+    **Note: this can block the entire partition in case a message processing returns a permanent error. Permanent errors are not retried via `error_backoff`, but the uncommitted message will be reprocessed after a rebalance.**
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
   - `headers` (default = []): List of headers they'd like to extract from kafka record.
@@ -213,6 +216,40 @@ receivers:
         password: "secret"
         mechanism: "SCRAM-SHA-512"
 ```
+
+#### SASL/OAUTHBEARER (OAuth2 token source)
+
+The `OAUTHBEARER` mechanism delegates token acquisition and refresh to an authenticator
+extension referenced by `oauthbearer_token_source`, such as
+[`oauth2clientauth`](../../extension/oauth2clientauthextension/README.md):
+
+```yaml
+extensions:
+  oauth2client:
+    client_id: someclientid
+    client_secret: someclientsecret
+    token_url: https://example.com/oauth2/default/v1/token
+
+receivers:
+  kafka:
+    tls:
+      insecure: false
+    auth:
+      sasl:
+        mechanism: OAUTHBEARER
+        oauthbearer_token_source: oauth2client
+
+service:
+  extensions: [oauth2client]
+  pipelines:
+    logs:
+      receivers: [kafka]
+      exporters: [debug]
+```
+
+The [`azureauth`](../../extension/azureauthextension/README.md) extension can also be used
+as a token source, which supports managed identity, workload identity, and service principal
+for authenticating against Azure Event Hubs.
 
 #### Header extraction
 

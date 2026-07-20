@@ -66,15 +66,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCiscoDeviceUpDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemCPUUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemMemoryUtilizationDataPoint(ts, 1)

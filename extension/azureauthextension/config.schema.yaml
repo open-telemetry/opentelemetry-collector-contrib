@@ -5,6 +5,13 @@ $defs:
       client_id:
         description: if left empty, then it is system managed
         type: string
+  server:
+    type: object
+    properties:
+      audience:
+        type: string
+      issuer_url:
+        type: string
   service_principal:
     type: object
     properties:
@@ -34,6 +41,9 @@ properties:
     type: array
     items:
       type: string
+  server:
+    x-optional: true
+    $ref: server
   service_principal:
     x-optional: true
     $ref: service_principal

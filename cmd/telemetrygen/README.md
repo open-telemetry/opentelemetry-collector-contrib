@@ -63,10 +63,18 @@ service:
 
 Starting OpenTelemetry collector via docker:
 ```
-docker run -p 4317:4317 -v $(pwd)/config.yaml:/etc/otelcol-contrib/config.yaml ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.86.0
+docker run -p 4317:4317 -v $(pwd)/config.yaml:/etc/otelcol-contrib/config.yaml ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.149.0
 ```
 
 Other options for running the collector are documented here https://opentelemetry.io/docs/collector/getting-started/
+
+## Export timeout
+
+The maximum time to wait for signals to reach the destination can be configured with the following flag:
+
+```console
+--timeout=10s #Defaults to 10s
+```
 
 ## Batching signals
 

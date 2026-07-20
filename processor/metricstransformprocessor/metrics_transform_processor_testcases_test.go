@@ -2063,4 +2063,63 @@ var standardTests = []metricsTransformTest{
 		},
 		out: []pmetric.Metric{},
 	},
+	{
+		name: "metric_aggregate_labels_summary_passthrough",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+				Action:              Update,
+				Operations: []internalOperation{
+					{
+						configOperation: &operation{
+							Action:          aggregateLabels,
+							AggregationType: aggregateutil.Sum,
+							LabelSet:        []string{"label1"},
+						},
+						labelSetMap: map[string]bool{"label1": true},
+					},
+				},
+			},
+		},
+		in: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeSummary, "metric1", "label1", "label2").
+				addSummaryDatapoint(1, 2, 10, 100.0, "label1-value1", "label2-value1").
+				addSummaryDatapoint(3, 4, 20, 200.0, "label1-value1", "label2-value2").build(),
+		},
+		out: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeSummary, "metric1", "label1", "label2").
+				addSummaryDatapoint(1, 2, 10, 100.0, "label1-value1", "label2-value1").
+				addSummaryDatapoint(3, 4, 20, 200.0, "label1-value1", "label2-value2").build(),
+		},
+	},
+	{
+		name: "metric_aggregate_label_values_summary_passthrough",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+				Action:              Update,
+				Operations: []internalOperation{
+					{
+						configOperation: &operation{
+							Action:          aggregateLabelValues,
+							Label:           "label2",
+							NewValue:        "new-label2",
+							AggregationType: aggregateutil.Sum,
+						},
+						aggregatedValuesSet: map[string]bool{"label2-value1": true, "label2-value2": true},
+					},
+				},
+			},
+		},
+		in: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeSummary, "metric1", "label1", "label2").
+				addSummaryDatapoint(1, 2, 10, 100.0, "label1-value1", "label2-value1").
+				addSummaryDatapoint(3, 4, 20, 200.0, "label1-value1", "label2-value2").build(),
+		},
+		out: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeSummary, "metric1", "label1", "label2").
+				addSummaryDatapoint(1, 2, 10, 100.0, "label1-value1", "label2-value1").
+				addSummaryDatapoint(3, 4, 20, 200.0, "label1-value1", "label2-value2").build(),
+		},
+	},
 }

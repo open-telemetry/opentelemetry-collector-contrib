@@ -33,6 +33,6 @@ func createDefaultConfig() component.Config {
 		ControllerConfig:     cfg,
 		Endpoint:             "unix:///run/podman/podman.sock",
 		APIVersion:           defaultAPIVersion,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }

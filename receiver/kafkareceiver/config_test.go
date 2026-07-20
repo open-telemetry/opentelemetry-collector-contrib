@@ -117,6 +117,39 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "rebalance_strategies"),
+			expected: &Config{
+				ClientConfig: configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: func() configkafka.ConsumerConfig {
+					config := configkafka.NewDefaultConsumerConfig()
+					config.GroupRebalanceStrategies = []configkafka.GroupRebalanceStrategy{
+						configkafka.CooperativeStickyBalanceStrategy,
+						"my_balancer",
+					}
+					return config
+				}(),
+				Logs: TopicEncodingConfig{
+					Topics:   []string{"otlp_logs"},
+					Encoding: "otlp_proto",
+				},
+				Metrics: TopicEncodingConfig{
+					Topics:   []string{"otlp_metrics"},
+					Encoding: "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topics:   []string{"otlp_spans"},
+					Encoding: "otlp_proto",
+				},
+				Profiles: TopicEncodingConfig{
+					Topics:   []string{"otlp_profiles"},
+					Encoding: "otlp_proto",
+				},
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "message_marking"),
 			expected: &Config{
 				ClientConfig:   configkafka.NewDefaultClientConfig(),

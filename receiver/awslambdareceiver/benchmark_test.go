@@ -36,7 +36,7 @@ func BenchmarkHandleS3Notification(b *testing.B) {
 	service := internal.NewMockS3Service(gomock.NewController(b))
 	service.EXPECT().ReadObject(gomock.Any(), bucket, object).Return([]byte("bucket content"), nil).AnyTimes()
 
-	handler := newS3LogsHandler(service, zap.NewNop(), &customLogUnmarshaler{}, &noOpLogsConsumer{})
+	handler := newS3LogsHandler(service, zap.NewNop(), fixedLogsDecoder(&customLogUnmarshaler{}), &noOpLogsConsumer{})
 
 	b.Run("HandleS3Event", func(b *testing.B) {
 		b.ReportAllocs()

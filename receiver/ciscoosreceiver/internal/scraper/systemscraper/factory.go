@@ -23,7 +23,7 @@ func NewFactory() scraper.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }
 

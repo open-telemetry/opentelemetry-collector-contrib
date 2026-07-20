@@ -4,10 +4,24 @@ display_name: SignalFx Exporter
 status:
   class: exporter
   stability:
-    beta: [traces, metrics, logs]
+    beta: [metrics, logs]
+    deprecated: [traces]
+  deprecation:
+    traces:
+      migration: "Traces pipeline is no longer necessary for trace correlation, trace correlation is supported via OTLP. Trace functionality will be removed from this exporter in December 2026."
+      date: "2026-05-29"
   distributions: [contrib]
   codeowners:
     active: [dmitryax, crobert-1]
+
+feature_gates:
+  - id: exporter.signalfx.consumeEntityEvents
+    stage: alpha
+    description: Process entity events from logs pipeline and convert to dimension property updates
+    from_version: v0.145.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/45595
+    skip_strict_validation: true
+
 tests:
   config:
     access_token: "my_fake_token"

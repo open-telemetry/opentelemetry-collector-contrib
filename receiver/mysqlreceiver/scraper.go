@@ -6,12 +6,17 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"container/heap"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"math"
 	"net"
+	"os"
 	"sort"
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"go.opentelemetry.io/collector/component"
@@ -28,6 +33,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
 
+const defaultServiceName = "unknown_service:mysql"
+
+// otelUUIDv5Namespace is the UUID v5 namespace for deriving service.instance.id,
+// as defined by the OpenTelemetry specification.
+var otelUUIDv5Namespace = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
+
 type mySQLScraper struct {
 	sqlclient              client
 	logger                 *zap.Logger
@@ -38,6 +49,12 @@ type mySQLScraper struct {
 	queryPlanCache         *expirable.LRU[string, string]
 	obfuscator             *obfuscator
 	lastExecutionTimestamp time.Time
+	serviceInstanceID      string
+
+	// detectedVersion is the database product and version detected at Connect time.
+	// It is set once during start() and used to stamp the db.system.name and
+	// db.system.version resource attributes on emitted data.
+	detectedVersion dbVersion
 
 	// Feature gates regarding resource attributes
 	renameCommands bool
@@ -49,6 +66,8 @@ func newMySQLScraper(
 	cache *lru.Cache[string, int64],
 	queryPlanCache *expirable.LRU[string, string],
 ) *mySQLScraper {
+	seed := resolveServiceInstanceSeed(config.Endpoint, settings.Logger)
+	serviceInstanceID := uuid.NewSHA1(otelUUIDv5Namespace, []byte(seed)).String()
 	return &mySQLScraper{
 		logger:                 settings.Logger,
 		config:                 config,
@@ -58,7 +77,34 @@ func newMySQLScraper(
 		queryPlanCache:         queryPlanCache,
 		obfuscator:             newObfuscator(),
 		lastExecutionTimestamp: time.Unix(0, 0),
+		serviceInstanceID:      serviceInstanceID,
 	}
+}
+
+// resolveServiceInstanceSeed returns the endpoint string to use as the UUID v5
+// seed for service.instance.id. For local endpoints (localhost, loopback IPs),
+// it substitutes the machine hostname so that co-hosted receivers on different
+// machines produce distinct IDs. The port is preserved so two local databases
+// on different ports remain distinguishable.
+func resolveServiceInstanceSeed(endpoint string, logger *zap.Logger) string {
+	host, port, err := net.SplitHostPort(endpoint)
+	if err != nil {
+		logger.Warn("Failed to parse endpoint for service.instance.id; using raw endpoint as UUID seed",
+			zap.String("endpoint", endpoint),
+			zap.Error(err))
+		return endpoint
+	}
+	if host == "localhost" || (net.ParseIP(host) != nil && net.ParseIP(host).IsLoopback()) {
+		hostname, hostnameErr := os.Hostname()
+		if hostnameErr != nil {
+			logger.Warn("Failed to resolve hostname for service.instance.id; UUID may not be unique for co-hosted receivers on different machines",
+				zap.String("endpoint", endpoint),
+				zap.Error(hostnameErr))
+			return endpoint
+		}
+		return net.JoinHostPort(hostname, port)
+	}
+	return endpoint
 }
 
 // start starts the scraper by initializing the db client connection.
@@ -74,8 +120,30 @@ func (m *mySQLScraper) start(_ context.Context, _ component.Host) error {
 		return err
 	}
 	m.sqlclient = sqlclient
-
+	m.detectedVersion = m.sqlclient.getDBVersion()
+	m.logDetectedVersion(m.detectedVersion)
 	return nil
+}
+
+// logDetectedVersion logs the detected database product and version, including
+// capability flags and an end-of-life warning for MySQL <8.
+func (m *mySQLScraper) logDetectedVersion(dbVer dbVersion) {
+	if dbVer.version == nil {
+		m.logger.Warn("database version could not be detected at startup; receiver will use MySQL <8/MariaDB fallback behavior for its entire lifetime",
+			zap.Bool("supports_query_sample_text", false),
+		)
+		return
+	}
+	m.logger.Info("detected database version",
+		zap.String("product", dbVer.productString()),
+		zap.String("version", dbVer.version.String()),
+		zap.Bool("supports_query_sample_text", dbVer.supportsQuerySampleText()),
+	)
+	if dbVer.product == dbProductMySQL && dbVer.version.Segments()[0] < 8 {
+		m.logger.Warn("detected MySQL version is past end-of-life and may not be supported by this receiver in a future release",
+			zap.String("version", dbVer.version.String()),
+		)
+	}
 }
 
 // shutdown closes the db connection
@@ -128,10 +196,30 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	m.scrapeReplicaStatusStats(now)
 
 	rb := m.mb.NewResourceBuilder()
-	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	m.setResourceAttributes(rb)
 	m.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return m.mb.Emit(), errs.Combine()
+}
+
+// emitLogs emits accumulated log records, stamps the resource
+// endpoint, applies resource-level version attributes, and returns the result.
+func (m *mySQLScraper) emitLogs(errs *scrapererror.ScrapeErrors) (plog.Logs, error) {
+	rb := m.lb.NewResourceBuilder()
+	m.setResourceAttributes(rb)
+	logs := m.lb.Emit(metadata.WithLogsResource(rb.Emit()))
+	return logs, errs.Combine()
+}
+
+func (m *mySQLScraper) setResourceAttributes(rb *metadata.ResourceBuilder) {
+	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	rb.SetServiceInstanceID(m.serviceInstanceID)
+	rb.SetServiceName(defaultServiceName)
+	rb.SetServiceNamespace("")
+	if m.detectedVersion.version != nil {
+		rb.SetDbSystemName(m.detectedVersion.systemName())
+		rb.SetDbSystemVersion(m.detectedVersion.version.String())
+	}
 }
 
 func (m *mySQLScraper) scrapeTopQueryFunc(_ context.Context) (plog.Logs, error) {
@@ -143,14 +231,12 @@ func (m *mySQLScraper) scrapeTopQueryFunc(_ context.Context) (plog.Logs, error) 
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	if m.lastExecutionTimestamp.Add(m.config.TopQueryCollection.CollectionInterval).After(now.AsTime()) {
+	if int(math.Ceil(time.Since(m.lastExecutionTimestamp).Seconds())) < int(m.config.TopQueryCollection.CollectionInterval.Seconds()) {
 		m.logger.Debug("Skipping top queries scrape, not enough time has passed since last execution")
 	} else {
 		m.scrapeTopQueries(now, errs)
 	}
-	rb := m.lb.NewResourceBuilder()
-	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
-	return m.lb.Emit(metadata.WithLogsResource(rb.Emit())), errs.Combine()
+	return m.emitLogs(errs)
 }
 
 func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, error) {
@@ -163,10 +249,7 @@ func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, er
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	m.scrapeQuerySamples(ctx, now, errs)
-
-	rb := m.lb.NewResourceBuilder()
-	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
-	return m.lb.Emit(metadata.WithLogsResource(rb.Emit())), errs.Combine()
+	return m.emitLogs(errs)
 }
 
 func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
@@ -635,7 +718,7 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 }
 
 func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
-	replicaStatusStats, err := m.sqlclient.getReplicaStatusStats()
+	replicaStatusStats, err := m.sqlclient.getReplicaStatusStats(m.detectedVersion.supportsReplicaStatus())
 	if err != nil {
 		m.logger.Info("Failed to fetch replica status stats", zap.Error(err))
 		return
@@ -654,7 +737,7 @@ func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 }
 
 func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	queries, err := m.sqlclient.getTopQueries(m.config.TopQueryCollection.MaxQuerySampleCount, m.config.TopQueryCollection.LookbackTime)
+	queries, err := m.sqlclient.getTopQueries(m.config.TopQueryCollection.MaxQuerySampleCount, m.config.TopQueryCollection.LookbackTime, m.detectedVersion.supportsQuerySampleText())
 	if err != nil {
 		m.logger.Error("Failed to fetch top queries", zap.Error(err))
 		errs.AddPartial(1, err)
@@ -696,22 +779,18 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 		}
 
 		var queryPlan string
-		var ok bool
-		if queryPlan, ok = m.queryPlanCache.Get(q.schemaName + "-" + q.digest); !ok {
-			// attempt to explain the query
-			queryPlan = m.sqlclient.explainQuery(q.digestText, q.querySampleText, q.schemaName, q.digest, m.logger)
-			if queryPlan == "" {
-				m.logger.Debug("query plan not available", zap.String("digest", q.digest), zap.String("digest_text", q.digestText))
-			} else {
-				// Obfuscate the plan
-				queryPlan, err = m.obfuscator.obfuscatePlan(queryPlan)
-				if err != nil {
-					// Obfuscation returned an error, log it. We cannot publish the unobfuscated plan as it may contain sensitive data
-					m.logger.Error("Failed to obfuscate query plan", zap.Error(err))
-				}
-			}
-			// add the obfuscated plan to the cache so we can use it again
-			m.queryPlanCache.Add(q.schemaName+"-"+q.digest, queryPlan)
+
+		queryPlanCacheID := m.getQueryPlanCacheID(q.digest, q.digestText)
+
+		// querySampleText is "" when the fallback template was used (MySQL <8 / MariaDB).
+		// Skip EXPLAIN in that case — there is no sample statement to explain.
+		if q.digest != "" && q.querySampleText != "" {
+			queryPlan = m.retrieveQueryPlan(q.digestText, q.querySampleText, q.schemaName, q.digest, queryPlanCacheID)
+		}
+
+		queryPlanHash := ""
+		if queryPlan != "" {
+			queryPlanHash = queryPlanCacheID
 		}
 
 		m.lb.RecordDbServerTopQueryEvent(
@@ -720,7 +799,7 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 			metadata.AttributeDbSystemNameMysql,
 			obfuscatedQuery,
 			queryPlan,
-			q.digest,
+			queryPlanHash,
 			q.digest,
 			countStarVal,
 			sumTimerWaitVal,
@@ -729,34 +808,28 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 }
 
 func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	samples, err := m.sqlclient.getQuerySamples(m.config.QuerySampleCollection.MaxRowsPerQuery)
+	samples, err := m.sqlclient.getQuerySamples(m.config.QuerySampleCollection.MaxRowsPerQuery, m.detectedVersion.supportsProcesslist())
 	if err != nil {
 		m.logger.Error("Failed to fetch query samples", zap.Error(err))
 		errs.AddPartial(1, err)
 		return
 	}
 
+	droppedSamples := 0
+
 	for i := range samples {
 		sample := &samples[i]
-		clientAddress := ""
-		clientPort := int64(0)
-		networkPeerAddress := ""
-		networkPeerPort := int64(0)
-
-		if sample.processlistHost != "" {
-			addr, port, err := net.SplitHostPort(sample.processlistHost)
-			if err != nil {
-				m.logger.Error("Failed to parse processlistHost value", zap.Error(err))
-				errs.AddPartial(1, err)
-			} else {
-				clientAddress = addr
-				clientPort, _ = parseInt(port)
-				networkPeerAddress = addr
-				networkPeerPort, _ = parseInt(port)
-			}
+		if sample.digestText == "" {
+			droppedSamples++
+			continue
 		}
 
-		obfuscatedQuery, obfErr := m.obfuscator.obfuscateSQLString(sample.sqlText)
+		clientAddress := sample.processlistHost
+		clientPort := int64(sample.clientPort)
+		networkPeerAddress := clientAddress
+		networkPeerPort := clientPort
+
+		obfuscatedQuery, obfErr := m.obfuscator.obfuscateSQLString(sample.digestText)
 		if obfErr != nil {
 			m.logger.Error("Failed to obfuscate query", zap.Error(obfErr))
 		}
@@ -775,6 +848,19 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			}
 		}
 
+		var queryPlan string
+
+		queryPlanCacheID := m.getQueryPlanCacheID(sample.digest, sample.digestText)
+
+		if sample.digest != "" {
+			queryPlan = m.retrieveQueryPlan(sample.digestText, sample.sqlText, sample.processlistDB, sample.digest, queryPlanCacheID)
+		}
+
+		queryPlanHash := ""
+		if queryPlan != "" {
+			queryPlanHash = queryPlanCacheID
+		}
+
 		m.lb.RecordDbServerQuerySampleEvent(
 			recordCtx,
 			now,
@@ -786,11 +872,13 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			sample.processlistState,
 			obfuscatedQuery,
 			sample.digest,
-			sample.digest,
+			queryPlan,
+			queryPlanHash,
 			sample.eventID,
 			sample.waitEvent,
 			sample.sessionStatus,
 			sample.sessionID,
+			sample.statementTimerWait,
 			sample.waitTime,
 			clientAddress,
 			clientPort,
@@ -798,6 +886,52 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			networkPeerPort,
 		)
 	}
+
+	if droppedSamples > 0 {
+		m.logger.Warn("dropped query samples due to missing digest_text",
+			zap.Int("count", droppedSamples))
+	}
+}
+
+func (m *mySQLScraper) getQueryPlanCacheID(digest, digestText string) string {
+	if !m.detectedVersion.supportsQuerySampleText() {
+		// Use the digestTextHash as plan key for MySQL versions < 8 and Mariadb since digest is not available consistently in those versions.
+		return getDigestTextHash(digestText)
+	}
+	return digest
+}
+
+func (m *mySQLScraper) retrieveQueryPlan(queryDigestText, querySampleText, schemaOrDbName, digest, digestTextHash string) string {
+	var queryPlan string
+	var ok bool
+	cacheKey := createCacheKey(schemaOrDbName, digestTextHash)
+	if queryPlan, ok = m.queryPlanCache.Get(cacheKey); !ok {
+		// attempt to explain the query
+		queryPlan = m.sqlclient.explainQuery(queryDigestText, querySampleText, schemaOrDbName, digest, m.logger)
+		if queryPlan == "" {
+			m.logger.Debug("query plan not available", zap.String("digest", digest), zap.String("digest_text", queryDigestText))
+		} else {
+			// Obfuscate the plan
+			var obfErr error
+			queryPlan, obfErr = m.obfuscator.obfuscatePlan(queryPlan)
+			if obfErr != nil {
+				// Obfuscation returned an error, log it. We cannot publish the unobfuscated plan as it may contain sensitive data
+				m.logger.Error("Failed to obfuscate query plan", zap.Error(obfErr))
+			}
+		}
+		// add the obfuscated plan to the cache so we can use it again
+		m.queryPlanCache.Add(cacheKey, queryPlan)
+	}
+	return queryPlan
+}
+
+func createCacheKey(dbName, digestTextHash string) string {
+	return dbName + "-" + digestTextHash
+}
+
+func getDigestTextHash(digestText string) string {
+	sum := sha256.Sum256([]byte(digestText))
+	return hex.EncodeToString(sum[:])
 }
 
 // contextWithTraceparent extracts a W3C TraceContext traceparent from the given
@@ -876,6 +1010,13 @@ func (m *mySQLScraper) cacheAndDiff(schemaName, digest, column string, val int64
 	if val > cached {
 		m.cache.Add(key, val)
 		return true, val - cached
+	}
+
+	// val < cached means the DB counter was reset (e.g. after a DB restart).
+	// Treat the current value as the full diff since the reset and refresh the cache.
+	if val < cached {
+		m.cache.Add(key, val)
+		return true, val
 	}
 
 	return true, 0

@@ -51,9 +51,12 @@ $defs:
       ibmcloud_vpc:
         description: IBMCloudVPCConfig contains user-specified configurations for the IBM Cloud VPC detector
         $ref: ./internal/ibmcloud/vpc.config
+      k8s_api:
+        description: K8SAPIConfig contains user-specified configurations for the K8S API detector
+        $ref: ./internal/k8sapi.config
       k8snode:
-        description: K8SNode contains user-specified configurations for the K8SNode detector
-        $ref: ./internal/k8snode.config
+        description: 'K8SNodeConfig contains user-specified configurations for the K8SNode detector (deprecated: use K8SAPIConfig)'
+        $ref: ./internal/k8sapi.config
       kubeadm:
         description: Kubeadm contains user-specified configurations for the Kubeadm detector
         $ref: ./internal/kubeadm.config

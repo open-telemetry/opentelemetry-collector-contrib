@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/metric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -268,7 +268,7 @@ func splitMetricsByAttributes(md pmetric.Metrics, attrs []string) map[string]pme
 		pendingResourceAttrs := make([]string, 0, len(attrs))
 		for _, attr := range attrs {
 			if val, ok := resourceAttrs.Get(attr); ok {
-				baseResourceKeyBuilder.WriteString(val.Str())
+				baseResourceKeyBuilder.WriteString(buildAttributeRoutingKeyValue(attr, val))
 				continue
 			}
 
@@ -291,10 +291,10 @@ func splitMetricsByAttributes(md pmetric.Metrics, attrs []string) map[string]pme
 
 			var baseScopeKeyBuilder strings.Builder
 			baseScopeKeyBuilder.WriteString(baseResourceKey)
-			pendingScopeAttrs := make([]string, 0, len(attrs))
+			pendingScopeAttrs := make([]string, 0, len(pendingResourceAttrs))
 			for _, attr := range pendingResourceAttrs {
 				if val, ok := scopeAttrs.Get(attr); ok {
-					baseScopeKeyBuilder.WriteString(val.Str())
+					baseScopeKeyBuilder.WriteString(buildAttributeRoutingKeyValue(attr, val))
 					continue
 				}
 
@@ -322,11 +322,15 @@ func splitMetricsByAttributes(md pmetric.Metrics, attrs []string) map[string]pme
 				forEachMetricDataPoint(rm, sm, m, func(dp attrPoint, newMD pmetric.Metrics) {
 					var key strings.Builder
 					key.WriteString(baseScopeKey)
+					dpAttrs := dp.Attributes()
 					for _, attr := range pendingScopeAttrs {
-						if val, ok := dp.Attributes().Get(attr); ok {
-							key.WriteString(val.Str())
+						if val, ok := dpAttrs.Get(attr); ok {
+							key.WriteString(buildAttributeRoutingKeyValue(attr, val))
+						} else {
+							key.WriteString(buildAttributeRoutingKey(attr))
 						}
 					}
+
 					appendMetricsByKey(results, key.String(), newMD)
 				})
 			}

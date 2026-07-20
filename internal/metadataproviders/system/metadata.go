@@ -18,7 +18,7 @@ import (
 	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/internal"
 )
@@ -168,7 +168,7 @@ func (p systemMetadataProvider) fromOption(ctx context.Context, opt resource.Opt
 	iter := res.Iter()
 	for iter.Next() {
 		if iter.Attribute().Key == attribute.Key(semconv) {
-			v := iter.Attribute().Value.Emit()
+			v := iter.Attribute().Value.String()
 
 			if v == "" {
 				return "", fmt.Errorf("empty %q", semconv)

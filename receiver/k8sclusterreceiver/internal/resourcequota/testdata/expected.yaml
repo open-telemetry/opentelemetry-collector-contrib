@@ -10,6 +10,12 @@ resourceMetrics:
         - key: k8s.resourcequota.uid
           value:
             stringValue: test-resourcequota-1-uid
+      entityRefs:
+        - descriptionKeys:
+            - k8s.resourcequota.name
+          idKeys:
+            - k8s.resourcequota.uid
+          type: k8s.resourcequota
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:

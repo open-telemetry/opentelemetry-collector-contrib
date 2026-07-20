@@ -163,17 +163,6 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 						}
 						attrID := md.ComputeAttributesHash(dpAttrs, resolvedAttrs)
 
-						if len(resAttrsCache) == 0 {
-							resAttrsCache = make([]pcommon.Map, len(sm.dpMetricDefs))
-						}
-						if resAttrsCache[mdIdx] == (pcommon.Map{}) {
-							resolvedResAttrs, resErr := md.ResolveIncludeResourceAttributes(ctx, tCtx)
-							if resErr != nil {
-								return fmt.Errorf("failed to resolve resource attributes: %w", resErr)
-							}
-							resAttrsCache[mdIdx] = md.FilterResourceAttributes(resourceAttrs, resolvedResAttrs, sm.collectorInstanceInfo)
-						}
-
 						if md.Conditions != nil {
 							var match bool
 							match, err = md.Conditions.Eval(ctx, tCtx)
@@ -185,6 +174,18 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 								return nil
 							}
 						}
+
+						if len(resAttrsCache) == 0 {
+							resAttrsCache = make([]pcommon.Map, len(sm.dpMetricDefs))
+						}
+						if resAttrsCache[mdIdx] == (pcommon.Map{}) {
+							resolvedResAttrs, resErr := md.ResolveIncludeResourceAttributes(ctx, tCtx)
+							if resErr != nil {
+								return fmt.Errorf("failed to resolve resource attributes: %w", resErr)
+							}
+							resAttrsCache[mdIdx] = md.FilterResourceAttributes(resourceAttrs, resolvedResAttrs, sm.collectorInstanceInfo)
+						}
+
 						filterAttrs := func() (pcommon.Map, error) {
 							return md.FilterAttributes(dpAttrs, resolvedAttrs), nil
 						}
@@ -345,7 +346,10 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 
 			for k := 0; k < scopeProfile.Profiles().Len(); k++ {
 				profile := scopeProfile.Profiles().At(k)
-				profileAttrs := pprofile.FromAttributeIndices(profiles.Dictionary().AttributeTable(), profile, profiles.Dictionary())
+				profileAttrs, err := pprofile.FromAttributeIndices(profiles.Dictionary().AttributeTable(), profile, profiles.Dictionary())
+				if err != nil {
+					return fmt.Errorf("failed to get profile attributes: %w", err)
+				}
 				for mdIdx, md := range sm.profileMetricDefs {
 					if !md.MatchAttributes(profileAttrs) {
 						continue

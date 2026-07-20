@@ -9,6 +9,13 @@ $defs:
       proxy:
         description: Proxy controls how the `/intake` proxy operates
         $ref: proxy_config
+  logs_config:
+    description: LogsConfig controls log-specific receiver behavior.
+    type: object
+    properties:
+      decode_json_message:
+        description: DecodeJSONMessage, when true, parses log records whose message is itself a JSON object and lifts the inner fields into the OTel log record — mirroring Datadog's server-side "Preprocessing for JSON logs". The inner reserved attributes (message, status/level, timestamp, host, service, and dd.trace_id/dd.span_id for trace correlation) take precedence over the agent envelope, and the remaining inner keys become attributes. This is useful because the Datadog Agent forwards application JSON logs as an opaque message string; Datadog's backend normally does this parsing. Enabled by default. set to false to keep the raw JSON message as the log body.
+        type: boolean
   proxy_config:
     description: ProxyConfig controls how the `/intake` proxy operates
     type: object
@@ -18,9 +25,20 @@ $defs:
         $ref: /pkg/datadog/config.api_config
 type: object
 properties:
+  idle_series_cleanup_interval:
+    description: IdleSeriesCleanupInterval defines how frequently the receiver checks for and removes idle series. Defaults to 5 minutes.
+    type: string
+    format: duration
+  idle_series_timeout:
+    description: IdleSeriesTimeout is the duration after which a series is considered stale and removed from memory if no new data points are received. The default value is 0, which disables this feature.
+    type: string
+    format: duration
   intake:
     description: Intake controls the `/intake` endpoint behavior
     $ref: intake_config
+  logs:
+    description: Logs controls log-specific receiver behavior.
+    $ref: logs_config
   read_timeout:
     description: ReadTimeout of the http server
     type: string

@@ -27,18 +27,3 @@ func metadataToHeaders(ctx context.Context, keys []string) []kgo.RecordHeader {
 	}
 	return headers
 }
-
-// setMessageHeaders extracts metadata from context and sets headers on all messages.
-func setMessageHeaders(ctx context.Context, messages []*kgo.Record, metadataKeys []string) {
-	headers := metadataToHeaders(ctx, metadataKeys)
-	if len(headers) == 0 || len(messages) == 0 {
-		return
-	}
-	for _, msg := range messages {
-		if len(msg.Headers) == 0 {
-			msg.Headers = headers
-		} else {
-			msg.Headers = append(msg.Headers, headers...)
-		}
-	}
-}

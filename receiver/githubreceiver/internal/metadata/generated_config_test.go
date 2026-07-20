@@ -20,7 +20,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -149,13 +149,120 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestVcsChangeCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcsChangeCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcsChangeCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcs.change.count doesn't have an attribute invalid, valid attributes: [vcs.repository.url.full, vcs.change.state, vcs.repository.name]")
+
+	cfg = DefaultMetricsConfig().VcsChangeCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcsChangeDurationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcsChangeDuration
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcsChangeDurationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcs.change.duration doesn't have an attribute invalid, valid attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.change.state]")
+
+	cfg = DefaultMetricsConfig().VcsChangeDuration
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcsChangeTimeToApprovalMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcsChangeTimeToApproval
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcsChangeTimeToApprovalMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcs.change.time_to_approval doesn't have an attribute invalid, valid attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name]")
+
+	cfg = DefaultMetricsConfig().VcsChangeTimeToApproval
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcsChangeTimeToMergeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcsChangeTimeToMerge
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcsChangeTimeToMergeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcs.change.time_to_merge doesn't have an attribute invalid, valid attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name]")
+
+	cfg = DefaultMetricsConfig().VcsChangeTimeToMerge
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcsContributorCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcsContributorCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcsContributorCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcs.contributor.count doesn't have an attribute invalid, valid attributes: [vcs.repository.url.full, vcs.repository.name]")
+
+	cfg = DefaultMetricsConfig().VcsContributorCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcsRefCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcsRefCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcsRefCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcs.ref.count doesn't have an attribute invalid, valid attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.type]")
+
+	cfg = DefaultMetricsConfig().VcsRefCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcsRefLinesDeltaMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcsRefLinesDelta
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcsRefLinesDeltaMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcs.ref.lines_delta doesn't have an attribute invalid, valid attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.ref.base.name, vcs.ref.base.type, vcs.line_change.type]")
+
+	cfg = DefaultMetricsConfig().VcsRefLinesDelta
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcsRefRevisionsDeltaMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcsRefRevisionsDelta
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcsRefRevisionsDeltaMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcs.ref.revisions_delta doesn't have an attribute invalid, valid attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.ref.base.name, vcs.ref.base.type, vcs.revision_delta.direction]")
+
+	cfg = DefaultMetricsConfig().VcsRefRevisionsDelta
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcsRefTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcsRefTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcsRefTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcs.ref.time doesn't have an attribute invalid, valid attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type]")
+
+	cfg = DefaultMetricsConfig().VcsRefTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
