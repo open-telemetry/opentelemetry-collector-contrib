@@ -41,7 +41,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.fragmentation
-            unit: "%"
+            unit: '%'
           - description: Number of pages in the index.
             gauge:
               dataPoints:
@@ -62,7 +62,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.page.count
-            unit: "{page}"
+            unit: '{page}'
           - description: Average percentage of available data storage space used in all pages of the index.
             gauge:
               dataPoints:
@@ -83,7 +83,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.page.utilization
-            unit: "%"
+            unit: '%'
           - description: Total number of records in the index.
             gauge:
               dataPoints:
@@ -104,7 +104,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.record.count
-            unit: "{record}"
+            unit: '{record}'
           - description: Total size of the index.
             gauge:
               dataPoints:
@@ -125,7 +125,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.size
-            unit: "By"
+            unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -171,7 +171,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.fragmentation
-            unit: "%"
+            unit: '%'
           - description: Number of pages in the index.
             gauge:
               dataPoints:
@@ -192,7 +192,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.page.count
-            unit: "{page}"
+            unit: '{page}'
           - description: Average percentage of available data storage space used in all pages of the index.
             gauge:
               dataPoints:
@@ -213,7 +213,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.page.utilization
-            unit: "%"
+            unit: '%'
           - description: Total number of records in the index.
             gauge:
               dataPoints:
@@ -234,7 +234,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.record.count
-            unit: "{record}"
+            unit: '{record}'
           - description: Total size of the index.
             gauge:
               dataPoints:
@@ -255,7 +255,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.size
-            unit: "By"
+            unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

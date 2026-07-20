@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/common"
+	hcconfig "github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
@@ -22,7 +22,7 @@ type Server struct {
 	grpcServer            *grpc.Server
 	aggregator            *status.Aggregator
 	config                *Config
-	componentHealthConfig *common.ComponentHealthConfig
+	componentHealthConfig *hcconfig.ComponentHealthConfig
 	telemetry             component.TelemetrySettings
 	doneCh                chan struct{}
 	doneOnce              sync.Once
@@ -32,7 +32,7 @@ var _ component.Component = (*Server)(nil)
 
 func NewServer(
 	config *Config,
-	componentHealthConfig *common.ComponentHealthConfig,
+	componentHealthConfig *hcconfig.ComponentHealthConfig,
 	telemetry component.TelemetrySettings,
 	aggregator *status.Aggregator,
 ) *Server {
@@ -44,7 +44,7 @@ func NewServer(
 		doneCh:                make(chan struct{}),
 	}
 	if srv.componentHealthConfig == nil {
-		srv.componentHealthConfig = &common.ComponentHealthConfig{}
+		srv.componentHealthConfig = &hcconfig.ComponentHealthConfig{}
 	}
 	return srv
 }
