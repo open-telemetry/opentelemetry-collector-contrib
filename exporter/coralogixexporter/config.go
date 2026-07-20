@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -21,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"google.golang.org/grpc/encoding"
+	"google.golang.org/grpc/encoding/gzip"
 )
 
 const (
@@ -137,7 +139,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	var err error
 
 	if !isEmpty(c.Domain) && isEmpty(c.Metrics.Endpoint) {
-		c.Metrics, err = setMergedTransportConfigWithConf(conf, c, &c.Metrics)
+		c.Metrics, err = setMergedTransportConfigWithConf(conf, c, "metrics", &c.Metrics)
 		if err != nil {
 			return err
 		}
@@ -150,7 +152,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if !isEmpty(c.Domain) && isEmpty(c.Traces.Endpoint) {
-		c.Traces, err = setMergedTransportConfigWithConf(conf, c, &c.Traces)
+		c.Traces, err = setMergedTransportConfigWithConf(conf, c, "traces", &c.Traces)
 		if err != nil {
 			return err
 		}
@@ -163,7 +165,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if !isEmpty(c.Domain) && isEmpty(c.Logs.Endpoint) {
-		c.Logs, err = setMergedTransportConfigWithConf(conf, c, &c.Logs)
+		c.Logs, err = setMergedTransportConfigWithConf(conf, c, "logs", &c.Logs)
 		if err != nil {
 			return err
 		}
@@ -177,7 +179,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 	// Only auto-populate profiles endpoint if protocol is not HTTP (profiles only support gRPC)
 	if c.Protocol != httpProtocol && !isEmpty(c.Domain) && isEmpty(c.Profiles.Endpoint) {
-		tCfg, err := setMergedTransportConfigWithConf(conf, c, &TransportConfig{ClientConfig: c.Profiles})
+		tCfg, err := setMergedTransportConfigWithConf(conf, c, "profiles", &TransportConfig{ClientConfig: c.Profiles})
 		if err != nil {
 			return err
 		}
@@ -337,7 +339,7 @@ func setDomainGrpcSettings(c *Config) string {
 //
 // NOTE: This function modifies *Config and *TransportConfig passed as arguments.
 // DO NOT ADD FURTHER USES OUTSIDE OF Unmarshal, see github.com/open-telemetry/opentelemetry-collector-contrib/issues/44731
-func setMergedTransportConfigWithConf(conf *confmap.Conf, c *Config, signalConfig *TransportConfig) (TransportConfig, error) {
+func setMergedTransportConfigWithConf(conf *confmap.Conf, c *Config, signalKey string, signalConfig *TransportConfig) (TransportConfig, error) {
 	var domainSettings TransportConfig
 	sub, err := conf.Sub("domain_settings")
 	if err != nil {
@@ -347,7 +349,17 @@ func setMergedTransportConfigWithConf(conf *confmap.Conf, c *Config, signalConfi
 		return TransportConfig{}, unmarshalErr
 	}
 
-	return *setMergedTransportConfig(c, &domainSettings, signalConfig), nil
+	var signalSub *confmap.Conf
+	if signalKey != "" {
+		signalSub, err = conf.Sub(signalKey)
+		if err != nil {
+			return TransportConfig{}, err
+		}
+	}
+
+	merged := setMergedTransportConfig(c, &domainSettings, signalSub, signalConfig)
+	applyTransportDefaults(merged)
+	return *merged, nil
 }
 
 // setMergedTransportConfig returns a TransportConfig that merges signal-specific settings with domain settings.
@@ -355,7 +367,7 @@ func setMergedTransportConfigWithConf(conf *confmap.Conf, c *Config, signalConfi
 //
 // NOTE: This function modifies *Config and *TransportConfig passed as arguments.
 // DO NOT ADD FURTHER USES OUTSIDE OF Unmarshal, see github.com/open-telemetry/opentelemetry-collector-contrib/issues/44731
-func setMergedTransportConfig(c *Config, merged, signalConfig *TransportConfig) *TransportConfig {
+func setMergedTransportConfig(c *Config, merged *TransportConfig, signalSub *confmap.Conf, signalConfig *TransportConfig) *TransportConfig {
 	if signalConfig.ProxyURL != "" {
 		merged.ProxyURL = signalConfig.ProxyURL
 	}
@@ -363,10 +375,10 @@ func setMergedTransportConfig(c *Config, merged, signalConfig *TransportConfig) 
 		merged.Timeout = signalConfig.Timeout
 	}
 
-	if signalConfig.Compression != "" {
+	if signalSub != nil && signalSub.IsSet("compression") {
 		merged.Compression = signalConfig.Compression
 	}
-	if signalConfig.AcceptEncoding != "" {
+	if signalSub != nil && signalSub.IsSet("accept_encoding") {
 		merged.AcceptEncoding = signalConfig.AcceptEncoding
 	}
 	if signalConfig.TLS.Insecure || signalConfig.TLS.InsecureSkipVerify || signalConfig.TLS.CAFile != "" {
@@ -404,4 +416,13 @@ func setMergedTransportConfig(c *Config, merged, signalConfig *TransportConfig) 
 	}
 
 	return merged
+}
+
+func applyTransportDefaults(cfg *TransportConfig) {
+	if cfg.Compression == "" {
+		cfg.Compression = configcompression.TypeGzip
+	}
+	if cfg.AcceptEncoding == "" {
+		cfg.AcceptEncoding = gzip.Name
+	}
 }

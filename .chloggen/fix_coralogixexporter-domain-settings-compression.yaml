@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: exporter/coralogix
+
+note: Fix domain_settings.compression being ignored when merging signal-level transport settings, so settings like zstd are correctly applied to logs, metrics, traces, and profiles.
+
+issues: [49662]
+
+change_logs: [user]

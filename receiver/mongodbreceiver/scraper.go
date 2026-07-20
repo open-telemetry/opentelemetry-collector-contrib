@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/go-version"
 	lru "github.com/hashicorp/golang-lru/v2/expirable"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -612,6 +613,13 @@ func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Time
 	}
 	indexStats, err := s.client.IndexStats(ctx, databaseName, collectionName)
 	if err != nil {
+		var srvErr mongo.ServerError
+		// ignore the error, $indexStats is not supported on views
+		if errors.As(err, &srvErr) && srvErr.HasErrorCode(40602) {
+			s.logger.Debug("skipping unsupported index stats for view",
+				zap.String("database", databaseName), zap.String("view", collectionName))
+			return
+		}
 		errs.AddPartial(1, fmt.Errorf("failed to fetch index stats metrics: %w", err))
 		return
 	}

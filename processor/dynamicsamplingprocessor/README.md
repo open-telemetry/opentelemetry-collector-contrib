@@ -262,6 +262,39 @@ In-flight work on adding tracestate handling to `tail_sampling`'s probabilistic 
 
 For these reasons `dynamic_sampling` is a separate processor. The `tail_sampling` users retain the existing multi-policy model unchanged, and `dynamic_sampling` keeps a single evaluation model (first-match with rate-bearing samplers) end to end.
 
+## Interoperability with upstream sampling
+
+The processor honours any incoming `ot=th` (sampling threshold) and `ot=rv` (explicit randomness) already set on incoming spans by an upstream sampler, such as an SDK head sampler or a probabilistic collector processor:
+
+- **Randomness.** If an incoming span carries `ot=rv`, that value is used to make the sampling decision. Otherwise the last 7 bytes of the trace ID are used, per the consistent probability spec.
+- **Population-relative rate (equalizing).** The rule's rate `N` is interpreted as the operator's target for the original population: "keep 1-in-N of all traces before any sampling." The effective absolute keep probability is `min(P_upstream, 1/N)`. This is the same composition mode as `equalizing` in [`processor/probabilisticsamplerprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor#equalizing).
+- **Threshold monotonicity.** If a span already carries an `ot=th` stricter than what this processor would emit, the incoming value is preserved. This matches the consistent probability spec: a downstream stage may raise a threshold but never lower it.
+
+### Accuracy under non-uniform upstream sampling
+
+The equalizing composition above is exact when upstream sampling is uniform across the keys the rule's adaptive sampler uses (`key_fields`). If upstream head-samples different classes of traffic at different rates and those classes overlap with the tail sampler's keys, the adaptive samplers observe a population that under-represents heavily-downsampled keys and can misjudge their per-key rate. Improving accuracy in that case requires per-key upstream tracking in the sampler and is tracked as follow-up work in [#49517](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49517). Under uniform upstream sampling (the common case, e.g. an SDK `TraceIdRatioBased` sampler) the rates are exact.
+
+### Grouping unrelated traces with a shared `ot=rv`
+
+Because the sampling decision is deterministic against the 56-bit randomness value, an upstream producer that sets the same `ot=rv` on multiple otherwise-unrelated traces will get the same sampling decision for all of them at the same threshold. This is useful when a set of traces should be sampled together as a group, for example:
+
+- An LLM agent producing multiple traces for turns in a single conversation, all stamped with a `conversation.id`-derived `ot=rv`.
+- A browser SDK producing multiple traces during one user session, all stamped with a `session.id`-derived `ot=rv`.
+- A batch job producing one trace per task, all stamped with the batch's job ID.
+
+The `ot=rv` value is a 56-bit number, so a stable hash of the entity ID truncated to 56 bits is a suitable derivation. The processor itself does not compute `ot=rv` from arbitrary attributes: the producer or an earlier processor is expected to set it. Whatever `ot=rv` is present when the accumulated trace arrives will be used for the decision and preserved on the emitted spans.
+
+#### Multi-instance deployment considerations
+
+Under the standard two-tier deployment pattern (`loadbalancing` exporter routing traces to a downstream tier running this processor), how traces are routed interacts with rv-based grouping in two useful ways:
+
+- **Routing by trace ID (default).** Traces in the same rv-group land on different collector instances because their trace IDs are unrelated. Sampling decisions remain correct without any coordination between collectors: because our decision is deterministic against the shared rv, every instance reaches the same keep/drop outcome for a given rv. The trade-off is that the adaptive samplers (`ema_dynamic`, `ema_throughput`, `windowed_throughput`) each see only a slice of the group's traffic, so per-key rate calculations converge more slowly than if the whole group were visible to one instance.
+- **Routing by a group-carrying attribute.** If the producer sets both a shared `conversation.id` (or similar) and the derived `ot=rv`, `loadbalancing` can be configured with `routing_key: attributes` naming that attribute so all traces for one group land on the same collector. Adaptive-sampler learning is coherent across the group at the cost of load distribution: heavy-tailed group sizes (one active conversation among many quiet ones) skew load onto specific instances, and `num_traces` on the busy instance must be sized for the largest concurrently-pending group or `traces_evicted` will start climbing. Group size is upstream-controlled, so an unexpected traffic spike within one group shifts the skew unpredictably.
+
+Route-by-trace-ID is the safe default (uniform load, correct decisions, coarser sampler learning). Route-by-attribute is worth reaching for when coherent adaptive learning across a group matters and `num_traces` can be sized conservatively.
+
+Future work on shared trace context across collector instances (tracked under "Cross-instance shared state" in [#49311](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49311)) would remove this trade-off: with a shared backing store the adaptive samplers can learn from the whole group regardless of which instance decides any individual trace, so uniform-load routing (route by trace ID) no longer costs sampler learning coherence.
+
 ## Metrics
 
 | Metric                                              | Type     | Labels   | Description                                                                 |
@@ -272,6 +305,7 @@ For these reasons `dynamic_sampling` is a separate processor. The `tail_sampling
 | `otelcol_processor_dynamic_sampling_decision_sample_rate` | Histogram | `rule` | Distribution of effective sample rates produced per rule.                  |
 | `otelcol_processor_dynamic_sampling_decision_triggers` | Counter  | `trigger` | Number of trace decisions made, labelled by which event triggered them (`root_span`, `trace_timeout`). |
 | `otelcol_processor_dynamic_sampling_traces_evicted` | Counter  |          | Traces evicted from the buffer before a decision could be made.             |
+| `otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable` | Counter |     | Spans whose incoming W3C tracestate could not be parsed while applying the sampling threshold. |
 
 ## Output attributes
 
