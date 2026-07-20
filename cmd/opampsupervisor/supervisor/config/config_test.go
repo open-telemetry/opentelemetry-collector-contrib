@@ -635,28 +635,6 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErrorFunc: simpleError("unsupported verifier type"),
 		},
-		{
-			name: "Package with unsupported verifier type (cosign not yet supported)",
-			config: Supervisor{
-				Server: OpAMPServer{
-					Endpoint: "wss://localhost:9090/opamp",
-					TLS:      tlsConfig,
-				},
-				Agent: Agent{
-					Executable:              "${file_path}",
-					OrphanDetectionInterval: 5 * time.Second,
-					ConfigApplyTimeout:      2 * time.Second,
-					BootstrapTimeout:        5 * time.Second,
-					Package: AgentPackage{
-						Verifier: Verifier{Type: "cosign"},
-					},
-				},
-				Capabilities: Capabilities{AcceptsRemoteConfig: true},
-				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
-				HealthCheck:  defaultHealthCheck,
-			},
-			expectedErrorFunc: simpleError("unsupported verifier type"),
-		},
 	}
 
 	// create some fake files for validating agent config

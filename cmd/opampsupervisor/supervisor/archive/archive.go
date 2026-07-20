@@ -47,7 +47,7 @@ func NewExtractor(format Format) (Extractor, error) {
 	case FormatNone:
 		return rawExtractor{maxBytes: maxAgentBytes}, nil
 	case FormatTarGzip:
-		return tarGzipExtractor{}, nil
+		return tarGzipExtractor{maxBytes: maxAgentBytes}, nil
 	default:
 		return nil, fmt.Errorf("unsupported archive format: %q", string(format))
 	}
@@ -84,9 +84,15 @@ var _ Extractor = tarGzipExtractor{}
 
 // tarGzipExtractor extracts the file named binaryName from a gzipped tarball and
 // writes it to destination.
-type tarGzipExtractor struct{}
+type tarGzipExtractor struct {
+	// maxBytes is the maximum binary size the extractor will write. The size a
+	// tar header declares is the decompressed size of its entry, and tar.Reader
+	// returns at most that many bytes, so entries declaring more than maxBytes
+	// are rejected before anything is written.
+	maxBytes int64
+}
 
-func (tarGzipExtractor) Extract(_ context.Context, pkg []byte, binaryName, destination string) error {
+func (e tarGzipExtractor) Extract(_ context.Context, pkg []byte, binaryName, destination string) error {
 	if binaryName == "" {
 		return errors.New("agent binary name is required for tar.gz archives")
 	}
@@ -103,9 +109,13 @@ func (tarGzipExtractor) Extract(_ context.Context, pkg []byte, binaryName, desti
 		if err != nil {
 			return fmt.Errorf("read tarball looking for %q: %w", binaryName, err)
 		}
-		if header.Name == binaryName {
-			break
+		if header.Name != binaryName {
+			continue
 		}
+		if header.Size > e.maxBytes {
+			return fmt.Errorf("binary exceeds maximum size of %d bytes", e.maxBytes)
+		}
+		break
 	}
 
 	if err := writeBinaryToDestination(tarReader, destination); err != nil {
@@ -116,7 +126,8 @@ func (tarGzipExtractor) Extract(_ context.Context, pkg []byte, binaryName, desti
 }
 
 // writeBinaryToDestination writes binary to destination, creating or truncating
-// the file with executable permissions. At most maxAgentBytes are written.
+// the file with executable permissions. If an error occurs during write, the
+// file at destination will be removed.
 func writeBinaryToDestination(binary io.Reader, destination string) error {
 	f, err := os.OpenFile(destination, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o700)
 	if err != nil {
@@ -124,7 +135,8 @@ func writeBinaryToDestination(binary io.Reader, destination string) error {
 	}
 	defer f.Close()
 
-	if _, err := io.CopyN(f, binary, maxAgentBytes); err != nil && !errors.Is(err, io.EOF) {
+	if _, err := io.Copy(f, binary); err != nil {
+		_ = os.Remove(destination)
 		return fmt.Errorf("write binary to destination: %w", err)
 	}
 

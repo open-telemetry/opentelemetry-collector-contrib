@@ -130,7 +130,7 @@ func TestTarGzipExtractor_Extract(t *testing.T) {
 		destination := filepath.Join(t.TempDir(), "otelcol-contrib")
 		archive := createTarGzArchive(t, map[string][]byte{"otelcol-contrib": []byte("binary")})
 
-		err := tarGzipExtractor{}.Extract(t.Context(), archive, "", destination)
+		err := tarGzipExtractor{maxBytes: maxAgentBytes}.Extract(t.Context(), archive, "", destination)
 		require.ErrorContains(t, err, "agent binary name is required")
 	})
 
@@ -138,15 +138,29 @@ func TestTarGzipExtractor_Extract(t *testing.T) {
 		destination := filepath.Join(t.TempDir(), "otelcol-contrib")
 		archive := createTarGzArchive(t, map[string][]byte{"some-other-file": []byte("binary")})
 
-		err := tarGzipExtractor{}.Extract(t.Context(), archive, "otelcol-contrib", destination)
+		err := tarGzipExtractor{maxBytes: maxAgentBytes}.Extract(t.Context(), archive, "otelcol-contrib", destination)
 		require.ErrorContains(t, err, `read tarball looking for "otelcol-contrib"`)
 	})
 
 	t.Run("not a gzip archive", func(t *testing.T) {
 		destination := filepath.Join(t.TempDir(), "otelcol-contrib")
 
-		err := tarGzipExtractor{}.Extract(t.Context(), []byte("not gzip data"), "otelcol-contrib", destination)
+		err := tarGzipExtractor{maxBytes: maxAgentBytes}.Extract(t.Context(), []byte("not gzip data"), "otelcol-contrib", destination)
 		require.ErrorContains(t, err, "create gzip reader")
+	})
+
+	t.Run("binary exceeds max size", func(t *testing.T) {
+		destination := filepath.Join(t.TempDir(), "otelcol-contrib")
+		archive := createTarGzArchive(t, map[string][]byte{
+			"otelcol-contrib": []byte("contents larger than the configured cap"),
+		})
+
+		err := tarGzipExtractor{maxBytes: 8}.Extract(t.Context(), archive, "otelcol-contrib", destination)
+		require.ErrorContains(t, err, "binary exceeds maximum size of 8 bytes")
+
+		// The size check happens before the destination is opened.
+		_, statErr := os.Stat(destination)
+		require.True(t, os.IsNotExist(statErr))
 	})
 }
 
