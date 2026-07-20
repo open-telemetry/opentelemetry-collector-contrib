@@ -14,6 +14,7 @@ import (
 	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -349,14 +350,14 @@ func codeFromAttr(attrVal pcommon.Value) (int64, error) {
 // getHTTPStatusCodeAttr returns the HTTP status code attribute value, preferring
 // the current semantic convention (http.response.status_code) and falling back
 // to the legacy attribute (http.status_code) for spans produced with older
-// semantic conventions. The legacy key is spelled out as a string literal
-// because it was removed from the semconv package (breaking change) and only
-// remains valid as a raw attribute name.
+// semantic conventions. The legacy key is referenced through semconv v1.25.0 —
+// the last version that still defined HTTPStatusCodeKey before it was removed —
+// rather than a raw string literal.
 func getHTTPStatusCodeAttr(attrs pcommon.Map) (pcommon.Value, bool) {
 	if httpCodeAttr, ok := attrs.Get(string(conventions.HTTPResponseStatusCodeKey)); ok {
 		return httpCodeAttr, true
 	}
-	return attrs.Get("http.status_code")
+	return attrs.Get(string(conventionsv125.HTTPStatusCodeKey))
 }
 
 func getStatusCodeFromHTTPStatusAttr(attrVal pcommon.Value, kind ptrace.SpanKind) (ptrace.StatusCode, error) {
