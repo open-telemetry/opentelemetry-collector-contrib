@@ -24,7 +24,6 @@ import (
 	"github.com/Showmax/go-fqdn"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/shirou/gopsutil/v4/host"
-	"github.com/shirou/gopsutil/v4/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -34,6 +33,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/api"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/credentials"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/procx"
 )
 
 type SumologicExtension struct {
@@ -66,6 +66,7 @@ type SumologicExtension struct {
 	backOff              *backoff.ExponentialBackOff
 	id                   component.ID
 	collectorCredentials credentials.CollectorCredentials
+	procx                *procx.Procx
 }
 
 const (
@@ -78,11 +79,6 @@ const (
 	collectorCredentialIDField = "collector_credential_id"
 
 	stickySessionKey = "AWSALB"
-
-	activeMQJavaProcess      = "activemq.jar"
-	cassandraJavaProcess     = "org.apache.cassandra.service.CassandraDaemon"
-	dockerDesktopJavaProcess = "com.docker.backend"
-	jmxJavaProcess           = "com.sun.management.jmxremote"
 )
 
 const (
@@ -163,6 +159,7 @@ func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, bu
 		closeChan:         make(chan struct{}),
 		backOff:           backOff,
 		id:                id,
+		procx:             procx.NewProcx(logger),
 	}, nil
 }
 
@@ -211,9 +208,10 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 	)
 
 	if se.updateMetadata {
-		err = se.updateMetadataWithBackoff(ctx)
+		err = se.updateMetadataWithHTTPClient(ctx, se.httpClient)
 		if err != nil {
-			return err
+			se.logger.Warn("Initial metadata update failed, will retry asynchronously", zap.Error(err))
+			go se.updateMetadataAsync()
 		}
 	}
 
@@ -720,96 +718,12 @@ func baseURL() (string, error) {
 	return h, nil
 }
 
-var sumoAppProcesses = map[string]string{
-	"apache":                "apache",
-	"apache2":               "apache",
-	"httpd":                 "apache",
-	"docker":                "docker", // docker cli
-	"elasticsearch":         "elasticsearch",
-	"mysql-server":          "mysql",
-	"mysqld":                "mysql",
-	"nginx":                 "nginx",
-	"postgresql":            "postgres",
-	"postgresql-9.5":        "postgres",
-	"rabbitmq-server":       "rabbitmq",
-	"redis":                 "redis",
-	"tomcat":                "tomcat",
-	"kafka-server-start.sh": "kafka", // Need to test this, most common shell wrapper.
-	"redis-server":          "redis",
-	"mongod":                "mongodb",
-	"cassandra":             "cassandra",
-	"jmx":                   "jmx",
-	"activemq":              "activemq",
-	"memcached":             "memcached",
-	"haproxy":               "haproxy",
-	"dockerd":               "docker-ce", // docker engine, for when process runs natively
-	"com.docker.backend":    "docker-ce", // docker daemon runs on a VM in Docker Desktop, process doesn't show on mac
-	"sqlservr":              "mssql",     // linux SQL Server process
-}
-
-func (se *SumologicExtension) filteredProcessList() ([]string, error) {
-	var pl []string
-
-	processes, err := process.Processes()
-	if err != nil {
-		return pl, fmt.Errorf("process discovery failed: %w", err)
-	}
-
-	for _, v := range processes {
-		e, err := v.Name()
-		if err != nil {
-			// If we can't get a process name, it may be a zombie process.
-			// We do not want to error out here, as it's not worth disrupting
-			// the startup process of the collector.
-			se.logger.Warn(
-				"process discovery: failed to get executable name (is it a zombie?)",
-				zap.Int32("pid", v.Pid),
-				zap.Error(err))
-			continue
-		}
-
-		e = strings.ToLower(e)
-
-		if a, i := sumoAppProcesses[e]; i {
-			pl = append(pl, a)
-		}
-
-		// handling for Docker Desktop
-		if e == dockerDesktopJavaProcess {
-			pl = append(pl, "docker-ce")
-		}
-
-		// handling Java background processes
-		if e == "java" {
-			cmdline, err := v.Cmdline()
-			if err != nil {
-				se.logger.Warn(
-					"process discovery: failed to get process arguments",
-					zap.Int32("pid", v.Pid),
-					zap.Error(err))
-				continue
-			}
-
-			switch {
-			case strings.Contains(cmdline, cassandraJavaProcess):
-				pl = append(pl, "cassandra")
-			case strings.Contains(cmdline, jmxJavaProcess):
-				pl = append(pl, "jmx")
-			case strings.Contains(cmdline, activeMQJavaProcess):
-				pl = append(pl, "activemq")
-			}
-		}
-	}
-
-	return pl, nil
-}
-
 func (se *SumologicExtension) discoverTags() (map[string]any, error) {
 	t := map[string]any{
 		"sumo.disco.enabled": "true",
 	}
 
-	pl, err := se.filteredProcessList()
+	pl, err := se.procx.FilteredProcessList()
 	if err != nil {
 		return t, err
 	}
@@ -920,30 +834,62 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 	return nil
 }
 
-func (se *SumologicExtension) updateMetadataWithBackoff(ctx context.Context) error {
-	se.backOff.Reset()
+// updateMetadataAsync retries metadata update in the background with exponential
+// backoff until the update succeeds or the collector shuts down. It is started
+// when the initial synchronous attempt in Start() fails so that startup is not
+// blocked by transient network unavailability (e.g. Windows boot race).
+func (se *SumologicExtension) updateMetadataAsync() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		select {
+		case <-se.closeChan:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
+	bo := backoff.NewExponentialBackOff()
+	bo.InitialInterval = se.conf.BackOff.InitialInterval
+	bo.MaxElapsedTime = se.conf.BackOff.MaxElapsedTime
+	bo.MaxInterval = se.conf.BackOff.MaxInterval
+	bo.Reset()
+
 	for {
-		err := se.updateMetadataWithHTTPClient(ctx, se.httpClient)
-		if err == nil {
-			return nil
+		select {
+		case <-se.closeChan:
+			se.logger.Info("Async metadata update loop stopped: collector shutting down")
+			return
+		default:
 		}
 
-		se.logger.Warn(fmt.Sprintf("collector metadata update failed: %s", err))
+		err := se.updateMetadataWithHTTPClient(ctx, se.httpClient)
+		if err == nil {
+			se.logger.Info("Async metadata update succeeded")
+			return
+		}
 
-		nbo := se.backOff.NextBackOff()
+		se.logger.Warn("Async metadata update failed, will retry", zap.Error(err))
+
 		var backOffErr *backoff.PermanentError
-		// Return error if backoff reaches the limit or uncoverable error is spotted
-		if ok := errors.As(err, &backOffErr); nbo == se.backOff.Stop || ok {
-			return fmt.Errorf("collector metadata update failed: %w", err)
+		if errors.As(err, &backOffErr) {
+			se.logger.Error("Async metadata update encountered a permanent error, stopping retries", zap.Error(err))
+			return
+		}
+
+		nbo := bo.NextBackOff()
+		if nbo == bo.Stop {
+			se.logger.Warn("Async metadata update stopped: backoff elapsed time exceeded")
+			return
 		}
 
 		t := time.NewTimer(nbo)
-		defer t.Stop()
-
 		select {
 		case <-t.C:
-		case <-ctx.Done():
-			return fmt.Errorf("collector metadata update cancelled: %w", ctx.Err())
+		case <-se.closeChan:
+			t.Stop()
+			se.logger.Info("Async metadata update loop stopped: collector shutting down")
+			return
 		}
 	}
 }

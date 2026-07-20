@@ -1,14 +1,17 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"time"
 
-	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
+	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
 	ddMetrics "github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/google/uuid"
@@ -20,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
@@ -78,11 +82,15 @@ type datadogExtension struct {
 	configs *configs
 
 	// components to assist in payload sending/logging
-	logger     *zap.Logger
-	serializer agentcomponents.SerializerWithForwarder
+	logger            *zap.Logger
+	serializer        agentcomponents.SerializerWithForwarder
+	telemetrySettings component.TelemetrySettings
 
 	// struct to store extension info
 	info *info
+
+	// host stores the component host for use when creating the HTTP server
+	host component.Host
 
 	otelCollectorMetadata *payload.OtelCollector
 	httpServer            *httpserver.Server
@@ -125,8 +133,11 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		e.configs.extension.API.Site,
 		fullConfig,
 		e.configs.extension.DeploymentType,
+		e.configs.extension.InstallationMethod,
 		buildInfo,
 		int64(payloadTTL),
+		e.configs.extension.GatewayService,
+		e.configs.extension.GatewayDestination,
 	)
 
 	// Populate resource attributes collected from TelemetrySettings.Resource
@@ -165,8 +176,12 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		e.info.host.Identifier,
 		e.info.uuid,
 		otelCollectorPayload,
+		e.telemetrySettings,
 	)
-	e.httpServer.Start()
+	startErr := e.httpServer.Start(context.Background(), e.host)
+	if startErr != nil {
+		return startErr
+	}
 	_, err = e.httpServer.SendPayload()
 	if err != nil {
 		return err
@@ -197,6 +212,9 @@ func (*datadogExtension) ComponentStatusChanged(
 
 // Start starts the extension via the component interface.
 func (e *datadogExtension) Start(_ context.Context, host component.Host) error {
+	// Store host for later use when creating the HTTP server
+	e.host = host
+
 	// Retrieve module information from the host
 	if mi, ok := host.(hostcapabilities.ModuleInfo); ok {
 		e.info.modules = mi.GetModuleInfos()
@@ -341,6 +359,25 @@ func (e *datadogExtension) GetSerializer() agentcomponents.SerializerWithForward
 	return e.serializer
 }
 
+// buildAgentConfig constructs the Datadog agent config component from the extension config.
+// Extracted to allow unit testing of option propagation independently of the full extension lifecycle.
+func buildAgentConfig(cfg *Config) coreconfig.Component {
+	ddConfig := &datadogconfig.Config{
+		API:          cfg.API,
+		ClientConfig: cfg.ClientConfig,
+	}
+	return agentcomponents.NewConfigComponent(
+		agentcomponents.WithAPIConfig(ddConfig),
+		agentcomponents.WithForwarderConfig(),
+		agentcomponents.WithPayloadsConfig(),
+		// Use ClientConfig proxy and TLS settings instead of environment variables
+		agentcomponents.WithProxy(ddConfig),
+		agentcomponents.WithTLSSetting(ddConfig),
+		// logging_frequency required to be set to avoid "divide by zero" error
+		agentcomponents.WithLoggingConfig(),
+	)
+}
+
 func newExtension(
 	ctx context.Context,
 	cfg *Config,
@@ -348,36 +385,24 @@ func newExtension(
 	hostProvider source.Provider,
 	uuidProvider uuidProvider,
 ) (*datadogExtension, error) {
-	// Create configuration for agent components
-	// Convert datadogextension.Config to datadogconfig.Config
-	ddConfig := &datadogconfig.Config{
-		API:          cfg.API,
-		ClientConfig: cfg.ClientConfig,
-	}
-	host, err := hostProvider.Source(context.Background())
-	if err != nil {
-		return nil, err
-	}
+	var host source.Source
 	var hostnameSource string
 	if cfg.Hostname != "" {
+		// Hostname is already known from config; skip the source provider to avoid
+		// unnecessary cloud metadata probes (e.g. GCP metadata server on non-GCP hosts).
 		hostnameSource = "config"
+		host = source.Source{Kind: source.HostnameKind, Identifier: cfg.Hostname}
 	} else {
 		hostnameSource = "inferred"
-	}
-
-	// Create agent components with proxy configuration from ClientConfig
-	configOptions := []agentcomponents.ConfigOption{
-		agentcomponents.WithAPIConfig(ddConfig),
-		agentcomponents.WithForwarderConfig(),
-		agentcomponents.WithPayloadsConfig(),
-		// Use ClientConfig proxy settings instead of environment variables
-		agentcomponents.WithProxy(ddConfig),
-		// logging_frequency required to be set to avoid "divide by zero" error
-		agentcomponents.WithCustomConfig("logging_frequency", 1, pkgconfigmodel.SourceDefault),
+		var err error
+		host, err = hostProvider.Source(context.Background())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Create agent components
-	configComponent := agentcomponents.NewConfigComponent(configOptions...)
+	configComponent := buildAgentConfig(cfg)
 	logComponent := agentcomponents.NewLogComponent(set.TelemetrySettings)
 	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, host.Identifier)
 
@@ -390,6 +415,10 @@ func newExtension(
 			return true
 		})
 	}
+	// Ensure os.type is always present; defer to any value already set by a resource detector
+	if _, ok := resourceMap[string(conventions.OSTypeKey)]; !ok {
+		resourceMap[string(conventions.OSTypeKey)] = runtime.GOOS
+	}
 
 	// configure payloadSender struct
 	ctxWithCancel, cancel := context.WithCancel(ctx)
@@ -397,9 +426,10 @@ func newExtension(
 	channel := make(chan struct{}, 1)
 
 	e := &datadogExtension{
-		configs:    &configs{extension: cfg},
-		logger:     set.Logger,
-		serializer: serializer,
+		configs:           &configs{extension: cfg},
+		logger:            set.Logger,
+		serializer:        serializer,
+		telemetrySettings: set.TelemetrySettings,
 		info: &info{
 			host:               host,
 			hostnameSource:     hostnameSource,

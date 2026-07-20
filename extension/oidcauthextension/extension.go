@@ -96,6 +96,7 @@ type oidcExtension struct {
 var (
 	errNoAudienceProvided                = errors.New("no Audience provided for the OIDC configuration")
 	errNoIssuerURL                       = errors.New("no IssuerURL provided for the OIDC configuration")
+	errIgnoreIssuerMultiProvider         = errors.New("ignore_issuer cannot be true when multiple providers are configured")
 	errInvalidAuthenticationHeaderFormat = errors.New("invalid authorization header format")
 	errFailedToObtainClaimsFromToken     = errors.New("failed to get the subject from the token issued by the OIDC provider")
 	errClaimNotFound                     = errors.New("username claim from the OIDC configuration not found on the token returned by the OIDC provider")
@@ -156,6 +157,12 @@ func (e *oidcExtension) Shutdown(context.Context) error {
 
 // authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
 func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+	clInfo := client.FromContext(ctx)
+	clientIP := "unknown"
+	if clInfo.Addr != nil {
+		clientIP = clInfo.Addr.String()
+	}
+
 	var authHeaders []string
 	for k, v := range headers {
 		if strings.EqualFold(k, e.cfg.Attribute) {
@@ -164,27 +171,49 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		}
 	}
 	if len(authHeaders) == 0 {
+		e.logger.Warn("Authentication failed: missing or empty header",
+			zap.String("client_ip", clientIP),
+			zap.Error(errNotAuthenticated),
+		)
 		return ctx, errNotAuthenticated
 	}
 
 	// we only use the first header, if multiple values exist
 	parts := strings.Split(authHeaders[0], " ")
 	if len(parts) != 2 {
+		e.logger.Warn("Authentication failed: invalid header format",
+			zap.String("client_ip", clientIP),
+			zap.Error(errInvalidAuthenticationHeaderFormat),
+		)
 		return ctx, errInvalidAuthenticationHeaderFormat
 	}
 
 	raw := parts[1]
 	unverifiedIssuer, err := getIssuerFromUnverifiedJWT(raw)
 	if err != nil {
+		e.logger.Warn("Authentication failed: could not parse issuer from token",
+			zap.String("client_ip", clientIP),
+			zap.Error(err),
+		)
 		return ctx, fmt.Errorf("failed to parse the token: %w", err)
 	}
 	pc, err := e.resolveProvider(unverifiedIssuer)
 	if err != nil {
+		e.logger.Warn("Authentication failed: could not resolve provider",
+			zap.String("client_ip", clientIP),
+			zap.String("issuer", unverifiedIssuer),
+			zap.Error(err),
+		)
 		return ctx, fmt.Errorf("failed to resolve OIDC provider for the issuer %q: %w", unverifiedIssuer, err)
 	}
 
 	idToken, err := pc.Verify(ctx, raw)
 	if err != nil {
+		e.logger.Warn("Authentication failed: token verification failed",
+			zap.String("client_ip", clientIP),
+			zap.String("issuer", unverifiedIssuer),
+			zap.Error(err),
+		)
 		return ctx, fmt.Errorf("failed to verify token: %w", err)
 	}
 
@@ -196,15 +225,28 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		// to read the claims. It could fail if we were using a custom struct. Instead of
 		// swallowing the error, it's better to make this future-proof, in case the underlying
 		// code changes
+		e.logger.Warn("Authentication failed: could not obtain claims",
+			zap.String("client_ip", clientIP),
+			zap.Error(err),
+		)
 		return ctx, errFailedToObtainClaimsFromToken
 	}
 
 	subject, err := getSubjectFromClaims(claims, pc.providerCfg.UsernameClaim, idToken.Subject)
 	if err != nil {
+		e.logger.Warn("Authentication failed: could not get subject from claims",
+			zap.String("client_ip", clientIP),
+			zap.Error(err),
+		)
 		return ctx, fmt.Errorf("failed to get subject from claims in the token: %w", err)
 	}
 	membership, err := getGroupsFromClaims(claims, pc.providerCfg.GroupsClaim)
 	if err != nil {
+		e.logger.Warn("Authentication failed: could not get groups from claims",
+			zap.String("client_ip", clientIP),
+			zap.String("subject", subject),
+			zap.Error(err),
+		)
 		return ctx, fmt.Errorf("failed to get groups from claims in the token: %w", err)
 	}
 
@@ -239,6 +281,7 @@ func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg
 	vCfg := &oidc.Config{
 		ClientID:          p.Audience,
 		SkipClientIDCheck: p.IgnoreAudience,
+		SkipIssuerCheck:   p.IgnoreIssuer,
 	}
 
 	if p.PublicKeysFile != "" {

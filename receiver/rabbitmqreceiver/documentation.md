@@ -38,9 +38,9 @@ The total number of messages currently in the queue.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| state | The state of messages in a queue. | Str: ``ready``, ``unacknowledged`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| state | The state of messages in a queue. | Str: ``ready``, ``unacknowledged`` | Recommended | - |
 
 ### rabbitmq.message.delivered
 
@@ -75,6 +75,22 @@ metrics:
   <metric_name>:
     enabled: true
 ```
+
+### rabbitmq.exchange.messages.published_in
+
+The total number of messages published into an exchange from channels.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {messages} | Sum | Int | Cumulative | true | Development |
+
+### rabbitmq.exchange.messages.published_out
+
+The total number of messages published out of an exchange to bound queues.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {messages} | Sum | Int | Cumulative | true | Development |
 
 ### rabbitmq.node.channel_closed
 
@@ -670,8 +686,10 @@ Uptime of the node.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| rabbitmq.node.name | The name of the RabbitMQ node. | Any Str | true |
-| rabbitmq.queue.name | The name of the RabbitMQ queue. | Any Str | true |
-| rabbitmq.vhost.name | The name of the RabbitMQ vHost. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| rabbitmq.exchange.name | The name of the RabbitMQ exchange. | Any Str | true | - | - |
+| rabbitmq.exchange.type | The type of the RabbitMQ exchange (direct, fanout, topic, or headers). | Any Str | true | - | - |
+| rabbitmq.node.name | The name of the RabbitMQ node. | Any Str | true | - | - |
+| rabbitmq.queue.name | The name of the RabbitMQ queue. | Any Str | true | - | - |
+| rabbitmq.vhost.name | The name of the RabbitMQ vHost. | Any Str | true | - | - |

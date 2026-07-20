@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/upload"
 )
@@ -22,6 +23,7 @@ import (
 func newUploadManager(
 	ctx context.Context,
 	conf *Config,
+	logger *zap.Logger,
 	metadata string,
 	format string,
 	isCompressed bool,
@@ -100,6 +102,7 @@ func newUploadManager(
 	}
 
 	return upload.NewS3Manager(
+		logger,
 		conf.S3Uploader.S3Bucket,
 		&upload.PartitionKeyBuilder{
 			PartitionBasePrefix:   conf.S3Uploader.S3BasePrefix,

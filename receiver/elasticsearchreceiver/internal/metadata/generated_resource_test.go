@@ -32,26 +32,25 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("elasticsearch.cluster.name")
+			elasticsearchClusterNameAttrVal, ok := res.Attributes().Get("elasticsearch.cluster.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "elasticsearch.cluster.name-val", val.Str())
+				assert.Equal(t, "elasticsearch.cluster.name-val", elasticsearchClusterNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("elasticsearch.index.name")
+			elasticsearchIndexNameAttrVal, ok := res.Attributes().Get("elasticsearch.index.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "elasticsearch.index.name-val", val.Str())
+				assert.Equal(t, "elasticsearch.index.name-val", elasticsearchIndexNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("elasticsearch.node.name")
+			elasticsearchNodeNameAttrVal, ok := res.Attributes().Get("elasticsearch.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "elasticsearch.node.name-val", val.Str())
+				assert.Equal(t, "elasticsearch.node.name-val", elasticsearchNodeNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("elasticsearch.node.version")
+			elasticsearchNodeVersionAttrVal, ok := res.Attributes().Get("elasticsearch.node.version")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "elasticsearch.node.version-val", val.Str())
+				assert.Equal(t, "elasticsearch.node.version-val", elasticsearchNodeVersionAttrVal.Str())
 			}
 		})
 	}

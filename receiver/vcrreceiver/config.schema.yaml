@@ -1,0 +1,14 @@
+type: object
+properties:
+  exclude_raw:
+    type: array
+    items:
+      type: string
+  include_raw:
+    type: array
+    items:
+      type: string
+  include_tape:
+    type: array
+    items:
+      type: string

@@ -1,5 +1,6 @@
 display_name: Azure Event Hub Receiver
 type: azure_event_hub
+deprecated_type: azureeventhub
 
 status:
   class: receiver

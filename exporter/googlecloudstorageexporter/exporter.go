@@ -10,7 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -23,11 +23,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"google.golang.org/api/googleapi"
+	"google.golang.org/api/option"
 )
 
 type poolItem interface {
@@ -153,14 +155,6 @@ func newStorageExporter(
 	}, nil
 }
 
-func isBucketConflictError(err error) bool {
-	var gErr *googleapi.Error
-	if !errors.As(err, &gErr) {
-		return false
-	}
-	return gErr.Code == http.StatusConflict
-}
-
 func (s *storageExporter) Start(ctx context.Context, host component.Host) error {
 	// Initialize default marshalers
 	s.logsMarshaler = &plog.JSONMarshaler{}
@@ -189,25 +183,39 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 	}
 
 	// TODO Add option for authenticator
-	client, err := storage.NewClient(ctx)
+	var clientOpts []option.ClientOption
+	if s.cfg.UniverseDomain != "" {
+		clientOpts = append(clientOpts, option.WithUniverseDomain(s.cfg.UniverseDomain))
+	}
+	client, err := storage.NewClient(ctx, clientOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to create storage client: %w", err)
 	}
-	err = client.Bucket(s.cfg.Bucket.Name).Create(ctx, s.cfg.Bucket.ProjectID, &storage.BucketAttrs{
-		Location: s.cfg.Bucket.Region,
-	})
-	if err != nil {
-		if !s.cfg.Bucket.ReuseIfExists {
+
+	bucketHandle := client.Bucket(s.cfg.Bucket.Name)
+
+	if s.cfg.Bucket.ReuseIfExists {
+		// Check if bucket exists without attempting to create it
+		_, err = bucketHandle.Attrs(ctx)
+		if err != nil {
+			if errors.Is(err, storage.ErrBucketNotExist) {
+				return fmt.Errorf("bucket %q does not exist and reuse_if_exists is true (bucket must be created externally): %w", s.cfg.Bucket.Name, err)
+			}
+			// Return error if it's a permission issue or network failure
+			return fmt.Errorf("failed to get bucket attributes: %w", err)
+		}
+		s.logger.Info("Using existing bucket", zap.String("bucket", s.cfg.Bucket.Name))
+	} else {
+		// Attempt to create the bucket
+		err = bucketHandle.Create(ctx, s.cfg.Bucket.ProjectID, &storage.BucketAttrs{
+			Location: s.cfg.Bucket.Region,
+		})
+		if err != nil {
 			return fmt.Errorf("failed to create storage bucket %q: %w", s.cfg.Bucket.Name, err)
 		}
-		if !isBucketConflictError(err) {
-			return fmt.Errorf("unexpected error creating the storage bucket %q: %w", s.cfg.Bucket.Name, err)
-		}
-		// otherwise bucket exists and will be reused
-		s.logger.Info("Existing bucket will be used", zap.String("bucket", s.cfg.Bucket.Name))
-	} else {
 		s.logger.Info("Created bucket", zap.String("bucket", s.cfg.Bucket.Name))
 	}
+
 	s.bucketHandle = client.Bucket(s.cfg.Bucket.Name)
 	s.storageClient = client
 	return nil
@@ -230,7 +238,12 @@ func (s *storageExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		return fmt.Errorf("failed to marshal logs: %w", err)
 	}
 
-	if err = s.uploadFile(ctx, buf); err != nil {
+	attributePartition := ""
+	if ld.ResourceLogs().Len() > 0 {
+		attributePartition = s.attributePartition(ld.ResourceLogs().At(0).Resource())
+	}
+
+	if err = s.uploadFile(ctx, buf, attributePartition); err != nil {
 		return fmt.Errorf("failed to upload logs: %w", err)
 	}
 	return nil
@@ -242,16 +255,44 @@ func (s *storageExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 		return fmt.Errorf("failed to marshal traces: %w", err)
 	}
 
-	if err = s.uploadFile(ctx, buf); err != nil {
+	attributePartition := ""
+	if td.ResourceSpans().Len() > 0 {
+		attributePartition = s.attributePartition(td.ResourceSpans().At(0).Resource())
+	}
+
+	if err = s.uploadFile(ctx, buf, attributePartition); err != nil {
 		return fmt.Errorf("failed to upload traces: %w", err)
 	}
 	return nil
 }
 
-// generateFilename returns the name of the file to be uploaded.
-// It starts from a unique ID, and prepends the partitionFormat and the prefix to it.
+// attributePartition returns the sanitized resource_attrs_to_gcs partition segment for the
+// resource, or "" when the mapping is unset, the attribute is absent, or it sanitizes empty.
+func (s *storageExporter) attributePartition(res pcommon.Resource) string {
+	if key := s.cfg.ResourceAttrsToGCS.Prefix; key != "" {
+		if value, ok := res.Attributes().Get(key); ok {
+			return sanitizePartitionSegment(value.AsString())
+		}
+	}
+	return ""
+}
+
+// sanitizePartitionSegment normalizes an untrusted attribute value for use in an object
+// name via path.Clean (collapses "//", drops "."/".."/empty segments). The leading "/"
+// prevents traversal above the root and is then trimmed.
+func sanitizePartitionSegment(value string) string {
+	return strings.TrimPrefix(path.Clean("/"+value), "/")
+}
+
+// generateFilename builds the object name with the layout (each segment optional, skipped
+// when empty):
+//
+//	<partitionPrefix>/<attributePartition>/<partitionFormat>/<filePrefix>_<uniqueID>[.ext]
+//
+// filePrefix joins uniqueID with "_" (or "/" when it ends in "/"); attributePartition comes
+// from resource_attrs_to_gcs; the .gz/.zst extension is appended when compression is set.
 func generateFilename(
-	uniqueID, filePrefix, partitionPrefix string,
+	uniqueID, filePrefix, partitionPrefix, attributePartition string,
 	compression configcompression.Type,
 	partitionFormat *strftime.Strftime,
 	now time.Time,
@@ -273,6 +314,13 @@ func generateFilename(
 		filename = partition + filename
 	}
 
+	if attributePartition != "" {
+		if !strings.HasSuffix(attributePartition, "/") {
+			attributePartition += "/"
+		}
+		filename = attributePartition + filename
+	}
+
 	if partitionPrefix != "" {
 		if !strings.HasSuffix(partitionPrefix, "/") {
 			partitionPrefix += "/"
@@ -291,7 +339,7 @@ func generateFilename(
 	return filename
 }
 
-func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err error) {
+func (s *storageExporter) uploadFile(ctx context.Context, content []byte, attributePartition string) (err error) {
 	if len(content) == 0 {
 		s.logger.Info("No content to upload")
 		return nil
@@ -310,6 +358,7 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 		uniqueID,
 		s.cfg.Bucket.FilePrefix,
 		s.cfg.Bucket.Partition.Prefix,
+		attributePartition,
 		s.cfg.Bucket.Compression,
 		s.partitionFormat,
 		time.Now().UTC(),
@@ -328,6 +377,9 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 		}
 	}()
 	if _, err = writer.Write(compressedContent); err != nil {
+		if !storage.ShouldRetry(err) {
+			return consumererror.NewPermanent(fmt.Errorf("failed to write to file: %w", err))
+		}
 		return fmt.Errorf("failed to write to file: %w", err)
 	}
 	s.logger.Info(

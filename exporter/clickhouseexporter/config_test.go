@@ -51,15 +51,16 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
-				collectorVersion: "unknown",
-				Endpoint:         defaultEndpoint,
-				Database:         "otel",
-				Username:         "foo",
-				Password:         "bar",
-				TTL:              72 * time.Hour,
-				LogsTableName:    "otel_logs",
-				TracesTableName:  "otel_traces",
-				CreateSchema:     true,
+				collectorVersion:  "unknown",
+				Endpoint:          defaultEndpoint,
+				Database:          "otel",
+				Username:          "foo",
+				Password:          "bar",
+				TTL:               72 * time.Hour,
+				LogsTableName:     "otel_logs",
+				TracesTableName:   "otel_traces",
+				ProfilesTableName: "otel_profiles",
+				CreateSchema:      true,
 				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 5 * time.Second,
 				},
@@ -96,6 +97,40 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 	}
+
+	jsonCfg := createDefaultConfig()
+	jsonCfg.(*Config).Endpoint = defaultEndpoint
+	jsonCfg.(*Config).JSON = true
+
+	tests = append(tests, struct {
+		id       component.ID
+		expected component.Config
+	}{
+		id:       component.NewIDWithName(metadata.Type, "json"),
+		expected: jsonCfg,
+	})
+
+	batchCfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = defaultEndpoint
+		cfg.QueueSettings = configoptional.Some(func() exporterhelper.QueueBatchConfig {
+			queue := exporterhelper.NewDefaultQueueConfig()
+			queue.Batch = configoptional.Some(exporterhelper.BatchConfig{
+				FlushTimeout: 5 * time.Second,
+				Sizer:        exporterhelper.RequestSizerTypeItems,
+				MinSize:      5000,
+				MaxSize:      10000,
+			})
+			return queue
+		}())
+	})
+
+	tests = append(tests, struct {
+		id       component.ID
+		expected component.Config
+	}{
+		id:       component.NewIDWithName(metadata.Type, "batch"),
+		expected: batchCfg,
+	})
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
@@ -641,11 +676,19 @@ func TestClusterString(t *testing.T) {
 		},
 		{
 			input:    "cluster_a_b",
-			expected: "ON CLUSTER cluster_a_b",
+			expected: "ON CLUSTER `cluster_a_b`",
 		},
 		{
 			input:    "cluster a b",
-			expected: "ON CLUSTER cluster a b",
+			expected: "ON CLUSTER `cluster a b`",
+		},
+		{
+			input:    "ch-cluster",
+			expected: "ON CLUSTER `ch-cluster`",
+		},
+		{
+			input:    "my`cluster",
+			expected: "ON CLUSTER `my``cluster`",
 		},
 	}
 

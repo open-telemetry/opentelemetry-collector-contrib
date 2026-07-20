@@ -59,6 +59,10 @@ exporters:
 
     # (Optional) Timeout is the timeout for every attempt to send data to the backend.
     timeout: 30s
+
+    # (Optional) Use AWS PrivateLink for private connectivity. When true, data is sent to
+    # ingress.private.<domain>. See "Coralogix's Domain" section below for details.
+    # private_link: true
 ```
 
 ### Transport Protocol
@@ -172,12 +176,12 @@ exporters:
 ```
 ### Host Attributes
 
-OpenTelemetry Collector [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover Host Resource attributes, such as `host.name` and provide Resource attributes using environment variables, which can be used for setting AppName and SubSystem fields in Coralogix.
+OpenTelemetry Collector [Resource Detection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover Host Resource attributes, such as `host.name` and provide Resource attributes using environment variables, which can be used for setting AppName and SubSystem fields in Coralogix.
 
 Example: 
 ```yaml
 processors:
-  resourcedetection/system:
+  resource_detection/system:
     detectors: ["system", "env"]
     system:
       hostname_sources: ["os"]
@@ -201,12 +205,12 @@ exporters:
 ```
 ### EC2 Attributes
 
-OpenTelemetry Collector [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover EC2 Resource attributes, such as EC2 tags as resource attributes.
+OpenTelemetry Collector [Resource Detection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover EC2 Resource attributes, such as EC2 tags as resource attributes.
 
 Example: 
 ```yaml
 processors:
- resourcedetection/ec2:
+ resource_detection/ec2:
     detectors: ["ec2"]
     ec2:
       # A list of regex's to match tag keys to add as resource attributes can be specified
@@ -324,7 +328,7 @@ For example:
 
 ```yaml
 receivers:
-  filelog/nginx:
+  file_log/nginx:
     include:
       - '/tmp/tmp.log'
     include_file_path: true
@@ -332,7 +336,7 @@ receivers:
     start_at: end
     resource: 
       cx.subsystem.name: nginx
-  filelog/access-log:
+  file_log/access-log:
     include:
       - '/tmp/access.log'
     include_file_path: true
@@ -348,7 +352,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog/nginx, filelog/access-log]
+      receivers: [file_log/nginx, file_log/access-log]
       exporters: [coralogix]
 ```
 

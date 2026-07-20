@@ -11,6 +11,6 @@ properties:
     additionalProperties:
       type: string
 allOf:
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker.config
+  - $ref: /internal/docker.config
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
   - $ref: ./internal/metadata.metrics_builder_config

@@ -1,0 +1,40 @@
+receivers:
+  filelog:
+    include: ["/var/log/*.log"]
+
+exporters:
+  debug/1:
+    use_internal_logger: false
+    verbosity: detailed
+  debug/2:
+    use_internal_logger: false
+    verbosity: detailed
+  debug/3:
+    use_internal_logger: false
+    verbosity: detailed
+
+connectors:
+  failover:
+    priority_levels:
+      - [logs/first]
+      - [logs/second]
+      - [logs/third]
+    retry_interval: 10s
+    condition: {}
+         
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      exporters: [failover]
+    logs/first:
+      receivers: [failover]
+      exporters: [debug/1]
+    logs/second:
+      receivers: [failover]
+      exporters: [debug/2]
+    logs/third:
+      receivers: [failover]
+      exporters: [debug/3]
+
+

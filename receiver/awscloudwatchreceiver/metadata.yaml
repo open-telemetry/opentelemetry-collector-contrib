@@ -1,5 +1,6 @@
 display_name: AWS CloudWatch Receiver
-type: awscloudwatch
+type: aws_cloudwatch
+deprecated_type: awscloudwatch
 
 description: |
   The AWS CloudWatch Receiver receives Cloudwatch events from [AWS CloudWatch](https://aws.amazon.com/cloudwatch/) via
@@ -8,10 +9,10 @@ description: |
 status:
   class: receiver
   stability:
-    alpha: [logs]
+    alpha: [logs, metrics]
   distributions: [contrib]
   codeowners:
-    active: [schmikei]
+    active: [schmikei, dyl10s]
     emeritus: [djaglowski]
     seeking_new: true
 

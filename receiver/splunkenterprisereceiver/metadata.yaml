@@ -1,4 +1,13 @@
-type: splunkenterprise
+display_name: Splunk Enterprise Receiver
+type: splunk_enterprise
+deprecated_type: splunkenterprise
+
+description: |
+  The Splunk Enterprise Receiver is a pull based tool which enables the ingestion of performance metrics describing the operational status of a user's Splunk Enterprise deployment to an appropriate observability tool.
+  It is designed to leverage several different data sources to gather these metrics including the [introspection api endpoint](https://help.splunk.com/en/splunk-enterprise/leverage-rest-apis/rest-api-reference/9.1/introspection-endpoints/introspection-endpoint-descriptions) and serializing
+  results from ad-hoc searches. Because of this, care must be taken by users when enabling metrics as running searches can effect your Splunk Enterprise Deployment and introspection may fail to report for Splunk
+  Cloud deployments. The primary purpose of this receiver is to empower those tasked with the maintenance and care of a Splunk Enterprise deployment to leverage opentelemetry and their observability toolset in their
+  jobs.
 
 status:
   class: receiver
@@ -8,7 +17,6 @@ status:
   codeowners:
     active: [shalper2, MovieStoreGuy, greatestusername]
 
-reaggregation_enabled: true
 attributes:
   splunk.bucket.dir:
     description: The bucket super-directory (home, cold, thawed) for each index
@@ -179,7 +187,7 @@ metrics:
     enabled: false
     description: Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.
     stability: development
-    unit: KBy
+    unit: kBy
     gauge:
       value_type: double
     attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
@@ -327,7 +335,7 @@ metrics:
     enabled: false
     description: Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best run against a Cluster Manager.
     stability: development
-    unit: KBy
+    unit: kBy
     gauge:
       value_type: int
     attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]

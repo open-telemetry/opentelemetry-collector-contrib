@@ -55,6 +55,78 @@ const expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
 
+func TestDynamicTemplateMode(t *testing.T) {
+	ts := pcommon.NewTimestampFromTime(time.Unix(0, 0))
+
+	// Build the four metric + DataPoint fixtures once.
+	m := pmetric.NewMetric()
+	m.SetName("g")
+	gauge := m.SetEmptyGauge()
+	dp := gauge.DataPoints().AppendEmpty()
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(1.0)
+
+	m2 := pmetric.NewMetric()
+	m2.SetName("c")
+	sum := m2.SetEmptySum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	dp2 := sum.DataPoints().AppendEmpty()
+	dp2.SetTimestamp(ts)
+	dp2.SetIntValue(2)
+
+	m3 := pmetric.NewMetric()
+	m3.SetName("h")
+	hist := m3.SetEmptyHistogram()
+	histDp := hist.DataPoints().AppendEmpty()
+	histDp.SetTimestamp(ts)
+	histDp.ExplicitBounds().FromRaw([]float64{1, 2})
+	histDp.BucketCounts().FromRaw([]uint64{1, 2, 3})
+
+	m4 := pmetric.NewMetric()
+	m4.SetName("s")
+	summaryDp := m4.SetEmptySummary().DataPoints().AppendEmpty()
+	summaryDp.SetTimestamp(ts)
+	summaryDp.SetSum(10)
+	summaryDp.SetCount(5)
+
+	metrics := []struct {
+		m  pmetric.Metric
+		dp datapoints.DataPoint
+	}{
+		{m, datapoints.NewNumber(m, dp)},
+		{m2, datapoints.NewNumber(m2, dp2)},
+		{m3, datapoints.NewHistogram(m3, histDp)},
+		{m4, datapoints.NewSummary(m4, summaryDp)},
+	}
+
+	tests := []struct {
+		name          string
+		mode          datapoints.DynamicTemplateMode
+		wantTemplates []string
+	}{
+		{
+			name:          "OTel",
+			mode:          datapoints.DynamicTemplateModeOTel,
+			wantTemplates: []string{"gauge_double", "counter_long", "histogram", "summary"},
+		},
+		{
+			name:          "ECS",
+			mode:          datapoints.DynamicTemplateModeECS,
+			wantTemplates: []string{"double_metrics", "double_metrics", "histogram_metrics", "summary_metrics"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			for i, metric := range metrics {
+				got := metric.dp.DynamicTemplate(metric.m, tc.mode)
+				require.Equal(t, tc.wantTemplates[i], got)
+			}
+		})
+	}
+}
+
 func TestEncodeSpan(t *testing.T) {
 	t.Run("non data stream", func(t *testing.T) {
 		encoder, _ := newEncoder(MappingNone)
@@ -178,6 +250,98 @@ func TestEncodeMetric(t *testing.T) {
 
 	allDocsSorted := docBytesToSortedString(docsBytes)
 	assert.Equal(t, expectedMetricsEncoded, allDocsSorted)
+}
+
+func TestEncodeMetricDocCountHint(t *testing.T) {
+	encoder, err := newEncoder(MappingECS)
+	require.NoError(t, err)
+
+	ec := encodingContext{
+		resource:          pcommon.NewResource(),
+		resourceSchemaURL: "",
+		scope:             pcommon.NewInstrumentationScope(),
+		scopeSchemaURL:    "",
+	}
+	idx := elasticsearch.Index{}
+	ts := pcommon.NewTimestampFromTime(time.Unix(0, 0))
+
+	tests := []struct {
+		name              string
+		buildDataPoints   func() []datapoints.DataPoint
+		wantDocCountInDoc bool
+		wantDocCountValue uint64
+	}{
+		{
+			name: "doc count hint absent",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("gauge")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+				dp.SetDoubleValue(1.0)
+				return []datapoints.DataPoint{datapoints.NewNumber(m, dp)}
+			},
+			wantDocCountInDoc: false,
+		},
+		{
+			name: "doc count hint present with zero doc count",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("summary")
+				summaryDp := m.SetEmptySummary().DataPoints().AppendEmpty()
+				summaryDp.SetTimestamp(ts)
+				summaryDp.SetSum(0)
+				summaryDp.SetCount(0)
+
+				hints := summaryDp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				hints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
+
+				return []datapoints.DataPoint{datapoints.NewSummary(m, summaryDp)}
+			},
+			wantDocCountInDoc: false,
+		},
+		{
+			name: "doc count hint with positive doc count",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("gauge")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+				dp.SetDoubleValue(2.5)
+
+				hints := dp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				hints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
+
+				return []datapoints.DataPoint{datapoints.NewNumber(m, dp)}
+			},
+			wantDocCountInDoc: true,
+			wantDocCountValue: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dataPoints := tt.buildDataPoints()
+
+			var buf bytes.Buffer
+			validationErrors := make([]error, 0)
+			_, err := encoder.encodeMetrics(ec, dataPoints, &validationErrors, idx, &buf)
+			require.NoError(t, err)
+			require.Empty(t, validationErrors)
+
+			if !tt.wantDocCountInDoc {
+				var doc map[string]any
+				require.NoError(t, json.Unmarshal(buf.Bytes(), &doc))
+				_, hasDocCount := doc["_doc_count"]
+				assert.False(t, hasDocCount, "expected no _doc_count in document")
+				return
+			}
+
+			docCount := gjson.GetBytes(buf.Bytes(), "_doc_count")
+			require.True(t, docCount.Exists(), "expected _doc_count in document")
+			assert.Equal(t, tt.wantDocCountValue, docCount.Uint(), "_doc_count value")
+		})
+	}
 }
 
 func docBytesToSortedString(docsBytes [][]byte) string {
@@ -417,7 +581,7 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"custom-agent","version":"1.2.3"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","type":"macos","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
+	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"custom-agent","version":"1.2.3"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
 
 	resourceContainerImageTags := resource.Attributes().PutEmptySlice("container.image.tags")
 	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
@@ -457,6 +621,8 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		"service.instance.id":         "23",
 		"service.name":                "some-service",
 		"service.version":             "env-version-1234",
+		"telemetry.sdk.version":       "1.2.3",
+		"telemetry.sdk.language":      "go",
 		"process.parent_pid":          "42",
 		"process.executable.name":     "node",
 		"client.address":              "12.53.12.1",
@@ -558,6 +724,10 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	  },
 	  "service": {
 		"environment": "BETA",
+		"language": {
+		  "name": "go",
+		  "version": "1.2.3"
+		},
 		"name": "some-service",
 		"node": {
 		  "name": "23"
@@ -705,8 +875,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		    "platform": "darwin",
 		    "full": "Mac OS Mojave",
 		    "name": "Mac OS X",
-		    "version": "10.14.1",
-		    "type": "macos"
+		    "version": "10.14.1"
 		  }
 		},
 		"process": {
@@ -719,6 +888,10 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"service": {
 		  "name": "foo.bar",
 		  "environment": "BETA",
+		  "language": {
+		    "name": "perl",
+		    "version": "7.9.12"
+		  },
 		  "version": "1.1.0",
 		  "node": {"name": "i-103de39e0a"},
 		  "runtime": {
@@ -763,132 +936,6 @@ func TestEncodeLogECSMode(t *testing.T) {
 		     "trigger": { "type": "api-gateway" }
 	  }
 	}`, buf.String())
-}
-
-func TestEncodeLogECSModeHostOSType(t *testing.T) {
-	tests := map[string]struct {
-		osType string
-		osName string
-
-		expectedHostOsName     string
-		expectedHostOsType     string
-		expectedHostOsPlatform string
-	}{
-		"none_set": {
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "", // should not be set
-			expectedHostOsPlatform: "", // should not be set
-		},
-		"type_windows": {
-			osType:                 "windows",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "windows",
-			expectedHostOsPlatform: "windows",
-		},
-		"type_linux": {
-			osType:                 "linux",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "linux",
-			expectedHostOsPlatform: "linux",
-		},
-		"type_darwin": {
-			osType:                 "darwin",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "macos",
-			expectedHostOsPlatform: "darwin",
-		},
-		"type_aix": {
-			osType:                 "aix",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "aix",
-		},
-		"type_hpux": {
-			osType:                 "hpux",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "hpux",
-		},
-		"type_solaris": {
-			osType:                 "solaris",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "solaris",
-		},
-		"type_unknown": {
-			osType:                 "unknown",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "", // should not be set
-			expectedHostOsPlatform: "unknown",
-		},
-		"name_android": {
-			osName:                 "Android",
-			expectedHostOsName:     "Android",
-			expectedHostOsType:     "android",
-			expectedHostOsPlatform: "", // should not be set
-		},
-		"name_ios": {
-			osName:                 "iOS",
-			expectedHostOsName:     "iOS",
-			expectedHostOsType:     "ios",
-			expectedHostOsPlatform: "", // should not be set
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			logs := plog.NewLogs()
-			resource := logs.ResourceLogs().AppendEmpty().Resource()
-			scope := pcommon.NewInstrumentationScope()
-			record := plog.NewLogRecord()
-
-			resource.Attributes().PutStr("agent.name", "custom-agent")
-			resource.Attributes().PutStr("agent.version", "1.2.3")
-			if test.osType != "" {
-				resource.Attributes().PutStr("os.type", test.osType)
-			}
-			if test.osName != "" {
-				resource.Attributes().PutStr("os.name", test.osName)
-			}
-
-			timestamp := pcommon.Timestamp(1710373859123456789)
-			record.SetTimestamp(timestamp)
-			logs.MarkReadOnly()
-
-			var buf bytes.Buffer
-			encoder, _ := newEncoder(MappingECS)
-			err := encoder.encodeLog(
-				encodingContext{resource: resource, scope: scope},
-				record, elasticsearch.Index{}, &buf,
-			)
-			require.NoError(t, err)
-
-			expectedJSON := `{"@timestamp":"2024-03-13T23:50:59.123456789Z","agent":{"name":"custom-agent","version":"1.2.3"}`
-			if test.expectedHostOsName != "" ||
-				test.expectedHostOsPlatform != "" ||
-				test.expectedHostOsType != "" {
-				expectedJSON += `, "host":{"os":{`
-
-				first := true
-				maybeAdd := func(k, v string) {
-					if v != "" {
-						if first {
-							first = false
-						} else {
-							expectedJSON += ","
-						}
-						expectedJSON += fmt.Sprintf("%q:%q", k, v)
-					}
-				}
-				maybeAdd("name", test.expectedHostOsName)
-				maybeAdd("type", test.expectedHostOsType)
-				maybeAdd("platform", test.expectedHostOsPlatform)
-				expectedJSON += "}}"
-			}
-			expectedJSON += "}"
-			require.JSONEq(t, expectedJSON, buf.String())
-		})
-	}
 }
 
 func TestEncodeLogECSModeTimestamps(t *testing.T) {
@@ -1539,4 +1586,273 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	)
 	require.Error(t, err)
 	require.ErrorIs(t, err, ErrInvalidTypeForBodyMapMode)
+}
+
+// TestECSSpanEventEncoder asserts the correct ECS document shape produced by encodeSpanEvent
+// for all combinations of (exception / non-exception) × (transaction parent / span parent).
+func TestECSSpanEventEncoder(t *testing.T) {
+	const (
+		traceID = "01020304050607080102030405060708"
+		txnID   = "0102030405060708"
+	)
+	commonTraceID := [16]byte{
+		0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+		0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+	}
+
+	tests := []struct {
+		name          string
+		resourceAttrs func(pcommon.Map)
+		scopeAttrs    func(pcommon.Map) // nil = no scope attrs
+		spanSpanID    [8]byte
+		spanAttrs     func(pcommon.Map) // nil = no extra span attrs
+		eventName     string
+		eventAttrs    func(pcommon.Map)
+		wantDataset   string
+		wantNamespace string
+		checkBody     func(t *testing.T, body string)
+	}{
+		{
+			name: "exception_with_transaction_parent",
+			resourceAttrs: func(m pcommon.Map) {
+				m.PutStr("service.name", "my-service")
+				m.PutStr("deployment.environment.name", "production")
+			},
+			spanSpanID: [8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08},
+			spanAttrs: func(m pcommon.Map) {
+				// The elasticapmprocessor sets transaction.id on transaction spans.
+				m.PutStr("transaction.id", txnID)
+			},
+			eventName: "exception",
+			eventAttrs: func(m pcommon.Map) {
+				m.PutStr("exception.type", "java.lang.NullPointerException")
+				m.PutStr("exception.message", "null pointer")
+				m.PutStr("exception.stacktrace", "at com.example.Foo.bar(Foo.java:42)")
+				m.PutBool("exception.escaped", false)
+				// Processor-set attributes.
+				m.PutStr("error.id", "abcdef1234567890abcdef1234567890")
+				m.PutBool("error.exception.handled", true)
+				m.PutStr("error.grouping_key", "abcdef1234567890")
+				m.PutStr("error.grouping_name", "null pointer")
+				m.PutStr("processor.event", "error")
+				m.PutBool("transaction.sampled", true)
+				m.PutStr("transaction.type", "request")
+				m.PutInt("timestamp.us", 1000000)
+				m.PutStr("data_stream.type", "traces")
+				m.PutStr("data_stream.dataset", "apm.error")
+				m.PutStr("data_stream.namespace", "default")
+			},
+			wantDataset:   "apm.error",
+			wantNamespace: "default",
+			checkBody: func(t *testing.T, body string) {
+				// ECS encoder serializes with dedot=true, so fields become nested objects.
+				assert.Equal(t, traceID, gjson.Get(body, "trace.id").String())
+				assert.Equal(t, "java.lang.NullPointerException", gjson.Get(body, "error.exception.type").String())
+				assert.Equal(t, "null pointer", gjson.Get(body, "error.exception.message").String())
+				assert.True(t, gjson.Get(body, "error.exception.handled").Bool())
+				assert.Equal(t, "at com.example.Foo.bar(Foo.java:42)", gjson.Get(body, "error.stack_trace").String())
+				assert.Equal(t, "abcdef1234567890abcdef1234567890", gjson.Get(body, "error.id").String())
+				assert.Equal(t, "abcdef1234567890", gjson.Get(body, "error.grouping_key").String())
+				// error.grouping_name is a scripted field in the logs-apm.error index template and
+				// cannot be indexed directly; the conversion map skips it.
+				assert.False(t, gjson.Get(body, "error.grouping_name").Exists())
+				assert.Equal(t, txnID, gjson.Get(body, "parent.id").String())
+				assert.Equal(t, txnID, gjson.Get(body, "span.id").String())
+				assert.Equal(t, txnID, gjson.Get(body, "transaction.id").String())
+				assert.True(t, gjson.Get(body, "transaction.sampled").Bool())
+				assert.Equal(t, "request", gjson.Get(body, "transaction.type").String())
+				assert.Equal(t, "error", gjson.Get(body, "processor.event").String())
+				// Exceptions must NOT carry event.kind.
+				assert.False(t, gjson.Get(body, "event.kind").Exists())
+				// data_stream.type is overridden to "logs" by addDataStreamAttributes.
+				assert.Equal(t, "logs", gjson.Get(body, "data_stream.type").String())
+				assert.Equal(t, "apm.error", gjson.Get(body, "data_stream.dataset").String())
+				// Wrong ECS paths that logRecordAttrsConversionMap produces — must NOT appear.
+				assert.False(t, gjson.Get(body, "error.type").Exists())
+				assert.False(t, gjson.Get(body, "error.message").Exists())
+				assert.False(t, gjson.Get(body, "error.stacktrace").Exists())
+			},
+		},
+		{
+			name: "exception_with_span_parent",
+			resourceAttrs: func(m pcommon.Map) {
+				m.PutStr("service.name", "my-service")
+			},
+			spanSpanID: [8]byte{0x05, 0x06, 0x07, 0x08, 0x00, 0x00, 0x00, 0x00},
+			spanAttrs:  nil, // no transaction.id — span parent
+			eventName:  "exception",
+			eventAttrs: func(m pcommon.Map) {
+				m.PutStr("exception.type", "java.lang.NullPointerException")
+				m.PutStr("exception.message", "null pointer")
+				m.PutStr("exception.stacktrace", "at com.example.Foo.bar(Foo.java:42)")
+				m.PutBool("exception.escaped", false)
+				m.PutStr("error.id", "abcdef1234567890abcdef1234567890")
+				m.PutBool("error.exception.handled", true)
+				m.PutStr("processor.event", "error")
+				m.PutInt("timestamp.us", 1000000)
+				m.PutStr("data_stream.type", "traces")
+				m.PutStr("data_stream.dataset", "apm.error")
+				m.PutStr("data_stream.namespace", "default")
+			},
+			wantDataset:   "apm.error",
+			wantNamespace: "default",
+			checkBody: func(t *testing.T, body string) {
+				assert.Equal(t, traceID, gjson.Get(body, "trace.id").String())
+				// parent.id = span's own span ID (hex of [8]byte{5,6,7,8,0,0,0,0}).
+				assert.Equal(t, "0506070800000000", gjson.Get(body, "parent.id").String())
+				// span.id must NOT be present for span-parented errors.
+				assert.False(t, gjson.Get(body, "span.id").Exists())
+				// transaction.id must NOT be present for span-parented errors.
+				assert.False(t, gjson.Get(body, "transaction.id").Exists())
+				assert.Equal(t, "java.lang.NullPointerException", gjson.Get(body, "error.exception.type").String())
+				assert.Equal(t, "null pointer", gjson.Get(body, "error.exception.message").String())
+				assert.Equal(t, "at com.example.Foo.bar(Foo.java:42)", gjson.Get(body, "error.stack_trace").String())
+			},
+		},
+		{
+			name: "non_exception_with_transaction_parent",
+			resourceAttrs: func(m pcommon.Map) {
+				m.PutStr("service.name", "my-service")
+			},
+			spanSpanID: [8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08},
+			spanAttrs: func(m pcommon.Map) {
+				m.PutStr("transaction.id", txnID)
+			},
+			eventName: "http.server.request",
+			eventAttrs: func(m pcommon.Map) {
+				m.PutInt("timestamp.us", 1000000)
+				m.PutStr("data_stream.type", "traces")
+				m.PutStr("data_stream.dataset", "apm.app.my-service")
+				m.PutStr("data_stream.namespace", "default")
+			},
+			// Hyphens in service names are replaced with underscores in dataset names.
+			wantDataset:   "apm.app.my_service",
+			wantNamespace: "default",
+			checkBody: func(t *testing.T, body string) {
+				assert.Equal(t, traceID, gjson.Get(body, "trace.id").String())
+				assert.Equal(t, "event", gjson.Get(body, "event.kind").String())
+				assert.Equal(t, "http.server.request", gjson.Get(body, "message").String())
+				// span.id = transaction.id for transaction-parented log events.
+				assert.Equal(t, txnID, gjson.Get(body, "span.id").String())
+				assert.Equal(t, txnID, gjson.Get(body, "transaction.id").String())
+				// parent.id must NOT be present for non-exception events.
+				assert.False(t, gjson.Get(body, "parent.id").Exists())
+				assert.False(t, gjson.Get(body, "error").Exists())
+			},
+		},
+		{
+			name: "non_exception_with_span_parent",
+			resourceAttrs: func(m pcommon.Map) {
+				m.PutStr("service.name", "my-service")
+			},
+			spanSpanID: [8]byte{0x05, 0x06, 0x07, 0x08, 0x00, 0x00, 0x00, 0x00},
+			spanAttrs:  nil, // no transaction.id — span parent
+			eventName:  "cache.miss",
+			eventAttrs: func(m pcommon.Map) {
+				m.PutInt("timestamp.us", 1000000)
+				m.PutStr("data_stream.type", "traces")
+				m.PutStr("data_stream.dataset", "apm.app.my-service")
+				m.PutStr("data_stream.namespace", "default")
+			},
+			wantDataset:   "apm.app.my_service",
+			wantNamespace: "default",
+			checkBody: func(t *testing.T, body string) {
+				assert.Equal(t, traceID, gjson.Get(body, "trace.id").String())
+				assert.Equal(t, "event", gjson.Get(body, "event.kind").String())
+				assert.Equal(t, "cache.miss", gjson.Get(body, "message").String())
+				// span.id = span's own span ID for span-parented log events.
+				assert.Equal(t, "0506070800000000", gjson.Get(body, "span.id").String())
+				// transaction.id must NOT be present for span-parented log events.
+				assert.False(t, gjson.Get(body, "transaction.id").Exists())
+				// parent.id must NOT be present for non-exception events.
+				assert.False(t, gjson.Get(body, "parent.id").Exists())
+				assert.False(t, gjson.Get(body, "error").Exists())
+			},
+		},
+		{
+			name: "exception_namespace_from_scope_attrs",
+			resourceAttrs: func(m pcommon.Map) {
+				m.PutStr("service.name", "my-service")
+			},
+			scopeAttrs: func(m pcommon.Map) {
+				m.PutStr("data_stream.namespace", "production")
+			},
+			spanSpanID: [8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08},
+			spanAttrs: func(m pcommon.Map) {
+				m.PutStr("transaction.id", txnID)
+			},
+			eventName: "exception",
+			eventAttrs: func(m pcommon.Map) {
+				m.PutStr("exception.type", "java.lang.NullPointerException")
+				m.PutStr("exception.message", "null pointer")
+			},
+			wantDataset:   "apm.error",
+			wantNamespace: "production",
+			checkBody: func(t *testing.T, body string) {
+				assert.Equal(t, "production", gjson.Get(body, "data_stream.namespace").String())
+				assert.Equal(t, "java.lang.NullPointerException", gjson.Get(body, "error.exception.type").String())
+			},
+		},
+		{
+			name: "non_exception_namespace_from_scope_attrs",
+			resourceAttrs: func(m pcommon.Map) {
+				m.PutStr("service.name", "my-service")
+			},
+			scopeAttrs: func(m pcommon.Map) {
+				m.PutStr("data_stream.namespace", "production")
+			},
+			spanSpanID: [8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08},
+			spanAttrs: func(m pcommon.Map) {
+				m.PutStr("transaction.id", txnID)
+			},
+			eventName: "http.server.request",
+			eventAttrs: func(m pcommon.Map) {
+				m.PutInt("timestamp.us", 1000000)
+			},
+			wantDataset:   "apm.app.my_service",
+			wantNamespace: "production",
+			checkBody: func(t *testing.T, body string) {
+				assert.Equal(t, "production", gjson.Get(body, "data_stream.namespace").String())
+				assert.Equal(t, "http.server.request", gjson.Get(body, "message").String())
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			encoder, _ := newEncoder(MappingECS)
+
+			resource := pcommon.NewResource()
+			tc.resourceAttrs(resource.Attributes())
+
+			scope := pcommon.NewInstrumentationScope()
+			if tc.scopeAttrs != nil {
+				tc.scopeAttrs(scope.Attributes())
+			}
+
+			span := ptrace.NewSpan()
+			span.SetTraceID(commonTraceID)
+			span.SetSpanID(tc.spanSpanID)
+			if tc.spanAttrs != nil {
+				tc.spanAttrs(span.Attributes())
+			}
+
+			spanEvent := ptrace.NewSpanEvent()
+			spanEvent.SetName(tc.eventName)
+			spanEvent.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1, 0).UTC()))
+			tc.eventAttrs(spanEvent.Attributes())
+
+			var buf bytes.Buffer
+			idx, err := encoder.encodeSpanEvent(
+				encodingContext{resource: resource, scope: scope},
+				span, spanEvent, elasticsearch.Index{}, &buf,
+			)
+			require.NoError(t, err)
+
+			assert.Equal(t, "logs", idx.Type)
+			assert.Equal(t, tc.wantDataset, idx.Dataset)
+			assert.Equal(t, tc.wantNamespace, idx.Namespace)
+			tc.checkBody(t, buf.String())
+		})
+	}
 }

@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -105,7 +106,23 @@ func TestExport_ErrorConsumer(t *testing.T) {
 
 	logsClient, selfExp, selfProv := makeTraceServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := logsClient.Export(t.Context(), req)
-	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
+	// Non-permanent errors should be mapped to Unavailable (retryable), not Unknown.
+	assert.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
+	assert.Equal(t, plogotlp.ExportResponse{}, resp)
+
+	// One self-tracing spans is issued.
+	require.NoError(t, selfProv.ForceFlush(t.Context()))
+	require.Len(t, selfExp.GetSpans(), 1)
+}
+
+func TestExport_PermanentErrorConsumer(t *testing.T) {
+	ld := testdata.GenerateLogs(1)
+	req := plogotlp.NewExportRequestFromLogs(ld)
+
+	logsClient, selfExp, selfProv := makeTraceServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("bad data"))))
+	resp, err := logsClient.Export(t.Context(), req)
+	// Permanent errors should be mapped to Internal, not Unknown.
+	assert.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: bad data")
 	assert.Equal(t, plogotlp.ExportResponse{}, resp)
 
 	// One self-tracing spans is issued.
@@ -114,19 +131,56 @@ func TestExport_ErrorConsumer(t *testing.T) {
 }
 
 func TestExport_AdmissionRequestTooLarge(t *testing.T) {
-	ld := testdata.GenerateLogs(10)
-	logSink := newTestSink()
-	req := plogotlp.NewExportRequestFromLogs(ld)
-	logsClient, selfExp, selfProv := makeTraceServiceClient(t, logSink)
+	t.Run("with data points", func(t *testing.T) {
+		ld := testdata.GenerateLogs(10)
+		logSink := newTestSink()
+		req := plogotlp.NewExportRequestFromLogs(ld)
+		logsClient, selfExp, selfProv := makeTraceServiceClient(t, logSink)
 
-	go logSink.unblock()
-	resp, err := logsClient.Export(t.Context(), req)
-	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = rejecting request, request is too large")
-	assert.Equal(t, plogotlp.ExportResponse{}, resp)
+		go logSink.unblock()
+		resp, err := logsClient.Export(t.Context(), req)
+		assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = rejecting request, request is too large")
+		assert.Equal(t, plogotlp.ExportResponse{}, resp)
 
-	// One self-tracing spans is issued.
-	require.NoError(t, selfProv.ForceFlush(t.Context()))
-	require.Len(t, selfExp.GetSpans(), 1)
+		// One self-tracing spans is issued.
+		require.NoError(t, selfProv.ForceFlush(t.Context()))
+		require.Len(t, selfExp.GetSpans(), 1)
+	})
+
+	t.Run("with metadata only", func(t *testing.T) {
+		// Create logs with metadata but no actual log records.
+		// This should still go through admission control based on size.
+		ld := plog.NewLogs()
+		for range 100 {
+			rl := ld.ResourceLogs().AppendEmpty()
+			// Add large attributes to the resource.
+			for range 10 {
+				rl.Resource().Attributes().PutStr(
+					"large.attribute.key.that.takes.space",
+					"This is a large attribute value that demonstrates metadata can be significant even without log records",
+				)
+			}
+			// Add scope but no log records.
+			sl := rl.ScopeLogs().AppendEmpty()
+			sl.Scope().SetName("test-scope")
+		}
+
+		require.Equal(t, 0, ld.LogRecordCount(), "Test setup: should have no log records")
+
+		sizer := &plog.ProtoMarshaler{}
+		sizeBytes := sizer.LogsSize(ld)
+		require.Greater(t, sizeBytes, maxBytes, "Test setup: metadata size should exceed admission limit")
+
+		req := plogotlp.NewExportRequestFromLogs(ld)
+		logSink := newTestSink()
+		logsClient, _, _ := makeTraceServiceClient(t, logSink)
+
+		// No need to call unblock() - request is rejected by admission control
+		// before ConsumeLogs is ever called.
+		_, err := logsClient.Export(t.Context(), req)
+		// Should be rejected by admission control due to size, not accepted with early return.
+		assert.ErrorContains(t, err, "rejecting request", "Should be rejected by admission control")
+	})
 }
 
 func TestExport_AdmissionLimitExceeded(t *testing.T) {

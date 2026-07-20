@@ -87,8 +87,11 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if index == len(pages) {
 			mp.wg.Done()
 		}
-		rw.WriteHeader(http.StatusNotFound)
-		return
+		if len(pages) == 0 {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		index = len(pages) - 1
 	}
 	switch {
 	case pages[index].useProtoBuf:
@@ -151,13 +154,26 @@ func (s *signalingSink) Wait(t *testing.T, timeout time.Duration) {
 func countExpectedScrapes(targets []*testData) int {
 	count := 0
 	for _, target := range targets {
-		for _, p := range target.pages {
-			if p.code != 404 {
-				count++
-			}
-		}
+		count += getTargetExpectedScrapes(target)
 	}
 	return count
+}
+
+func getTargetExpectedScrapes(target *testData) int {
+	wantTotal := 0
+	for _, p := range target.pages {
+		if p.code != 404 {
+			wantTotal++
+		}
+	}
+	return wantTotal
+}
+
+func getTargetName(target *testData) string {
+	if target.relabeledJob != "" {
+		return target.relabeledJob
+	}
+	return target.name
 }
 
 // -------------------------
@@ -197,7 +213,6 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 		job["job_name"] = tds[i].name
 		job["metrics_path"] = metricPaths[i]
 		job["scrape_interval"] = "100ms"
-		job["scrape_timeout"] = "50ms"
 		job["static_configs"] = []map[string]any{{"targets": []string{u.Host}}}
 		jobs = append(jobs, job)
 	}
@@ -285,9 +300,11 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, target *testDa
 	// during a scrape
 	for i := range rms {
 		allMetrics := getMetrics(rms[i])
-		if expectedScrapeMetricCount <= len(allMetrics) && countScrapeMetrics(allMetrics, target.normalizedName) == expectedScrapeMetricCount ||
-			expectedExtraScrapeMetricCount <= len(allMetrics) && countScrapeMetrics(allMetrics, target.normalizedName) == expectedExtraScrapeMetricCount {
-			if isFirstFailedScrape(allMetrics, target.normalizedName) {
+		scrapeCount := countScrapeMetrics(allMetrics)
+		hasExpectedCount := (len(allMetrics) >= expectedScrapeMetricCount && scrapeCount == expectedScrapeMetricCount) ||
+			(len(allMetrics) >= expectedExtraScrapeMetricCount && scrapeCount == expectedExtraScrapeMetricCount)
+		if hasExpectedCount {
+			if isFirstFailedScrape(allMetrics) {
 				continue
 			}
 			assertUp(t, 1, allMetrics)
@@ -301,6 +318,32 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, target *testDa
 		}
 	}
 	return out
+}
+
+func isValidScrape(rm pmetric.ResourceMetrics) bool {
+	allMetrics := getMetrics(rm)
+	scrapeCount := countScrapeMetrics(allMetrics)
+
+	// A valid scrape must contain exactly the expected number of default scrape metrics
+	// (either with or without extra scrape metrics enabled).
+	hasExpectedCount := (len(allMetrics) >= expectedScrapeMetricCount && scrapeCount == expectedScrapeMetricCount) ||
+		(len(allMetrics) >= expectedExtraScrapeMetricCount && scrapeCount == expectedExtraScrapeMetricCount)
+
+	if hasExpectedCount {
+		// Skip the first failed scrape if it only contains default metrics with up=0.
+		if isFirstFailedScrape(allMetrics) {
+			return false
+		}
+		// Ensure the scrape was successful (up=1).
+		for _, m := range allMetrics {
+			if m.Name() == "up" {
+				if m.Gauge().DataPoints().At(0).DoubleValue() == 1 {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func isScrapeConfigResource(rms pmetric.ResourceMetrics, target *testData) bool {
@@ -325,7 +368,7 @@ func isScrapeConfigResource(rms pmetric.ResourceMetrics, target *testData) bool 
 	return resourceJobName.AsString() == targetJobName.AsString() && resourceInstanceID.AsString() == targetInstanceID.AsString()
 }
 
-func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
+func isFirstFailedScrape(metrics []pmetric.Metric) bool {
 	for _, m := range metrics {
 		if m.Name() == "up" {
 			if m.Gauge().DataPoints().At(0).DoubleValue() == 1 { // assumed up will not have multiple datapoints
@@ -335,7 +378,7 @@ func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 	}
 
 	for _, m := range metrics {
-		if isDefaultMetrics(m, normalizedNames) || isExtraScrapeMetrics(m) {
+		if isDefaultMetrics(m) || isExtraScrapeMetrics(m) {
 			continue
 		}
 
@@ -386,13 +429,22 @@ func assertUp(t *testing.T, expected float64, metrics []pmetric.Metric) {
 	t.Error("No 'up' metric found")
 }
 
-func countScrapeMetricsRM(got pmetric.ResourceMetrics, normalizedNames bool) int {
+func getUpValue(metrics []pmetric.Metric) float64 {
+	for _, m := range metrics {
+		if m.Name() == "up" {
+			return m.Gauge().DataPoints().At(0).DoubleValue()
+		}
+	}
+	return -1
+}
+
+func countScrapeMetricsRM(got pmetric.ResourceMetrics) int {
 	n := 0
 	ilms := got.ScopeMetrics()
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
 		for i := 0; i < ilm.Metrics().Len(); i++ {
-			if isDefaultMetrics(ilm.Metrics().At(i), normalizedNames) {
+			if isDefaultMetrics(ilm.Metrics().At(i)) {
 				n++
 			}
 		}
@@ -400,26 +452,20 @@ func countScrapeMetricsRM(got pmetric.ResourceMetrics, normalizedNames bool) int
 	return n
 }
 
-func countScrapeMetrics(metrics []pmetric.Metric, normalizedNames bool) int {
+func countScrapeMetrics(metrics []pmetric.Metric) int {
 	n := 0
 	for _, m := range metrics {
-		if isDefaultMetrics(m, normalizedNames) || isExtraScrapeMetrics(m) {
+		if isDefaultMetrics(m) || isExtraScrapeMetrics(m) {
 			n++
 		}
 	}
 	return n
 }
 
-func isDefaultMetrics(m pmetric.Metric, normalizedNames bool) bool {
+func isDefaultMetrics(m pmetric.Metric) bool {
 	switch m.Name() {
-	case "up", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
+	case "up", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added", "scrape_duration_seconds", "scrape_duration":
 		return true
-
-	// if normalizedNames is true, we expect unit `_seconds` to be trimmed.
-	case "scrape_duration_seconds":
-		return !normalizedNames
-	case "scrape_duration":
-		return normalizedNames
 	default:
 	}
 	return false
@@ -469,7 +515,7 @@ func doCompare(t *testing.T, name string, want pcommon.Map, got pmetric.Resource
 
 func doCompareNormalized(t *testing.T, name string, want pcommon.Map, got pmetric.ResourceMetrics, metricExpectations []metricExpectation, normalizedNames bool) {
 	t.Run(name, func(t *testing.T) {
-		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got, normalizedNames))
+		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got))
 		assertExpectedAttributes(t, want, got)
 		assertExpectedMetrics(t, metricExpectations, got, normalizedNames, false)
 	})
@@ -843,26 +889,39 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	// Wait for consumer to receive all expected scrapes (deterministic, replaces polling).
 	cms.Wait(t, 30*time.Second)
 
-	// This begins the processing of the scrapes collected by the receiver
-	metrics := cms.AllMetrics()
-	// split and store results by target name
-	pResults := splitMetricsByTarget(metrics)
-	lres, lep := len(pResults), len(mp.endpoints)
-	// There may be an additional scrape entry between when the mock server provided
-	// all responses and when we capture the metrics.  It will be ignored later.
-	assert.GreaterOrEqualf(t, lres, lep, "want at least %d targets, but got %v\n", lep, lres)
+	// Wait for per-target scrape counts, capturing the snapshot used for validation.
+	var pResults map[string][]pmetric.ResourceMetrics
+	require.Eventually(t, func() bool {
+		metrics := cms.AllMetrics()
+		pResults = splitMetricsByTarget(metrics)
+		for _, target := range targets[:len(mp.endpoints)] {
+			scrapes := pResults[getTargetName(target)]
+
+			expected := getTargetExpectedScrapes(target)
+			if !target.validateScrapes {
+				validCount := 0
+				for _, s := range scrapes {
+					if isValidScrape(s) {
+						validCount++
+					}
+				}
+				if validCount < expected {
+					return false
+				}
+			} else if len(scrapes) < expected {
+				return false
+			}
+		}
+		return true
+	}, 10*time.Second, 10*time.Millisecond, "failed to receive expected scrapes")
 
 	// loop to validate outputs for each targets
 	// Stop once we have evaluated all expected results, any others are superfluous.
-	for _, target := range targets[:lep] {
+	for _, target := range targets[:len(mp.endpoints)] {
 		t.Run(target.name, func(t *testing.T) {
-			name := target.name
-			if target.relabeledJob != "" {
-				name = target.relabeledJob
-			}
-			scrapes := pResults[name]
+			scrapes := pResults[getTargetName(target)]
 			if !target.validateScrapes {
-				scrapes = getValidScrapes(t, pResults[name], target)
+				scrapes = getValidScrapes(t, scrapes, target)
 			}
 			target.validateFunc(t, target, scrapes)
 		})

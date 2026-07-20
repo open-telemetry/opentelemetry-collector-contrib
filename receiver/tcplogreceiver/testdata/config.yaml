@@ -1,2 +1,7 @@
-tcplog:
+tcp_log:
   listen_address: "127.0.0.1:29018"
+  retry_on_failure:
+    enabled: false
+    initial_interval: 1000000000
+    max_interval: 30000000000
+    max_elapsed_time: 300000000000

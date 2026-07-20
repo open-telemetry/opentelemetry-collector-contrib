@@ -27,6 +27,8 @@ var (
 	dt1     = time.Date(2019, 1, 2, 15, 4, 5, 666666000, time.UTC)
 	dt2     = time.Date(2019, 1, 2, 15, 4, 5, 666000000, time.UTC)
 	dt3     = time.Date(2025, 7, 7, 1, 7, 27, 123456789, time.UTC)
+	layout1 = "2006-1-2 15:4:5.999999"
+	layout2 = "2006-1-2 3:4:5.999 pm, Mon"
 )
 
 func TestFormat(t *testing.T) {
@@ -44,13 +46,39 @@ func TestFormat(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	dt, err := Parse(format1, value1)
+	dt, layout, err := Parse(format1, func(native string) (time.Time, error) { return time.Parse(native, value1) })
 	require.NoError(t, err)
-	assert.Equal(t, dt, dt1, "Given: %v, expected: %v", dt, dt1)
+	assert.Equal(t, dt1, dt, "Given: %v, expected: %v", dt, dt1)
+	assert.Equal(t, layout1, layout)
 
-	dt, err = Parse(format2, value2)
+	dt, layout, err = Parse(format2, func(native string) (time.Time, error) { return time.Parse(native, value2) })
 	require.NoError(t, err)
-	assert.Equal(t, dt, dt2, "Given: %v, expected: %v", dt, dt2)
+	assert.Equal(t, dt2, dt, "Given: %v, expected: %v", dt, dt2)
+	assert.Equal(t, layout2, layout)
+}
+
+func TestFlexibleParse(t *testing.T) {
+	// These test cases cover only the format specifiers that are unique to OTel or have conflicting behavior vs strptime.
+	// See ../../strptime_test.go for test cases that verify OTel's behavior matches strptime.
+	want := time.Date(2019, 1, 2, 15, 4, 5, 0, time.UTC)
+	for _, tc := range []struct {
+		name, format, input string
+	}{
+		{"baseline", "%Y-%m-%dT%H:%M:%S%z", "2019-1-2T15:4:5Z"},
+		// Bespoke to OTel
+		{"o", "%Y-%o-%dT%H:%M:%S%z", "2019-1-2T15:4:5Z"},
+		{"q", "%Y-%q-%dT%H:%M:%S%z", "2019-1-2T15:4:5Z"},
+		// Conflicting with normal strptime behavior
+		{"X", "%Y-%m-%dT%X%z", "2019-1-2T15:4:5Z"},
+		{"g", "%Y-%m-%gT%H:%M:%S%z", "2019-1-2T15:4:5Z"},
+		{"r", "%Y-%m-%d %r", "2019-1-2 3:4:5 pm"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, _, err := Parse(tc.format, func(native string) (time.Time, error) { return time.Parse(native, tc.input) })
+			require.NoError(t, err)
+			assert.Equal(t, want, got)
+		})
+	}
 }
 
 func TestZulu(t *testing.T) {
@@ -60,10 +88,18 @@ func TestZulu(t *testing.T) {
 		"2019-01-02T15:04:05.666666Z",
 		"2019-01-02T15:04:05.666666-0000",
 		"2019-01-02T15:04:05.666666+0000",
+		"2019-01-02T15:04:05.666666+00:00",
+		"2019-01-02T15:04:05.666666+00",
+		"2019-01-02T15:04:05.666666 Z",
+		"2019-01-02T15:04:05.666666 -0000",
+		"2019-01-02T15:04:05.666666 +0000",
+		"2019-01-02T15:04:05.666666 +00:00",
+		"2019-01-02T15:04:05.666666 +00",
 	} {
 		t.Run(input, func(t *testing.T) {
-			dt, err := Parse(format, input)
+			dt, layout, err := Parse(format, func(native string) (time.Time, error) { return time.Parse(native, input) })
 			require.NoError(t, err)
+			assert.NotEmpty(t, layout)
 			// We compare the unix nanoseconds because Go has a subtle parsing difference between "Z" and "+0000".
 			// The former returns a Time with the UTC timezone, the latter returns a Time with a 0000 time zone offset.
 			// (See Go's documentation for `time.Parse`.)
@@ -107,7 +143,7 @@ func TestValidate(t *testing.T) {
 			args: args{
 				layout: "%C-%m-%d-%H-%M-%S.%L",
 			},
-			wantErr: "invalid strptime format: [unsupported ctimefmt.ToNative() directive: %C]",
+			wantErr: "invalid strptime format: [unsupported ctimefmt.toNative() directive: %C]",
 		},
 	}
 	for _, tt := range tests {
@@ -119,44 +155,6 @@ func TestValidate(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-		})
-	}
-}
-
-func TestGetNativeSubstitutes(t *testing.T) {
-	type args struct {
-		format string
-	}
-	tests := []struct {
-		name string
-		args args
-		want map[string]string
-	}{
-		{
-			name: "get ctime directives",
-			args: args{
-				format: "%Y-%m-%d %H:%M:%S.%f",
-			},
-			want: map[string]string{"01": "%m", "02": "%d", "04": "%M", "05": "%S", "15": "%H", "2006": "%Y", "999999": "%f"},
-		},
-		{
-			name: "format contains unsupported directive",
-			args: args{
-				format: "%C-%m-%d-%H-%M-%S.%L",
-			},
-			want: map[string]string{"01": "%m", "02": "%d", "04": "%M", "05": "%S", "15": "%H", "999": "%L"},
-		},
-		{
-			name: "format contains Go layout elements",
-			args: args{
-				format: "2006-%m-%d",
-			},
-			want: map[string]string{"01": "%m", "02": "%d"},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, GetNativeSubstitutes(tt.args.format), "GetNativeSubstitutes(%v)", tt.args.format)
 		})
 	}
 }

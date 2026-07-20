@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -21,23 +22,33 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
+	legacyServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	legacyServerConfig.WriteTimeout = 0
+	legacyServerConfig.ReadHeaderTimeout = 0
+	legacyServerConfig.IdleTimeout = 0
+	legacyServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+	}
+	legacyServerConfig.KeepAlivesEnabled = true
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpServerConfig.WriteTimeout = 0
+	httpServerConfig.ReadHeaderTimeout = 0
+	httpServerConfig.IdleTimeout = 0
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+	}
+	httpServerConfig.KeepAlivesEnabled = true
 	assert.Equal(t, &Config{
 		LegacyConfig: healthcheck.HTTPLegacyConfig{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: "tcp",
-					Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
-				},
-			},
-			Path: "/",
+			ServerConfig: legacyServerConfig,
+			Path:         "/",
 		},
 		HTTPConfig: &healthcheck.HTTPConfig{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: "tcp",
-					Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
-				},
-			},
+			ServerConfig: httpServerConfig,
 			Status: healthcheck.PathConfig{
 				Enabled: true,
 				Path:    "/status",
@@ -53,6 +64,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 					Endpoint:  testutil.EndpointForPort(healthcheck.DefaultGRPCPort),
 					Transport: "tcp",
 				},
+				Keepalive: configoptional.Some(configgrpc.NewDefaultKeepaliveServerConfig()),
 			},
 		},
 	}, cfg)
@@ -63,6 +75,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	ext, err := createExtension(ctx, extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
+	require.NoError(t, ext.Shutdown(ctx))
 }
 
 func TestCreate(t *testing.T) {
@@ -73,4 +86,5 @@ func TestCreate(t *testing.T) {
 	ext, err := createExtension(ctx, extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
+	require.NoError(t, ext.Shutdown(ctx))
 }

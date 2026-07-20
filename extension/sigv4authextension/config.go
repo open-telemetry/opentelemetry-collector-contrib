@@ -25,6 +25,7 @@ type AssumeRole struct {
 	SessionName          string `mapstructure:"session_name,omitempty"`
 	STSRegion            string `mapstructure:"sts_region,omitempty"`
 	WebIdentityTokenFile string `mapstructure:"web_identity_token_file,omitempty"`
+	ExternalID           string `mapstructure:"external_id,omitempty"`
 }
 
 // compile time check that the Config struct satisfies the component.Config interface

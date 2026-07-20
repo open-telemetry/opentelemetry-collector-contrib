@@ -1,4 +1,6 @@
 $defs:
+  counter_type:
+    type: string
   explicit_bucket:
     type: object
     properties:

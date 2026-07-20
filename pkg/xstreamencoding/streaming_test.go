@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
@@ -139,4 +141,152 @@ func TestStreamBatchHelper_ShouldFlush(t *testing.T) {
 
 	helper.IncrementItems(5)
 	assert.True(t, helper.ShouldFlush())
+}
+
+type stubLogsUnmarshaler struct {
+	logs plog.Logs
+	err  error
+}
+
+func (s *stubLogsUnmarshaler) UnmarshalLogs(_ []byte) (plog.Logs, error) {
+	return s.logs, s.err
+}
+
+type capturingLogsUnmarshaler struct {
+	received *[]byte
+}
+
+func (s *capturingLogsUnmarshaler) UnmarshalLogs(data []byte) (plog.Logs, error) {
+	*s.received = data
+	return plog.NewLogs(), nil
+}
+
+type stubMetricsUnmarshaler struct {
+	metrics pmetric.Metrics
+	err     error
+}
+
+func (s *stubMetricsUnmarshaler) UnmarshalMetrics(_ []byte) (pmetric.Metrics, error) {
+	return s.metrics, s.err
+}
+
+type capturingMetricsUnmarshaler struct {
+	received *[]byte
+}
+
+func (s *capturingMetricsUnmarshaler) UnmarshalMetrics(data []byte) (pmetric.Metrics, error) {
+	*s.received = data
+	return pmetric.NewMetrics(), nil
+}
+
+func TestLogsUnmarshalerDecoderFactory(t *testing.T) {
+	t.Run("decode returns result then EOF", func(t *testing.T) {
+		expected := plog.NewLogs()
+		expected.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("hello")
+
+		factory := NewLogsUnmarshalerDecoderFactory(&stubLogsUnmarshaler{logs: expected})
+		input := "some log data"
+		decoder, err := factory.NewLogsDecoder(strings.NewReader(input))
+		require.NoError(t, err)
+
+		logs, err := decoder.DecodeLogs()
+		require.NoError(t, err)
+		assert.Equal(t, expected, logs)
+
+		_, err = decoder.DecodeLogs()
+		assert.ErrorIs(t, err, io.EOF)
+	})
+
+	t.Run("offset equals bytes read", func(t *testing.T) {
+		factory := NewLogsUnmarshalerDecoderFactory(&stubLogsUnmarshaler{logs: plog.NewLogs()})
+		input := "12345678"
+		decoder, err := factory.NewLogsDecoder(strings.NewReader(input))
+		require.NoError(t, err)
+
+		assert.Equal(t, int64(0), decoder.Offset())
+
+		_, err = decoder.DecodeLogs()
+		require.NoError(t, err)
+		assert.Equal(t, int64(len(input)), decoder.Offset())
+	})
+
+	t.Run("with offset option skips bytes", func(t *testing.T) {
+		input := "XXXXXreal data"
+		var received []byte
+		captureUnmarshaler := &capturingLogsUnmarshaler{received: &received}
+		factory := NewLogsUnmarshalerDecoderFactory(captureUnmarshaler)
+
+		decoder, err := factory.NewLogsDecoder(strings.NewReader(input), encoding.WithOffset(5))
+		require.NoError(t, err)
+
+		_, err = decoder.DecodeLogs()
+		require.NoError(t, err)
+		assert.Equal(t, []byte("real data"), received)
+		assert.Equal(t, int64(len(input)), decoder.Offset())
+	})
+
+	t.Run("unmarshal error propagates", func(t *testing.T) {
+		factory := NewLogsUnmarshalerDecoderFactory(&stubLogsUnmarshaler{err: assert.AnError})
+		decoder, err := factory.NewLogsDecoder(strings.NewReader("data"))
+		require.NoError(t, err)
+
+		_, err = decoder.DecodeLogs()
+		require.ErrorIs(t, err, assert.AnError)
+	})
+}
+
+func TestMetricsUnmarshalerDecoderFactory(t *testing.T) {
+	t.Run("decode returns result then EOF", func(t *testing.T) {
+		expected := pmetric.NewMetrics()
+		expected.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("test")
+
+		factory := NewMetricsUnmarshalerDecoderFactory(&stubMetricsUnmarshaler{metrics: expected})
+		input := "some metric data"
+		decoder, err := factory.NewMetricsDecoder(strings.NewReader(input))
+		require.NoError(t, err)
+
+		metrics, err := decoder.DecodeMetrics()
+		require.NoError(t, err)
+		assert.Equal(t, expected, metrics)
+
+		_, err = decoder.DecodeMetrics()
+		assert.ErrorIs(t, err, io.EOF)
+	})
+
+	t.Run("offset equals bytes read", func(t *testing.T) {
+		factory := NewMetricsUnmarshalerDecoderFactory(&stubMetricsUnmarshaler{metrics: pmetric.NewMetrics()})
+		input := "12345678"
+		decoder, err := factory.NewMetricsDecoder(strings.NewReader(input))
+		require.NoError(t, err)
+
+		assert.Equal(t, int64(0), decoder.Offset())
+
+		_, err = decoder.DecodeMetrics()
+		require.NoError(t, err)
+		assert.Equal(t, int64(len(input)), decoder.Offset())
+	})
+
+	t.Run("with offset option skips bytes", func(t *testing.T) {
+		input := "XXXXXreal data"
+		var received []byte
+		captureUnmarshaler := &capturingMetricsUnmarshaler{received: &received}
+		factory := NewMetricsUnmarshalerDecoderFactory(captureUnmarshaler)
+
+		decoder, err := factory.NewMetricsDecoder(strings.NewReader(input), encoding.WithOffset(5))
+		require.NoError(t, err)
+
+		_, err = decoder.DecodeMetrics()
+		require.NoError(t, err)
+		assert.Equal(t, []byte("real data"), received)
+		assert.Equal(t, int64(len(input)), decoder.Offset())
+	})
+
+	t.Run("unmarshal error propagates", func(t *testing.T) {
+		factory := NewMetricsUnmarshalerDecoderFactory(&stubMetricsUnmarshaler{err: assert.AnError})
+		decoder, err := factory.NewMetricsDecoder(strings.NewReader("data"))
+		require.NoError(t, err)
+
+		_, err = decoder.DecodeMetrics()
+		require.ErrorIs(t, err, assert.AnError)
+	})
 }

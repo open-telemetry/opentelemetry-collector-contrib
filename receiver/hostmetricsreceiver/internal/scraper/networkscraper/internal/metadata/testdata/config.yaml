@@ -3,31 +3,62 @@ all_set:
   metrics:
     system.network.connections:
       enabled: true
+      attributes: ["protocol","state"]
     system.network.conntrack.count:
       enabled: true
     system.network.conntrack.max:
       enabled: true
     system.network.dropped:
       enabled: true
+      attributes: ["device","direction"]
     system.network.errors:
       enabled: true
+      attributes: ["device","direction"]
     system.network.io:
       enabled: true
+      attributes: ["device","direction"]
     system.network.packets:
       enabled: true
+      attributes: ["device","direction"]
+reaggregate_set:
+  metrics:
+    system.network.connections:
+      enabled: true
+      attributes: []
+    system.network.conntrack.count:
+      enabled: true
+    system.network.conntrack.max:
+      enabled: true
+    system.network.dropped:
+      enabled: true
+      attributes: []
+    system.network.errors:
+      enabled: true
+      attributes: []
+    system.network.io:
+      enabled: true
+      attributes: []
+    system.network.packets:
+      enabled: true
+      attributes: []
 none_set:
   metrics:
     system.network.connections:
       enabled: false
+      attributes: ["protocol","state"]
     system.network.conntrack.count:
       enabled: false
     system.network.conntrack.max:
       enabled: false
     system.network.dropped:
       enabled: false
+      attributes: ["device","direction"]
     system.network.errors:
       enabled: false
+      attributes: ["device","direction"]
     system.network.io:
       enabled: false
+      attributes: ["device","direction"]
     system.network.packets:
       enabled: false
+      attributes: ["device","direction"]

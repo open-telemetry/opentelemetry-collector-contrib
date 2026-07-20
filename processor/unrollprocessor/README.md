@@ -4,14 +4,14 @@
 The Unroll Processor takes log records with slice bodies and expands each element of the slice into its own log
 record. This allows for better processing and analysis of structured log data that contains arrays or lists.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Funroll%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Funroll) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Funroll%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Funroll) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_unroll)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_unroll&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@axw](https://www.github.com/axw), [@schmikei](https://www.github.com/schmikei), [@rnishtala-sumo](https://www.github.com/rnishtala-sumo) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@schmikei](https://www.github.com/schmikei), [@rnishtala-sumo](https://www.github.com/rnishtala-sumo) |
+| Emeritus      | [@axw](https://www.github.com/axw) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -69,7 +69,7 @@ service:
     logs:
       receivers: [otlp]
       processors: [unroll]
-      exporters: [logging]
+      exporters: [debug]
 ```
 
 ### Split a log record into multiple via a delimiter
@@ -78,7 +78,7 @@ The following configuration utilizes the [transform processor](https://github.co
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: [ ./test.txt ]
     start_at: beginning
 
@@ -98,7 +98,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       processors: [transform, unroll]
       exporters: [file]
 ```
@@ -189,7 +189,7 @@ service:
     logs:
       receivers: [otlp]
       processors: [unroll]
-      exporters: [logging]
+      exporters: [debug]
 ```
 
 This configuration will unroll nested slices within slice elements, creating individual log records for all nested elements.

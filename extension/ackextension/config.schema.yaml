@@ -1,0 +1,16 @@
+description: Config defines configuration for ack extension
+type: object
+properties:
+  max_number_of_partition:
+    description: MaxNumPartition Specifies the maximum number of partitions that clients can acquire for this extension instance. Implementation defines how limit exceeding should be handled.
+    type: integer
+    x-customType: uint64
+  max_number_of_pending_acks_per_partition:
+    description: MaxNumPendingAcksPerPartition Specifies the maximum number of ackIDs and their corresponding status information that are waiting to be queried in each partition.
+    type: integer
+    x-customType: uint64
+  storage:
+    description: StorageID defines the storage type of the extension. In-memory type is set by default (if not provided). Future consideration is disk type.
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID

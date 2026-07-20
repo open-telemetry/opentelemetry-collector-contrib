@@ -63,7 +63,7 @@ func TestCreateLegacyExporter(t *testing.T) {
 }
 
 func TestCustomMonitoredResourceMapping(t *testing.T) {
-	_ = featuregate.GlobalRegistry().Set("exporter.googlecloud.CustomMonitoredResources", true)
+	_ = featuregate.GlobalRegistry().Set(metadata.ExporterGooglecloudCustomMonitoredResourcesFeatureGate.ID(), true)
 	ctx := t.Context()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()

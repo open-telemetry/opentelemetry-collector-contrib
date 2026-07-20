@@ -22,6 +22,8 @@ $defs:
         type: array
         items:
           type: string
+      include_log_record_original:
+        type: boolean
       journalctl_path:
         type: string
       matches:
@@ -43,4 +45,4 @@ $defs:
         items:
           type: string
     allOf:
-      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.input_config
+      - $ref: /pkg/stanza/operator/helper.input_config

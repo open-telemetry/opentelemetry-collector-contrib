@@ -6,16 +6,20 @@ package tcplogreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver/internal/metadata"
 )
 
-// NewFactory creates a factory for tcp receiver
+// NewFactory creates a factory for tcp_log receiver
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability)
+	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability,
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 // ReceiverType implements adapter.LogReceiverType
@@ -31,7 +35,8 @@ func (ReceiverType) Type() component.Type {
 func (ReceiverType) CreateDefaultConfig() component.Config {
 	return &TCPLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			Operators: []operator.Config{},
+			Operators:      []operator.Config{},
+			RetryOnFailure: consumerretry.NewDefaultConfig(),
 		},
 		InputConfig: *tcp.NewConfig(),
 	}
@@ -42,7 +47,7 @@ func (ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*TCPLogConfig).BaseConfig
 }
 
-// TCPLogConfig defines configuration for the tcp receiver
+// TCPLogConfig defines configuration for the tcp_log receiver
 type TCPLogConfig struct {
 	InputConfig        tcp.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`

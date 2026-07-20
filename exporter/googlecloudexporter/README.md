@@ -108,7 +108,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
         check_interval: 1s
         limit_percentage: 65
         spike_limit_percentage: 20
-      resourcedetection:
+      resource_detection:
         detectors: [gcp]
         timeout: 10s
     service:
@@ -321,7 +321,7 @@ It also parses out the `timestamp` and inserts a non-default `log_name` attribut
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: [ /var/log/apache.log ]
     start_at: beginning
     operators:
@@ -348,7 +348,7 @@ processors:
     check_interval: 1s
     limit_percentage: 65
     spike_limit_percentage: 20
-  resourcedetection:
+  resource_detection:
     detectors: [gcp]
     timeout: 10s
   attributes:
@@ -361,8 +361,8 @@ processors:
 
 service:
     logs:
-      receivers: [filelog]
-      processors: [memory_limiter, resourcedetection, attributes]
+      receivers: [file_log]
+      processors: [memory_limiter, resource_detection, attributes]
       exporters: [googlecloud]
 
 ```

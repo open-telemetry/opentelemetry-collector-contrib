@@ -12,25 +12,26 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 )
 
 type eventType string
 
 const (
-	s3Event           eventType = "S3Event"
-	cwEvent           eventType = "CloudWatchEvent"
-	customReplayEvent eventType = "replayFailedEvents"
+	s3Event     eventType = "S3Event"
+	cwEvent     eventType = "CloudWatchEvent"
+	customEvent eventType = "CustomEvent"
+	replayEvent eventType = "replayFailedEvents"
 
 	// defaultMetricsEncodingExtension defines the default encoding extension ID for metrics when none is specified
 	defaultMetricsEncodingExtension = "awscloudwatchmetricstreams_encoding"
@@ -95,7 +96,7 @@ func newMetricsReceiver(cfg *Config, set receiver.Settings, next consumer.Metric
 func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) error {
 	// Verify we're running in a Lambda environment
 	if os.Getenv("AWS_EXECUTION_ENV") == "" || !strings.HasPrefix(os.Getenv("AWS_EXECUTION_ENV"), "AWS_Lambda_") {
-		return errors.New("awslambdareceiver must be used in an AWS Lambda environment: missing environment variable AWS_EXECUTION_ENV")
+		return errors.New("aws_lambda receiver must be used in an AWS Lambda environment: missing environment variable AWS_EXECUTION_ENV")
 	}
 
 	// Initialize S3 provider to be used by implementations
@@ -113,16 +114,11 @@ func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) erro
 
 // processLambdaEvent filters trigger events and forward to dedicated processors
 func (a *awsLambdaReceiver) processLambdaEvent(ctx context.Context, event json.RawMessage) error {
-	triggerType, err := detectTriggerType(event)
-	if err != nil {
-		// Unknown or invalid event triggers are suppressed so that they do not get replayed by the lambda framework.
-		a.logger.Error("Received an event with invalid or unsupported trigger type", zap.Error(err))
-		return nil
-	}
+	triggerType := detectTriggerType(event)
 
-	if triggerType == customReplayEvent {
+	if triggerType == replayEvent {
 		a.logger.Info("Running custom event", zap.String(logInvokedTrigger, string(triggerType)))
-		service, err := a.s3Provider.GetService(ctx)
+		service, err := a.s3Provider.GetService(ctx, a.cfg.S3.AWSOptions)
 		if err != nil {
 			return err
 		}
@@ -159,13 +155,7 @@ func (a *awsLambdaReceiver) handleCustomTriggers(ctx context.Context, customEven
 			continue
 		}
 
-		tType, err := detectTriggerType(content)
-		if err != nil {
-			// Note - Manual triggers are synchronous.
-			// Errors for synchronous invocations are not retried by Lambda & not stored at error destination.
-			return fmt.Errorf("invalid lambda trigger event from custom trigger: %w", err)
-		}
-
+		tType := detectTriggerType(content)
 		err = a.handleEvent(ctx, content, tType)
 		if err != nil {
 			a.logger.Error("error while processing content of the custom trigger", zap.Error(err))
@@ -228,50 +218,90 @@ func newLogsHandler(
 	s3Provider internal.S3Provider,
 ) (handlerProvider, error) {
 	logger := set.Logger
-	var s3Unmarshaler unmarshalFunc[plog.Logs] = bytesToPlogs
-	if cfg.S3.Encoding != "" {
-		logger.Info("Using configured S3 encoding for logs", zap.String("encoding", cfg.S3.Encoding))
-		extension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.S3.Encoding, "logs")
-		if err != nil {
-			return nil, err
-		}
 
-		s3Unmarshaler = extension.UnmarshalLogs
-	}
-
-	var cwUnmarshaler unmarshalFunc[plog.Logs] = cwLogsToPlogs
-	if cfg.CloudWatch.Encoding != "" {
-		logger.Info("Using configured CloudWatch encoding for logs", zap.String("encoding", cfg.CloudWatch.Encoding))
-		extension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.CloudWatch.Encoding, "logs")
-		if err != nil {
-			return nil, err
-		}
-
-		cwUnmarshaler = extension.UnmarshalLogs
-	}
-
-	s3Service, err := s3Provider.GetService(ctx)
+	s3Service, err := s3Provider.GetService(ctx, cfg.S3.AWSOptions)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load the S3 service: %w", err)
 	}
 
-	// Register handlers. Logs supports S3 and CloudWatch Logs subscription events.
 	registry := make(handlerRegistry)
-	registry[s3Event] = func() lambdaEventHandler {
-		// Wrapper function that sets observed timestamp for S3 logs
-		logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
-			enrichS3Logs(logs, event)
-			return next.ConsumeLogs(ctx, logs)
+
+	// S3: multi-encoding or single-encoding. Both paths resolve to newS3LogsHandler,
+	// which accepts a per-event getDecoder function.
+	var getLogsDecoder func(objectKey string) (encoding.LogsDecoderFactory, string, error)
+	if len(cfg.S3.Encodings) > 0 {
+		s3Router, buildErr := buildS3LogsRouter(host, cfg.S3, logger)
+		if buildErr != nil {
+			return nil, fmt.Errorf("failed to build S3 multi-encoding router: %w", buildErr)
+		}
+		getLogsDecoder = s3Router.GetDecoder
+	} else {
+		s3LogsDecoder := internal.NewDefaultBlobDecoder()
+		if cfg.S3.Encoding != "" {
+			logger.Info("Using configured S3 encoding for logs", zap.String("encoding", cfg.S3.Encoding))
+			s3LogsDecoder, err = resolveLogsDecoder(host, cfg.S3.Encoding)
+			if err != nil {
+				return nil, err
+			}
+		}
+		encodingName := cfg.S3.Encoding
+		getLogsDecoder = func(_ string) (encoding.LogsDecoderFactory, string, error) {
+			return s3LogsDecoder, encodingName, nil
+		}
+	}
+	registry[s3Event] = newS3LogsHandler(s3Service, logger, getLogsDecoder, next)
+
+	// CloudWatch: single-encoding path unchanged in this PR.
+	cwDecoder := internal.NewDefaultCWLogsDecoder()
+	if cfg.CloudWatch.Encoding != "" {
+		logger.Info("Using configured CloudWatch encoding for logs", zap.String("encoding", cfg.CloudWatch.Encoding))
+		cwDecoder, err = resolveLogsDecoder(host, cfg.CloudWatch.Encoding)
+		if err != nil {
+			return nil, err
+		}
+	}
+	registry[cwEvent] = newCWLogsSubscriptionHandler(cwDecoder, next)
+
+	// Customer handler: register only if provided.
+	if cfg.Custom.Encoding != "" {
+		logger.Info("Using configured encoding for custom logs trigger", zap.String("encoding", cfg.Custom.Encoding))
+		customDecoder, err := resolveLogsDecoder(host, cfg.Custom.Encoding)
+		if err != nil {
+			return nil, err
 		}
 
-		return newS3Handler(s3Service, logger, s3Unmarshaler, logsConsumer)
-	}
-
-	registry[cwEvent] = func() lambdaEventHandler {
-		return newCWLogsSubscriptionHandler(cwUnmarshaler, next.ConsumeLogs)
+		registry[customEvent] = newCustomHandler(customDecoder, next)
 	}
 
 	return newHandlerProvider(registry), nil
+}
+
+// buildS3LogsRouter constructs a logsDecoderRouter from the S3 encodings config.
+// Encodings are sorted by path pattern specificity before being passed to the router.
+func buildS3LogsRouter(host component.Host, cfg S3Config, logger *zap.Logger) (*logsDecoderRouter, error) {
+	sortedEncodings := cfg.sortedEncodings()
+	decoders := make(map[string]encoding.LogsDecoderFactory, len(sortedEncodings))
+
+	defaultDecoder := internal.NewDefaultBlobDecoder()
+	for _, enc := range sortedEncodings {
+		if enc.Encoding == "" {
+			// No extension configured: use the raw-passthrough decoder.
+			decoders[enc.Name] = defaultDecoder
+			continue
+		}
+		decoder, err := resolveLogsDecoder(host, enc.Encoding)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve encoding for S3 entry %q: %w", enc.Name, err)
+		}
+		logger.Info("Registered decoder for S3 encoding entry",
+			zap.String("name", enc.Name),
+			zap.String("encoding", enc.Encoding),
+			zap.String("pattern", enc.resolvePathPattern()),
+		)
+		decoders[enc.Name] = decoder
+	}
+
+	return newLogsDecoderRouter(sortedEncodings, decoders), nil
 }
 
 func newMetricsHandler(
@@ -283,6 +313,10 @@ func newMetricsHandler(
 	s3Provider internal.S3Provider,
 ) (handlerProvider, error) {
 	logger := set.Logger
+	// Multi-format routing via 's3.encodings' is only supported for logs.
+	if len(cfg.S3.Encodings) > 0 {
+		return nil, errors.New("'s3.encodings' is only supported for the logs signal type; use 's3.encoding' for metrics")
+	}
 	extensionID := defaultMetricsEncodingExtension
 	// Note: for metrics, we currently support S3 trigger only.
 	if cfg.S3.Encoding != "" {
@@ -290,27 +324,56 @@ func newMetricsHandler(
 		extensionID = cfg.S3.Encoding
 	}
 
-	encodingExtension, err := loadEncodingExtension[pmetric.Unmarshaler](host, extensionID, "metrics")
+	ext, err := loadEncodingExtension[extension.Extension](host, extensionID, "metrics")
 	if err != nil {
 		return nil, err
 	}
 
-	s3Service, err := s3Provider.GetService(ctx)
+	var decoder encoding.MetricsDecoderFactory
+	decoder, ok := ext.(encoding.MetricsDecoderExtension)
+	if !ok {
+		// derive a decoder wrapper if extension is of encoding.MetricsUnmarshalerExtension type
+		metricsUnmarshaler, t := ext.(encoding.MetricsUnmarshalerExtension)
+		if !t {
+			return nil, errors.New("provided extension does not implement MetricsDecoder or MetricsUnmarshalerExtension interfaces")
+		}
+
+		decoder = xstreamencoding.NewMetricsUnmarshalerDecoderFactory(metricsUnmarshaler)
+	}
+
+	s3Service, err := s3Provider.GetService(ctx, cfg.S3.AWSOptions)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load the S3 service: %w", err)
 	}
 
 	// Register handlers. Metrics supports S3 events.
 	registry := make(handlerRegistry)
-	registry[s3Event] = func() lambdaEventHandler {
-		metricConsumer := func(ctx context.Context, _ events.S3EventRecord, metrics pmetric.Metrics) error {
-			return next.ConsumeMetrics(ctx, metrics)
-		}
-
-		return newS3Handler(s3Service, set.Logger, encodingExtension.UnmarshalMetrics, metricConsumer)
-	}
+	registry[s3Event] = newS3MetricsHandler(s3Service, set.Logger, decoder, next)
 
 	return newHandlerProvider(registry), nil
+}
+
+func resolveLogsDecoder(host component.Host, encoderName string) (encoding.LogsDecoderFactory, error) {
+	var ext extension.Extension
+	ext, err := loadEncodingExtension[extension.Extension](host, encoderName, "logs")
+	if err != nil {
+		return nil, err
+	}
+
+	var decoderFactory encoding.LogsDecoderFactory
+	var ok bool
+	decoderFactory, ok = ext.(encoding.LogsDecoderExtension)
+	if !ok {
+		// derive a decoder wrapper if extension is of encoding.LogsUnmarshalerExtension type
+		logsUnmarshaler, t := ext.(encoding.LogsUnmarshalerExtension)
+		if !t {
+			return nil, errors.New("provided extension does not implement LogsDecoder or LogsUnmarshalerExtension interfaces")
+		}
+
+		decoderFactory = xstreamencoding.NewLogsUnmarshalerDecoderFactory(logsUnmarshaler)
+	}
+
+	return decoderFactory, nil
 }
 
 // loadEncodingExtension attempts to load an available extension for the given name.
@@ -336,31 +399,35 @@ func loadEncodingExtension[T any](host component.Host, encoding, signalType stri
 // Supported trigger types are:
 // - S3Event
 // - CloudWatchEvent
+// - CustomEvent
 // See payload content at official documentation,
-//   - For S3: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#S3Event
-//   - For CloudWatch: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#CloudwatchLogsEvent
+// - For S3: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#S3Event
+// - For CloudWatch: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#CloudwatchLogsEvent
 //
-// Suppoerted custom trigger type:
+// Supported custom trigger type:
 // - replayFailedEvents
-func detectTriggerType(data []byte) (eventType, error) {
+// Beyond these, all other events will be fall through to CustomEvent category.
+func detectTriggerType(data []byte) eventType {
 	switch {
 	case bytes.HasPrefix(data, []byte(`{"Records"`)):
-		return s3Event, nil
+		return s3Event
 	case bytes.HasPrefix(data, []byte(`{"awslogs"`)):
-		return cwEvent, nil
+		return cwEvent
 	}
 
 	// fallback for possible manual trigger cases
 	key, err := extractFirstKey(data)
 	if err != nil {
-		return "", err
+		// Note errors are intentionally ignored. Return as a custom event
+		return customEvent
 	}
 
-	if key == string(customReplayEvent) {
-		return customReplayEvent, nil
+	if key == string(replayEvent) {
+		return replayEvent
 	}
 
-	return "", fmt.Errorf("unknown event type with key: %s", key)
+	// Fallback to handle as a custom event
+	return customEvent
 }
 
 // extractFirstKey extracts the first JSON key from byte array without parsing it.

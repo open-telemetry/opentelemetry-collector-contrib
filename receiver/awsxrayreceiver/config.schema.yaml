@@ -4,6 +4,6 @@ properties:
   proxy_server:
     description: ProxyServer defines configurations related to the local TCP proxy server.
     x-pointer: true
-    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy.config
+    $ref: /internal/aws/proxy.config
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confignet.addr_config

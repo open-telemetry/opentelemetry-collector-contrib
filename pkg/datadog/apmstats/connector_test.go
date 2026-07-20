@@ -32,7 +32,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/internal/metadata"
 )
 
 var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
@@ -417,7 +417,7 @@ func TestObfuscate(t *testing.T) {
 	cfg := NewConnectorFactory(datadogComponentType, component.StabilityLevelBeta, component.StabilityLevelBeta, nil, nil, nil).CreateDefaultConfig().(*datadogconfig.ConnectorComponentConfig)
 	cfg.Traces.BucketInterval = time.Second
 
-	prevVal := featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	prevVal := metadata.DatadogEnableReceiveResourceSpansV2FeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true))
 	defer func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))

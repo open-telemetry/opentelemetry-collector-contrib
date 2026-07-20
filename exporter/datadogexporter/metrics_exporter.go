@@ -1,10 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -78,7 +81,7 @@ func newMetricsExporter(
 		options = append(options, otlpmetrics.WithRemapping())
 	}
 
-	if inferIntervalDeltaFeatureGate.IsEnabled() {
+	if featuregates.InferIntervalDeltaFeatureGate.IsEnabled() {
 		params.Logger.Info("Metrics interval will be inferred for OTLP delta metrics with a set StartTimestamp.")
 		options = append(options, otlpmetrics.WithInferDeltaInterval())
 	}
@@ -125,10 +128,24 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 		return fmt.Errorf("failed to marshal sketches: %w", err)
 	}
 
+	// Compress the payload with gzip to stay consistent with the metric series
+	// path (SubmitMetrics + GZipSubmitMetricsOptionalParameters). The sketches
+	// intake accepts gzip-encoded payloads just like the series intake, so this
+	// reduces egress without any behavior change. ProtobufHeaders advertises the
+	// gzip Content-Encoding.
+	var buf bytes.Buffer
+	g := gzip.NewWriter(&buf)
+	if _, err = g.Write(payload); err != nil {
+		return fmt.Errorf("failed to compress sketches payload: %w", err)
+	}
+	if err = g.Close(); err != nil {
+		return fmt.Errorf("failed to close gzip writer for sketches payload: %w", err)
+	}
+
 	req, err := http.NewRequestWithContext(ctx,
 		http.MethodPost,
 		exp.cfg.Metrics.Endpoint+sketches.SketchSeriesEndpoint,
-		bytes.NewBuffer(payload),
+		&buf,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to build sketches HTTP request: %w", err)

@@ -35,7 +35,7 @@ func newTestDevice(name, host string) DeviceConfig {
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 	require.NotNil(t, factory)
-	assert.Equal(t, "ciscoos", factory.Type().String())
+	assert.Equal(t, "cisco_os", factory.Type().String())
 }
 
 func TestCreateDefaultConfig(t *testing.T) {

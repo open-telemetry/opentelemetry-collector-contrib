@@ -1,0 +1,183 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.region
+          value:
+            stringValue: us-east-1
+        - key: cloud.account.id
+          value:
+            stringValue: "123456789012"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: aws.cloudtrail.event_version
+                value:
+                  stringValue: "1.08"
+              - key: aws.cloudtrail.event_id
+                value:
+                  stringValue: e755e09c-42f9-4c5c-9064-EXAMPLE228c7
+              - key: rpc.method
+                value:
+                  stringValue: StartInstances
+              - key: rpc.system
+                value:
+                  stringValue: AwsApiCall
+              - key: aws.cloudtrail.api_version
+                value:
+                  stringValue: v1
+              - key: rpc.service
+                value:
+                  stringValue: ec2.amazonaws.com
+              - key: aws.request_id
+                value:
+                  stringValue: e4336db0-149f-4a6b-844d-EXAMPLEb9d16
+              - key: aws.event.category
+                value:
+                  stringValue: Management
+              - key: aws.event.read_only
+                value:
+                  boolValue: false
+              - key: aws.event.management
+                value:
+                  boolValue: true
+              - key: source.address
+                value:
+                  stringValue: 192.0.2.0
+              - key: user_agent.original
+                value:
+                  stringValue: aws-cli/2.13.5 Python/3.11.4 Linux/4.14.255-314-253.539.amzn2.x86_64 exec-env/CloudShell exe/x86_64.amzn.2 prompt/off command/ec2.start-instances
+              - key: aws.session.console
+                value:
+                  boolValue: true
+              - key: user.name
+                value:
+                  stringValue: Mateo
+              - key: aws.user_identity.account_id
+                value:
+                  stringValue: "123456789012"
+              - key: aws.access_key.id
+                value:
+                  stringValue: AKIAIOSFODNN7EXAMPLE
+              - key: aws.principal.id
+                value:
+                  stringValue: EXAMPLE6E4XEGITWATV6R
+              - key: aws.principal.arn
+                value:
+                  stringValue: arn:aws:iam::123456789012:user/Mateo
+              - key: aws.principal.type
+                value:
+                  stringValue: IAMUser
+              - key: aws.user_identity.session_context.attributes.mfa_authenticated
+                value:
+                  boolValue: false
+              - key: aws.user_identity.session_context.attributes.creation_date
+                value:
+                  stringValue: "2023-07-19T21:11:57Z"
+              - key: tls.protocol.version
+                value:
+                  stringValue: "1.2"
+              - key: tls.cipher
+                value:
+                  stringValue: ECDHE-RSA-AES128-GCM-SHA256
+              - key: server.address
+                value:
+                  stringValue: ec2.us-east-1.amazonaws.com
+              - key: aws.request.parameters
+                value:
+                  kvlistValue:
+                    values:
+                      - key: instancesSet
+                        value:
+                          kvlistValue:
+                            values:
+                              - key: items
+                                value:
+                                  arrayValue:
+                                    values:
+                                      - kvlistValue:
+                                          values:
+                                            - key: instanceId
+                                              value:
+                                                stringValue: i-EXAMPLE56126103cb
+                                      - kvlistValue:
+                                          values:
+                                            - key: instanceId
+                                              value:
+                                                stringValue: i-EXAMPLEaff4840c22
+              - key: aws.response.elements
+                value:
+                  kvlistValue:
+                    values:
+                      - key: requestId
+                        value:
+                          stringValue: e4336db0-149f-4a6b-844d-EXAMPLEb9d16
+                      - key: instancesSet
+                        value:
+                          kvlistValue:
+                            values:
+                              - key: items
+                                value:
+                                  arrayValue:
+                                    values:
+                                      - kvlistValue:
+                                          values:
+                                            - key: instanceId
+                                              value:
+                                                stringValue: i-EXAMPLEaff4840c22
+                                            - key: currentState
+                                              value:
+                                                kvlistValue:
+                                                  values:
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 0
+                                                    - key: name
+                                                      value:
+                                                        stringValue: pending
+                                            - key: previousState
+                                              value:
+                                                kvlistValue:
+                                                  values:
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 80
+                                                    - key: name
+                                                      value:
+                                                        stringValue: stopped
+                                      - kvlistValue:
+                                          values:
+                                            - key: previousState
+                                              value:
+                                                kvlistValue:
+                                                  values:
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 80
+                                                    - key: name
+                                                      value:
+                                                        stringValue: stopped
+                                            - key: instanceId
+                                              value:
+                                                stringValue: i-EXAMPLE56126103cb
+                                            - key: currentState
+                                              value:
+                                                kvlistValue:
+                                                  values:
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 0
+                                                    - key: name
+                                                      value:
+                                                        stringValue: pending
+            body: {}
+            timeUnixNano: "1689801448000000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.cloudtrail
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+          version: test-version

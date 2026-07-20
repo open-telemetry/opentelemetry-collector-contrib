@@ -12,5 +12,6 @@ This component has the following feature gates:
 | `logs.jsonParserArray` | beta | When enabled, allows usage of `json_array_parser`. | v0.93.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30321) |
 | `parser.uri.ecscompliant` | alpha | When enabled resulting map will be in semconv compliant format. | v0.103.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/32906) |
 | `stanza.synchronousLogEmitter` | alpha | Prevents possible data loss in Stanza-based receivers by emitting logs synchronously. | v0.122.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35456) |
+| `stanza.windows.eventDrivenScraping` | alpha | When enabled, the Stanza windows input wakes on API signals instead of polling on a fixed interval. | v0.148.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47091) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

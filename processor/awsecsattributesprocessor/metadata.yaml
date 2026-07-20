@@ -1,0 +1,14 @@
+type: aws_ecs_attributes
+
+status:
+  class: processor
+  stability:
+    development: [logs, metrics, traces, profiles]
+  distributions: []
+  codeowners:
+    active: [povilasv, iblancasa, dmitryax]
+
+tests:
+  config:
+    container_id:
+      sources: [container.id]

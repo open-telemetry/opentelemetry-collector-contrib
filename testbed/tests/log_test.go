@@ -16,8 +16,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/splunkdatareceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/fluentdatasender"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/k8sdatasender"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/stanzadatasender"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/tcpudpdatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -48,8 +51,8 @@ func TestLog10kDPS(t *testing.T) {
 			},
 		},
 		{
-			name:     "filelog",
-			sender:   datasenders.NewFileLogWriter(t),
+			name:     "file_log",
+			sender:   stanzadatasender.NewFileLogWriter(t),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 50,
@@ -57,8 +60,8 @@ func TestLog10kDPS(t *testing.T) {
 			},
 		},
 		{
-			name: "filelog checkpoints",
-			sender: datasenders.NewFileLogWriter(t).WithStorage(`
+			name: "file_log checkpoints",
+			sender: stanzadatasender.NewFileLogWriter(t).WithStorage(`
     storage: file_storage
 `),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
@@ -66,11 +69,11 @@ func TestLog10kDPS(t *testing.T) {
 				ExpectedMaxCPU: 50,
 				ExpectedMaxRAM: 120,
 			},
-			extensions: datasenders.NewLocalFileStorageExtension(t),
+			extensions: stanzadatasender.NewLocalFileStorageExtension(t),
 		},
 		{
 			name:     "kubernetes containers",
-			sender:   datasenders.NewKubernetesContainerWriter(),
+			sender:   k8sdatasender.NewKubernetesContainerWriter(),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 110,
@@ -79,7 +82,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "kubernetes containers parser",
-			sender:   datasenders.NewKubernetesContainerParserWriter(),
+			sender:   k8sdatasender.NewKubernetesContainerParserWriter(),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 110,
@@ -88,7 +91,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "k8s CRI-Containerd",
-			sender:   datasenders.NewKubernetesCRIContainerdWriter(),
+			sender:   k8sdatasender.NewKubernetesCRIContainerdWriter(),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 100,
@@ -97,7 +100,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "k8s CRI-Containerd no attr ops",
-			sender:   datasenders.NewKubernetesCRIContainerdNoAttributesOpsWriter(),
+			sender:   k8sdatasender.NewKubernetesCRIContainerdNoAttributesOpsWriter(),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 100,
@@ -106,7 +109,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "CRI-Containerd",
-			sender:   datasenders.NewCRIContainerdWriter(),
+			sender:   k8sdatasender.NewCRIContainerdWriter(),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 100,
@@ -115,7 +118,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "syslog-tcp-batch-1",
-			sender:   datasenders.NewTCPUDPWriter("tcp", testbed.DefaultHost, testutil.GetAvailablePort(t), 1),
+			sender:   tcpudpdatasender.NewTCPUDPWriter("tcp", testbed.DefaultHost, testutil.GetAvailablePort(t), 1),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,
@@ -124,7 +127,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "syslog-tcp-batch-100",
-			sender:   datasenders.NewTCPUDPWriter("tcp", testbed.DefaultHost, testutil.GetAvailablePort(t), 100),
+			sender:   tcpudpdatasender.NewTCPUDPWriter("tcp", testbed.DefaultHost, testutil.GetAvailablePort(t), 100),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,
@@ -133,8 +136,8 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "FluentForward-SplunkHEC",
-			sender:   datasenders.NewFluentLogsForwarder(t, testutil.GetAvailablePort(t)),
-			receiver: datareceivers.NewSplunkHECDataReceiver(testutil.GetAvailablePort(t)),
+			sender:   fluentdatasender.NewFluentLogsForwarder(t, testutil.GetAvailablePort(t)),
+			receiver: splunkdatareceiver.NewSplunkHECDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 60,
 				ExpectedMaxRAM: 150,
@@ -142,7 +145,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "tcp-batch-1",
-			sender:   datasenders.NewTCPUDPWriter("tcp", testbed.DefaultHost, testutil.GetAvailablePort(t), 1),
+			sender:   tcpudpdatasender.NewTCPUDPWriter("tcp", testbed.DefaultHost, testutil.GetAvailablePort(t), 1),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,
@@ -151,7 +154,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "tcp-batch-100",
-			sender:   datasenders.NewTCPUDPWriter("tcp", testbed.DefaultHost, testutil.GetAvailablePort(t), 100),
+			sender:   tcpudpdatasender.NewTCPUDPWriter("tcp", testbed.DefaultHost, testutil.GetAvailablePort(t), 100),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,
@@ -260,8 +263,8 @@ func TestLogLargeFiles(t *testing.T) {
 			 * With a rate of 200,000 lines per second over a duration of 100 seconds,
 			 * this results in a file size of approximately 2GB over its lifetime.
 			 */
-			name:     "filelog-largefiles-2Gb-lifetime",
-			sender:   datasenders.NewFileLogWriter(t),
+			name:     "file_log-largefiles-2Gb-lifetime",
+			sender:   stanzadatasender.NewFileLogWriter(t),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			loadOptions: testbed.LoadOptions{
 				DataItemsPerSecond: 200000,
@@ -280,8 +283,8 @@ func TestLogLargeFiles(t *testing.T) {
 			 * With a rate of 330,000 lines per second over a duration of 200 seconds,
 			 * this results in a file size of approximately 6GB over its lifetime.
 			 */
-			name:     "filelog-largefiles-6GB-lifetime",
-			sender:   datasenders.NewFileLogWriter(t),
+			name:     "file_log-largefiles-6GB-lifetime",
+			sender:   stanzadatasender.NewFileLogWriter(t),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			loadOptions: testbed.LoadOptions{
 				DataItemsPerSecond: 330000,
@@ -329,7 +332,7 @@ func TestLargeFileOnce(t *testing.T) {
 	}
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
-	sender := datasenders.NewFileLogWriter(t)
+	sender := stanzadatasender.NewFileLogWriter(t)
 	receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 	loadOptions := testbed.LoadOptions{
 		DataItemsPerSecond: 1,
@@ -365,7 +368,7 @@ func TestLargeFileOnce(t *testing.T) {
 	tc.StartBackend()
 	tc.StartAgent()
 
-	tc.WaitForN(func() bool { return dataItemsGenerated.Load() == tc.MockBackend.DataItemsReceived() }, 200*time.Second, "all logs received")
+	tc.WaitForN(func() bool { return dataItemsGenerated.Load() == tc.MockBackend.DataItemsReceived() }, 400*time.Second, "all logs received")
 
 	tc.StopAgent()
 	tc.ValidateData()
@@ -381,8 +384,8 @@ func TestMemoryLimiterHit(t *testing.T) {
 			sender: testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
 		},
 		{
-			name: "filelog",
-			sender: datasenders.NewFileLogWriter(t).WithRetry(`
+			name: "file_log",
+			sender: stanzadatasender.NewFileLogWriter(t).WithRetry(`
     retry_on_failure:
       enabled: true
 `),

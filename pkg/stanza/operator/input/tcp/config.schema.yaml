@@ -10,19 +10,19 @@ $defs:
       listen_address:
         type: string
       max_log_size:
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.byte_size
+        $ref: /pkg/stanza/operator/helper.byte_size
       multiline:
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split.config
+        $ref: /pkg/stanza/split.config
       one_log_per_packet:
         type: boolean
       tls:
         x-pointer: true
         $ref: go.opentelemetry.io/collector/config/configtls.server_config
     allOf:
-      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim.config
+      - $ref: /pkg/stanza/trim.config
   config:
     description: Config is the configuration of a tcp input operator.
     type: object
     allOf:
-      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.input_config
+      - $ref: /pkg/stanza/operator/helper.input_config
       - $ref: base_config

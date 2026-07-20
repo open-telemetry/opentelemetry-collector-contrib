@@ -294,6 +294,15 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `stringify_all(attributes)`,
+			want: func(t *testing.T, tCtx *ottlprofile.TransformContext) {
+				putProfileAttribute(t, tCtx, "conflict", `{"conflict1":{"conflict2":"pass"}}`)
+				putProfileAttribute(t, tCtx, "conflict.conflict1", `{"conflict2":"nopass"}`)
+				putProfileAttribute(t, tCtx, "foo", `{"bar":"pass","flags":"pass","nested":{"test":"pass"},"slice":["val"]}`)
+				putProfileAttribute(t, tCtx, "things", `[{"name":"foo","value":2},{"name":"bar","value":5}]`)
+			},
+		},
+		{
 			statement: `truncate_all(attributes, 100)`,
 			want:      func(_ *testing.T, _ *ottlprofile.TransformContext) {},
 		},
@@ -358,7 +367,8 @@ func Test_e2e_editors(t *testing.T) {
 			for _, statement := range statements {
 				validator, tCtx := newDictionaryValidator(constructProfileTransformContextEditors())
 				t.Cleanup(tCtx.Close)
-				_, _, _ = statement.Execute(t.Context(), tCtx)
+				_, _, err = statement.Execute(t.Context(), tCtx)
+				require.NoError(t, err)
 				require.NoError(t, validator.validate())
 
 				exValidator, exTCtx := newDictionaryValidator(constructProfileTransformContextEditors())
@@ -1375,7 +1385,8 @@ func Test_e2e_ottl_features(t *testing.T) {
 			for _, statement := range statements {
 				tCtx := constructProfileTransformContext()
 				t.Cleanup(tCtx.Close)
-				_, _, _ = statement.Execute(t.Context(), tCtx)
+				_, _, err = statement.Execute(t.Context(), tCtx)
+				require.NoError(t, err)
 
 				exTCtx := constructProfileTransformContext()
 				tt.want(t, exTCtx)
@@ -1445,7 +1456,8 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				require.NoError(t, err)
 
 				for _, s := range statements {
-					_, _, _ = s.Execute(t.Context(), tCtx)
+					_, _, err = s.Execute(t.Context(), tCtx)
+					require.NoError(t, err)
 				}
 			}
 

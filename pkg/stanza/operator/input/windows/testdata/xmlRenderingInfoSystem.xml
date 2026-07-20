@@ -1,0 +1,31 @@
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Service Control Manager" Guid="{555908d1-a6d7-4695-8e1e-26931d2012f4}" EventSourceName="Service Control Manager"/>
+    <EventID Qualifiers="16384">7036</EventID>
+    <Version>0</Version>
+    <Level>4</Level>
+    <Task>0</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x8080000000000000</Keywords>
+    <TimeCreated SystemTime="2026-03-16T15:49:02.0784174Z"/>
+    <EventRecordID>17353</EventRecordID>
+    <Correlation/>
+    <Execution ProcessID="788" ThreadID="4396"/>
+    <Channel>System</Channel>
+    <Computer>computer</Computer>
+    <Security/>
+  </System>
+  <EventData>
+    <Data Name="param1">Software Protection</Data>
+    <Data Name="param2">running</Data>
+    <Binary>7300700070007300760063002F0034000000</Binary>
+  </EventData>
+  <RenderingInfo Culture="en-US">
+    <Message>The Software Protection service entered the running state.</Message>
+    <Level>Information</Level>
+    <Provider>Microsoft-Windows-Service Control Manager</Provider>
+    <Keywords>
+      <Keyword>Classic</Keyword>
+    </Keywords>
+  </RenderingInfo>
+</Event>

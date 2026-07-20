@@ -4,7 +4,6 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/xpdata/entity"
 )
 
 // ResourceBuilder is a helper struct to build resources predefined in metadata.yaml.
@@ -197,6 +196,55 @@ func (rb *ResourceBuilder) SetK8sNodeUID(val string) {
 	}
 }
 
+// SetK8sPersistentvolumeName sets provided value as "k8s.persistentvolume.name" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeName(val string) {
+	if rb.config.K8sPersistentvolumeName.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.name", val)
+	}
+}
+
+// SetK8sPersistentvolumeReclaimPolicyDelete sets "k8s.persistentvolume.reclaim_policy=Delete" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeReclaimPolicyDelete() {
+	if rb.config.K8sPersistentvolumeReclaimPolicy.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.reclaim_policy", "Delete")
+	}
+}
+
+// SetK8sPersistentvolumeReclaimPolicyRecycle sets "k8s.persistentvolume.reclaim_policy=Recycle" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeReclaimPolicyRecycle() {
+	if rb.config.K8sPersistentvolumeReclaimPolicy.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.reclaim_policy", "Recycle")
+	}
+}
+
+// SetK8sPersistentvolumeReclaimPolicyRetain sets "k8s.persistentvolume.reclaim_policy=Retain" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeReclaimPolicyRetain() {
+	if rb.config.K8sPersistentvolumeReclaimPolicy.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.reclaim_policy", "Retain")
+	}
+}
+
+// SetK8sPersistentvolumeUID sets provided value as "k8s.persistentvolume.uid" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeUID(val string) {
+	if rb.config.K8sPersistentvolumeUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.uid", val)
+	}
+}
+
+// SetK8sPersistentvolumeclaimName sets provided value as "k8s.persistentvolumeclaim.name" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeclaimName(val string) {
+	if rb.config.K8sPersistentvolumeclaimName.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolumeclaim.name", val)
+	}
+}
+
+// SetK8sPersistentvolumeclaimUID sets provided value as "k8s.persistentvolumeclaim.uid" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeclaimUID(val string) {
+	if rb.config.K8sPersistentvolumeclaimUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolumeclaim.uid", val)
+	}
+}
+
 // SetK8sPodName sets provided value as "k8s.pod.name" attribute.
 func (rb *ResourceBuilder) SetK8sPodName(val string) {
 	if rb.config.K8sPodName.Enabled {
@@ -309,6 +357,13 @@ func (rb *ResourceBuilder) SetK8sStatefulsetUID(val string) {
 	}
 }
 
+// SetK8sStorageclassName sets provided value as "k8s.storageclass.name" attribute.
+func (rb *ResourceBuilder) SetK8sStorageclassName(val string) {
+	if rb.config.K8sStorageclassName.Enabled {
+		rb.res.Attributes().PutStr("k8s.storageclass.name", val)
+	}
+}
+
 // SetOpenshiftClusterquotaName sets provided value as "openshift.clusterquota.name" attribute.
 func (rb *ResourceBuilder) SetOpenshiftClusterquotaName(val string) {
 	if rb.config.OpenshiftClusterquotaName.Enabled {
@@ -335,201 +390,6 @@ func (rb *ResourceBuilder) SetOsType(val string) {
 	if rb.config.OsType.Enabled {
 		rb.res.Attributes().PutStr("os.type", val)
 	}
-}
-
-// AssociateWithK8sNamespace associates the resource with entity type "k8s.namespace".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithK8sNamespace() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("k8s.namespace")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("k8s.namespace.uid")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("k8s.namespace.name")
-}
-
-// AssociateWithK8sNode associates the resource with entity type "k8s.node".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithK8sNode() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("k8s.node")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("k8s.node.uid")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("k8s.node.name")
-	descKeys.Append("k8s.kubelet.version")
-	descKeys.Append("container.runtime")
-	descKeys.Append("container.runtime.version")
-	descKeys.Append("os.description")
-	descKeys.Append("os.type")
-}
-
-// AssociateWithK8sDeployment associates the resource with entity type "k8s.deployment".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithK8sDeployment() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("k8s.deployment")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("k8s.deployment.uid")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("k8s.deployment.name")
-}
-
-// AssociateWithK8sReplicaset associates the resource with entity type "k8s.replicaset".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithK8sReplicaset() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("k8s.replicaset")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("k8s.replicaset.uid")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("k8s.replicaset.name")
-}
-
-// AssociateWithK8sStatefulset associates the resource with entity type "k8s.statefulset".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithK8sStatefulset() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("k8s.statefulset")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("k8s.statefulset.uid")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("k8s.statefulset.name")
-}
-
-// AssociateWithK8sDaemonset associates the resource with entity type "k8s.daemonset".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithK8sDaemonset() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("k8s.daemonset")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("k8s.daemonset.uid")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("k8s.daemonset.name")
-}
-
-// AssociateWithK8sCronjob associates the resource with entity type "k8s.cronjob".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithK8sCronjob() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("k8s.cronjob")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("k8s.cronjob.uid")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("k8s.cronjob.name")
-}
-
-// AssociateWithK8sJob associates the resource with entity type "k8s.job".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithK8sJob() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("k8s.job")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("k8s.job.uid")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("k8s.job.name")
-}
-
-// AssociateWithK8sPod associates the resource with entity type "k8s.pod".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithK8sPod() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("k8s.pod")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("k8s.pod.uid")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("k8s.pod.name")
-	descKeys.Append("k8s.pod.qos_class")
-}
-
-// AssociateWithK8sContainer associates the resource with entity type "k8s.container".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithK8sContainer() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("k8s.container")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("container.id")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("k8s.container.name")
-	descKeys.Append("container.image.name")
-	descKeys.Append("container.image.tag")
-	descKeys.Append("k8s.container.status.last_terminated_reason")
-}
-
-// AssociateWithK8sReplicationcontroller associates the resource with entity type "k8s.replicationcontroller".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithK8sReplicationcontroller() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("k8s.replicationcontroller")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("k8s.replicationcontroller.uid")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("k8s.replicationcontroller.name")
-}
-
-// AssociateWithK8sResourcequota associates the resource with entity type "k8s.resourcequota".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithK8sResourcequota() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("k8s.resourcequota")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("k8s.resourcequota.uid")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("k8s.resourcequota.name")
-}
-
-// AssociateWithK8sService associates the resource with entity type "k8s.service".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithK8sService() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("k8s.service")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("k8s.service.uid")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("k8s.service.name")
-	descKeys.Append("k8s.service.type")
-	descKeys.Append("k8s.service.publish_not_ready_addresses")
-	descKeys.Append("k8s.service.traffic_distribution")
-}
-
-// AssociateWithK8sHpa associates the resource with entity type "k8s.hpa".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithK8sHpa() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("k8s.hpa")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("k8s.hpa.uid")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("k8s.hpa.name")
-	descKeys.Append("k8s.hpa.scaletargetref.apiversion")
-	descKeys.Append("k8s.hpa.scaletargetref.kind")
-	descKeys.Append("k8s.hpa.scaletargetref.name")
-}
-
-// AssociateWithOpenshiftClusterquota associates the resource with entity type "openshift.clusterquota".
-// This method is experimental and will be replaced with an entity builder pattern in the future.
-// However, for now, it allows associating resources with entities and producing correct entity references.
-func (rb *ResourceBuilder) AssociateWithOpenshiftClusterquota() {
-	entityRef := entity.ResourceEntityRefs(rb.res).AppendEmpty()
-	entityRef.SetType("openshift.clusterquota")
-	idKeys := entityRef.IdKeys()
-	idKeys.Append("openshift.clusterquota.uid")
-	descKeys := entityRef.DescriptionKeys()
-	descKeys.Append("openshift.clusterquota.name")
 }
 
 // Emit returns the built resource and resets the internal builder state.

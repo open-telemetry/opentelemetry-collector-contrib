@@ -6,6 +6,7 @@
 package postgresqlreceiver
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net"
@@ -14,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/tj/assert"
@@ -38,8 +40,8 @@ const (
 )
 
 func TestIntegration(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, false)()
-	defer testutil.SetFeatureGateForTest(t, connectionPoolGate, false)()
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, false)()
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlConnectionPoolFeatureGate, false)()
 	t.Run("single_db", integrationTest("single_db", []string{"otel"}, pre17TestVersion))
 	t.Run("multi_db", integrationTest("multi_db", []string{"otel", "otel2"}, pre17TestVersion))
 	t.Run("all_db", integrationTest("all_db", []string{}, pre17TestVersion))
@@ -48,22 +50,82 @@ func TestIntegration(t *testing.T) {
 }
 
 func TestIntegrationWithSeparateSchemaAttr(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, true)()
-	defer testutil.SetFeatureGateForTest(t, connectionPoolGate, false)()
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, true)()
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlConnectionPoolFeatureGate, false)()
 	t.Run("single_db_schemaattr", integrationTest("single_db_schemaattr", []string{"otel"}, pre17TestVersion))
 	t.Run("multi_db_schemaattr", integrationTest("multi_db_schemaattr", []string{"otel", "otel2"}, pre17TestVersion))
 	t.Run("all_db_schemaattr", integrationTest("all_db_schemaattr", []string{}, pre17TestVersion))
 }
 
 func TestIntegrationWithConnectionPool(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, false)()
-	defer testutil.SetFeatureGateForTest(t, connectionPoolGate, true)()
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, false)()
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlConnectionPoolFeatureGate, true)()
 	t.Run("single_db_connpool", integrationTest("single_db_connpool", []string{"otel"}, pre17TestVersion))
 	t.Run("multi_db_connpool", integrationTest("multi_db_connpool", []string{"otel", "otel2"}, pre17TestVersion))
 	t.Run("all_db_connpool", integrationTest("all_db_connpool", []string{}, pre17TestVersion))
 }
 
-func integrationTest(name string, databases []string, pgVersion string) func(*testing.T) {
+func TestIntegrationSemconv(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, true)()
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlConnectionPoolFeatureGate, false)()
+	t.Run("multi_db", integrationTestSemconv("multi_db_semconv", []string{"otel", "otel2"}, pre17TestVersion))
+}
+
+func integrationTest(
+	name string,
+	databases []string,
+	pgVersion string,
+	additionalIgnoredResourceAttributeValues ...string,
+) func(*testing.T) {
+	compareOptions := []pmetrictest.CompareMetricsOption{
+		pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
+	}
+	for _, attribute := range additionalIgnoredResourceAttributeValues {
+		compareOptions = append(compareOptions, pmetrictest.IgnoreResourceAttributeValue(attribute))
+	}
+	compareOptions = append(compareOptions,
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricValues(
+			"postgresql.backends",
+			"postgresql.bgwriter.buffers.allocated",
+			"postgresql.bgwriter.buffers.writes",
+			"postgresql.bgwriter.checkpoint.count",
+			"postgresql.bgwriter.duration",
+			"postgresql.bgwriter.maxwritten",
+			"postgresql.blks_hit",
+			"postgresql.blks_read",
+			"postgresql.blocks_read",
+			"postgresql.commits",
+			"postgresql.connection.max",
+			"postgresql.database.count",
+			"postgresql.database.locks",
+			"postgresql.db_size",
+			"postgresql.deadlocks",
+			"postgresql.index.scans",
+			"postgresql.index.size",
+			"postgresql.operations",
+			"postgresql.replication.data_delay",
+			"postgresql.rollbacks",
+			"postgresql.rows",
+			"postgresql.sequential_scans",
+			"postgresql.table.count",
+			"postgresql.table.size",
+			"postgresql.table.vacuum.count",
+			"postgresql.tup_deleted",
+			"postgresql.tup_fetched",
+			"postgresql.tup_inserted",
+			"postgresql.tup_returned",
+			"postgresql.tup_updated",
+			"postgresql.wal.age",
+			"postgresql.wal.delay",
+			"postgresql.wal.lag",
+		),
+		pmetrictest.IgnoreSubsequentDataPoints("postgresql.backends"),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+	)
+
 	expectedFile := filepath.Join("testdata", "integration", "expected_"+name+".yaml")
 	return scraperinttest.NewIntegrationTest(
 		NewFactory(),
@@ -108,50 +170,152 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 				rCfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
-		scraperinttest.WithCompareOptions(
-			pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricValues(
-				"postgresql.backends",
-				"postgresql.bgwriter.buffers.allocated",
-				"postgresql.bgwriter.buffers.writes",
-				"postgresql.bgwriter.checkpoint.count",
-				"postgresql.bgwriter.duration",
-				"postgresql.bgwriter.maxwritten",
-				"postgresql.blks_hit",
-				"postgresql.blks_read",
-				"postgresql.blocks_read",
-				"postgresql.commits",
-				"postgresql.connection.max",
-				"postgresql.database.count",
-				"postgresql.database.locks",
-				"postgresql.db_size",
-				"postgresql.deadlocks",
-				"postgresql.index.scans",
-				"postgresql.index.size",
-				"postgresql.operations",
-				"postgresql.replication.data_delay",
-				"postgresql.rollbacks",
-				"postgresql.rows",
-				"postgresql.sequential_scans",
-				"postgresql.table.count",
-				"postgresql.table.size",
-				"postgresql.table.vacuum.count",
-				"postgresql.tup_deleted",
-				"postgresql.tup_fetched",
-				"postgresql.tup_inserted",
-				"postgresql.tup_returned",
-				"postgresql.tup_updated",
-				"postgresql.wal.age",
-				"postgresql.wal.delay",
-				"postgresql.wal.lag",
-			),
-			pmetrictest.IgnoreSubsequentDataPoints("postgresql.backends"),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp(),
-		),
+		scraperinttest.WithCompareOptions(compareOptions...),
 	).Run
+}
+
+func integrationTestSemconv(name string, databases []string, pgVersion string) func(*testing.T) {
+	return integrationTest(name, databases, pgVersion, "server.address", "server.port")
+}
+
+func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
+	ci, err := testcontainers.GenericContainer(
+		t.Context(),
+		testcontainers.GenericContainerRequest{
+			ProviderType: testcontainers.ProviderPodman,
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
+				Env: map[string]string{
+					"POSTGRES_USER":     "root",
+					"POSTGRES_PASSWORD": "otel",
+					"POSTGRES_DB":       "otel",
+				},
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+					ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+					FileMode:          700,
+				}},
+				ExposedPorts: []string{postgresqlPort},
+				WaitingFor: wait.ForListeningPort(postgresqlPort).
+					WithStartupTimeout(2 * time.Minute),
+			},
+		})
+	require.NoError(t, err)
+
+	err = ci.Start(t.Context())
+	require.NoError(t, err)
+	defer testcontainers.CleanupContainer(t, ci)
+
+	p, err := ci.MappedPort(t.Context(), postgresqlPort)
+	require.NoError(t, err)
+
+	lockDB, err := sql.Open("postgres", fmt.Sprintf("postgres://root:otel@localhost:%s/otel?sslmode=disable", p.Port()))
+	require.NoError(t, err)
+	defer lockDB.Close()
+
+	tx, err := lockDB.Begin()
+	require.NoError(t, err)
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	_, err = tx.Exec("LOCK TABLE table1 IN ACCESS EXCLUSIVE MODE")
+	require.NoError(t, err)
+
+	clientDB, err := getDB(postgreSQLConfig{
+		username: "otelu",
+		password: "otelp",
+		address: confignet.AddrConfig{
+			Endpoint: net.JoinHostPort("localhost", p.Port()),
+		},
+		tls: configtls.ClientConfig{
+			Insecure: true,
+		},
+	}, "otel")
+	require.NoError(t, err)
+
+	client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
+	defer func() {
+		require.NoError(t, client.Close())
+	}()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+
+	tableMetrics, err := client.getDatabaseTableMetrics(ctx, "otel")
+	require.NoError(t, err)
+	require.NotContains(t, tableMetrics, tableKey("otel", "public", "table1"))
+	require.Contains(t, tableMetrics, tableKey("otel", "public", "table2"))
+}
+
+func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
+	ci, err := testcontainers.GenericContainer(
+		t.Context(),
+		testcontainers.GenericContainerRequest{
+			ProviderType: testcontainers.ProviderPodman,
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
+				Env: map[string]string{
+					"POSTGRES_USER":     "root",
+					"POSTGRES_PASSWORD": "otel",
+					"POSTGRES_DB":       "otel",
+				},
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+					ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+					FileMode:          700,
+				}},
+				ExposedPorts: []string{postgresqlPort},
+				WaitingFor: wait.ForListeningPort(postgresqlPort).
+					WithStartupTimeout(2 * time.Minute),
+			},
+		})
+	require.NoError(t, err)
+
+	err = ci.Start(t.Context())
+	require.NoError(t, err)
+	defer testcontainers.CleanupContainer(t, ci)
+
+	p, err := ci.MappedPort(t.Context(), postgresqlPort)
+	require.NoError(t, err)
+
+	lockDB, err := sql.Open("postgres", fmt.Sprintf("postgres://root:otel@localhost:%s/otel?sslmode=disable", p.Port()))
+	require.NoError(t, err)
+	defer lockDB.Close()
+
+	tx, err := lockDB.Begin()
+	require.NoError(t, err)
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	_, err = tx.Exec("REINDEX INDEX table1_pkey")
+	require.NoError(t, err)
+
+	clientDB, err := getDB(postgreSQLConfig{
+		username: "otelu",
+		password: "otelp",
+		address: confignet.AddrConfig{
+			Endpoint: net.JoinHostPort("localhost", p.Port()),
+		},
+		tls: configtls.ClientConfig{
+			Insecure: true,
+		},
+	}, "otel")
+	require.NoError(t, err)
+
+	client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
+	defer func() {
+		require.NoError(t, client.Close())
+	}()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+
+	indexStats, err := client.getIndexStats(ctx, "otel")
+	require.NoError(t, err)
+	require.NotContains(t, indexStats, indexKey("otel", "public", "table1", "table1_pkey"))
+	require.Contains(t, indexStats, indexKey("otel", "public", "table2", "table2_pkey"))
 }
 
 func TestScrapeLogsFromContainer(t *testing.T) {
@@ -216,15 +380,21 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		AddrConfig: confignet.AddrConfig{
 			Endpoint: net.JoinHostPort("localhost", p.Port()),
 		},
-		LogsBuilderConfig: metadata.DefaultLogsBuilderConfig(),
+		LogsBuilderConfig: func() metadata.LogsBuilderConfig {
+			cfg := metadata.DefaultLogsBuilderConfig()
+			cfg.Events.DbServerQuerySample.Enabled = true
+			cfg.Events.DbServerTopQuery.Enabled = true
+			return cfg
+		}(),
 	}
 	clientFactory := newDefaultClientFactory(&cfg)
 
-	ns := newPostgreSQLScraper(receiver.Settings{
+	ns, err := newPostgreSQLScraper(receiver.Settings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zap.Must(zap.NewProduction()),
 		},
 	}, &cfg, clientFactory, newCache(1), newTTLCache[string](1000, time.Second))
+	assert.NoError(t, err)
 	plogs, err := ns.scrapeQuerySamples(t.Context(), 30)
 	assert.NoError(t, err)
 	logRecords := plogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()

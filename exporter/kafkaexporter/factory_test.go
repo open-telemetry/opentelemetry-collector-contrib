@@ -32,7 +32,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.Equal(t, configkafka.NewDefaultClientConfig(), cfg.ClientConfig)
-	assert.Empty(t, cfg.Topic)
 }
 
 func TestCreateMetricExporter(t *testing.T) {
@@ -55,18 +54,20 @@ func TestCreateMetricExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = "otlp_proto"
+				conf.Metrics.Encoding = "otlp_proto"
 			}),
 		},
 		{
-			name: "with include metadata keys and partitioner",
+			name: "with include metadata keys and batch partition metadata keys",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(exporterhelper.BatchConfig{
-					Sizer: exporterhelper.RequestSizerTypeBytes,
-				})
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
+					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
+					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
+					return batch
+				}())
 			}),
 		},
 	}
@@ -111,18 +112,20 @@ func TestCreateLogExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = "otlp_proto"
+				conf.Logs.Encoding = "otlp_proto"
 			}),
 		},
 		{
-			name: "with include metadata keys and partitioner",
+			name: "with include metadata keys and batch partition metadata keys",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(exporterhelper.BatchConfig{
-					Sizer: exporterhelper.RequestSizerTypeBytes,
-				})
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
+					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
+					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
+					return batch
+				}())
 			}),
 		},
 	}
@@ -167,18 +170,20 @@ func TestCreateTraceExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = "otlp_proto"
+				conf.Traces.Encoding = "otlp_proto"
 			}),
 		},
 		{
-			name: "with include metadata keys and partitioner",
+			name: "with include metadata keys and batch partition metadata keys",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(exporterhelper.BatchConfig{
-					Sizer: exporterhelper.RequestSizerTypeBytes,
-				})
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
+					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
+					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
+					return batch
+				}())
 			}),
 		},
 	}
@@ -223,18 +228,20 @@ func TestCreateProfileExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = "otlp_proto"
+				conf.Profiles.Encoding = "otlp_proto"
 			}),
 		},
 		{
-			name: "with include metadata keys and partitioner",
+			name: "with include metadata keys and batch partition metadata keys",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(exporterhelper.BatchConfig{
-					Sizer: exporterhelper.RequestSizerTypeBytes,
-				})
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
+					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
+					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
+					return batch
+				}())
 			}),
 		},
 	}

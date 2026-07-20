@@ -11,21 +11,21 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
-var featureGateJSON = featuregate.GlobalRegistry().MustRegister("clickhouse.json", featuregate.StageAlpha)
-
 // NewFactory creates a factory for the ClickHouse exporter.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporter.WithMetrics(createMetricExporter, metadata.MetricsStability),
+		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		xexporter.WithMetrics(createMetricExporter, metadata.MetricsStability),
+		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
 	)
 }
 
@@ -38,7 +38,7 @@ func createLogsExporter(
 	c.collectorVersion = set.BuildInfo.Version
 
 	var exp anyLogsExporter
-	if featureGateJSON.IsEnabled() {
+	if c.JSON {
 		exp = newLogsJSONExporter(set.Logger, c)
 	} else {
 		exp = newLogsExporter(set.Logger, c)
@@ -66,7 +66,7 @@ func createTracesExporter(
 	c.collectorVersion = set.BuildInfo.Version
 
 	var exp anyTracesExporter
-	if featureGateJSON.IsEnabled() {
+	if c.JSON {
 		exp = newTracesJSONExporter(set.Logger, c)
 	} else {
 		exp = newTracesExporter(set.Logger, c)
@@ -77,6 +77,29 @@ func createTracesExporter(
 		set,
 		cfg,
 		exp.pushTraceData,
+		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithShutdown(exp.shutdown),
+		exporterhelper.WithTimeout(c.TimeoutSettings),
+		exporterhelper.WithQueue(c.QueueSettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
+	)
+}
+
+func createProfilesExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (xexporter.Profiles, error) {
+	c := cfg.(*Config)
+	c.collectorVersion = set.BuildInfo.Version
+
+	exp := newProfilesExporter(set.Logger, c)
+
+	return xexporterhelper.NewProfiles(
+		ctx,
+		set,
+		cfg,
+		exp.pushProfilesData,
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),

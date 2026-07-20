@@ -1,10 +1,12 @@
 $defs:
   dimension:
-    description: Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
+    description: Dimension defines a single dimension entry. Exactly one of Name (with optional Default) or Glob must be set. If Name is set, Default value will be used if dimension is missing form a span attribute.
     type: object
     properties:
       default:
         x-pointer: true
+        type: string
+      glob:
         type: string
       name:
         type: string
@@ -73,13 +75,16 @@ properties:
     items:
       $ref: dimension
   dimensions:
-    description: 'Dimensions defines the list of additional dimensions on top of the provided: - service.name - span.kind - span.kind - status.code - collector.instance.id This dimensions never added unless enable feature-gate connector.spanmetrics.includeCollectorInstanceID The dimensions will be fetched from the span''s attributes. Examples of some conventionally used attributes: https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.'
+    description: 'Dimensions defines the list of additional dimensions on top of the provided: - service.name - span.name - span.kind - status.code - collector.instance.id The dimensions will be fetched from the span''s attributes. Examples of some conventionally used attributes: https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.'
     type: array
     items:
       $ref: dimension
   dimensions_cache_size:
     description: 'DimensionsCacheSize defines the size of cache for storing Dimensions, which helps to avoid cache memory growing indefinitely over the lifetime of the collector. Optional. See defaultDimensionsCacheSize in connector.go for the default value. Deprecated [v0.130.0]:  Please use AggregationCardinalityLimit instead'
     type: integer
+  enable_metrics_sampling_method:
+    description: EnableMetricsSamplingMethod adds the sampling.method attribute ("extrapolated" or "counted") to metrics. When false (default), the attribute is not added.
+    type: boolean
   events:
     description: Events defines the configuration for events section of spans.
     $ref: events_config
@@ -119,3 +124,7 @@ properties:
     type: array
     items:
       type: string
+  series_expiration:
+    description: SeriesExpiration is the time period after which individual metric series are considered stale and will no longer be exported. Default value (0) means that individual metric series will never expire.
+    type: string
+    format: duration

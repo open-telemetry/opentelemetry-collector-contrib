@@ -45,6 +45,7 @@ The following exporter configuration parameters are supported.
 | `retry_max_attempts`      | The max number of attempts for retrying a request if the `retry_mode` is set. Setting max attempts to 0 will allow the SDK to retry all retryable errors until the request succeeds, or a non-retryable error is returned. | 3                                           |
 | `retry_max_backoff`       | the max backoff delay that can occur before retrying a request if `retry_mode` is set                                                                                                                                      | 20s                                         |
 | `unique_key_func_name`    | Name of the function to use for generating a unique portion of the key name, defaults to a random integer. Only supported value is `uuidv7`.                                                                               |                                             |
+| `retry_on_failure`    | see [Retry on Failure](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#retry-on-failure) for the full set of available options.                                                                               |                                             |
 
 ### Marshaler
 

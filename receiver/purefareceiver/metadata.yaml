@@ -1,4 +1,8 @@
+display_name: Pure Storage FlashArray Receiver
 type: purefa
+
+description: |
+  The Pure Storage FlashArray Receiver receives metrics from the Pure Storage FlashArray.
 
 status:
   class: receiver

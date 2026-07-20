@@ -4,6 +4,7 @@
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -70,7 +71,9 @@ func (e *logsJSONExporter) start(ctx context.Context, _ component.Host) error {
 		e.logger.Error("schema detection failed", zap.Error(err))
 	}
 
-	e.renderInsertLogsJSONSQL()
+	if err := e.renderInsertLogsJSONSQL(); err != nil {
+		return fmt.Errorf("render logs json insert sql: %w", err)
+	}
 
 	return nil
 }
@@ -236,7 +239,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 	return nil
 }
 
-func (e *logsJSONExporter) renderInsertLogsJSONSQL() {
+func (e *logsJSONExporter) renderInsertLogsJSONSQL() error {
 	var featureColumnNames strings.Builder
 	var featureColumnPositions strings.Builder
 
@@ -258,20 +261,47 @@ func (e *logsJSONExporter) renderInsertLogsJSONSQL() {
 		featureColumnPositions.WriteString(", ?")
 	}
 
-	e.insertSQL = fmt.Sprintf(sqltemplates.LogsJSONInsert, e.cfg.database(), e.cfg.LogsTableName, featureColumnNames.String(), featureColumnPositions.String())
+	data := sqltemplates.InsertData{
+		Database:               e.cfg.database(),
+		TableName:              e.cfg.LogsTableName,
+		FeatureColumnNames:     featureColumnNames.String(),
+		FeatureColumnPositions: featureColumnPositions.String(),
+	}
+
+	var buf bytes.Buffer
+	if err := sqltemplates.LogsJSONInsertTmpl.Execute(&buf, data); err != nil {
+		return fmt.Errorf("execute logs json insert template: %w", err)
+	}
+
+	e.insertSQL = buf.String()
+	return nil
 }
 
-func renderCreateLogsJSONTableSQL(cfg *Config) string {
-	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "Timestamp")
-	return fmt.Sprintf(sqltemplates.LogsJSONCreateTable,
-		cfg.database(), cfg.LogsTableName, cfg.clusterString(),
-		cfg.tableEngineString(),
-		ttlExpr,
-	)
+func renderCreateLogsJSONTableSQL(cfg *Config) (string, error) {
+	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
+	data := sqltemplates.CreateTableData{
+		Database:      cfg.database(),
+		TableName:     cfg.LogsTableName,
+		ClusterString: cfg.clusterString(),
+		Engine:        cfg.tableEngineString(),
+		TTL:           ttlExpr,
+	}
+
+	var buf bytes.Buffer
+	if err := sqltemplates.LogsJSONCreateTableTmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("execute logs json create table template: %w", err)
+	}
+
+	return buf.String(), nil
 }
 
 func createLogsJSONTable(ctx context.Context, cfg *Config, db driver.Conn) error {
-	if err := db.Exec(ctx, renderCreateLogsJSONTableSQL(cfg)); err != nil {
+	sql, err := renderCreateLogsJSONTableSQL(cfg)
+	if err != nil {
+		return fmt.Errorf("render create logs json table sql: %w", err)
+	}
+
+	if err := db.Exec(ctx, sql); err != nil {
 		return fmt.Errorf("exec create logs json table sql: %w", err)
 	}
 

@@ -22,14 +22,14 @@ $defs:
       listen_address:
         type: string
       multiline:
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split.config
+        $ref: /pkg/stanza/split.config
       one_log_per_packet:
         type: boolean
     allOf:
-      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim.config
+      - $ref: /pkg/stanza/trim.config
   config:
     description: Config is the configuration of a udp input operator.
     type: object
     allOf:
-      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.input_config
+      - $ref: /pkg/stanza/operator/helper.input_config
       - $ref: base_config

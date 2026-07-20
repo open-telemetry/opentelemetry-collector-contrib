@@ -11,6 +11,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/prometheus/prometheus/storage"
 )
 
 func BenchmarkAppendWithCreatedLine(b *testing.B) {
@@ -28,11 +29,11 @@ func BenchmarkAppendWithCreatedLine(b *testing.B) {
 
 			for j, ls := range labelSets {
 				value := float64(j)
-				_, err := tx.Append(0, ls[0], timestamp, value)
+				_, err := tx.Append(0, ls[0], 0, timestamp, value, nil, nil, storage.AOptions{})
 				if err != nil {
 					b.Fatal(err)
 				}
-				_, err = tx.Append(0, ls[1], timestamp, ctValue)
+				_, err = tx.Append(0, ls[1], 0, timestamp, ctValue, nil, nil, storage.AOptions{})
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -50,11 +51,10 @@ func BenchmarkAppendWithCreatedLine(b *testing.B) {
 
 			for j, ls := range labelSets {
 				value := float64(j)
-				_, err := tx.Append(0, ls[0], timestamp, value)
-				if err != nil {
-					b.Fatal(err)
-				}
-				_, err = tx.AppendSTZeroSample(0, ls[1], timestamp, int64(ctValue))
+				// In AppenderV2 the start timestamp is carried on the datapoint append
+				// call itself. This models the _created-derived start time without an
+				// additional synthetic append for the _created line.
+				_, err := tx.Append(0, ls[0], int64(ctValue), timestamp, value, nil, nil, storage.AOptions{})
 				if err != nil {
 					b.Fatal(err)
 				}

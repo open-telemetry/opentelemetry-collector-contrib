@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -192,7 +193,7 @@ func TestNewEnhancingConsumer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newEnhancingConsumer(tt.args.resources, tt.args.resourceAttributes, tt.args.env, tt.args.endpoint, tt.args.nextLogs, tt.args.nextMetrics, tt.args.nextTraces)
+			got, err := newEnhancingConsumer(tt.args.resources, tt.args.resourceAttributes, tt.args.env, tt.args.endpoint, tt.args.nextLogs, tt.args.nextMetrics, tt.args.nextTraces, nil)
 			if tt.expectedError != "" {
 				assert.EqualError(t, err, tt.expectedError)
 				assert.Nil(t, got)
@@ -336,6 +337,48 @@ func TestEnhancingConsumerConsumeFunctions(t *testing.T) {
 			} else {
 				require.EqualError(t, ec.ConsumeTraces(t.Context(), ptrace.NewTraces()), "no trace consumer available")
 			}
+
+			// Profiles consumer is never set in these combinatorial tests
+			require.EqualError(t, ec.ConsumeProfiles(t.Context(), pprofile.NewProfiles()), "no profile consumer available")
 		})
 	}
+}
+
+func TestEnhancingConsumerConsumeProfiles(t *testing.T) {
+	profilesFn := func() pprofile.Profiles {
+		pd := pprofile.NewProfiles()
+		pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+		return pd
+	}
+
+	t.Run("with consumer", func(t *testing.T) {
+		sink := &consumertest.ProfilesSink{}
+		ec := &enhancingConsumer{
+			profiles: sink,
+			attrs: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+		}
+		require.NoError(t, ec.ConsumeProfiles(t.Context(), profilesFn()))
+		profiles := sink.AllProfiles()
+		require.Len(t, profiles, 1)
+		attrs := profiles[0].ResourceProfiles().At(0).Resource().Attributes()
+		val, ok := attrs.Get("key1")
+		require.True(t, ok)
+		require.Equal(t, "value1", val.Str())
+		val, ok = attrs.Get("key2")
+		require.True(t, ok)
+		require.Equal(t, "value2", val.Str())
+	})
+
+	t.Run("without consumer", func(t *testing.T) {
+		ec := &enhancingConsumer{
+			attrs: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+		}
+		require.EqualError(t, ec.ConsumeProfiles(t.Context(), pprofile.NewProfiles()), "no profile consumer available")
+	})
 }

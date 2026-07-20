@@ -32,12 +32,14 @@ resource_attributes:
 attributes:
   direction:
     description: The direction data is moving.
+    requirement_level: recommended
     type: string
     enum:
       - sent
       - received
   request:
     description: The type of request sent by a client.
+    requirement_level: recommended
     type: string
     enum:
       - delete

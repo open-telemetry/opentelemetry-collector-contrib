@@ -1,4 +1,8 @@
+display_name: Solace Receiver
 type: solace
+
+description: |
+  The Solace Receiver receives trace data from a [Solace PubSub+ Event Broker](https://solace.com/products/event-broker/).
 
 status:
   class: receiver

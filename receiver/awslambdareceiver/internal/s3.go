@@ -7,11 +7,21 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
+
+// AWSOptions holds configuration overrides for AWS SDK when accessing S3 data.
+type AWSOptions struct {
+	AccessKeyID     string              `mapstructure:"access_key_id"`
+	SecretAccessKey configopaque.String `mapstructure:"secret_access_key"`
+	SessionToken    configopaque.String `mapstructure:"session_token"`
+}
 
 // s3API abstracts out the S3 APIs allowing mocking for tests
 type s3API interface {
@@ -22,6 +32,7 @@ type s3API interface {
 
 // S3Service define services exposed for consumers
 type S3Service interface {
+	GetReader(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error)
 	ReadObject(ctx context.Context, bucketName, objectKey string) ([]byte, error)
 	ListObjects(ctx context.Context, bucketName, continuationToken, prefix string) (*s3.ListObjectsV2Output, error)
 	DeleteObject(ctx context.Context, bucketName, objectKey string) error
@@ -29,19 +40,38 @@ type S3Service interface {
 
 // S3Provider expose contract to get S3Service
 type S3Provider interface {
-	GetService(ctx context.Context) (S3Service, error)
+	GetService(ctx context.Context, options AWSOptions) (S3Service, error)
 }
 
 // S3ServiceProvider provides S3Service instances.
-type S3ServiceProvider struct{}
+type S3ServiceProvider struct {
+	service S3Service
+	err     error
 
-func (*S3ServiceProvider) GetService(ctx context.Context) (S3Service, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("unable to load AWS SDK config: %w", err)
-	}
+	once sync.Once
+}
 
-	return &s3ServiceClient{api: s3.NewFromConfig(cfg)}, nil
+func (s *S3ServiceProvider) GetService(ctx context.Context, awsOptions AWSOptions) (S3Service, error) {
+	s.once.Do(func() {
+		cfg, err := config.LoadDefaultConfig(ctx)
+		if err != nil {
+			s.err = fmt.Errorf("unable to load AWS SDK config: %w", err)
+			return
+		}
+
+		// Use static creds if provided
+		if awsOptions.AccessKeyID != "" && awsOptions.SecretAccessKey != "" {
+			cfg.Credentials = credentials.NewStaticCredentialsProvider(
+				awsOptions.AccessKeyID,
+				string(awsOptions.SecretAccessKey),
+				string(awsOptions.SessionToken),
+			)
+		}
+
+		s.service = &s3ServiceClient{api: s3.NewFromConfig(cfg)}
+	})
+
+	return s.service, s.err
 }
 
 // s3ServiceClient implements the S3Service
@@ -67,6 +97,16 @@ func (s *s3ServiceClient) ReadObject(ctx context.Context, bucketName, objectKey 
 	}
 
 	return body, nil
+}
+
+func (s *s3ServiceClient) GetReader(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
+	params := s3.GetObjectInput{Bucket: &bucketName, Key: &objectKey}
+	out, err := s.api.GetObject(ctx, &params)
+	if err != nil {
+		return nil, fmt.Errorf("unable to to obtain file object with key %s from bucket %s: %w", objectKey, bucketName, err)
+	}
+
+	return out.Body, nil
 }
 
 func (s *s3ServiceClient) ListObjects(ctx context.Context, bucketName, continuationToken, prefix string) (*s3.ListObjectsV2Output, error) {

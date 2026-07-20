@@ -1,0 +1,37 @@
+$defs:
+  action_value:
+    description: ActionValue is the enum to capture the four types of actions to perform on a header
+    type: string
+  header_config:
+    type: object
+    properties:
+      action:
+        $ref: action_value
+      default_value:
+        x-pointer: true
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      from_attribute:
+        x-pointer: true
+        type: string
+      from_context:
+        x-pointer: true
+        type: string
+      key:
+        x-pointer: true
+        type: string
+      value:
+        x-pointer: true
+        type: string
+      value_file:
+        x-pointer: true
+        type: string
+type: object
+properties:
+  additional_auth:
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
+  headers:
+    type: array
+    items:
+      $ref: header_config

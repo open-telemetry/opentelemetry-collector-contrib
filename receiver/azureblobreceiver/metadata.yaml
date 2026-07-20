@@ -1,5 +1,6 @@
 display_name: Azure Blob Receiver
-type: azureblob
+type: azure_blob
+deprecated_type: azureblob
 
 status:
   class: receiver

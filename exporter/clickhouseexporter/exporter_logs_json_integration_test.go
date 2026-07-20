@@ -45,7 +45,7 @@ func newTestLogsJSONExporter(t *testing.T, dsn string, testSchemaFeatures bool, 
 	if testSchemaFeatures {
 		exporter.schemaFeatures.AttributeKeys = false
 		exporter.schemaFeatures.EventName = false
-		exporter.renderInsertLogsJSONSQL()
+		require.NoError(t, exporter.renderInsertLogsJSONSQL())
 	}
 
 	t.Cleanup(func() { _ = exporter.shutdown(t.Context()) })

@@ -1,0 +1,39 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: h
+        - key: deployment.environment.name
+          value:
+            stringValue: staging
+        - key: service.name
+          value:
+            stringValue: svc-injected
+        - key: service.version
+          value:
+            stringValue: 2.0.0
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: datadog.ddsource
+                value:
+                  stringValue: python
+              - key: custom.count
+                value:
+                  intValue: "42"
+              - key: custom.flag
+                value:
+                  boolValue: true
+              - key: exception.message
+                value:
+                  stringValue: boom
+            body:
+              stringValue: correlated log
+            observedTimeUnixNano: "1700000000000000000"
+            severityNumber: 17
+            severityText: error
+            spanId: 000000003ade68b1
+            timeUnixNano: "1700000000000000000"
+            traceId: 0000000000000000112210f47de98115
+        scope: {}

@@ -49,6 +49,11 @@ $defs:
       max_modules:
         description: MaxModules is the maximum number of YANG modules to cache
         type: integer
+      module_paths:
+        description: ModulePaths defines the directories where .yang files are stored. This is used by the internal parser to resolve Cisco-specific schemas.
+        type: array
+        items:
+          type: string
 description: Config defines configuration for yanggrpc receiver.
 type: object
 properties:

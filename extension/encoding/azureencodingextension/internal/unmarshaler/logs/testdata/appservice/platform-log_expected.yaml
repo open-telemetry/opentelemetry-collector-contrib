@@ -28,5 +28,9 @@ resourceLogs:
             severityText: Informational
             timeUnixNano: "1713960235630000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.appservice
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

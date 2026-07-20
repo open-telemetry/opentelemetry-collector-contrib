@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -111,7 +110,7 @@ func TestLoadConfig(t *testing.T) {
 	cmNoStr, err := cm.Sub(id.String())
 	require.NoError(t, err)
 
-	testMetrics := metadata.DefaultMetricsBuilderConfig()
+	testMetrics := metadata.NewDefaultMetricsBuilderConfig()
 	testMetrics.Metrics.SnowflakeDatabaseBytesScannedAvg.Enabled = true
 	testMetrics.Metrics.SnowflakeQueryBytesDeletedAvg.Enabled = false
 
@@ -136,7 +135,9 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, cmNoStr.Unmarshal(cfg))
 	assert.NoError(t, xconfmap.Validate(cfg))
 
-	diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{}))
+	diff := cmp.Diff(expected, cfg, cmp.FilterPath(func(p cmp.Path) bool {
+		return p.Last().String() == ".enabledSetByUser"
+	}, cmp.Ignore()))
 	if diff != "" {
 		t.Errorf("config mismatch (-expected / +actual)\n%s", diff)
 	}

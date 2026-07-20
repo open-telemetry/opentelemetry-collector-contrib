@@ -1,15 +1,19 @@
-type: windowsservice
+display_name: Windows Service Receiver
+type: windows_service
+deprecated_type: windowsservice
+
+description: |
+  The Windows Service Receiver is a receiver for scraping information about the state of services running on a Windows
+  machine.
 
 status:
   class: receiver
   stability:
-    development: [metrics]
+    alpha: [metrics]
   distributions: [contrib]
   codeowners:
     active: [pjanotti, shalper2]
   unsupported_platforms: [darwin, linux]
-
-reaggregation_enabled: true
 
 attributes:
   name:

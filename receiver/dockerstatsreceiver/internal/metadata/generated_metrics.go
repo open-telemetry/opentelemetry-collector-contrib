@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -10,7 +11,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+)
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 
 // AttributeContainerState specifies the value container.state attribute.
@@ -61,28 +69,36 @@ var MapAttributeContainerState = map[string]AttributeContainerState{
 
 var MetricsInfo = metricsInfo{
 	ContainerBlockioIoMergedRecursive: metricInfo{
-		Name: "container.blockio.io_merged_recursive",
+		Name:       "container.blockio.io_merged_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerBlockioIoQueuedRecursive: metricInfo{
-		Name: "container.blockio.io_queued_recursive",
+		Name:       "container.blockio.io_queued_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerBlockioIoServiceBytesRecursive: metricInfo{
-		Name: "container.blockio.io_service_bytes_recursive",
+		Name:       "container.blockio.io_service_bytes_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerBlockioIoServiceTimeRecursive: metricInfo{
-		Name: "container.blockio.io_service_time_recursive",
+		Name:       "container.blockio.io_service_time_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerBlockioIoServicedRecursive: metricInfo{
-		Name: "container.blockio.io_serviced_recursive",
+		Name:       "container.blockio.io_serviced_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerBlockioIoTimeRecursive: metricInfo{
-		Name: "container.blockio.io_time_recursive",
+		Name:       "container.blockio.io_time_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerBlockioIoWaitTimeRecursive: metricInfo{
-		Name: "container.blockio.io_wait_time_recursive",
+		Name:       "container.blockio.io_wait_time_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerBlockioSectorsRecursive: metricInfo{
-		Name: "container.blockio.sectors_recursive",
+		Name:       "container.blockio.sectors_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerCPULimit: metricInfo{
 		Name: "container.cpu.limit",
@@ -106,7 +122,8 @@ var MetricsInfo = metricsInfo{
 		Name: "container.cpu.usage.kernelmode",
 	},
 	ContainerCPUUsagePercpu: metricInfo{
-		Name: "container.cpu.usage.percpu",
+		Name:       "container.cpu.usage.percpu",
+		Attributes: []string{"core"},
 	},
 	ContainerCPUUsageSystem: metricInfo{
 		Name: "container.cpu.usage.system",
@@ -238,28 +255,36 @@ var MetricsInfo = metricsInfo{
 		Name: "container.memory.writeback",
 	},
 	ContainerNetworkIoUsageRxBytes: metricInfo{
-		Name: "container.network.io.usage.rx_bytes",
+		Name:       "container.network.io.usage.rx_bytes",
+		Attributes: []string{"interface"},
 	},
 	ContainerNetworkIoUsageRxDropped: metricInfo{
-		Name: "container.network.io.usage.rx_dropped",
+		Name:       "container.network.io.usage.rx_dropped",
+		Attributes: []string{"interface"},
 	},
 	ContainerNetworkIoUsageRxErrors: metricInfo{
-		Name: "container.network.io.usage.rx_errors",
+		Name:       "container.network.io.usage.rx_errors",
+		Attributes: []string{"interface"},
 	},
 	ContainerNetworkIoUsageRxPackets: metricInfo{
-		Name: "container.network.io.usage.rx_packets",
+		Name:       "container.network.io.usage.rx_packets",
+		Attributes: []string{"interface"},
 	},
 	ContainerNetworkIoUsageTxBytes: metricInfo{
-		Name: "container.network.io.usage.tx_bytes",
+		Name:       "container.network.io.usage.tx_bytes",
+		Attributes: []string{"interface"},
 	},
 	ContainerNetworkIoUsageTxDropped: metricInfo{
-		Name: "container.network.io.usage.tx_dropped",
+		Name:       "container.network.io.usage.tx_dropped",
+		Attributes: []string{"interface"},
 	},
 	ContainerNetworkIoUsageTxErrors: metricInfo{
-		Name: "container.network.io.usage.tx_errors",
+		Name:       "container.network.io.usage.tx_errors",
+		Attributes: []string{"interface"},
 	},
 	ContainerNetworkIoUsageTxPackets: metricInfo{
-		Name: "container.network.io.usage.tx_packets",
+		Name:       "container.network.io.usage.tx_packets",
+		Attributes: []string{"interface"},
 	},
 	ContainerPidsCount: metricInfo{
 		Name: "container.pids.count",
@@ -354,13 +379,15 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricContainerBlockioIoMergedRecursive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        ContainerBlockioIoMergedRecursiveMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.blockio.io_merged_recursive metric with initial data.
@@ -372,19 +399,54 @@ func (m *metricContainerBlockioIoMergedRecursive) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerBlockioIoMergedRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoMergedRecursiveMetricAttributeKeyDeviceMajor) {
+		dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoMergedRecursiveMetricAttributeKeyDeviceMinor) {
+		dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoMergedRecursiveMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -397,13 +459,18 @@ func (m *metricContainerBlockioIoMergedRecursive) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerBlockioIoMergedRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerBlockioIoMergedRecursive(cfg MetricConfig) metricContainerBlockioIoMergedRecursive {
+func newMetricContainerBlockioIoMergedRecursive(cfg ContainerBlockioIoMergedRecursiveMetricConfig) metricContainerBlockioIoMergedRecursive {
 	m := metricContainerBlockioIoMergedRecursive{config: cfg}
 
 	if cfg.Enabled {
@@ -414,9 +481,10 @@ func newMetricContainerBlockioIoMergedRecursive(cfg MetricConfig) metricContaine
 }
 
 type metricContainerBlockioIoQueuedRecursive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        ContainerBlockioIoQueuedRecursiveMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.blockio.io_queued_recursive metric with initial data.
@@ -428,19 +496,54 @@ func (m *metricContainerBlockioIoQueuedRecursive) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerBlockioIoQueuedRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoQueuedRecursiveMetricAttributeKeyDeviceMajor) {
+		dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoQueuedRecursiveMetricAttributeKeyDeviceMinor) {
+		dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoQueuedRecursiveMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -453,13 +556,18 @@ func (m *metricContainerBlockioIoQueuedRecursive) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerBlockioIoQueuedRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerBlockioIoQueuedRecursive(cfg MetricConfig) metricContainerBlockioIoQueuedRecursive {
+func newMetricContainerBlockioIoQueuedRecursive(cfg ContainerBlockioIoQueuedRecursiveMetricConfig) metricContainerBlockioIoQueuedRecursive {
 	m := metricContainerBlockioIoQueuedRecursive{config: cfg}
 
 	if cfg.Enabled {
@@ -470,9 +578,10 @@ func newMetricContainerBlockioIoQueuedRecursive(cfg MetricConfig) metricContaine
 }
 
 type metricContainerBlockioIoServiceBytesRecursive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                      // data buffer for generated metric.
+	config        ContainerBlockioIoServiceBytesRecursiveMetricConfig // metric config provided by user.
+	capacity      int                                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.blockio.io_service_bytes_recursive metric with initial data.
@@ -484,19 +593,54 @@ func (m *metricContainerBlockioIoServiceBytesRecursive) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerBlockioIoServiceBytesRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoServiceBytesRecursiveMetricAttributeKeyDeviceMajor) {
+		dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoServiceBytesRecursiveMetricAttributeKeyDeviceMinor) {
+		dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoServiceBytesRecursiveMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -509,13 +653,18 @@ func (m *metricContainerBlockioIoServiceBytesRecursive) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerBlockioIoServiceBytesRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerBlockioIoServiceBytesRecursive(cfg MetricConfig) metricContainerBlockioIoServiceBytesRecursive {
+func newMetricContainerBlockioIoServiceBytesRecursive(cfg ContainerBlockioIoServiceBytesRecursiveMetricConfig) metricContainerBlockioIoServiceBytesRecursive {
 	m := metricContainerBlockioIoServiceBytesRecursive{config: cfg}
 
 	if cfg.Enabled {
@@ -526,9 +675,10 @@ func newMetricContainerBlockioIoServiceBytesRecursive(cfg MetricConfig) metricCo
 }
 
 type metricContainerBlockioIoServiceTimeRecursive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                     // data buffer for generated metric.
+	config        ContainerBlockioIoServiceTimeRecursiveMetricConfig // metric config provided by user.
+	capacity      int                                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.blockio.io_service_time_recursive metric with initial data.
@@ -540,19 +690,54 @@ func (m *metricContainerBlockioIoServiceTimeRecursive) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerBlockioIoServiceTimeRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoServiceTimeRecursiveMetricAttributeKeyDeviceMajor) {
+		dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoServiceTimeRecursiveMetricAttributeKeyDeviceMinor) {
+		dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoServiceTimeRecursiveMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -565,13 +750,18 @@ func (m *metricContainerBlockioIoServiceTimeRecursive) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerBlockioIoServiceTimeRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerBlockioIoServiceTimeRecursive(cfg MetricConfig) metricContainerBlockioIoServiceTimeRecursive {
+func newMetricContainerBlockioIoServiceTimeRecursive(cfg ContainerBlockioIoServiceTimeRecursiveMetricConfig) metricContainerBlockioIoServiceTimeRecursive {
 	m := metricContainerBlockioIoServiceTimeRecursive{config: cfg}
 
 	if cfg.Enabled {
@@ -582,9 +772,10 @@ func newMetricContainerBlockioIoServiceTimeRecursive(cfg MetricConfig) metricCon
 }
 
 type metricContainerBlockioIoServicedRecursive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                  // data buffer for generated metric.
+	config        ContainerBlockioIoServicedRecursiveMetricConfig // metric config provided by user.
+	capacity      int                                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.blockio.io_serviced_recursive metric with initial data.
@@ -596,19 +787,54 @@ func (m *metricContainerBlockioIoServicedRecursive) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerBlockioIoServicedRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoServicedRecursiveMetricAttributeKeyDeviceMajor) {
+		dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoServicedRecursiveMetricAttributeKeyDeviceMinor) {
+		dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoServicedRecursiveMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -621,13 +847,18 @@ func (m *metricContainerBlockioIoServicedRecursive) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerBlockioIoServicedRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerBlockioIoServicedRecursive(cfg MetricConfig) metricContainerBlockioIoServicedRecursive {
+func newMetricContainerBlockioIoServicedRecursive(cfg ContainerBlockioIoServicedRecursiveMetricConfig) metricContainerBlockioIoServicedRecursive {
 	m := metricContainerBlockioIoServicedRecursive{config: cfg}
 
 	if cfg.Enabled {
@@ -638,9 +869,10 @@ func newMetricContainerBlockioIoServicedRecursive(cfg MetricConfig) metricContai
 }
 
 type metricContainerBlockioIoTimeRecursive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        ContainerBlockioIoTimeRecursiveMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.blockio.io_time_recursive metric with initial data.
@@ -652,19 +884,54 @@ func (m *metricContainerBlockioIoTimeRecursive) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerBlockioIoTimeRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoTimeRecursiveMetricAttributeKeyDeviceMajor) {
+		dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoTimeRecursiveMetricAttributeKeyDeviceMinor) {
+		dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoTimeRecursiveMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -677,13 +944,18 @@ func (m *metricContainerBlockioIoTimeRecursive) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerBlockioIoTimeRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerBlockioIoTimeRecursive(cfg MetricConfig) metricContainerBlockioIoTimeRecursive {
+func newMetricContainerBlockioIoTimeRecursive(cfg ContainerBlockioIoTimeRecursiveMetricConfig) metricContainerBlockioIoTimeRecursive {
 	m := metricContainerBlockioIoTimeRecursive{config: cfg}
 
 	if cfg.Enabled {
@@ -694,9 +966,10 @@ func newMetricContainerBlockioIoTimeRecursive(cfg MetricConfig) metricContainerB
 }
 
 type metricContainerBlockioIoWaitTimeRecursive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                  // data buffer for generated metric.
+	config        ContainerBlockioIoWaitTimeRecursiveMetricConfig // metric config provided by user.
+	capacity      int                                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.blockio.io_wait_time_recursive metric with initial data.
@@ -708,19 +981,54 @@ func (m *metricContainerBlockioIoWaitTimeRecursive) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerBlockioIoWaitTimeRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoWaitTimeRecursiveMetricAttributeKeyDeviceMajor) {
+		dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoWaitTimeRecursiveMetricAttributeKeyDeviceMinor) {
+		dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioIoWaitTimeRecursiveMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -733,13 +1041,18 @@ func (m *metricContainerBlockioIoWaitTimeRecursive) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerBlockioIoWaitTimeRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerBlockioIoWaitTimeRecursive(cfg MetricConfig) metricContainerBlockioIoWaitTimeRecursive {
+func newMetricContainerBlockioIoWaitTimeRecursive(cfg ContainerBlockioIoWaitTimeRecursiveMetricConfig) metricContainerBlockioIoWaitTimeRecursive {
 	m := metricContainerBlockioIoWaitTimeRecursive{config: cfg}
 
 	if cfg.Enabled {
@@ -750,9 +1063,10 @@ func newMetricContainerBlockioIoWaitTimeRecursive(cfg MetricConfig) metricContai
 }
 
 type metricContainerBlockioSectorsRecursive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        ContainerBlockioSectorsRecursiveMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.blockio.sectors_recursive metric with initial data.
@@ -764,19 +1078,54 @@ func (m *metricContainerBlockioSectorsRecursive) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerBlockioSectorsRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioSectorsRecursiveMetricAttributeKeyDeviceMajor) {
+		dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioSectorsRecursiveMetricAttributeKeyDeviceMinor) {
+		dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerBlockioSectorsRecursiveMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -789,13 +1138,18 @@ func (m *metricContainerBlockioSectorsRecursive) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerBlockioSectorsRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerBlockioSectorsRecursive(cfg MetricConfig) metricContainerBlockioSectorsRecursive {
+func newMetricContainerBlockioSectorsRecursive(cfg ContainerBlockioSectorsRecursiveMetricConfig) metricContainerBlockioSectorsRecursive {
 	m := metricContainerBlockioSectorsRecursive{config: cfg}
 
 	if cfg.Enabled {
@@ -806,9 +1160,9 @@ func newMetricContainerBlockioSectorsRecursive(cfg MetricConfig) metricContainer
 }
 
 type metricContainerCPULimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   ContainerCPULimitMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills container.cpu.limit metric with initial data.
@@ -845,7 +1199,7 @@ func (m *metricContainerCPULimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerCPULimit(cfg MetricConfig) metricContainerCPULimit {
+func newMetricContainerCPULimit(cfg ContainerCPULimitMetricConfig) metricContainerCPULimit {
 	m := metricContainerCPULimit{config: cfg}
 
 	if cfg.Enabled {
@@ -856,9 +1210,9 @@ func newMetricContainerCPULimit(cfg MetricConfig) metricContainerCPULimit {
 }
 
 type metricContainerCPULogicalCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   ContainerCPULogicalCountMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills container.cpu.logical.count metric with initial data.
@@ -895,7 +1249,7 @@ func (m *metricContainerCPULogicalCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerCPULogicalCount(cfg MetricConfig) metricContainerCPULogicalCount {
+func newMetricContainerCPULogicalCount(cfg ContainerCPULogicalCountMetricConfig) metricContainerCPULogicalCount {
 	m := metricContainerCPULogicalCount{config: cfg}
 
 	if cfg.Enabled {
@@ -906,9 +1260,9 @@ func newMetricContainerCPULogicalCount(cfg MetricConfig) metricContainerCPULogic
 }
 
 type metricContainerCPUShares struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   ContainerCPUSharesMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills container.cpu.shares metric with initial data.
@@ -945,7 +1299,7 @@ func (m *metricContainerCPUShares) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerCPUShares(cfg MetricConfig) metricContainerCPUShares {
+func newMetricContainerCPUShares(cfg ContainerCPUSharesMetricConfig) metricContainerCPUShares {
 	m := metricContainerCPUShares{config: cfg}
 
 	if cfg.Enabled {
@@ -956,9 +1310,9 @@ func newMetricContainerCPUShares(cfg MetricConfig) metricContainerCPUShares {
 }
 
 type metricContainerCPUThrottlingDataPeriods struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   ContainerCPUThrottlingDataPeriodsMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills container.cpu.throttling_data.periods metric with initial data.
@@ -997,7 +1351,7 @@ func (m *metricContainerCPUThrottlingDataPeriods) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricContainerCPUThrottlingDataPeriods(cfg MetricConfig) metricContainerCPUThrottlingDataPeriods {
+func newMetricContainerCPUThrottlingDataPeriods(cfg ContainerCPUThrottlingDataPeriodsMetricConfig) metricContainerCPUThrottlingDataPeriods {
 	m := metricContainerCPUThrottlingDataPeriods{config: cfg}
 
 	if cfg.Enabled {
@@ -1008,9 +1362,9 @@ func newMetricContainerCPUThrottlingDataPeriods(cfg MetricConfig) metricContaine
 }
 
 type metricContainerCPUThrottlingDataThrottledPeriods struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                         // data buffer for generated metric.
+	config   ContainerCPUThrottlingDataThrottledPeriodsMetricConfig // metric config provided by user.
+	capacity int                                                    // max observed number of data points added to the metric.
 }
 
 // init fills container.cpu.throttling_data.throttled_periods metric with initial data.
@@ -1049,7 +1403,7 @@ func (m *metricContainerCPUThrottlingDataThrottledPeriods) emit(metrics pmetric.
 	}
 }
 
-func newMetricContainerCPUThrottlingDataThrottledPeriods(cfg MetricConfig) metricContainerCPUThrottlingDataThrottledPeriods {
+func newMetricContainerCPUThrottlingDataThrottledPeriods(cfg ContainerCPUThrottlingDataThrottledPeriodsMetricConfig) metricContainerCPUThrottlingDataThrottledPeriods {
 	m := metricContainerCPUThrottlingDataThrottledPeriods{config: cfg}
 
 	if cfg.Enabled {
@@ -1060,9 +1414,9 @@ func newMetricContainerCPUThrottlingDataThrottledPeriods(cfg MetricConfig) metri
 }
 
 type metricContainerCPUThrottlingDataThrottledTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                      // data buffer for generated metric.
+	config   ContainerCPUThrottlingDataThrottledTimeMetricConfig // metric config provided by user.
+	capacity int                                                 // max observed number of data points added to the metric.
 }
 
 // init fills container.cpu.throttling_data.throttled_time metric with initial data.
@@ -1101,7 +1455,7 @@ func (m *metricContainerCPUThrottlingDataThrottledTime) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricContainerCPUThrottlingDataThrottledTime(cfg MetricConfig) metricContainerCPUThrottlingDataThrottledTime {
+func newMetricContainerCPUThrottlingDataThrottledTime(cfg ContainerCPUThrottlingDataThrottledTimeMetricConfig) metricContainerCPUThrottlingDataThrottledTime {
 	m := metricContainerCPUThrottlingDataThrottledTime{config: cfg}
 
 	if cfg.Enabled {
@@ -1112,9 +1466,9 @@ func newMetricContainerCPUThrottlingDataThrottledTime(cfg MetricConfig) metricCo
 }
 
 type metricContainerCPUUsageKernelmode struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ContainerCPUUsageKernelmodeMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills container.cpu.usage.kernelmode metric with initial data.
@@ -1153,7 +1507,7 @@ func (m *metricContainerCPUUsageKernelmode) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerCPUUsageKernelmode(cfg MetricConfig) metricContainerCPUUsageKernelmode {
+func newMetricContainerCPUUsageKernelmode(cfg ContainerCPUUsageKernelmodeMetricConfig) metricContainerCPUUsageKernelmode {
 	m := metricContainerCPUUsageKernelmode{config: cfg}
 
 	if cfg.Enabled {
@@ -1164,9 +1518,10 @@ func newMetricContainerCPUUsageKernelmode(cfg MetricConfig) metricContainerCPUUs
 }
 
 type metricContainerCPUUsagePercpu struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        ContainerCPUUsagePercpuMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.cpu.usage.percpu metric with initial data.
@@ -1178,17 +1533,48 @@ func (m *metricContainerCPUUsagePercpu) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerCPUUsagePercpu) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, coreAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerCPUUsagePercpuMetricAttributeKeyCore) {
+		dp.Attributes().PutStr("core", coreAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("core", coreAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1201,13 +1587,18 @@ func (m *metricContainerCPUUsagePercpu) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerCPUUsagePercpu) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerCPUUsagePercpu(cfg MetricConfig) metricContainerCPUUsagePercpu {
+func newMetricContainerCPUUsagePercpu(cfg ContainerCPUUsagePercpuMetricConfig) metricContainerCPUUsagePercpu {
 	m := metricContainerCPUUsagePercpu{config: cfg}
 
 	if cfg.Enabled {
@@ -1218,9 +1609,9 @@ func newMetricContainerCPUUsagePercpu(cfg MetricConfig) metricContainerCPUUsageP
 }
 
 type metricContainerCPUUsageSystem struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   ContainerCPUUsageSystemMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills container.cpu.usage.system metric with initial data.
@@ -1259,7 +1650,7 @@ func (m *metricContainerCPUUsageSystem) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerCPUUsageSystem(cfg MetricConfig) metricContainerCPUUsageSystem {
+func newMetricContainerCPUUsageSystem(cfg ContainerCPUUsageSystemMetricConfig) metricContainerCPUUsageSystem {
 	m := metricContainerCPUUsageSystem{config: cfg}
 
 	if cfg.Enabled {
@@ -1270,9 +1661,9 @@ func newMetricContainerCPUUsageSystem(cfg MetricConfig) metricContainerCPUUsageS
 }
 
 type metricContainerCPUUsageTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   ContainerCPUUsageTotalMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills container.cpu.usage.total metric with initial data.
@@ -1311,7 +1702,7 @@ func (m *metricContainerCPUUsageTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerCPUUsageTotal(cfg MetricConfig) metricContainerCPUUsageTotal {
+func newMetricContainerCPUUsageTotal(cfg ContainerCPUUsageTotalMetricConfig) metricContainerCPUUsageTotal {
 	m := metricContainerCPUUsageTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -1322,9 +1713,9 @@ func newMetricContainerCPUUsageTotal(cfg MetricConfig) metricContainerCPUUsageTo
 }
 
 type metricContainerCPUUsageUsermode struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   ContainerCPUUsageUsermodeMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills container.cpu.usage.usermode metric with initial data.
@@ -1363,7 +1754,7 @@ func (m *metricContainerCPUUsageUsermode) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerCPUUsageUsermode(cfg MetricConfig) metricContainerCPUUsageUsermode {
+func newMetricContainerCPUUsageUsermode(cfg ContainerCPUUsageUsermodeMetricConfig) metricContainerCPUUsageUsermode {
 	m := metricContainerCPUUsageUsermode{config: cfg}
 
 	if cfg.Enabled {
@@ -1374,9 +1765,9 @@ func newMetricContainerCPUUsageUsermode(cfg MetricConfig) metricContainerCPUUsag
 }
 
 type metricContainerCPUUtilization struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   ContainerCPUUtilizationMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills container.cpu.utilization metric with initial data.
@@ -1413,7 +1804,7 @@ func (m *metricContainerCPUUtilization) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerCPUUtilization(cfg MetricConfig) metricContainerCPUUtilization {
+func newMetricContainerCPUUtilization(cfg ContainerCPUUtilizationMetricConfig) metricContainerCPUUtilization {
 	m := metricContainerCPUUtilization{config: cfg}
 
 	if cfg.Enabled {
@@ -1424,9 +1815,9 @@ func newMetricContainerCPUUtilization(cfg MetricConfig) metricContainerCPUUtiliz
 }
 
 type metricContainerMemoryActiveAnon struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   ContainerMemoryActiveAnonMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.active_anon metric with initial data.
@@ -1465,7 +1856,7 @@ func (m *metricContainerMemoryActiveAnon) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryActiveAnon(cfg MetricConfig) metricContainerMemoryActiveAnon {
+func newMetricContainerMemoryActiveAnon(cfg ContainerMemoryActiveAnonMetricConfig) metricContainerMemoryActiveAnon {
 	m := metricContainerMemoryActiveAnon{config: cfg}
 
 	if cfg.Enabled {
@@ -1476,9 +1867,9 @@ func newMetricContainerMemoryActiveAnon(cfg MetricConfig) metricContainerMemoryA
 }
 
 type metricContainerMemoryActiveFile struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   ContainerMemoryActiveFileMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.active_file metric with initial data.
@@ -1517,7 +1908,7 @@ func (m *metricContainerMemoryActiveFile) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryActiveFile(cfg MetricConfig) metricContainerMemoryActiveFile {
+func newMetricContainerMemoryActiveFile(cfg ContainerMemoryActiveFileMetricConfig) metricContainerMemoryActiveFile {
 	m := metricContainerMemoryActiveFile{config: cfg}
 
 	if cfg.Enabled {
@@ -1528,9 +1919,9 @@ func newMetricContainerMemoryActiveFile(cfg MetricConfig) metricContainerMemoryA
 }
 
 type metricContainerMemoryAnon struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   ContainerMemoryAnonMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.anon metric with initial data.
@@ -1569,7 +1960,7 @@ func (m *metricContainerMemoryAnon) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryAnon(cfg MetricConfig) metricContainerMemoryAnon {
+func newMetricContainerMemoryAnon(cfg ContainerMemoryAnonMetricConfig) metricContainerMemoryAnon {
 	m := metricContainerMemoryAnon{config: cfg}
 
 	if cfg.Enabled {
@@ -1580,9 +1971,9 @@ func newMetricContainerMemoryAnon(cfg MetricConfig) metricContainerMemoryAnon {
 }
 
 type metricContainerMemoryCache struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   ContainerMemoryCacheMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.cache metric with initial data.
@@ -1621,7 +2012,7 @@ func (m *metricContainerMemoryCache) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryCache(cfg MetricConfig) metricContainerMemoryCache {
+func newMetricContainerMemoryCache(cfg ContainerMemoryCacheMetricConfig) metricContainerMemoryCache {
 	m := metricContainerMemoryCache{config: cfg}
 
 	if cfg.Enabled {
@@ -1632,9 +2023,9 @@ func newMetricContainerMemoryCache(cfg MetricConfig) metricContainerMemoryCache 
 }
 
 type metricContainerMemoryDirty struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   ContainerMemoryDirtyMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.dirty metric with initial data.
@@ -1673,7 +2064,7 @@ func (m *metricContainerMemoryDirty) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryDirty(cfg MetricConfig) metricContainerMemoryDirty {
+func newMetricContainerMemoryDirty(cfg ContainerMemoryDirtyMetricConfig) metricContainerMemoryDirty {
 	m := metricContainerMemoryDirty{config: cfg}
 
 	if cfg.Enabled {
@@ -1684,9 +2075,9 @@ func newMetricContainerMemoryDirty(cfg MetricConfig) metricContainerMemoryDirty 
 }
 
 type metricContainerMemoryFails struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   ContainerMemoryFailsMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.fails metric with initial data.
@@ -1725,7 +2116,7 @@ func (m *metricContainerMemoryFails) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryFails(cfg MetricConfig) metricContainerMemoryFails {
+func newMetricContainerMemoryFails(cfg ContainerMemoryFailsMetricConfig) metricContainerMemoryFails {
 	m := metricContainerMemoryFails{config: cfg}
 
 	if cfg.Enabled {
@@ -1736,9 +2127,9 @@ func newMetricContainerMemoryFails(cfg MetricConfig) metricContainerMemoryFails 
 }
 
 type metricContainerMemoryFile struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   ContainerMemoryFileMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.file metric with initial data.
@@ -1777,7 +2168,7 @@ func (m *metricContainerMemoryFile) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryFile(cfg MetricConfig) metricContainerMemoryFile {
+func newMetricContainerMemoryFile(cfg ContainerMemoryFileMetricConfig) metricContainerMemoryFile {
 	m := metricContainerMemoryFile{config: cfg}
 
 	if cfg.Enabled {
@@ -1788,9 +2179,9 @@ func newMetricContainerMemoryFile(cfg MetricConfig) metricContainerMemoryFile {
 }
 
 type metricContainerMemoryHierarchicalMemoryLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                     // data buffer for generated metric.
+	config   ContainerMemoryHierarchicalMemoryLimitMetricConfig // metric config provided by user.
+	capacity int                                                // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.hierarchical_memory_limit metric with initial data.
@@ -1829,7 +2220,7 @@ func (m *metricContainerMemoryHierarchicalMemoryLimit) emit(metrics pmetric.Metr
 	}
 }
 
-func newMetricContainerMemoryHierarchicalMemoryLimit(cfg MetricConfig) metricContainerMemoryHierarchicalMemoryLimit {
+func newMetricContainerMemoryHierarchicalMemoryLimit(cfg ContainerMemoryHierarchicalMemoryLimitMetricConfig) metricContainerMemoryHierarchicalMemoryLimit {
 	m := metricContainerMemoryHierarchicalMemoryLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -1840,9 +2231,9 @@ func newMetricContainerMemoryHierarchicalMemoryLimit(cfg MetricConfig) metricCon
 }
 
 type metricContainerMemoryHierarchicalMemswLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                    // data buffer for generated metric.
+	config   ContainerMemoryHierarchicalMemswLimitMetricConfig // metric config provided by user.
+	capacity int                                               // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.hierarchical_memsw_limit metric with initial data.
@@ -1881,7 +2272,7 @@ func (m *metricContainerMemoryHierarchicalMemswLimit) emit(metrics pmetric.Metri
 	}
 }
 
-func newMetricContainerMemoryHierarchicalMemswLimit(cfg MetricConfig) metricContainerMemoryHierarchicalMemswLimit {
+func newMetricContainerMemoryHierarchicalMemswLimit(cfg ContainerMemoryHierarchicalMemswLimitMetricConfig) metricContainerMemoryHierarchicalMemswLimit {
 	m := metricContainerMemoryHierarchicalMemswLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -1892,9 +2283,9 @@ func newMetricContainerMemoryHierarchicalMemswLimit(cfg MetricConfig) metricCont
 }
 
 type metricContainerMemoryInactiveAnon struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ContainerMemoryInactiveAnonMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.inactive_anon metric with initial data.
@@ -1933,7 +2324,7 @@ func (m *metricContainerMemoryInactiveAnon) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryInactiveAnon(cfg MetricConfig) metricContainerMemoryInactiveAnon {
+func newMetricContainerMemoryInactiveAnon(cfg ContainerMemoryInactiveAnonMetricConfig) metricContainerMemoryInactiveAnon {
 	m := metricContainerMemoryInactiveAnon{config: cfg}
 
 	if cfg.Enabled {
@@ -1944,9 +2335,9 @@ func newMetricContainerMemoryInactiveAnon(cfg MetricConfig) metricContainerMemor
 }
 
 type metricContainerMemoryInactiveFile struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ContainerMemoryInactiveFileMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.inactive_file metric with initial data.
@@ -1985,7 +2376,7 @@ func (m *metricContainerMemoryInactiveFile) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryInactiveFile(cfg MetricConfig) metricContainerMemoryInactiveFile {
+func newMetricContainerMemoryInactiveFile(cfg ContainerMemoryInactiveFileMetricConfig) metricContainerMemoryInactiveFile {
 	m := metricContainerMemoryInactiveFile{config: cfg}
 
 	if cfg.Enabled {
@@ -1996,9 +2387,9 @@ func newMetricContainerMemoryInactiveFile(cfg MetricConfig) metricContainerMemor
 }
 
 type metricContainerMemoryMappedFile struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   ContainerMemoryMappedFileMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.mapped_file metric with initial data.
@@ -2037,7 +2428,7 @@ func (m *metricContainerMemoryMappedFile) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryMappedFile(cfg MetricConfig) metricContainerMemoryMappedFile {
+func newMetricContainerMemoryMappedFile(cfg ContainerMemoryMappedFileMetricConfig) metricContainerMemoryMappedFile {
 	m := metricContainerMemoryMappedFile{config: cfg}
 
 	if cfg.Enabled {
@@ -2048,9 +2439,9 @@ func newMetricContainerMemoryMappedFile(cfg MetricConfig) metricContainerMemoryM
 }
 
 type metricContainerMemoryPercent struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   ContainerMemoryPercentMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.percent metric with initial data.
@@ -2087,7 +2478,7 @@ func (m *metricContainerMemoryPercent) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryPercent(cfg MetricConfig) metricContainerMemoryPercent {
+func newMetricContainerMemoryPercent(cfg ContainerMemoryPercentMetricConfig) metricContainerMemoryPercent {
 	m := metricContainerMemoryPercent{config: cfg}
 
 	if cfg.Enabled {
@@ -2098,9 +2489,9 @@ func newMetricContainerMemoryPercent(cfg MetricConfig) metricContainerMemoryPerc
 }
 
 type metricContainerMemoryPgfault struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   ContainerMemoryPgfaultMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.pgfault metric with initial data.
@@ -2139,7 +2530,7 @@ func (m *metricContainerMemoryPgfault) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryPgfault(cfg MetricConfig) metricContainerMemoryPgfault {
+func newMetricContainerMemoryPgfault(cfg ContainerMemoryPgfaultMetricConfig) metricContainerMemoryPgfault {
 	m := metricContainerMemoryPgfault{config: cfg}
 
 	if cfg.Enabled {
@@ -2150,9 +2541,9 @@ func newMetricContainerMemoryPgfault(cfg MetricConfig) metricContainerMemoryPgfa
 }
 
 type metricContainerMemoryPgmajfault struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   ContainerMemoryPgmajfaultMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.pgmajfault metric with initial data.
@@ -2191,7 +2582,7 @@ func (m *metricContainerMemoryPgmajfault) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryPgmajfault(cfg MetricConfig) metricContainerMemoryPgmajfault {
+func newMetricContainerMemoryPgmajfault(cfg ContainerMemoryPgmajfaultMetricConfig) metricContainerMemoryPgmajfault {
 	m := metricContainerMemoryPgmajfault{config: cfg}
 
 	if cfg.Enabled {
@@ -2202,9 +2593,9 @@ func newMetricContainerMemoryPgmajfault(cfg MetricConfig) metricContainerMemoryP
 }
 
 type metricContainerMemoryPgpgin struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   ContainerMemoryPgpginMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.pgpgin metric with initial data.
@@ -2243,7 +2634,7 @@ func (m *metricContainerMemoryPgpgin) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryPgpgin(cfg MetricConfig) metricContainerMemoryPgpgin {
+func newMetricContainerMemoryPgpgin(cfg ContainerMemoryPgpginMetricConfig) metricContainerMemoryPgpgin {
 	m := metricContainerMemoryPgpgin{config: cfg}
 
 	if cfg.Enabled {
@@ -2254,9 +2645,9 @@ func newMetricContainerMemoryPgpgin(cfg MetricConfig) metricContainerMemoryPgpgi
 }
 
 type metricContainerMemoryPgpgout struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   ContainerMemoryPgpgoutMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.pgpgout metric with initial data.
@@ -2295,7 +2686,7 @@ func (m *metricContainerMemoryPgpgout) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryPgpgout(cfg MetricConfig) metricContainerMemoryPgpgout {
+func newMetricContainerMemoryPgpgout(cfg ContainerMemoryPgpgoutMetricConfig) metricContainerMemoryPgpgout {
 	m := metricContainerMemoryPgpgout{config: cfg}
 
 	if cfg.Enabled {
@@ -2306,9 +2697,9 @@ func newMetricContainerMemoryPgpgout(cfg MetricConfig) metricContainerMemoryPgpg
 }
 
 type metricContainerMemoryRss struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   ContainerMemoryRssMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.rss metric with initial data.
@@ -2347,7 +2738,7 @@ func (m *metricContainerMemoryRss) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryRss(cfg MetricConfig) metricContainerMemoryRss {
+func newMetricContainerMemoryRss(cfg ContainerMemoryRssMetricConfig) metricContainerMemoryRss {
 	m := metricContainerMemoryRss{config: cfg}
 
 	if cfg.Enabled {
@@ -2358,9 +2749,9 @@ func newMetricContainerMemoryRss(cfg MetricConfig) metricContainerMemoryRss {
 }
 
 type metricContainerMemoryRssHuge struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   ContainerMemoryRssHugeMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.rss_huge metric with initial data.
@@ -2399,7 +2790,7 @@ func (m *metricContainerMemoryRssHuge) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryRssHuge(cfg MetricConfig) metricContainerMemoryRssHuge {
+func newMetricContainerMemoryRssHuge(cfg ContainerMemoryRssHugeMetricConfig) metricContainerMemoryRssHuge {
 	m := metricContainerMemoryRssHuge{config: cfg}
 
 	if cfg.Enabled {
@@ -2410,9 +2801,9 @@ func newMetricContainerMemoryRssHuge(cfg MetricConfig) metricContainerMemoryRssH
 }
 
 type metricContainerMemoryTotalActiveAnon struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   ContainerMemoryTotalActiveAnonMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_active_anon metric with initial data.
@@ -2451,7 +2842,7 @@ func (m *metricContainerMemoryTotalActiveAnon) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricContainerMemoryTotalActiveAnon(cfg MetricConfig) metricContainerMemoryTotalActiveAnon {
+func newMetricContainerMemoryTotalActiveAnon(cfg ContainerMemoryTotalActiveAnonMetricConfig) metricContainerMemoryTotalActiveAnon {
 	m := metricContainerMemoryTotalActiveAnon{config: cfg}
 
 	if cfg.Enabled {
@@ -2462,9 +2853,9 @@ func newMetricContainerMemoryTotalActiveAnon(cfg MetricConfig) metricContainerMe
 }
 
 type metricContainerMemoryTotalActiveFile struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   ContainerMemoryTotalActiveFileMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_active_file metric with initial data.
@@ -2503,7 +2894,7 @@ func (m *metricContainerMemoryTotalActiveFile) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricContainerMemoryTotalActiveFile(cfg MetricConfig) metricContainerMemoryTotalActiveFile {
+func newMetricContainerMemoryTotalActiveFile(cfg ContainerMemoryTotalActiveFileMetricConfig) metricContainerMemoryTotalActiveFile {
 	m := metricContainerMemoryTotalActiveFile{config: cfg}
 
 	if cfg.Enabled {
@@ -2514,9 +2905,9 @@ func newMetricContainerMemoryTotalActiveFile(cfg MetricConfig) metricContainerMe
 }
 
 type metricContainerMemoryTotalCache struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   ContainerMemoryTotalCacheMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_cache metric with initial data.
@@ -2555,7 +2946,7 @@ func (m *metricContainerMemoryTotalCache) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryTotalCache(cfg MetricConfig) metricContainerMemoryTotalCache {
+func newMetricContainerMemoryTotalCache(cfg ContainerMemoryTotalCacheMetricConfig) metricContainerMemoryTotalCache {
 	m := metricContainerMemoryTotalCache{config: cfg}
 
 	if cfg.Enabled {
@@ -2566,9 +2957,9 @@ func newMetricContainerMemoryTotalCache(cfg MetricConfig) metricContainerMemoryT
 }
 
 type metricContainerMemoryTotalDirty struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   ContainerMemoryTotalDirtyMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_dirty metric with initial data.
@@ -2607,7 +2998,7 @@ func (m *metricContainerMemoryTotalDirty) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryTotalDirty(cfg MetricConfig) metricContainerMemoryTotalDirty {
+func newMetricContainerMemoryTotalDirty(cfg ContainerMemoryTotalDirtyMetricConfig) metricContainerMemoryTotalDirty {
 	m := metricContainerMemoryTotalDirty{config: cfg}
 
 	if cfg.Enabled {
@@ -2618,9 +3009,9 @@ func newMetricContainerMemoryTotalDirty(cfg MetricConfig) metricContainerMemoryT
 }
 
 type metricContainerMemoryTotalInactiveAnon struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                               // data buffer for generated metric.
+	config   ContainerMemoryTotalInactiveAnonMetricConfig // metric config provided by user.
+	capacity int                                          // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_inactive_anon metric with initial data.
@@ -2659,7 +3050,7 @@ func (m *metricContainerMemoryTotalInactiveAnon) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricContainerMemoryTotalInactiveAnon(cfg MetricConfig) metricContainerMemoryTotalInactiveAnon {
+func newMetricContainerMemoryTotalInactiveAnon(cfg ContainerMemoryTotalInactiveAnonMetricConfig) metricContainerMemoryTotalInactiveAnon {
 	m := metricContainerMemoryTotalInactiveAnon{config: cfg}
 
 	if cfg.Enabled {
@@ -2670,9 +3061,9 @@ func newMetricContainerMemoryTotalInactiveAnon(cfg MetricConfig) metricContainer
 }
 
 type metricContainerMemoryTotalInactiveFile struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                               // data buffer for generated metric.
+	config   ContainerMemoryTotalInactiveFileMetricConfig // metric config provided by user.
+	capacity int                                          // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_inactive_file metric with initial data.
@@ -2711,7 +3102,7 @@ func (m *metricContainerMemoryTotalInactiveFile) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricContainerMemoryTotalInactiveFile(cfg MetricConfig) metricContainerMemoryTotalInactiveFile {
+func newMetricContainerMemoryTotalInactiveFile(cfg ContainerMemoryTotalInactiveFileMetricConfig) metricContainerMemoryTotalInactiveFile {
 	m := metricContainerMemoryTotalInactiveFile{config: cfg}
 
 	if cfg.Enabled {
@@ -2722,9 +3113,9 @@ func newMetricContainerMemoryTotalInactiveFile(cfg MetricConfig) metricContainer
 }
 
 type metricContainerMemoryTotalMappedFile struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   ContainerMemoryTotalMappedFileMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_mapped_file metric with initial data.
@@ -2763,7 +3154,7 @@ func (m *metricContainerMemoryTotalMappedFile) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricContainerMemoryTotalMappedFile(cfg MetricConfig) metricContainerMemoryTotalMappedFile {
+func newMetricContainerMemoryTotalMappedFile(cfg ContainerMemoryTotalMappedFileMetricConfig) metricContainerMemoryTotalMappedFile {
 	m := metricContainerMemoryTotalMappedFile{config: cfg}
 
 	if cfg.Enabled {
@@ -2774,9 +3165,9 @@ func newMetricContainerMemoryTotalMappedFile(cfg MetricConfig) metricContainerMe
 }
 
 type metricContainerMemoryTotalPgfault struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ContainerMemoryTotalPgfaultMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_pgfault metric with initial data.
@@ -2815,7 +3206,7 @@ func (m *metricContainerMemoryTotalPgfault) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryTotalPgfault(cfg MetricConfig) metricContainerMemoryTotalPgfault {
+func newMetricContainerMemoryTotalPgfault(cfg ContainerMemoryTotalPgfaultMetricConfig) metricContainerMemoryTotalPgfault {
 	m := metricContainerMemoryTotalPgfault{config: cfg}
 
 	if cfg.Enabled {
@@ -2826,9 +3217,9 @@ func newMetricContainerMemoryTotalPgfault(cfg MetricConfig) metricContainerMemor
 }
 
 type metricContainerMemoryTotalPgmajfault struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   ContainerMemoryTotalPgmajfaultMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_pgmajfault metric with initial data.
@@ -2867,7 +3258,7 @@ func (m *metricContainerMemoryTotalPgmajfault) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricContainerMemoryTotalPgmajfault(cfg MetricConfig) metricContainerMemoryTotalPgmajfault {
+func newMetricContainerMemoryTotalPgmajfault(cfg ContainerMemoryTotalPgmajfaultMetricConfig) metricContainerMemoryTotalPgmajfault {
 	m := metricContainerMemoryTotalPgmajfault{config: cfg}
 
 	if cfg.Enabled {
@@ -2878,9 +3269,9 @@ func newMetricContainerMemoryTotalPgmajfault(cfg MetricConfig) metricContainerMe
 }
 
 type metricContainerMemoryTotalPgpgin struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   ContainerMemoryTotalPgpginMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_pgpgin metric with initial data.
@@ -2919,7 +3310,7 @@ func (m *metricContainerMemoryTotalPgpgin) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryTotalPgpgin(cfg MetricConfig) metricContainerMemoryTotalPgpgin {
+func newMetricContainerMemoryTotalPgpgin(cfg ContainerMemoryTotalPgpginMetricConfig) metricContainerMemoryTotalPgpgin {
 	m := metricContainerMemoryTotalPgpgin{config: cfg}
 
 	if cfg.Enabled {
@@ -2930,9 +3321,9 @@ func newMetricContainerMemoryTotalPgpgin(cfg MetricConfig) metricContainerMemory
 }
 
 type metricContainerMemoryTotalPgpgout struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ContainerMemoryTotalPgpgoutMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_pgpgout metric with initial data.
@@ -2971,7 +3362,7 @@ func (m *metricContainerMemoryTotalPgpgout) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryTotalPgpgout(cfg MetricConfig) metricContainerMemoryTotalPgpgout {
+func newMetricContainerMemoryTotalPgpgout(cfg ContainerMemoryTotalPgpgoutMetricConfig) metricContainerMemoryTotalPgpgout {
 	m := metricContainerMemoryTotalPgpgout{config: cfg}
 
 	if cfg.Enabled {
@@ -2982,9 +3373,9 @@ func newMetricContainerMemoryTotalPgpgout(cfg MetricConfig) metricContainerMemor
 }
 
 type metricContainerMemoryTotalRss struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   ContainerMemoryTotalRssMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_rss metric with initial data.
@@ -3023,7 +3414,7 @@ func (m *metricContainerMemoryTotalRss) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryTotalRss(cfg MetricConfig) metricContainerMemoryTotalRss {
+func newMetricContainerMemoryTotalRss(cfg ContainerMemoryTotalRssMetricConfig) metricContainerMemoryTotalRss {
 	m := metricContainerMemoryTotalRss{config: cfg}
 
 	if cfg.Enabled {
@@ -3034,9 +3425,9 @@ func newMetricContainerMemoryTotalRss(cfg MetricConfig) metricContainerMemoryTot
 }
 
 type metricContainerMemoryTotalRssHuge struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ContainerMemoryTotalRssHugeMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_rss_huge metric with initial data.
@@ -3075,7 +3466,7 @@ func (m *metricContainerMemoryTotalRssHuge) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryTotalRssHuge(cfg MetricConfig) metricContainerMemoryTotalRssHuge {
+func newMetricContainerMemoryTotalRssHuge(cfg ContainerMemoryTotalRssHugeMetricConfig) metricContainerMemoryTotalRssHuge {
 	m := metricContainerMemoryTotalRssHuge{config: cfg}
 
 	if cfg.Enabled {
@@ -3086,9 +3477,9 @@ func newMetricContainerMemoryTotalRssHuge(cfg MetricConfig) metricContainerMemor
 }
 
 type metricContainerMemoryTotalUnevictable struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   ContainerMemoryTotalUnevictableMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_unevictable metric with initial data.
@@ -3127,7 +3518,7 @@ func (m *metricContainerMemoryTotalUnevictable) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricContainerMemoryTotalUnevictable(cfg MetricConfig) metricContainerMemoryTotalUnevictable {
+func newMetricContainerMemoryTotalUnevictable(cfg ContainerMemoryTotalUnevictableMetricConfig) metricContainerMemoryTotalUnevictable {
 	m := metricContainerMemoryTotalUnevictable{config: cfg}
 
 	if cfg.Enabled {
@@ -3138,9 +3529,9 @@ func newMetricContainerMemoryTotalUnevictable(cfg MetricConfig) metricContainerM
 }
 
 type metricContainerMemoryTotalWriteback struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   ContainerMemoryTotalWritebackMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.total_writeback metric with initial data.
@@ -3179,7 +3570,7 @@ func (m *metricContainerMemoryTotalWriteback) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricContainerMemoryTotalWriteback(cfg MetricConfig) metricContainerMemoryTotalWriteback {
+func newMetricContainerMemoryTotalWriteback(cfg ContainerMemoryTotalWritebackMetricConfig) metricContainerMemoryTotalWriteback {
 	m := metricContainerMemoryTotalWriteback{config: cfg}
 
 	if cfg.Enabled {
@@ -3190,9 +3581,9 @@ func newMetricContainerMemoryTotalWriteback(cfg MetricConfig) metricContainerMem
 }
 
 type metricContainerMemoryUnevictable struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   ContainerMemoryUnevictableMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.unevictable metric with initial data.
@@ -3231,7 +3622,7 @@ func (m *metricContainerMemoryUnevictable) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryUnevictable(cfg MetricConfig) metricContainerMemoryUnevictable {
+func newMetricContainerMemoryUnevictable(cfg ContainerMemoryUnevictableMetricConfig) metricContainerMemoryUnevictable {
 	m := metricContainerMemoryUnevictable{config: cfg}
 
 	if cfg.Enabled {
@@ -3242,9 +3633,9 @@ func newMetricContainerMemoryUnevictable(cfg MetricConfig) metricContainerMemory
 }
 
 type metricContainerMemoryUsageLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   ContainerMemoryUsageLimitMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.usage.limit metric with initial data.
@@ -3283,7 +3674,7 @@ func (m *metricContainerMemoryUsageLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryUsageLimit(cfg MetricConfig) metricContainerMemoryUsageLimit {
+func newMetricContainerMemoryUsageLimit(cfg ContainerMemoryUsageLimitMetricConfig) metricContainerMemoryUsageLimit {
 	m := metricContainerMemoryUsageLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -3294,9 +3685,9 @@ func newMetricContainerMemoryUsageLimit(cfg MetricConfig) metricContainerMemoryU
 }
 
 type metricContainerMemoryUsageMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   ContainerMemoryUsageMaxMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.usage.max metric with initial data.
@@ -3335,7 +3726,7 @@ func (m *metricContainerMemoryUsageMax) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryUsageMax(cfg MetricConfig) metricContainerMemoryUsageMax {
+func newMetricContainerMemoryUsageMax(cfg ContainerMemoryUsageMaxMetricConfig) metricContainerMemoryUsageMax {
 	m := metricContainerMemoryUsageMax{config: cfg}
 
 	if cfg.Enabled {
@@ -3346,9 +3737,9 @@ func newMetricContainerMemoryUsageMax(cfg MetricConfig) metricContainerMemoryUsa
 }
 
 type metricContainerMemoryUsageTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   ContainerMemoryUsageTotalMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.usage.total metric with initial data.
@@ -3387,7 +3778,7 @@ func (m *metricContainerMemoryUsageTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryUsageTotal(cfg MetricConfig) metricContainerMemoryUsageTotal {
+func newMetricContainerMemoryUsageTotal(cfg ContainerMemoryUsageTotalMetricConfig) metricContainerMemoryUsageTotal {
 	m := metricContainerMemoryUsageTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -3398,9 +3789,9 @@ func newMetricContainerMemoryUsageTotal(cfg MetricConfig) metricContainerMemoryU
 }
 
 type metricContainerMemoryWriteback struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   ContainerMemoryWritebackMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills container.memory.writeback metric with initial data.
@@ -3439,7 +3830,7 @@ func (m *metricContainerMemoryWriteback) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryWriteback(cfg MetricConfig) metricContainerMemoryWriteback {
+func newMetricContainerMemoryWriteback(cfg ContainerMemoryWritebackMetricConfig) metricContainerMemoryWriteback {
 	m := metricContainerMemoryWriteback{config: cfg}
 
 	if cfg.Enabled {
@@ -3450,9 +3841,10 @@ func newMetricContainerMemoryWriteback(cfg MetricConfig) metricContainerMemoryWr
 }
 
 type metricContainerNetworkIoUsageRxBytes struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        ContainerNetworkIoUsageRxBytesMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.network.io.usage.rx_bytes metric with initial data.
@@ -3464,17 +3856,48 @@ func (m *metricContainerNetworkIoUsageRxBytes) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerNetworkIoUsageRxBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerNetworkIoUsageRxBytesMetricAttributeKeyInterface) {
+		dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3487,13 +3910,18 @@ func (m *metricContainerNetworkIoUsageRxBytes) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerNetworkIoUsageRxBytes) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerNetworkIoUsageRxBytes(cfg MetricConfig) metricContainerNetworkIoUsageRxBytes {
+func newMetricContainerNetworkIoUsageRxBytes(cfg ContainerNetworkIoUsageRxBytesMetricConfig) metricContainerNetworkIoUsageRxBytes {
 	m := metricContainerNetworkIoUsageRxBytes{config: cfg}
 
 	if cfg.Enabled {
@@ -3504,9 +3932,10 @@ func newMetricContainerNetworkIoUsageRxBytes(cfg MetricConfig) metricContainerNe
 }
 
 type metricContainerNetworkIoUsageRxDropped struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        ContainerNetworkIoUsageRxDroppedMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.network.io.usage.rx_dropped metric with initial data.
@@ -3518,17 +3947,48 @@ func (m *metricContainerNetworkIoUsageRxDropped) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerNetworkIoUsageRxDropped) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerNetworkIoUsageRxDroppedMetricAttributeKeyInterface) {
+		dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3541,13 +4001,18 @@ func (m *metricContainerNetworkIoUsageRxDropped) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerNetworkIoUsageRxDropped) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerNetworkIoUsageRxDropped(cfg MetricConfig) metricContainerNetworkIoUsageRxDropped {
+func newMetricContainerNetworkIoUsageRxDropped(cfg ContainerNetworkIoUsageRxDroppedMetricConfig) metricContainerNetworkIoUsageRxDropped {
 	m := metricContainerNetworkIoUsageRxDropped{config: cfg}
 
 	if cfg.Enabled {
@@ -3558,9 +4023,10 @@ func newMetricContainerNetworkIoUsageRxDropped(cfg MetricConfig) metricContainer
 }
 
 type metricContainerNetworkIoUsageRxErrors struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        ContainerNetworkIoUsageRxErrorsMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.network.io.usage.rx_errors metric with initial data.
@@ -3572,17 +4038,48 @@ func (m *metricContainerNetworkIoUsageRxErrors) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerNetworkIoUsageRxErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerNetworkIoUsageRxErrorsMetricAttributeKeyInterface) {
+		dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3595,13 +4092,18 @@ func (m *metricContainerNetworkIoUsageRxErrors) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerNetworkIoUsageRxErrors) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerNetworkIoUsageRxErrors(cfg MetricConfig) metricContainerNetworkIoUsageRxErrors {
+func newMetricContainerNetworkIoUsageRxErrors(cfg ContainerNetworkIoUsageRxErrorsMetricConfig) metricContainerNetworkIoUsageRxErrors {
 	m := metricContainerNetworkIoUsageRxErrors{config: cfg}
 
 	if cfg.Enabled {
@@ -3612,9 +4114,10 @@ func newMetricContainerNetworkIoUsageRxErrors(cfg MetricConfig) metricContainerN
 }
 
 type metricContainerNetworkIoUsageRxPackets struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        ContainerNetworkIoUsageRxPacketsMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.network.io.usage.rx_packets metric with initial data.
@@ -3626,17 +4129,48 @@ func (m *metricContainerNetworkIoUsageRxPackets) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerNetworkIoUsageRxPackets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerNetworkIoUsageRxPacketsMetricAttributeKeyInterface) {
+		dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3649,13 +4183,18 @@ func (m *metricContainerNetworkIoUsageRxPackets) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerNetworkIoUsageRxPackets) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerNetworkIoUsageRxPackets(cfg MetricConfig) metricContainerNetworkIoUsageRxPackets {
+func newMetricContainerNetworkIoUsageRxPackets(cfg ContainerNetworkIoUsageRxPacketsMetricConfig) metricContainerNetworkIoUsageRxPackets {
 	m := metricContainerNetworkIoUsageRxPackets{config: cfg}
 
 	if cfg.Enabled {
@@ -3666,9 +4205,10 @@ func newMetricContainerNetworkIoUsageRxPackets(cfg MetricConfig) metricContainer
 }
 
 type metricContainerNetworkIoUsageTxBytes struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        ContainerNetworkIoUsageTxBytesMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.network.io.usage.tx_bytes metric with initial data.
@@ -3680,17 +4220,48 @@ func (m *metricContainerNetworkIoUsageTxBytes) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerNetworkIoUsageTxBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerNetworkIoUsageTxBytesMetricAttributeKeyInterface) {
+		dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3703,13 +4274,18 @@ func (m *metricContainerNetworkIoUsageTxBytes) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerNetworkIoUsageTxBytes) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerNetworkIoUsageTxBytes(cfg MetricConfig) metricContainerNetworkIoUsageTxBytes {
+func newMetricContainerNetworkIoUsageTxBytes(cfg ContainerNetworkIoUsageTxBytesMetricConfig) metricContainerNetworkIoUsageTxBytes {
 	m := metricContainerNetworkIoUsageTxBytes{config: cfg}
 
 	if cfg.Enabled {
@@ -3720,9 +4296,10 @@ func newMetricContainerNetworkIoUsageTxBytes(cfg MetricConfig) metricContainerNe
 }
 
 type metricContainerNetworkIoUsageTxDropped struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        ContainerNetworkIoUsageTxDroppedMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.network.io.usage.tx_dropped metric with initial data.
@@ -3734,17 +4311,48 @@ func (m *metricContainerNetworkIoUsageTxDropped) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerNetworkIoUsageTxDropped) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerNetworkIoUsageTxDroppedMetricAttributeKeyInterface) {
+		dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3757,13 +4365,18 @@ func (m *metricContainerNetworkIoUsageTxDropped) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerNetworkIoUsageTxDropped) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerNetworkIoUsageTxDropped(cfg MetricConfig) metricContainerNetworkIoUsageTxDropped {
+func newMetricContainerNetworkIoUsageTxDropped(cfg ContainerNetworkIoUsageTxDroppedMetricConfig) metricContainerNetworkIoUsageTxDropped {
 	m := metricContainerNetworkIoUsageTxDropped{config: cfg}
 
 	if cfg.Enabled {
@@ -3774,9 +4387,10 @@ func newMetricContainerNetworkIoUsageTxDropped(cfg MetricConfig) metricContainer
 }
 
 type metricContainerNetworkIoUsageTxErrors struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        ContainerNetworkIoUsageTxErrorsMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.network.io.usage.tx_errors metric with initial data.
@@ -3788,17 +4402,48 @@ func (m *metricContainerNetworkIoUsageTxErrors) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerNetworkIoUsageTxErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerNetworkIoUsageTxErrorsMetricAttributeKeyInterface) {
+		dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3811,13 +4456,18 @@ func (m *metricContainerNetworkIoUsageTxErrors) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerNetworkIoUsageTxErrors) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerNetworkIoUsageTxErrors(cfg MetricConfig) metricContainerNetworkIoUsageTxErrors {
+func newMetricContainerNetworkIoUsageTxErrors(cfg ContainerNetworkIoUsageTxErrorsMetricConfig) metricContainerNetworkIoUsageTxErrors {
 	m := metricContainerNetworkIoUsageTxErrors{config: cfg}
 
 	if cfg.Enabled {
@@ -3828,9 +4478,10 @@ func newMetricContainerNetworkIoUsageTxErrors(cfg MetricConfig) metricContainerN
 }
 
 type metricContainerNetworkIoUsageTxPackets struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        ContainerNetworkIoUsageTxPacketsMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills container.network.io.usage.tx_packets metric with initial data.
@@ -3842,17 +4493,48 @@ func (m *metricContainerNetworkIoUsageTxPackets) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricContainerNetworkIoUsageTxPackets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerNetworkIoUsageTxPacketsMetricAttributeKeyInterface) {
+		dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface", interfaceAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3865,13 +4547,18 @@ func (m *metricContainerNetworkIoUsageTxPackets) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerNetworkIoUsageTxPackets) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricContainerNetworkIoUsageTxPackets(cfg MetricConfig) metricContainerNetworkIoUsageTxPackets {
+func newMetricContainerNetworkIoUsageTxPackets(cfg ContainerNetworkIoUsageTxPacketsMetricConfig) metricContainerNetworkIoUsageTxPackets {
 	m := metricContainerNetworkIoUsageTxPackets{config: cfg}
 
 	if cfg.Enabled {
@@ -3882,9 +4569,9 @@ func newMetricContainerNetworkIoUsageTxPackets(cfg MetricConfig) metricContainer
 }
 
 type metricContainerPidsCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   ContainerPidsCountMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills container.pids.count metric with initial data.
@@ -3923,7 +4610,7 @@ func (m *metricContainerPidsCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerPidsCount(cfg MetricConfig) metricContainerPidsCount {
+func newMetricContainerPidsCount(cfg ContainerPidsCountMetricConfig) metricContainerPidsCount {
 	m := metricContainerPidsCount{config: cfg}
 
 	if cfg.Enabled {
@@ -3934,9 +4621,9 @@ func newMetricContainerPidsCount(cfg MetricConfig) metricContainerPidsCount {
 }
 
 type metricContainerPidsLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   ContainerPidsLimitMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills container.pids.limit metric with initial data.
@@ -3975,7 +4662,7 @@ func (m *metricContainerPidsLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerPidsLimit(cfg MetricConfig) metricContainerPidsLimit {
+func newMetricContainerPidsLimit(cfg ContainerPidsLimitMetricConfig) metricContainerPidsLimit {
 	m := metricContainerPidsLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -3986,9 +4673,9 @@ func newMetricContainerPidsLimit(cfg MetricConfig) metricContainerPidsLimit {
 }
 
 type metricContainerRestarts struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   ContainerRestartsMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills container.restarts metric with initial data.
@@ -4027,7 +4714,7 @@ func (m *metricContainerRestarts) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerRestarts(cfg MetricConfig) metricContainerRestarts {
+func newMetricContainerRestarts(cfg ContainerRestartsMetricConfig) metricContainerRestarts {
 	m := metricContainerRestarts{config: cfg}
 
 	if cfg.Enabled {
@@ -4092,9 +4779,9 @@ func newMetricContainerStatus(cfg MetricConfig) metricContainerStatus {
 }
 
 type metricContainerUptime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   ContainerUptimeMetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
 }
 
 // init fills container.uptime metric with initial data.
@@ -4131,7 +4818,7 @@ func (m *metricContainerUptime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerUptime(cfg MetricConfig) metricContainerUptime {
+func newMetricContainerUptime(cfg ContainerUptimeMetricConfig) metricContainerUptime {
 	m := metricContainerUptime{config: cfg}
 
 	if cfg.Enabled {

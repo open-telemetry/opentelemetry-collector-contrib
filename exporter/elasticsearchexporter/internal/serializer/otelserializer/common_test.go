@@ -8,8 +8,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/elastic/go-structform"
-	structformjson "github.com/elastic/go-structform/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -43,10 +41,10 @@ func TestWriteAttributes_Deduplication(t *testing.T) {
 
 	// Serialize using writeAttributes
 	var buf bytes.Buffer
-	visitor := structformjson.NewVisitor(&buf)
-	require.NoError(t, visitor.OnObjectStart(-1, structform.AnyType))
-	writeAttributes(visitor, attributes, false)
-	require.NoError(t, visitor.OnObjectFinished())
+	w := newJSONWriter(&buf)
+	w.startObject()
+	w.writeAttributes(attributes, false, true)
+	w.endObject()
 
 	// Parse and verify the output
 	var result map[string]any

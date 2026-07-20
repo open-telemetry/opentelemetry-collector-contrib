@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
@@ -36,17 +37,19 @@ func NewFactory() receiver.Factory {
 		receivers: sharedcomponent.NewSharedComponents(),
 	}
 
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		f.createDefaultConfig,
-		receiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
-		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability))
+		xreceiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
+		xreceiver.WithLogs(f.createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 func (*blobReceiverFactory) createDefaultConfig() component.Config {
 	return &Config{
-		Logs:           LogsConfig{ContainerName: logsContainerName},
-		Traces:         TracesConfig{ContainerName: tracesContainerName},
+		Logs:           LogsConfig{ContainerName: logsContainerName, Encoding: EncodingOTLPJSON},
+		Traces:         TracesConfig{ContainerName: tracesContainerName, Encoding: EncodingOTLPJSON},
 		Authentication: ConnectionStringAuth,
 		Cloud:          defaultCloud,
 	}
@@ -105,7 +108,7 @@ func (f *blobReceiverFactory) getReceiver(
 		}
 
 		var receiver component.Component
-		receiver, err = newReceiver(set, beh)
+		receiver, err = newReceiver(set, beh, receiverConfig.Logs.Encoding, receiverConfig.Traces.Encoding)
 		return receiver
 	})
 

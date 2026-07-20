@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -83,22 +84,25 @@ func TestBasicStart(t *testing.T) {
 	t.Parallel()
 
 	srv := httptest.NewServer(func() http.HandlerFunc {
-		var reqCount int32
+		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
-			reqNum := atomic.AddInt32(&reqCount, 1)
+			reqNum := reqCount.Add(1)
 
 			switch reqNum {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
-				_, err := w.Write([]byte(`{
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, "collector_name")
+
+				_, writeErr := w.Write([]byte(`{
 					"collectorCredentialID": "collectorId",
 					"collectorCredentialKey": "collectorKey",
 					"collectorId": "id"
 				}`))
-				if err != nil {
+				if writeErr != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 				}
 
@@ -141,17 +145,20 @@ func TestStoreCredentials(t *testing.T) {
 	t.Parallel()
 
 	getServer := func() *httptest.Server {
-		var reqCount int32
+		var reqCount atomic.Int32
 
 		return httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, req *http.Request) {
-				// TODO Add payload verification - verify if collectorName is set properly
-				reqNum := atomic.AddInt32(&reqCount, 1)
+				reqNum := reqCount.Add(1)
 
 				switch reqNum {
 				// register
 				case 1:
 					assert.Equal(t, registerURL, req.URL.Path)
+
+					// Verify registration payload
+					verifyRegistrationPayload(t, req, "collector_name")
+
 					_, err := w.Write([]byte(`{
 						"collectorCredentialID": "collectorId",
 						"collectorCredentialKey": "collectorKey",
@@ -289,11 +296,11 @@ func TestStoreCredentials(t *testing.T) {
 func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 	t.Parallel()
 
-	var reqCount int32
+	var reqCount atomic.Int32
 	getServer := func() *httptest.Server {
 		return httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, req *http.Request) {
-				reqNum := atomic.AddInt32(&reqCount, 1)
+				reqNum := reqCount.Add(1)
 
 				switch reqNum {
 				// heartbeat
@@ -369,7 +376,7 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 	// Depending on timing, the periodic heartbeat can result in more than
 	// two requests being made. Testing that at least two requests were made
 	// should be sufficient to satisfy this test.
-	require.GreaterOrEqual(t, atomic.LoadInt32(&reqCount), int32(2))
+	require.GreaterOrEqual(t, reqCount.Load(), int32(2))
 }
 
 func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
@@ -462,17 +469,20 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 	t.Parallel()
 
 	getServer := func() *httptest.Server {
-		var reqCount int32
+		var reqCount atomic.Int32
 
 		return httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, req *http.Request) {
-				// TODO Add payload verification - verify if collectorName is set properly
-				reqNum := atomic.AddInt32(&reqCount, 1)
+				reqNum := reqCount.Add(1)
 
 				switch reqNum {
 				// register
 				case 1:
 					assert.Equal(t, registerURL, req.URL.Path)
+
+					// Verify registration payload
+					verifyRegistrationPayload(t, req, "collector_name")
+
 					_, err := w.Write([]byte(`{
 						"collectorCredentialID": "collectorId",
 						"collectorCredentialKey": "collectorKey",
@@ -562,16 +572,18 @@ func TestRegisterEmptyCollectorName(t *testing.T) {
 	hostname, err := getHostname(zap.NewNop())
 	require.NoError(t, err)
 	srv := httptest.NewServer(func() http.HandlerFunc {
-		var reqCount int32
+		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
-			reqNum := atomic.AddInt32(&reqCount, 1)
+			reqNum := reqCount.Add(1)
 
 			switch reqNum {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -628,16 +640,18 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 	hostname, err := getHostname(zap.NewNop())
 	require.NoError(t, err)
 	srv := httptest.NewServer(func() http.HandlerFunc {
-		var reqCount int32
+		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
-			reqNum := atomic.AddInt32(&reqCount, 1)
+			reqNum := reqCount.Add(1)
 
 			switch reqNum {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -661,6 +675,9 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 			// register again because force registration was set
 			case 3:
 				assert.Equal(t, registerURL, req.URL.Path)
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -718,23 +735,28 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 	t.Parallel()
 
+	hostname, err := getHostname(zap.NewNop())
+	require.NoError(t, err)
+
 	srv := httptest.NewServer(func() http.HandlerFunc {
-		var reqCount int32
+		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
-			reqNum := atomic.AddInt32(&reqCount, 1)
+			reqNum := reqCount.Add(1)
 
 			switch reqNum {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
 
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
+
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
 					"collector didn't send correct Authorization header with registration request")
 
-				_, err := w.Write([]byte(`{
+				_, err = w.Write([]byte(`{
 					"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 					"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					"collectorId": "000000000FFFFFFF"
@@ -1086,13 +1108,15 @@ func TestRegisterEmptyCollectorNameWithBackoff(t *testing.T) {
 		var reqCount int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
 			reqNum := atomic.AddInt32(&reqCount, 1)
 
 			switch {
 			// register
 			case reqNum <= retriesLimit:
 				assert.Equal(t, registerURL, req.URL.Path)
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -1155,8 +1179,10 @@ func TestRegisterEmptyCollectorNameUnrecoverableError(t *testing.T) {
 	require.NoError(t, err)
 	srv := httptest.NewServer(func() http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
 			assert.Equal(t, registerURL, req.URL.Path)
+
+			// Verify registration payload
+			verifyRegistrationPayload(t, req, hostname)
 
 			authHeader := req.Header.Get("Authorization")
 			assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -1200,10 +1226,10 @@ func TestRegisterEmptyCollectorNameUnrecoverableError(t *testing.T) {
 func TestRegistrationRedirect(t *testing.T) {
 	t.Parallel()
 
-	var destReqCount int32
+	var destReqCount atomic.Int32
 	destSrv := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
-			switch atomic.AddInt32(&destReqCount, 1) {
+			switch destReqCount.Add(1) {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
@@ -1257,10 +1283,10 @@ func TestRegistrationRedirect(t *testing.T) {
 	))
 	t.Cleanup(func() { destSrv.Close() })
 
-	var origReqCount int32
+	var origReqCount atomic.Int32
 	origSrv := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
-			switch atomic.AddInt32(&origReqCount, 1) {
+			switch origReqCount.Add(1) {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
@@ -1294,11 +1320,11 @@ func TestRegistrationRedirect(t *testing.T) {
 		se, err := newSumologicExtension(configFn(), logger, component.NewID(metadata.Type), "1.0.0")
 		require.NoError(t, err)
 		require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
-		assert.Eventually(t, func() bool { return atomic.LoadInt32(&origReqCount) == 1 },
+		assert.Eventually(t, func() bool { return origReqCount.Load() == 1 },
 			5*time.Second, 100*time.Millisecond,
 			"extension should only make 1 request to the original server before redirect",
 		)
-		assert.Eventually(t, func() bool { return atomic.LoadInt32(&destReqCount) == 3 },
+		assert.Eventually(t, func() bool { return destReqCount.Load() == 3 },
 			5*time.Second, 100*time.Millisecond,
 			"extension should make 3 requests (registration + metadata + heartbeat) to the destination server",
 		)
@@ -1310,12 +1336,12 @@ func TestRegistrationRedirect(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 
-		assert.Eventually(t, func() bool { return atomic.LoadInt32(&origReqCount) == 1 },
+		assert.Eventually(t, func() bool { return origReqCount.Load() == 1 },
 			5*time.Second, 100*time.Millisecond,
 			"after restarting with locally stored credentials extension shouldn't call the original server",
 		)
 
-		assert.Eventually(t, func() bool { return atomic.LoadInt32(&destReqCount) == 6 },
+		assert.Eventually(t, func() bool { return destReqCount.Load() == 6 },
 			5*time.Second, 100*time.Millisecond,
 			"extension should make 6 requests (registration + metadata + heartbeat, after restart "+
 				"heartbeat to validate credentials, metadata update, and then the first heartbeat on "+
@@ -1329,10 +1355,10 @@ func TestRegistrationRedirect(t *testing.T) {
 func TestCollectorReregistersAfterHTTPUnauthorizedFromHeartbeat(t *testing.T) {
 	t.Parallel()
 
-	var reqCount int32
+	var reqCount atomic.Int32
 	srv := httptest.NewServer(func() http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			reqNum := atomic.AddInt32(&reqCount, 1)
+			reqNum := reqCount.Add(1)
 
 			t.Logf("request: (#%d) %s", reqNum, req.URL.Path)
 			handlerRegister := func() {
@@ -1408,12 +1434,12 @@ func TestCollectorReregistersAfterHTTPUnauthorizedFromHeartbeat(t *testing.T) {
 	const expectedReqCount = 10
 	if !assert.Eventually(t,
 		func() bool {
-			return atomic.LoadInt32(&reqCount) == expectedReqCount
+			return reqCount.Load() == expectedReqCount
 		},
 		5*time.Second, 50*time.Millisecond,
 	) {
 		t.Logf("the expected number of requests (%d) wasn't reached, got %d",
-			expectedReqCount, atomic.LoadInt32(&reqCount),
+			expectedReqCount, reqCount.Load(),
 		)
 	}
 
@@ -1425,10 +1451,10 @@ func TestRegistrationRequestPayload(t *testing.T) {
 
 	hostname, err := getHostname(zap.NewNop())
 	require.NoError(t, err)
-	var reqCount int32
+	var reqCount atomic.Int32
 	srv := httptest.NewServer(func() http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			reqNum := atomic.AddInt32(&reqCount, 1)
+			reqNum := reqCount.Add(1)
 
 			switch reqNum {
 			// register
@@ -1608,6 +1634,115 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// TestStartDoesNotBlockWhenMetadataUpdateFails verifies that when update_metadata
+// is enabled and the first metadata request returns an error (e.g. HTTP 500 on
+// Windows before the network is fully initialized), Start() still returns nil so
+// that collector startup is not blocked.
+func TestStartDoesNotBlockWhenMetadataUpdateFails(t *testing.T) {
+	t.Parallel()
+
+	var reqCount atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		n := reqCount.Add(1)
+		switch req.URL.Path {
+		case registerURL:
+			_, err := w.Write([]byte(`{
+				"collectorCredentialID": "collectorId",
+				"collectorCredentialKey": "collectorKey",
+				"collectorId": "id"
+			}`))
+			assert.NoError(t, err)
+		case metadataURL:
+			// Always return 500 so the async goroutine keeps retrying.
+			// We only care that Start() returned without an error.
+			w.WriteHeader(http.StatusInternalServerError)
+		case heartbeatURL:
+			if n > 10 {
+				w.WriteHeader(http.StatusNoContent)
+			}
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	t.Cleanup(func() { srv.Close() })
+
+	dir := t.TempDir()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.CollectorName = "collector_name"
+	cfg.APIBaseURL = srv.URL
+	cfg.Credentials.InstallationToken = "dummy_install_token"
+	cfg.CollectorCredentialsDirectory = dir
+	cfg.BackOff.InitialInterval = time.Millisecond
+	cfg.BackOff.MaxInterval = time.Millisecond
+
+	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
+	require.NoError(t, err)
+
+	// Start() must not return an error even though the metadata endpoint is
+	// returning HTTP 500.
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, se.Shutdown(t.Context()))
+}
+
+// TestUpdateMetadataAsyncRetriesUntilSuccess verifies that the async retry
+// goroutine keeps retrying the metadata update after a transient failure and
+// exits once the update succeeds.
+func TestUpdateMetadataAsyncRetriesUntilSuccess(t *testing.T) {
+	t.Parallel()
+
+	var metadataReqCount atomic.Int32
+	const failUntilReq = 3 // fail the first N metadata requests
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		switch req.URL.Path {
+		case registerURL:
+			_, err := w.Write([]byte(`{
+				"collectorCredentialID": "collectorId",
+				"collectorCredentialKey": "collectorKey",
+				"collectorId": "id"
+			}`))
+			assert.NoError(t, err)
+		case metadataURL:
+			n := metadataReqCount.Add(1)
+			if n <= failUntilReq {
+				w.WriteHeader(http.StatusInternalServerError)
+			} else {
+				w.WriteHeader(http.StatusOK)
+			}
+		case heartbeatURL:
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	t.Cleanup(func() { srv.Close() })
+
+	dir := t.TempDir()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.CollectorName = "collector_name"
+	cfg.APIBaseURL = srv.URL
+	cfg.Credentials.InstallationToken = "dummy_install_token"
+	cfg.CollectorCredentialsDirectory = dir
+	cfg.BackOff.InitialInterval = time.Millisecond
+	cfg.BackOff.MaxInterval = time.Millisecond
+
+	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
+	require.NoError(t, err)
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+
+	// The async goroutine should eventually succeed, meaning the total metadata
+	// request count must exceed failUntilReq.
+	assert.Eventually(t,
+		func() bool { return metadataReqCount.Load() > failUntilReq },
+		5*time.Second, 10*time.Millisecond,
+		"async metadata retry goroutine should have retried and succeeded",
+	)
+
+	require.NoError(t, se.Shutdown(t.Context()))
+}
+
 func Test_cleanupBuildVersion(t *testing.T) {
 	type args struct {
 		version string
@@ -1676,4 +1811,22 @@ func Test_cleanupBuildVersion(t *testing.T) {
 			assert.Equalf(t, tt.want, cleanupBuildVersion(tt.args.version), "cleanupBuildVersion(%v)", tt.args.version)
 		})
 	}
+}
+
+// Verify Registration Payload
+func verifyRegistrationPayload(t *testing.T, req *http.Request, expectedName string) {
+	t.Helper()
+
+	// Read request body
+	body, err := io.ReadAll(req.Body)
+	assert.NoError(t, err)
+
+	// Unmarshal collector name
+	var payload struct {
+		CollectorName string `json:"collectorName"`
+	}
+	err = json.Unmarshal(body, &payload)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedName, payload.CollectorName)
 }

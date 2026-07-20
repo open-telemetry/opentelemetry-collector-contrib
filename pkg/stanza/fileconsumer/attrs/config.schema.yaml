@@ -14,3 +14,5 @@ $defs:
         type: boolean
       include_file_path_resolved:
         type: boolean
+      include_file_permissions:
+        type: boolean

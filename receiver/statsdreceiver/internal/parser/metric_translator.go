@@ -4,6 +4,8 @@
 package parser // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/parser"
 
 import (
+	"math"
+	"math/rand/v2"
 	"sort"
 	"time"
 
@@ -11,11 +13,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"gonum.org/v1/gonum/stat"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 var statsDDefaultPercentiles = []float64{0, 10, 50, 90, 95, 100}
 
-func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool) pmetric.ScopeMetrics {
+func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, counterType protocol.CounterType) pmetric.ScopeMetrics {
 	ilm := pmetric.NewScopeMetrics()
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(parsedMetric.description.name)
@@ -27,7 +31,7 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool) pmet
 	nm.Sum().SetIsMonotonic(isMonotonicCounter)
 
 	dp := nm.Sum().DataPoints().AppendEmpty()
-	dp.SetIntValue(parsedMetric.counterValue())
+	setCounterValue(dp, parsedMetric.counterValue(), counterType)
 	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
 		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
@@ -37,6 +41,42 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool) pmet
 	}
 
 	return ilm
+}
+
+// setCounterValue sets the counter data point value based on the configured counter type.
+func setCounterValue(dp pmetric.NumberDataPoint, value float64, counterType protocol.CounterType) {
+	switch counterType {
+	case protocol.CounterTypeFloat:
+		dp.SetDoubleValue(value)
+	case protocol.CounterTypeStochasticInt:
+		dp.SetIntValue(stochasticRound(value))
+	default: // protocol.CounterTypeInt or empty (default)
+		dp.SetIntValue(int64(value))
+	}
+}
+
+// aggregateCounterValue adds the value to an existing counter data point.
+func aggregateCounterValue(dp pmetric.NumberDataPoint, value float64, counterType protocol.CounterType) {
+	switch counterType {
+	case protocol.CounterTypeFloat:
+		dp.SetDoubleValue(dp.DoubleValue() + value)
+	case protocol.CounterTypeStochasticInt:
+		dp.SetIntValue(dp.IntValue() + stochasticRound(value))
+	default: // protocol.CounterTypeInt or empty (default)
+		dp.SetIntValue(dp.IntValue() + int64(value))
+	}
+}
+
+// stochasticRound performs probabilistic rounding where the probability of rounding
+// up equals the fractional part. This maintains integer type while being statistically
+// accurate over time.
+func stochasticRound(value float64) int64 {
+	floor := math.Floor(value)
+	fraction := value - floor
+	if rand.Float64() < fraction {
+		return int64(floor) + 1
+	}
+	return int64(floor)
 }
 
 func setTimestampsForCounterMetric(ilm pmetric.ScopeMetrics, startTime, timeNow time.Time) {
@@ -182,17 +222,15 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 	}
 }
 
-func (s statsDMetric) counterValue() int64 {
+func (s statsDMetric) counterValue() float64 {
 	x := s.asFloat
-	// Note statds counters are always represented as integers.
-	// There is no statsd specification that says what should or
-	// shouldn't be done here.  Rounding may occur for sample
-	// rates that are not integer reciprocals.  Recommendation:
-	// use integer reciprocal sampling rates.
+	// Note statsD counters are traditionally represented as integers, but
+	// we'll preserve the floating point precision to avoid truncating
+	// fractional values to zero.
 	if 0 < s.sampleRate && s.sampleRate < 1 {
 		x /= s.sampleRate
 	}
-	return int64(x)
+	return x
 }
 
 func (s statsDMetric) gaugeValue() float64 {

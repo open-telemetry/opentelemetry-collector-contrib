@@ -43,22 +43,6 @@ func TestYANGParser(t *testing.T) {
 		t.Logf("Analysis result: %+v", analysis)
 	})
 
-	t.Run("TestKeyFieldIdentification", func(t *testing.T) {
-		encodingPath := "Cisco-IOS-XE-interfaces-oper:interfaces/interface/statistics"
-		analysis := parser.AnalyzeEncodingPath(encodingPath)
-
-		// Create a mock grpc service to test key identification
-		service := &grpcService{yangParser: parser}
-
-		// Test that "name" is identified as a key field
-		isKey := service.isKeyField("name", analysis)
-		assert.True(t, isKey, "Field 'name' should be identified as a key field")
-
-		// Test that regular statistics fields are not key fields
-		isKey = service.isKeyField("in-octets", analysis)
-		assert.False(t, isKey, "Field 'in-octets' should not be identified as a key field")
-	})
-
 	t.Run("TestBGPPathAnalysis", func(t *testing.T) {
 		encodingPath := "Cisco-IOS-XE-bgp-oper:bgp-state-data/neighbors/neighbor"
 
@@ -128,26 +112,6 @@ func TestYANGParserPersistence(t *testing.T) {
 		loadedModules := parser2.GetAvailableModules()
 		assert.ElementsMatch(t, originalModules, loadedModules)
 	})
-}
-
-func TestFieldNameExtraction(t *testing.T) {
-	service := &grpcService{}
-
-	testCases := []struct {
-		input    string
-		expected string
-	}{
-		{"content.name", "name"},
-		{"keys.interface-name", "interface-name"},
-		{"statistics.in-octets", "in-octets"},
-		{"content.discontinuity-time_info", "discontinuity-time"},
-		{"simple", "simple"},
-	}
-
-	for _, tc := range testCases {
-		result := service.extractFieldName(tc.input)
-		assert.Equal(t, tc.expected, result, "Expected %s but got %s for input %s", tc.expected, result, tc.input)
-	}
 }
 
 // TestYANGEnhancedTelemetryProcessing tests the integration with real telemetry data

@@ -1,8 +1,52 @@
+$defs:
+  file_config:
+    description: FileConfig configures a scraper that reads pprof files matching a glob pattern.
+    type: object
+    properties:
+      include:
+        description: Include is the glob pattern for pprof files to scrape.
+        type: string
+    allOf:
+      - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  remote_config:
+    description: RemoteConfig configures a scraper that pulls pprof from a remote HTTP endpoint.
+    type: object
+    allOf:
+      - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+      - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  self_config:
+    description: SelfConfig configures a scraper that profiles the running collector.
+    type: object
+    properties:
+      block_profile_fraction:
+        description: Fraction of blocking events that are profiled. A value <= 0 disables profiling. See https://golang.org/pkg/runtime/#SetBlockProfileRate for details.
+        type: integer
+      mutex_profile_fraction:
+        description: Fraction of mutex contention events that are profiled. A value <= 0 disables profiling. See https://golang.org/pkg/runtime/#SetMutexProfileFraction for details.
+        type: integer
+    allOf:
+      - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  server_config:
+    description: ServerConfig configures an HTTP server that accepts pushed pprof data.
+    type: object
+    allOf:
+      - $ref: go.opentelemetry.io/collector/config/confighttp.server_config
 description: Config defines the configuration for the pprof receiver.
 type: object
 properties:
-  include:
-    description: Include is the glob pattern for pprof files to scrape.
-    type: string
-allOf:
-  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  file:
+    description: File configures reading pprof profiles from files matching a glob pattern.
+    x-optional: true
+    $ref: file_config
+  remote:
+    description: Remote configures pulling pprof profiles from a remote HTTP endpoint.
+    x-optional: true
+    $ref: remote_config
+  self:
+    description: Self configures profiling the running collector.
+    x-optional: true
+    $ref: self_config
+  server:
+    description: Server configures an HTTP server that accepts pushed pprof profiles.
+    x-optional: true
+    $ref: server_config

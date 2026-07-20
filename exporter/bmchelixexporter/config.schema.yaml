@@ -2,7 +2,11 @@ description: Config struct is used to store the configuration of the exporter
 type: object
 properties:
   api_key:
+    description: 'APIKey authenticates requests to BMC Helix Operations Management. Connect to BMC Helix Operations Management, go to the Administration > Repository page, and click on the Copy API Key button to get your API Key. Alternatively, it is recommended to create and use a dedicated authentication key for external integration: https://docs.bmc.com/xwiki/bin/view/Helix-Common-Services/BMC-Helix-Portal/BMC-Helix-Portal/helixportal261/Administering/Using-API-keys-for-external-integrations/'
     $ref: go.opentelemetry.io/collector/config/configopaque.string
+  enrich_metric_with_attributes:
+    description: EnrichMetricWithAttributes enables enriched metric creation by appending datapoint attribute values to the metric name. This increases metric cardinality but provides more detailed identification in BMC Helix Operations Management. Default is true.
+    type: boolean
   retry_on_failure:
     $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
 allOf:

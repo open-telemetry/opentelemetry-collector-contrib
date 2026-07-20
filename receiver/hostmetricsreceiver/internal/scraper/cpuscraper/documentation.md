@@ -12,6 +12,14 @@ metrics:
     enabled: false
 ```
 
+### system.cpu.logical.count
+
+Number of available logical CPUs.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {cpu} | Sum | Int | Cumulative | false | Development |
+
 ### system.cpu.time
 
 Total seconds each logical CPU spent on each mode.
@@ -22,10 +30,10 @@ Total seconds each logical CPU spent on each mode.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| cpu | Logical CPU number starting at 0. | Any Str | Recommended |
-| state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cpu | Logical CPU number starting at 0. | Any Str | Opt-In | - |
+| state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` | Recommended | - |
 
 ## Optional Metrics
 
@@ -47,17 +55,9 @@ Current frequency of the CPU core in Hz.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| cpu | Logical CPU number starting at 0. | Any Str | Recommended |
-
-### system.cpu.logical.count
-
-Number of available logical CPUs.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {cpu} | Sum | Int | Cumulative | false | Development |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cpu | Logical CPU number starting at 0. | Any Str | Recommended | - |
 
 ### system.cpu.physical.count
 
@@ -77,7 +77,7 @@ Difference in system.cpu.time since the last measurement per logical CPU, divide
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| cpu | Logical CPU number starting at 0. | Any Str | Recommended |
-| state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cpu | Logical CPU number starting at 0. | Any Str | Opt-In | - |
+| state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` | Recommended | - |

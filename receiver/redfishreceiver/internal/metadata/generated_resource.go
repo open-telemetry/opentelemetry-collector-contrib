@@ -21,17 +21,17 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
-// SetBaseURL sets provided value as "base_url" attribute.
-func (rb *ResourceBuilder) SetBaseURL(val string) {
-	if rb.config.BaseURL.Enabled {
-		rb.res.Attributes().PutStr("base_url", val)
+// SetHostName sets provided value as "host.name" attribute.
+func (rb *ResourceBuilder) SetHostName(val string) {
+	if rb.config.HostName.Enabled {
+		rb.res.Attributes().PutStr("host.name", val)
 	}
 }
 
-// SetSystemHostName sets provided value as "system.host_name" attribute.
-func (rb *ResourceBuilder) SetSystemHostName(val string) {
-	if rb.config.SystemHostName.Enabled {
-		rb.res.Attributes().PutStr("system.host_name", val)
+// SetURLFull sets provided value as "url.full" attribute.
+func (rb *ResourceBuilder) SetURLFull(val string) {
+	if rb.config.URLFull.Enabled {
+		rb.res.Attributes().PutStr("url.full", val)
 	}
 }
 

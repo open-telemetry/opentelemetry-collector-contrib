@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -28,7 +27,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config",
 			cfg: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedSuccess: true,
@@ -36,7 +35,8 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config with no metric settings",
 			cfg: &Config{
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedSuccess: true,
 		},
@@ -67,26 +67,28 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config only datasource and none direct connect settings",
 			cfg: &Config{
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-				DataSource:       "a connection string",
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				DataSource:           "a connection string",
 			},
 			expectedSuccess: true,
 		},
 		{
 			desc: "valid config with all direct connection settings",
 			cfg: &Config{
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-				Server:           "0.0.0.0",
-				Username:         "sa",
-				Password:         "password",
-				Port:             1433,
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				Server:               "0.0.0.0",
+				Username:             "sa",
+				Password:             "password",
+				Port:                 1433,
 			},
 			expectedSuccess: true,
 		},
 		{
 			desc: "config with invalid MaxQuerySampleCount value",
 			cfg: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 				TopQueryCollection: TopQueryCollection{
 					MaxQuerySampleCount: 100000,
@@ -97,7 +99,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "config with invalid TopQueryCount value",
 			cfg: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 				TopQueryCollection: TopQueryCollection{
 					MaxQuerySampleCount: 100,
@@ -109,7 +111,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "config with invalid LookbackTime",
 			cfg: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 				TopQueryCollection: TopQueryCollection{
 					MaxQuerySampleCount: 100,
@@ -158,22 +160,25 @@ func TestLoadConfig(t *testing.T) {
 		expected.MetricsBuilderConfig = metadata.MetricsBuilderConfig{
 			Metrics: metadata.DefaultMetricsConfig(),
 			ResourceAttributes: metadata.ResourceAttributesConfig{
-				HostName: metadata.ResourceAttributeConfig{
+				HostName: metadata.HostNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
+				ServiceName: metadata.ServiceNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverInstanceName: metadata.ResourceAttributeConfig{
+				SqlserverDatabaseName: metadata.SqlserverDatabaseNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverComputerName: metadata.ResourceAttributeConfig{
+				SqlserverInstanceName: metadata.SqlserverInstanceNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				ServerAddress: metadata.ResourceAttributeConfig{
+				SqlserverComputerName: metadata.SqlserverComputerNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				ServerPort: metadata.ResourceAttributeConfig{
+				ServerAddress: metadata.ServerAddressResourceAttributeConfig{
+					Enabled: true,
+				},
+				ServerPort: metadata.ServerPortResourceAttributeConfig{
 					Enabled: true,
 				},
 			},
@@ -188,22 +193,25 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 			ResourceAttributes: metadata.ResourceAttributesConfig{
-				HostName: metadata.ResourceAttributeConfig{
+				HostName: metadata.HostNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
+				ServiceName: metadata.ServiceNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverInstanceName: metadata.ResourceAttributeConfig{
+				SqlserverDatabaseName: metadata.SqlserverDatabaseNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverComputerName: metadata.ResourceAttributeConfig{
+				SqlserverInstanceName: metadata.SqlserverInstanceNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				ServerAddress: metadata.ResourceAttributeConfig{
+				SqlserverComputerName: metadata.SqlserverComputerNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				ServerPort: metadata.ResourceAttributeConfig{
+				ServerAddress: metadata.ServerAddressResourceAttributeConfig{
+					Enabled: true,
+				},
+				ServerPort: metadata.ServerPortResourceAttributeConfig{
 					Enabled: true,
 				},
 			},
@@ -224,7 +232,13 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, sub.Unmarshal(cfg))
 
 		assert.NoError(t, xconfmap.Validate(cfg))
-		if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(Config{}), cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.EventConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
+		if diff := cmp.Diff(expected, cfg, cmp.FilterPath(func(p cmp.Path) bool {
+			if sf, ok := p.Last().(cmp.StructField); ok {
+				name := sf.Name()
+				return name != "" && name[0] >= 'a' && name[0] <= 'z'
+			}
+			return false
+		}, cmp.Ignore())); diff != "" {
 			t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 		}
 	})

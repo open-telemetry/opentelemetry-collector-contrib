@@ -34,7 +34,7 @@ data:
           network:
           processes:
 
-      filelog:
+      file_log:
         include_file_path: true
         poll_interval: 500ms
         include:
@@ -61,7 +61,7 @@ data:
         sending_queue:
           batch:
     processors:
-      resourcedetection:
+      resource_detection:
         # ensures host.name and other important resource tags
         # get picked up
         detectors: [system, env, docker]
@@ -132,12 +132,12 @@ data:
       pipelines:
         metrics:
           receivers: [hostmetrics, otlp]
-          processors: [resourcedetection, k8sattributes]
+          processors: [resource_detection, k8sattributes]
           exporters: [datadog]
         traces:
           receivers: [otlp]
-          processors: [resourcedetection, k8sattributes]
+          processors: [resource_detection, k8sattributes]
           exporters: [datadog]
         logs:
-          receivers: [filelog]
+          receivers: [file_log]
           exporters: [datadog]

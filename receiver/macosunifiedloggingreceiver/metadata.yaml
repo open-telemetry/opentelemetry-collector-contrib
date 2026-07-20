@@ -1,5 +1,6 @@
 display_name: macOS Unified Logging Receiver
-type: macosunifiedlogging
+type: macos_unified_logging
+deprecated_type: macosunifiedlogging
 
 description: |
   The macOS Unified Logging Receiver collects logs from macOS systems using the native `log` command. This receiver

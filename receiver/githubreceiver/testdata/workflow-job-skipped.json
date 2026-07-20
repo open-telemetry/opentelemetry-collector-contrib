@@ -76,9 +76,9 @@
     "url": "https://api.github.com/orgs/open-telemetry"
   },
   "sender": {
-    "login": "adrielp",
-    "url": "https://api.github.com/users/adrielp",
-    "html_url": "https://github.com/adrielp",
+    "login": "username",
+    "url": "https://api.github.com/users/username",
+    "html_url": "https://github.com/username",
     "type": "User",
     "user_view_type": "public",
     "site_admin": false

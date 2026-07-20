@@ -29,6 +29,7 @@ all_set:
       enabled: true
     redis.cluster.state:
       enabled: true
+      attributes: ["cluster_state"]
     redis.cluster.stats_messages_received:
       enabled: true
     redis.cluster.stats_messages_sent:
@@ -37,10 +38,13 @@ all_set:
       enabled: true
     redis.cmd.calls:
       enabled: true
+      attributes: ["cmd"]
     redis.cmd.latency:
       enabled: true
+      attributes: ["cmd","percentile"]
     redis.cmd.usec:
       enabled: true
+      attributes: ["cmd"]
     redis.commands:
       enabled: true
     redis.commands.processed:
@@ -51,12 +55,16 @@ all_set:
       enabled: true
     redis.cpu.time:
       enabled: true
+      attributes: ["state"]
     redis.db.avg_ttl:
       enabled: true
+      attributes: ["db"]
     redis.db.expires:
       enabled: true
+      attributes: ["db"]
     redis.db.keys:
       enabled: true
+      attributes: ["db"]
     redis.keys.evicted:
       enabled: true
     redis.keys.expired:
@@ -85,6 +93,7 @@ all_set:
       enabled: true
     redis.mode:
       enabled: true
+      attributes: ["mode"]
     redis.net.input:
       enabled: true
     redis.net.output:
@@ -99,6 +108,142 @@ all_set:
       enabled: true
     redis.role:
       enabled: true
+      attributes: ["role"]
+    redis.sentinel.masters:
+      enabled: true
+    redis.sentinel.running_scripts:
+      enabled: true
+    redis.sentinel.scripts_queue_length:
+      enabled: true
+    redis.sentinel.simulate_failure_flags:
+      enabled: true
+    redis.sentinel.tilt_since_seconds:
+      enabled: true
+    redis.sentinel.total_tilt:
+      enabled: true
+    redis.slaves.connected:
+      enabled: true
+    redis.tracking_total_keys:
+      enabled: true
+    redis.uptime:
+      enabled: true
+  resource_attributes:
+    redis.version:
+      enabled: true
+    server.address:
+      enabled: true
+    server.port:
+      enabled: true
+reaggregate_set:
+  metrics:
+    redis.clients.blocked:
+      enabled: true
+    redis.clients.connected:
+      enabled: true
+    redis.clients.max_input_buffer:
+      enabled: true
+    redis.clients.max_output_buffer:
+      enabled: true
+    redis.cluster.cluster_enabled:
+      enabled: true
+    redis.cluster.known_nodes:
+      enabled: true
+    redis.cluster.links_buffer_limit_exceeded.count:
+      enabled: true
+    redis.cluster.node.count:
+      enabled: true
+    redis.cluster.node.uptime:
+      enabled: true
+    redis.cluster.slots_assigned:
+      enabled: true
+    redis.cluster.slots_fail:
+      enabled: true
+    redis.cluster.slots_ok:
+      enabled: true
+    redis.cluster.slots_pfail:
+      enabled: true
+    redis.cluster.state:
+      enabled: true
+      attributes: []
+    redis.cluster.stats_messages_received:
+      enabled: true
+    redis.cluster.stats_messages_sent:
+      enabled: true
+    redis.cluster.uptime:
+      enabled: true
+    redis.cmd.calls:
+      enabled: true
+      attributes: []
+    redis.cmd.latency:
+      enabled: true
+      attributes: []
+    redis.cmd.usec:
+      enabled: true
+      attributes: []
+    redis.commands:
+      enabled: true
+    redis.commands.processed:
+      enabled: true
+    redis.connections.received:
+      enabled: true
+    redis.connections.rejected:
+      enabled: true
+    redis.cpu.time:
+      enabled: true
+      attributes: []
+    redis.db.avg_ttl:
+      enabled: true
+      attributes: []
+    redis.db.expires:
+      enabled: true
+      attributes: []
+    redis.db.keys:
+      enabled: true
+      attributes: []
+    redis.keys.evicted:
+      enabled: true
+    redis.keys.expired:
+      enabled: true
+    redis.keyspace.hits:
+      enabled: true
+    redis.keyspace.misses:
+      enabled: true
+    redis.latest_fork:
+      enabled: true
+    redis.maxmemory:
+      enabled: true
+    redis.memory.fragmentation_ratio:
+      enabled: true
+    redis.memory.lua:
+      enabled: true
+    redis.memory.peak:
+      enabled: true
+    redis.memory.rss:
+      enabled: true
+    redis.memory.used:
+      enabled: true
+    redis.memory.used_memory_overhead:
+      enabled: true
+    redis.memory.used_memory_startup:
+      enabled: true
+    redis.mode:
+      enabled: true
+      attributes: []
+    redis.net.input:
+      enabled: true
+    redis.net.output:
+      enabled: true
+    redis.rdb.changes_since_last_save:
+      enabled: true
+    redis.replication.backlog_first_byte_offset:
+      enabled: true
+    redis.replication.offset:
+      enabled: true
+    redis.replication.replica_offset:
+      enabled: true
+    redis.role:
+      enabled: true
+      attributes: []
     redis.sentinel.masters:
       enabled: true
     redis.sentinel.running_scripts:
@@ -154,6 +299,7 @@ none_set:
       enabled: false
     redis.cluster.state:
       enabled: false
+      attributes: ["cluster_state"]
     redis.cluster.stats_messages_received:
       enabled: false
     redis.cluster.stats_messages_sent:
@@ -162,10 +308,13 @@ none_set:
       enabled: false
     redis.cmd.calls:
       enabled: false
+      attributes: ["cmd"]
     redis.cmd.latency:
       enabled: false
+      attributes: ["cmd","percentile"]
     redis.cmd.usec:
       enabled: false
+      attributes: ["cmd"]
     redis.commands:
       enabled: false
     redis.commands.processed:
@@ -176,12 +325,16 @@ none_set:
       enabled: false
     redis.cpu.time:
       enabled: false
+      attributes: ["state"]
     redis.db.avg_ttl:
       enabled: false
+      attributes: ["db"]
     redis.db.expires:
       enabled: false
+      attributes: ["db"]
     redis.db.keys:
       enabled: false
+      attributes: ["db"]
     redis.keys.evicted:
       enabled: false
     redis.keys.expired:
@@ -210,6 +363,7 @@ none_set:
       enabled: false
     redis.mode:
       enabled: false
+      attributes: ["mode"]
     redis.net.input:
       enabled: false
     redis.net.output:
@@ -224,6 +378,7 @@ none_set:
       enabled: false
     redis.role:
       enabled: false
+      attributes: ["role"]
     redis.sentinel.masters:
       enabled: false
     redis.sentinel.running_scripts:

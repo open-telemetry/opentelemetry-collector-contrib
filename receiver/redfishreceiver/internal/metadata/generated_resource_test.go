@@ -13,8 +13,8 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
-			rb.SetBaseURL("base_url-val")
-			rb.SetSystemHostName("system.host_name-val")
+			rb.SetHostName("host.name-val")
+			rb.SetURLFull("url.full-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
@@ -30,16 +30,15 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("base_url")
+			hostNameAttrVal, ok := res.Attributes().Get("host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "base_url-val", val.Str())
+				assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("system.host_name")
+			urlFullAttrVal, ok := res.Attributes().Get("url.full")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "system.host_name-val", val.Str())
+				assert.Equal(t, "url.full-val", urlFullAttrVal.Str())
 			}
 		})
 	}

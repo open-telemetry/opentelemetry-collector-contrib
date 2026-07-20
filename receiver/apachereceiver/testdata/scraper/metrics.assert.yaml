@@ -1,0 +1,113 @@
+version: 1
+signal: metrics
+resources:
+    - attributes:
+        apache.server.name: 127.0.0.1
+        apache.server.port/regex: '[0-9]+'
+      scopes:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
+          version: latest
+          metrics:
+            - name: apache.connections.async
+              type: gauge
+              unit: '{connections}'
+              datapoints:
+                - attributes:
+                    connection_state: closing
+                - attributes:
+                    connection_state: keepalive
+                - attributes:
+                    connection_state: writing
+            - name: apache.cpu.load
+              type: gauge
+              unit: '%'
+            - name: apache.cpu.time
+              type: sum
+              unit: '{jiff}'
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    level: children
+                    mode: system
+                - attributes:
+                    level: children
+                    mode: user
+                - attributes:
+                    level: self
+                    mode: system
+                - attributes:
+                    level: self
+                    mode: user
+            - name: apache.current_connections
+              type: sum
+              unit: '{connections}'
+              temporality: cumulative
+              monotonic: false
+            - name: apache.load.1
+              type: gauge
+              unit: '%'
+            - name: apache.load.15
+              type: gauge
+              unit: '%'
+            - name: apache.load.5
+              type: gauge
+              unit: '%'
+            - name: apache.request.time
+              type: sum
+              unit: ms
+              temporality: cumulative
+              monotonic: true
+            - name: apache.requests
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+            - name: apache.scoreboard
+              type: sum
+              unit: '{workers}'
+              temporality: cumulative
+              monotonic: false
+              datapoints:
+                - attributes:
+                    state: closing
+                - attributes:
+                    state: dnslookup
+                - attributes:
+                    state: finishing
+                - attributes:
+                    state: idle_cleanup
+                - attributes:
+                    state: keepalive
+                - attributes:
+                    state: logging
+                - attributes:
+                    state: open
+                - attributes:
+                    state: reading
+                - attributes:
+                    state: sending
+                - attributes:
+                    state: starting
+                - attributes:
+                    state: waiting
+            - name: apache.traffic
+              type: sum
+              unit: By
+              temporality: cumulative
+              monotonic: true
+            - name: apache.uptime
+              type: sum
+              unit: s
+              temporality: cumulative
+              monotonic: true
+            - name: apache.workers
+              type: sum
+              unit: '{workers}'
+              temporality: cumulative
+              monotonic: false
+              datapoints:
+                - attributes:
+                    state: busy
+                - attributes:
+                    state: idle

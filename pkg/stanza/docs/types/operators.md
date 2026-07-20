@@ -10,7 +10,7 @@ For example, the following sequence reads logs from a file, parses them as `json
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: my-log.json
     operators:
       - type: json_parser
@@ -37,7 +37,7 @@ Let's look at how these default values work together by considering the linear s
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: my-log.json
     operators:
       - type: json_parser
@@ -58,7 +58,7 @@ Additionally, we could accomplish the same task using custom `id`'s.
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: my-log.json
     operators:
       - type: json_parser
@@ -83,7 +83,7 @@ Here's a scenario where we read from a file that contains logs with two differne
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: my-log.json
     operators:
       - type: router
@@ -112,7 +112,7 @@ However, in some non-linear sequences, you may not want all logs to flow through
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: my-log.json
     operators:
       - type: router

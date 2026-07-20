@@ -77,12 +77,9 @@ func TestDetailedTelemetryValidation(t *testing.T) {
 	}
 
 	ctx := t.Context()
-	rcvr, err := createMetricsReceiver(ctx, settings, config, csmr)
-	if err != nil {
-		t.Fatalf("Failed to create receiver: %v", err)
-	}
+	rcvr := createMetricsReceiver(ctx, settings, config, csmr)
 
-	err = rcvr.Start(ctx, componenttest.NewNopHost())
+	err := rcvr.Start(ctx, componenttest.NewNopHost())
 	if err != nil {
 		t.Fatalf("Failed to start receiver: %v", err)
 	}
@@ -129,9 +126,7 @@ func TestDetailedTelemetryValidation(t *testing.T) {
 
 	for _, tc := range testCases {
 		err := sendDetailedTelemetryData("localhost:57403", "CISCO-TEST-SWITCH", tc.interfaceName, tc.rxPkts, tc.txPkts, tc.rxBytes, tc.txBytes)
-		if err != nil {
-			t.Fatalf("Failed to send telemetry for %s: %v", tc.name, err)
-		}
+		assert.NoError(t, err, "Failed to send telemetry for %s: %v", tc.name, err)
 	}
 
 	// Wait for data processing
@@ -409,7 +404,7 @@ func sendDetailedTelemetryData(endpoint, nodeID, interfaceName string, rxPkts, t
 	}
 
 	_, err = stream.Recv()
-	if err != nil && errors.Is(err, io.EOF) {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return fmt.Errorf("unexpected error receiving response: %w", err)
 	}
 

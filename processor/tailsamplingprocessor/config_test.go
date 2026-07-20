@@ -12,9 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -35,6 +37,7 @@ func TestLoadConfig(t *testing.T) {
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,
+			SamplingStrategy:        samplingStrategyTraceComplete,
 			DecisionCache:           DecisionCacheConfig{SampledCacheSize: 1_000, NonSampledCacheSize: 10_000},
 			PolicyCfgs: []PolicyCfg{
 				{
@@ -82,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 					sharedPolicyCfg: sharedPolicyCfg{
 						Name:            "test-policy-7",
 						Type:            RateLimiting,
-						RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
+						RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35, BurstCapacity: 70},
 					},
 				},
 				{
@@ -143,6 +146,21 @@ func TestLoadConfig(t *testing.T) {
 									Name:               "test-and-policy-2",
 									Type:               StringAttribute,
 									StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+								},
+							},
+							{
+								sharedPolicyCfg: sharedPolicyCfg{
+									Name: "test-and-policy-3",
+									Type: Not,
+								},
+								NotCfg: NotCfg{
+									SubPolicy: NotSubPolicyCfg{
+										sharedPolicyCfg: sharedPolicyCfg{
+											Name:       "test-and-policy-3-not-sub-policy",
+											Type:       Latency,
+											LatencyCfg: LatencyCfg{ThresholdMs: 1000},
+										},
+									},
 								},
 							},
 						},
@@ -207,4 +225,60 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		}, cfg)
+}
+
+func TestConfigValidateTailStorageFeatureGate(t *testing.T) {
+	tailStorageID := component.MustNewID("tail_storage_pebble")
+
+	testCases := []struct {
+		name         string
+		gateEnabled  bool
+		tailStorage  *component.ID
+		wantErr      bool
+		errSubstring string
+	}{
+		{
+			name:         "tail storage set and gate disabled returns error",
+			gateEnabled:  false,
+			tailStorage:  &tailStorageID,
+			wantErr:      true,
+			errSubstring: "'tail_storage' requires",
+		},
+		{
+			name:        "tail storage set and gate enabled is valid",
+			gateEnabled: true,
+			tailStorage: &tailStorageID,
+			wantErr:     false,
+		},
+		{
+			name:        "tail storage not set and gate disabled is valid",
+			gateEnabled: false,
+			tailStorage: nil,
+			wantErr:     false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			prev := tailstorageextension.IsFeatureGateEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(tailstorageextension.FeatureGateID, tc.gateEnabled))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(tailstorageextension.FeatureGateID, prev))
+			})
+
+			cfg := &Config{
+				SamplingStrategy: samplingStrategyTraceComplete,
+				TailStorageID:    tc.tailStorage,
+			}
+
+			err := cfg.Validate()
+			if tc.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errSubstring)
+				assert.Contains(t, err.Error(), tailstorageextension.FeatureGateID)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
 }

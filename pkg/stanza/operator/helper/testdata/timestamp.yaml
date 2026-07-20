@@ -14,3 +14,9 @@ parse_from:
   type: helpers_test
   time:
     parse_from: body.from
+time_zone_locations:
+  type: helpers_test
+  time:
+    time_zone_locations:
+      PDT: America/Los_Angeles
+      NZST: Pacific/Auckland

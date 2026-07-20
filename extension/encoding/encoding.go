@@ -41,10 +41,15 @@ type LogsDecoder interface {
 	Offset() int64
 }
 
+// LogsDecoderFactory creates LogsDecoder instances for streaming log deserialization.
+type LogsDecoderFactory interface {
+	NewLogsDecoder(reader io.Reader, options ...DecoderOption) (LogsDecoder, error)
+}
+
 // LogsDecoderExtension is an extension that unmarshals logs from a stream.
 type LogsDecoderExtension interface {
 	extension.Extension
-	NewLogsDecoder(reader io.Reader, options ...DecoderOption) (LogsDecoder, error)
+	LogsDecoderFactory
 }
 
 // MetricsMarshalerExtension is an extension that marshals metrics.
@@ -70,10 +75,15 @@ type MetricsDecoder interface {
 	Offset() int64
 }
 
+// MetricsDecoderFactory creates MetricsDecoder instances for streaming metric deserialization.
+type MetricsDecoderFactory interface {
+	NewMetricsDecoder(reader io.Reader, options ...DecoderOption) (MetricsDecoder, error)
+}
+
 // MetricsDecoderExtension is an extension that unmarshals metrics from a stream.
 type MetricsDecoderExtension interface {
 	extension.Extension
-	NewMetricsDecoder(reader io.Reader, options ...DecoderOption) (MetricsDecoder, error)
+	MetricsDecoderFactory
 }
 
 // TracesMarshalerExtension is an extension that marshals traces.
