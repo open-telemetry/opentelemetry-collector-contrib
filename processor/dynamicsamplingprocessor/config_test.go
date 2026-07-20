@@ -320,6 +320,31 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			wantErr: "key_fields",
 		},
+		{
+			name: "root_span_condition_valid",
+			cfg: Config{
+				TraceTimeout:      time.Second,
+				DecisionDelay:     time.Second,
+				NumTraces:         100,
+				RootSpanCondition: `IsRootSpan() or span.attributes["hint"] == true`,
+				Rules: []RuleConfig{
+					{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}},
+				},
+			},
+		},
+		{
+			name: "root_span_condition_invalid_ottl_rejected",
+			cfg: Config{
+				TraceTimeout:      time.Second,
+				DecisionDelay:     time.Second,
+				NumTraces:         100,
+				RootSpanCondition: `this is not valid ottl`,
+				Rules: []RuleConfig{
+					{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}},
+				},
+			},
+			wantErr: "root_span_condition",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

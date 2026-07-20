@@ -80,7 +80,42 @@ processors:
           ema_dynamic:
             goal_sampling_percentage: 20
             key_fields: ["service.name", "http.status_code"]
+
+    # Optional. OTTL boolean expression evaluated per span. When it returns true
+    # for any span in the trace, the trace transitions from accumulation to the
+    # decision-delay phase without waiting for trace_timeout. Defaults to
+    # IsRootSpan() when unset.
+    # root_span_condition: 'IsRootSpan() or span.attributes["otelcol.dynamic_sampling.root_span"] == true'
 ```
+
+### Root-span detection
+
+The processor moves a trace out of accumulation and into the decision-delay phase as soon as it sees a span it considers a "root". By default that means `IsRootSpan()`: any span whose W3C `ParentSpanID` is empty. This works for producer-side head-sampled traces where the true root always lands at the same collector, but it stalls when:
+
+- Only the server side of a cross-process trace reaches this collector, so no observed span has an empty parent.
+- The operator wants to trigger on a producer-supplied hint (e.g. a message-broker consumer or batch-job entry point) rather than on the transport-level root.
+
+`root_span_condition` lets the operator override the trigger with any OTTL boolean expression evaluated in the `ottlspan` context. The first span for which it returns true starts the decision-delay timer.
+
+Producer hint (fires on any real root, or on any span the producer explicitly tagged):
+
+```yaml
+root_span_condition: 'IsRootSpan() or span.attributes["otelcol.dynamic_sampling.root_span"] == true'
+```
+
+Cross-process server (accept the gateway's server span as a trigger even though it has a parent):
+
+```yaml
+root_span_condition: 'IsRootSpan() or (span.kind == SPAN_KIND_SERVER and resource.attributes["service.name"] == "gateway")'
+```
+
+Message consumer (trigger on the consumer side of a queue rather than waiting for `trace_timeout`):
+
+```yaml
+root_span_condition: 'IsRootSpan() or (span.kind == SPAN_KIND_CONSUMER and IsMatch(span.name, "^receive "))'
+```
+
+Evaluation errors are counted on `processor_dynamic_sampling_ottl_eval_errors` under the sentinel `rule="_root_span_condition"` label so they show up separately from rule-condition errors. A span whose evaluation errored is treated as non-matching, so a broken expression can only delay the trigger to `trace_timeout`, never fire it prematurely.
 
 ### Rules
 

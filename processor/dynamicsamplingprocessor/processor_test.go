@@ -680,6 +680,67 @@ func TestProcessor_DivergentRVLogsWarning(t *testing.T) {
 	assert.Equal(t, zap.WarnLevel, warnings[0].Level)
 }
 
+// TestProcessor_RootSpanCondition_CustomExpression verifies that operators
+// can point the trigger at spans whose ParentSpanID is non-empty by providing
+// an OTTL expression. The trace has no true root span, so the default
+// IsRootSpan() would let it wait until trace_timeout; with a custom hint
+// attribute the decision must fire before trace_timeout.
+func TestProcessor_RootSpanCondition_CustomExpression(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:      time.Hour,
+		DecisionDelay:     50 * time.Millisecond,
+		NumTraces:         10,
+		RootSpanCondition: `span.attributes["otelcol.dynamic_sampling.root_span"] == true`,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+	span := ss.Spans().AppendEmpty()
+	span.SetTraceID(pcommon.TraceID([16]byte{0xDE, 0xAD, 0xBE, 0xEF}))
+	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	span.SetParentSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9})
+	span.SetName("consume")
+	span.Attributes().PutBool("otelcol.dynamic_sampling.root_span", true)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 1
+	}, time.Second, 10*time.Millisecond, "hint attribute should trigger decision before trace_timeout")
+}
+
+// TestProcessor_RootSpanCondition_NonMatchingHoldsForTimeout verifies that
+// when the custom expression does not match any span, the trace waits for
+// trace_timeout and is then decided normally. This guards against a broken
+// override silently accepting every span.
+func TestProcessor_RootSpanCondition_NonMatchingHoldsForTimeout(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:      50 * time.Millisecond,
+		DecisionDelay:     50 * time.Millisecond,
+		NumTraces:         10,
+		RootSpanCondition: `span.attributes["never_present"] == true`,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	traceID := pcommon.TraceID([16]byte{0x01, 0x02})
+	// newRootTrace has an empty parent, but our condition ignores that fact.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newRootTrace(traceID)))
+
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 1
+	}, time.Second, 10*time.Millisecond, "trace_timeout should fire since the custom condition never matches")
+}
+
 func TestProcessor_DecisionCacheDisabled(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{
