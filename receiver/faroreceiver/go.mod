@@ -49,7 +49,6 @@ require (
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.62.1-0.20260720221237-c82363844ef5 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.156.1-0.20260720221237-c82363844ef5 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.156.1-0.20260720221237-c82363844ef5 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.156.1-0.20260720221237-c82363844ef5 // indirect
 	go.opentelemetry.io/collector/featuregate v1.62.1-0.20260720221237-c82363844ef5 // indirect
