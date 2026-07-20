@@ -6,7 +6,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
@@ -26,7 +26,7 @@ func makeSQL(span ptrace.Span, attributes map[string]pcommon.Value) (map[string]
 
 	for key, value := range attributes {
 		switch key {
-		// New v1.38.0 keys — gate-guarded by EmitV1DB:
+		// New v1.40.0 keys — gate-guarded by EmitV1DB:
 		case string(conventions.DBNamespaceKey):
 			if metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate.IsEnabled() {
 				dbInstance = value.Str()
