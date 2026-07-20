@@ -132,7 +132,7 @@ func TestRecordSpecMetrics(t *testing.T) {
 				pod.Status.ContainerStatuses = []corev1.ContainerStatus{*tt.containerStatus}
 			}
 
-			mbc := metadata.DefaultMetricsBuilderConfig()
+			mbc := metadata.NewDefaultMetricsBuilderConfig()
 			if tt.metricsConfig != nil {
 				mbc = tt.metricsConfig(mbc)
 			}

@@ -19,3 +19,4 @@ feature_gates:
       db.name, net.peer.name).
     from_version: v0.146.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44796
+    skip_strict_validation: true

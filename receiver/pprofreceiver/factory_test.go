@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
@@ -57,8 +58,15 @@ func TestNewFactory_PprofConversion(t *testing.T) {
 		factory := NewFactory()
 
 		cfg := factory.CreateDefaultConfig().(*Config)
-		cfg.Include = pprofFile
-		cfg.CollectionInterval = 100 * time.Millisecond
+		fileCfg := FileConfig{
+			ControllerConfig: defaultControllerConfig(),
+			Include:          pprofFile,
+		}
+		fileCfg.CollectionInterval = 100 * time.Millisecond
+		cfg.Remote = configoptional.None[RemoteConfig]()
+		cfg.Self = configoptional.None[SelfConfig]()
+		cfg.Server = configoptional.None[ServerConfig]()
+		cfg.File = configoptional.Some(fileCfg)
 
 		sink := new(consumertest.ProfilesSink)
 		receiver, err := factory.(xreceiver.Factory).CreateProfiles(

@@ -108,7 +108,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
         check_interval: 1s
         limit_percentage: 65
         spike_limit_percentage: 20
-      resourcedetection:
+      resource_detection:
         detectors: [gcp]
         timeout: 10s
     service:
@@ -348,7 +348,7 @@ processors:
     check_interval: 1s
     limit_percentage: 65
     spike_limit_percentage: 20
-  resourcedetection:
+  resource_detection:
     detectors: [gcp]
     timeout: 10s
   attributes:
@@ -362,7 +362,7 @@ processors:
 service:
     logs:
       receivers: [file_log]
-      processors: [memory_limiter, resourcedetection, attributes]
+      processors: [memory_limiter, resource_detection, attributes]
       exporters: [googlecloud]
 
 ```

@@ -53,6 +53,7 @@ var errNoLastArchive = errors.New("no last archive found, not able to calculate 
 type client interface {
 	Close() error
 	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
+	getDatabaseConflicts(ctx context.Context, databases []string) (map[databaseName]databaseConflictStats, error)
 	getDatabaseLocks(ctx context.Context) ([]databaseLocks, error)
 	getBGWriterStats(ctx context.Context) (*bgStat, error)
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
@@ -303,6 +304,54 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 	return dbStats, errs
 }
 
+// databaseConflictStats holds the per-database query cancellation counters from
+// pg_stat_database_conflicts. These counters are only incremented on standby
+// servers, where queries can be canceled due to conflicts with recovery.
+type databaseConflictStats struct {
+	conflTablespace int64
+	conflLock       int64
+	conflSnapshot   int64
+	conflBufferpin  int64
+	conflDeadlock   int64
+}
+
+func (c *postgreSQLClient) getDatabaseConflicts(ctx context.Context, databases []string) (map[databaseName]databaseConflictStats, error) {
+	query := filterQueryByDatabases(
+		"SELECT datname, confl_tablespace, confl_lock, confl_snapshot, confl_bufferpin, confl_deadlock FROM pg_stat_database_conflicts",
+		databases,
+		false,
+	)
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var errs error
+	conflictStats := map[databaseName]databaseConflictStats{}
+
+	for rows.Next() {
+		var datname string
+		var conflTablespace, conflLock, conflSnapshot, conflBufferpin, conflDeadlock int64
+		err = rows.Scan(&datname, &conflTablespace, &conflLock, &conflSnapshot, &conflBufferpin, &conflDeadlock)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		if datname != "" {
+			conflictStats[databaseName(datname)] = databaseConflictStats{
+				conflTablespace: conflTablespace,
+				conflLock:       conflLock,
+				conflSnapshot:   conflSnapshot,
+				conflBufferpin:  conflBufferpin,
+				conflDeadlock:   conflDeadlock,
+			}
+		}
+	}
+	return conflictStats, multierr.Append(errs, rows.Err())
+}
+
 type databaseLocks struct {
 	relation string
 	mode     string
@@ -407,17 +456,29 @@ type tableStats struct {
 }
 
 func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error) {
-	query := `SELECT schemaname as schema, relname AS table,
-	n_live_tup AS live,
-	n_dead_tup AS dead,
-	n_tup_ins AS ins,
-	n_tup_upd AS upd,
-	n_tup_del AS del,
-	n_tup_hot_upd AS hot_upd,
-	seq_scan AS seq_scans,
-	pg_relation_size(relid) AS table_size,
-	vacuum_count
-	FROM pg_stat_user_tables;`
+	// explicitly ignore the relations which have an active `AccessExclusiveLock`
+	// this is to prevent the current query's `AccessShareLock` from getting stalled
+	query := `SELECT
+    s.schemaname AS schema,
+    s.relname AS table,
+    s.n_live_tup AS live,
+    s.n_dead_tup AS dead,
+    s.n_tup_ins AS ins,
+    s.n_tup_upd AS upd,
+    s.n_tup_del AS del,
+    s.n_tup_hot_upd AS hot_upd,
+    s.seq_scan AS seq_scans,
+    pg_relation_size(s.relid) AS table_size,
+    s.vacuum_count
+FROM pg_stat_user_tables s
+LEFT JOIN (
+    SELECT DISTINCT relation
+    FROM pg_locks
+    WHERE locktype = 'relation'
+      AND mode = 'AccessExclusiveLock'
+      AND granted = true
+) l ON s.relid = l.relation
+WHERE l.relation IS NULL;`
 
 	ts := map[tableIdentifier]tableStats{}
 	var errors error
@@ -518,10 +579,20 @@ type indexStat struct {
 }
 
 func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
+	// explicitly ignore indexes which have an active `AccessExclusiveLock`
+	// this is to prevent the current query's `AccessShareLock` from getting stalled
 	query := `SELECT schemaname, relname, indexrelname,
 	pg_relation_size(indexrelid) AS index_size,
 	idx_scan
-	FROM pg_stat_user_indexes;`
+	FROM pg_stat_user_indexes s
+	LEFT JOIN (
+		SELECT DISTINCT relation
+		FROM pg_locks
+		WHERE locktype = 'relation'
+		  AND mode = 'AccessExclusiveLock'
+		  AND granted = true
+	) l ON s.indexrelid = l.relation
+	WHERE l.relation IS NULL;`
 
 	stats := map[indexIdentifer]indexStat{}
 
@@ -917,12 +988,12 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
-	if err := tmpl.Execute(&buf, map[string]any{
+	if tmplErr := tmpl.Execute(&buf, map[string]any{
 		"limit":                limit,
 		"newestQueryTimestamp": newestQueryTimestamp,
-	}); err != nil {
-		logger.Error("failed to execute template", zap.Error(err))
-		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", err)
+	}); tmplErr != nil {
+		logger.Error("failed to execute template", zap.Error(tmplErr))
+		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", tmplErr)
 	}
 
 	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, buf.String(), logger, sqlquery.TelemetryConfig{})
@@ -956,6 +1027,12 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 			querySampleColumnQueryID,
 			querySampleColumnState,
 			querySampleColumnApplicationName,
+			querySampleColumnBlockingPIDs,
+			querySampleColumnBlockingStartTime,
+			querySampleColumnBlockingLockMode,
+			querySampleColumnBlockingLockType,
+			querySampleColumnBlockingLockRelation,
+			querySampleColumnBlockingTxnStartTime,
 		}
 
 		for _, col := range querySampleSimpleColumns {
@@ -1012,6 +1089,15 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 			}
 		}
 
+		blockingWaitDuration := int64(0)
+		if row[querySampleColumnBlockingWaitDuration] != "" {
+			blockingWaitDuration, err = strconv.ParseInt(row[querySampleColumnBlockingWaitDuration], 10, 64)
+			if err != nil {
+				logger.Warn("failed to convert blocking_wait_duration to int64", zap.Error(err))
+				errs = append(errs, err)
+			}
+		}
+
 		// TODO: check if the query is truncated.
 		obfuscated, err := obfuscateSQL(row[querySampleColumnQuery])
 		if err != nil {
@@ -1025,6 +1111,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		currentAttributes[string(semconv.DBNamespaceKey)] = row[querySampleColumnDatname]
 		currentAttributes[string(semconv.UserNameKey)] = row[querySampleColumnUsename]
 		currentAttributes[postgresqlTotalExecTimeAttributeName] = duration
+		currentAttributes[dbAttributePrefix+querySampleColumnBlockingWaitDuration] = blockingWaitDuration
 		finalAttributes = append(finalAttributes, currentAttributes)
 	}
 

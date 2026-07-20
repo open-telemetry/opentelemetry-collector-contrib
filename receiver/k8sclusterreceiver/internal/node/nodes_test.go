@@ -167,7 +167,7 @@ func TestNodeMetrics(t *testing.T) {
 	n := testutils.NewNode("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sNodeCondition.Enabled = true
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, n, ts)

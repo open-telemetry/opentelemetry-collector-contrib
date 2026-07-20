@@ -20,7 +20,7 @@ type MultiConditionalAttributeSet struct {
 
 type MultiConditionalAttributeSetSlice []*MultiConditionalAttributeSet
 
-func NewMultiConditionalAttributeSet[Match ValueMatch](mappings map[string]string, matches map[string][]Match) MultiConditionalAttributeSet {
+func NewMultiConditionalAttributeSet[Match ValueMatch](mappings map[string]string, copyAttributes bool, matches map[string][]Match) MultiConditionalAttributeSet {
 	keysToPossibleValues := make(map[string]set)
 	for k, values := range matches {
 		on := make(map[string]struct{})
@@ -31,7 +31,7 @@ func NewMultiConditionalAttributeSet[Match ValueMatch](mappings map[string]strin
 	}
 	return MultiConditionalAttributeSet{
 		keysToPossibleValues: keysToPossibleValues,
-		attrs:                NewAttributeChangeSet(mappings),
+		attrs:                NewAttributeChangeSet(mappings, copyAttributes),
 	}
 }
 

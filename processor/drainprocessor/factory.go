@@ -32,6 +32,8 @@ func createDefaultConfig() component.Config {
 		MaxNodeChildren:   100,
 		MaxClusters:       0,
 		TemplateAttribute: "log.record.template",
+		ExtractParameters: false,
+		ParamsAttribute:   "log.record.template.params",
 		WarmupMinClusters: 0,
 	}
 }
@@ -53,5 +55,7 @@ func createLogsProcessor(
 		nextConsumer,
 		proc.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithStart(proc.Start),
+		processorhelper.WithShutdown(proc.Shutdown),
 	)
 }

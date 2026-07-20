@@ -4,13 +4,13 @@
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 
 import (
+	"errors"
+	"fmt"
 	"sort"
-	"strings"
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	encoder "go.opentelemetry.io/otel/schema/v1.1"
 	ast11 "go.opentelemetry.io/otel/schema/v1.1/ast"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -32,6 +32,9 @@ type Translation interface {
 	// updates.
 	SupportedVersion(v *Version) bool
 
+	// TargetSchemaURL returns the target schema URL for this translation.
+	TargetSchemaURL() string
+
 	// ApplyAllResourceChanges will modify the resource part of the incoming signals
 	// This applies to all telemetry types and should be applied there
 	ApplyAllResourceChanges(in alias.Resource, inSchemaURL string) error
@@ -52,6 +55,11 @@ type translator struct {
 	target          *Version
 	indexes         map[Version]int // map from version to index in revisions containing the pertinent Version
 	revisions       []RevisionV1
+	copyFromVersion *Version
+	// singleHop is true for v2 resolved registries: there is exactly one
+	// revision (the registry head), and any incoming version != target should
+	// trigger that single revision in Apply/Revert direction.
+	singleHop bool
 
 	log *zap.Logger
 }
@@ -77,7 +85,18 @@ func (t *translator) loadTranslation(content *ast11.Schema) error {
 		if exist {
 			continue
 		}
-		rev, err := NewRevision(version, def)
+		// When copyFromVersion is set, attribute renames preserve both old
+		// and new names for revisions between copyFromVersion and the target
+		// (in either direction).
+		copyAttributes := false
+		if t.copyFromVersion != nil {
+			lower, upper := t.copyFromVersion, t.target
+			if t.target.LessThan(t.copyFromVersion) {
+				lower, upper = t.target, t.copyFromVersion
+			}
+			copyAttributes = lower.LessThan(version) && !upper.LessThan(version)
+		}
+		rev, err := NewRevision(version, def, copyAttributes)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -93,7 +112,7 @@ func (t *translator) loadTranslation(content *ast11.Schema) error {
 	return errs
 }
 
-func newTranslatorFromSchema(log *zap.Logger, targetSchemaURL string, schemaFileSchema *ast11.Schema) (*translator, error) {
+func newTranslatorFromSchema(log *zap.Logger, targetSchemaURL string, schemaFileSchema *ast11.Schema, copyFromVersion *Version) (*translator, error) {
 	_, target, err := GetFamilyAndVersion(targetSchemaURL)
 	if err != nil {
 		return nil, err
@@ -102,6 +121,7 @@ func newTranslatorFromSchema(log *zap.Logger, targetSchemaURL string, schemaFile
 		targetSchemaURL: targetSchemaURL,
 		target:          target,
 		log:             log,
+		copyFromVersion: copyFromVersion,
 		indexes:         map[Version]int{},
 	}
 
@@ -111,16 +131,64 @@ func newTranslatorFromSchema(log *zap.Logger, targetSchemaURL string, schemaFile
 	return t, nil
 }
 
-func newTranslator(log *zap.Logger, targetSchemaURL, schema string) (*translator, error) {
-	schemaFileSchema, err := encoder.Parse(strings.NewReader(schema))
+// newTranslatorFromV2Resolved builds a single-hop translator from a v2
+// resolved registry. There is exactly one revision (the registry head); any
+// incoming version != target triggers it in Update or Revert direction.
+func newTranslatorFromV2Resolved(log *zap.Logger, targetSchemaURL string, resolved *V2Resolved, copyFromVersion *Version) (*translator, error) {
+	_, target, err := GetFamilyAndVersion(targetSchemaURL)
 	if err != nil {
 		return nil, err
 	}
-	var t *translator
-	if t, err = newTranslatorFromSchema(log, targetSchemaURL, schemaFileSchema); err != nil {
+	// copyAttributes applies to renames between copyFromVersion and target,
+	// inclusive on the lower bound. With a single-hop registry there is no
+	// per-version chain to consult, so the flag is effectively "enabled when
+	// migration mode is configured".
+	copyAttributes := copyFromVersion != nil
+	rev := NewRevisionFromV2Resolved(target, resolved, copyAttributes)
+	t := &translator{
+		targetSchemaURL: targetSchemaURL,
+		target:          target,
+		log:             log,
+		copyFromVersion: copyFromVersion,
+		indexes:         map[Version]int{*target: 0},
+		revisions:       []RevisionV1{*rev},
+		singleHop:       true,
+	}
+	log.Debug("loaded v2 resolved registry",
+		zap.Int("attribute_catalog_size", len(resolved.AttributeCatalog)),
+		zap.Int("metric_signals", len(resolved.Registry.Metrics)),
+		zap.Int("span_signals", len(resolved.Registry.Spans)),
+		zap.Int("event_signals", len(resolved.Registry.Events)),
+	)
+	return t, nil
+}
+
+// newTranslatorFromParsed dispatches on the parsed schema format. v2
+// manifests cannot be turned into a translator directly; the caller (manager)
+// must follow resolved_registry_uri and re-invoke this function with the
+// resolved/2.0 result.
+func newTranslatorFromParsed(log *zap.Logger, targetSchemaURL string, parsed *ParsedSchema, copyFromVersion *Version) (*translator, error) {
+	switch parsed.Format {
+	case SchemaFormatV1:
+		return newTranslatorFromSchema(log, targetSchemaURL, parsed.V1, copyFromVersion)
+	case SchemaFormatV2Resolved:
+		return newTranslatorFromV2Resolved(log, targetSchemaURL, parsed.V2Resolved, copyFromVersion)
+	case SchemaFormatV2Manifest:
+		return nil, errors.New("manifest/2.0 requires resolved_registry_uri fetch by caller")
+	default:
+		return nil, fmt.Errorf("unsupported parsed schema format: %d", parsed.Format)
+	}
+}
+
+// newTranslator parses a schema document and returns a translator. Manifest
+// documents return an error since they require a follow-up fetch (manager
+// handles that path via newTranslatorFromParsed).
+func newTranslator(log *zap.Logger, targetSchemaURL, schema string, copyFromVersion *Version) (*translator, error) {
+	parsed, err := Parse(schema)
+	if err != nil {
 		return nil, err
 	}
-	return t, nil
+	return newTranslatorFromParsed(log, targetSchemaURL, parsed, copyFromVersion)
 }
 
 func (t *translator) Len() int {
@@ -137,7 +205,17 @@ func (t *translator) Swap(i, j int) {
 	t.revisions[i], t.revisions[j] = t.revisions[j], t.revisions[i]
 }
 
+func (t *translator) TargetSchemaURL() string {
+	return t.targetSchemaURL
+}
+
 func (t *translator) SupportedVersion(v *Version) bool {
+	if t.singleHop {
+		// v2 resolved registries hold renames for all historic predecessors
+		// of the head version. Any incoming version is "supported" in the
+		// sense that we will attempt translation; unmapped names pass through.
+		return v != nil
+	}
 	_, ok := t.indexes[*v]
 	return ok
 }
@@ -315,6 +393,18 @@ func (t *translator) iterator(from *Version) (iterator, int) {
 	status := from.Compare(t.target)
 	if status == NoChange || !t.SupportedVersion(from) {
 		return func() (r RevisionV1, more bool) { return RevisionV1{}, false }, NoChange
+	}
+	if t.singleHop {
+		// Single revision (the v2 head). Yield it once; direction is set by
+		// status (Update for from<target, Revert for from>target).
+		consumed := false
+		return func() (RevisionV1, bool) {
+			if consumed || len(t.revisions) == 0 {
+				return RevisionV1{}, false
+			}
+			consumed = true
+			return t.revisions[0], true
+		}, status
 	}
 	it, stop := t.indexes[*from], t.indexes[*t.target]
 	if status == Update {

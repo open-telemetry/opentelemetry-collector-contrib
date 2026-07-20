@@ -77,6 +77,7 @@ const (
 	faroGeoASNID          = "geo_asn_id"
 
 	faroIsK6Browser = "k6_isK6Browser"
+	faroK6TestRunID = "k6_testRunId"
 
 	faroPageID         = "page_id"
 	faroPageURL        = "page_url"
@@ -404,7 +405,7 @@ func extractAppFromKeyVal(kv map[string]string, rl pcommon.Resource) faroTypes.A
 		if key == string(conventions.ServiceVersionKey) {
 			app.Version = val.Str()
 		}
-		if key == string(conventionsv126.DeploymentEnvironmentKey) {
+		if key == string(conventionsv126.DeploymentEnvironmentKey) || key == string(conventions.DeploymentEnvironmentNameKey) {
 			app.Environment = val.Str()
 		}
 		// force the app name stored in resource attribute service.name
@@ -615,6 +616,9 @@ func extractK6FromKeyVal(kv map[string]string) (faroTypes.K6, error) {
 			return k6, err
 		}
 		k6.IsK6Browser = isK6Browser
+	}
+	if testRunID, ok := kv[faroK6TestRunID]; ok {
+		k6.TestRunID = testRunID
 	}
 	return k6, nil
 }

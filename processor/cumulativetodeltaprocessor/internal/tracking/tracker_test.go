@@ -5,6 +5,7 @@ package tracking
 
 import (
 	"context"
+	"math"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -31,10 +32,11 @@ func TestMetricTracker_Convert(t *testing.T) {
 	miSum.MetricValueType = pmetric.NumberDataPointValueTypeDouble
 
 	type subTest struct {
-		name    string
-		value   ValuePoint
-		wantOut DeltaValue
-		noOut   bool
+		name       string
+		value      ValuePoint
+		wantOut    DeltaValue
+		noOut      bool
+		wantReason string
 	}
 
 	future := time.Now().Add(1 * time.Hour)
@@ -87,7 +89,8 @@ func TestMetricTracker_Convert(t *testing.T) {
 						FloatValue:        100,
 						IntValue:          100,
 					},
-					noOut: true,
+					noOut:      true,
+					wantReason: ReasonInitial,
 				},
 				keepSubsequentTest,
 			},
@@ -102,7 +105,8 @@ func TestMetricTracker_Convert(t *testing.T) {
 						FloatValue:        100,
 						IntValue:          100,
 					},
-					noOut: true,
+					noOut:      true,
+					wantReason: ReasonInitial,
 				},
 				keepSubsequentTest,
 			},
@@ -118,7 +122,8 @@ func TestMetricTracker_Convert(t *testing.T) {
 						FloatValue:        100,
 						IntValue:          100,
 					},
-					noOut: true,
+					noOut:      true,
+					wantReason: ReasonInitial,
 				},
 				keepSubsequentTest,
 			},
@@ -160,7 +165,8 @@ func TestMetricTracker_Convert(t *testing.T) {
 						FloatValue:        75.0,
 						IntValue:          75,
 					},
-					noOut: true,
+					noOut:      true,
+					wantReason: ReasonReset,
 				},
 				{
 					name: "Convert delta above previous not Converted Value",
@@ -212,14 +218,16 @@ func TestMetricTracker_Convert(t *testing.T) {
 						Value:    ttt.value,
 					}
 
-					gotOut, valid := m.Convert(floatPoint)
+					gotOut, valid, reason := m.Convert(floatPoint)
+					assert.Equal(t, ttt.wantReason, reason)
 					if !ttt.noOut {
 						require.True(t, valid)
 						assert.Equal(t, ttt.wantOut.StartTimestamp, gotOut.StartTimestamp)
 						assert.Equal(t, ttt.wantOut.FloatValue, gotOut.FloatValue)
 					}
 
-					gotOut, valid = m.Convert(intPoint)
+					gotOut, valid, reason = m.Convert(intPoint)
+					assert.Equal(t, ttt.wantReason, reason)
 					if !ttt.noOut {
 						require.True(t, valid)
 						assert.Equal(t, ttt.wantOut.StartTimestamp, gotOut.StartTimestamp)
@@ -234,7 +242,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 		m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueAuto)
 		invalidID := miIntSum
 		invalidID.MetricType = pmetric.MetricTypeGauge
-		_, valid := m.Convert(MetricPoint{
+		_, valid, reason := m.Convert(MetricPoint{
 			Identity: invalidID,
 			Value: ValuePoint{
 				ObservedTimestamp: 0,
@@ -243,7 +251,70 @@ func TestMetricTracker_Convert(t *testing.T) {
 			},
 		})
 		assert.False(t, valid, "Expected invalid for non cumulative metric")
+		assert.Empty(t, reason, "Expected no reason for non cumulative metric")
 	})
+
+	t.Run("NaN float value", func(t *testing.T) {
+		m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueAuto)
+		_, valid, reason := m.Convert(MetricPoint{
+			Identity: miSum,
+			Value: ValuePoint{
+				ObservedTimestamp: pcommon.NewTimestampFromTime(future),
+				FloatValue:        math.NaN(),
+			},
+		})
+		assert.False(t, valid, "Expected invalid for NaN float value")
+		assert.Empty(t, reason, "Expected no reason for NaN float value")
+	})
+}
+
+func TestMetricTracker_ConvertHistogramReset(t *testing.T) {
+	miHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeHistogram,
+		MetricName:             "hist",
+		Attributes:             pcommon.NewMap(),
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	point := func(count uint64, sum float64, buckets []uint64) MetricPoint {
+		return MetricPoint{
+			Identity: miHist,
+			Value: ValuePoint{
+				ObservedTimestamp: now,
+				HistogramValue: &HistogramPoint{
+					Count:        count,
+					Sum:          sum,
+					BucketBounds: []float64{1, 2},
+					BucketCounts: buckets,
+				},
+			},
+		}
+	}
+
+	// Setup tracker and initial point.
+	m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+	out, valid, _ := m.Convert(point(10, 5, []uint64{4, 6}))
+	require.True(t, valid)
+	assert.Equal(t, []uint64{4, 6}, out.HistogramValue.BucketCounts)
+
+	// Bucket count drops.
+	_, valid, reason := m.Convert(point(11, 6, []uint64{2, 9}))
+	require.False(t, valid)
+	assert.Equal(t, ReasonReset, reason)
+
+	// Setup tracker and initial point.
+	m = NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+	out, valid, _ = m.Convert(point(10, 5, []uint64{4, 6}))
+	require.True(t, valid)
+	assert.Equal(t, []uint64{4, 6}, out.HistogramValue.BucketCounts)
+
+	// Monotonic increase.
+	out, valid, _ = m.Convert(point(15, 10, []uint64{4, 11}))
+	require.True(t, valid)
+	assert.Equal(t, uint64(5), out.HistogramValue.Count)
+	assert.Equal(t, []uint64{0, 5}, out.HistogramValue.BucketCounts)
 }
 
 func Test_metricTracker_removeStale(t *testing.T) {

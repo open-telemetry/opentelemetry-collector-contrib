@@ -22,52 +22,67 @@ const (
 
 var MetricsInfo = metricsInfo{
 	KafkaBrokerLogRetentionPeriod: metricInfo{
-		Name: "kafka.broker.log_retention_period",
+		Name:       "kafka.broker.log_retention_period",
+		Attributes: []string{"broker"},
 	},
 	KafkaBrokers: metricInfo{
 		Name: "kafka.brokers",
 	},
 	KafkaConsumerGroupLag: metricInfo{
-		Name: "kafka.consumer_group.lag",
+		Name:       "kafka.consumer_group.lag",
+		Attributes: []string{"group", "topic", "partition"},
 	},
 	KafkaConsumerGroupLagSum: metricInfo{
-		Name: "kafka.consumer_group.lag_sum",
+		Name:       "kafka.consumer_group.lag_sum",
+		Attributes: []string{"group", "topic"},
 	},
 	KafkaConsumerGroupMembers: metricInfo{
-		Name: "kafka.consumer_group.members",
+		Name:       "kafka.consumer_group.members",
+		Attributes: []string{"group"},
 	},
 	KafkaConsumerGroupOffset: metricInfo{
-		Name: "kafka.consumer_group.offset",
+		Name:       "kafka.consumer_group.offset",
+		Attributes: []string{"group", "topic", "partition"},
 	},
 	KafkaConsumerGroupOffsetSum: metricInfo{
-		Name: "kafka.consumer_group.offset_sum",
+		Name:       "kafka.consumer_group.offset_sum",
+		Attributes: []string{"group", "topic"},
 	},
 	KafkaPartitionCurrentOffset: metricInfo{
-		Name: "kafka.partition.current_offset",
+		Name:       "kafka.partition.current_offset",
+		Attributes: []string{"topic", "partition"},
 	},
 	KafkaPartitionOldestOffset: metricInfo{
-		Name: "kafka.partition.oldest_offset",
+		Name:       "kafka.partition.oldest_offset",
+		Attributes: []string{"topic", "partition"},
 	},
 	KafkaPartitionReplicas: metricInfo{
-		Name: "kafka.partition.replicas",
+		Name:       "kafka.partition.replicas",
+		Attributes: []string{"topic", "partition"},
 	},
 	KafkaPartitionReplicasInSync: metricInfo{
-		Name: "kafka.partition.replicas_in_sync",
+		Name:       "kafka.partition.replicas_in_sync",
+		Attributes: []string{"topic", "partition"},
 	},
 	KafkaTopicLogRetentionPeriod: metricInfo{
-		Name: "kafka.topic.log_retention_period",
+		Name:       "kafka.topic.log_retention_period",
+		Attributes: []string{"topic"},
 	},
 	KafkaTopicLogRetentionSize: metricInfo{
-		Name: "kafka.topic.log_retention_size",
+		Name:       "kafka.topic.log_retention_size",
+		Attributes: []string{"topic"},
 	},
 	KafkaTopicMinInsyncReplicas: metricInfo{
-		Name: "kafka.topic.min_insync_replicas",
+		Name:       "kafka.topic.min_insync_replicas",
+		Attributes: []string{"topic"},
 	},
 	KafkaTopicPartitions: metricInfo{
-		Name: "kafka.topic.partitions",
+		Name:       "kafka.topic.partitions",
+		Attributes: []string{"topic"},
 	},
 	KafkaTopicReplicationFactor: metricInfo{
-		Name: "kafka.topic.replication_factor",
+		Name:       "kafka.topic.replication_factor",
+		Attributes: []string{"topic"},
 	},
 }
 
@@ -91,7 +106,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricKafkaBrokerLogRetentionPeriod struct {

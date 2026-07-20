@@ -10,6 +10,9 @@ status:
     active: [atoulme, pdelewski, Erog38]
 
 tests:
+  config:
+    retry_on_failure:
+      enabled: false
   expect_consumer_error: true
   goleak:
     ignore:

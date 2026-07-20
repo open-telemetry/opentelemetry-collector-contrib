@@ -259,3 +259,95 @@ func TestFromMetrics_NonMonotonicSum(t *testing.T) {
 	// Monotonic sum SHOULD have exemplars
 	assert.Len(t, tsMonotonic.Exemplars, 1)
 }
+
+func TestFromMetrics_TranslationStrategies(t *testing.T) {
+	tests := []struct {
+		name         string
+		strategy     string
+		metricFunc   func() pmetric.Metric
+		expectedName string
+	}{
+		{
+			name:     "NoTranslation",
+			strategy: "NoTranslation",
+			metricFunc: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetName("test.metric-name/with_special@chars")
+				m.SetEmptyGauge()
+				m.Gauge().DataPoints().AppendEmpty().SetDoubleValue(1.23)
+				return m
+			},
+			expectedName: "test.metric-name/with_special@chars",
+		},
+		{
+			name:     "UnderscoreEscapingWithSuffixes",
+			strategy: "UnderscoreEscapingWithSuffixes",
+			metricFunc: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetName("test.counter")
+				m.SetUnit("By")
+				m.SetEmptySum().SetIsMonotonic(true)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1.23)
+				return m
+			},
+			expectedName: "test_counter_bytes_total",
+		},
+		{
+			name:     "UnderscoreEscapingWithoutSuffixes",
+			strategy: "UnderscoreEscapingWithoutSuffixes",
+			metricFunc: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetName("test.counter")
+				m.SetUnit("By")
+				m.SetEmptySum().SetIsMonotonic(true)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1.23)
+				return m
+			},
+			expectedName: "test_counter",
+		},
+		{
+			name:     "NoUTF8EscapingWithSuffixes",
+			strategy: "NoUTF8EscapingWithSuffixes",
+			metricFunc: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetName("test.counter")
+				m.SetUnit("By")
+				m.SetEmptySum().SetIsMonotonic(true)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1.23)
+				return m
+			},
+			expectedName: "test.counter_bytes_total",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := pmetric.NewMetrics()
+			metrics := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+			tt.metricFunc().CopyTo(metrics.AppendEmpty())
+
+			tsMap, err := FromMetrics(md, Settings{TranslationStrategy: tt.strategy})
+			require.NoError(t, err)
+			require.Len(t, tsMap, 1)
+
+			var tsFound *prompb.TimeSeries
+			for _, ts := range tsMap {
+				tsFound = ts
+				break
+			}
+			require.NotNil(t, tsFound)
+
+			var nameFound bool
+			for _, l := range tsFound.Labels {
+				if l.Name == model.MetricNameLabel {
+					assert.Equal(t, tt.expectedName, l.Value)
+					nameFound = true
+				}
+			}
+			assert.True(t, nameFound, "metric name label not found")
+		})
+	}
+}

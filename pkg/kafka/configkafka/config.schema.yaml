@@ -64,7 +64,7 @@ $defs:
         description: RackID provides the rack identifier for this client to enable rack-aware replica selection when supported by the brokers. This maps to Kafka's standard "client.rack" setting. By default, this is empty.
         type: string
       resolve_canonical_bootstrap_servers_only:
-        description: ResolveCanonicalBootstrapServersOnly configures the Kafka client to perform a DNS lookup on each of the provided brokers, and then perform a reverse lookup on the resulting IPs to obtain the canonical hostnames to use as the bootstrap servers. This can be required in SASL environments.
+        description: 'ResolveCanonicalBootstrapServersOnly is ignored, and exists for backwards compatibility in config parsing. Deprecated [v0.153.0]: this field is a no-op since the migration to franz-go, which has no direct equivalent to the associated Sarama config. This config will be removed in a future release.'
         type: boolean
       tls:
         description: TLS holds TLS-related configuration for connecting to Kafka brokers. By default the client will use an insecure connection unless SASL/AWS_MSK_IAM_OAUTHBEARER auth is configured.
@@ -85,8 +85,13 @@ $defs:
       group_instance_id:
         description: GroupInstanceID specifies the ID of the consumer
         type: string
+      group_rebalance_strategies:
+        description: GroupRebalanceStrategies specifies the ordered strategies to advertise for partition assignment. Kafka selects the first strategy supported by every member of the consumer group. Built-in values are "range", "roundrobin", "sticky", and "cooperative-sticky". Any other value is treated as the component ID of a registered extension that implements kgo.GroupBalancer. When omitted, the franz-go default applies, currently "cooperative-sticky". This field is mutually exclusive with GroupRebalanceStrategy.
+        type: array
+        items:
+          $ref: group_rebalance_strategy
       group_rebalance_strategy:
-        description: GroupRebalanceStrategy specifies the strategy to use for partition assignment. Possible values are "range", "roundrobin", "sticky", and "cooperative-sticky". Defaults to "cooperative-sticky"
+        description: 'GroupRebalanceStrategy specifies the strategy to use for partition assignment. Accepts the same values as GroupRebalanceStrategies. Defaults to "cooperative-sticky". Deprecated [v0.154.0]: use GroupRebalanceStrategies instead.'
         $ref: group_rebalance_strategy
       heartbeat_interval:
         description: HeartbeatInterval controls the Kafka consumer group coordination heartbeat interval. Heartbeats ensure the consumer's session remains active.
@@ -189,8 +194,11 @@ $defs:
         description: Linger controls the linger time for the producer. (default 10ms).
         type: string
         format: duration
+      max_broker_write_bytes:
+        description: MaxBrokerWriteBytes is the maximum bytes the producer will write to a broker in a single request. It must be >= MaxMessageBytes. Maps to franz-go's kgo.BrokerMaxWriteBytes, whose default (and minimum accepted value) is 100 MiB. (default 104857600)
+        type: integer
       max_message_bytes:
-        description: Maximum message bytes the producer will accept to produce (default 1000000)
+        description: MaxMessageBytes is the maximum message bytes the producer will accept to produce. It must be less than or equal to MaxBrokerWriteBytes, and must fit in an int32 as it maps to franz-go's kgo.ProducerBatchMaxBytes. (default 1000000)
         type: integer
       required_acks:
         description: 'RequiredAcks holds the number acknowledgements required before producing returns successfully. See: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#acks Acceptable values are: 0 (NoResponse)   Does not wait for any acknowledgements. 1 (WaitForLocal) Waits for only the leader to write the record to its local log, but does not wait for followers to acknowledge. (default) -1 (WaitForAll)   Waits for all in-sync replicas to acknowledge. In YAML configuration, "all" is accepted as an alias for -1.'
@@ -219,5 +227,5 @@ $defs:
         description: Username to be used on authentication
         type: string
       version:
-        description: 'SASL Protocol Version to be used, possible values are: (0, 1). Defaults to 0.'
+        description: 'Version is ignored, and exists for backwards compatibility in config parsing. Deprecated [v0.153.0]: this field is a no-op since the migration to franz-go, which negotiates the SASL handshake version automatically. This config will be removed in a future release.'
         type: integer

@@ -45,7 +45,7 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	)
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(zap.NewNop(), mb, pod, ts)
 	m := mb.Emit()
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
@@ -67,7 +67,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 		testutils.NewEvictedTerminatedPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
 	)
 
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sPodStatusReason.Enabled = true
 	mbc.ResourceAttributes.K8sPodQosClass.Enabled = true
 	mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.Enabled = true
@@ -616,7 +616,7 @@ func TestPodContainerStateMetrics(t *testing.T) {
 		testutils.NewPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
 	)
 
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sContainerStatusState.Enabled = true
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
@@ -654,7 +654,7 @@ func TestPodContainerReasonMetrics(t *testing.T) {
 		},
 	)
 
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sContainerStatusReason.Enabled = true
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))

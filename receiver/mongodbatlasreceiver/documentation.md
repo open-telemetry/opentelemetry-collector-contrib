@@ -987,18 +987,18 @@ Aggregate of MongoDB Metrics CACHE_FILL_RATIO, DIRTY_FILL_RATIO
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| mongodb_atlas.cluster.name | Cluster Name | Any Str | false | - |
-| mongodb_atlas.db.name | Name of the Database | Any Str | true | - |
-| mongodb_atlas.disk.partition | Name of a disk partition | Any Str | true | - |
-| mongodb_atlas.host.name | Hostname of the process | Any Str | true | - |
-| mongodb_atlas.org_name | Organization Name | Any Str | true | - |
-| mongodb_atlas.process.id | ID of the process | Any Str | true | - |
-| mongodb_atlas.process.port | Port process is bound to | Any Str | true | - |
-| mongodb_atlas.process.type_name | Process type | Any Str | true | - |
-| mongodb_atlas.project.id | Project ID | Any Str | true | - |
-| mongodb_atlas.project.name | Project Name | Any Str | true | - |
-| mongodb_atlas.provider.name | Provider Name | Any Str | false | - |
-| mongodb_atlas.region.name | Region Name | Any Str | false | - |
-| mongodb_atlas.user.alias | User-friendly hostname of the cluster node | Any Str | false | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| mongodb_atlas.cluster.name | Cluster Name | Any Str | false | - | - |
+| mongodb_atlas.db.name | Name of the Database | Any Str | true | - | - |
+| mongodb_atlas.disk.partition | Name of a disk partition | Any Str | true | - | - |
+| mongodb_atlas.host.name | Hostname of the process | Any Str | true | - | - |
+| mongodb_atlas.org_name | Organization Name | Any Str | true | - | - |
+| mongodb_atlas.process.id | ID of the process | Any Str | true | - | - |
+| mongodb_atlas.process.port | Port process is bound to | Any Str | true | - | - |
+| mongodb_atlas.process.type_name | Process type | Any Str | true | - | - |
+| mongodb_atlas.project.id | Project ID | Any Str | true | - | - |
+| mongodb_atlas.project.name | Project Name | Any Str | true | - | - |
+| mongodb_atlas.provider.name | Provider Name | Any Str | false | - | - |
+| mongodb_atlas.region.name | Region Name | Any Str | false | - | - |
+| mongodb_atlas.user.alias | User-friendly hostname of the cluster node | Any Str | false | - | - |

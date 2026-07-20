@@ -14,6 +14,7 @@ import (
 
 type metricPacker struct {
 	logger *zap.Logger
+	config *Config
 }
 
 type timedMetricDataPoint struct {
@@ -53,8 +54,8 @@ func (packer *metricPacker) MetricToEnvelopes(metric pmetric.Metric, resource pc
 			resourceAttributes := resource.Attributes()
 			applyResourcesToDataProperties(metricData.Properties, resourceAttributes)
 			applyInstrumentationScopeValueToDataProperties(metricData.Properties, instrumentationScope)
-			applyCloudTagsToEnvelope(envelope, resourceAttributes)
-			applyApplicationTagsToEnvelope(envelope, resourceAttributes)
+			applyCloudTagsToEnvelope(envelope, resourceAttributes, packer.tagMappings())
+			applyApplicationTagsToEnvelope(envelope, resourceAttributes, packer.tagMappings())
 			applyDeviceTagsToEnvelope(envelope, resourceAttributes)
 			applyInternalSdkVersionTagToEnvelope(envelope)
 
@@ -79,11 +80,21 @@ func (packer *metricPacker) sanitize(sanitizeFunc func() []string) {
 	}
 }
 
-func newMetricPacker(logger *zap.Logger) *metricPacker {
+func newMetricPacker(logger *zap.Logger, config *Config) *metricPacker {
 	packer := &metricPacker{
 		logger: logger,
+		config: config,
 	}
 	return packer
+}
+
+// tagMappings returns the configured envelope tag mappings if any, else nil
+// to signal historical hardcoded behavior to the envelope helpers.
+func (packer *metricPacker) tagMappings() *TagMappingsConfig {
+	if packer.config == nil {
+		return nil
+	}
+	return &packer.config.TagMappings
 }
 
 func (packer metricPacker) getMetricTimedData(metric pmetric.Metric) metricTimedData {

@@ -81,6 +81,20 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				"c", 0, nil, nil, 0),
 		},
 		{
+			name:  "counter with empty tag entries before valid tags",
+			input: "test.metric:42|c|#,,layer:gateway,component:scoring",
+			wantMetric: testStatsDMetric(
+				"test.metric",
+				42,
+				false,
+				"c",
+				0,
+				[]string{"layer", "component"},
+				[]string{"gateway", "scoring"},
+				0,
+			),
+		},
+		{
 			name:  "integer counter",
 			input: "test.metric:42|c",
 			wantMetric: testStatsDMetric(
@@ -2153,6 +2167,60 @@ func TestStatsDParser_HistogramExplicitBucket(t *testing.T) {
 			assert.Equal(t, nodiffs, metricstestutil.DiffMetrics(nodiffs, tc.ExpectedOutput, p.GetMetrics()[0].Metrics))
 		})
 	}
+}
+
+func TestStatsDParser_TimingExplicitBucket(t *testing.T) {
+	originalTimeNowFunc := timeNowFunc
+	timeNowFunc = func() time.Time {
+		return time.Unix(711, 0)
+	}
+	t.Cleanup(func() {
+		timeNowFunc = originalTimeNowFunc
+	})
+
+	expected := pmetric.NewMetrics()
+	ilm := expected.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	m := ilm.Metrics().AppendEmpty()
+	m.SetName("timer.duration")
+	histogram := m.SetEmptyHistogram()
+	histogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dp := histogram.DataPoints().AppendEmpty()
+	dp.SetCount(4)
+	dp.SetSum(555.5)
+	dp.SetMin(0.5)
+	dp.SetMax(500)
+	dp.BucketCounts().FromRaw([]uint64{1, 1, 1, 1})
+	dp.ExplicitBounds().FromRaw([]float64{1, 10, 100})
+
+	p := &StatsDParser{}
+	require.NoError(t, p.Initialize(false, false, false, false, false, []protocol.TimerHistogramMapping{
+		{
+			StatsdType:   "timing",
+			ObserverType: "histogram",
+			Histogram: protocol.HistogramConfig{
+				ExplicitBuckets: []protocol.ExplicitBucket{
+					{
+						MatcherPattern: "timer.*",
+						Buckets:        []float64{1, 10, 100},
+					},
+				},
+				MaxSize: 10,
+			},
+		},
+	}, protocol.CounterTypeInt))
+
+	addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
+	for _, input := range []string{
+		"timer.duration:0.5|ms",
+		"timer.duration:5|ms",
+		"timer.duration:50|ms",
+		"timer.duration:500|ms",
+	} {
+		require.NoError(t, p.Aggregate(input, addr))
+	}
+
+	var nodiffs []*metricstestutil.MetricDiff
+	assert.Equal(t, nodiffs, metricstestutil.DiffMetrics(nodiffs, expected, p.GetMetrics()[0].Metrics))
 }
 
 func TestStatsDParser_IPOnlyAggregation(t *testing.T) {

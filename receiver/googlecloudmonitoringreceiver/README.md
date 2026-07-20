@@ -4,7 +4,6 @@
 The primary objective of the Google Cloud Monitoring Receiver is to gather time series metrics data from all Google
 services and convert this data into a pipeline format that facilitates further use.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
@@ -41,6 +40,7 @@ receivers:
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `timeout`: (default = `1m`) The timeout of running commands against the GCP Monitoring REST API.
 - `project_id` (Required): The GCP project ID.
+- `endpoint` (Optional): Overrides the default `monitoring.googleapis.com:443` endpoint. Use this when targeting non-standard universe domains.
 - `metrics_list` (Required): A list of services metrics to monitor.
 
 Each single metric can have the following configuration:

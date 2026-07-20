@@ -26,7 +26,7 @@ func (ms *WindowsServiceStatusMetricConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-// MetricsConfig provides config for windowsservice metrics.
+// MetricsConfig provides config for windows_service metrics.
 type MetricsConfig struct {
 	WindowsServiceStatus WindowsServiceStatusMetricConfig `mapstructure:"windows.service.status"`
 }
@@ -39,13 +39,18 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for windowsservice metrics builder.
+// MetricsBuilderConfig is a configuration for windows_service metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics: DefaultMetricsConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

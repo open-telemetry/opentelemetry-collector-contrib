@@ -92,7 +92,7 @@ func (tc *correctnessTestCase) waitForAllMetrics() {
 }
 
 func componentFactories(t *testing.T) otelcol.Factories {
-	factories, err := testbed.Components()
+	f, err := factories()
 	require.NoError(t, err)
-	return factories
+	return f
 }

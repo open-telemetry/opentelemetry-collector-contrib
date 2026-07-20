@@ -1,4 +1,5 @@
-type: servicegraph
+type: service_graph
+deprecated_type: servicegraph
 display_name: Service Graph Connector
 
 status:
@@ -9,6 +10,31 @@ status:
   codeowners:
     active: [mapno, JaredTan95]
 
+feature_gates:
+  - id: "connector.servicegraph.legacyLatencyMetricNames"
+    description: When enabled, connector uses legacy latency metric names.
+    stage: deprecated
+    from_version: v0.80.0
+    to_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743
+    skip_strict_validation: true
+
+  - id: "connector.servicegraph.legacyLatencyUnitMs"
+    description: When enabled, connector reports latency in milliseconds, instead of seconds.
+    stage: deprecated
+    from_version: v0.89.0
+    to_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27488
+    skip_strict_validation: true
+  
+  - id: "connector.servicegraph.virtualNode"
+    description: When enabled and setting `virtual_node_peer_attributes` is not empty, the connector looks for the presence of these attributes in span to create virtual server nodes.
+    stage: stable
+    from_version: v0.73.0
+    to_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17196
+    skip_strict_validation: true
+    
 tests:
   config:
 

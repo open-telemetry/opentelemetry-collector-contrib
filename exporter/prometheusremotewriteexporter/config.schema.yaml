@@ -35,7 +35,7 @@ description: Config defines configuration for Remote Write exporter.
 type: object
 properties:
   add_metric_suffixes:
-    description: AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
+    description: 'AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export Deprecated: Use TranslationStrategy instead. It will be removed in v0.153.0.'
     type: boolean
   disable_scope_info:
     description: DisableScopeInfo allows disabling the export of the scope info labels
@@ -70,6 +70,9 @@ properties:
   target_info:
     description: TargetInfo allows customizing the target_info metric
     $ref: target_info
+  translation_strategy:
+    description: TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names. When set, this takes precedence over AddMetricSuffixes.
+    type: string
   wal:
     description: WAL enables persisting metrics to a write-ahead-log before sending to the remote storage.
     x-optional: true

@@ -5,9 +5,14 @@ package drainprocessor // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
@@ -18,13 +23,18 @@ import (
 )
 
 type drainProcessor struct {
-	config    *Config
-	logger    *zap.Logger
-	telemetry *metadata.TelemetryBuilder
+	config      *Config
+	componentID component.ID
+	logger      *zap.Logger
+	telemetry   *metadata.TelemetryBuilder
 
 	mu       sync.Mutex
 	drain    *internaldrain.Drain
 	warmedUp bool // true when WarmupMinClusters == 0 or cluster count has reached the threshold
+
+	storageClient    storage.Client
+	stopSave         context.CancelFunc // cancels periodic save goroutine
+	lastSnapshotHash atomic.Uint64
 }
 
 func newDrainProcessor(set processor.Settings, cfg *Config) (*drainProcessor, error) {
@@ -45,13 +55,13 @@ func newDrainProcessor(set processor.Settings, cfg *Config) (*drainProcessor, er
 	}
 
 	p := &drainProcessor{
-		config:    cfg,
-		logger:    set.Logger,
-		telemetry: tel,
-		drain:     d,
-		warmedUp:  cfg.WarmupMinClusters == 0,
+		config:      cfg,
+		componentID: set.ID,
+		logger:      set.Logger,
+		telemetry:   tel,
+		drain:       d,
+		warmedUp:    cfg.WarmupMinClusters == 0,
 	}
-	p.seed()
 	return p, nil
 }
 
@@ -63,7 +73,7 @@ func (p *drainProcessor) seed() {
 		if strings.TrimSpace(tmpl) == "" {
 			continue
 		}
-		if _, err := p.drain.Train(tmpl); err != nil {
+		if _, _, err := p.drain.Train(tmpl); err != nil {
 			p.logger.Warn("failed to seed template, skipping", zap.String("template", tmpl), zap.Error(err))
 		}
 	}
@@ -71,10 +81,54 @@ func (p *drainProcessor) seed() {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		if _, err := p.drain.Train(line); err != nil {
+		if _, _, err := p.drain.Train(line); err != nil {
 			p.logger.Warn("failed to seed log line, skipping", zap.String("line", line), zap.Error(err))
 		}
 	}
+}
+
+// Start loads a snapshot from storage (if available) and starts the periodic
+// save goroutine when configured.
+func (p *drainProcessor) Start(ctx context.Context, host component.Host) error {
+	if p.config.Storage != nil {
+		var err error
+		p.storageClient, err = getStorageClient(ctx, host, p.config.Storage, p.componentID)
+		if err != nil {
+			return fmt.Errorf("failed to get storage client: %w", err)
+		}
+
+		if !p.loadSnapshot(ctx) {
+			p.seed()
+		}
+
+		if p.config.SaveInterval > 0 {
+			p.startPeriodicSave(ctx)
+		}
+		return nil
+	}
+
+	p.seed()
+	return nil
+}
+
+// Shutdown stops the periodic save goroutine, performs a final snapshot save,
+// and closes the storage client.
+func (p *drainProcessor) Shutdown(ctx context.Context) error {
+	if p.stopSave != nil {
+		p.stopSave()
+	}
+
+	var errs []error
+	if p.storageClient != nil {
+		if err := p.saveSnapshot(ctx); err != nil {
+			p.logger.Warn("final snapshot save failed", zap.Error(err))
+			errs = append(errs, err)
+		}
+		if err := p.storageClient.Close(ctx); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // processLogs is the ConsumeLogs handler passed to processorhelper.NewLogs.
@@ -105,7 +159,7 @@ func (p *drainProcessor) annotate(ctx context.Context, lr plog.LogRecord) {
 	}
 
 	p.mu.Lock()
-	tmpl, err := p.drain.Train(text)
+	tmpl, tmplTokens, err := p.drain.Train(text)
 	if !p.warmedUp && p.drain.ClusterCount() >= p.config.WarmupMinClusters {
 		p.warmedUp = true
 	}
@@ -121,7 +175,33 @@ func (p *drainProcessor) annotate(ctx context.Context, lr plog.LogRecord) {
 	}
 
 	lr.Attributes().PutStr(p.config.TemplateAttribute, tmpl)
+	if p.config.ExtractParameters {
+		p.extractParams(lr, text, tmplTokens)
+	}
 	p.telemetry.ProcessorDrainLogRecordsAnnotated.Add(ctx, 1)
+}
+
+// extractParams writes body tokens at <*> positions of the template as a slice
+// attribute. The slice is only created when at least one parameter is present.
+func (p *drainProcessor) extractParams(lr plog.LogRecord, body string, tmplTokens []string) {
+	bodyTokens := p.drain.Tokenise(body)
+	if len(bodyTokens) == 0 || len(bodyTokens) != len(tmplTokens) {
+		return
+	}
+	var params []string
+	for i, t := range tmplTokens {
+		if t == "<*>" {
+			params = append(params, bodyTokens[i])
+		}
+	}
+	if len(params) == 0 {
+		return
+	}
+	slice := lr.Attributes().PutEmptySlice(p.config.ParamsAttribute)
+	slice.EnsureCapacity(len(params))
+	for _, v := range params {
+		slice.AppendEmpty().SetStr(v)
+	}
 }
 
 // extractBody returns the text to feed to Drain for the given log record.

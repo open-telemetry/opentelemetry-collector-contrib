@@ -29,7 +29,7 @@ func createDefaultConfig() component.Config {
 	scraperConfig.CollectionInterval = 30 * time.Minute
 	return &Config{
 		ControllerConfig:     scraperConfig,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		Version:              4,
 		Endpoint:             "pool.ntp.org:123",
 	}

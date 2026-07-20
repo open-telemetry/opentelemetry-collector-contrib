@@ -3,17 +3,19 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// SshcheckDurationMetricConfig provides config for the sshcheck.duration metric.
+type SshcheckDurationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SshcheckDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -27,34 +29,194 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for sshcheck metrics.
+// SshcheckErrorMetricAttributeKey specifies the key of an attribute for the sshcheck.error metric.
+type SshcheckErrorMetricAttributeKey string
+
+const (
+	SshcheckErrorMetricAttributeKeyErrorMessage SshcheckErrorMetricAttributeKey = "error.message"
+)
+
+// SshcheckErrorMetricConfig provides config for the sshcheck.error metric.
+type SshcheckErrorMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SshcheckErrorMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SshcheckErrorMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SshcheckErrorMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SshcheckErrorMetricAttributeKeyErrorMessage:
+		default:
+			return fmt.Errorf("metric sshcheck.error doesn't have an attribute %v, valid attributes: [error.message]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SshcheckSftpDurationMetricConfig provides config for the sshcheck.sftp_duration metric.
+type SshcheckSftpDurationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SshcheckSftpDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SshcheckSftpErrorMetricAttributeKey specifies the key of an attribute for the sshcheck.sftp_error metric.
+type SshcheckSftpErrorMetricAttributeKey string
+
+const (
+	SshcheckSftpErrorMetricAttributeKeyErrorMessage SshcheckSftpErrorMetricAttributeKey = "error.message"
+)
+
+// SshcheckSftpErrorMetricConfig provides config for the sshcheck.sftp_error metric.
+type SshcheckSftpErrorMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SshcheckSftpErrorMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SshcheckSftpErrorMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SshcheckSftpErrorMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SshcheckSftpErrorMetricAttributeKeyErrorMessage:
+		default:
+			return fmt.Errorf("metric sshcheck.sftp_error doesn't have an attribute %v, valid attributes: [error.message]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SshcheckSftpStatusMetricConfig provides config for the sshcheck.sftp_status metric.
+type SshcheckSftpStatusMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SshcheckSftpStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SshcheckStatusMetricConfig provides config for the sshcheck.status metric.
+type SshcheckStatusMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SshcheckStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MetricsConfig provides config for ssh_check metrics.
 type MetricsConfig struct {
-	SshcheckDuration     MetricConfig `mapstructure:"sshcheck.duration"`
-	SshcheckError        MetricConfig `mapstructure:"sshcheck.error"`
-	SshcheckSftpDuration MetricConfig `mapstructure:"sshcheck.sftp_duration"`
-	SshcheckSftpError    MetricConfig `mapstructure:"sshcheck.sftp_error"`
-	SshcheckSftpStatus   MetricConfig `mapstructure:"sshcheck.sftp_status"`
-	SshcheckStatus       MetricConfig `mapstructure:"sshcheck.status"`
+	SshcheckDuration     SshcheckDurationMetricConfig     `mapstructure:"sshcheck.duration"`
+	SshcheckError        SshcheckErrorMetricConfig        `mapstructure:"sshcheck.error"`
+	SshcheckSftpDuration SshcheckSftpDurationMetricConfig `mapstructure:"sshcheck.sftp_duration"`
+	SshcheckSftpError    SshcheckSftpErrorMetricConfig    `mapstructure:"sshcheck.sftp_error"`
+	SshcheckSftpStatus   SshcheckSftpStatusMetricConfig   `mapstructure:"sshcheck.sftp_status"`
+	SshcheckStatus       SshcheckStatusMetricConfig       `mapstructure:"sshcheck.status"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SshcheckDuration: MetricConfig{
+		SshcheckDuration: SshcheckDurationMetricConfig{
 			Enabled: true,
 		},
-		SshcheckError: MetricConfig{
-			Enabled: true,
+		SshcheckError: SshcheckErrorMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SshcheckErrorMetricAttributeKey{SshcheckErrorMetricAttributeKeyErrorMessage},
 		},
-		SshcheckSftpDuration: MetricConfig{
+		SshcheckSftpDuration: SshcheckSftpDurationMetricConfig{
 			Enabled: false,
 		},
-		SshcheckSftpError: MetricConfig{
+		SshcheckSftpError: SshcheckSftpErrorMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SshcheckSftpErrorMetricAttributeKey{SshcheckSftpErrorMetricAttributeKeyErrorMessage},
+		},
+		SshcheckSftpStatus: SshcheckSftpStatusMetricConfig{
 			Enabled: false,
 		},
-		SshcheckSftpStatus: MetricConfig{
-			Enabled: false,
-		},
-		SshcheckStatus: MetricConfig{
+		SshcheckStatus: SshcheckStatusMetricConfig{
 			Enabled: true,
 		},
 	}
@@ -86,7 +248,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for sshcheck resource attributes.
+// ResourceAttributesConfig provides config for ssh_check resource attributes.
 type ResourceAttributesConfig struct {
 	SSHEndpoint ResourceAttributeConfig `mapstructure:"ssh.endpoint"`
 }
@@ -99,15 +261,20 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for sshcheck metrics builder.
+// MetricsBuilderConfig is a configuration for ssh_check metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

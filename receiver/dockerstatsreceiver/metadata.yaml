@@ -17,8 +17,6 @@ status:
     emeritus: [rmfitzpatrick]
   unsupported_platforms: [darwin, windows]
 
-reaggregation_enabled: true
-
 sem_conv_version: 1.40.0
 
 tests:

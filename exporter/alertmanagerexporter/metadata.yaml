@@ -4,7 +4,7 @@ display_name: Alertmanager Exporter
 status:
   class: exporter
   stability:
-    development: [traces]
+    development: [traces,logs]
   distributions: []
   codeowners:
     active: [sokoide, mcube8]

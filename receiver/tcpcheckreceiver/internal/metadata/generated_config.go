@@ -101,7 +101,7 @@ func (ms *TcpcheckStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for tcpcheck metrics.
+// MetricsConfig provides config for tcp_check metrics.
 type MetricsConfig struct {
 	TcpcheckDuration TcpcheckDurationMetricConfig `mapstructure:"tcpcheck.duration"`
 	TcpcheckError    TcpcheckErrorMetricConfig    `mapstructure:"tcpcheck.error"`
@@ -124,13 +124,18 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for tcpcheck metrics builder.
+// MetricsBuilderConfig is a configuration for tcp_check metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics: DefaultMetricsConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

@@ -42,6 +42,6 @@ func TestLoadConfig(t *testing.T) {
 		GroupMatch:           "test_\\w+",
 		RefreshFrequency:     time.Nanosecond,
 		Scrapers:             []string{"brokers", "topics", "consumers"},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}, cfg)
 }

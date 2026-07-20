@@ -31,6 +31,9 @@ all_set:
       enabled: true
     k8s.container.cpu_request_utilization:
       enabled: true
+    k8s.container.ephemeral_storage.usage:
+      enabled: true
+      attributes: ["fs.type"]
     k8s.container.memory.node.utilization:
       enabled: true
     k8s.container.memory_limit_utilization:
@@ -61,7 +64,17 @@ all_set:
       enabled: true
     k8s.node.network.errors:
       enabled: true
+      attributes: ["interface","direction"]
     k8s.node.network.io:
+      enabled: true
+      attributes: ["interface","direction"]
+    k8s.node.system_container.cpu.time:
+      enabled: true
+    k8s.node.system_container.cpu.usage:
+      enabled: true
+    k8s.node.system_container.memory.usage:
+      enabled: true
+    k8s.node.system_container.memory.working_set:
       enabled: true
     k8s.node.uptime:
       enabled: true
@@ -101,8 +114,10 @@ all_set:
       enabled: true
     k8s.pod.network.errors:
       enabled: true
+      attributes: ["interface","direction"]
     k8s.pod.network.io:
       enabled: true
+      attributes: ["interface","direction"]
     k8s.pod.uptime:
       enabled: true
     k8s.pod.volume.usage:
@@ -135,6 +150,174 @@ all_set:
     k8s.namespace.name:
       enabled: true
     k8s.node.name:
+      enabled: true
+    k8s.node.system_container.name:
+      enabled: true
+    k8s.persistentvolumeclaim.name:
+      enabled: true
+    k8s.pod.name:
+      enabled: true
+    k8s.pod.uid:
+      enabled: true
+    k8s.volume.name:
+      enabled: true
+    k8s.volume.type:
+      enabled: true
+    partition:
+      enabled: true
+reaggregate_set:
+  metrics:
+    container.cpu.time:
+      enabled: true
+    container.cpu.usage:
+      enabled: true
+    container.filesystem.available:
+      enabled: true
+    container.filesystem.capacity:
+      enabled: true
+    container.filesystem.usage:
+      enabled: true
+    container.memory.available:
+      enabled: true
+    container.memory.major_page_faults:
+      enabled: true
+    container.memory.page_faults:
+      enabled: true
+    container.memory.rss:
+      enabled: true
+    container.memory.usage:
+      enabled: true
+    container.memory.working_set:
+      enabled: true
+    container.uptime:
+      enabled: true
+    k8s.container.cpu.node.utilization:
+      enabled: true
+    k8s.container.cpu_limit_utilization:
+      enabled: true
+    k8s.container.cpu_request_utilization:
+      enabled: true
+    k8s.container.ephemeral_storage.usage:
+      enabled: true
+      attributes: []
+    k8s.container.memory.node.utilization:
+      enabled: true
+    k8s.container.memory_limit_utilization:
+      enabled: true
+    k8s.container.memory_request_utilization:
+      enabled: true
+    k8s.node.cpu.time:
+      enabled: true
+    k8s.node.cpu.usage:
+      enabled: true
+    k8s.node.filesystem.available:
+      enabled: true
+    k8s.node.filesystem.capacity:
+      enabled: true
+    k8s.node.filesystem.usage:
+      enabled: true
+    k8s.node.memory.available:
+      enabled: true
+    k8s.node.memory.major_page_faults:
+      enabled: true
+    k8s.node.memory.page_faults:
+      enabled: true
+    k8s.node.memory.rss:
+      enabled: true
+    k8s.node.memory.usage:
+      enabled: true
+    k8s.node.memory.working_set:
+      enabled: true
+    k8s.node.network.errors:
+      enabled: true
+      attributes: []
+    k8s.node.network.io:
+      enabled: true
+      attributes: []
+    k8s.node.system_container.cpu.time:
+      enabled: true
+    k8s.node.system_container.cpu.usage:
+      enabled: true
+    k8s.node.system_container.memory.usage:
+      enabled: true
+    k8s.node.system_container.memory.working_set:
+      enabled: true
+    k8s.node.uptime:
+      enabled: true
+    k8s.pod.cpu.node.utilization:
+      enabled: true
+    k8s.pod.cpu.time:
+      enabled: true
+    k8s.pod.cpu.usage:
+      enabled: true
+    k8s.pod.cpu_limit_utilization:
+      enabled: true
+    k8s.pod.cpu_request_utilization:
+      enabled: true
+    k8s.pod.filesystem.available:
+      enabled: true
+    k8s.pod.filesystem.capacity:
+      enabled: true
+    k8s.pod.filesystem.usage:
+      enabled: true
+    k8s.pod.memory.available:
+      enabled: true
+    k8s.pod.memory.major_page_faults:
+      enabled: true
+    k8s.pod.memory.node.utilization:
+      enabled: true
+    k8s.pod.memory.page_faults:
+      enabled: true
+    k8s.pod.memory.rss:
+      enabled: true
+    k8s.pod.memory.usage:
+      enabled: true
+    k8s.pod.memory.working_set:
+      enabled: true
+    k8s.pod.memory_limit_utilization:
+      enabled: true
+    k8s.pod.memory_request_utilization:
+      enabled: true
+    k8s.pod.network.errors:
+      enabled: true
+      attributes: []
+    k8s.pod.network.io:
+      enabled: true
+      attributes: []
+    k8s.pod.uptime:
+      enabled: true
+    k8s.pod.volume.usage:
+      enabled: true
+    k8s.volume.available:
+      enabled: true
+    k8s.volume.capacity:
+      enabled: true
+    k8s.volume.inodes:
+      enabled: true
+    k8s.volume.inodes.free:
+      enabled: true
+    k8s.volume.inodes.used:
+      enabled: true
+  resource_attributes:
+    aws.volume.id:
+      enabled: true
+    container.id:
+      enabled: true
+    fs.type:
+      enabled: true
+    gce.pd.name:
+      enabled: true
+    glusterfs.endpoints.name:
+      enabled: true
+    glusterfs.path:
+      enabled: true
+    k8s.container.name:
+      enabled: true
+    k8s.namespace.name:
+      enabled: true
+    k8s.node.name:
+      enabled: true
+    k8s.node.system_container.name:
       enabled: true
     k8s.persistentvolumeclaim.name:
       enabled: true
@@ -180,6 +363,9 @@ none_set:
       enabled: false
     k8s.container.cpu_request_utilization:
       enabled: false
+    k8s.container.ephemeral_storage.usage:
+      enabled: false
+      attributes: ["fs.type"]
     k8s.container.memory.node.utilization:
       enabled: false
     k8s.container.memory_limit_utilization:
@@ -210,7 +396,17 @@ none_set:
       enabled: false
     k8s.node.network.errors:
       enabled: false
+      attributes: ["interface","direction"]
     k8s.node.network.io:
+      enabled: false
+      attributes: ["interface","direction"]
+    k8s.node.system_container.cpu.time:
+      enabled: false
+    k8s.node.system_container.cpu.usage:
+      enabled: false
+    k8s.node.system_container.memory.usage:
+      enabled: false
+    k8s.node.system_container.memory.working_set:
       enabled: false
     k8s.node.uptime:
       enabled: false
@@ -250,8 +446,10 @@ none_set:
       enabled: false
     k8s.pod.network.errors:
       enabled: false
+      attributes: ["interface","direction"]
     k8s.pod.network.io:
       enabled: false
+      attributes: ["interface","direction"]
     k8s.pod.uptime:
       enabled: false
     k8s.pod.volume.usage:
@@ -284,6 +482,8 @@ none_set:
     k8s.namespace.name:
       enabled: false
     k8s.node.name:
+      enabled: false
+    k8s.node.system_container.name:
       enabled: false
     k8s.persistentvolumeclaim.name:
       enabled: false
@@ -332,6 +532,10 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     k8s.node.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.node.system_container.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -397,6 +601,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.node.name-val"
+    k8s.node.system_container.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.node.system_container.name-val"
     k8s.persistentvolumeclaim.name:
       enabled: true
       metrics_exclude:

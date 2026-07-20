@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
@@ -100,19 +101,34 @@ func (e *traceExporterImp) Shutdown(ctx context.Context) error {
 }
 
 func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	// traceID routing (the default) can route spans directly into per-backend traces in a
+	// single pass, avoiding the SplitTraces + mergeTraces round-trip.
+	if e.routingKey == traceIDRouting {
+		return e.consumeTracesByID(ctx, td)
+	}
+
 	batches := batchpersignal.SplitTraces(td)
 
 	exporterSegregatedTraces := make(exporterTraces)
-	endpoints := make(map[*wrappedExporter]string)
 	for _, batch := range batches {
 		routingID, err := routingIdentifiersFromTraces(batch, e.routingKey, e.routingAttrs)
 		if err != nil {
+			// Release the consumeWG counts already added for backends collected so far;
+			// otherwise Shutdown's consumeWG.Wait() would hang on the skipped Done() calls.
+			for exp := range exporterSegregatedTraces {
+				exp.consumeWG.Done()
+			}
 			return err
 		}
 
 		for rid := range routingID {
-			exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(rid))
+			exp, _, err := e.loadBalancer.exporterAndEndpoint([]byte(rid))
 			if err != nil {
+				// Release the consumeWG counts already added for backends collected so far;
+				// otherwise Shutdown's consumeWG.Wait() would hang on the skipped Done() calls.
+				for exp := range exporterSegregatedTraces {
+					exp.consumeWG.Done()
+				}
 				return err
 			}
 
@@ -122,29 +138,106 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 				exporterSegregatedTraces[exp] = ptrace.NewTraces()
 			}
 			exporterSegregatedTraces[exp] = mergeTraces(exporterSegregatedTraces[exp], batch)
-
-			endpoints[exp] = endpoint
 		}
 	}
 
 	var errs error
-
 	for exp, td := range exporterSegregatedTraces {
-		start := time.Now()
-		err := exp.ConsumeTraces(ctx, td)
-		exp.consumeWG.Done()
-		errs = multierr.Append(errs, err)
-		duration := time.Since(start)
-		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
-		if err == nil {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
-		} else {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
-			e.logger.Debug("failed to export traces", zap.Error(err))
+		errs = multierr.Append(errs, e.exportToBackend(ctx, exp, td))
+	}
+	return errs
+}
+
+// consumeTracesByID routes each span to the backend for its trace ID, accumulating spans
+// directly into one ptrace.Traces per backend. It copies each span once and allocates a
+// single ptrace.Traces per backend, versus one per trace on the SplitTraces path.
+func (e *traceExporterImp) consumeTracesByID(ctx context.Context, td ptrace.Traces) error {
+	// dest holds a backend's in-progress traces and the source resource/scope indices of the
+	// ScopeSpans being appended to, so a contiguous run of the same source scope reuses it.
+	type dest struct {
+		traces ptrace.Traces
+		curSS  ptrace.ScopeSpans
+		rsIdx  int
+		ssIdx  int
+		active bool
+	}
+	dests := make(map[*wrappedExporter]*dest, e.loadBalancer.NumBackends())
+	// Resolving a backend hashes the trace ID under a lock; cache it so spans that share a
+	// trace ID resolve only once per batch.
+	expByTID := make(map[pcommon.TraceID]*wrappedExporter)
+
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		sss := rs.ScopeSpans()
+		for j := 0; j < sss.Len(); j++ {
+			ss := sss.At(j)
+			spans := ss.Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				tid := span.TraceID()
+
+				exp, ok := expByTID[tid]
+				if !ok {
+					var err error
+					exp, _, err = e.loadBalancer.exporterAndEndpoint(tid[:])
+					if err != nil {
+						// Release the consumeWG counts already added for backends collected so
+						// far; otherwise Shutdown's consumeWG.Wait() would hang on the skipped
+						// Done() calls.
+						for exp := range dests {
+							exp.consumeWG.Done()
+						}
+						return err
+					}
+					expByTID[tid] = exp
+				}
+
+				d, ok := dests[exp]
+				if !ok {
+					exp.consumeWG.Add(1)
+					d = &dest{traces: ptrace.NewTraces()}
+					dests[exp] = d
+				}
+
+				// Start a new ResourceSpans/ScopeSpans when the source resource/scope changes.
+				if !d.active || d.rsIdx != i || d.ssIdx != j {
+					destRS := d.traces.ResourceSpans().AppendEmpty()
+					rs.Resource().CopyTo(destRS.Resource())
+					destRS.SetSchemaUrl(rs.SchemaUrl())
+					d.curSS = destRS.ScopeSpans().AppendEmpty()
+					ss.Scope().CopyTo(d.curSS.Scope())
+					d.curSS.SetSchemaUrl(ss.SchemaUrl())
+					d.rsIdx, d.ssIdx, d.active = i, j, true
+				}
+
+				span.CopyTo(d.curSS.Spans().AppendEmpty())
+			}
 		}
 	}
 
+	var errs error
+	for exp, d := range dests {
+		errs = multierr.Append(errs, e.exportToBackend(ctx, exp, d.traces))
+	}
 	return errs
+}
+
+// exportToBackend sends td to one backend, records per-backend telemetry, and signals the
+// exporter's consume wait group.
+func (e *traceExporterImp) exportToBackend(ctx context.Context, exp *wrappedExporter, td ptrace.Traces) error {
+	start := time.Now()
+	err := exp.ConsumeTraces(ctx, td)
+	exp.consumeWG.Done()
+	duration := time.Since(start)
+	e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
+	if err == nil {
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
+	} else {
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
+		e.logger.Debug("failed to export traces", zap.Error(err))
+	}
+	return err
 }
 
 // routingIdentifiersFromTraces reads the traces and determines an identifier that can be used to define a position on the
@@ -200,7 +293,7 @@ func routingIdentifiersFromTraces(td ptrace.Traces, rType routingKey, attrs []st
 			// resource spans
 			rAttr, ok := rs.At(i).Resource().Attributes().Get(a)
 			if ok {
-				rKey.WriteString(rAttr.Str())
+				rKey.WriteString(buildAttributeRoutingKeyValue(a, rAttr))
 				continue
 			}
 
@@ -208,7 +301,7 @@ func routingIdentifiersFromTraces(td ptrace.Traces, rType routingKey, attrs []st
 			ils := rs.At(0).ScopeSpans()
 			iAttr, ok := ils.At(0).Scope().Attributes().Get(a)
 			if ok {
-				rKey.WriteString(iAttr.Str())
+				rKey.WriteString(buildAttributeRoutingKeyValue(a, iAttr))
 				continue
 			}
 
@@ -216,22 +309,22 @@ func routingIdentifiersFromTraces(td ptrace.Traces, rType routingKey, attrs []st
 			spans := ils.At(0).Spans()
 
 			if a == pseudoAttrSpanKind {
-				rKey.WriteString(spans.At(0).Kind().String())
-
+				rKey.WriteString(buildAttributeRoutingKeyStrValue(a, spans.At(0).Kind().String()))
 				continue
 			}
 
 			if a == pseudoAttrSpanName {
-				rKey.WriteString(spans.At(0).Name())
-
+				rKey.WriteString(buildAttributeRoutingKeyStrValue(a, spans.At(0).Name()))
 				continue
 			}
 
 			sAttr, ok := spans.At(0).Attributes().Get(a)
 			if ok {
-				rKey.WriteString(sAttr.Str())
+				rKey.WriteString(buildAttributeRoutingKeyValue(a, sAttr))
 				continue
 			}
+
+			rKey.WriteString(buildAttributeRoutingKey(a))
 		}
 
 		// No matter what, there will be a key here (even if that key is "").

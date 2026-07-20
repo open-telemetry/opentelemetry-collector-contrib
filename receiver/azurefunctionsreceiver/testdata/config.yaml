@@ -2,21 +2,77 @@ azure_functions:
   http:
     endpoint: test:123
   auth: azureauth
-  logs:
-    encoding: azure_encoding
+  triggers:
+    event_hub:
+      logs:
+        - name: logs
+          encoding: azure_encoding
+        - name: raw_logs
+          encoding: azureresourcelogs_encoding
+      include_metadata: true
 
 azure_functions/no_auth:
   http:
     endpoint: test:123
-  logs:
-    encoding: azure_encoding
+  triggers:
+    event_hub:
+      logs:
+        - name: logs
+          encoding: azure_encoding
 
-azure_functions/no_http:
+azure_functions/no_http_config:
   auth: azureauth
-  logs:
-    encoding: azure_encoding
+  triggers:
+    event_hub:
+      logs:
+        - name: logs
+          encoding: azure_encoding
 
-azure_functions/missing_logs_encoding:
-  auth: azureauth
+azure_functions/no_triggers:
   http:
     endpoint: test:123
+  auth: azureauth
+
+azure_functions/no_event_hub:
+  http:
+    endpoint: test:123
+  auth: azureauth
+  triggers: {}
+
+azure_functions/empty_event_hub_logs:
+  http:
+    endpoint: test:123
+  auth: azureauth
+  triggers:
+    event_hub:
+      logs: []
+
+azure_functions/missing_binding_name:
+  http:
+    endpoint: test:123
+  auth: azureauth
+  triggers:
+    event_hub:
+      logs:
+        - encoding: azure_encoding
+
+azure_functions/missing_binding_encoding:
+  http:
+    endpoint: test:123
+  auth: azureauth
+  triggers:
+    event_hub:
+      logs:
+        - name: logs
+
+azure_functions/duplicate_binding_name:
+  http:
+    endpoint: test:123
+  auth: azureauth
+  triggers:
+    event_hub:
+      logs:
+        - name: logs
+          encoding: azure_encoding
+        - name: logs
+          encoding: azureresourcelogs_encoding
