@@ -573,7 +573,7 @@ metrics:
     gauge:
       value_type: double
     attributes: [sqlserver.availability_group.name, sqlserver.replica.name]
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled. Sourced from secondary_lag_seconds in sys.dm_hadr_database_replica_states (SQL Server 2016+).
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.batch.request.rate:
     enabled: true
     description: Number of batch requests received by SQL Server.
