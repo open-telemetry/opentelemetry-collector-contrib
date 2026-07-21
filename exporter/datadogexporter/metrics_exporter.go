@@ -86,6 +86,10 @@ func newMetricsExporter(
 		options = append(options, otlpmetrics.WithInferDeltaInterval())
 	}
 
+	if featuregates.AddUnitsFeatureGate.IsEnabled() {
+		options = append(options, otlpmetrics.WithUnits())
+	}
+
 	tr, err := otlpmetrics.NewDefaultTranslator(params.TelemetrySettings, attrsTranslator, options...)
 	if err != nil {
 		return nil, err
