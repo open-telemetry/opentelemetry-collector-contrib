@@ -10,6 +10,8 @@ import (
 
 type Config struct {
 	ServerConfig configgrpc.ServerConfig `mapstructure:",squash"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ component.Config = (*Config)(nil)
