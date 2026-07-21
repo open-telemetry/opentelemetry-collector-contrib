@@ -4,8 +4,8 @@ go 1.25.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.42.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.156.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.156.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.157.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.157.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.63.0
 	go.opentelemetry.io/collector/component/componenttest v0.157.0

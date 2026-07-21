@@ -10,9 +10,9 @@ require (
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/leodido/go-syslog/v4 v4.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.156.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.156.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.156.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.157.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.157.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.157.0
 	github.com/stretchr/testify v1.11.1
 	github.com/valyala/fastjson v1.6.10
 	go.opentelemetry.io/collector/component v1.63.0

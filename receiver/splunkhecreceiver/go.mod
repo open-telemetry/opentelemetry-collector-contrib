@@ -6,13 +6,13 @@ require (
 	github.com/goccy/go-json v0.10.6
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.156.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension v0.156.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.156.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.156.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.156.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.156.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk v0.156.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.157.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension v0.157.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.157.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.157.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.157.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.157.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk v0.157.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.63.0
 	go.opentelemetry.io/collector/component/componentstatus v0.157.0
@@ -62,10 +62,10 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.156.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.156.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.156.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof v0.156.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.157.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.157.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.157.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof v0.157.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.27 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect

@@ -7,7 +7,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling =
 require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/honeycombio/dynsampler-go v0.6.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.156.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.157.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.63.0
 	go.opentelemetry.io/collector/component/componenttest v0.157.0
