@@ -9,7 +9,7 @@ module-sets:
       # - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
 
   contrib-base:
-    version: v0.156.0
+    version: v0.157.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
