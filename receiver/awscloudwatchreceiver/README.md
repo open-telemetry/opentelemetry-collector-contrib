@@ -33,6 +33,7 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 | `logs`          | *optional* | `Logs`    | Configuration for logs collection. See [Logs Parameters](#logs-parameters).       |
 | `metrics`       | *optional* | `Metrics` | Configuration for metrics collection via GetMetricData. See [Metrics Parameters](#metrics-parameters-getmetricdata--listmetrics). |
 | `storage`       | *optional* | string    | The ID of a storage extension to be used for state persistence.                   |
+| `credentials_provider` | *optional* | string | The ID of an `awscredentialsprovider` extension that supplies AWS credentials (static keys, profile, or STS assume-role) instead of the default SDK credential chain. Note: this is a credentials-provider extension, not a `configauth` authenticator. |
 
 ### Logs Parameters
 

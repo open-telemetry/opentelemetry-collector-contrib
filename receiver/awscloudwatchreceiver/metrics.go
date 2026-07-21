@@ -75,7 +75,7 @@ func newCloudWatchMetricsScraper(cfg *Config, settings receiver.Settings) *cloud
 	}
 }
 
-func (s *cloudWatchMetricsScraper) start(ctx context.Context, _ component.Host) error {
+func (s *cloudWatchMetricsScraper) start(ctx context.Context, host component.Host) error {
 	s.settings.Logger.Debug("initializing CloudWatch client", zap.String("region", s.cfg.Region))
 	opts := []func(*config.LoadOptions) error{config.WithRegion(s.cfg.Region)}
 	if s.cfg.IMDSEndpoint != "" {
@@ -87,6 +87,13 @@ func (s *cloudWatchMetricsScraper) start(ctx context.Context, _ component.Host) 
 	cfg, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
 		return err
+	}
+	creds, err := resolveCredentialsProvider(host, s.cfg.CredentialsProvider)
+	if err != nil {
+		return err
+	}
+	if creds != nil {
+		cfg.Credentials = creds
 	}
 	s.client = cloudwatch.NewFromConfig(cfg)
 	return nil

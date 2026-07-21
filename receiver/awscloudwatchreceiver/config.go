@@ -33,6 +33,11 @@ type Config struct {
 	Logs         LogsConfig    `mapstructure:"logs"`
 	Metrics      MetricsConfig `mapstructure:"metrics"`
 	StorageID    *component.ID `mapstructure:"storage"`
+	// CredentialsProvider optionally references an awscredentialsprovider extension by
+	// component ID. When set, the extension's resolved credentials are used for the
+	// CloudWatch clients instead of the default SDK credential chain. This is not a
+	// configauth authenticator; the extension only supplies an aws.CredentialsProvider.
+	CredentialsProvider *component.ID `mapstructure:"credentials_provider"`
 }
 
 // MetricsConfig is the configuration for the metrics (GetMetricData) portion of this receiver.
