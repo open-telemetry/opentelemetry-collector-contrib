@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -649,6 +650,159 @@ func TestConfigValidation(t *testing.T) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedErr)
 			}
+		})
+	}
+}
+
+func TestDomainSettingsCompressionMerge(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name                      string
+		config                    map[string]any
+		wantLogsCompression       configcompression.Type
+		wantMetricsCompression    configcompression.Type
+		wantTracesCompression     configcompression.Type
+		wantProfilesCompression   configcompression.Type
+		wantLogsAcceptEncoding    string
+		wantMetricsAcceptEncoding string
+		wantTracesAcceptEncoding  string
+	}{
+		{
+			name: "domain_settings_compression_applied_to_signals",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+				"domain_settings": map[string]any{
+					"compression": "zstd",
+				},
+			},
+			wantLogsCompression:       configcompression.TypeZstd,
+			wantMetricsCompression:    configcompression.TypeZstd,
+			wantTracesCompression:     configcompression.TypeZstd,
+			wantProfilesCompression:   configcompression.TypeZstd,
+			wantLogsAcceptEncoding:    gzip.Name,
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  gzip.Name,
+		},
+		{
+			name: "signal_compression_overrides_domain_settings",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+				"domain_settings": map[string]any{
+					"compression": "zstd",
+				},
+				"logs": map[string]any{
+					"compression": "snappy",
+				},
+			},
+			wantLogsCompression:       configcompression.TypeSnappy,
+			wantMetricsCompression:    configcompression.TypeZstd,
+			wantTracesCompression:     configcompression.TypeZstd,
+			wantProfilesCompression:   configcompression.TypeZstd,
+			wantLogsAcceptEncoding:    gzip.Name,
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  gzip.Name,
+		},
+		{
+			name: "default_gzip_when_compression_not_set",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+			},
+			wantLogsCompression:       configcompression.TypeGzip,
+			wantMetricsCompression:    configcompression.TypeGzip,
+			wantTracesCompression:     configcompression.TypeGzip,
+			wantProfilesCompression:   configcompression.TypeGzip,
+			wantLogsAcceptEncoding:    gzip.Name,
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  gzip.Name,
+		},
+		{
+			name: "domain_settings_accept_encoding_applied_to_signals",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+				"domain_settings": map[string]any{
+					"accept_encoding": "snappy",
+				},
+			},
+			wantLogsCompression:       configcompression.TypeGzip,
+			wantMetricsCompression:    configcompression.TypeGzip,
+			wantTracesCompression:     configcompression.TypeGzip,
+			wantProfilesCompression:   configcompression.TypeGzip,
+			wantLogsAcceptEncoding:    "snappy",
+			wantMetricsAcceptEncoding: "snappy",
+			wantTracesAcceptEncoding:  "snappy",
+		},
+		{
+			name: "signal_accept_encoding_overrides_domain_settings",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+				"domain_settings": map[string]any{
+					"accept_encoding": "snappy",
+				},
+				"metrics": map[string]any{
+					"accept_encoding": gzip.Name,
+				},
+			},
+			wantLogsCompression:       configcompression.TypeGzip,
+			wantMetricsCompression:    configcompression.TypeGzip,
+			wantTracesCompression:     configcompression.TypeGzip,
+			wantProfilesCompression:   configcompression.TypeGzip,
+			wantLogsAcceptEncoding:    "snappy",
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  "snappy",
+		},
+		{
+			name: "profiles_compression_from_domain_settings",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+				"domain_settings": map[string]any{
+					"compression": "zstd",
+				},
+				"profiles": map[string]any{
+					"compression": "snappy",
+				},
+			},
+			wantLogsCompression:       configcompression.TypeZstd,
+			wantMetricsCompression:    configcompression.TypeZstd,
+			wantTracesCompression:     configcompression.TypeZstd,
+			wantProfilesCompression:   configcompression.TypeSnappy,
+			wantLogsAcceptEncoding:    gzip.Name,
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  gzip.Name,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conf := confmap.NewFromStringMap(tt.config)
+			cfg := createDefaultConfig().(*Config)
+			require.NoError(t, cfg.Unmarshal(conf))
+
+			assert.Equal(t, tt.wantLogsCompression, cfg.Logs.Compression)
+			assert.Equal(t, tt.wantMetricsCompression, cfg.Metrics.Compression)
+			assert.Equal(t, tt.wantTracesCompression, cfg.Traces.Compression)
+			assert.Equal(t, tt.wantProfilesCompression, cfg.Profiles.Compression)
+			assert.Equal(t, tt.wantLogsAcceptEncoding, cfg.Logs.AcceptEncoding)
+			assert.Equal(t, tt.wantMetricsAcceptEncoding, cfg.Metrics.AcceptEncoding)
+			assert.Equal(t, tt.wantTracesAcceptEncoding, cfg.Traces.AcceptEncoding)
 		})
 	}
 }
