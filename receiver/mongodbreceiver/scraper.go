@@ -37,6 +37,7 @@ var (
 )
 
 const (
+	defaultServiceName          = "unknown_service:mongodb"
 	namespaceKey                = "ns"
 	commandKey                  = "command"
 	commentKey                  = "comment"
@@ -225,6 +226,8 @@ func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now
 	rb.SetServerAddress(serverAddress)
 	rb.SetServerPort(serverPort)
 	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
+	rb.SetServiceName(defaultServiceName)
+	rb.SetServiceNamespace("")
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 }
 
@@ -579,6 +582,8 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 	rb.SetServerAddress(serverAddress)
 	rb.SetServerPort(serverPort)
 	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
+	rb.SetServiceName(defaultServiceName)
+	rb.SetServiceNamespace("")
 	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
