@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
+	lru "github.com/hashicorp/golang-lru/v2/expirable"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.opentelemetry.io/collector/component"
@@ -74,20 +75,23 @@ func generateInstanceID(serverAddress string, serverPort int64) string {
 }
 
 type mongodbScraper struct {
-	logger             *zap.Logger
-	config             *Config
-	client             client
-	secondaryClients   []client
-	mongoVersion       *version.Version
-	mb                 *metadata.MetricsBuilder
-	lb                 *metadata.LogsBuilder
-	prevReplTimestamp  pcommon.Timestamp
-	prevReplCounts     map[string]int64
-	prevTimestamp      pcommon.Timestamp
-	prevFlushTimestamp pcommon.Timestamp
-	prevCounts         map[string]int64
-	prevFlushCount     int64
-	obfuscator         *obfuscator
+	logger                *zap.Logger
+	config                *Config
+	client                client
+	secondaryClients      []client
+	mongoVersion          *version.Version
+	mb                    *metadata.MetricsBuilder
+	lb                    *metadata.LogsBuilder
+	prevReplTimestamp     pcommon.Timestamp
+	prevReplCounts        map[string]int64
+	prevTimestamp         pcommon.Timestamp
+	prevFlushTimestamp    pcommon.Timestamp
+	prevCounts            map[string]int64
+	prevFlushCount        int64
+	obfuscator            *obfuscator
+	planCache             *lru.LRU[string, string]
+	lastScrapeTime        time.Time // upper bound of the last successful scrape window; used by both profiler and getLog paths
+	lastTopQueryExecution time.Time
 }
 
 func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
