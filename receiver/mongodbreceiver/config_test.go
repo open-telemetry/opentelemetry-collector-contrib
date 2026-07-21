@@ -505,7 +505,7 @@ func TestValidateTopQueryCollection(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := baseCfg()
 			tc.mutate(&cfg.TopQueryCollection)
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			if tc.errSubstr == "" {
 				require.NoError(t, err)
 			} else {
@@ -537,7 +537,7 @@ func TestValidateTopQueryCollection_PartialUserConfig(t *testing.T) {
 	require.Equal(t, defaultQueryPlanCacheTTL, cfg.TopQueryCollection.QueryPlanCacheTTL)
 	require.Equal(t, defaultTopQueryCollectionInterval, cfg.TopQueryCollection.CollectionInterval)
 
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 // decodeInto merges a raw config map into an already-populated Config the
