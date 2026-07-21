@@ -69,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 func TestLoadDeprecatedConfig(t *testing.T) {
 	t.Parallel()
 
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-deprecated.yaml"))
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_deprecated.yaml"))
 	require.NoError(t, err)
 
 	tests := []struct {
