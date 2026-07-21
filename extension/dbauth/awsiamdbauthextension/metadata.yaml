@@ -1,0 +1,14 @@
+type: aws_iam_dbauth
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [XSAM]
+
+# This component is a credentials provider for the db_auth framework (see
+# extension/dbauth and config/configdbauth), not a transport authenticator.
+# It mints short-lived AWS RDS IAM database auth tokens and is referenced by
+# receivers via their db_auth block and resolved from the host extension map.
