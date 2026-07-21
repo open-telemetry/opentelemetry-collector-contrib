@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
@@ -79,7 +80,15 @@ func newTracesExporterWithClient(ctx context.Context, cfg *Config, set exporter.
 			}
 			return err
 		},
-		exporterhelper.WithStart(func(context.Context, component.Host) error {
+		exporterhelper.WithStart(func(_ context.Context, _ component.Host) error {
+			if metadata.ExporterAwsxrayDontEmitV0HTTPNetworkConventionsFeatureGate.IsEnabled() &&
+				!metadata.ExporterAwsxrayEmitV1HTTPNetworkConventionsFeatureGate.IsEnabled() {
+				return errors.New("feature gate exporter.awsxray.DontEmitV0HTTPNetworkConventions requires exporter.awsxray.EmitV1HTTPNetworkConventions to also be enabled")
+			}
+			if metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate.IsEnabled() &&
+				!metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate.IsEnabled() {
+				return errors.New("feature gate exporter.awsxray.DontEmitV0DBConventions requires exporter.awsxray.EmitV1DBConventions to also be enabled")
+			}
 			sender.Start(ctx)
 			return nil
 		}),
