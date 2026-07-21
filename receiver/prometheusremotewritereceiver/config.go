@@ -10,7 +10,7 @@ import (
 
 // Config holds common fields and embedded protocol-specific configurations
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 }
 
 var _ component.Config = (*Config)(nil)

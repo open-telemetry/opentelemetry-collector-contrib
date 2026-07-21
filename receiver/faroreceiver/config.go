@@ -12,7 +12,7 @@ import (
 )
 
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 }
 
 var (
@@ -21,7 +21,7 @@ var (
 )
 
 func (cfg *Config) Validate() error {
-	if cfg.NetAddr.Endpoint == "" {
+	if cfg.ServerConfig.NetAddr.Endpoint == "" {
 		return errors.New("must specify endpoint")
 	}
 	return nil
