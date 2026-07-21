@@ -152,6 +152,12 @@ Three metrics report similarity-search activity
 - `postgresql.vector.search.duration`: the cumulative execution time (in seconds) of vector searches.
 - `postgresql.vector.search.rows_returned`: the cumulative number of rows returned by vector searches.
 
+> [!NOTE]
+> The distance function is inferred from the query text alone, so the receiver cannot tell which
+> operator implementation is actually invoked. If the `pg_trgm` extension is also installed, its
+> text-similarity `<->` operator is indistinguishable from pgvector's L2 `<->` operator, so queries
+> such as `ORDER BY text_col <-> 'abc'` may be counted under the `l2` distance function.
+
 #### Insert metrics
 
 These metrics report write activity against pgvector tables

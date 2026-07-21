@@ -5,8 +5,8 @@
 -- tune pg_stat_statements.max accordingly if the statement cache is unusually large.
 WITH vector_tables AS (
     SELECT DISTINCT
-        lower(n.nspname) AS schema_name,
-        lower(c.relname) AS table_name
+        n.nspname AS schema_name,
+        c.relname AS table_name
     FROM pg_class c
     JOIN pg_namespace n ON n.oid = c.relnamespace
     JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped
@@ -18,8 +18,12 @@ insert_statements AS (
     SELECT
         pg_stat_statements.rows AS rows,
         pg_stat_statements.total_exec_time AS total_exec_time,
-        lower(replace(extracted.target[1], '"', '')) AS part1,
-        lower(replace(extracted.target[2], '"', '')) AS part2
+        CASE WHEN extracted.target[1] LIKE '"%'
+             THEN replace(extracted.target[1], '"', '')
+             ELSE lower(extracted.target[1]) END AS part1,
+        CASE WHEN extracted.target[2] LIKE '"%'
+             THEN replace(extracted.target[2], '"', '')
+             ELSE lower(extracted.target[2]) END AS part2
     FROM pg_stat_statements
     JOIN pg_database ON pg_stat_statements.dbid = pg_database.oid
     CROSS JOIN LATERAL (
@@ -31,6 +35,7 @@ insert_statements AS (
     WHERE pg_database.datname = current_database()
         AND pg_stat_statements.query != '<insufficient privilege>'
         AND pg_stat_statements.query NOT LIKE '/* otel-collector-ignore */%'
+        AND EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector')
         AND extracted.target IS NOT NULL
 )
 SELECT

@@ -1,3 +1,9 @@
+-- Distance-function classification is purely text based; it cannot resolve which operator
+-- implementation a query actually invokes. The `(^|[^<])<->(?!>)` pattern excludes pg_trgm's
+-- word-similarity variants (<<->, <->>, <<->>), but pg_trgm also overloads the plain `<->`
+-- operator for text similarity. When both pg_trgm and pgvector are installed, a query such as
+-- `ORDER BY text_col <-> 'abc'` is indistinguishable from a pgvector L2 search and is counted as
+-- `l2`. This limitation is documented in the metric documentation.
 SELECT
   CASE
     WHEN query ~ '<=>'            OR query ~* '\mcosine_distance\M'  THEN 'cosine'
