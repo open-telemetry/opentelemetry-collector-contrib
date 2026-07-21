@@ -1,0 +1,27 @@
+
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	 'sqlserver_cpu_memory' AS [measurement]
+	,REPLACE(@@SERVERNAME,'\',':') AS [sql_instance]
+	,HOST_NAME() AS [computer_name]
+	,100 - y.SystemIdle AS [cpu_utilization]
+	,m.total_physical_memory_kb * 1024 AS [memory_total_bytes]
+	,m.available_physical_memory_kb * 1024 AS [memory_available_bytes]
+FROM (
+	SELECT TOP 1
+		CAST(record AS XML).value('(./Record/SchedulerMonitorEvent/SystemHealth/ProcessUtilization)[1]','int') AS SQLProcessUtilization,
+		CAST(record AS XML).value('(./Record/SchedulerMonitorEvent/SystemHealth/SystemIdle)[1]','int') AS SystemIdle
+	FROM sys.dm_os_ring_buffers
+	WHERE ring_buffer_type = N'RING_BUFFER_SCHEDULER_MONITOR'
+	ORDER BY timestamp DESC
+) y
+CROSS JOIN sys.dm_os_sys_memory m
+WHERE 1=1
+	AND @@SERVERNAME = 'instanceName'
+OPTION(RECOMPILE)

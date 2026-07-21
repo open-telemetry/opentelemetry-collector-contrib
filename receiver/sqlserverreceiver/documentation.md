@@ -280,6 +280,16 @@ Number of CPUs.
 | ---- | ----------- | ---------- | --------- |
 | {CPUs} | Gauge | Int | Development |
 
+### sqlserver.cpu.utilization
+
+System-wide CPU utilization as observed by the SQL Server scheduler monitor. This reflects host-wide CPU usage, not the SQL Server process alone.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
+
 ### sqlserver.cursor.count
 
 Number of cursors by state.
@@ -452,6 +462,40 @@ Total number of deadlocks.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {deadlocks}/s | Gauge | Double | Development |
+
+### sqlserver.disk.io.rate
+
+Rate of read and write operations on disk drives hosting SQL Server database files.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {operations}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | Recommended | - |
+| disk.drive | The drive letter of the disk hosting SQL Server database files. | Any Str | Recommended | - |
+
+### sqlserver.disk.io.throughput
+
+Bytes read from and written to disk drives hosting SQL Server database files per second.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | Recommended | - |
+| disk.drive | The drive letter of the disk hosting SQL Server database files. | Any Str | Recommended | - |
 
 ### sqlserver.error.rate
 
@@ -805,6 +849,22 @@ This metric is only available when the receiver is configured to directly connec
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | page.pool | The type of page pool in the SQL Server buffer manager. | Str: ``cache``, ``total``, ``target``, ``database``, ``stolen``, ``reserved``, ``free`` | Recommended | - |
+
+### sqlserver.memory.physical
+
+Physical memory on the host as observed by SQL Server, broken down by state (total or available).
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| memory.state | The state of the physical memory on the host. | Str: ``total``, ``available`` | Recommended | - |
 
 ### sqlserver.memory.usage
 

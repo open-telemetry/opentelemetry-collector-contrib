@@ -1,0 +1,10 @@
+[
+  {
+    "measurement": "sqlserver_cpu_memory",
+    "sql_instance": "testhost",
+    "computer_name": "testhost",
+    "cpu_utilization": "42.5",
+    "memory_total_bytes": "17179869184",
+    "memory_available_bytes": "8589934592"
+  }
+]

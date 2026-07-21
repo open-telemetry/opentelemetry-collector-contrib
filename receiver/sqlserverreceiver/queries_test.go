@@ -91,6 +91,30 @@ func TestQueryContents(t *testing.T) {
 			getQuery:                 getSQLServerIndexPhysicalStatsQuery,
 			expectedQueryValFilename: "indexPhysicalQueryWithInstanceName.txt",
 		},
+		{
+			name:                     "Test CPU memory query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerCPUMemoryQuery,
+			expectedQueryValFilename: "cpuMemoryQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test CPU memory query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerCPUMemoryQuery,
+			expectedQueryValFilename: "cpuMemoryQueryWithInstanceName.txt",
+		},
+		{
+			name:                     "Test disk IO query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerDiskIOQuery,
+			expectedQueryValFilename: "diskIOQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test disk IO query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerDiskIOQuery,
+			expectedQueryValFilename: "diskIOQueryWithInstanceName.txt",
+		},
 	}
 
 	for _, tt := range queryTests {

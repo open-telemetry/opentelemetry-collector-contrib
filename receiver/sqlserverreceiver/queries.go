@@ -1270,3 +1270,83 @@ func getSQLServerIndexPhysicalStatsQuery(instanceName string) string {
 	r := strings.NewReplacer("{filter_instance_name}", "")
 	return r.Replace(sqlServerIndexPhysicalStatsQuery)
 }
+
+// sqlServerCPUMemoryQuery collects host-level CPU utilization and physical memory from
+// sys.dm_os_ring_buffers and sys.dm_os_sys_memory as observed by SQL Server.
+const sqlServerCPUMemoryQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	 'sqlserver_cpu_memory' AS [measurement]
+	,REPLACE(@@SERVERNAME,'\',':') AS [sql_instance]
+	,HOST_NAME() AS [computer_name]
+	,100 - y.SystemIdle AS [cpu_utilization]
+	,m.total_physical_memory_kb * 1024 AS [memory_total_bytes]
+	,m.available_physical_memory_kb * 1024 AS [memory_available_bytes]
+FROM (
+	SELECT TOP 1
+		CAST(record AS XML).value('(./Record/SchedulerMonitorEvent/SystemHealth/ProcessUtilization)[1]','int') AS SQLProcessUtilization,
+		CAST(record AS XML).value('(./Record/SchedulerMonitorEvent/SystemHealth/SystemIdle)[1]','int') AS SystemIdle
+	FROM sys.dm_os_ring_buffers
+	WHERE ring_buffer_type = N'RING_BUFFER_SCHEDULER_MONITOR'
+	ORDER BY timestamp DESC
+) y
+CROSS JOIN sys.dm_os_sys_memory m
+WHERE 1=1
+{filter_instance_name}
+OPTION(RECOMPILE)
+`
+
+func getSQLServerCPUMemoryQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerCPUMemoryQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerCPUMemoryQuery)
+}
+
+// sqlServerDiskIOQuery collects per-drive read/write IOPS and throughput for SQL Server database files.
+const sqlServerDiskIOQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	 'sqlserver_disk_io' AS [measurement]
+	,REPLACE(@@SERVERNAME,'\',':') AS [sql_instance]
+	,HOST_NAME() AS [computer_name]
+	,LEFT(mf.physical_name, 1) AS [disk_drive]
+	,SUM(vfs.num_of_reads) AS [read_ops]
+	,SUM(vfs.num_of_writes) AS [write_ops]
+	,SUM(vfs.num_of_bytes_read) AS [read_bytes]
+	,SUM(vfs.num_of_bytes_written) AS [write_bytes]
+	,SUM(vfs.sample_ms) / 1000.0 AS [sample_seconds]
+FROM sys.dm_io_virtual_file_stats(NULL, NULL) vfs
+INNER JOIN sys.master_files mf ON vfs.database_id = mf.database_id AND vfs.file_id = mf.file_id
+WHERE 1=1
+{filter_instance_name}
+GROUP BY LEFT(mf.physical_name, 1)
+OPTION(RECOMPILE)
+`
+
+func getSQLServerDiskIOQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerDiskIOQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerDiskIOQuery)
+}

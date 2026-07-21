@@ -1,0 +1,157 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: testhost
+    scopeMetrics:
+      - metrics:
+          - description: Rate of read and write operations on disk drives hosting SQL Server database files.
+            gauge:
+              dataPoints:
+                - asDouble: 41.15
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk.drive
+                      value:
+                        stringValue: C
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 22.63
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: disk.drive
+                      value:
+                        stringValue: C
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.disk.io.rate
+            unit: '{operations}/s'
+          - description: Bytes read from and written to disk drives hosting SQL Server database files per second.
+            gauge:
+              dataPoints:
+                - asDouble: 4.194304e+06
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk.drive
+                      value:
+                        stringValue: C
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 2.097152e+06
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: disk.drive
+                      value:
+                        stringValue: C
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.disk.io.throughput
+            unit: By/s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: testhost
+    scopeMetrics:
+      - metrics:
+          - description: Rate of read and write operations on disk drives hosting SQL Server database files.
+            gauge:
+              dataPoints:
+                - asDouble: 32.92
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk.drive
+                      value:
+                        stringValue: D
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 18.106666666666666
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: disk.drive
+                      value:
+                        stringValue: D
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.disk.io.rate
+            unit: '{operations}/s'
+          - description: Bytes read from and written to disk drives hosting SQL Server database files per second.
+            gauge:
+              dataPoints:
+                - asDouble: 8.388608e+06
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk.drive
+                      value:
+                        stringValue: D
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 4.194304e+06
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: disk.drive
+                      value:
+                        stringValue: D
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.disk.io.throughput
+            unit: By/s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
