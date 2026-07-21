@@ -514,7 +514,7 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 		{
 			name:              "empty config",
 			cfg:               &Config{},
-			excludeMetricsLen: 11,
+			excludeMetricsLen: 10,
 		},
 		{
 			name: "existing exclude config",
@@ -525,7 +525,7 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 					},
 				},
 			},
-			excludeMetricsLen: 12,
+			excludeMetricsLen: 11,
 		},
 		{
 			name: "existing empty exclude config",
