@@ -5,10 +5,12 @@ package opensearchexporter
 
 import (
 	"errors"
+	"net"
 	"testing"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -57,6 +59,38 @@ func TestTraceProcessItemFailure(t *testing.T) {
 				t.Errorf("expected %d errors, got %d", tt.expectedErrs, len(tbi.errs))
 			}
 		})
+	}
+}
+
+func TestTraceOnIndexerErrorIsRetryable(t *testing.T) {
+	tbi := &traceBulkIndexer{}
+	tbi.onIndexerError(t.Context(), &net.OpError{Op: "dial", Err: errors.New("connection refused")})
+	err := tbi.joinedError()
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if consumererror.IsPermanent(err) {
+		t.Error("indexer-level transport error must be retryable, not permanent")
+	}
+}
+
+func TestTraceProcessItemFailureTransportErrorRetryable(t *testing.T) {
+	tbi := &traceBulkIndexer{}
+	tbi.processItemFailure(opensearchapi.BulkRespItem{Status: 0}, &net.OpError{Op: "read", Err: errors.New("i/o timeout")}, ptrace.NewTraces())
+	if len(tbi.errs) != 1 {
+		t.Fatalf("expected 1 error, got %d", len(tbi.errs))
+	}
+	if consumererror.IsPermanent(tbi.errs[0]) {
+		t.Error("per-item transport error must be retryable, not permanent")
+	}
+
+	tbi2 := &traceBulkIndexer{}
+	tbi2.processItemFailure(opensearchapi.BulkRespItem{Status: 0}, errors.New("encode failed"), ptrace.NewTraces())
+	if len(tbi2.errs) != 1 {
+		t.Fatalf("expected 1 error, got %d", len(tbi2.errs))
+	}
+	if !consumererror.IsPermanent(tbi2.errs[0]) {
+		t.Error("encoding error must remain permanent")
 	}
 }
 

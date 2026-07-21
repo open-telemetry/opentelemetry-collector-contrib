@@ -5,10 +5,12 @@ package opensearchexporter
 
 import (
 	"errors"
+	"net"
 	"testing"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -57,6 +59,41 @@ func TestProcessItemFailure(t *testing.T) {
 				t.Errorf("expected %d errors, got %d", tt.expectedErrs, len(lbi.errs))
 			}
 		})
+	}
+}
+
+func TestOnIndexerErrorIsRetryable(t *testing.T) {
+	lbi := &logBulkIndexer{}
+	// A transport failure surfaces through the bulk indexer's OnError callback.
+	lbi.onIndexerError(t.Context(), &net.OpError{Op: "dial", Err: errors.New("connection refused")})
+	err := lbi.joinedError()
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if consumererror.IsPermanent(err) {
+		t.Error("indexer-level transport error must be retryable, not permanent (otherwise retry_on_failure silently drops the batch)")
+	}
+}
+
+func TestProcessItemFailureTransportErrorRetryable(t *testing.T) {
+	// A per-item transport error (net.OpError) with no HTTP status is transient.
+	lbi := &logBulkIndexer{}
+	lbi.processItemFailure(opensearchapi.BulkRespItem{Status: 0}, &net.OpError{Op: "read", Err: errors.New("i/o timeout")}, plog.NewLogs())
+	if len(lbi.errs) != 1 {
+		t.Fatalf("expected 1 error, got %d", len(lbi.errs))
+	}
+	if consumererror.IsPermanent(lbi.errs[0]) {
+		t.Error("per-item transport error must be retryable, not permanent")
+	}
+
+	// A genuine encoding error (never sent) stays permanent.
+	lbi2 := &logBulkIndexer{}
+	lbi2.processItemFailure(opensearchapi.BulkRespItem{Status: 0}, errors.New("encode failed"), plog.NewLogs())
+	if len(lbi2.errs) != 1 {
+		t.Fatalf("expected 1 error, got %d", len(lbi2.errs))
+	}
+	if !consumererror.IsPermanent(lbi2.errs[0]) {
+		t.Error("encoding error must remain permanent")
 	}
 }
 
