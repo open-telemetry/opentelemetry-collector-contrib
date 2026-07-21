@@ -9,7 +9,7 @@ import (
 )
 
 type Config struct {
-	configgrpc.ServerConfig `mapstructure:",squash"`
+	ServerConfig configgrpc.ServerConfig `mapstructure:",squash"`
 }
 
 var _ component.Config = (*Config)(nil)
