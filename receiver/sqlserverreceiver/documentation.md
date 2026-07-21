@@ -284,7 +284,7 @@ This metric is only available when the receiver is configured to directly connec
 
 Number of seconds the secondary replica is lagging behind the primary replica, measured as the time between the most recent hardened log block on the primary and on the secondary.
 
-This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled. Sourced from secondary_lag_seconds in sys.dm_hadr_database_replica_states (SQL Server 2016+).
+This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
