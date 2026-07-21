@@ -26,8 +26,8 @@ github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjR
 github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-go.opentelemetry.io/collector/client v1.62.1-0.20260709230849-fe96e04e8916 h1:oZxBdeB1C7cH+K/NwZPvIBwQBbnjD2FZ3OB8Qtew1MA=
-go.opentelemetry.io/collector/client v1.62.1-0.20260709230849-fe96e04e8916/go.mod h1:iao8KfxMeND0zdp+PcHGPY9r1BDgS+OppY7RKLlUeUU=
+go.opentelemetry.io/collector/client v1.62.1-0.20260720221237-c82363844ef5 h1:0pWTXaQLDNV9UWwuArEx+h3IXS71+35bNto9jkpooEM=
+go.opentelemetry.io/collector/client v1.62.1-0.20260720221237-c82363844ef5/go.mod h1:iao8KfxMeND0zdp+PcHGPY9r1BDgS+OppY7RKLlUeUU=
 go.opentelemetry.io/collector/consumer v1.62.0 h1:nJzGs8soiciZvGhiA4OYwPRRCrTsXnNHrmzi/jaT3ck=
 go.opentelemetry.io/collector/consumer v1.62.0/go.mod h1:uNbRHJ9LqgHxcWdLTvRTO4K3SSGZop1qlHKfV5lUvGg=
 go.opentelemetry.io/collector/featuregate v1.62.0 h1:pYY7RlulSCTOS9mFWxasMLwYJCfNXHtnOkZlv3jg/V4=

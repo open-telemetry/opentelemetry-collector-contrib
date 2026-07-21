@@ -17,13 +17,13 @@ require (
 	github.com/twmb/murmur3 v1.1.8
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8
 	github.com/zeebo/xxh3 v1.1.0
-	go.opentelemetry.io/collector/client v1.62.1-0.20260709230849-fe96e04e8916
-	go.opentelemetry.io/collector/component v1.62.1-0.20260709230849-fe96e04e8916
-	go.opentelemetry.io/collector/component/componenttest v0.156.1-0.20260709230849-fe96e04e8916
-	go.opentelemetry.io/collector/featuregate v1.62.1-0.20260709230849-fe96e04e8916
-	go.opentelemetry.io/collector/pdata v1.62.1-0.20260709230849-fe96e04e8916
-	go.opentelemetry.io/collector/pdata/pprofile v0.156.1-0.20260709230849-fe96e04e8916
-	go.opentelemetry.io/collector/pdata/xpdata v0.156.1-0.20260709230849-fe96e04e8916
+	go.opentelemetry.io/collector/client v1.62.1-0.20260720221237-c82363844ef5
+	go.opentelemetry.io/collector/component v1.62.1-0.20260720221237-c82363844ef5
+	go.opentelemetry.io/collector/component/componenttest v0.156.1-0.20260720221237-c82363844ef5
+	go.opentelemetry.io/collector/featuregate v1.62.1-0.20260720221237-c82363844ef5
+	go.opentelemetry.io/collector/pdata v1.62.1-0.20260720221237-c82363844ef5
+	go.opentelemetry.io/collector/pdata/pprofile v0.156.1-0.20260720221237-c82363844ef5
+	go.opentelemetry.io/collector/pdata/xpdata v0.156.1-0.20260720221237-c82363844ef5
 	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/otel/trace v1.44.0
 	go.uber.org/goleak v1.3.0

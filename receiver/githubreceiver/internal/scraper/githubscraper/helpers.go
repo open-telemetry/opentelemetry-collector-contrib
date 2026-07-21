@@ -250,8 +250,9 @@ func (ghs *githubScraper) getMergedPullRequests(
 
 		// Process PRs in reverse chronological order (most recent first)
 		// Stop immediately when we hit a PR older than our cutoff
-		for i := range prs.Repository.PullRequests.Nodes {
-			pr := &prs.Repository.PullRequests.Nodes[i]
+		nodes := prs.Repository.PullRequests.Nodes
+		for i := len(nodes) - 1; i >= 0; i-- {
+			pr := &nodes[i]
 
 			// Check if this PR is older than our cutoff date using the Before
 			// method, meaning; earlier in time which is older than our cutoff.
