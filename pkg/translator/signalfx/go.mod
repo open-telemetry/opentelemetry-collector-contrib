@@ -24,7 +24,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.157.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260721190914-bc198f44aa6e // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.157.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.157.1-0.20260721190914-bc198f44aa6e // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
