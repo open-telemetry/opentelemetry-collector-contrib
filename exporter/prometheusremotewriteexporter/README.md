@@ -110,7 +110,7 @@ exporters:
 
 Several helper files are leveraged to provide additional capabilities automatically:
 
-- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md), note that the exporter only supports `snappy` compression type as it's [required](https://prometheus.io/docs/specs/remote_write_spec/#protocol) by the Prometheus remote write protocol.
+- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md), note that the exporter only supports `snappy` compression type as it's [required](https://prometheus.io/docs/specs/remote_write_spec/#protocol) by the Prometheus remote write protocol. The top-level `timeout` setting is shared by both the HTTP client and the exporter retry helper, so they cannot be configured independently. Enable the `exporter.prometheusremotewritexporter.UseHTTPConfigField` feature gate to configure HTTP client settings under an `http` block instead. See [#46209](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46209).
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - [Retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), note that the exporter doesn't support `sending_queue` but provides `remote_write_queue`.
 
