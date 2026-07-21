@@ -24,6 +24,8 @@ import (
 type localFileStorage struct {
 	cfg    *Config
 	logger *zap.Logger
+	// compactFunc allows tests to inject a custom compaction function to simulate panics
+	compactFunc func(*fileStorageClient, string, time.Duration, int64) error
 }
 
 // Ensure this storage extension implements the appropriate interface
@@ -43,10 +45,15 @@ func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extensio
 			}
 		}
 	}
-	return &localFileStorage{
+	lfs := &localFileStorage{
 		cfg:    config,
 		logger: logger,
-	}, nil
+	}
+	// Default compaction function - can be overridden in tests
+	lfs.compactFunc = func(c *fileStorageClient, dir string, timeout time.Duration, maxTxSize int64) error {
+		return c.Compact(dir, timeout, maxTxSize)
+	}
+	return lfs, nil
 }
 
 // Start runs cleanup if configured
@@ -85,6 +92,7 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 		lfs.logger.Warn("filename too long, using hashed filename instead",
 			zap.String("originalFile", absoluteName), zap.String("component", rawName), zap.String("hashedFileName", hashedName))
 		client, err = lfs.createClientWithPanicRecovery(hashedName)
+		absoluteName = hashedName
 	}
 
 	// return error if still not successful
@@ -92,11 +100,42 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 		return nil, err
 	}
 
-	// return if compaction is not required
+	// Perform on_start compaction if configured
 	if lfs.cfg.Compaction.OnStart {
-		compactionErr := lfs.compactWithPanicRecovery(client, absoluteName)
+		// Wrap compaction with panic recovery. If compaction panics (e.g., due to database corruption),
+		// close the corrupted client and recreate through the existing backup-and-recreate flow.
+		compactionErr := func() (err error) {
+			defer func() {
+				if r := recover(); r != nil {
+					lfs.logger.Warn("panic during on_start compaction, database may be corrupted",
+						zap.String("file", absoluteName),
+						zap.Any("panic", r))
+
+					// Close the corrupted database to release resources
+					if closeErr := client.Close(context.Background()); closeErr != nil {
+						lfs.logger.Error("failed to close corrupted database after compaction panic", zap.Error(closeErr))
+					}
+
+					// Reuse the existing backup-and-recreate helper if recreate is enabled
+					if lfs.cfg.Recreate {
+						client, err = lfs.backupAndRecreateClient(absoluteName)
+					} else {
+						// If recreate is disabled, set client to nil and return an error
+						client = nil
+						err = fmt.Errorf("compaction failed due to panic, database may be corrupted: %v", r)
+					}
+				}
+			}()
+
+			return lfs.compactFunc(client, lfs.cfg.Compaction.Directory, lfs.cfg.Timeout, lfs.cfg.Compaction.MaxTransactionSize)
+		}()
+
 		if compactionErr != nil {
 			lfs.logger.Error("compaction on start failed", zap.Error(compactionErr))
+			// If we failed to recreate after a panic, return the error
+			if client == nil {
+				return nil, compactionErr
+			}
 		}
 	}
 
@@ -120,20 +159,8 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 				zap.String("file", absoluteName),
 				zap.Any("panic", r))
 
-			// Use a filename-safe timestamp so recreate works on Windows too.
-			timestamp := time.Now().UTC().Format("20060102T150405.000Z0700")
-			backupName := absoluteName + "." + timestamp + ".backup"
-			if renameErr := os.Rename(absoluteName, backupName); renameErr != nil {
-				err = fmt.Errorf("error renaming corrupted database. Please remove %s manually: %w", absoluteName, renameErr)
-				return
-			}
-
-			lfs.logger.Info("Corrupted database file renamed",
-				zap.String("original", absoluteName),
-				zap.String("backup", backupName))
-
-			// Try to create client again with fresh database
-			client, err = newClient(lfs.logger, absoluteName, lfs.cfg)
+			// Use the helper function to backup and recreate
+			client, err = lfs.backupAndRecreateClient(absoluteName)
 		}
 	}()
 
@@ -142,22 +169,21 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 	return client, err
 }
 
-// compactWithPanicRecovery wraps the Compact call with panic recovery to handle
-// database corruption that may occur during compaction (e.g., after unexpected power loss).
-// This prevents collector crashes but does not automatically recreate the database.
-func (lfs *localFileStorage) compactWithPanicRecovery(client *fileStorageClient, absoluteName string) (err error) {
-	// Handle panics during compaction
-	defer func() {
-		if r := recover(); r != nil {
-			lfs.logger.Error("panic during compaction, database may be corrupted",
-				zap.String("file", absoluteName),
-				zap.Any("panic", r))
-			err = fmt.Errorf("compaction failed due to panic, database may be corrupted: %v", r)
-		}
-	}()
+// backupAndRecreateClient backs up the corrupted database and creates a fresh one
+func (lfs *localFileStorage) backupAndRecreateClient(absoluteName string) (*fileStorageClient, error) {
+	// Use a filename-safe timestamp so recreate works on Windows too.
+	timestamp := time.Now().UTC().Format("20060102T150405.000Z0700")
+	backupName := absoluteName + "." + timestamp + ".backup"
+	if renameErr := os.Rename(absoluteName, backupName); renameErr != nil {
+		return nil, fmt.Errorf("error renaming corrupted database. Please remove %s manually: %w", absoluteName, renameErr)
+	}
 
-	// Attempt compaction
-	return client.Compact(lfs.cfg.Compaction.Directory, lfs.cfg.Timeout, lfs.cfg.Compaction.MaxTransactionSize)
+	lfs.logger.Info("Corrupted database file renamed",
+		zap.String("original", absoluteName),
+		zap.String("backup", backupName))
+
+	// Try to create client again with fresh database
+	return newClient(lfs.logger, absoluteName, lfs.cfg)
 }
 
 func kindString(k component.Kind) string {
