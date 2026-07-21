@@ -7,6 +7,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-version v1.9.0
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.157.0
