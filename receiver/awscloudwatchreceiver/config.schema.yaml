@@ -49,6 +49,9 @@ $defs:
     description: 'MetricQuery defines a single CloudWatch metric to scrape via GetMetricData. When Stats is empty all four statistics (Sum, SampleCount, Minimum, Maximum) are fetched and combined into an OpenTelemetry Summary metric aligned with the CloudWatch Metric Streams OpenTelemetry 1.0.0 format. When Stats is set, each named statistic is fetched and emitted as a separate Gauge data point on the same metric, with a "stat" attribute identifying the statistic. CloudWatch statistic names: Sum, Average, Minimum, Maximum, SampleCount, p99, p95, etc.'
     type: object
     properties:
+      account_id:
+        description: AccountID is the source account for this metric in cross-account monitoring setups. If not a configured source account, the metric is dropped.
+        type: string
       dimensions:
         type: object
         additionalProperties:
@@ -86,10 +89,20 @@ $defs:
     description: MetricsDiscoveryConfig configures automatic discovery of metrics via ListMetrics. Discovered metrics are then scraped with GetMetricData. Mutually exclusive with metrics (explicit list).
     type: object
     properties:
+      account_identifiers:
+        description: AccountIdentifiers restricts cross-account discovery to specific source account IDs. Requires IncludeLinkedAccounts. When unset, metrics from all linked accounts are discovered.
+        type: array
+        items:
+          type: string
       filters:
         x-optional: true
         $ref: metrics_discovery_filters
+      include_linked_accounts:
+        description: IncludeLinkedAccounts, when true and run from a monitoring account, discovers metrics from linked source accounts.
+        x-pointer: true
+        type: boolean
       limit:
+        description: Limit is the maximum number of metrics to discover. Defaults to 100. In cross-account setups, the limit is applied per source account. Lower values may cap API costs but may cause incomplete data.
         type: integer
       stats:
         description: Stats selects which CloudWatch statistics to fetch for all discovered metrics. Same semantics as MetricQuery.Stats.
