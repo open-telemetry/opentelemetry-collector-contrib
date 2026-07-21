@@ -256,6 +256,17 @@ SELECT DISTINCT
 			,'Query Store logical reads'
 			,'Query Store logical writes'
 			,'Execution Errors'
+			,'Active cursors'
+			,'Cached Cursor Counts'
+			,'Number of active cursor plans'
+			,'Cursor memory usage'
+			,'Cursor Requests/sec'
+			,'CLR Execution'
+			,'Tasks Running'
+			,'Task Limit Reached'
+			,'Tasks Started/sec'
+			,'Tasks Aborted/sec'
+			,'Stored Procedures Invoked/sec'
 		) OR (
 			spi.[object_name] LIKE '%User Settable%'
 			OR spi.[object_name] LIKE '%SQL Errors%'
@@ -1089,6 +1100,43 @@ ELSE
 {filter_instance_name};
 `
 
+// sqlServerWorkerThreadsQuery queries sys.dm_os_schedulers for worker thread counts.
+const sqlServerWorkerThreadsQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	 'sqlserver_worker_threads' AS [measurement]
+	,REPLACE(@@SERVERNAME,'\',':') AS [sql_instance]
+	,HOST_NAME() AS [computer_name]
+	,si.max_workers_count AS [total_threads]
+	,SUM(s.active_workers_count) AS [active_threads]
+	,si.max_workers_count - SUM(s.active_workers_count) AS [available_threads]
+	,SUM(s.runnable_tasks_count) AS [waiting_for_cpu_threads]
+	,SUM(s.work_queue_count) AS [requests_waiting_for_threads]
+FROM sys.dm_os_schedulers s
+CROSS JOIN sys.dm_os_sys_info si
+WHERE s.status = 'VISIBLE ONLINE'
+{filter_instance_name}
+GROUP BY si.max_workers_count
+OPTION(RECOMPILE)
+`
+
+func getSQLServerWorkerThreadsQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerWorkerThreadsQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerWorkerThreadsQuery)
+}
+
 func getSQLServerWaitStatsQuery(instanceName string) string {
 	if instanceName != "" {
 		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
@@ -1098,6 +1146,53 @@ func getSQLServerWaitStatsQuery(instanceName string) string {
 
 	r := strings.NewReplacer("{filter_instance_name}", "")
 	return r.Replace(sqlServerWaitStatsQuery)
+}
+
+const sqlServerAvailabilityGroupQuery = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('IsHadrEnabled') != 1 RETURN;
+
+DECLARE
+	 @SqlStatement AS nvarchar(max)
+	,@MajorMinorVersion AS int = CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),4) AS int) * 100 + CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),3) AS int)
+	,@SecondaryLagCol AS nvarchar(max) = N'NULL'
+
+IF @MajorMinorVersion >= 1300 BEGIN
+	SET @SecondaryLagCol = N'sec.[secondary_lag_seconds]'
+END
+
+SET @SqlStatement = N'
+SELECT
+	ag.[name]                                               AS [availability_group_name]
+	,DB_NAME(sec.[database_id])                             AS [database_name]
+	,ar.[replica_server_name]                               AS [replica_name]
+	,sec.[log_send_queue_size]                              AS [log_send_queue_size]
+	,sec.[log_send_rate]                                    AS [log_send_rate]
+	,sec.[redo_queue_size]                                  AS [redo_queue_size]
+	,sec.[redo_rate]                                        AS [redo_rate]
+	,' + @SecondaryLagCol + N'                              AS [secondary_lag]
+	,REPLACE(@@SERVERNAME,''\'','':'')                      AS [sql_instance]
+	,HOST_NAME()                                            AS [computer_name]
+FROM sys.dm_hadr_database_replica_states AS sec WITH (NOLOCK)
+INNER JOIN sys.availability_replicas AS ar WITH (NOLOCK)
+	ON sec.[replica_id] = ar.[replica_id]
+INNER JOIN sys.availability_groups AS ag WITH (NOLOCK)
+	ON ar.[group_id] = ag.[group_id]
+WHERE sec.[is_primary_replica] = 0{filter_instance_name}
+ORDER BY ag.[name], ar.[replica_server_name], DB_NAME(sec.[database_id]);'
+
+EXEC sp_executesql @SqlStatement;
+`
+
+func getSQLServerAvailabilityGroupQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\n\tAND @@SERVERNAME = ''%s''", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerAvailabilityGroupQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerAvailabilityGroupQuery)
 }
 
 // sqlServerIndexPhysicalStatsQuery collects per-index physical stats (fragmentation, page count,
