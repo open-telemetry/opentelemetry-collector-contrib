@@ -101,7 +101,7 @@ attributes:
     requirement_level: recommended
     enum: [read, write]
   disk.drive:
-    description: The drive letter of the disk hosting SQL Server database files.
+    description: The first character of the database file path. On Windows this is the drive letter (e.g. C); on Linux this is always /.
     type: string
     requirement_level: recommended
   file_type:
@@ -602,7 +602,7 @@ metrics:
       input_type: string
   sqlserver.cpu.utilization:
     enabled: false
-    description: System-wide CPU utilization as observed by the SQL Server scheduler monitor. This reflects host-wide CPU usage, not the SQL Server process alone.
+    description: System-wide CPU utilization as observed by the SQL Server scheduler monitor, expressed as a percentage (0–100). This reflects host-wide CPU usage, not the SQL Server process alone.
     stability: development
     unit: "%"
     gauge:
@@ -740,22 +740,26 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-  sqlserver.disk.io.rate:
+  sqlserver.disk.io.bytes:
     enabled: false
-    description: Rate of read and write operations on disk drives hosting SQL Server database files.
+    description: Total bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.
     stability: development
-    unit: "{operations}/s"
-    gauge:
-      value_type: double
+    unit: By
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
     attributes: [direction, disk.drive]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
-  sqlserver.disk.io.throughput:
+  sqlserver.disk.io.operations:
     enabled: false
-    description: Bytes read from and written to disk drives hosting SQL Server database files per second.
+    description: Total read and write operations on disk drives hosting SQL Server database files since SQL Server last started.
     stability: development
-    unit: "By/s"
-    gauge:
-      value_type: double
+    unit: "{operations}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
     attributes: [direction, disk.drive]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
   sqlserver.error.rate:

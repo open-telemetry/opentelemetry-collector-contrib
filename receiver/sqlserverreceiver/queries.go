@@ -1290,7 +1290,6 @@ SELECT
 	,m.available_physical_memory_kb * 1024 AS [memory_available_bytes]
 FROM (
 	SELECT TOP 1
-		CAST(record AS XML).value('(./Record/SchedulerMonitorEvent/SystemHealth/ProcessUtilization)[1]','int') AS SQLProcessUtilization,
 		CAST(record AS XML).value('(./Record/SchedulerMonitorEvent/SystemHealth/SystemIdle)[1]','int') AS SystemIdle
 	FROM sys.dm_os_ring_buffers
 	WHERE ring_buffer_type = N'RING_BUFFER_SCHEDULER_MONITOR'
@@ -1331,7 +1330,6 @@ SELECT
 	,SUM(vfs.num_of_writes) AS [write_ops]
 	,SUM(vfs.num_of_bytes_read) AS [read_bytes]
 	,SUM(vfs.num_of_bytes_written) AS [write_bytes]
-	,SUM(vfs.sample_ms) / 1000.0 AS [sample_seconds]
 FROM sys.dm_io_virtual_file_stats(NULL, NULL) vfs
 INNER JOIN sys.master_files mf ON vfs.database_id = mf.database_id AND vfs.file_id = mf.file_id
 WHERE 1=1

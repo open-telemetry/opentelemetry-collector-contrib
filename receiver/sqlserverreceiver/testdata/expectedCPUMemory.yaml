@@ -24,7 +24,7 @@ resourceMetrics:
             stringValue: testhost
     scopeMetrics:
       - metrics:
-          - description: System-wide CPU utilization as observed by the SQL Server scheduler monitor. This reflects host-wide CPU usage, not the SQL Server process alone.
+          - description: System-wide CPU utilization as observed by the SQL Server scheduler monitor, expressed as a percentage (0–100). This reflects host-wide CPU usage, not the SQL Server process alone.
             gauge:
               dataPoints:
                 - asDouble: 42.5

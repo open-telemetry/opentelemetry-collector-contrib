@@ -282,7 +282,7 @@ Number of CPUs.
 
 ### sqlserver.cpu.utilization
 
-System-wide CPU utilization as observed by the SQL Server scheduler monitor. This reflects host-wide CPU usage, not the SQL Server process alone.
+System-wide CPU utilization as observed by the SQL Server scheduler monitor, expressed as a percentage (0–100). This reflects host-wide CPU usage, not the SQL Server process alone.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -463,39 +463,39 @@ Total number of deadlocks.
 | ---- | ----------- | ---------- | --------- |
 | {deadlocks}/s | Gauge | Double | Development |
 
-### sqlserver.disk.io.rate
+### sqlserver.disk.io.bytes
 
-Rate of read and write operations on disk drives hosting SQL Server database files.
+Total bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {operations}/s | Gauge | Double | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | Recommended | - |
-| disk.drive | The drive letter of the disk hosting SQL Server database files. | Any Str | Recommended | - |
+| disk.drive | The first character of the database file path. On Windows this is the drive letter (e.g. C); on Linux this is always /. | Any Str | Recommended | - |
 
-### sqlserver.disk.io.throughput
+### sqlserver.disk.io.operations
 
-Bytes read from and written to disk drives hosting SQL Server database files per second.
+Total read and write operations on disk drives hosting SQL Server database files since SQL Server last started.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By/s | Gauge | Double | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | Recommended | - |
-| disk.drive | The drive letter of the disk hosting SQL Server database files. | Any Str | Recommended | - |
+| disk.drive | The first character of the database file path. On Windows this is the drive letter (e.g. C); on Linux this is always /. | Any Str | Recommended | - |
 
 ### sqlserver.error.rate
 

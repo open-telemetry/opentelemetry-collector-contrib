@@ -24,10 +24,12 @@ resourceMetrics:
             stringValue: testhost
     scopeMetrics:
       - metrics:
-          - description: Rate of read and write operations on disk drives hosting SQL Server database files.
-            gauge:
+          - description: Total bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.
+            name: sqlserver.disk.io.bytes
+            sum:
+              aggregationTemporality: 2
               dataPoints:
-                - asDouble: 41.15
+                - asInt: "1258291200"
                   attributes:
                     - key: direction
                       value:
@@ -37,7 +39,7 @@ resourceMetrics:
                         stringValue: C
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 22.63
+                - asInt: "629145600"
                   attributes:
                     - key: direction
                       value:
@@ -47,12 +49,14 @@ resourceMetrics:
                         stringValue: C
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.disk.io.rate
-            unit: '{operations}/s'
-          - description: Bytes read from and written to disk drives hosting SQL Server database files per second.
-            gauge:
+              isMonotonic: true
+            unit: By
+          - description: Total read and write operations on disk drives hosting SQL Server database files since SQL Server last started.
+            name: sqlserver.disk.io.operations
+            sum:
+              aggregationTemporality: 2
               dataPoints:
-                - asDouble: 4.194304e+06
+                - asInt: "12345"
                   attributes:
                     - key: direction
                       value:
@@ -62,7 +66,7 @@ resourceMetrics:
                         stringValue: C
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 2.097152e+06
+                - asInt: "6789"
                   attributes:
                     - key: direction
                       value:
@@ -72,8 +76,8 @@ resourceMetrics:
                         stringValue: C
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.disk.io.throughput
-            unit: By/s
+              isMonotonic: true
+            unit: '{operations}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -102,10 +106,12 @@ resourceMetrics:
             stringValue: testhost
     scopeMetrics:
       - metrics:
-          - description: Rate of read and write operations on disk drives hosting SQL Server database files.
-            gauge:
+          - description: Total bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.
+            name: sqlserver.disk.io.bytes
+            sum:
+              aggregationTemporality: 2
               dataPoints:
-                - asDouble: 32.92
+                - asInt: "2516582400"
                   attributes:
                     - key: direction
                       value:
@@ -115,7 +121,7 @@ resourceMetrics:
                         stringValue: D
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 18.106666666666666
+                - asInt: "1258291200"
                   attributes:
                     - key: direction
                       value:
@@ -125,12 +131,14 @@ resourceMetrics:
                         stringValue: D
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.disk.io.rate
-            unit: '{operations}/s'
-          - description: Bytes read from and written to disk drives hosting SQL Server database files per second.
-            gauge:
+              isMonotonic: true
+            unit: By
+          - description: Total read and write operations on disk drives hosting SQL Server database files since SQL Server last started.
+            name: sqlserver.disk.io.operations
+            sum:
+              aggregationTemporality: 2
               dataPoints:
-                - asDouble: 8.388608e+06
+                - asInt: "9876"
                   attributes:
                     - key: direction
                       value:
@@ -140,7 +148,7 @@ resourceMetrics:
                         stringValue: D
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 4.194304e+06
+                - asInt: "5432"
                   attributes:
                     - key: direction
                       value:
@@ -150,8 +158,8 @@ resourceMetrics:
                         stringValue: D
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.disk.io.throughput
-            unit: By/s
+              isMonotonic: true
+            unit: '{operations}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
