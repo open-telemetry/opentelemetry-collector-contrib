@@ -73,6 +73,7 @@ exporter/tinybirdexporter exporter/tinybird
 exporter/zipkinexporter exporter/zipkin
 extension/ackextension extension/ack
 extension/asapauthextension extension/asapauth
+extension/awscredentialsproviderextension extension/awscredentialsprovider
 extension/awsproxy extension/awsproxy
 extension/azureauthextension extension/azureauth
 extension/basicauthextension extension/basicauth

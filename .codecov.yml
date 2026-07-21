@@ -301,6 +301,10 @@ component_management:
     name: extension_asapauth
     paths:
     - extension/asapauthextension/**
+  - component_id: extension_awscredentialsprovider
+    name: extension_awscredentialsprovider
+    paths:
+    - extension/awscredentialsproviderextension/**
   - component_id: extension_awsproxy
     name: extension_awsproxy
     paths:

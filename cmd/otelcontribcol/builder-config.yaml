@@ -17,6 +17,7 @@ extensions:
   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.156.1-0.20260720221237-c82363844ef5
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension v0.156.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.156.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/awscredentialsproviderextension v0.156.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.156.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/azureauthextension v0.156.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.156.0
