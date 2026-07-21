@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: receiver/statsd
+
+note: Fix explicit bucket histogram mapping for StatsD timing metrics.
+
+issues: [49747]
+
+change_logs: [user]
