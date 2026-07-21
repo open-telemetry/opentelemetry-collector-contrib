@@ -356,7 +356,6 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 }
 
 func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Context) error {
-	// databaseNameKey, computerNameKey, and instanceNameKey are package-level constants.
 	const (
 		agNameKey           = "availability_group_name"
 		logSendQueueSizeKey = "log_send_queue_size"
