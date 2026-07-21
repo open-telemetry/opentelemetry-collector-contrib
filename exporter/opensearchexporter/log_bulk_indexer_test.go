@@ -4,8 +4,11 @@
 package opensearchexporter
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"net"
+	"net/url"
 	"testing"
 	"time"
 
@@ -75,25 +78,30 @@ func TestOnIndexerErrorIsRetryable(t *testing.T) {
 	}
 }
 
-func TestProcessItemFailureTransportErrorRetryable(t *testing.T) {
-	// A per-item transport error (net.OpError) with no HTTP status is transient.
-	lbi := &logBulkIndexer{}
-	lbi.processItemFailure(opensearchapi.BulkRespItem{Status: 0}, &net.OpError{Op: "read", Err: errors.New("i/o timeout")}, plog.NewLogs())
-	if len(lbi.errs) != 1 {
-		t.Fatalf("expected 1 error, got %d", len(lbi.errs))
+func TestIsRetryableError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"nil", nil, false},
+		{"deadline exceeded", context.DeadlineExceeded, true},
+		{"canceled", context.Canceled, true},
+		{"net.OpError", &net.OpError{Op: "dial", Err: errors.New("connection refused")}, true},
+		{
+			"url.Error wrapping net.OpError",
+			&url.Error{Op: "Post", URL: "http://localhost", Err: &net.OpError{Op: "dial", Err: errors.New("connection refused")}},
+			true,
+		},
+		{"flush-wrapped deadline", fmt.Errorf("flush: %w", context.DeadlineExceeded), true},
+		{"encoding error", errors.New("json: unsupported value"), false},
 	}
-	if consumererror.IsPermanent(lbi.errs[0]) {
-		t.Error("per-item transport error must be retryable, not permanent")
-	}
-
-	// A genuine encoding error (never sent) stays permanent.
-	lbi2 := &logBulkIndexer{}
-	lbi2.processItemFailure(opensearchapi.BulkRespItem{Status: 0}, errors.New("encode failed"), plog.NewLogs())
-	if len(lbi2.errs) != 1 {
-		t.Fatalf("expected 1 error, got %d", len(lbi2.errs))
-	}
-	if !consumererror.IsPermanent(lbi2.errs[0]) {
-		t.Error("encoding error must remain permanent")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isRetryableError(tt.err); got != tt.want {
+				t.Errorf("isRetryableError(%v) = %v, want %v", tt.err, got, tt.want)
+			}
+		})
 	}
 }
 

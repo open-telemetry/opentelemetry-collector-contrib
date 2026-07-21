@@ -74,26 +74,6 @@ func TestTraceOnIndexerErrorIsRetryable(t *testing.T) {
 	}
 }
 
-func TestTraceProcessItemFailureTransportErrorRetryable(t *testing.T) {
-	tbi := &traceBulkIndexer{}
-	tbi.processItemFailure(opensearchapi.BulkRespItem{Status: 0}, &net.OpError{Op: "read", Err: errors.New("i/o timeout")}, ptrace.NewTraces())
-	if len(tbi.errs) != 1 {
-		t.Fatalf("expected 1 error, got %d", len(tbi.errs))
-	}
-	if consumererror.IsPermanent(tbi.errs[0]) {
-		t.Error("per-item transport error must be retryable, not permanent")
-	}
-
-	tbi2 := &traceBulkIndexer{}
-	tbi2.processItemFailure(opensearchapi.BulkRespItem{Status: 0}, errors.New("encode failed"), ptrace.NewTraces())
-	if len(tbi2.errs) != 1 {
-		t.Fatalf("expected 1 error, got %d", len(tbi2.errs))
-	}
-	if !consumererror.IsPermanent(tbi2.errs[0]) {
-		t.Error("encoding error must remain permanent")
-	}
-}
-
 func TestNewTraceBulkIndexerWithPipeline(t *testing.T) {
 	tests := []struct {
 		name     string

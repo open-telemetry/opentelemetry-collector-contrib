@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"net"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
@@ -133,11 +132,12 @@ func (lbi *logBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem, i
 		// Non-recoverable OpenSearch error while indexing document
 		lbi.appendPermanentError(responseAsError(resp))
 	default:
-		// A transport error (e.g. net.OpError) reported per item is transient and
-		// should be retried; anything else here is an encoding error we never sent,
-		// which is permanent.
-		var netErr *net.OpError
-		if errors.As(itemErr, &netErr) {
+		// No server status classified the item, so this is either a flush/
+		// transport failure (retry) or an encoding failure we never sent
+		// (permanent). On a flush failure opensearchutil reports the same error
+		// through both this per-item path and onIndexerError, so both must land
+		// on retryable or the joined error is still permanent via errors.As.
+		if isRetryableError(itemErr) {
 			lbi.appendRetryLogError(itemErr, logs)
 		} else {
 			lbi.appendPermanentError(itemErr)

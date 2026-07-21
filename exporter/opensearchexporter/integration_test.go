@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -455,4 +456,41 @@ func TestOpenSearchOTelV1_CustomIndex(t *testing.T) {
 
 	assert.Equal(t, "my-custom-traces", bulkIndex)
 	require.NoError(t, exporter.Shutdown(t.Context()))
+}
+
+// TestOpenSearchLogExporter_TransportFailureRetryable drives a real bulk flush
+// against a server that never responds before the client timeout, so the flush
+// fails at the transport level (context deadline / net timeout). The exporter
+// must surface that as a retryable error rather than permanent, otherwise
+// retry_on_failure would drop the batch. Retry is disabled here so the single
+// synchronous attempt returns immediately. See #49208.
+func TestOpenSearchLogExporter_TransportFailureRetryable(t *testing.T) {
+	blocked := make(chan struct{})
+	ts := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		<-blocked // hold the request open past the client timeout
+	}))
+	defer func() {
+		close(blocked)
+		ts.Close()
+	}()
+
+	cfg := withDefaultConfig(func(config *Config) {
+		config.Endpoint = ts.URL
+		config.TimeoutSettings.Timeout = 50 * time.Millisecond
+		config.BackOffConfig.Enabled = false
+	})
+
+	f := NewFactory()
+	exporter, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	require.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, exporter.Shutdown(t.Context())) }()
+
+	logs, err := golden.ReadLogs("testdata/logs-sample-a.yaml")
+	require.NoError(t, err)
+
+	err = exporter.ConsumeLogs(t.Context(), logs)
+	require.Error(t, err)
+	require.False(t, consumererror.IsPermanent(err),
+		"a transport/flush failure (timeout) must be retryable, not permanent")
 }

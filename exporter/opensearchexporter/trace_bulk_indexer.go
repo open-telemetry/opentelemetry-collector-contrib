@@ -135,11 +135,12 @@ func (tbi *traceBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem,
 		// Non-recoverable OpenSearch error while indexing document
 		tbi.appendPermanentError(responseAsError(resp))
 	default:
-		// A transport error (e.g. net.OpError) reported per item is transient and
-		// should be retried; anything else here is an encoding error we never sent,
-		// which is permanent.
-		var netErr *net.OpError
-		if errors.As(itemErr, &netErr) {
+		// No server status classified the item, so this is either a flush/
+		// transport failure (retry) or an encoding failure we never sent
+		// (permanent). On a flush failure opensearchutil reports the same error
+		// through both this per-item path and onIndexerError, so both must land
+		// on retryable or the joined error is still permanent via errors.As.
+		if isRetryableError(itemErr) {
 			tbi.appendRetryTraceError(itemErr, traces)
 		} else {
 			tbi.appendPermanentError(itemErr)
@@ -164,6 +165,21 @@ func attributesToMapString(attributes pcommon.Map) map[string]string {
 func shouldRetryEvent(status int) bool {
 	retryOnStatus := []int{500, 502, 503, 504, 429}
 	return slices.Contains(retryOnStatus, status)
+}
+
+// isRetryableError reports whether err is a transient transport/flush failure
+// (connection refused, timeout, DNS, cancelled/deadline-exceeded context) that
+// should be retried rather than dropped as permanent. Encoding failures, which
+// never leave the process, are not transport errors and remain permanent.
+func isRetryableError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return true
+	}
+	var netErr net.Error
+	return errors.As(err, &netErr)
 }
 
 func (tbi *traceBulkIndexer) newBulkIndexerItem(document []byte, indexName string) opensearchutil.BulkIndexerItem {
