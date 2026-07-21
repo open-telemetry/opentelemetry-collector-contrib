@@ -16,7 +16,7 @@ import (
 
 func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 	set := processortest.NewNopSettings(processortest.NopType)
-	set.ID = component.NewID(component.MustNewType("spanpruning"))
+	set.ID = component.NewID(component.MustNewType("span_pruning"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
@@ -48,6 +48,70 @@ func AssertEqualProcessorSpanpruningAggregationsCreated(t *testing.T, tt *compon
 		},
 	}
 	got, err := tt.GetMetric("otelcol_processor_spanpruning_aggregations_created")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorSpanpruningBytesEmitted(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_spanpruning_bytes_emitted",
+		Description: "Total bytes of serialized traces emitted after pruning [Development]",
+		Unit:        "By",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_spanpruning_bytes_emitted")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorSpanpruningBytesProcessedInput(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_spanpruning_bytes_processed_input",
+		Description: "Total bytes of traces that matched pruning conditions (entire trace when any span matches), measured before pruning [Development]",
+		Unit:        "By",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_spanpruning_bytes_processed_input")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorSpanpruningBytesProcessedOutput(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_spanpruning_bytes_processed_output",
+		Description: "Total bytes of traces that matched pruning conditions (entire trace when any span matches), measured after pruning [Development]",
+		Unit:        "By",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_spanpruning_bytes_processed_output")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorSpanpruningBytesReceived(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_spanpruning_bytes_received",
+		Description: "Total bytes of serialized traces received before pruning [Development]",
+		Unit:        "By",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_spanpruning_bytes_received")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

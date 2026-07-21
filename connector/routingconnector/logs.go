@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlotelcol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
@@ -73,6 +74,20 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 					ld.CopyTo(matched)
 				default:
 					// all logs are routed
+					ld.MoveTo(matched)
+				}
+			}
+		case "otelcol":
+			otx := ottlotelcol.NewTransformContextPtr()
+			_, isMatch, err := route.otelcolStatement.Execute(ctx, otx)
+			otx.Close()
+			if err != nil {
+				errs = errors.Join(errs, err)
+			} else if isMatch {
+				switch route.action {
+				case Copy:
+					ld.CopyTo(matched)
+				default:
 					ld.MoveTo(matched)
 				}
 			}

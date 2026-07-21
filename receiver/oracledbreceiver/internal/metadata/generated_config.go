@@ -7,6 +7,7 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // OracledbBufferInspectedMetricAttributeKey specifies the key of an attribute for the oracledb.buffer.inspected metric.
@@ -265,6 +266,26 @@ func (ms *OracledbConsistentGetsMetricConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
+// OracledbCPUUsageRateMetricConfig provides config for the oracledb.cpu.usage.rate metric.
+type OracledbCPUUsageRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbCPUUsageRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbCPUTimeMetricConfig provides config for the oracledb.cpu_time metric.
 type OracledbCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -312,6 +333,26 @@ type OracledbCursorCacheSizeMetricConfig struct {
 }
 
 func (ms *OracledbCursorCacheSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbCursorCacheUtilizationMetricConfig provides config for the oracledb.cursor.cache.utilization metric.
+type OracledbCursorCacheUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbCursorCacheUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -789,6 +830,54 @@ func (ms *OracledbExecutionsMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
+// OracledbGcCurrentBlockTimeMetricAttributeKey specifies the key of an attribute for the oracledb.gc.current_block.time metric.
+type OracledbGcCurrentBlockTimeMetricAttributeKey string
+
+const (
+	OracledbGcCurrentBlockTimeMetricAttributeKeyNetworkIoDirection OracledbGcCurrentBlockTimeMetricAttributeKey = "network.io.direction"
+)
+
+// OracledbGcCurrentBlockTimeMetricConfig provides config for the oracledb.gc.current_block.time metric.
+type OracledbGcCurrentBlockTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbGcCurrentBlockTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbGcCurrentBlockTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbGcCurrentBlockTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbGcCurrentBlockTimeMetricAttributeKeyNetworkIoDirection:
+		default:
+			return fmt.Errorf("metric oracledb.gc.current_block.time doesn't have an attribute %v, valid attributes: [network.io.direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // OracledbHardParsesMetricConfig provides config for the oracledb.hard_parses metric.
 type OracledbHardParsesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -809,6 +898,26 @@ func (ms *OracledbHardParsesMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
+// OracledbHostCPUUsageRateMetricConfig provides config for the oracledb.host.cpu.usage.rate metric.
+type OracledbHostCPUUsageRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbHostCPUUsageRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbHostCPUUtilizationMetricConfig provides config for the oracledb.host.cpu.utilization metric.
 type OracledbHostCPUUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -816,6 +925,86 @@ type OracledbHostCPUUtilizationMetricConfig struct {
 }
 
 func (ms *OracledbHostCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbIoSingleBlockReadLatencyMetricConfig provides config for the oracledb.io.single_block.read.latency metric.
+type OracledbIoSingleBlockReadLatencyMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbIoSingleBlockReadLatencyMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbJvmMemoryCommittedMetricConfig provides config for the oracledb.jvm.memory.committed metric.
+type OracledbJvmMemoryCommittedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbJvmMemoryCommittedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbJvmMemoryLiveMetricConfig provides config for the oracledb.jvm.memory.live metric.
+type OracledbJvmMemoryLiveMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbJvmMemoryLiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbJvmMemoryUsedMetricConfig provides config for the oracledb.jvm.memory.used metric.
+type OracledbJvmMemoryUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbJvmMemoryUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -897,6 +1086,54 @@ func (ms *OracledbLobOperationsMetricConfig) Validate() error {
 	return nil
 }
 
+// OracledbLockTimeMetricAttributeKey specifies the key of an attribute for the oracledb.lock.time metric.
+type OracledbLockTimeMetricAttributeKey string
+
+const (
+	OracledbLockTimeMetricAttributeKeyOracledbSessionType OracledbLockTimeMetricAttributeKey = "oracledb.session.type"
+)
+
+// OracledbLockTimeMetricConfig provides config for the oracledb.lock.time metric.
+type OracledbLockTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbLockTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbLockTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbLockTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbLockTimeMetricAttributeKeyOracledbSessionType:
+		default:
+			return fmt.Errorf("metric oracledb.lock.time doesn't have an attribute %v, valid attributes: [oracledb.session.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // OracledbLogicalReadsMetricConfig provides config for the oracledb.logical_reads metric.
 type OracledbLogicalReadsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -924,6 +1161,26 @@ type OracledbLogonsMetricConfig struct {
 }
 
 func (ms *OracledbLogonsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbOsSwapsMetricConfig provides config for the oracledb.os.swaps metric.
+type OracledbOsSwapsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbOsSwapsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1172,6 +1429,26 @@ type OracledbParseCallsMetricConfig struct {
 }
 
 func (ms *OracledbParseCallsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbPgaCacheUtilizationMetricConfig provides config for the oracledb.pga.cache.utilization metric.
+type OracledbPgaCacheUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbPgaCacheUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1490,6 +1767,26 @@ type OracledbQueriesParallelizedMetricConfig struct {
 }
 
 func (ms *OracledbQueriesParallelizedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbRecoveryBlocksMetricConfig provides config for the oracledb.recovery.blocks metric.
+type OracledbRecoveryBlocksMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbRecoveryBlocksMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1872,6 +2169,170 @@ func (ms *OracledbScanTableRowsMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
+// OracledbSessionAverageMetricAttributeKey specifies the key of an attribute for the oracledb.session.average metric.
+type OracledbSessionAverageMetricAttributeKey string
+
+const (
+	OracledbSessionAverageMetricAttributeKeySessionStatus OracledbSessionAverageMetricAttributeKey = "session_status"
+)
+
+// OracledbSessionAverageMetricConfig provides config for the oracledb.session.average metric.
+type OracledbSessionAverageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbSessionAverageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbSessionAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbSessionAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbSessionAverageMetricAttributeKeySessionStatus:
+		default:
+			return fmt.Errorf("metric oracledb.session.average doesn't have an attribute %v, valid attributes: [session_status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbSessionStoredProcedureMemoryMetricConfig provides config for the oracledb.session.stored_procedure.memory metric.
+type OracledbSessionStoredProcedureMemoryMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSessionStoredProcedureMemoryMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSessionWaitTimeMetricAttributeKey specifies the key of an attribute for the oracledb.session.wait.time metric.
+type OracledbSessionWaitTimeMetricAttributeKey string
+
+const (
+	OracledbSessionWaitTimeMetricAttributeKeyOracledbSessionWaitState OracledbSessionWaitTimeMetricAttributeKey = "oracledb.session.wait.state"
+)
+
+// OracledbSessionWaitTimeMetricConfig provides config for the oracledb.session.wait.time metric.
+type OracledbSessionWaitTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbSessionWaitTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbSessionWaitTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbSessionWaitTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbSessionWaitTimeMetricAttributeKeyOracledbSessionWaitState:
+		default:
+			return fmt.Errorf("metric oracledb.session.wait.time doesn't have an attribute %v, valid attributes: [oracledb.session.wait.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbSessionWaitsMetricAttributeKey specifies the key of an attribute for the oracledb.session.waits metric.
+type OracledbSessionWaitsMetricAttributeKey string
+
+const (
+	OracledbSessionWaitsMetricAttributeKeyOracledbSessionWaitState OracledbSessionWaitsMetricAttributeKey = "oracledb.session.wait.state"
+)
+
+// OracledbSessionWaitsMetricConfig provides config for the oracledb.session.waits metric.
+type OracledbSessionWaitsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbSessionWaitsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbSessionWaitsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbSessionWaitsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbSessionWaitsMetricAttributeKeyOracledbSessionWaitState:
+		default:
+			return fmt.Errorf("metric oracledb.session.waits doesn't have an attribute %v, valid attributes: [oracledb.session.wait.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // OracledbSessionsLimitMetricConfig provides config for the oracledb.sessions.limit metric.
 type OracledbSessionsLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1941,6 +2402,74 @@ func (ms *OracledbSessionsUsageMetricConfig) Validate() error {
 	return nil
 }
 
+// OracledbSgaLimitMetricConfig provides config for the oracledb.sga.limit metric.
+type OracledbSgaLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSgaLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSgaUsageMetricAttributeKey specifies the key of an attribute for the oracledb.sga.usage metric.
+type OracledbSgaUsageMetricAttributeKey string
+
+const (
+	OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName OracledbSgaUsageMetricAttributeKey = "oracledb.sga.component.name"
+)
+
+// OracledbSgaUsageMetricConfig provides config for the oracledb.sga.usage metric.
+type OracledbSgaUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbSgaUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbSgaUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbSgaUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName:
+		default:
+			return fmt.Errorf("metric oracledb.sga.usage doesn't have an attribute %v, valid attributes: [oracledb.sga.component.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // OracledbSharedPoolUtilizationMetricConfig provides config for the oracledb.shared_pool.utilization metric.
 type OracledbSharedPoolUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1958,6 +2487,54 @@ func (ms *OracledbSharedPoolUtilizationMetricConfig) Unmarshal(parser *confmap.C
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSmonPostsMetricAttributeKey specifies the key of an attribute for the oracledb.smon.posts metric.
+type OracledbSmonPostsMetricAttributeKey string
+
+const (
+	OracledbSmonPostsMetricAttributeKeyOracledbSmonType OracledbSmonPostsMetricAttributeKey = "oracledb.smon.type"
+)
+
+// OracledbSmonPostsMetricConfig provides config for the oracledb.smon.posts metric.
+type OracledbSmonPostsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbSmonPostsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbSmonPostsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbSmonPostsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbSmonPostsMetricAttributeKeyOracledbSmonType:
+		default:
+			return fmt.Errorf("metric oracledb.smon.posts doesn't have an attribute %v, valid attributes: [oracledb.smon.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -2186,6 +2763,66 @@ func (ms *OracledbStorageUtilizationMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
+// OracledbSystemCPUCountMetricConfig provides config for the oracledb.system.cpu.count metric.
+type OracledbSystemCPUCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSystemCPUCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSystemMemoryLimitMetricConfig provides config for the oracledb.system.memory.limit metric.
+type OracledbSystemMemoryLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSystemMemoryLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSystemProcessCountMetricConfig provides config for the oracledb.system.process.count metric.
+type OracledbSystemProcessCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSystemProcessCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbTablespaceSizeLimitMetricAttributeKey specifies the key of an attribute for the oracledb.tablespace_size.limit metric.
 type OracledbTablespaceSizeLimitMetricAttributeKey string
 
@@ -2282,6 +2919,46 @@ func (ms *OracledbTablespaceSizeUsageMetricConfig) Validate() error {
 	return nil
 }
 
+// OracledbTransactionResponseTimeMetricConfig provides config for the oracledb.transaction.response.time metric.
+type OracledbTransactionResponseTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbTransactionResponseTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbTransactionRollbacksMetricConfig provides config for the oracledb.transaction.rollbacks metric.
+type OracledbTransactionRollbacksMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbTransactionRollbacksMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbTransactionsLimitMetricConfig provides config for the oracledb.transactions.limit metric.
 type OracledbTransactionsLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2374,9 +3051,11 @@ type MetricsConfig struct {
 	OracledbCheckpointBuffers                     OracledbCheckpointBuffersMetricConfig                     `mapstructure:"oracledb.checkpoint.buffers"`
 	OracledbCheckpointCompleted                   OracledbCheckpointCompletedMetricConfig                   `mapstructure:"oracledb.checkpoint.completed"`
 	OracledbConsistentGets                        OracledbConsistentGetsMetricConfig                        `mapstructure:"oracledb.consistent_gets"`
+	OracledbCPUUsageRate                          OracledbCPUUsageRateMetricConfig                          `mapstructure:"oracledb.cpu.usage.rate"`
 	OracledbCPUTime                               OracledbCPUTimeMetricConfig                               `mapstructure:"oracledb.cpu_time"`
 	OracledbCursorCacheHits                       OracledbCursorCacheHitsMetricConfig                       `mapstructure:"oracledb.cursor.cache.hits"`
 	OracledbCursorCacheSize                       OracledbCursorCacheSizeMetricConfig                       `mapstructure:"oracledb.cursor.cache.size"`
+	OracledbCursorCacheUtilization                OracledbCursorCacheUtilizationMetricConfig                `mapstructure:"oracledb.cursor.cache.utilization"`
 	OracledbCursorOpen                            OracledbCursorOpenMetricConfig                            `mapstructure:"oracledb.cursor.open"`
 	OracledbDataDictionaryHitRatio                OracledbDataDictionaryHitRatioMetricConfig                `mapstructure:"oracledb.data_dictionary.hit_ratio"`
 	OracledbDatabaseCPUUtilization                OracledbDatabaseCPUUtilizationMetricConfig                `mapstructure:"oracledb.database.cpu.utilization"`
@@ -2396,12 +3075,20 @@ type MetricsConfig struct {
 	OracledbExchangeDeadlocks                     OracledbExchangeDeadlocksMetricConfig                     `mapstructure:"oracledb.exchange_deadlocks"`
 	OracledbExecutionUtilization                  OracledbExecutionUtilizationMetricConfig                  `mapstructure:"oracledb.execution.utilization"`
 	OracledbExecutions                            OracledbExecutionsMetricConfig                            `mapstructure:"oracledb.executions"`
+	OracledbGcCurrentBlockTime                    OracledbGcCurrentBlockTimeMetricConfig                    `mapstructure:"oracledb.gc.current_block.time"`
 	OracledbHardParses                            OracledbHardParsesMetricConfig                            `mapstructure:"oracledb.hard_parses"`
+	OracledbHostCPUUsageRate                      OracledbHostCPUUsageRateMetricConfig                      `mapstructure:"oracledb.host.cpu.usage.rate"`
 	OracledbHostCPUUtilization                    OracledbHostCPUUtilizationMetricConfig                    `mapstructure:"oracledb.host.cpu.utilization"`
+	OracledbIoSingleBlockReadLatency              OracledbIoSingleBlockReadLatencyMetricConfig              `mapstructure:"oracledb.io.single_block.read.latency"`
+	OracledbJvmMemoryCommitted                    OracledbJvmMemoryCommittedMetricConfig                    `mapstructure:"oracledb.jvm.memory.committed"`
+	OracledbJvmMemoryLive                         OracledbJvmMemoryLiveMetricConfig                         `mapstructure:"oracledb.jvm.memory.live"`
+	OracledbJvmMemoryUsed                         OracledbJvmMemoryUsedMetricConfig                         `mapstructure:"oracledb.jvm.memory.used"`
 	OracledbLibraryCacheUtilization               OracledbLibraryCacheUtilizationMetricConfig               `mapstructure:"oracledb.library_cache.utilization"`
 	OracledbLobOperations                         OracledbLobOperationsMetricConfig                         `mapstructure:"oracledb.lob.operations"`
+	OracledbLockTime                              OracledbLockTimeMetricConfig                              `mapstructure:"oracledb.lock.time"`
 	OracledbLogicalReads                          OracledbLogicalReadsMetricConfig                          `mapstructure:"oracledb.logical_reads"`
 	OracledbLogons                                OracledbLogonsMetricConfig                                `mapstructure:"oracledb.logons"`
+	OracledbOsSwaps                               OracledbOsSwapsMetricConfig                               `mapstructure:"oracledb.os.swaps"`
 	OracledbParallelOperationsDowngraded1To25Pct  OracledbParallelOperationsDowngraded1To25PctMetricConfig  `mapstructure:"oracledb.parallel_operations_downgraded_1_to_25_pct"`
 	OracledbParallelOperationsDowngraded25To50Pct OracledbParallelOperationsDowngraded25To50PctMetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_25_to_50_pct"`
 	OracledbParallelOperationsDowngraded50To75Pct OracledbParallelOperationsDowngraded50To75PctMetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_50_to_75_pct"`
@@ -2413,6 +3100,7 @@ type MetricsConfig struct {
 	OracledbParseRate                             OracledbParseRateMetricConfig                             `mapstructure:"oracledb.parse.rate"`
 	OracledbParseUtilization                      OracledbParseUtilizationMetricConfig                      `mapstructure:"oracledb.parse.utilization"`
 	OracledbParseCalls                            OracledbParseCallsMetricConfig                            `mapstructure:"oracledb.parse_calls"`
+	OracledbPgaCacheUtilization                   OracledbPgaCacheUtilizationMetricConfig                   `mapstructure:"oracledb.pga.cache.utilization"`
 	OracledbPgaMemory                             OracledbPgaMemoryMetricConfig                             `mapstructure:"oracledb.pga_memory"`
 	OracledbPhysicalIoCacheWrites                 OracledbPhysicalIoCacheWritesMetricConfig                 `mapstructure:"oracledb.physical_io.cache_writes"`
 	OracledbPhysicalIoRequests                    OracledbPhysicalIoRequestsMetricConfig                    `mapstructure:"oracledb.physical_io.requests"`
@@ -2426,6 +3114,7 @@ type MetricsConfig struct {
 	OracledbProcessesLimit                        OracledbProcessesLimitMetricConfig                        `mapstructure:"oracledb.processes.limit"`
 	OracledbProcessesUsage                        OracledbProcessesUsageMetricConfig                        `mapstructure:"oracledb.processes.usage"`
 	OracledbQueriesParallelized                   OracledbQueriesParallelizedMetricConfig                   `mapstructure:"oracledb.queries_parallelized"`
+	OracledbRecoveryBlocks                        OracledbRecoveryBlocksMetricConfig                        `mapstructure:"oracledb.recovery.blocks"`
 	OracledbRecycleBinLimit                       OracledbRecycleBinLimitMetricConfig                       `mapstructure:"oracledb.recycle_bin.limit"`
 	OracledbRedoBlocks                            OracledbRedoBlocksMetricConfig                            `mapstructure:"oracledb.redo.blocks"`
 	OracledbRedoOperations                        OracledbRedoOperationsMetricConfig                        `mapstructure:"oracledb.redo.operations"`
@@ -2436,9 +3125,16 @@ type MetricsConfig struct {
 	OracledbRedoAllocationUtilization             OracledbRedoAllocationUtilizationMetricConfig             `mapstructure:"oracledb.redo_allocation.utilization"`
 	OracledbScanCount                             OracledbScanCountMetricConfig                             `mapstructure:"oracledb.scan.count"`
 	OracledbScanTableRows                         OracledbScanTableRowsMetricConfig                         `mapstructure:"oracledb.scan.table.rows"`
+	OracledbSessionAverage                        OracledbSessionAverageMetricConfig                        `mapstructure:"oracledb.session.average"`
+	OracledbSessionStoredProcedureMemory          OracledbSessionStoredProcedureMemoryMetricConfig          `mapstructure:"oracledb.session.stored_procedure.memory"`
+	OracledbSessionWaitTime                       OracledbSessionWaitTimeMetricConfig                       `mapstructure:"oracledb.session.wait.time"`
+	OracledbSessionWaits                          OracledbSessionWaitsMetricConfig                          `mapstructure:"oracledb.session.waits"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
+	OracledbSgaLimit                              OracledbSgaLimitMetricConfig                              `mapstructure:"oracledb.sga.limit"`
+	OracledbSgaUsage                              OracledbSgaUsageMetricConfig                              `mapstructure:"oracledb.sga.usage"`
 	OracledbSharedPoolUtilization                 OracledbSharedPoolUtilizationMetricConfig                 `mapstructure:"oracledb.shared_pool.utilization"`
+	OracledbSmonPosts                             OracledbSmonPostsMetricConfig                             `mapstructure:"oracledb.smon.posts"`
 	OracledbSortOperations                        OracledbSortOperationsMetricConfig                        `mapstructure:"oracledb.sort.operations"`
 	OracledbSortRatio                             OracledbSortRatioMetricConfig                             `mapstructure:"oracledb.sort.ratio"`
 	OracledbSortRows                              OracledbSortRowsMetricConfig                              `mapstructure:"oracledb.sort.rows"`
@@ -2446,8 +3142,13 @@ type MetricsConfig struct {
 	OracledbSqlnetIoTransferred                   OracledbSqlnetIoTransferredMetricConfig                   `mapstructure:"oracledb.sqlnet.io.transferred"`
 	OracledbStorageUsage                          OracledbStorageUsageMetricConfig                          `mapstructure:"oracledb.storage.usage"`
 	OracledbStorageUtilization                    OracledbStorageUtilizationMetricConfig                    `mapstructure:"oracledb.storage.utilization"`
+	OracledbSystemCPUCount                        OracledbSystemCPUCountMetricConfig                        `mapstructure:"oracledb.system.cpu.count"`
+	OracledbSystemMemoryLimit                     OracledbSystemMemoryLimitMetricConfig                     `mapstructure:"oracledb.system.memory.limit"`
+	OracledbSystemProcessCount                    OracledbSystemProcessCountMetricConfig                    `mapstructure:"oracledb.system.process.count"`
 	OracledbTablespaceSizeLimit                   OracledbTablespaceSizeLimitMetricConfig                   `mapstructure:"oracledb.tablespace_size.limit"`
 	OracledbTablespaceSizeUsage                   OracledbTablespaceSizeUsageMetricConfig                   `mapstructure:"oracledb.tablespace_size.usage"`
+	OracledbTransactionResponseTime               OracledbTransactionResponseTimeMetricConfig               `mapstructure:"oracledb.transaction.response.time"`
+	OracledbTransactionRollbacks                  OracledbTransactionRollbacksMetricConfig                  `mapstructure:"oracledb.transaction.rollbacks"`
 	OracledbTransactionsLimit                     OracledbTransactionsLimitMetricConfig                     `mapstructure:"oracledb.transactions.limit"`
 	OracledbTransactionsUsage                     OracledbTransactionsUsageMetricConfig                     `mapstructure:"oracledb.transactions.usage"`
 	OracledbUserCommits                           OracledbUserCommitsMetricConfig                           `mapstructure:"oracledb.user_commits"`
@@ -2490,6 +3191,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbConsistentGets: OracledbConsistentGetsMetricConfig{
 			Enabled: false,
 		},
+		OracledbCPUUsageRate: OracledbCPUUsageRateMetricConfig{
+			Enabled: false,
+		},
 		OracledbCPUTime: OracledbCPUTimeMetricConfig{
 			Enabled: true,
 		},
@@ -2497,6 +3201,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		OracledbCursorCacheSize: OracledbCursorCacheSizeMetricConfig{
+			Enabled: false,
+		},
+		OracledbCursorCacheUtilization: OracledbCursorCacheUtilizationMetricConfig{
 			Enabled: false,
 		},
 		OracledbCursorOpen: OracledbCursorOpenMetricConfig{
@@ -2562,10 +3269,30 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbExecutions: OracledbExecutionsMetricConfig{
 			Enabled: true,
 		},
+		OracledbGcCurrentBlockTime: OracledbGcCurrentBlockTimeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbGcCurrentBlockTimeMetricAttributeKey{OracledbGcCurrentBlockTimeMetricAttributeKeyNetworkIoDirection},
+		},
 		OracledbHardParses: OracledbHardParsesMetricConfig{
 			Enabled: true,
 		},
+		OracledbHostCPUUsageRate: OracledbHostCPUUsageRateMetricConfig{
+			Enabled: false,
+		},
 		OracledbHostCPUUtilization: OracledbHostCPUUtilizationMetricConfig{
+			Enabled: false,
+		},
+		OracledbIoSingleBlockReadLatency: OracledbIoSingleBlockReadLatencyMetricConfig{
+			Enabled: false,
+		},
+		OracledbJvmMemoryCommitted: OracledbJvmMemoryCommittedMetricConfig{
+			Enabled: false,
+		},
+		OracledbJvmMemoryLive: OracledbJvmMemoryLiveMetricConfig{
+			Enabled: false,
+		},
+		OracledbJvmMemoryUsed: OracledbJvmMemoryUsedMetricConfig{
 			Enabled: false,
 		},
 		OracledbLibraryCacheUtilization: OracledbLibraryCacheUtilizationMetricConfig{
@@ -2576,10 +3303,18 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []OracledbLobOperationsMetricAttributeKey{OracledbLobOperationsMetricAttributeKeyDiskIoDirection},
 		},
+		OracledbLockTime: OracledbLockTimeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbLockTimeMetricAttributeKey{OracledbLockTimeMetricAttributeKeyOracledbSessionType},
+		},
 		OracledbLogicalReads: OracledbLogicalReadsMetricConfig{
 			Enabled: true,
 		},
 		OracledbLogons: OracledbLogonsMetricConfig{
+			Enabled: false,
+		},
+		OracledbOsSwaps: OracledbOsSwapsMetricConfig{
 			Enabled: false,
 		},
 		OracledbParallelOperationsDowngraded1To25Pct: OracledbParallelOperationsDowngraded1To25PctMetricConfig{
@@ -2616,6 +3351,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		OracledbParseCalls: OracledbParseCallsMetricConfig{
 			Enabled: true,
+		},
+		OracledbPgaCacheUtilization: OracledbPgaCacheUtilizationMetricConfig{
+			Enabled: false,
 		},
 		OracledbPgaMemory: OracledbPgaMemoryMetricConfig{
 			Enabled: true,
@@ -2660,6 +3398,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbQueriesParallelized: OracledbQueriesParallelizedMetricConfig{
 			Enabled: false,
 		},
+		OracledbRecoveryBlocks: OracledbRecoveryBlocksMetricConfig{
+			Enabled: false,
+		},
 		OracledbRecycleBinLimit: OracledbRecycleBinLimitMetricConfig{
 			Enabled: false,
 		},
@@ -2702,6 +3443,24 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbScanTableRows: OracledbScanTableRowsMetricConfig{
 			Enabled: false,
 		},
+		OracledbSessionAverage: OracledbSessionAverageMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OracledbSessionAverageMetricAttributeKey{OracledbSessionAverageMetricAttributeKeySessionStatus},
+		},
+		OracledbSessionStoredProcedureMemory: OracledbSessionStoredProcedureMemoryMetricConfig{
+			Enabled: false,
+		},
+		OracledbSessionWaitTime: OracledbSessionWaitTimeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbSessionWaitTimeMetricAttributeKey{OracledbSessionWaitTimeMetricAttributeKeyOracledbSessionWaitState},
+		},
+		OracledbSessionWaits: OracledbSessionWaitsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbSessionWaitsMetricAttributeKey{OracledbSessionWaitsMetricAttributeKeyOracledbSessionWaitState},
+		},
 		OracledbSessionsLimit: OracledbSessionsLimitMetricConfig{
 			Enabled: true,
 		},
@@ -2710,8 +3469,21 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus},
 		},
+		OracledbSgaLimit: OracledbSgaLimitMetricConfig{
+			Enabled: false,
+		},
+		OracledbSgaUsage: OracledbSgaUsageMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OracledbSgaUsageMetricAttributeKey{OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName},
+		},
 		OracledbSharedPoolUtilization: OracledbSharedPoolUtilizationMetricConfig{
 			Enabled: false,
+		},
+		OracledbSmonPosts: OracledbSmonPostsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbSmonPostsMetricAttributeKey{OracledbSmonPostsMetricAttributeKeyOracledbSmonType},
 		},
 		OracledbSortOperations: OracledbSortOperationsMetricConfig{
 			Enabled:             false,
@@ -2740,6 +3512,15 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbStorageUtilization: OracledbStorageUtilizationMetricConfig{
 			Enabled: false,
 		},
+		OracledbSystemCPUCount: OracledbSystemCPUCountMetricConfig{
+			Enabled: false,
+		},
+		OracledbSystemMemoryLimit: OracledbSystemMemoryLimitMetricConfig{
+			Enabled: false,
+		},
+		OracledbSystemProcessCount: OracledbSystemProcessCountMetricConfig{
+			Enabled: false,
+		},
 		OracledbTablespaceSizeLimit: OracledbTablespaceSizeLimitMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
@@ -2749,6 +3530,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []OracledbTablespaceSizeUsageMetricAttributeKey{OracledbTablespaceSizeUsageMetricAttributeKeyTablespaceName},
+		},
+		OracledbTransactionResponseTime: OracledbTransactionResponseTimeMetricConfig{
+			Enabled: false,
+		},
+		OracledbTransactionRollbacks: OracledbTransactionRollbacksMetricConfig{
+			Enabled: false,
 		},
 		OracledbTransactionsLimit: OracledbTransactionsLimitMetricConfig{
 			Enabled: true,
@@ -2805,9 +3592,11 @@ func DefaultEventsConfig() EventsConfig {
 	}
 }
 
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
+// HostNameResourceAttributeConfig provides config for the host.name resource attribute.
+type HostNameResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
 	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
@@ -2826,7 +3615,322 @@ type ResourceAttributeConfig struct {
 	enabledSetByUser bool
 }
 
-func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+func (rac *HostNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracleDbHostingTypeResourceAttributeConfig provides config for the oracle.db.hosting_type resource attribute.
+type OracleDbHostingTypeResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *OracleDbHostingTypeResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracleDbOpenModeResourceAttributeConfig provides config for the oracle.db.open_mode resource attribute.
+type OracleDbOpenModeResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *OracleDbOpenModeResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracleDbPdbResourceAttributeConfig provides config for the oracle.db.pdb resource attribute.
+type OracleDbPdbResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *OracleDbPdbResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracleDbRoleResourceAttributeConfig provides config for the oracle.db.role resource attribute.
+type OracleDbRoleResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *OracleDbRoleResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracleDbVersionResourceAttributeConfig provides config for the oracle.db.version resource attribute.
+type OracleDbVersionResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *OracleDbVersionResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbInstanceNameResourceAttributeConfig provides config for the oracledb.instance.name resource attribute.
+type OracledbInstanceNameResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *OracledbInstanceNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ServiceInstanceIDResourceAttributeConfig provides config for the service.instance.id resource attribute.
+type ServiceInstanceIDResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServiceInstanceIDResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ServiceNameResourceAttributeConfig provides config for the service.name resource attribute.
+type ServiceNameResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServiceNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ServiceNamespaceResourceAttributeConfig provides config for the service.namespace resource attribute.
+type ServiceNamespaceResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServiceNamespaceResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2840,42 +3944,86 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for oracledb resource attributes.
 type ResourceAttributesConfig struct {
-	HostName             ResourceAttributeConfig `mapstructure:"host.name"`
-	OracleDbHostingType  ResourceAttributeConfig `mapstructure:"oracle.db.hosting_type"`
-	OracleDbOpenMode     ResourceAttributeConfig `mapstructure:"oracle.db.open_mode"`
-	OracleDbPdb          ResourceAttributeConfig `mapstructure:"oracle.db.pdb"`
-	OracleDbRole         ResourceAttributeConfig `mapstructure:"oracle.db.role"`
-	OracleDbVersion      ResourceAttributeConfig `mapstructure:"oracle.db.version"`
-	OracledbInstanceName ResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
-	ServiceInstanceID    ResourceAttributeConfig `mapstructure:"service.instance.id"`
+	HostName             HostNameResourceAttributeConfig             `mapstructure:"host.name"`
+	OracleDbHostingType  OracleDbHostingTypeResourceAttributeConfig  `mapstructure:"oracle.db.hosting_type"`
+	OracleDbOpenMode     OracleDbOpenModeResourceAttributeConfig     `mapstructure:"oracle.db.open_mode"`
+	OracleDbPdb          OracleDbPdbResourceAttributeConfig          `mapstructure:"oracle.db.pdb"`
+	OracleDbRole         OracleDbRoleResourceAttributeConfig         `mapstructure:"oracle.db.role"`
+	OracleDbVersion      OracleDbVersionResourceAttributeConfig      `mapstructure:"oracle.db.version"`
+	OracledbInstanceName OracledbInstanceNameResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
+	ServiceInstanceID    ServiceInstanceIDResourceAttributeConfig    `mapstructure:"service.instance.id"`
+	ServiceName          ServiceNameResourceAttributeConfig          `mapstructure:"service.name"`
+	ServiceNamespace     ServiceNamespaceResourceAttributeConfig     `mapstructure:"service.namespace"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		HostName: ResourceAttributeConfig{
+		HostName: HostNameResourceAttributeConfig{
 			Enabled: true,
 		},
-		OracleDbHostingType: ResourceAttributeConfig{
+		OracleDbHostingType: OracleDbHostingTypeResourceAttributeConfig{
 			Enabled: true,
 		},
-		OracleDbOpenMode: ResourceAttributeConfig{
+		OracleDbOpenMode: OracleDbOpenModeResourceAttributeConfig{
 			Enabled: true,
 		},
-		OracleDbPdb: ResourceAttributeConfig{
+		OracleDbPdb: OracleDbPdbResourceAttributeConfig{
 			Enabled: true,
 		},
-		OracleDbRole: ResourceAttributeConfig{
+		OracleDbRole: OracleDbRoleResourceAttributeConfig{
 			Enabled: true,
 		},
-		OracleDbVersion: ResourceAttributeConfig{
+		OracleDbVersion: OracleDbVersionResourceAttributeConfig{
 			Enabled: true,
 		},
-		OracledbInstanceName: ResourceAttributeConfig{
+		OracledbInstanceName: OracledbInstanceNameResourceAttributeConfig{
 			Enabled: true,
 		},
-		ServiceInstanceID: ResourceAttributeConfig{
+		ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{
 			Enabled: true,
 		},
+		ServiceName: ServiceNameResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServiceNamespace: ServiceNamespaceResourceAttributeConfig{
+			Enabled: false,
+		},
+	}
+}
+
+// applyOverrideValues applies override values to the given resource.
+// For each enabled resource attribute with a non-nil OverrideValue,
+// the override replaces any existing value in the resource.
+func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
+	if rac.HostName.Enabled && rac.HostName.OverrideValue != nil {
+		res.Attributes().PutStr("host.name", *rac.HostName.OverrideValue)
+	}
+	if rac.OracleDbHostingType.Enabled && rac.OracleDbHostingType.OverrideValue != nil {
+		res.Attributes().PutStr("oracle.db.hosting_type", *rac.OracleDbHostingType.OverrideValue)
+	}
+	if rac.OracleDbOpenMode.Enabled && rac.OracleDbOpenMode.OverrideValue != nil {
+		res.Attributes().PutStr("oracle.db.open_mode", *rac.OracleDbOpenMode.OverrideValue)
+	}
+	if rac.OracleDbPdb.Enabled && rac.OracleDbPdb.OverrideValue != nil {
+		res.Attributes().PutStr("oracle.db.pdb", *rac.OracleDbPdb.OverrideValue)
+	}
+	if rac.OracleDbRole.Enabled && rac.OracleDbRole.OverrideValue != nil {
+		res.Attributes().PutStr("oracle.db.role", *rac.OracleDbRole.OverrideValue)
+	}
+	if rac.OracleDbVersion.Enabled && rac.OracleDbVersion.OverrideValue != nil {
+		res.Attributes().PutStr("oracle.db.version", *rac.OracleDbVersion.OverrideValue)
+	}
+	if rac.OracledbInstanceName.Enabled && rac.OracledbInstanceName.OverrideValue != nil {
+		res.Attributes().PutStr("oracledb.instance.name", *rac.OracledbInstanceName.OverrideValue)
+	}
+	if rac.ServiceInstanceID.Enabled && rac.ServiceInstanceID.OverrideValue != nil {
+		res.Attributes().PutStr("service.instance.id", *rac.ServiceInstanceID.OverrideValue)
+	}
+	if rac.ServiceName.Enabled && rac.ServiceName.OverrideValue != nil {
+		res.Attributes().PutStr("service.name", *rac.ServiceName.OverrideValue)
+	}
+	if rac.ServiceNamespace.Enabled && rac.ServiceNamespace.OverrideValue != nil {
+		res.Attributes().PutStr("service.namespace", *rac.ServiceNamespace.OverrideValue)
 	}
 }
 

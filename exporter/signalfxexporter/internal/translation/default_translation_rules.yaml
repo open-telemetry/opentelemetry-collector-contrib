@@ -40,11 +40,6 @@ translation_rules:
   operand1_metric: sf_temp.system.cpu.usage
   operand2_metric: sf_temp.system.cpu.total
   operator: /
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.utilization
-  aggregation_method: avg
-  without_dimensions:
-  - cpu
 - action: multiply_float
   scale_factors_float:
     sf_temp.cpu.utilization: 100
@@ -91,53 +86,7 @@ translation_rules:
 # compute cpu.num_processors
 - action: copy_metrics
   mapping:
-    sf_temp.cpu.idle: sf_temp.cpu.num_processors
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.num_processors
-  aggregation_method: count
-  without_dimensions:
-  - cpu
-
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.idle
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.interrupt
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.system
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.user
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.steal
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.wait
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.softirq
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.nice
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
+    system.cpu.logical.count: sf_temp.cpu.num_processors
 
 # compute memory.total
 - action: copy_metrics
