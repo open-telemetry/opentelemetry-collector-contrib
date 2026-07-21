@@ -1735,20 +1735,27 @@ func (c *WatchClient) cancelDeleteRequests(ids []PodIdentifier, podUID string) {
 	if len(ids) == 0 {
 		return
 	}
+
+	c.deleteMut.Lock()
+	if len(c.deleteQueue) == 0 {
+		c.deleteMut.Unlock()
+		return
+	}
+
 	idSet := make(map[PodIdentifier]struct{}, len(ids))
 	for i := range ids {
 		idSet[ids[i]] = struct{}{}
 	}
-	c.deleteMut.Lock()
+
 	newQueue := c.deleteQueue[:0]
 	for i := range c.deleteQueue {
-		d := &c.deleteQueue[i]
+		d := c.deleteQueue[i]
 		if d.podUID == podUID {
 			if _, ok := idSet[d.id]; ok {
 				continue // Cancel this delete request
 			}
 		}
-		newQueue = append(newQueue, *d)
+		newQueue = append(newQueue, d)
 	}
 	c.deleteQueue = newQueue
 	c.deleteMut.Unlock()
