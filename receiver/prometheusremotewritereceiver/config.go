@@ -11,6 +11,8 @@ import (
 // Config holds common fields and embedded protocol-specific configurations
 type Config struct {
 	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ component.Config = (*Config)(nil)

@@ -13,6 +13,8 @@ import (
 
 type Config struct {
 	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var (

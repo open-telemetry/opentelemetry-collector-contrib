@@ -11,6 +11,8 @@ import (
 
 type Config struct {
 	ServerConfig confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func createDefaultConfig() component.Config {
