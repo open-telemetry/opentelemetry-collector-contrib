@@ -69,7 +69,7 @@ type Config struct {
 }
 
 var (
-	_ component.Config   = (*Config)(nil)
+	_ component.Config  = (*Config)(nil)
 	_ confmap.Validator = (*ArrowConfig)(nil)
 )
 

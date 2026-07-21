@@ -38,7 +38,7 @@ type Config struct {
 }
 
 var (
-	_ confmap.Validator  = (*Config)(nil)
+	_ confmap.Validator   = (*Config)(nil)
 	_ confmap.Unmarshaler = (*Config)(nil)
 )
 
