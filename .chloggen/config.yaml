@@ -13,8 +13,8 @@ components:
     - cmd/opampsupervisor
     - cmd/otelcontribcol
     - cmd/oteltestbedcol
-    - cmd/schemagen
     - cmd/telemetrygen
+    - config/configdbauth
     - connector/count
     - connector/datadog
     - connector/exceptions
@@ -90,6 +90,7 @@ components:
     - extension/cgroup_runtime
     - extension/datadog
     - extension/db_storage
+    - extension/dbauth
     - extension/docker_observer
     - extension/ecs_observer
     - extension/encoding
@@ -185,15 +186,16 @@ components:
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
-    - processor/awsecsattributes
+    - processor/aws_ecs_attributes
     - processor/azuredetector
     - processor/cardinality_guardian
     - processor/coralogix
-    - processor/cumulativetodelta
+    - processor/cumulative_to_delta
+    - processor/delta_to_rate
     - processor/deltatocumulative
-    - processor/deltatorate
     - processor/digitaloceandetector
     - processor/drain
+    - processor/dynamic_sampling
     - processor/dynatracedetector
     - processor/filter
     - processor/gen_ai_normalizer
@@ -222,7 +224,7 @@ components:
     - processor/scalewaydetector
     - processor/schema
     - processor/span
-    - processor/spanpruning
+    - processor/span_pruning
     - processor/sumologic
     - processor/tail_sampling
     - processor/tencentcvmdetector
@@ -240,8 +242,8 @@ components:
     - receiver/aerospike
     - receiver/apache
     - receiver/apache_spark
+    - receiver/aws_cloudwatch
     - receiver/aws_lambda
-    - receiver/awscloudwatch
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
@@ -282,7 +284,6 @@ components:
     - receiver/iis
     - receiver/influxdb
     - receiver/jaeger
-    - receiver/jmx
     - receiver/journald
     - receiver/k8s_cluster
     - receiver/k8s_events

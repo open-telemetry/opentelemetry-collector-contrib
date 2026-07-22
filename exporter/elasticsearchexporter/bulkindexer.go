@@ -92,14 +92,14 @@ func bulkIndexerConfig(client elastictransport.Interface, config *Config, requir
 		}
 	}
 	var compressionLevel int
-	if config.Compression == configcompression.TypeGzip {
-		compressionLevel = int(config.CompressionParams.Level)
+	if config.ClientConfig.Compression == configcompression.TypeGzip {
+		compressionLevel = int(config.ClientConfig.CompressionParams.Level)
 	}
 	return docappender.BulkIndexerConfig{
 		Client:                  client,
 		MaxDocumentRetries:      maxDocRetries,
 		Pipeline:                config.Pipeline,
-		RetryOnDocumentStatus:   config.Retry.RetryOnStatus,
+		RetryOnDocumentStatus:   config.Retry.RetryOnDocumentStatus,
 		RequireDataStream:       requireDataStream,
 		CompressionLevel:        compressionLevel,
 		PopulateFailedDocsInput: config.LogFailedDocsInput,
@@ -158,7 +158,7 @@ func newSyncBulkIndexer(
 	return &syncBulkIndexer{
 		config:                 bulkIndexerConfig(client, config, false, logger),
 		maxFlushBytes:          maxFlushBytes,
-		flushTimeout:           config.Timeout,
+		flushTimeout:           config.ClientConfig.Timeout,
 		retryConfig:            config.Retry,
 		metadataKeys:           config.MetadataKeys,
 		telemetryBuilder:       tb,

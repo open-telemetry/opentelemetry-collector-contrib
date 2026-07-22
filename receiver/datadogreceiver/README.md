@@ -75,6 +75,31 @@ The value must be a string with a unit (e.g. "5m", "60s").
 
 Default: "5m"
 
+### logs.decode_json_message (Optional)
+
+When `true`, log records whose `message` is itself a JSON object are expanded, mirroring Datadog's
+server-side "Preprocessing for JSON logs". The Datadog Agent forwards an application's JSON log as an
+opaque `message` string (JSON parsing normally happens in the Datadog backend), so without this the
+whole line becomes the log body. With it enabled, the inner reserved attributes take precedence over
+the agent envelope:
+
+- inner `message` → log body
+- `status`/`level`/`severity` → severity
+- `timestamp`/`@timestamp`/`date` → timestamp (the application's emit time, overriding the agent's collection time)
+- `hostname`/`host` → `host.name`, `service` → `service.name`
+- `dd.trace_id`/`dd.span_id` (decimal) → the record's `TraceID`/`SpanID`, enabling trace-log correlation
+- remaining inner keys → log attributes (with Datadog→OTel key translation)
+
+Default: `true`. Set to `false` to keep the raw JSON message as the log body.
+
+```yaml
+receivers:
+  datadog:
+    endpoint: localhost:8126
+    logs:
+      decode_json_message: true
+```
+
 ### HTTP Service Config
 
 All config params here are valid as well

@@ -10,5 +10,10 @@ service:
     resource:
       # Set resource attributes suggested by the OpAMP spec.
       # See https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#agentdescription-message
-      {{range $k, $v := .ResourceAttributes}}{{$k}}: "{{$v}}"
-      {{end}}
+      {{- if .ResourceAttributes}}
+      attributes:
+      {{- range .ResourceAttributes}}
+        - name: {{.Name}}
+          value: "{{.Value}}"
+      {{- end}}
+      {{- end}}

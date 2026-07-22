@@ -13,8 +13,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -287,6 +287,100 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 			pmetrictest.IgnoreResourceMetricsOrder(),
 		))
 	})
+}
+
+// TestAzureScraperScrapeCustomNamespaceMetrics verifies that the scraper discovers and
+// collects metrics from custom metric namespaces (e.g. "azure.vm.linux.guestmetrics"
+// published by Azure Monitor Agent / MetricsExtension). The Azure Monitor
+// MetricDefinitions API only returns such metrics when the metricnamespace query
+// parameter is explicitly provided; without it only platform metrics are returned.
+func TestAzureScraperScrapeCustomNamespaceMetrics(t *testing.T) {
+	fakeSubID := "sub-id-1"
+	vmType := "Microsoft.Compute/virtualMachines"
+	customNamespace := "azure.vm.linux.guestmetrics"
+	metricName := "disk/free_percent"
+	timeGrain := "PT1M"
+	var unit armmonitor.MetricUnit = "Percent"
+	diskFreePercent := 92.5
+
+	cfg := createDefaultTestConfig()
+	cfg.SubscriptionIDs = []string{fakeSubID}
+	cfg.Services = []string{vmType}
+	cfg.Metrics = NestedListAlias{
+		customNamespace: {
+			metricName: {"Average"},
+		},
+	}
+
+	vmName := "my-vm"
+	vmID := "/subscriptions/" + fakeSubID + "/resourceGroups/rg/providers/" + vmType + "/" + vmName
+	location := "eastus"
+
+	subscriptionsByIDMockData := newSubscriptionsByIDMockData(map[string]string{
+		fakeSubID: "My Subscription",
+	})
+	resourceMockData := newResourcesMockData(map[string][][]*armresources.GenericResourceExpanded{
+		fakeSubID: {
+			{{ID: &vmID, Location: &location, Name: &vmName, Type: &vmType}},
+		},
+	})
+
+	// The default (nil) MetricDefinitions call returns nothing for this resource.
+	// The namespace-filtered call for "azure.vm.linux.guestmetrics" returns disk/free_percent.
+	// The mock key "vmID::namespace" triggers the namespace-filtered mock path.
+	metricsDefinitionMockData := newMetricsDefinitionMockData(map[string][]metricsDefinitionMockInput{
+		vmID + "::" + customNamespace: {
+			{namespace: customNamespace, name: metricName, timeGrain: timeGrain},
+		},
+	})
+
+	metricsMockData := newMetricsClientListResponseMockData(map[string]map[string][]metricsClientListResponseMockInput{
+		vmID: {
+			metricName: {{
+				Name: metricName,
+				Unit: unit,
+				TimeSeries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
+					{Average: &diskFreePercent},
+				}}},
+			}},
+		},
+	})
+
+	optionsResolver := newMockClientOptionsResolver(
+		subscriptionsByIDMockData,
+		getSubscriptionsMockData(),
+		resourceMockData,
+		metricsDefinitionMockData,
+		metricsMockData,
+		nil,
+	)
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	s := &azureScraper{
+		cfg:                          cfg,
+		settings:                     settings.TelemetrySettings,
+		mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+		subscriptions:                map[string]*azureSubscription{},
+		resources:                    map[string]map[string]*azureResource{},
+	}
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	expectedFile := filepath.Join("testdata", "expected_metrics", "metrics_custom_namespace.yaml")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(
+		expectedMetrics,
+		metrics,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+	))
 }
 
 func getSubscriptionByIDMockData() map[string]armsubscriptions.ClientGetResponse {

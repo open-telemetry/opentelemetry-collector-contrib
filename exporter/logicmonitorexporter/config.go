@@ -20,7 +20,7 @@ import (
 
 // Config defines configuration for LogicMonitor exporter.
 type Config struct {
-	confighttp.ClientConfig `mapstructure:",squash"`
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
 
 	QueueSettings               configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig   `mapstructure:"retry_on_failure"`
@@ -66,11 +66,11 @@ type LogsConfig struct {
 }
 
 func (c *Config) Validate() error {
-	if c.Endpoint == "" {
+	if c.ClientConfig.Endpoint == "" {
 		return errors.New("endpoint should not be empty")
 	}
 
-	u, err := url.Parse(c.Endpoint)
+	u, err := url.Parse(c.ClientConfig.Endpoint)
 	if err != nil || u.Scheme == "" || u.Host == "" {
 		return errors.New("endpoint must be valid")
 	}

@@ -801,6 +801,581 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestElasticsearchBreakerMemoryEstimatedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchBreakerMemoryEstimated
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchBreakerMemoryEstimatedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.breaker.memory.estimated doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchBreakerMemoryEstimated
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchBreakerMemoryLimitMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchBreakerMemoryLimit
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchBreakerMemoryLimitMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.breaker.memory.limit doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchBreakerMemoryLimit
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchBreakerTrippedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchBreakerTripped
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchBreakerTrippedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.breaker.tripped doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchBreakerTripped
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchClusterHealthMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchClusterHealth
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchClusterHealthMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.cluster.health doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchClusterHealth
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchClusterIndicesCacheEvictionsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchClusterIndicesCacheEvictions
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.cluster.indices.cache.evictions doesn't have an attribute invalid, valid attributes: [cache_name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchClusterIndicesCacheEvictions
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchClusterPublishedStatesDifferencesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchClusterPublishedStatesDifferences
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.cluster.published_states.differences doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchClusterPublishedStatesDifferences
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchClusterShardsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchClusterShards
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchClusterShardsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.cluster.shards doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchClusterShards
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchClusterStateQueueMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchClusterStateQueue
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchClusterStateQueueMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.cluster.state_queue doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchClusterStateQueue
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchClusterStateUpdateCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchClusterStateUpdateCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchClusterStateUpdateCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.cluster.state_update.count doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchClusterStateUpdateCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchClusterStateUpdateTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchClusterStateUpdateTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchClusterStateUpdateTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.cluster.state_update.time doesn't have an attribute invalid, valid attributes: [state, type]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchClusterStateUpdateTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexCacheEvictionsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexCacheEvictions
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexCacheEvictionsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.cache.evictions doesn't have an attribute invalid, valid attributes: [cache_name, aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexCacheEvictions
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexCacheMemoryUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexCacheMemoryUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexCacheMemoryUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.cache.memory.usage doesn't have an attribute invalid, valid attributes: [cache_name, aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexCacheMemoryUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexCacheSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexCacheSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexCacheSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.cache.size doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexCacheSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexDocumentsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexDocuments
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexDocumentsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.documents doesn't have an attribute invalid, valid attributes: [state, aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexDocuments
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexOperationsCompletedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexOperationsCompleted
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexOperationsCompletedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.operations.completed doesn't have an attribute invalid, valid attributes: [operation, aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexOperationsCompleted
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexOperationsMergeCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexOperationsMergeCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexOperationsMergeCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.operations.merge.current doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexOperationsMergeCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexOperationsMergeDocsCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexOperationsMergeDocsCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.operations.merge.docs_count doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexOperationsMergeDocsCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexOperationsMergeSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexOperationsMergeSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexOperationsMergeSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.operations.merge.size doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexOperationsMergeSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexOperationsTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexOperationsTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexOperationsTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.operations.time doesn't have an attribute invalid, valid attributes: [operation, aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexOperationsTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexSegmentsCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexSegmentsCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexSegmentsCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.segments.count doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexSegmentsCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexSegmentsMemoryMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexSegmentsMemory
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexSegmentsMemoryMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.segments.memory doesn't have an attribute invalid, valid attributes: [aggregation, object]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexSegmentsMemory
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexSegmentsSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexSegmentsSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexSegmentsSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.segments.size doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexSegmentsSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexShardsSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexShardsSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexShardsSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.shards.size doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexShardsSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexTranslogOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexTranslogOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexTranslogOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.translog.operations doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexTranslogOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchIndexTranslogSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchIndexTranslogSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchIndexTranslogSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.index.translog.size doesn't have an attribute invalid, valid attributes: [aggregation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchIndexTranslogSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchMemoryIndexingPressureMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchMemoryIndexingPressure
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchMemoryIndexingPressureMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.memory.indexing_pressure doesn't have an attribute invalid, valid attributes: [stage]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchMemoryIndexingPressure
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeCacheCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeCacheCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeCacheCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.cache.count doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeCacheCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeCacheEvictionsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeCacheEvictions
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeCacheEvictionsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.cache.evictions doesn't have an attribute invalid, valid attributes: [cache_name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeCacheEvictions
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeCacheMemoryUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeCacheMemoryUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeCacheMemoryUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.cache.memory.usage doesn't have an attribute invalid, valid attributes: [cache_name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeCacheMemoryUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeClusterIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeClusterIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeClusterIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.cluster.io doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeClusterIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeDocumentsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeDocuments
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeDocumentsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.documents doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeDocuments
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeOperationsCompletedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeOperationsCompleted
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeOperationsCompletedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.operations.completed doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeOperationsCompleted
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeOperationsCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeOperationsCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeOperationsCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.operations.current doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeOperationsCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeOperationsGetCompletedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeOperationsGetCompleted
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeOperationsGetCompletedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.operations.get.completed doesn't have an attribute invalid, valid attributes: [result]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeOperationsGetCompleted
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeOperationsGetTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeOperationsGetTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeOperationsGetTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.operations.get.time doesn't have an attribute invalid, valid attributes: [result]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeOperationsGetTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeOperationsTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeOperationsTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeOperationsTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.operations.time doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeOperationsTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodePipelineIngestDocumentsCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodePipelineIngestDocumentsCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.pipeline.ingest.documents.current doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodePipelineIngestDocumentsCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodePipelineIngestDocumentsPreprocessedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodePipelineIngestDocumentsPreprocessed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.pipeline.ingest.documents.preprocessed doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodePipelineIngestDocumentsPreprocessed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodePipelineIngestOperationsFailedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodePipelineIngestOperationsFailed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.pipeline.ingest.operations.failed doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodePipelineIngestOperationsFailed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeSegmentsMemoryMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeSegmentsMemory
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeSegmentsMemoryMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.segments.memory doesn't have an attribute invalid, valid attributes: [object]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeSegmentsMemory
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeThreadPoolTasksFinishedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeThreadPoolTasksFinished
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.thread_pool.tasks.finished doesn't have an attribute invalid, valid attributes: [thread_pool_name, state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeThreadPoolTasksFinished
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeThreadPoolTasksQueuedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeThreadPoolTasksQueued
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.thread_pool.tasks.queued doesn't have an attribute invalid, valid attributes: [thread_pool_name]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeThreadPoolTasksQueued
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchNodeThreadPoolThreadsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchNodeThreadPoolThreads
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchNodeThreadPoolThreadsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.node.thread_pool.threads doesn't have an attribute invalid, valid attributes: [thread_pool_name, state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchNodeThreadPoolThreads
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestElasticsearchOsMemoryMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ElasticsearchOsMemory
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ElasticsearchOsMemoryMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric elasticsearch.os.memory doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ElasticsearchOsMemory
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestJvmGcCollectionsCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().JvmGcCollectionsCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []JvmGcCollectionsCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric jvm.gc.collections.count doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().JvmGcCollectionsCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestJvmGcCollectionsElapsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().JvmGcCollectionsElapsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []JvmGcCollectionsElapsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric jvm.gc.collections.elapsed doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().JvmGcCollectionsElapsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestJvmMemoryPoolMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().JvmMemoryPoolMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []JvmMemoryPoolMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric jvm.memory.pool.max doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().JvmMemoryPoolMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestJvmMemoryPoolUsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().JvmMemoryPoolUsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []JvmMemoryPoolUsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric jvm.memory.pool.used doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().JvmMemoryPoolUsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

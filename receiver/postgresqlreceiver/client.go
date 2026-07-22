@@ -53,6 +53,7 @@ var errNoLastArchive = errors.New("no last archive found, not able to calculate 
 type client interface {
 	Close() error
 	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
+	getDatabaseConflicts(ctx context.Context, databases []string) (map[databaseName]databaseConflictStats, error)
 	getDatabaseLocks(ctx context.Context) ([]databaseLocks, error)
 	getBGWriterStats(ctx context.Context) (*bgStat, error)
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
@@ -64,6 +65,8 @@ type client interface {
 	getMaxConnections(ctx context.Context) (int64, error)
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
 	getFunctionStats(ctx context.Context, database string) (map[functionIdentifer]functionStat, error)
+	getVectorSearchStats(ctx context.Context) ([]vectorSearchStat, error)
+	getVectorInsertStats(ctx context.Context) ([]vectorInsertStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 	getVersion(ctx context.Context) (string, error)
 	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error)
@@ -303,6 +306,54 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 	return dbStats, errs
 }
 
+// databaseConflictStats holds the per-database query cancellation counters from
+// pg_stat_database_conflicts. These counters are only incremented on standby
+// servers, where queries can be canceled due to conflicts with recovery.
+type databaseConflictStats struct {
+	conflTablespace int64
+	conflLock       int64
+	conflSnapshot   int64
+	conflBufferpin  int64
+	conflDeadlock   int64
+}
+
+func (c *postgreSQLClient) getDatabaseConflicts(ctx context.Context, databases []string) (map[databaseName]databaseConflictStats, error) {
+	query := filterQueryByDatabases(
+		"SELECT datname, confl_tablespace, confl_lock, confl_snapshot, confl_bufferpin, confl_deadlock FROM pg_stat_database_conflicts",
+		databases,
+		false,
+	)
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var errs error
+	conflictStats := map[databaseName]databaseConflictStats{}
+
+	for rows.Next() {
+		var datname string
+		var conflTablespace, conflLock, conflSnapshot, conflBufferpin, conflDeadlock int64
+		err = rows.Scan(&datname, &conflTablespace, &conflLock, &conflSnapshot, &conflBufferpin, &conflDeadlock)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		if datname != "" {
+			conflictStats[databaseName(datname)] = databaseConflictStats{
+				conflTablespace: conflTablespace,
+				conflLock:       conflLock,
+				conflSnapshot:   conflSnapshot,
+				conflBufferpin:  conflBufferpin,
+				conflDeadlock:   conflDeadlock,
+			}
+		}
+	}
+	return conflictStats, multierr.Append(errs, rows.Err())
+}
+
 type databaseLocks struct {
 	relation string
 	mode     string
@@ -407,17 +458,29 @@ type tableStats struct {
 }
 
 func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error) {
-	query := `SELECT schemaname as schema, relname AS table,
-	n_live_tup AS live,
-	n_dead_tup AS dead,
-	n_tup_ins AS ins,
-	n_tup_upd AS upd,
-	n_tup_del AS del,
-	n_tup_hot_upd AS hot_upd,
-	seq_scan AS seq_scans,
-	pg_relation_size(relid) AS table_size,
-	vacuum_count
-	FROM pg_stat_user_tables;`
+	// explicitly ignore the relations which have an active `AccessExclusiveLock`
+	// this is to prevent the current query's `AccessShareLock` from getting stalled
+	query := `SELECT
+    s.schemaname AS schema,
+    s.relname AS table,
+    s.n_live_tup AS live,
+    s.n_dead_tup AS dead,
+    s.n_tup_ins AS ins,
+    s.n_tup_upd AS upd,
+    s.n_tup_del AS del,
+    s.n_tup_hot_upd AS hot_upd,
+    s.seq_scan AS seq_scans,
+    pg_relation_size(s.relid) AS table_size,
+    s.vacuum_count
+FROM pg_stat_user_tables s
+LEFT JOIN (
+    SELECT DISTINCT relation
+    FROM pg_locks
+    WHERE locktype = 'relation'
+      AND mode = 'AccessExclusiveLock'
+      AND granted = true
+) l ON s.relid = l.relation
+WHERE l.relation IS NULL;`
 
 	ts := map[tableIdentifier]tableStats{}
 	var errors error
@@ -518,10 +581,20 @@ type indexStat struct {
 }
 
 func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
+	// explicitly ignore indexes which have an active `AccessExclusiveLock`
+	// this is to prevent the current query's `AccessShareLock` from getting stalled
 	query := `SELECT schemaname, relname, indexrelname,
 	pg_relation_size(indexrelid) AS index_size,
 	idx_scan
-	FROM pg_stat_user_indexes;`
+	FROM pg_stat_user_indexes s
+	LEFT JOIN (
+		SELECT DISTINCT relation
+		FROM pg_locks
+		WHERE locktype = 'relation'
+		  AND mode = 'AccessExclusiveLock'
+		  AND granted = true
+	) l ON s.indexrelid = l.relation
+	WHERE l.relation IS NULL;`
 
 	stats := map[indexIdentifer]indexStat{}
 
@@ -606,6 +679,92 @@ SELECT s.schemaname,
 		}
 	}
 	return stats, multierr.Combine(errs...)
+}
+
+// vectorSearchStat holds the aggregated pgvector search statistics for a single distance function.
+type vectorSearchStat struct {
+	// distanceFunction is the pgvector distance function classification (e.g. cosine, l2, hamming).
+	distanceFunction string
+	// calls is the cumulative number of executions of statements using this distance function.
+	calls int64
+	// totalExecTime is the cumulative execution time in seconds.
+	totalExecTime float64
+	// rowsReturned is the cumulative number of rows returned by statements using this distance function.
+	rowsReturned int64
+}
+
+//go:embed templates/vectorSearchStatsTemplate.tmpl
+var vectorSearchStatsQuery string
+
+func (c *postgreSQLClient) getVectorSearchStats(ctx context.Context) ([]vectorSearchStat, error) {
+	rows, err := c.client.QueryContext(ctx, vectorSearchStatsQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []vectorSearchStat
+	var errs error
+	for rows.Next() {
+		var distanceFunction string
+		var calls int64
+		var totalExecTimeMs float64
+		var rowsReturned int64
+		if err := rows.Scan(&distanceFunction, &calls, &totalExecTimeMs, &rowsReturned); err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		stats = append(stats, vectorSearchStat{
+			distanceFunction: distanceFunction,
+			calls:            calls,
+			// pg_stat_statements reports total_exec_time in milliseconds; convert to seconds.
+			totalExecTime: totalExecTimeMs / 1000.0,
+			rowsReturned:  rowsReturned,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+	return stats, errs
+}
+
+// vectorInsertStat holds the aggregated pgvector insert statistics.
+type vectorInsertStat struct {
+	// rows is the cumulative number of vectors inserted into pgvector tables.
+	rows int64
+	// totalExecTime is the cumulative execution time in seconds.
+	totalExecTime float64
+}
+
+//go:embed templates/vectorInsertStatsTemplate.tmpl
+var vectorInsertStatsQuery string
+
+func (c *postgreSQLClient) getVectorInsertStats(ctx context.Context) ([]vectorInsertStat, error) {
+	rows, err := c.client.QueryContext(ctx, vectorInsertStatsQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []vectorInsertStat
+	var errs error
+	for rows.Next() {
+		var insertedRows int64
+		var totalExecTimeMs float64
+		if err := rows.Scan(&insertedRows, &totalExecTimeMs); err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		stats = append(stats, vectorInsertStat{
+			rows: insertedRows,
+			// pg_stat_statements reports total_exec_time in milliseconds; convert to seconds.
+			totalExecTime: totalExecTimeMs / 1000.0,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+	return stats, errs
 }
 
 type bgStat struct {
@@ -917,12 +1076,12 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
-	if err := tmpl.Execute(&buf, map[string]any{
+	if tmplErr := tmpl.Execute(&buf, map[string]any{
 		"limit":                limit,
 		"newestQueryTimestamp": newestQueryTimestamp,
-	}); err != nil {
-		logger.Error("failed to execute template", zap.Error(err))
-		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", err)
+	}); tmplErr != nil {
+		logger.Error("failed to execute template", zap.Error(tmplErr))
+		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", tmplErr)
 	}
 
 	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, buf.String(), logger, sqlquery.TelemetryConfig{})
@@ -956,6 +1115,12 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 			querySampleColumnQueryID,
 			querySampleColumnState,
 			querySampleColumnApplicationName,
+			querySampleColumnBlockingPIDs,
+			querySampleColumnBlockingStartTime,
+			querySampleColumnBlockingLockMode,
+			querySampleColumnBlockingLockType,
+			querySampleColumnBlockingLockRelation,
+			querySampleColumnBlockingTxnStartTime,
 		}
 
 		for _, col := range querySampleSimpleColumns {
@@ -1012,6 +1177,15 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 			}
 		}
 
+		blockingWaitDuration := int64(0)
+		if row[querySampleColumnBlockingWaitDuration] != "" {
+			blockingWaitDuration, err = strconv.ParseInt(row[querySampleColumnBlockingWaitDuration], 10, 64)
+			if err != nil {
+				logger.Warn("failed to convert blocking_wait_duration to int64", zap.Error(err))
+				errs = append(errs, err)
+			}
+		}
+
 		// TODO: check if the query is truncated.
 		obfuscated, err := obfuscateSQL(row[querySampleColumnQuery])
 		if err != nil {
@@ -1025,6 +1199,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		currentAttributes[string(semconv.DBNamespaceKey)] = row[querySampleColumnDatname]
 		currentAttributes[string(semconv.UserNameKey)] = row[querySampleColumnUsename]
 		currentAttributes[postgresqlTotalExecTimeAttributeName] = duration
+		currentAttributes[dbAttributePrefix+querySampleColumnBlockingWaitDuration] = blockingWaitDuration
 		finalAttributes = append(finalAttributes, currentAttributes)
 	}
 

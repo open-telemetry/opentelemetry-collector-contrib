@@ -27,7 +27,7 @@ var (
 // Config is the configuration for the elasticsearch receiver
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	confighttp.ClientConfig        `mapstructure:",squash"`
+	ClientConfig                   confighttp.ClientConfig `mapstructure:",squash"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// Nodes defines the nodes to scrape.
@@ -54,15 +54,15 @@ func (cfg *Config) Validate() error {
 		combinedErr = err
 	}
 
-	if cfg.Endpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" {
 		return errors.Join(combinedErr, errEmptyEndpoint)
 	}
 
-	u, err := url.Parse(cfg.Endpoint)
+	u, err := url.Parse(cfg.ClientConfig.Endpoint)
 	if err != nil {
 		return errors.Join(
 			combinedErr,
-			fmt.Errorf("invalid endpoint '%s': %w", cfg.Endpoint, err),
+			fmt.Errorf("invalid endpoint '%s': %w", cfg.ClientConfig.Endpoint, err),
 		)
 	}
 

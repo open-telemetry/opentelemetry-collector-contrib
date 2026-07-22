@@ -126,7 +126,8 @@ var MetricsInfo = metricsInfo{
 		Name: "couchdb.database.open",
 	},
 	CouchdbDatabaseOperations: metricInfo{
-		Name: "couchdb.database.operations",
+		Name:       "couchdb.database.operations",
+		Attributes: []string{"operation"},
 	},
 	CouchdbFileDescriptorOpen: metricInfo{
 		Name: "couchdb.file_descriptor.open",
@@ -135,13 +136,16 @@ var MetricsInfo = metricsInfo{
 		Name: "couchdb.httpd.bulk_requests",
 	},
 	CouchdbHttpdRequests: metricInfo{
-		Name: "couchdb.httpd.requests",
+		Name:       "couchdb.httpd.requests",
+		Attributes: []string{"http.method"},
 	},
 	CouchdbHttpdResponses: metricInfo{
-		Name: "couchdb.httpd.responses",
+		Name:       "couchdb.httpd.responses",
+		Attributes: []string{"http.status_code"},
 	},
 	CouchdbHttpdViews: metricInfo{
-		Name: "couchdb.httpd.views",
+		Name:       "couchdb.httpd.views",
+		Attributes: []string{"view"},
 	},
 }
 
@@ -157,7 +161,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricCouchdbAverageRequestTime struct {

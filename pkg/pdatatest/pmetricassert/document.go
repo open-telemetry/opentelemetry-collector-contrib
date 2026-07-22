@@ -52,7 +52,7 @@ type datapointAssertion struct {
 	Value          any            `yaml:"value,omitempty"`
 	Count          *uint64        `yaml:"count,omitempty"`
 	Sum            *float64       `yaml:"sum,omitempty"`
-	ExplicitBounds []float64      `yaml:"explicit_bounds,omitempty"`
+	ExplicitBounds *[]float64     `yaml:"explicit_bounds,omitempty"`
 	BucketCounts   []uint64       `yaml:"bucket_counts,omitempty"`
 	Min            *float64       `yaml:"min,omitempty"`
 	Max            *float64       `yaml:"max,omitempty"`
@@ -117,10 +117,21 @@ func compactShorthand(doc *document) {
 		for j := range doc.Resources[i].Scopes {
 			for k := range doc.Resources[i].Scopes[j].Metrics {
 				m := &doc.Resources[i].Scopes[j].Metrics[k]
-				if len(m.Datapoints) == 1 && len(m.Datapoints[0].Attributes) == 0 && m.Datapoints[0].Value == nil {
+				if len(m.Datapoints) == 1 && isEmptyDatapointAssertion(m.Datapoints[0]) {
 					m.Datapoints = nil
 				}
 			}
 		}
 	}
+}
+
+func isEmptyDatapointAssertion(dp datapointAssertion) bool {
+	return len(dp.Attributes) == 0 &&
+		dp.Value == nil &&
+		dp.Count == nil &&
+		dp.Sum == nil &&
+		dp.ExplicitBounds == nil &&
+		len(dp.BucketCounts) == 0 &&
+		dp.Min == nil &&
+		dp.Max == nil
 }

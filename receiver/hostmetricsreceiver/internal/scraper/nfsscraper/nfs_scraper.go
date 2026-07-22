@@ -30,10 +30,10 @@ type nfsScraper struct {
 	config   *Config
 	mb       *metadata.MetricsBuilder
 
-	getNfsStats  func() (*NfsStats, error)
+	getNfsStats  func() (*nfsStats, error)
 	getNfsdStats func() (*nfsdStats, error)
 
-	nfsStats  *NfsStats
+	nfsStats  *nfsStats
 	nfsdStats *nfsdStats
 }
 
