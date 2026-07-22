@@ -57,10 +57,10 @@ all_set:
       enabled: true
     sqlserver.disk.io.rate:
       enabled: true
-      attributes: ["disk.io.direction","disk.drive"]
-    sqlserver.disk.io.throughput:
+      attributes: ["disk.io.direction","system.filesystem.drive"]
+    sqlserver.disk.operation.rate:
       enabled: true
-      attributes: ["disk.io.direction","disk.drive"]
+      attributes: ["disk.io.direction","system.filesystem.drive"]
     sqlserver.error.rate:
       enabled: true
     sqlserver.extent.operation.rate:
@@ -306,7 +306,7 @@ reaggregate_set:
     sqlserver.disk.io.rate:
       enabled: true
       attributes: []
-    sqlserver.disk.io.throughput:
+    sqlserver.disk.operation.rate:
       enabled: true
       attributes: []
     sqlserver.error.rate:
@@ -553,10 +553,10 @@ none_set:
       enabled: false
     sqlserver.disk.io.rate:
       enabled: false
-      attributes: ["disk.io.direction","disk.drive"]
-    sqlserver.disk.io.throughput:
+      attributes: ["disk.io.direction","system.filesystem.drive"]
+    sqlserver.disk.operation.rate:
       enabled: false
-      attributes: ["disk.io.direction","disk.drive"]
+      attributes: ["disk.io.direction","system.filesystem.drive"]
     sqlserver.error.rate:
       enabled: false
     sqlserver.extent.operation.rate:

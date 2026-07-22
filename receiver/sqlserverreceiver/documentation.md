@@ -465,23 +465,6 @@ Total number of deadlocks.
 
 ### sqlserver.disk.io.rate
 
-Read and write operations per second on disk drives hosting SQL Server database files.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {operations}/s | Gauge | Double | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| disk.io.direction | The direction of disk I/O operations. | Str: ``read``, ``write`` | Recommended | - |
-| disk.drive | The first character of the database file path. On Windows this is the drive letter (e.g. C); on Linux this is always /. | Any Str | Recommended | - |
-
-### sqlserver.disk.io.throughput
-
 Bytes per second read from and written to disk drives hosting SQL Server database files.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
@@ -495,7 +478,24 @@ This metric is only available when the receiver is configured to directly connec
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | The direction of disk I/O operations. | Str: ``read``, ``write`` | Recommended | - |
-| disk.drive | The first character of the database file path. On Windows this is the drive letter (e.g. C); on Linux this is always /. | Any Str | Recommended | - |
+| system.filesystem.drive | The drive identifier of the disk hosting SQL Server database files. On Windows this is the drive letter (e.g. C); on Linux this is always /. | Any Str | Recommended | - |
+
+### sqlserver.disk.operation.rate
+
+Read and write operations per second on disk drives hosting SQL Server database files.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {operations}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | The direction of disk I/O operations. | Str: ``read``, ``write`` | Recommended | - |
+| system.filesystem.drive | The drive identifier of the disk hosting SQL Server database files. On Windows this is the drive letter (e.g. C); on Linux this is always /. | Any Str | Recommended | - |
 
 ### sqlserver.error.rate
 

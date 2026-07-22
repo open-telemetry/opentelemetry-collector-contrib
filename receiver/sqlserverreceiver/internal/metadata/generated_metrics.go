@@ -902,11 +902,11 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverDiskIoRate: metricInfo{
 		Name:       "sqlserver.disk.io.rate",
-		Attributes: []string{"disk.io.direction", "disk.drive"},
+		Attributes: []string{"disk.io.direction", "system.filesystem.drive"},
 	},
-	SqlserverDiskIoThroughput: metricInfo{
-		Name:       "sqlserver.disk.io.throughput",
-		Attributes: []string{"disk.io.direction", "disk.drive"},
+	SqlserverDiskOperationRate: metricInfo{
+		Name:       "sqlserver.disk.operation.rate",
+		Attributes: []string{"disk.io.direction", "system.filesystem.drive"},
 	},
 	SqlserverErrorRate: metricInfo{
 		Name:       "sqlserver.error.rate",
@@ -1174,7 +1174,7 @@ type metricsInfo struct {
 	SqlserverDatabaseTempdbVersionStoreSize     metricInfo
 	SqlserverDeadlockRate                       metricInfo
 	SqlserverDiskIoRate                         metricInfo
-	SqlserverDiskIoThroughput                   metricInfo
+	SqlserverDiskOperationRate                  metricInfo
 	SqlserverErrorRate                          metricInfo
 	SqlserverExtentOperationRate                metricInfo
 	SqlserverGhostRecordSkippedRate             metricInfo
@@ -2735,14 +2735,14 @@ type metricSqlserverDiskIoRate struct {
 // init fills sqlserver.disk.io.rate metric with initial data.
 func (m *metricSqlserverDiskIoRate) init() {
 	m.data.SetName("sqlserver.disk.io.rate")
-	m.data.SetDescription("Read and write operations per second on disk drives hosting SQL Server database files.")
-	m.data.SetUnit("{operations}/s")
+	m.data.SetDescription("Bytes per second read from and written to disk drives hosting SQL Server database files.")
+	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverDiskIoRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskIoDirectionAttributeValue string, diskDriveAttributeValue string) {
+func (m *metricSqlserverDiskIoRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskIoDirectionAttributeValue string, systemFilesystemDriveAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2753,8 +2753,8 @@ func (m *metricSqlserverDiskIoRate) recordDataPoint(start pcommon.Timestamp, ts 
 	if slices.Contains(m.config.EnabledAttributes, SqlserverDiskIoRateMetricAttributeKeyDiskIoDirection) {
 		dp.Attributes().PutStr("disk.io.direction", diskIoDirectionAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverDiskIoRateMetricAttributeKeyDiskDrive) {
-		dp.Attributes().PutStr("disk.drive", diskDriveAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverDiskIoRateMetricAttributeKeySystemFilesystemDrive) {
+		dp.Attributes().PutStr("system.filesystem.drive", systemFilesystemDriveAttributeValue)
 	}
 
 	var s string
@@ -2817,24 +2817,24 @@ func newMetricSqlserverDiskIoRate(cfg SqlserverDiskIoRateMetricConfig) metricSql
 	return m
 }
 
-type metricSqlserverDiskIoThroughput struct {
-	data          pmetric.Metric                        // data buffer for generated metric.
-	config        SqlserverDiskIoThroughputMetricConfig // metric config provided by user.
-	capacity      int                                   // max observed number of data points added to the metric.
-	aggDataPoints []float64                             // slice containing number of aggregated datapoints at each index
+type metricSqlserverDiskOperationRate struct {
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        SqlserverDiskOperationRateMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []float64                              // slice containing number of aggregated datapoints at each index
 }
 
-// init fills sqlserver.disk.io.throughput metric with initial data.
-func (m *metricSqlserverDiskIoThroughput) init() {
-	m.data.SetName("sqlserver.disk.io.throughput")
-	m.data.SetDescription("Bytes per second read from and written to disk drives hosting SQL Server database files.")
-	m.data.SetUnit("By/s")
+// init fills sqlserver.disk.operation.rate metric with initial data.
+func (m *metricSqlserverDiskOperationRate) init() {
+	m.data.SetName("sqlserver.disk.operation.rate")
+	m.data.SetDescription("Read and write operations per second on disk drives hosting SQL Server database files.")
+	m.data.SetUnit("{operations}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverDiskIoThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskIoDirectionAttributeValue string, diskDriveAttributeValue string) {
+func (m *metricSqlserverDiskOperationRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskIoDirectionAttributeValue string, systemFilesystemDriveAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2842,11 +2842,11 @@ func (m *metricSqlserverDiskIoThroughput) recordDataPoint(start pcommon.Timestam
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverDiskIoThroughputMetricAttributeKeyDiskIoDirection) {
+	if slices.Contains(m.config.EnabledAttributes, SqlserverDiskOperationRateMetricAttributeKeyDiskIoDirection) {
 		dp.Attributes().PutStr("disk.io.direction", diskIoDirectionAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverDiskIoThroughputMetricAttributeKeyDiskDrive) {
-		dp.Attributes().PutStr("disk.drive", diskDriveAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverDiskOperationRateMetricAttributeKeySystemFilesystemDrive) {
+		dp.Attributes().PutStr("system.filesystem.drive", systemFilesystemDriveAttributeValue)
 	}
 
 	var s string
@@ -2879,14 +2879,14 @@ func (m *metricSqlserverDiskIoThroughput) recordDataPoint(start pcommon.Timestam
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverDiskIoThroughput) updateCapacity() {
+func (m *metricSqlserverDiskOperationRate) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverDiskIoThroughput) emit(metrics pmetric.MetricSlice) {
+func (m *metricSqlserverDiskOperationRate) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
@@ -2899,8 +2899,8 @@ func (m *metricSqlserverDiskIoThroughput) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSqlserverDiskIoThroughput(cfg SqlserverDiskIoThroughputMetricConfig) metricSqlserverDiskIoThroughput {
-	m := metricSqlserverDiskIoThroughput{config: cfg}
+func newMetricSqlserverDiskOperationRate(cfg SqlserverDiskOperationRateMetricConfig) metricSqlserverDiskOperationRate {
+	m := metricSqlserverDiskOperationRate{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -7385,7 +7385,7 @@ type MetricsBuilder struct {
 	metricSqlserverDatabaseTempdbVersionStoreSize     metricSqlserverDatabaseTempdbVersionStoreSize
 	metricSqlserverDeadlockRate                       metricSqlserverDeadlockRate
 	metricSqlserverDiskIoRate                         metricSqlserverDiskIoRate
-	metricSqlserverDiskIoThroughput                   metricSqlserverDiskIoThroughput
+	metricSqlserverDiskOperationRate                  metricSqlserverDiskOperationRate
 	metricSqlserverErrorRate                          metricSqlserverErrorRate
 	metricSqlserverExtentOperationRate                metricSqlserverExtentOperationRate
 	metricSqlserverGhostRecordSkippedRate             metricSqlserverGhostRecordSkippedRate
@@ -7506,7 +7506,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverDatabaseTempdbVersionStoreSize:     newMetricSqlserverDatabaseTempdbVersionStoreSize(mbc.Metrics.SqlserverDatabaseTempdbVersionStoreSize),
 		metricSqlserverDeadlockRate:                       newMetricSqlserverDeadlockRate(mbc.Metrics.SqlserverDeadlockRate),
 		metricSqlserverDiskIoRate:                         newMetricSqlserverDiskIoRate(mbc.Metrics.SqlserverDiskIoRate),
-		metricSqlserverDiskIoThroughput:                   newMetricSqlserverDiskIoThroughput(mbc.Metrics.SqlserverDiskIoThroughput),
+		metricSqlserverDiskOperationRate:                  newMetricSqlserverDiskOperationRate(mbc.Metrics.SqlserverDiskOperationRate),
 		metricSqlserverErrorRate:                          newMetricSqlserverErrorRate(mbc.Metrics.SqlserverErrorRate),
 		metricSqlserverExtentOperationRate:                newMetricSqlserverExtentOperationRate(mbc.Metrics.SqlserverExtentOperationRate),
 		metricSqlserverGhostRecordSkippedRate:             newMetricSqlserverGhostRecordSkippedRate(mbc.Metrics.SqlserverGhostRecordSkippedRate),
@@ -7728,7 +7728,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverDatabaseTempdbVersionStoreSize.emit(ils.Metrics())
 	mb.metricSqlserverDeadlockRate.emit(ils.Metrics())
 	mb.metricSqlserverDiskIoRate.emit(ils.Metrics())
-	mb.metricSqlserverDiskIoThroughput.emit(ils.Metrics())
+	mb.metricSqlserverDiskOperationRate.emit(ils.Metrics())
 	mb.metricSqlserverErrorRate.emit(ils.Metrics())
 	mb.metricSqlserverExtentOperationRate.emit(ils.Metrics())
 	mb.metricSqlserverGhostRecordSkippedRate.emit(ils.Metrics())
@@ -7976,13 +7976,13 @@ func (mb *MetricsBuilder) RecordSqlserverDeadlockRateDataPoint(ts pcommon.Timest
 }
 
 // RecordSqlserverDiskIoRateDataPoint adds a data point to sqlserver.disk.io.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverDiskIoRateDataPoint(ts pcommon.Timestamp, val float64, diskIoDirectionAttributeValue AttributeDiskIoDirection, diskDriveAttributeValue string) {
-	mb.metricSqlserverDiskIoRate.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), diskDriveAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverDiskIoRateDataPoint(ts pcommon.Timestamp, val float64, diskIoDirectionAttributeValue AttributeDiskIoDirection, systemFilesystemDriveAttributeValue string) {
+	mb.metricSqlserverDiskIoRate.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), systemFilesystemDriveAttributeValue)
 }
 
-// RecordSqlserverDiskIoThroughputDataPoint adds a data point to sqlserver.disk.io.throughput metric.
-func (mb *MetricsBuilder) RecordSqlserverDiskIoThroughputDataPoint(ts pcommon.Timestamp, val float64, diskIoDirectionAttributeValue AttributeDiskIoDirection, diskDriveAttributeValue string) {
-	mb.metricSqlserverDiskIoThroughput.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), diskDriveAttributeValue)
+// RecordSqlserverDiskOperationRateDataPoint adds a data point to sqlserver.disk.operation.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverDiskOperationRateDataPoint(ts pcommon.Timestamp, val float64, diskIoDirectionAttributeValue AttributeDiskIoDirection, systemFilesystemDriveAttributeValue string) {
+	mb.metricSqlserverDiskOperationRate.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), systemFilesystemDriveAttributeValue)
 }
 
 // RecordSqlserverErrorRateDataPoint adds a data point to sqlserver.error.rate metric.

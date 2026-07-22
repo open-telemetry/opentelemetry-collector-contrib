@@ -74,7 +74,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.database.operations"] = mb.metricSqlserverDatabaseOperations.config.AggregationStrategy
 			aggMap["sqlserver.database.tempdb.space"] = mb.metricSqlserverDatabaseTempdbSpace.config.AggregationStrategy
 			aggMap["sqlserver.disk.io.rate"] = mb.metricSqlserverDiskIoRate.config.AggregationStrategy
-			aggMap["sqlserver.disk.io.throughput"] = mb.metricSqlserverDiskIoThroughput.config.AggregationStrategy
+			aggMap["sqlserver.disk.operation.rate"] = mb.metricSqlserverDiskOperationRate.config.AggregationStrategy
 			aggMap["sqlserver.host.memory.usage"] = mb.metricSqlserverHostMemoryUsage.config.AggregationStrategy
 			aggMap["sqlserver.index.fragmentation"] = mb.metricSqlserverIndexFragmentation.config.AggregationStrategy
 			aggMap["sqlserver.index.page.count"] = mb.metricSqlserverIndexPageCount.config.AggregationStrategy
@@ -197,15 +197,15 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverDeadlockRateDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverDiskIoRateDataPoint(ts, 1, AttributeDiskIoDirectionRead, "disk.drive-val")
+			mb.RecordSqlserverDiskIoRateDataPoint(ts, 1, AttributeDiskIoDirectionRead, "system.filesystem.drive-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverDiskIoRateDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "disk.drive-val-2")
+				mb.RecordSqlserverDiskIoRateDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "system.filesystem.drive-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverDiskIoThroughputDataPoint(ts, 1, AttributeDiskIoDirectionRead, "disk.drive-val")
+			mb.RecordSqlserverDiskOperationRateDataPoint(ts, 1, AttributeDiskIoDirectionRead, "system.filesystem.drive-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverDiskIoThroughputDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "disk.drive-val-2")
+				mb.RecordSqlserverDiskOperationRateDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "system.filesystem.drive-val-2")
 			}
 
 			allMetricsCount++
@@ -504,7 +504,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverDatabaseOperations.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseTempdbSpace.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDiskIoRate.aggDataPoints)
-				assert.Empty(t, mb.metricSqlserverDiskIoThroughput.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverDiskOperationRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverHostMemoryUsage.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverIndexFragmentation.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverIndexPageCount.aggDataPoints)
@@ -1082,8 +1082,8 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.disk.io.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Read and write operations per second on disk drives hosting SQL Server database files.", mi.Description())
-						assert.Equal(t, "{operations}/s", mi.Unit())
+						assert.Equal(t, "Bytes per second read from and written to disk drives hosting SQL Server database files.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -1092,16 +1092,16 @@ func TestMetricsBuilder(t *testing.T) {
 						diskIoDirectionAttrVal, ok := dp.Attributes().Get("disk.io.direction")
 						assert.True(t, ok)
 						assert.Equal(t, "read", diskIoDirectionAttrVal.Str())
-						diskDriveAttrVal, ok := dp.Attributes().Get("disk.drive")
+						systemFilesystemDriveAttrVal, ok := dp.Attributes().Get("system.filesystem.drive")
 						assert.True(t, ok)
-						assert.Equal(t, "disk.drive-val", diskDriveAttrVal.Str())
+						assert.Equal(t, "system.filesystem.drive-val", systemFilesystemDriveAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.disk.io.rate"], "Found a duplicate in the metrics slice: sqlserver.disk.io.rate")
 						validatedMetrics["sqlserver.disk.io.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Read and write operations per second on disk drives hosting SQL Server database files.", mi.Description())
-						assert.Equal(t, "{operations}/s", mi.Unit())
+						assert.Equal(t, "Bytes per second read from and written to disk drives hosting SQL Server database files.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -1118,17 +1118,17 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("disk.io.direction")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("disk.drive")
+						_, ok = dp.Attributes().Get("system.filesystem.drive")
 						assert.False(t, ok)
 					}
-				case "sqlserver.disk.io.throughput":
+				case "sqlserver.disk.operation.rate":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.disk.io.throughput"], "Found a duplicate in the metrics slice: sqlserver.disk.io.throughput")
-						validatedMetrics["sqlserver.disk.io.throughput"] = true
+						assert.False(t, validatedMetrics["sqlserver.disk.operation.rate"], "Found a duplicate in the metrics slice: sqlserver.disk.operation.rate")
+						validatedMetrics["sqlserver.disk.operation.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Bytes per second read from and written to disk drives hosting SQL Server database files.", mi.Description())
-						assert.Equal(t, "By/s", mi.Unit())
+						assert.Equal(t, "Read and write operations per second on disk drives hosting SQL Server database files.", mi.Description())
+						assert.Equal(t, "{operations}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -1137,21 +1137,21 @@ func TestMetricsBuilder(t *testing.T) {
 						diskIoDirectionAttrVal, ok := dp.Attributes().Get("disk.io.direction")
 						assert.True(t, ok)
 						assert.Equal(t, "read", diskIoDirectionAttrVal.Str())
-						diskDriveAttrVal, ok := dp.Attributes().Get("disk.drive")
+						systemFilesystemDriveAttrVal, ok := dp.Attributes().Get("system.filesystem.drive")
 						assert.True(t, ok)
-						assert.Equal(t, "disk.drive-val", diskDriveAttrVal.Str())
+						assert.Equal(t, "system.filesystem.drive-val", systemFilesystemDriveAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["sqlserver.disk.io.throughput"], "Found a duplicate in the metrics slice: sqlserver.disk.io.throughput")
-						validatedMetrics["sqlserver.disk.io.throughput"] = true
+						assert.False(t, validatedMetrics["sqlserver.disk.operation.rate"], "Found a duplicate in the metrics slice: sqlserver.disk.operation.rate")
+						validatedMetrics["sqlserver.disk.operation.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Bytes per second read from and written to disk drives hosting SQL Server database files.", mi.Description())
-						assert.Equal(t, "By/s", mi.Unit())
+						assert.Equal(t, "Read and write operations per second on disk drives hosting SQL Server database files.", mi.Description())
+						assert.Equal(t, "{operations}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["sqlserver.disk.io.throughput"] {
+						switch aggMap["sqlserver.disk.operation.rate"] {
 						case "sum":
 							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
 						case "avg":
@@ -1163,7 +1163,7 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("disk.io.direction")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("disk.drive")
+						_, ok = dp.Attributes().Get("system.filesystem.drive")
 						assert.False(t, ok)
 					}
 				case "sqlserver.error.rate":

@@ -100,10 +100,6 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [read, write]
-  disk.drive:
-    description: The first character of the database file path. On Windows this is the drive letter (e.g. C); on Linux this is always /.
-    type: string
-    requirement_level: recommended
   disk.io.direction:
     description: The direction of disk I/O operations.
     type: string
@@ -401,6 +397,10 @@ attributes:
   sqlserver.writes:
     description: Number of writes performed by the query.
     type: int
+    requirement_level: recommended
+  system.filesystem.drive:
+    description: The drive identifier of the disk hosting SQL Server database files. On Windows this is the drive letter (e.g. C); on Linux this is always /.
+    type: string
     requirement_level: recommended
   system.memory.state:
     description: The state of the physical memory on the host.
@@ -747,21 +747,21 @@ metrics:
     attributes: []
   sqlserver.disk.io.rate:
     enabled: false
-    description: Read and write operations per second on disk drives hosting SQL Server database files.
-    stability: development
-    unit: "{operations}/s"
-    gauge:
-      value_type: double
-    attributes: [disk.io.direction, disk.drive]
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
-  sqlserver.disk.io.throughput:
-    enabled: false
     description: Bytes per second read from and written to disk drives hosting SQL Server database files.
     stability: development
     unit: "By/s"
     gauge:
       value_type: double
-    attributes: [disk.io.direction, disk.drive]
+    attributes: [disk.io.direction, system.filesystem.drive]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
+  sqlserver.disk.operation.rate:
+    enabled: false
+    description: Read and write operations per second on disk drives hosting SQL Server database files.
+    stability: development
+    unit: "{operations}/s"
+    gauge:
+      value_type: double
+    attributes: [disk.io.direction, system.filesystem.drive]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
   sqlserver.error.rate:
     enabled: false
