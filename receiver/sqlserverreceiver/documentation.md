@@ -463,15 +463,15 @@ Total number of deadlocks.
 | ---- | ----------- | ---------- | --------- |
 | {deadlocks}/s | Gauge | Double | Development |
 
-### sqlserver.disk.io.bytes
+### sqlserver.disk.io.rate
 
-Total bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.
+Read and write operations per second on disk drives hosting SQL Server database files.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | Development |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {operations}/s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -480,15 +480,15 @@ This metric is only available when the receiver is configured to directly connec
 | direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | Recommended | - |
 | disk.drive | The first character of the database file path. On Windows this is the drive letter (e.g. C); on Linux this is always /. | Any Str | Recommended | - |
 
-### sqlserver.disk.io.operations
+### sqlserver.disk.io.throughput
 
-Total read and write operations on disk drives hosting SQL Server database files since SQL Server last started.
+Bytes per second read from and written to disk drives hosting SQL Server database files.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | Development |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
 
 #### Attributes
 

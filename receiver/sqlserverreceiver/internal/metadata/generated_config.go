@@ -667,24 +667,24 @@ func (ms *SqlserverDeadlockRateMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// SqlserverDiskIoBytesMetricAttributeKey specifies the key of an attribute for the sqlserver.disk.io.bytes metric.
-type SqlserverDiskIoBytesMetricAttributeKey string
+// SqlserverDiskIoRateMetricAttributeKey specifies the key of an attribute for the sqlserver.disk.io.rate metric.
+type SqlserverDiskIoRateMetricAttributeKey string
 
 const (
-	SqlserverDiskIoBytesMetricAttributeKeyDirection SqlserverDiskIoBytesMetricAttributeKey = "direction"
-	SqlserverDiskIoBytesMetricAttributeKeyDiskDrive SqlserverDiskIoBytesMetricAttributeKey = "disk.drive"
+	SqlserverDiskIoRateMetricAttributeKeyDirection SqlserverDiskIoRateMetricAttributeKey = "direction"
+	SqlserverDiskIoRateMetricAttributeKeyDiskDrive SqlserverDiskIoRateMetricAttributeKey = "disk.drive"
 )
 
-// SqlserverDiskIoBytesMetricConfig provides config for the sqlserver.disk.io.bytes metric.
-type SqlserverDiskIoBytesMetricConfig struct {
+// SqlserverDiskIoRateMetricConfig provides config for the sqlserver.disk.io.rate metric.
+type SqlserverDiskIoRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverDiskIoBytesMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverDiskIoRateMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SqlserverDiskIoBytesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverDiskIoRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -698,12 +698,12 @@ func (ms *SqlserverDiskIoBytesMetricConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-func (ms *SqlserverDiskIoBytesMetricConfig) Validate() error {
+func (ms *SqlserverDiskIoRateMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverDiskIoBytesMetricAttributeKeyDirection, SqlserverDiskIoBytesMetricAttributeKeyDiskDrive:
+		case SqlserverDiskIoRateMetricAttributeKeyDirection, SqlserverDiskIoRateMetricAttributeKeyDiskDrive:
 		default:
-			return fmt.Errorf("metric sqlserver.disk.io.bytes doesn't have an attribute %v, valid attributes: [direction, disk.drive]", val)
+			return fmt.Errorf("metric sqlserver.disk.io.rate doesn't have an attribute %v, valid attributes: [direction, disk.drive]", val)
 		}
 	}
 
@@ -716,24 +716,24 @@ func (ms *SqlserverDiskIoBytesMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverDiskIoOperationsMetricAttributeKey specifies the key of an attribute for the sqlserver.disk.io.operations metric.
-type SqlserverDiskIoOperationsMetricAttributeKey string
+// SqlserverDiskIoThroughputMetricAttributeKey specifies the key of an attribute for the sqlserver.disk.io.throughput metric.
+type SqlserverDiskIoThroughputMetricAttributeKey string
 
 const (
-	SqlserverDiskIoOperationsMetricAttributeKeyDirection SqlserverDiskIoOperationsMetricAttributeKey = "direction"
-	SqlserverDiskIoOperationsMetricAttributeKeyDiskDrive SqlserverDiskIoOperationsMetricAttributeKey = "disk.drive"
+	SqlserverDiskIoThroughputMetricAttributeKeyDirection SqlserverDiskIoThroughputMetricAttributeKey = "direction"
+	SqlserverDiskIoThroughputMetricAttributeKeyDiskDrive SqlserverDiskIoThroughputMetricAttributeKey = "disk.drive"
 )
 
-// SqlserverDiskIoOperationsMetricConfig provides config for the sqlserver.disk.io.operations metric.
-type SqlserverDiskIoOperationsMetricConfig struct {
+// SqlserverDiskIoThroughputMetricConfig provides config for the sqlserver.disk.io.throughput metric.
+type SqlserverDiskIoThroughputMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
 	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverDiskIoOperationsMetricAttributeKey `mapstructure:"attributes"`
+	EnabledAttributes   []SqlserverDiskIoThroughputMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SqlserverDiskIoOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverDiskIoThroughputMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -747,12 +747,12 @@ func (ms *SqlserverDiskIoOperationsMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *SqlserverDiskIoOperationsMetricConfig) Validate() error {
+func (ms *SqlserverDiskIoThroughputMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverDiskIoOperationsMetricAttributeKeyDirection, SqlserverDiskIoOperationsMetricAttributeKeyDiskDrive:
+		case SqlserverDiskIoThroughputMetricAttributeKeyDirection, SqlserverDiskIoThroughputMetricAttributeKeyDiskDrive:
 		default:
-			return fmt.Errorf("metric sqlserver.disk.io.operations doesn't have an attribute %v, valid attributes: [direction, disk.drive]", val)
+			return fmt.Errorf("metric sqlserver.disk.io.throughput doesn't have an attribute %v, valid attributes: [direction, disk.drive]", val)
 		}
 	}
 
@@ -2824,8 +2824,8 @@ type MetricsConfig struct {
 	SqlserverDatabaseTempdbSpace                SqlserverDatabaseTempdbSpaceMetricConfig                `mapstructure:"sqlserver.database.tempdb.space"`
 	SqlserverDatabaseTempdbVersionStoreSize     SqlserverDatabaseTempdbVersionStoreSizeMetricConfig     `mapstructure:"sqlserver.database.tempdb.version_store.size"`
 	SqlserverDeadlockRate                       SqlserverDeadlockRateMetricConfig                       `mapstructure:"sqlserver.deadlock.rate"`
-	SqlserverDiskIoBytes                        SqlserverDiskIoBytesMetricConfig                        `mapstructure:"sqlserver.disk.io.bytes"`
-	SqlserverDiskIoOperations                   SqlserverDiskIoOperationsMetricConfig                   `mapstructure:"sqlserver.disk.io.operations"`
+	SqlserverDiskIoRate                         SqlserverDiskIoRateMetricConfig                         `mapstructure:"sqlserver.disk.io.rate"`
+	SqlserverDiskIoThroughput                   SqlserverDiskIoThroughputMetricConfig                   `mapstructure:"sqlserver.disk.io.throughput"`
 	SqlserverErrorRate                          SqlserverErrorRateMetricConfig                          `mapstructure:"sqlserver.error.rate"`
 	SqlserverExtentOperationRate                SqlserverExtentOperationRateMetricConfig                `mapstructure:"sqlserver.extent.operation.rate"`
 	SqlserverGhostRecordSkippedRate             SqlserverGhostRecordSkippedRateMetricConfig             `mapstructure:"sqlserver.ghost_record.skipped.rate"`
@@ -2984,15 +2984,15 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverDeadlockRate: SqlserverDeadlockRateMetricConfig{
 			Enabled: false,
 		},
-		SqlserverDiskIoBytes: SqlserverDiskIoBytesMetricConfig{
+		SqlserverDiskIoRate: SqlserverDiskIoRateMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SqlserverDiskIoBytesMetricAttributeKey{SqlserverDiskIoBytesMetricAttributeKeyDirection, SqlserverDiskIoBytesMetricAttributeKeyDiskDrive},
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverDiskIoRateMetricAttributeKey{SqlserverDiskIoRateMetricAttributeKeyDirection, SqlserverDiskIoRateMetricAttributeKeyDiskDrive},
 		},
-		SqlserverDiskIoOperations: SqlserverDiskIoOperationsMetricConfig{
+		SqlserverDiskIoThroughput: SqlserverDiskIoThroughputMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SqlserverDiskIoOperationsMetricAttributeKey{SqlserverDiskIoOperationsMetricAttributeKeyDirection, SqlserverDiskIoOperationsMetricAttributeKeyDiskDrive},
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverDiskIoThroughputMetricAttributeKey{SqlserverDiskIoThroughputMetricAttributeKeyDirection, SqlserverDiskIoThroughputMetricAttributeKeyDiskDrive},
 		},
 		SqlserverErrorRate: SqlserverErrorRateMetricConfig{
 			Enabled: false,

@@ -55,10 +55,10 @@ all_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
-    sqlserver.disk.io.bytes:
+    sqlserver.disk.io.rate:
       enabled: true
       attributes: ["direction","disk.drive"]
-    sqlserver.disk.io.operations:
+    sqlserver.disk.io.throughput:
       enabled: true
       attributes: ["direction","disk.drive"]
     sqlserver.error.rate:
@@ -303,10 +303,10 @@ reaggregate_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
-    sqlserver.disk.io.bytes:
+    sqlserver.disk.io.rate:
       enabled: true
       attributes: []
-    sqlserver.disk.io.operations:
+    sqlserver.disk.io.throughput:
       enabled: true
       attributes: []
     sqlserver.error.rate:
@@ -551,10 +551,10 @@ none_set:
       enabled: false
     sqlserver.deadlock.rate:
       enabled: false
-    sqlserver.disk.io.bytes:
+    sqlserver.disk.io.rate:
       enabled: false
       attributes: ["direction","disk.drive"]
-    sqlserver.disk.io.operations:
+    sqlserver.disk.io.throughput:
       enabled: false
       attributes: ["direction","disk.drive"]
     sqlserver.error.rate:

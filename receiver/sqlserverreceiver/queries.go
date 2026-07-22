@@ -1330,6 +1330,7 @@ SELECT
 	,SUM(vfs.num_of_writes) AS [write_ops]
 	,SUM(vfs.num_of_bytes_read) AS [read_bytes]
 	,SUM(vfs.num_of_bytes_written) AS [write_bytes]
+	,MAX(vfs.sample_ms) / 1000.0 AS [sample_seconds]
 FROM sys.dm_io_virtual_file_stats(NULL, NULL) vfs
 INNER JOIN sys.master_files mf ON vfs.database_id = mf.database_id AND vfs.file_id = mf.file_id
 WHERE 1=1

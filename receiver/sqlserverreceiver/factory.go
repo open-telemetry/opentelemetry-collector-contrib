@@ -384,6 +384,6 @@ func isDiskIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		return false
 	}
 
-	return metrics.SqlserverDiskIoOperations.Enabled ||
-		metrics.SqlserverDiskIoBytes.Enabled
+	return metrics.SqlserverDiskIoRate.Enabled ||
+		metrics.SqlserverDiskIoThroughput.Enabled
 }

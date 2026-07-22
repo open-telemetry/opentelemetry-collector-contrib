@@ -52,8 +52,8 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
 	cfg.Metrics.SqlserverDeadlockRate.Enabled = enabled
-	cfg.Metrics.SqlserverDiskIoBytes.Enabled = enabled
-	cfg.Metrics.SqlserverDiskIoOperations.Enabled = enabled
+	cfg.Metrics.SqlserverDiskIoRate.Enabled = enabled
+	cfg.Metrics.SqlserverDiskIoThroughput.Enabled = enabled
 	cfg.Metrics.SqlserverErrorRate.Enabled = enabled
 	cfg.Metrics.SqlserverExtentOperationRate.Enabled = enabled
 	cfg.Metrics.SqlserverGhostRecordSkippedRate.Enabled = enabled
@@ -1450,8 +1450,8 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 	cfg.Server = "0.0.0.0"
 	cfg.Port = 1433
 	assert.NoError(t, cfg.Validate())
-	cfg.Metrics.SqlserverDiskIoOperations.Enabled = true
-	cfg.Metrics.SqlserverDiskIoBytes.Enabled = true
+	cfg.Metrics.SqlserverDiskIoRate.Enabled = true
+	cfg.Metrics.SqlserverDiskIoThroughput.Enabled = true
 
 	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
@@ -1486,10 +1486,10 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 			for k := 0; k < sm.Metrics().Len(); k++ {
 				m := sm.Metrics().At(k)
 				switch m.Name() {
-				case metadata.MetricsInfo.SqlserverDiskIoOperations.Name:
-					totalDP += m.Sum().DataPoints().Len()
-				case metadata.MetricsInfo.SqlserverDiskIoBytes.Name:
-					totalDP += m.Sum().DataPoints().Len()
+				case metadata.MetricsInfo.SqlserverDiskIoRate.Name:
+					totalDP += m.Gauge().DataPoints().Len()
+				case metadata.MetricsInfo.SqlserverDiskIoThroughput.Name:
+					totalDP += m.Gauge().DataPoints().Len()
 				}
 			}
 		}
@@ -1517,10 +1517,10 @@ func TestIsDiskIOQueryEnabled(t *testing.T) {
 	metrics := &metadata.MetricsConfig{}
 	assert.False(t, isDiskIOQueryEnabled(metrics))
 
-	metrics.SqlserverDiskIoOperations.Enabled = true
+	metrics.SqlserverDiskIoRate.Enabled = true
 	assert.True(t, isDiskIOQueryEnabled(metrics))
 
-	metrics.SqlserverDiskIoOperations.Enabled = false
-	metrics.SqlserverDiskIoBytes.Enabled = true
+	metrics.SqlserverDiskIoRate.Enabled = false
+	metrics.SqlserverDiskIoThroughput.Enabled = true
 	assert.True(t, isDiskIOQueryEnabled(metrics))
 }

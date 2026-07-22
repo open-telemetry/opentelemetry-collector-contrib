@@ -2146,6 +2146,7 @@ func (s *sqlServerScraperHelper) recordDiskIOMetrics(ctx context.Context) error 
 	const writeOps = "write_ops"
 	const readBytes = "read_bytes"
 	const writeBytes = "write_bytes"
+	const sampleSeconds = "sample_seconds"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -2159,34 +2160,45 @@ func (s *sqlServerScraperHelper) recordDiskIOMetrics(ctx context.Context) error 
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		sampleSecs, err := retrieveFloat(row, sampleSeconds)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", sampleSeconds, i, err))
+			s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+			continue
+		}
+		if sampleSecs.(float64) <= 0 {
+			s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+			continue
+		}
 		drive := row[diskDrive]
 
 		rOps, err := retrieveInt(row, readOps)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", readOps, i, err))
 		} else {
-			s.mb.RecordSqlserverDiskIoOperationsDataPoint(now, rOps.(int64), metadata.AttributeDirectionRead, drive)
+			s.mb.RecordSqlserverDiskIoRateDataPoint(now, float64(rOps.(int64))/sampleSecs.(float64), metadata.AttributeDirectionRead, drive)
 		}
 
 		wOps, err := retrieveInt(row, writeOps)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", writeOps, i, err))
 		} else {
-			s.mb.RecordSqlserverDiskIoOperationsDataPoint(now, wOps.(int64), metadata.AttributeDirectionWrite, drive)
+			s.mb.RecordSqlserverDiskIoRateDataPoint(now, float64(wOps.(int64))/sampleSecs.(float64), metadata.AttributeDirectionWrite, drive)
 		}
 
 		rBytes, err := retrieveInt(row, readBytes)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", readBytes, i, err))
 		} else {
-			s.mb.RecordSqlserverDiskIoBytesDataPoint(now, rBytes.(int64), metadata.AttributeDirectionRead, drive)
+			s.mb.RecordSqlserverDiskIoThroughputDataPoint(now, float64(rBytes.(int64))/sampleSecs.(float64), metadata.AttributeDirectionRead, drive)
 		}
 
 		wBytes, err := retrieveInt(row, writeBytes)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", writeBytes, i, err))
 		} else {
-			s.mb.RecordSqlserverDiskIoBytesDataPoint(now, wBytes.(int64), metadata.AttributeDirectionWrite, drive)
+			s.mb.RecordSqlserverDiskIoThroughputDataPoint(now, float64(wBytes.(int64))/sampleSecs.(float64), metadata.AttributeDirectionWrite, drive)
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))

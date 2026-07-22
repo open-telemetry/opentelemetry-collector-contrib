@@ -740,26 +740,22 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-  sqlserver.disk.io.bytes:
+  sqlserver.disk.io.rate:
     enabled: false
-    description: Total bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.
+    description: Read and write operations per second on disk drives hosting SQL Server database files.
     stability: development
-    unit: By
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
+    unit: "{operations}/s"
+    gauge:
+      value_type: double
     attributes: [direction, disk.drive]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
-  sqlserver.disk.io.operations:
+  sqlserver.disk.io.throughput:
     enabled: false
-    description: Total read and write operations on disk drives hosting SQL Server database files since SQL Server last started.
+    description: Bytes per second read from and written to disk drives hosting SQL Server database files.
     stability: development
-    unit: "{operations}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
+    unit: "By/s"
+    gauge:
+      value_type: double
     attributes: [direction, disk.drive]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
   sqlserver.error.rate:
