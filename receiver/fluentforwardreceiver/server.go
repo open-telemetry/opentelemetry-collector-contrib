@@ -27,7 +27,6 @@ const readBufferSize = 10 * 1024
 type server struct {
 	outCh            chan<- eventWithACK
 	ackWaitTimeout   time.Duration
-	ackWaiters       chan struct{}
 	logger           *zap.Logger
 	telemetryBuilder *metadata.TelemetryBuilder
 	conns            map[net.Conn]struct{}
@@ -38,7 +37,6 @@ func newServer(outCh chan<- eventWithACK, ackWaitTimeout time.Duration, logger *
 	return &server{
 		outCh:            outCh,
 		ackWaitTimeout:   ackWaitTimeout,
-		ackWaiters:       make(chan struct{}, maxPendingACKs),
 		logger:           logger,
 		telemetryBuilder: telemetryBuilder,
 		conns:            make(map[net.Conn]struct{}),
@@ -131,50 +129,36 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 
 		chunk := e.Chunk()
 		if chunk == "" {
-			if err = s.enqueueEvent(ctx, eventWithACK{event: e}, 0); err != nil {
-				return err
+			if enqErr := s.enqueueEvent(ctx, eventWithACK{event: e}); enqErr != nil {
+				return enqErr
 			}
 			continue
 		}
 
-		if !s.acquireACKWaiter(ctx) {
-			return fmt.Errorf("too many pending acknowledgments")
-		}
+		// Chunked events must be acknowledged only after the pipeline has
+		// accepted them. Bound the enqueue so a backed-up collector cannot pin
+		// this connection indefinitely; on timeout the connection is closed
+		// without an ACK and the client retries the chunk.
 		ackCh := make(chan error, 1)
-		err = s.enqueueEvent(ctx, eventWithACK{event: e, ackCh: ackCh}, s.ackWaitTimeout)
-		if err != nil {
-			s.releaseACKWaiter()
-			return err
+		enqueueCtx, cancel := context.WithTimeout(ctx, s.ackWaitTimeout)
+		enqErr := s.enqueueEvent(enqueueCtx, eventWithACK{event: e, ackCh: ackCh})
+		cancel()
+		if enqErr != nil {
+			return enqErr
 		}
 
-		err = s.waitForACK(ctx, conn, chunk, ackCh)
-		s.releaseACKWaiter()
-		if err != nil {
-			return err
+		if ackErr := s.waitForACK(ctx, conn, chunk, ackCh); ackErr != nil {
+			return ackErr
 		}
 	}
 }
 
-func (s *server) enqueueEvent(ctx context.Context, e eventWithACK, timeout time.Duration) error {
-	if timeout <= 0 {
-		select {
-		case s.outCh <- e:
-			return nil
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
-
-	timer := time.NewTimer(timeout)
-	defer timer.Stop()
-
+func (s *server) enqueueEvent(ctx context.Context, e eventWithACK) error {
 	select {
 	case s.outCh <- e:
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()
-	case <-timer.C:
-		return fmt.Errorf("timed out waiting to enqueue chunk for acknowledgment")
 	}
 }
 
@@ -196,24 +180,6 @@ func (s *server) waitForACK(ctx context.Context, conn net.Conn, chunk string, ac
 		return ctx.Err()
 	case <-timer.C:
 		return fmt.Errorf("timed out waiting for downstream consumer to process chunk %s", chunk)
-	}
-}
-
-func (s *server) acquireACKWaiter(ctx context.Context) bool {
-	select {
-	case s.ackWaiters <- struct{}{}:
-		return true
-	case <-ctx.Done():
-		return false
-	default:
-		return false
-	}
-}
-
-func (s *server) releaseACKWaiter() {
-	select {
-	case <-s.ackWaiters:
-	default:
 	}
 }
 

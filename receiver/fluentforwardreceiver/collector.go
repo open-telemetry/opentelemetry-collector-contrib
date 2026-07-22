@@ -66,7 +66,14 @@ func (c *collector) processEvents(ctx context.Context) {
 			logRecordCount := out.LogRecordCount()
 			c.telemetryBuilder.FluentRecordsGenerated.Add(ctx, int64(logRecordCount))
 			obsCtx := c.obsrecv.StartLogsOp(ctx)
-			consumeCtx, cancel := c.contextWithACKTimeout(obsCtx, len(ackChs))
+			// Bound ConsumeLogs only when the batch carries chunk ACK waiters, so
+			// a stuck pipeline cannot hold a client's chunk open past the wait
+			// timeout. Batches without waiters keep the original unbounded behavior.
+			consumeCtx := obsCtx
+			cancel := context.CancelFunc(func() {})
+			if len(ackChs) > 0 && c.ackWaitTimeout > 0 {
+				consumeCtx, cancel = context.WithTimeout(obsCtx, c.ackWaitTimeout)
+			}
 			err := c.nextConsumer.ConsumeLogs(consumeCtx, out)
 			cancel()
 			c.obsrecv.EndLogsOp(obsCtx, "fluent", logRecordCount, err)
@@ -89,14 +96,7 @@ func (c *collector) fillBufferUntilChanEmpty(dest plog.LogRecordSlice, ackChs []
 	}
 }
 
-func (c *collector) contextWithACKTimeout(ctx context.Context, ackCount int) (context.Context, context.CancelFunc) {
-	if ackCount == 0 || c.ackWaitTimeout <= 0 {
-		return ctx, func() {}
-	}
-	return context.WithTimeout(ctx, c.ackWaitTimeout)
-}
-
-func (c *collector) completeACKs(ackChs []chan error, err error) {
+func (*collector) completeACKs(ackChs []chan error, err error) {
 	for _, ackCh := range ackChs {
 		select {
 		case ackCh <- err:

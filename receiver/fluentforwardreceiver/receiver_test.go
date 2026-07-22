@@ -64,10 +64,10 @@ func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observ
 	return connect, next, logObserver, cancel, receiver
 }
 
-func setupServerWithConsumer(t *testing.T, next consumer.Logs, configure func(*fluentReceiver)) (func() net.Conn, *observer.ObservedLogs, context.CancelFunc, receiver.Logs) {
+func setupServerWithConsumer(t *testing.T, next consumer.Logs, configure func(*fluentReceiver)) (func() net.Conn, context.CancelFunc, receiver.Logs) {
 	ctx, cancel := context.WithCancel(t.Context())
 
-	logCore, logObserver := observer.New(zap.DebugLevel)
+	logCore, _ := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
 
 	set := receivertest.NewNopSettings(metadata.Type)
@@ -95,7 +95,7 @@ func setupServerWithConsumer(t *testing.T, next consumer.Logs, configure func(*f
 		assert.NoError(t, recv.Shutdown(ctx))
 	}()
 
-	return connect, logObserver, cancel, recv
+	return connect, cancel, recv
 }
 
 func waitForConnectionClose(t *testing.T, conn net.Conn) {
@@ -243,7 +243,7 @@ func TestEventAcknowledgment(t *testing.T) {
 func TestEventAcknowledgmentWaitsForConsumerSuccess(t *testing.T) {
 	release := make(chan struct{})
 	next := newGatedLogsConsumer(release, nil)
-	connect, _, cancel, _ := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
+	connect, cancel, _ := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
 		r.collector.ackWaitTimeout = 5 * time.Second
 		r.server.ackWaitTimeout = 5 * time.Second
 	})
@@ -251,7 +251,7 @@ func TestEventAcknowledgmentWaitsForConsumerSuccess(t *testing.T) {
 
 	const chunkValue = "chunk-success"
 	conn := connect()
-	n, err := conn.Write(makeSampleEventWithChunk("my-tag", chunkValue))
+	n, err := conn.Write(makeSampleEventWithChunk(chunkValue))
 	require.NoError(t, err)
 	require.Positive(t, n)
 
@@ -268,11 +268,11 @@ func TestEventAcknowledgmentWaitsForConsumerSuccess(t *testing.T) {
 
 func TestEventAcknowledgmentDownstreamErrorClosesWithoutACK(t *testing.T) {
 	next := newErrLogsConsumer(errors.New("pipeline full"))
-	connect, _, cancel, _ := setupServerWithConsumer(t, next, nil)
+	connect, cancel, _ := setupServerWithConsumer(t, next, nil)
 	defer cancel()
 
 	conn := connect()
-	n, err := conn.Write(makeSampleEventWithChunk("my-tag", "chunk-error"))
+	n, err := conn.Write(makeSampleEventWithChunk("chunk-error"))
 	require.NoError(t, err)
 	require.Positive(t, n)
 
@@ -283,14 +283,14 @@ func TestEventAcknowledgmentDownstreamErrorClosesWithoutACK(t *testing.T) {
 func TestEventAcknowledgmentTimeoutClosesWithoutACK(t *testing.T) {
 	release := make(chan struct{})
 	next := newGatedLogsConsumer(release, nil)
-	connect, _, cancel, _ := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
+	connect, cancel, _ := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
 		r.collector.ackWaitTimeout = 50 * time.Millisecond
 		r.server.ackWaitTimeout = 50 * time.Millisecond
 	})
 	defer cancel()
 
 	conn := connect()
-	n, err := conn.Write(makeSampleEventWithChunk("my-tag", "chunk-timeout"))
+	n, err := conn.Write(makeSampleEventWithChunk("chunk-timeout"))
 	require.NoError(t, err)
 	require.Positive(t, n)
 
@@ -311,55 +311,73 @@ func TestEventAcknowledgmentEnqueueTimeoutClosesWithoutACK(t *testing.T) {
 
 	serverDone := make(chan error, 1)
 	go func() {
-		err := srv.handleConn(t.Context(), serverConn)
+		handleErr := srv.handleConn(t.Context(), serverConn)
 		_ = serverConn.Close()
-		serverDone <- err
+		serverDone <- handleErr
 	}()
 
 	writeDone := make(chan error, 1)
 	go func() {
-		_, err := clientConn.Write(makeSampleEventWithChunk("my-tag", "chunk-enqueue-timeout"))
-		writeDone <- err
+		_, writeErr := clientConn.Write(makeSampleEventWithChunk("chunk-enqueue-timeout"))
+		writeDone <- writeErr
 	}()
-	if err := <-writeDone; err != nil {
-		require.ErrorIs(t, err, io.ErrClosedPipe)
+	if writeErr := <-writeDone; writeErr != nil {
+		require.ErrorIs(t, writeErr, io.ErrClosedPipe)
 	}
 
 	select {
-	case err := <-serverDone:
-		require.ErrorContains(t, err, "timed out waiting to enqueue chunk for acknowledgment")
+	case runErr := <-serverDone:
+		require.ErrorIs(t, runErr, context.DeadlineExceeded)
 	case <-time.After(5 * time.Second):
 		require.FailNow(t, "timed out waiting for server enqueue timeout")
 	}
-	_, err = clientConn.Read(make([]byte, 1))
-	require.True(t, errors.Is(err, io.ErrClosedPipe) || errors.Is(err, io.EOF), "expected closed connection, got: %v", err)
+	_, readErr := clientConn.Read(make([]byte, 1))
+	require.True(t, errors.Is(readErr, io.ErrClosedPipe) || errors.Is(readErr, io.EOF), "expected closed connection, got: %v", readErr)
 }
 
-func TestEventAcknowledgmentBoundedPendingWaiters(t *testing.T) {
-	release := make(chan struct{})
-	next := newGatedLogsConsumer(release, nil)
-	connect, _, cancel, _ := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
-		r.collector.ackWaitTimeout = 5 * time.Second
-		r.server.ackWaitTimeout = 5 * time.Second
-		r.server.ackWaiters = make(chan struct{}, 1)
+func TestConnectionsBoundedByLimitListener(t *testing.T) {
+	next := new(consumertest.LogsSink)
+	connect, cancel, recv := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
+		r.maxConnections = 1
 	})
 	defer cancel()
 
+	srv := recv.(*fluentReceiver).server
+
+	// The first connection takes the only slot. It sends nothing, so its
+	// handler parks reading and keeps the connection (and the LimitListener
+	// slot) open.
 	firstConn := connect()
-	n, err := firstConn.Write(makeSampleEventWithChunk("my-tag", "chunk-blocked"))
-	require.NoError(t, err)
-	require.Positive(t, n)
-	require.Eventually(t, next.called, 5*time.Second, 10*time.Millisecond)
+	defer firstConn.Close()
+	require.Eventually(t, func() bool { return connCount(srv) == 1 }, 5*time.Second, 10*time.Millisecond)
 
+	// The second connection is accepted by the kernel, but LimitListener will
+	// not hand it to the server until the slot frees, so it is never processed.
 	secondConn := connect()
-	n, err = secondConn.Write(makeSampleEventWithChunk("my-tag", "chunk-rejected"))
+	defer secondConn.Close()
+	n, err := secondConn.Write(makeSampleEventWithChunk("chunk-limited"))
 	require.NoError(t, err)
 	require.Positive(t, n)
-	waitForConnectionClose(t, secondConn)
 
-	close(release)
-	resp := readACKResponse(t, firstConn)
-	require.Equal(t, "chunk-blocked", resp["ack"])
+	// While the first connection holds the slot the server never accepts the
+	// second one (conn count stays at 1) and it receives no acknowledgment.
+	require.Never(t, func() bool { return connCount(srv) > 1 }, 300*time.Millisecond, 20*time.Millisecond)
+	require.NoError(t, secondConn.SetReadDeadline(time.Now().Add(200*time.Millisecond)))
+	_, err = secondConn.Read(make([]byte, 1))
+	require.True(t, isTimeout(err), "expected no ACK while the connection limit is saturated, got: %v", err)
+
+	// Free the slot; the second connection is now accepted and its chunk is
+	// acknowledged.
+	require.NoError(t, firstConn.Close())
+	require.NoError(t, secondConn.SetReadDeadline(time.Time{}))
+	resp := readACKResponse(t, secondConn)
+	require.Equal(t, "chunk-limited", resp["ack"])
+}
+
+func connCount(s *server) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.conns)
 }
 
 func TestForwardEventAcknowledgment(t *testing.T) {
@@ -368,7 +386,7 @@ func TestForwardEventAcknowledgment(t *testing.T) {
 
 	const chunkValue = "chunk-forward"
 	conn := connect()
-	n, err := conn.Write(makeSampleForwardEventWithChunk("my-tag", chunkValue))
+	n, err := conn.Write(makeSampleForwardEventWithChunk(chunkValue))
 	require.NoError(t, err)
 	require.Positive(t, n)
 
@@ -382,7 +400,7 @@ func TestPackedForwardEventAcknowledgment(t *testing.T) {
 
 	const chunkValue = "chunk-packed-forward"
 	conn := connect()
-	n, err := conn.Write(makeSamplePackedForwardEventWithChunk("my-tag", chunkValue))
+	n, err := conn.Write(makeSamplePackedForwardEventWithChunk(chunkValue))
 	require.NoError(t, err)
 	require.Positive(t, n)
 
@@ -393,7 +411,7 @@ func TestPackedForwardEventAcknowledgment(t *testing.T) {
 func TestEventAcknowledgmentShutdownWhileWaiting(t *testing.T) {
 	release := make(chan struct{})
 	next := newGatedLogsConsumer(release, nil)
-	connect, _, cancel, recv := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
+	connect, cancel, recv := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
 		r.collector.ackWaitTimeout = 5 * time.Second
 		r.server.ackWaitTimeout = 5 * time.Second
 	})
@@ -401,7 +419,7 @@ func TestEventAcknowledgmentShutdownWhileWaiting(t *testing.T) {
 	defer close(release)
 
 	conn := connect()
-	n, err := conn.Write(makeSampleEventWithChunk("my-tag", "chunk-shutdown"))
+	n, err := conn.Write(makeSampleEventWithChunk("chunk-shutdown"))
 	require.NoError(t, err)
 	require.Positive(t, n)
 	require.Eventually(t, next.called, 5*time.Second, 10*time.Millisecond)
@@ -577,11 +595,11 @@ func makeSampleEvent(tag string) []byte {
 	return b
 }
 
-func makeSampleEventWithChunk(tag, chunk string) []byte {
+func makeSampleEventWithChunk(chunk string) []byte {
 	var b []byte
 
 	b = msgp.AppendArrayHeader(b, 4)
-	b = msgp.AppendString(b, tag)
+	b = msgp.AppendString(b, "my-tag")
 	b = msgp.AppendInt(b, 5000)
 	b = msgp.AppendMapHeader(b, 1)
 	b = msgp.AppendString(b, "a")
@@ -590,24 +608,24 @@ func makeSampleEventWithChunk(tag, chunk string) []byte {
 	return b
 }
 
-func makeSampleForwardEventWithChunk(tag, chunk string) []byte {
+func makeSampleForwardEventWithChunk(chunk string) []byte {
 	var b []byte
 
 	b = msgp.AppendArrayHeader(b, 3)
-	b = msgp.AppendString(b, tag)
+	b = msgp.AppendString(b, "my-tag")
 	b = msgp.AppendArrayHeader(b, 1)
 	b = appendSampleEntry(b)
 	b = msgp.AppendMapStrStr(b, map[string]string{"chunk": chunk})
 	return b
 }
 
-func makeSamplePackedForwardEventWithChunk(tag, chunk string) []byte {
+func makeSamplePackedForwardEventWithChunk(chunk string) []byte {
 	var entries []byte
 	entries = appendSampleEntry(entries)
 
 	var b []byte
 	b = msgp.AppendArrayHeader(b, 3)
-	b = msgp.AppendString(b, tag)
+	b = msgp.AppendString(b, "my-tag")
 	b = msgp.AppendBytes(b, entries)
 	b = msgp.AppendMapStrStr(b, map[string]string{"chunk": chunk})
 	return b
