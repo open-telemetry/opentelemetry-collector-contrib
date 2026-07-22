@@ -14,4 +14,5 @@ var (
 	DisableMetricRemappingFeatureGate          = metadata.ExporterDatadogexporterDisableAllMetricRemappingFeatureGate
 	AttributeSliceMultiTagExportingFeatureGate = metadata.ExporterDatadogexporterEnableAttributeSliceMultiTagExportingFeatureGate
 	InferIntervalDeltaFeatureGate              = metadata.ExporterDatadogexporterInferIntervalForDeltaMetricsFeatureGate
+	AddUnitsFeatureGate                        = metadata.ExporterDatadogexporterAddUnitsFeatureGate
 )

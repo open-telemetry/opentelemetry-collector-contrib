@@ -163,6 +163,15 @@ attributes:
     type: string
     requirement_level: required
     enum: [free_space, probe, range]
+  sqlserver.availability_group.name:
+    description: The name of the SQL Server Availability Group.
+    type: string
+    requirement_level: recommended
+  sqlserver.availability_group.queue.type:
+    description: The type of availability group queue.
+    type: string
+    requirement_level: recommended
+    enum: [log_send, redo]
   sqlserver.blocking.start_time:
     description: Timestamp of when the current blocking wait began (ISO 8601 format).
     type: string
@@ -303,6 +312,10 @@ attributes:
   sqlserver.reads:
     description: Number of physical reads performed by the query.
     type: int
+    requirement_level: recommended
+  sqlserver.replica.name:
+    description: The name of the SQL Server Availability Group replica.
+    type: string
     requirement_level: recommended
   sqlserver.request_status:
     description: Status of the request (e.g., running, suspended).
@@ -534,6 +547,33 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.availability_group.database_replica.queue.rate:
+    enabled: false
+    description: Rate at which log data is being sent or redone on a database replica, broken down by queue type (log_send for primary-to-secondary transmission, redo for applying log records on the secondary).
+    stability: development
+    unit: By/s
+    gauge:
+      value_type: int
+    attributes: [sqlserver.availability_group.name, sqlserver.replica.name, sqlserver.availability_group.queue.type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+  sqlserver.availability_group.database_replica.queue.size:
+    enabled: false
+    description: Amount of log data waiting to be processed on a database replica, broken down by queue type (log_send for data not yet sent to the secondary, redo for data received but not yet applied).
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [sqlserver.availability_group.name, sqlserver.replica.name, sqlserver.availability_group.queue.type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+  sqlserver.availability_group.database_replica.secondary_lag:
+    enabled: false
+    description: Number of seconds the secondary replica is lagging behind the primary replica, measured as the time between the most recent hardened log block on the primary and on the secondary.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [sqlserver.availability_group.name, sqlserver.replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.batch.request.rate:
     enabled: true
     description: Number of batch requests received by SQL Server.

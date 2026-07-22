@@ -27,7 +27,15 @@ var DatadogEnableScopeConventionFeatureGate = featuregate.GlobalRegistry().MustR
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, use otel.scope.name and otel.scope.version convention to set scope name and version instead of the deprecated otel.library.name and otel.library.version."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49001"),
-	featuregate.WithRegisterFromVersion("v0.155.0"),
+	featuregate.WithRegisterFromVersion("v0.158.0"),
+)
+
+var ExporterDatadogexporterAddUnitsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.AddUnits",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the Datadog Exporter adds units to exported metrics."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/15280"),
+	featuregate.WithRegisterFromVersion("v0.157.0"),
 )
 
 var ExporterDatadogexporterDisableAllMetricRemappingFeatureGate = featuregate.GlobalRegistry().MustRegister(
