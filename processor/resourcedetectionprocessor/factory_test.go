@@ -343,7 +343,7 @@ func newObservedLogger() (*zap.Logger, *observer.ObservedLogs) {
 	return zap.New(core), logs
 }
 
-func TestWarnDeprecatedPerDetectorFlags_NoWarningWhenTopLevelSet(t *testing.T) {
+func TestWarnDeprecatedPerDetectorFlags_WarnsEvenWhenTopLevelSet(t *testing.T) {
 	logger, logs := newObservedLogger()
 	cfg := createDefaultConfig().(*Config)
 	cfg.FailOnMissingMetadata = true
@@ -351,7 +351,7 @@ func TestWarnDeprecatedPerDetectorFlags_NoWarningWhenTopLevelSet(t *testing.T) {
 
 	warnDeprecatedPerDetectorFlags(logger, cfg)
 
-	assert.Equal(t, 0, logs.Len(), "no warning should be emitted when top-level flag is set")
+	assert.Equal(t, 1, logs.Len(), "deprecation warning should be emitted even when the top-level flag is set")
 }
 
 func TestWarnDeprecatedPerDetectorFlags_WarningWhenPerDetectorSet(t *testing.T) {

@@ -109,7 +109,9 @@ func TestVultrDetector_FailOnMissingMetadata(t *testing.T) {
 	cfg := CreateDefaultConfig()
 	cfg.FailOnMissingMetadata = true
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, true)
+	// Inject top-level false: the deprecated per-detector flag alone must still
+	// trigger fail-on-missing for this detector (backward compatibility).
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())

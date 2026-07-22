@@ -236,16 +236,9 @@ func (f *factory) getResourceDetectionProcessor(
 
 	warnDeprecatedPerDetectorFlags(params.Logger, oCfg)
 
-	// Resolve the effective fail_on_missing_metadata: top-level OR any per-detector flag (OR logic).
-	failOnMissingMetadata := oCfg.FailOnMissingMetadata ||
-		oCfg.DetectorConfig.EC2Config.FailOnMissingMetadata || //nolint:staticcheck
-		oCfg.DetectorConfig.AlibabaECSConfig.FailOnMissingMetadata || //nolint:staticcheck
-		oCfg.DetectorConfig.TencentCVMConfig.FailOnMissingMetadata || //nolint:staticcheck
-		oCfg.DetectorConfig.UpcloudConfig.FailOnMissingMetadata || //nolint:staticcheck
-		oCfg.DetectorConfig.VultrConfig.FailOnMissingMetadata || //nolint:staticcheck
-		oCfg.DetectorConfig.OpenStackNovaConfig.FailOnMissingMetadata //nolint:staticcheck
-
-	provider, err := f.getResourceProvider(params, oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig, failOnMissingMetadata)
+	// The deprecated per-detector fail_on_missing_metadata fields are OR'd with this
+	// top-level flag inside each affected detector, preserving per-detector scope.
+	provider, err := f.getResourceProvider(params, oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.FailOnMissingMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -260,11 +253,8 @@ func (f *factory) getResourceDetectionProcessor(
 }
 
 // warnDeprecatedPerDetectorFlags emits a deprecation warning if any per-detector
-// fail_on_missing_metadata fields are set without the top-level flag.
+// fail_on_missing_metadata fields are set.
 func warnDeprecatedPerDetectorFlags(logger *zap.Logger, oCfg *Config) {
-	if oCfg.FailOnMissingMetadata {
-		return // top-level is set; per-detector fields are superseded
-	}
 	var affectedDetectors []string
 	if oCfg.DetectorConfig.EC2Config.FailOnMissingMetadata { //nolint:staticcheck
 		affectedDetectors = append(affectedDetectors, "ec2")

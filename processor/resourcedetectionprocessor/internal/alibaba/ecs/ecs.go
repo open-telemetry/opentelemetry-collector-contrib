@@ -39,7 +39,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 		logger:                set.Logger,
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		metadataProvider:      ecsprovider.NewProvider(),
-		failOnMissingMetadata: failOnMissingMetadata,
+		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata,
 	}, nil
 }
 

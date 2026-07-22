@@ -44,7 +44,7 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissi
 		provider:              newVultrProvider(),
 		logger:                p.Logger,
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
-		failOnMissingMetadata: failOnMissingMetadata,
+		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata,
 	}, nil
 }
 

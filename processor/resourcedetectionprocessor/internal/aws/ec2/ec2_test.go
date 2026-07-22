@@ -137,6 +137,30 @@ func TestNewDetector(t *testing.T) {
 	}
 }
 
+// TestNewDetector_FailOnMissingMetadataResolution verifies the effective flag is
+// the top-level value OR this detector's own deprecated field. It never depends on
+// another detector's flag, so a per-detector setting stays scoped to that detector.
+func TestNewDetector_FailOnMissingMetadataResolution(t *testing.T) {
+	tests := []struct {
+		name        string
+		topLevel    bool
+		perDetector bool
+		want        bool
+	}{
+		{"neither set", false, false, false},
+		{"per-detector only (backward compat, stays scoped)", false, true, true},
+		{"top-level only", true, false, true},
+		{"both set", true, true, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), Config{FailOnMissingMetadata: tt.perDetector}, tt.topLevel)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, d.(*Detector).failOnMissingMetadata)
+		})
+	}
+}
+
 // Define a mock client to mock connecting to an EC2 instance
 type mockEC2ClientError struct{}
 
