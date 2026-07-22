@@ -62,7 +62,7 @@ func (i *Input) SetHost(host component.Host) {
 
 // Start will start listening for log entries over tcp.
 func (i *Input) Start(_ operator.Persister) error {
-	if i.auth.IsConfigured() {
+	if i.auth != nil && i.auth.IsConfigured() {
 		authServer, err := i.auth.GetServer(context.Background(), i.host)
 		if err != nil {
 			return fmt.Errorf("%w: %w", errResolveAuthenticator, err)
