@@ -5,6 +5,8 @@ package textencodingextension
 
 import (
 	"bytes"
+	"fmt"
+	"strings"
 	"io"
 	"regexp"
 	"testing"
@@ -175,4 +177,23 @@ func TestStreamDecoding_flushAll(t *testing.T) {
 	ld, err = decoder.DecodeLogs()
 	assert.ErrorIs(t, err, io.EOF)
 	assert.Equal(t, 0, ld.LogRecordCount())
+}
+
+func TestUnmarshalLogsAcrossMultipleBatches(t *testing.T) {
+	// Regression test: inputs with more than the default 1000-item flush
+	// threshold must not be silently truncated by UnmarshalLogs.
+	enc, err := textutils.LookupEncoding("utf8")
+	require.NoError(t, err)
+	r := regexp.MustCompile(`\r?\n`)
+	codec := &textLogCodec{decoder: enc.NewDecoder(), unmarshalingSeparator: r, marshalingSeparator: "\n"}
+
+	var input strings.Builder
+	const recordCount = 1863
+	for i := 0; i < recordCount; i++ {
+		fmt.Fprintf(&input, "record-%d\n", i)
+	}
+
+	logs, err := codec.UnmarshalLogs([]byte(input.String()))
+	require.NoError(t, err)
+	require.Equal(t, recordCount, logs.LogRecordCount())
 }
