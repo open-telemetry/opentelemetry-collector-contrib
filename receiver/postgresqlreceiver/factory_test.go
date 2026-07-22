@@ -9,11 +9,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
@@ -48,6 +51,49 @@ func TestCreateMetrics(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
+}
+
+func TestCreateMetricsResolvesDBAuthAtStart(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_dbauth"))
+
+	metricsReceiver, err := factory.CreateMetrics(
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	err = metricsReceiver.Start(t.Context(), componenttest.NewNopHost())
+	require.ErrorContains(t, err, "requested credential provider is not present")
+}
+
+type extensionsHost map[component.ID]component.Component
+
+func (h extensionsHost) GetExtensions() map[component.ID]component.Component {
+	return h
+}
+
+func TestCreateMetricsStartsWithDBAuthProvider(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_dbauth"))
+	cfg.InitialDelay = time.Hour
+
+	metricsReceiver, err := factory.CreateMetrics(
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, metricsReceiver.Start(t.Context(), extensionsHost(credExtMap())))
+	require.NoError(t, metricsReceiver.Shutdown(t.Context()))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {

@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -1342,6 +1343,9 @@ func (mockSimpleClientFactory) close() error {
 	return nil
 }
 
+// setCredentialProvider implements postgreSQLClientFactory (no-op for the mock).
+func (mockSimpleClientFactory) setCredentialProvider(dbauth.Provider) {}
+
 // getClient implements postgreSQLClientFactory.
 func (m mockSimpleClientFactory) getClient(string) (client, error) {
 	return &postgreSQLClient{
@@ -1446,6 +1450,8 @@ func (m *mockClientFactory) close() error {
 	args := m.Called()
 	return args.Error(0)
 }
+
+func (*mockClientFactory) setCredentialProvider(dbauth.Provider) {}
 
 func (m *mockClientFactory) initMocks(databases []string) {
 	listClient := new(mockClient)

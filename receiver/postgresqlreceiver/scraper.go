@@ -21,6 +21,7 @@ import (
 	"github.com/google/uuid"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -515,6 +516,20 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		)
 		count++
 	}
+}
+
+// start resolves the credential provider (if a db_auth block is
+// configured) from the host extension map — only available now, at Start — and
+// injects it into the client factory so connections are built with it.
+func (p *postgreSQLScraper) start(_ context.Context, host component.Host) error {
+	provider, err := p.config.resolveCredentialProvider(host.GetExtensions())
+	if err != nil {
+		return err
+	}
+	if provider != nil {
+		p.clientFactory.setCredentialProvider(provider)
+	}
+	return nil
 }
 
 func (p *postgreSQLScraper) shutdown(_ context.Context) error {

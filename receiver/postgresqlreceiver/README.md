@@ -55,10 +55,40 @@ The monitoring user must be granted `SELECT` on `pg_stat_database`.
 
 ## Configuration
 
-The following settings are required to create a database connection:
+The following setting is required to create a database connection:
 
 - `username`
-- `password`
+
+Exactly one of the following credential settings is also required:
+
+- `password`: A static PostgreSQL password.
+- `db_auth`: The component ID of a database authentication provider extension. The provider supplies the password, and can optionally override `username`, whenever the receiver opens a connection. `db_auth` and `password` are mutually exclusive.
+
+For example, a provider extension must be declared, referenced from the receiver,
+and enabled in `service.extensions`:
+
+```yaml
+extensions:
+  aws_iam_dbauth:
+    region: us-east-2
+
+receivers:
+  postgresql:
+    endpoint: my-database.example.com:5432
+    username: monitor
+    db_auth: aws_iam_dbauth
+
+service:
+  extensions: [aws_iam_dbauth]
+  pipelines:
+    metrics:
+      receivers: [postgresql]
+```
+
+The selected provider extension must be included in the Collector distribution.
+Provider-wide settings, such as the region above, belong to the extension;
+`endpoint` and `username` are passed to it by the receiver for each credential
+request.
 
 The following settings are optional:
 
@@ -177,6 +207,14 @@ When this feature gate is enabled, the following optional settings are available
 - `max_open`: The maximum number of open connections to the database.
 
 Those settings and their defaults are further documented in the [`sql/database`](https://pkg.go.dev/database/sql#DB) package.
+
+The connection pool composes with a `db_auth` block (e.g. AWS IAM). The
+credential is re-resolved on every new connection the pool opens, so a short-lived
+token (an RDS IAM token lives ~15 minutes) is re-minted as the pool grows or
+replaces connections, and a connection is never opened with an expired token.
+Connections already established stay valid for their lifetime — IAM authenticates
+only at connection open, not per query — so tune `max_lifetime` to bound how long
+a connection lives before it must reconnect with a fresh token.
 
 ### Example Configuration
 

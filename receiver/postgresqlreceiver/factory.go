@@ -88,18 +88,13 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 
-	var clientFactory postgreSQLClientFactory
-	if metadata.ReceiverPostgresqlConnectionPoolFeatureGate.IsEnabled() {
-		clientFactory = newPoolClientFactory(cfg)
-	} else {
-		clientFactory = newDefaultClientFactory(cfg)
-	}
+	clientFactory := newClientFactory(cfg)
 
 	ns, err := newPostgreSQLScraper(params, cfg, clientFactory, newCache(1), newTTLCache[string](1, time.Second))
 	if err != nil {
 		return nil, err
 	}
-	s, err := scraper.NewMetrics(ns.scrape, scraper.WithShutdown(ns.shutdown))
+	s, err := scraper.NewMetrics(ns.scrape, scraper.WithStart(ns.start), scraper.WithShutdown(ns.shutdown))
 	if err != nil {
 		return nil, err
 	}
@@ -119,12 +114,7 @@ func createLogsReceiver(
 ) (receiver.Logs, error) {
 	cfg := receiverCfg.(*Config)
 
-	var clientFactory postgreSQLClientFactory
-	if metadata.ReceiverPostgresqlConnectionPoolFeatureGate.IsEnabled() {
-		clientFactory = newPoolClientFactory(cfg)
-	} else {
-		clientFactory = newDefaultClientFactory(cfg)
-	}
+	clientFactory := newClientFactory(cfg)
 
 	opts := make([]scraperhelper.ControllerOption, 0)
 
@@ -137,7 +127,7 @@ func createLogsReceiver(
 		}
 		s, err := scraper.NewLogs(func(ctx context.Context) (plog.Logs, error) {
 			return ns.scrapeQuerySamples(ctx, cfg.QuerySampleCollection.MaxRowsPerQuery)
-		}, scraper.WithShutdown(ns.shutdown))
+		}, scraper.WithStart(ns.start), scraper.WithShutdown(ns.shutdown))
 		if err != nil {
 			return nil, err
 		}
@@ -157,7 +147,7 @@ func createLogsReceiver(
 		}
 		s, err := scraper.NewLogs(func(ctx context.Context) (plog.Logs, error) {
 			return ns.scrapeTopQuery(ctx, cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopNQuery, cfg.MaxExplainEachInterval, cfg.TopQueryCollection.CollectionInterval)
-		}, scraper.WithShutdown(ns.shutdown))
+		}, scraper.WithStart(ns.start), scraper.WithShutdown(ns.shutdown))
 		if err != nil {
 			return nil, err
 		}
