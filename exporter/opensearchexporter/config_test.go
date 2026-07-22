@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sampleEndpoint := "https://opensearch.example.com:9200"
 	sampleCfg := withDefaultConfig(func(config *Config) {
-		config.Endpoint = sampleEndpoint
+		config.ClientConfig.Endpoint = sampleEndpoint
 		config.BulkAction = defaultBulkAction
 	})
 	maxIdleConns := 100
@@ -88,7 +88,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "empty_dataset"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.Dataset = ""
 				config.Namespace = "eu"
 			}),
@@ -99,7 +99,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "empty_namespace"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.Dataset = "ngnix"
 				config.Namespace = ""
 			}),
@@ -110,7 +110,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "invalid_bulk_action"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.BulkAction = "delete"
 			}),
 			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
@@ -120,7 +120,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "dynamic_log_indexing"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.LogsIndex = "otel-logs-%{service.name}"
 				config.LogsIndexFallback = "default-service"
 				config.LogsIndexTimeFormat = "yyyy.MM.dd"
@@ -131,7 +131,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "log_index_time_format_valid"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.LogsIndex = "otel-logs-%{service.name}"
 				config.LogsIndexFallback = "default-service"
 				config.LogsIndexTimeFormat = "yyyy.MM.dd"
@@ -141,7 +141,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "log_index_time_format_empty"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.LogsIndex = "otel-logs-%{service.name}"
 				config.LogsIndexFallback = "default-service"
 				config.LogsIndexTimeFormat = ""
@@ -151,7 +151,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "log_index_time_format_invalid"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.LogsIndex = "otel-logs-%{service.name}"
 				config.LogsIndexFallback = "default-service"
 				config.LogsIndexTimeFormat = "invalid_format!"
@@ -163,7 +163,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "log_index_time_format_whitespace"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.LogsIndex = "otel-logs-%{service.name}"
 				config.LogsIndexFallback = "default-service"
 				config.LogsIndexTimeFormat = "   "
@@ -175,7 +175,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "log_index_time_format_special_chars"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.LogsIndex = "otel-logs-%{service.name}"
 				config.LogsIndexFallback = "default-service"
 				config.LogsIndexTimeFormat = "yyyy/MM/dd@!#"
@@ -187,7 +187,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "traces_index_valid"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.TracesIndex = "otel-traces-%{service.name}"
 				config.TracesIndexFallback = "default-service"
 				config.TracesIndexTimeFormat = "yyyy.MM.dd"
@@ -198,7 +198,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "traces_index_time_format_valid"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.TracesIndex = "otel-traces-%{service.name}"
 				config.TracesIndexFallback = "default-service"
 				config.TracesIndexTimeFormat = "yyyy.MM.dd"
@@ -208,7 +208,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "traces_index_time_format_empty"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.TracesIndex = "otel-traces-%{service.name}"
 				config.TracesIndexFallback = "default-service"
 				config.TracesIndexTimeFormat = ""
@@ -218,7 +218,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "traces_index_time_format_invalid"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.TracesIndex = "otel-traces-%{service.name}"
 				config.TracesIndexFallback = "default-service"
 				config.TracesIndexTimeFormat = "invalid_format!"
@@ -230,7 +230,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "pipeline"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.Pipeline = "my-pipeline"
 			}),
 			configValidateAssert: assert.NoError,
@@ -238,7 +238,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "otel_v1"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.Mode = "otel-v1"
 			}),
 			configValidateAssert: assert.NoError,
@@ -246,7 +246,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "otel_v1_with_dataset"),
 			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
+				config.ClientConfig.Endpoint = sampleEndpoint
 				config.Dataset = "ngnix"
 				config.Mode = "otel-v1"
 			}),
@@ -346,7 +346,7 @@ func TestOTelV1MappingModeValidation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := withDefaultConfig(func(config *Config) {
-				config.Endpoint = "http://localhost:9200"
+				config.ClientConfig.Endpoint = "http://localhost:9200"
 				config.Mode = tt.mode
 				config.ManageIndexTemplate = tt.manageTpl
 			})

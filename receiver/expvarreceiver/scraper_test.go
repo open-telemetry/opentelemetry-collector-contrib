@@ -98,7 +98,7 @@ func TestAllMetrics(t *testing.T) {
 	ms := newMockServer(t, filepath.Join("testdata", "response", "expvar_response.json"))
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
-	cfg.Endpoint = ms.URL + defaultPath
+	cfg.ClientConfig.Endpoint = ms.URL + defaultPath
 	cfg.Metrics = allMetricsEnabled
 
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
@@ -119,7 +119,7 @@ func TestNoMetrics(t *testing.T) {
 	ms := newMockServer(t, filepath.Join("testdata", "response", "expvar_response.json"))
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
-	cfg.Endpoint = ms.URL + defaultPath
+	cfg.ClientConfig.Endpoint = ms.URL + defaultPath
 	cfg.Metrics = allMetricsDisabled
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
@@ -135,7 +135,7 @@ func TestNotFoundResponse(t *testing.T) {
 	ms := newMockServer(t, filepath.Join("testdata", "response", "expvar_response.json"))
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
-	cfg.Endpoint = ms.URL + "/nonexistent/path"
+	cfg.ClientConfig.Endpoint = ms.URL + "/nonexistent/path"
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -147,7 +147,7 @@ func TestBadTypeInReturnedData(t *testing.T) {
 	ms := newMockServer(t, filepath.Join("testdata", "response", "bad_data_response.json"))
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
-	cfg.Endpoint = ms.URL + defaultPath
+	cfg.ClientConfig.Endpoint = ms.URL + defaultPath
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -159,7 +159,7 @@ func TestJSONParseError(t *testing.T) {
 	ms := newMockServer(t, filepath.Join("testdata", "response", "bad_data_response.txt"))
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
-	cfg.Endpoint = ms.URL + defaultPath
+	cfg.ClientConfig.Endpoint = ms.URL + defaultPath
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -171,7 +171,7 @@ func TestEmptyResponseBodyError(t *testing.T) {
 	ms := newMockServer(t, filepath.Join("testdata", "response", "bad_data_empty_response.json"))
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
-	cfg.Endpoint = ms.URL + defaultPath
+	cfg.ClientConfig.Endpoint = ms.URL + defaultPath
 	cfg.Metrics = allMetricsDisabled
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
