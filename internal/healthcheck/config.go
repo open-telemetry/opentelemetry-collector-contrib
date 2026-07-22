@@ -96,7 +96,7 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.GRPCConfig != nil && c.GRPCConfig.NetAddr.Endpoint == "" {
+	if c.GRPCConfig != nil && c.GRPCConfig.ServerConfig.NetAddr.Endpoint == "" {
 		return ErrGRPCEndpointRequired
 	}
 

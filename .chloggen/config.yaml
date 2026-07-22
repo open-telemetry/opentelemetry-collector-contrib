@@ -191,8 +191,8 @@ components:
     - processor/cardinality_guardian
     - processor/coralogix
     - processor/cumulative_to_delta
+    - processor/delta_to_rate
     - processor/deltatocumulative
-    - processor/deltatorate
     - processor/digitaloceandetector
     - processor/drain
     - processor/dynamic_sampling
