@@ -24,7 +24,7 @@ import (
 // rdsTokenLifetime is the lifetime AWS gives an RDS IAM auth token.
 const rdsTokenLifetime = 15 * time.Minute
 
-// iamExtension is the aws_iam provider. It is a Collector extension (so it lives
+// iamExtension is the aws_iam_dbauth provider. It is a Collector extension (so it lives
 // in the host extension map) that also implements dbauth.Provider. It mints
 // short-lived RDS IAM auth tokens on demand and supplies them as the connection
 // secret.
@@ -62,7 +62,7 @@ func (e *iamExtension) GetCredential(ctx context.Context, req dbauth.Request) (*
 	issuedAt := time.Now()
 	token, err := auth.BuildAuthToken(ctx, endpoint, e.awsConfig.Region, dbUser, e.awsConfig.Credentials)
 	if err != nil {
-		return nil, fmt.Errorf("aws_iam: mint RDS token for %q: %w", endpoint, err)
+		return nil, fmt.Errorf("aws_iam_dbauth: mint RDS token for %q: %w", endpoint, err)
 	}
 	notAfter := issuedAt.Add(rdsTokenLifetime)
 	return &dbauth.Credential{

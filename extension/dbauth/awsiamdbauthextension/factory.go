@@ -14,7 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth/awsiamdbauthextension/internal/metadata"
 )
 
-// NewFactory returns the aws_iam credential provider as a Collector extension
+// NewFactory returns the aws_iam_dbauth credential provider as a Collector extension
 // factory. The extension is declared once (and listed in service.extensions) and
 // is referenced by any number of receivers, each naming it by component ID inside
 // their db_auth block. It holds the provider-wide config (the required region);
@@ -37,11 +37,11 @@ func createDefaultConfig() component.Config {
 func createExtension(ctx context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
 	c, ok := cfg.(*Config)
 	if !ok {
-		return nil, fmt.Errorf("aws_iam: unexpected config type %T", cfg)
+		return nil, fmt.Errorf("aws_iam_dbauth: unexpected config type %T", cfg)
 	}
 	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(c.Region))
 	if err != nil {
-		return nil, fmt.Errorf("aws_iam: load AWS config: %w", err)
+		return nil, fmt.Errorf("aws_iam_dbauth: load AWS config: %w", err)
 	}
 	return &iamExtension{
 		cfg:       c,

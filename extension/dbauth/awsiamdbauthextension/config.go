@@ -5,11 +5,11 @@ package awsiamdbauthextension // import "github.com/open-telemetry/opentelemetry
 
 import "errors"
 
-// Config is the aws_iam provider extension's config. It carries the provider-wide
+// Config is the aws_iam_dbauth provider extension's config. It carries the provider-wide
 // inputs an operator sets on the extension:
 //
 //	extensions:
-//	  aws_iam:
+//	  aws_iam_dbauth:
 //	    region: us-east-1   # required
 //	    # endpoint / db_user: optional, normally supplied by the receiver instead
 //
@@ -39,7 +39,7 @@ type Config struct {
 }
 
 // errNoRegion is returned at config load when the extension has no region set.
-var errNoRegion = errors.New("aws_iam: region must be set on the extension")
+var errNoRegion = errors.New("aws_iam_dbauth: region must be set on the extension")
 
 // Validate fails when no region is configured. Region is the one required field;
 // the endpoint and database user may be supplied by each consuming receiver.

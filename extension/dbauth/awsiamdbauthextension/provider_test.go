@@ -50,16 +50,16 @@ func parseToken(t *testing.T, token string) *url.URL {
 // implements dbauth.Provider — the dual role consumers depend on.
 func newProviderExtension(t *testing.T, cfg *Config) dbauth.Provider {
 	t.Helper()
-	ext, err := createExtension(context.Background(), extension.Settings{}, cfg)
+	ext, err := createExtension(t.Context(), extension.Settings{}, cfg)
 	require.NoError(t, err)
 	p, ok := ext.(dbauth.Provider)
-	require.True(t, ok, "the aws_iam extension must implement dbauth.Provider")
+	require.True(t, ok, "the aws_iam_dbauth extension must implement dbauth.Provider")
 	return p
 }
 
 func TestFactory_TypeAndStability(t *testing.T) {
 	f := NewFactory()
-	assert.Equal(t, "aws_iam", f.Type().String())
+	assert.Equal(t, "aws_iam_dbauth", f.Type().String())
 }
 
 func TestFactory_DefaultConfig(t *testing.T) {
@@ -74,17 +74,17 @@ func TestExtension_ImplementsProvider(t *testing.T) {
 }
 
 func TestExtension_StartShutdownNoop(t *testing.T) {
-	ext, err := createExtension(context.Background(), extension.Settings{}, &Config{Region: "us-east-1"})
+	ext, err := createExtension(t.Context(), extension.Settings{}, &Config{Region: "us-east-1"})
 	require.NoError(t, err)
-	require.NoError(t, ext.Start(context.Background(), nil))
-	require.NoError(t, ext.Shutdown(context.Background()))
+	require.NoError(t, ext.Start(t.Context(), nil))
+	require.NoError(t, ext.Shutdown(t.Context()))
 }
 
 func TestGetCredential(t *testing.T) {
 	e := newTestExtension(&Config{Region: "us-east-1"}, staticCredentials())
 
 	earliestExpiry := time.Now().Add(rdsTokenLifetime)
-	cred, err := e.GetCredential(context.Background(), dbauth.Request{Endpoint: "db:5432", Username: "monitor"})
+	cred, err := e.GetCredential(t.Context(), dbauth.Request{Endpoint: "db:5432", Username: "monitor"})
 	latestExpiry := time.Now().Add(rdsTokenLifetime)
 	require.NoError(t, err)
 
@@ -109,9 +109,9 @@ func TestGetCredential_MintError(t *testing.T) {
 			return aws.Credentials{}, sentinel
 		},
 	))
-	_, err := e.GetCredential(context.Background(), dbauth.Request{Endpoint: "db:5432", Username: "monitor"})
+	_, err := e.GetCredential(t.Context(), dbauth.Request{Endpoint: "db:5432", Username: "monitor"})
 	require.ErrorIs(t, err, sentinel)
-	assert.ErrorContains(t, err, `aws_iam: mint RDS token for "db:5432"`)
+	assert.ErrorContains(t, err, `aws_iam_dbauth: mint RDS token for "db:5432"`)
 }
 
 func TestGetCredential_EndpointAndDBUserFromConfig(t *testing.T) {
@@ -122,7 +122,7 @@ func TestGetCredential_EndpointAndDBUserFromConfig(t *testing.T) {
 		staticCredentials(),
 	)
 
-	cred, err := e.GetCredential(context.Background(), dbauth.Request{})
+	cred, err := e.GetCredential(t.Context(), dbauth.Request{})
 	require.NoError(t, err)
 	u := parseToken(t, cred.Secret)
 	assert.Equal(t, "cfg-db:5432", u.Host)
@@ -138,7 +138,7 @@ func TestGetCredential_RequestOutranksConfigEndpointAndDBUser(t *testing.T) {
 		staticCredentials(),
 	)
 
-	cred, err := e.GetCredential(context.Background(),
+	cred, err := e.GetCredential(t.Context(),
 		dbauth.Request{Endpoint: "req-db:5432", Username: "req_user"})
 	require.NoError(t, err)
 	u := parseToken(t, cred.Secret)
