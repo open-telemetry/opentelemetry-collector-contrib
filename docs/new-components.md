@@ -198,6 +198,7 @@ When donating a component to the community, break it down into separate PRs as f
     * `make checkapi`
     * `make goporto`
     * `make crosslink`
+    * `make tidylist`
     * `make gotidy`
     * `make genotelcontribcol`
     * `make genoteltestbedcol`
@@ -205,6 +206,8 @@ When donating a component to the community, break it down into separate PRs as f
     * `make multimod-verify`
     * `make generate-gh-issue-templates`
     * `make gengithub`
+    * `make genlabels`
+    * `make gencodecov`
     * `make addlicense`
 * **Second PR** should include the concrete implementation of the component. If the
   size of this PR is larger than the recommended size consider splitting it in

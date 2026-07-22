@@ -39,6 +39,7 @@ func TestLoadConfig(t *testing.T) {
 			QuotaProject: "other-project",
 			TokenType:    "access_token",
 			Audience:     "my-audience",
+			TokenHeader:  "authorization",
 		},
 	}, cfg)
 }

@@ -46,6 +46,7 @@ func TestLoadConfig(t *testing.T) {
 				UseHostnameIfPresent:  true,
 				UseHostBindings:       true,
 				IgnoreNonHostBindings: true,
+				IncludeAllContainers:  true,
 			},
 		},
 	}

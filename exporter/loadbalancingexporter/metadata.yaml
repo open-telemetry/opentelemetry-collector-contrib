@@ -1,4 +1,5 @@
-type: loadbalancing
+type: load_balancing
+deprecated_type: loadbalancing
 display_name: Load Balancing Exporter
 
 status:
@@ -8,7 +9,7 @@ status:
     development: [metrics]
   distributions: [contrib, k8s]
   codeowners:
-    active: [rlankfo]
+    active: [rlankfo, iblancasa]
     emeritus: [jpkrohling]
     seeking_new: true
 
@@ -96,4 +97,5 @@ tests:
         # Ignore goroutines spawned by net.Resolver for DNS lookups on Windows
         # These can remain in syscall state during test cleanup
         - internal/poll.runtime_pollWait
+        - syscall.SyscallN
         - syscall.Syscall6

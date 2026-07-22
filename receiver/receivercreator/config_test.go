@@ -14,10 +14,12 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator/internal/metadata"
@@ -91,7 +93,7 @@ func TestLoadConfig(t *testing.T) {
 						Rule:               `type == "port"`,
 						ResourceAttributes: map[string]any{"one": "two"},
 						rule:               portRule,
-						signals:            receiverSignals{metrics: true, logs: true, traces: true},
+						signals:            receiverSignals{metrics: true, logs: true, traces: true, profiles: true},
 					},
 					"nop/1": {
 						receiverConfig: receiverConfig{
@@ -104,7 +106,7 @@ func TestLoadConfig(t *testing.T) {
 						Rule:               `type == "port"`,
 						ResourceAttributes: map[string]any{"two": "three"},
 						rule:               portRule,
-						signals:            receiverSignals{metrics: true, logs: true, traces: true},
+						signals:            receiverSignals{metrics: true, logs: true, traces: true, profiles: true},
 					},
 				},
 				WatchObservers: []component.ID{
@@ -121,6 +123,13 @@ func TestLoadConfig(t *testing.T) {
 					observer.K8sIngressType:   {"k8s.ingress.key": "k8s.ingress.value"},
 					observer.K8sNodeType:      {"k8s.node.key": "k8s.node.value"},
 					observer.KafkaTopicType:   {},
+				},
+				Discovery: DiscoveryConfig{
+					DefaultFileLogConfig: userConfigMap{
+						"include_file_path": true,
+						"include_file_name": false,
+						"operators":         []any{map[string]any{"id": "container-parser", "type": "container"}},
+					},
 				},
 			},
 		},
@@ -181,6 +190,7 @@ type nopWithEndpointReceiver struct {
 	consumer.Logs
 	consumer.Metrics
 	consumer.Traces
+	xconsumer.Profiles
 	rcvr.Settings
 	cfg component.Config
 }
@@ -235,6 +245,23 @@ func (*nopWithEndpointFactory) CreateTraces(
 	}, nil
 }
 
+func (*nopWithEndpointFactory) CreateProfiles(
+	_ context.Context,
+	rcs rcvr.Settings,
+	cfg component.Config,
+	nextConsumer xconsumer.Profiles,
+) (xreceiver.Profiles, error) {
+	return &nopWithEndpointReceiver{
+		Profiles: nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
+	}, nil
+}
+
+func (*nopWithEndpointFactory) ProfilesStability() component.StabilityLevel {
+	return component.StabilityLevelAlpha
+}
+
 type nopWithoutEndpointConfig struct {
 	NotEndpoint string `mapstructure:"not_endpoint"`
 	IntField    int    `mapstructure:"int_field"`
@@ -249,6 +276,7 @@ type nopWithoutEndpointReceiver struct {
 	consumer.Logs
 	consumer.Metrics
 	consumer.Traces
+	xconsumer.Profiles
 	rcvr.Settings
 	cfg component.Config
 }
@@ -296,6 +324,23 @@ func (*nopWithoutEndpointFactory) CreateTraces(
 		Settings: rcs,
 		cfg:      cfg,
 	}, nil
+}
+
+func (*nopWithoutEndpointFactory) CreateProfiles(
+	_ context.Context,
+	rcs rcvr.Settings,
+	cfg component.Config,
+	nextConsumer xconsumer.Profiles,
+) (xreceiver.Profiles, error) {
+	return &nopWithoutEndpointReceiver{
+		Profiles: nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
+	}, nil
+}
+
+func (*nopWithoutEndpointFactory) ProfilesStability() component.StabilityLevel {
+	return component.StabilityLevelAlpha
 }
 
 type nopWithFileLogConfig struct {

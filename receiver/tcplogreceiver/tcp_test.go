@@ -70,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub("tcplog")
+	sub, err := cm.Sub("tcp_log")
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 

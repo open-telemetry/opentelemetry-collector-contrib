@@ -3,7 +3,6 @@
 
 The SQL Query Receiver uses custom SQL queries to generate logs and/or metrics from a database connection.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |
@@ -59,6 +58,9 @@ The SQL Query Receiver uses custom SQL queries to generate logs and/or metrics f
 - `queries` (required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
 - `collection_interval`(optional): The time interval between query executions. Defaults to _10s_.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+- `timeout` (optional, default = `0s`): the maximum duration a single query execution is allowed to take before it is
+  cancelled. This prevents collection from blocking indefinitely when, for example, a queried table or relation is
+  locked. A non-positive value (the default) disables the timeout.
 - `storage` (optional, default `""`): The ID of a [storage][storage_extension] extension to be used to [track processed results](#tracking-processed-results).
 - `telemetry` (optional) Defines settings for the component's own telemetry - logs, metrics or traces.
   - `telemetry.logs` (optional) Defines settings for the component's own logs.
@@ -82,6 +84,7 @@ Additionally, each `query` section supports the following properties:
   See the below section [Tracking processed results](#tracking-processed-results).
 - `tracking_start_value` (optional, default `""`) Applies only to logs. In case of a parameterized query, defines the initial value for the parameter.
   See the below section [Tracking processed results](#tracking-processed-results).
+- `ignore_null_values` (optional, default `false`) When set to `true`, suppresses warning logs about NULL values encountered in query result columns. This is useful when queries return NULL in columns that are not referenced in the metric or log configuration.
 - `attribute_columns`(optional): a list of column names in the returned dataset used to set attributes on the signal.
   These attributes may be case-sensitive, depending on the driver (e.g. Oracle DB).
 
@@ -314,8 +317,8 @@ This produces three separate metrics (`pgbouncer.lists.pools`, `pgbouncer.lists.
 
 #### NULL values
 
-Avoid queries that produce any NULL values. If a query produces a NULL value, a warning will be logged. Furthermore,
-if a configuration references the column that produces a NULL value, an additional error will be logged. However, in
+If a query produces a NULL value, a warning will be logged unless `ignore_null_values` is set to true. Furthermore,
+if a configuration references the column that produces a NULL value, an error will always be logged. However, in
 either case, the receiver will continue to operate.
 
 #### Oracle DB Driver Example

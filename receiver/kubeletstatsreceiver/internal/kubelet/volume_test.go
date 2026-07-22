@@ -158,7 +158,14 @@ func TestDetailedPVCLabels(t *testing.T) {
 					Namespace: tt.pod.namespace,
 				},
 			}
-			rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
+			rac := metadata.DefaultResourceAttributesConfig()
+			rac.AwsVolumeID.Enabled = true
+			rac.FsType.Enabled = true
+			rac.GcePdName.Enabled = true
+			rac.GlusterfsEndpointsName.Enabled = true
+			rac.GlusterfsPath.Enabled = true
+			rac.Partition.Enabled = true
+			rb := metadata.NewResourceBuilder(rac)
 			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
 				Items: []v1.Pod{
 					{

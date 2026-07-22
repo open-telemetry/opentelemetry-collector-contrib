@@ -7,7 +7,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -42,10 +42,8 @@ func TestDetect(t *testing.T) {
 	md.On("Hostname").Return("hostname", nil)
 	md.On("OSType").Return("darwin", nil)
 	md.On("ContainerInfo").Return(container.InspectResponse{
-		ContainerJSONBase: &container.ContainerJSONBase{
-			Name:  "foo",
-			Image: "bar:1.0",
-		},
+		Name:  "foo",
+		Image: "bar:1.0",
 	}, nil)
 
 	cfg := CreateDefaultConfig()
@@ -68,4 +66,42 @@ func TestDetect(t *testing.T) {
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
+}
+
+func TestDetectSkipsContainerInfoByDefault(t *testing.T) {
+	md := &mockMetadata{}
+	md.On("Hostname").Return("hostname", nil)
+	md.On("OSType").Return("darwin", nil)
+
+	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	require.NoError(t, err)
+	detector.(*Detector).provider = md
+	res, _, err := detector.Detect(t.Context())
+	require.NoError(t, err)
+	md.AssertNotCalled(t, "ContainerInfo")
+
+	expected := map[string]any{
+		"host.name": "hostname",
+		"os.type":   "darwin",
+	}
+	assert.Equal(t, expected, res.Attributes().AsRaw())
+}
+
+func TestDetectSkipsDisabledResourceAttributes(t *testing.T) {
+	md := &mockMetadata{}
+
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.HostName.Enabled = false
+	cfg.ResourceAttributes.OsType.Enabled = false
+
+	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	require.NoError(t, err)
+	detector.(*Detector).provider = md
+	res, _, err := detector.Detect(t.Context())
+	require.NoError(t, err)
+
+	md.AssertNotCalled(t, "Hostname")
+	md.AssertNotCalled(t, "OSType")
+	md.AssertNotCalled(t, "ContainerInfo")
+	assert.Empty(t, res.Attributes().AsRaw())
 }

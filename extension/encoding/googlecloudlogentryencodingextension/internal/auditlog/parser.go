@@ -6,12 +6,14 @@ package auditlog // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
 
@@ -246,9 +248,15 @@ func handleStatus(s *status, attr pcommon.Map) {
 	if s == nil {
 		return
 	}
-
-	shared.PutInt(string(conventions.RPCJSONRPCErrorCodeKey), s.Code, attr)
-	shared.PutStr(string(conventions.RPCJSONRPCErrorMessageKey), s.Message, attr)
+	if s.Code != nil {
+		if !metadata.ExtensionEncodingGooglecloudlogentryencodingDontEmitV0RPCConventionsFeatureGate.IsEnabled() {
+			shared.PutInt("rpc.jsonrpc.error_code", s.Code, attr)
+		}
+		shared.PutStr(string(conventions.RPCResponseStatusCodeKey), strconv.FormatInt(*s.Code, 10), attr)
+	}
+	if !metadata.ExtensionEncodingGooglecloudlogentryencodingDontEmitV0RPCConventionsFeatureGate.IsEnabled() {
+		shared.PutStr("rpc.jsonrpc.error_message", s.Message, attr)
+	}
 }
 
 func handleAuthenticationInfo(info *authenticationInfo, attr pcommon.Map) {

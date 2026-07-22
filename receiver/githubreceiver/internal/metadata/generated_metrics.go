@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 const (
@@ -179,31 +179,40 @@ var MapAttributeVcsRevisionDeltaDirection = map[string]AttributeVcsRevisionDelta
 
 var MetricsInfo = metricsInfo{
 	VcsChangeCount: metricInfo{
-		Name: "vcs.change.count",
+		Name:       "vcs.change.count",
+		Attributes: []string{"vcs.repository.url.full", "vcs.change.state", "vcs.repository.name"},
 	},
 	VcsChangeDuration: metricInfo{
-		Name: "vcs.change.duration",
+		Name:       "vcs.change.duration",
+		Attributes: []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name", "vcs.change.state"},
 	},
 	VcsChangeTimeToApproval: metricInfo{
-		Name: "vcs.change.time_to_approval",
+		Name:       "vcs.change.time_to_approval",
+		Attributes: []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name"},
 	},
 	VcsChangeTimeToMerge: metricInfo{
-		Name: "vcs.change.time_to_merge",
+		Name:       "vcs.change.time_to_merge",
+		Attributes: []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name"},
 	},
 	VcsContributorCount: metricInfo{
-		Name: "vcs.contributor.count",
+		Name:       "vcs.contributor.count",
+		Attributes: []string{"vcs.repository.url.full", "vcs.repository.name"},
 	},
 	VcsRefCount: metricInfo{
-		Name: "vcs.ref.count",
+		Name:       "vcs.ref.count",
+		Attributes: []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.type"},
 	},
 	VcsRefLinesDelta: metricInfo{
-		Name: "vcs.ref.lines_delta",
+		Name:       "vcs.ref.lines_delta",
+		Attributes: []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name", "vcs.ref.head.type", "vcs.ref.base.name", "vcs.ref.base.type", "vcs.line_change.type"},
 	},
 	VcsRefRevisionsDelta: metricInfo{
-		Name: "vcs.ref.revisions_delta",
+		Name:       "vcs.ref.revisions_delta",
+		Attributes: []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name", "vcs.ref.head.type", "vcs.ref.base.name", "vcs.ref.base.type", "vcs.revision_delta.direction"},
 	},
 	VcsRefTime: metricInfo{
-		Name: "vcs.ref.time",
+		Name:       "vcs.ref.time",
+		Attributes: []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name", "vcs.ref.head.type"},
 	},
 	VcsRepositoryCount: metricInfo{
 		Name: "vcs.repository.count",
@@ -224,7 +233,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricVcsChangeCount struct {

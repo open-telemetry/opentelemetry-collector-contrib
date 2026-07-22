@@ -18,11 +18,12 @@ import (
 	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
@@ -120,7 +121,7 @@ func getTranslationConfiguration(config *Config) (bool, bool) {
 	}
 
 	// If feature gate is enabled, ignore AddMetricSuffixes (for deprecation)
-	if disableAddMetricSuffixesFeatureGate.IsEnabled() {
+	if metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate.IsEnabled() {
 		// Default to UnderscoreEscapingWithSuffixes behavior when AddMetricSuffixes is deprecated
 		return true, false
 	}
@@ -276,6 +277,14 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 		return nil, err
 	}
 
+	exemplars := convertExemplars(dp.Exemplars())
+	if len(exemplars) > 0 {
+		m, err = prometheus.NewMetricWithExemplars(m, exemplars...)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if c.sendTimestamps {
 		return prometheus.NewMetricWithTimestamp(dp.Timestamp().AsTime(), m), nil
 	}
@@ -308,6 +317,9 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 
 	if !c.withoutScopeInfo {
 		for k, v := range scopeAttributes.All() {
+			if isReservedScopeAttribute(k) {
+				continue
+			}
 			labelName, err := c.labelNamer.Build("otel_scope_" + k)
 			if err != nil {
 				multiErrs = multierr.Append(multiErrs, err)
@@ -337,6 +349,15 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 		return nil, nil, multiErrs
 	}
 	return prometheus.NewDesc(name, help, keys, c.constLabels), values, nil
+}
+
+func isReservedScopeAttribute(k string) bool {
+	switch k {
+	case "name", "version", "schema_url":
+		return true
+	default:
+		return false
+	}
 }
 
 func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
@@ -477,7 +498,7 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 	for _, bucket := range buckets {
 		index := indicesMap[bucket]
 		var countPerBucket uint64
-		if ip.ExplicitBounds().Len() > 0 && index < ip.ExplicitBounds().Len() {
+		if ip.ExplicitBounds().Len() > 0 && index < ip.ExplicitBounds().Len() && index < ip.BucketCounts().Len() {
 			countPerBucket = ip.BucketCounts().At(index)
 		}
 		cumCount += countPerBucket

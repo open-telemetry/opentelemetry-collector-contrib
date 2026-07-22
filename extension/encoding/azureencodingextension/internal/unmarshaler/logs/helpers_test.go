@@ -326,6 +326,68 @@ func TestConvertInvalidSingleQuotedJSON(t *testing.T) {
 	}
 }
 
+func TestUnmarshalStringOrObjectJSON(t *testing.T) {
+	t.Parallel()
+
+	type simple struct {
+		Key   string `json:"key"`
+		Count int    `json:"count"`
+	}
+
+	tests := []struct {
+		name        string
+		input       []byte
+		expected    simple
+		expectError bool
+	}{
+		{
+			name:     "JSON object",
+			input:    []byte(`{"key":"value","count":42}`),
+			expected: simple{Key: "value", Count: 42},
+		},
+		{
+			name:     "stringified JSON object",
+			input:    []byte(`"{\"key\":\"value\",\"count\":42}"`),
+			expected: simple{Key: "value", Count: 42},
+		},
+		{
+			name:        "non-JSON string payload",
+			input:       []byte(`"not-json"`),
+			expectError: true,
+		},
+		{
+			name:        "empty string",
+			input:       []byte(`""`),
+			expectError: true,
+		},
+		{
+			name:        "invalid JSON",
+			input:       []byte(`{invalid`),
+			expectError: true,
+		},
+		{
+			name:     "null value",
+			input:    []byte(`null`),
+			expected: simple{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var got simple
+			err := unmarshalStringOrObjectJSON(tt.input, &got)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expected, got)
+			}
+		})
+	}
+}
+
 func Test_stringToNumber(t *testing.T) {
 	tests := []struct {
 		name  string

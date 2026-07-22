@@ -6,7 +6,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon" // Applies resource attributes values to data properties
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 const (
@@ -22,8 +22,9 @@ func applyResourcesToDataProperties(dataProperties map[string]string, resourceAt
 	}
 }
 
-// Sets important ai.cloud.* tags on the envelope
-func applyCloudTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes pcommon.Map) {
+// Sets important ai.cloud.* tags on the envelope. When tagMappings is non-nil it
+// takes precedence over the historical hardcoded ServiceInstanceID source.
+func applyCloudTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes pcommon.Map, tagMappings *TagMappingsConfig) {
 	// Extract key service.* labels from the Resource labels and construct CloudRole and CloudRoleInstance envelope tags
 	// https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/resource/semantic_conventions
 	if serviceName, serviceNameExists := resourceAttributes.Get(string(conventions.ServiceNameKey)); serviceNameExists {
@@ -36,15 +37,26 @@ func applyCloudTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes p
 		envelope.Tags[contracts.CloudRole] = cloudRole
 	}
 
-	if serviceInstance, exists := resourceAttributes.Get(string(conventions.ServiceInstanceIDKey)); exists {
+	if tagMappings != nil && tagMappings.CloudRoleInstance != nil {
+		if v, ok := resolveMapping(resourceAttributes, tagMappings.CloudRoleInstance); ok {
+			envelope.Tags[contracts.CloudRoleInstance] = v
+		}
+	} else if serviceInstance, exists := resourceAttributes.Get(string(conventions.ServiceInstanceIDKey)); exists {
 		envelope.Tags[contracts.CloudRoleInstance] = serviceInstance.Str()
 	}
 
 	envelope.Tags[contracts.InternalSdkVersion] = getCollectorVersion()
 }
 
-// Sets ai.application.* tags on the envelope
-func applyApplicationTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes pcommon.Map) {
+// Sets ai.application.* tags on the envelope. When tagMappings is non-nil it
+// takes precedence over the historical hardcoded ServiceVersion source.
+func applyApplicationTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes pcommon.Map, tagMappings *TagMappingsConfig) {
+	if tagMappings != nil && tagMappings.ApplicationVersion != nil {
+		if v, ok := resolveMapping(resourceAttributes, tagMappings.ApplicationVersion); ok {
+			envelope.Tags[contracts.ApplicationVersion] = v
+		}
+		return
+	}
 	if serviceVersion, serviceVersionExists := resourceAttributes.Get(string(conventions.ServiceVersionKey)); serviceVersionExists {
 		envelope.Tags[contracts.ApplicationVersion] = serviceVersion.Str()
 	}

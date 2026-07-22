@@ -4,8 +4,8 @@ cmd/golden cmd/golden
 cmd/opampsupervisor cmd/opampsupervisor
 cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
-cmd/schemagen cmd/schemagen
 cmd/telemetrygen cmd/telemetrygen
+config/configdbauth config/configdbauth
 confmap/provider/aesprovider confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider confmap/provider/s3provider
@@ -25,6 +25,7 @@ connector/slowsqlconnector connector/slowsql
 connector/spanmetricsconnector connector/spanmetrics
 connector/sumconnector connector/sum
 exporter/alertmanagerexporter exporter/alertmanager
+exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
 exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/awsemfexporter exporter/awsemf
 exporter/awskinesisexporter exporter/awskinesis
@@ -78,6 +79,7 @@ extension/basicauthextension extension/basicauth
 extension/bearertokenauthextension extension/bearertokenauth
 extension/cgroupruntimeextension extension/cgroupruntime
 extension/datadogextension extension/datadog
+extension/dbauth extension/dbauth
 extension/encoding extension/encoding
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension extension/encoding/awscloudwatchmetricstreams
@@ -97,6 +99,7 @@ extension/healthcheckv2extension extension/healthcheckv2
 extension/httpforwarderextension extension/httpforwarder
 extension/jaegerremotesampling extension/jaegerremotesampling
 extension/k8sleaderelector extension/k8sleaderelector
+extension/mcp extension/mcp
 extension/oauth2clientauthextension extension/oauth2clientauth
 extension/observer extension/observer
 extension/observer/cfgardenobserver extension/observer/cfgardenobserver
@@ -117,6 +120,7 @@ extension/storage/dbstorage extension/storage/dbstorage
 extension/storage/filestorage extension/storage/filestorage
 extension/storage/redisstorageextension extension/storage/redisstorage
 extension/sumologicextension extension/sumologic
+extension/tailstorage/pebbletailstorageextension extension/tailstorage/pebbletailstorage
 internal/aws internal/aws
 internal/collectd internal/collectd
 internal/common internal/common
@@ -175,12 +179,16 @@ pkg/winperfcounters pkg/winperfcounters
 pkg/xk8stest pkg/xk8stest
 pkg/xstreamencoding pkg/xstreamencoding
 processor/attributesprocessor processor/attributes
+processor/awsecsattributesprocessor processor/awsecsattributes
+processor/cardinalityguardianprocessor processor/cardinalityguardian
 processor/coralogixprocessor processor/coralogix
 processor/cumulativetodeltaprocessor processor/cumulativetodelta
 processor/deltatocumulativeprocessor processor/deltatocumulative
 processor/deltatorateprocessor processor/deltatorate
-processor/dnslookupprocessor processor/dnslookup
+processor/drainprocessor processor/drain
+processor/dynamicsamplingprocessor processor/dynamicsampling
 processor/filterprocessor processor/filter
+processor/genainormalizerprocessor processor/genainormalizer
 processor/geoipprocessor processor/geoip
 processor/groupbyattrsprocessor processor/groupbyattrs
 processor/groupbytraceprocessor processor/groupbytrace
@@ -214,11 +222,14 @@ processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/
 processor/resourceprocessor processor/resource
 processor/schemaprocessor processor/schema
 processor/spanprocessor processor/span
+processor/spanpruningprocessor processor/spanpruning
 processor/sumologicprocessor processor/sumologic
 processor/tailsamplingprocessor processor/tailsampling
 processor/transformprocessor processor/transform
+processor/transformprocessor/internal/logparsingfuncs processor/transform/internal/logparsingfuncs
 processor/unrollprocessor processor/unroll
 receiver/activedirectorydsreceiver receiver/activedirectoryds
+receiver/activedirectoryinvreceiver receiver/activedirectoryinv
 receiver/aerospikereceiver receiver/aerospike
 receiver/apachereceiver receiver/apache
 receiver/apachesparkreceiver receiver/apachespark
@@ -277,7 +288,6 @@ receiver/icmpcheckreceiver receiver/icmpcheck
 receiver/iisreceiver receiver/iis
 receiver/influxdbreceiver receiver/influxdb
 receiver/jaegerreceiver receiver/jaeger
-receiver/jmxreceiver receiver/jmx
 receiver/journaldreceiver receiver/journald
 receiver/k8sclusterreceiver receiver/k8scluster
 receiver/k8seventsreceiver receiver/k8sevents
@@ -316,7 +326,6 @@ receiver/redisreceiver receiver/redis
 receiver/riakreceiver receiver/riak
 receiver/saphanareceiver receiver/saphana
 receiver/signalfxreceiver receiver/signalfx
-receiver/simpleprometheusreceiver receiver/simpleprometheus
 receiver/skywalkingreceiver receiver/skywalking
 receiver/snmpreceiver receiver/snmp
 receiver/snowflakereceiver receiver/snowflake
@@ -351,4 +360,4 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
-exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
+receiver/simpleprometheusreceiver receiver/simpleprometheus

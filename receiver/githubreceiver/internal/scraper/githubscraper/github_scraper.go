@@ -30,12 +30,27 @@ type githubScraper struct {
 	logger   *zap.Logger
 	mb       *metadata.MetricsBuilder
 	rb       *metadata.ResourceBuilder
+	// now is overridable so tests can inject a deterministic clock.
+	now func() time.Time
 }
 
 func (ghs *githubScraper) start(ctx context.Context, host component.Host) (err error) {
 	ghs.logger.Sugar().Info("starting the GitHub scraper")
 	ghs.client, err = ghs.cfg.ToClient(ctx, host.GetExtensions(), ghs.settings)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Wrap the transport with retry logic for transient GitHub API errors.
+	// Retries are bounded by the scrape context (cancelled at next collection
+	// interval).
+	ghs.client.Transport = &retryRoundTripper{
+		base:   ghs.client.Transport,
+		cfg:    ghs.cfg.RetryConfig,
+		logger: ghs.logger,
+	}
+
+	return nil
 }
 
 func newGitHubScraper(
@@ -48,6 +63,7 @@ func newGitHubScraper(
 		logger:   settings.Logger,
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		now:      time.Now,
 	}
 }
 
@@ -57,10 +73,10 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return pmetric.NewMetrics(), errClientNotInitErr
 	}
 
-	now := pcommon.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(ghs.now())
 	ghs.logger.Sugar().Debug("current time", zap.Time("now", now.AsTime()))
 
-	currentDate := time.Now().Day()
+	currentDate := ghs.now().Day()
 	ghs.logger.Sugar().Debugf("current date: %v", currentDate)
 
 	genClient, restClient, err := ghs.createClients()
@@ -111,7 +127,6 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		name := repo.Name
 		url := repo.Url
 		trunk := repo.DefaultBranchRef.Name
-		now := now
 
 		// Acquire semaphore slot before launching goroutine
 		if sem != nil {
@@ -131,6 +146,8 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			if sem != nil {
 				defer func() { <-sem }()
 			}
+
+			now := pcommon.NewTimestampFromTime(ghs.now())
 
 			branches, count, err := ghs.getBranches(ctx, genClient, name, trunk)
 			if err != nil {

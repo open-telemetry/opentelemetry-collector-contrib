@@ -41,7 +41,7 @@ func TestCreateMetrics(t *testing.T) {
 				CollectionInterval: 10 * time.Second,
 			},
 			ClientConfig:         clientConfig,
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		},
 		consumertest.NewNop(),
 	)

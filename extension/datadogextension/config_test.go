@@ -27,6 +27,16 @@ import (
 )
 
 func TestConfig_Validate(t *testing.T) {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
 	tests := []struct {
 		name    string
 		config  Config
@@ -40,13 +50,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 			},
 			wantErr: nil,
@@ -59,13 +64,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 			},
 			wantErr: datadogconfig.ErrEmptyEndpoint,
@@ -78,13 +78,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 			},
 			wantErr: datadogconfig.ErrUnsetAPIKey,
@@ -107,13 +102,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				DeploymentType: "gateway",
 			},
@@ -127,13 +117,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				DeploymentType: "daemonset",
 			},
@@ -147,13 +132,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				DeploymentType: "unknown",
 			},
@@ -167,13 +147,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				DeploymentType: "invalid-mode",
 			},
@@ -187,13 +162,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				DeploymentType: "",
 			},
@@ -216,14 +186,18 @@ func TestConfig_Validate(t *testing.T) {
 
 func TestExtensionWithProxyConfig(t *testing.T) {
 	// Create config with proxy settings
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.ProxyURL = "http://proxy.example.com:8080"
+	clientConfig.Timeout = 30 * time.Second
+	clientConfig.TLS = configtls.ClientConfig{
+		InsecureSkipVerify: true,
+	}
 	cfg := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			ProxyURL: "http://proxy.example.com:8080",
-			Timeout:  30 * time.Second,
-			TLS: configtls.ClientConfig{
-				InsecureSkipVerify: true,
-			},
-		},
+		ClientConfig: clientConfig,
 		API: datadogconfig.APIConfig{
 			Key:              "test-api-key-12345",
 			Site:             "datadoghq.com",
@@ -266,19 +240,24 @@ func TestExtensionWithProxyConfig(t *testing.T) {
 }
 
 func TestConfig_DeploymentTypeDefault(t *testing.T) {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
 	cfg := Config{
 		API: datadogconfig.APIConfig{
 			Site: datadogconfig.DefaultSite,
 			Key:  "1234567890abcdef1234567890abcdef",
 		},
 		HTTPConfig: &httpserver.Config{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-					Endpoint:  "localhost:8080",
-				},
-			},
-			Path: "/metadata",
+			ServerConfig: serverConfig,
+			Path:         "/metadata",
 		},
 		DeploymentType: "",
 	}
@@ -289,19 +268,24 @@ func TestConfig_DeploymentTypeDefault(t *testing.T) {
 }
 
 func TestConfig_InstallationMethodDefault(t *testing.T) {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
 	cfg := Config{
 		API: datadogconfig.APIConfig{
 			Site: datadogconfig.DefaultSite,
 			Key:  "1234567890abcdef1234567890abcdef",
 		},
 		HTTPConfig: &httpserver.Config{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-					Endpoint:  "localhost:8080",
-				},
-			},
-			Path: "/metadata",
+			ServerConfig: serverConfig,
+			Path:         "/metadata",
 		},
 	}
 
@@ -328,19 +312,24 @@ func TestConfig_InstallationMethodValidValues(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			serverConfig := confighttp.NewDefaultServerConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			serverConfig.WriteTimeout = 0
+			serverConfig.ReadHeaderTimeout = 0
+			serverConfig.IdleTimeout = 0
+			serverConfig.KeepAlivesEnabled = false
+			serverConfig.NetAddr = confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:8080",
+			}
 			cfg := Config{
 				API: datadogconfig.APIConfig{
 					Site: datadogconfig.DefaultSite,
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				InstallationMethod: tt.installationMethod,
 			}
@@ -391,19 +380,24 @@ func TestConfig_DeploymentTypeValidValues(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			serverConfig := confighttp.NewDefaultServerConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			serverConfig.WriteTimeout = 0
+			serverConfig.ReadHeaderTimeout = 0
+			serverConfig.IdleTimeout = 0
+			serverConfig.KeepAlivesEnabled = false
+			serverConfig.NetAddr = confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:8080",
+			}
 			cfg := Config{
 				API: datadogconfig.APIConfig{
 					Site: datadogconfig.DefaultSite,
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				DeploymentType: tt.deploymentType,
 			}
@@ -417,4 +411,66 @@ func TestConfig_DeploymentTypeValidValues(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfig_GatewayTopologyFields(t *testing.T) {
+	baseConfig := func() Config {
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:8080",
+		}
+		return Config{
+			API: datadogconfig.APIConfig{
+				Site: datadogconfig.DefaultSite,
+				Key:  "1234567890abcdef1234567890abcdef",
+			},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: serverConfig,
+				Path:         "/metadata",
+			},
+		}
+	}
+
+	t.Run("empty gateway fields are valid", func(t *testing.T) {
+		cfg := baseConfig()
+		assert.NoError(t, cfg.Validate())
+		assert.Empty(t, cfg.GatewayService)
+		assert.Empty(t, cfg.GatewayDestination)
+	})
+
+	t.Run("gateway_service set by gateway collector", func(t *testing.T) {
+		cfg := baseConfig()
+		cfg.GatewayService = "monitoring/otelcol-gateway"
+		assert.NoError(t, cfg.Validate())
+		assert.Equal(t, "monitoring/otelcol-gateway", cfg.GatewayService)
+	})
+
+	t.Run("gateway_destination set by daemonset collector", func(t *testing.T) {
+		cfg := baseConfig()
+		cfg.GatewayDestination = "monitoring/otelcol-gateway"
+		assert.NoError(t, cfg.Validate())
+		assert.Equal(t, "monitoring/otelcol-gateway", cfg.GatewayDestination)
+	})
+
+	t.Run("both fields set for intermediate gateway", func(t *testing.T) {
+		cfg := baseConfig()
+		cfg.GatewayService = "monitoring/otelcol-gateway-l2"
+		cfg.GatewayDestination = "monitoring/otelcol-gateway-l1"
+		assert.NoError(t, cfg.Validate())
+		assert.Equal(t, "monitoring/otelcol-gateway-l2", cfg.GatewayService)
+		assert.Equal(t, "monitoring/otelcol-gateway-l1", cfg.GatewayDestination)
+	})
+
+	t.Run("simple service name without namespace", func(t *testing.T) {
+		cfg := baseConfig()
+		cfg.GatewayService = "otelcol-gateway"
+		cfg.GatewayDestination = "otelcol-gateway"
+		assert.NoError(t, cfg.Validate())
+	})
 }

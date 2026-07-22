@@ -33,7 +33,7 @@ func TestSystemScraper_Start(t *testing.T) {
 			},
 		},
 	}
-	config.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
+	config.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
 
 	scraper := &systemScraper{
 		logger: logger,
@@ -60,7 +60,7 @@ func TestSystemScraper_Start_EmptyIP(t *testing.T) {
 			},
 		},
 	}
-	config.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
+	config.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
 
 	scraper := &systemScraper{
 		logger: logger,

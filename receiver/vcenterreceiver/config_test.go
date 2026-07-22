@@ -103,7 +103,8 @@ func TestLoadConfig(t *testing.T) {
 	expected.Endpoint = "http://vcsa.host.localnet"
 	expected.Username = "otelu"
 	expected.Password = "${env:VCENTER_PASSWORD}"
-	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
+	expected.MaxQueryMetrics = 128
+	expected.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
 	expected.Metrics.VcenterHostCPUUtilization.Enabled = false
 	expected.CollectionInterval = 5 * time.Minute
 

@@ -153,12 +153,13 @@ func convertFromLogs(workerItem fromConverterWorkerItem) []*entry.Entry {
 	result := make([]*entry.Entry, 0, workerItem.LogRecordSlice.Len())
 	for i := 0; i < workerItem.LogRecordSlice.Len(); i++ {
 		record := workerItem.LogRecordSlice.At(i)
-		entry := entry.Entry{}
+		e := entry.New()
+		e.ObservedTimestamp = time.Time{}
 
-		entry.ScopeName = workerItem.Scope.Scope().Name()
-		entry.Resource = workerItem.Resource.Attributes().AsRaw()
-		convertFrom(record, &entry)
-		result = append(result, &entry)
+		e.ScopeName = workerItem.Scope.Scope().Name()
+		e.Resource = workerItem.Resource.Attributes().AsRaw()
+		convertFrom(record, e)
+		result = append(result, e)
 	}
 	return result
 }

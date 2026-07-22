@@ -160,6 +160,12 @@ func TestListDataPointsForMetricBackOffFails(t *testing.T) {
 	assert.Nil(t, resp)
 }
 
+func TestValidPeriodValues(t *testing.T) {
+	for period, value := range validPeriods {
+		assert.Equal(t, period, value.Value())
+	}
+}
+
 func TestPollMetricsAndConsumeSuccess(t *testing.T) {
 	mockCes := mocks.NewCesClient(t)
 	next := new(consumertest.MetricsSink)

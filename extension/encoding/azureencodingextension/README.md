@@ -3,13 +3,13 @@
 
 This extension is designed for unmarshaling logs/traces/metrics encoded in specific format produced by [Azure Diagnostic Settings Export](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings) or [Azure Data Collection Rules (DCRs)](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-rule-overview)
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]  |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fazureencoding%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fazureencoding) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fazureencoding%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fazureencoding) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@axw](https://www.github.com/axw), [@constanca-m](https://www.github.com/constanca-m) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@constanca-m](https://www.github.com/constanca-m) |
+| Emeritus      | [@axw](https://www.github.com/axw) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -178,6 +178,24 @@ receivers:
     logs:
       encoding: azure_encoding
 ```
+
+### Semantic Conventions Compatibility
+
+This extension follows Collector-native semconv migration gates for log attribute key migrations.
+
+The following feature gates control migration of legacy log keys (v0) to stable keys (v1):
+
+- `extension.azureencoding.EmitV1LogConventions`
+- `extension.azureencoding.DontEmitV0LogConventions`
+
+Behavior matrix:
+
+| EmitV1 | DontEmitV0 | Behavior |
+| --- | --- | --- |
+| false | false | Emit v0 conventions only (default) |
+| true | false | Emit both v0 and v1 conventions |
+| true | true | Emit v1 conventions only |
+| false | true | Invalid configuration (startup error) |
 
 ### Log format identification
 

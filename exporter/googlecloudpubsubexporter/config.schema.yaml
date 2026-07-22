@@ -68,6 +68,9 @@ properties:
   traces:
     description: TracesSignalConfig allows for custom log configuration
     $ref: signal_config
+  universe_domain:
+    description: UniverseDomain is the universe domain for the Pubsub service. Defaults to "googleapis.com". Set to support Sovereign Cloud regions. See https://pkg.go.dev/google.golang.org/api/option#WithUniverseDomain
+    type: string
   user_agent:
     description: User agent that will be used by the Pubsub client to connect to the service
     type: string

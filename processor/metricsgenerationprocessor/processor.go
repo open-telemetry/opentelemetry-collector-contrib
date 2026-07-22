@@ -8,17 +8,10 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-)
 
-var matchAttributes = featuregate.GlobalRegistry().MustRegister(
-	"metricsgeneration.MatchAttributes",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the metric calculations will only be done between data points whose attributes match."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35425"),
-	featuregate.WithRegisterFromVersion("v0.112.0"),
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor/internal/metadata"
 )
 
 type metricsGenerationProcessor struct {
@@ -78,7 +71,7 @@ func (mgp *metricsGenerationProcessor) processMetrics(_ context.Context, md pmet
 					continue
 				}
 
-				if matchAttributes.IsEnabled() {
+				if metadata.MetricsgenerationMatchAttributesFeatureGate.IsEnabled() {
 					generateCalculatedMetrics(rm, metric2, rule, mgp.logger)
 				} else {
 					// When matching metric attributes isn't required the value of the first data point of metric2 is

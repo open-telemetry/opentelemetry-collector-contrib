@@ -124,7 +124,7 @@ func (scopeStatements) Context() ContextID {
 func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for _, rspans := range td.ResourceSpans().All() {
 		for _, sspans := range rspans.ScopeSpans().All() {
-			tCtx := ottlscope.NewTransformContextPtr(sspans.Scope(), rspans.Resource(), sspans)
+			tCtx := ottlscope.NewTransformContextPtr(sspans.Scope(), rspans.Resource(), sspans, rspans)
 			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
 				tCtx.Close()
@@ -146,7 +146,7 @@ func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	for _, rmetrics := range md.ResourceMetrics().All() {
 		for _, smetrics := range rmetrics.ScopeMetrics().All() {
-			tCtx := ottlscope.NewTransformContextPtr(smetrics.Scope(), rmetrics.Resource(), smetrics)
+			tCtx := ottlscope.NewTransformContextPtr(smetrics.Scope(), rmetrics.Resource(), smetrics, rmetrics)
 			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
 				tCtx.Close()
@@ -168,7 +168,7 @@ func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics)
 func (s scopeStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	for _, rlogs := range ld.ResourceLogs().All() {
 		for _, slogs := range rlogs.ScopeLogs().All() {
-			tCtx := ottlscope.NewTransformContextPtr(slogs.Scope(), rlogs.Resource(), slogs)
+			tCtx := ottlscope.NewTransformContextPtr(slogs.Scope(), rlogs.Resource(), slogs, rlogs)
 			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
 				tCtx.Close()
@@ -190,7 +190,7 @@ func (s scopeStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 func (s scopeStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error {
 	for _, rprofiles := range ld.ResourceProfiles().All() {
 		for _, sprofiles := range rprofiles.ScopeProfiles().All() {
-			tCtx := ottlscope.NewTransformContextPtr(sprofiles.Scope(), rprofiles.Resource(), sprofiles)
+			tCtx := ottlscope.NewTransformContextPtr(sprofiles.Scope(), rprofiles.Resource(), sprofiles, rprofiles)
 			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
 				tCtx.Close()

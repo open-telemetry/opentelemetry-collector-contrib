@@ -67,6 +67,42 @@ func TestQueryContents(t *testing.T) {
 			getQuery:                 getSQLServerWaitStatsQuery,
 			expectedQueryValFilename: "waitStatsQueryWithInstanceName.txt",
 		},
+		{
+			name:                     "Test worker threads query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerWorkerThreadsQuery,
+			expectedQueryValFilename: "workerThreadsQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test worker threads query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerWorkerThreadsQuery,
+			expectedQueryValFilename: "workerThreadsQueryWithInstanceName.txt",
+		},
+		{
+			name:                     "Test index physical stats query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerIndexPhysicalStatsQuery,
+			expectedQueryValFilename: "indexPhysicalQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test index physical stats query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerIndexPhysicalStatsQuery,
+			expectedQueryValFilename: "indexPhysicalQueryWithInstanceName.txt",
+		},
+		{
+			name:                     "Test availability group query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerAvailabilityGroupQuery,
+			expectedQueryValFilename: "availabilityGroupQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test availability group query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerAvailabilityGroupQuery,
+			expectedQueryValFilename: "availabilityGroupQueryWithInstanceName.txt",
+		},
 	}
 
 	for _, tt := range queryTests {
@@ -139,4 +175,22 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 			require.Equal(t, expected, actual)
 		})
 	}
+}
+
+func TestGetSQLServerIdleBlockingSessionsQuery(t *testing.T) {
+	expectedBytes, err := os.ReadFile(path.Join(".", "testdata", "testIdleBlockerQuerySampleQuery.txt"))
+	require.NoError(t, err)
+
+	expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
+	actual := strings.ReplaceAll(getSQLServerIdleBlockingSessionsQuery(), "\r\n", "\n")
+	require.Equal(t, expected, actual)
+}
+
+func TestFormatSQLServerSessionIDsParam(t *testing.T) {
+	actual := formatSQLServerSessionIDsParam(map[int64]struct{}{
+		91: {},
+		60: {},
+		77: {},
+	})
+	require.Equal(t, "60,77,91", actual)
 }

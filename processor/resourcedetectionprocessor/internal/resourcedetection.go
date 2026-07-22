@@ -17,6 +17,9 @@ import (
 	backoff "github.com/cenkalti/backoff/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
@@ -25,7 +28,7 @@ import (
 type DetectorType string
 
 type Detector interface {
-	Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error)
+	Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error)
 }
 
 type DetectorConfig any
@@ -34,7 +37,14 @@ type ResourceDetectorConfig interface {
 	GetConfigFromType(DetectorType) DetectorConfig
 }
 
-type DetectorFactory func(processor.Settings, DetectorConfig) (Detector, error)
+type DetectorFactory func(processor.Settings, DetectorConfig, bool) (Detector, error)
+
+// detectorEntry pairs a detector with its type so detection telemetry can be
+// attributed to the specific detector.
+type detectorEntry struct {
+	detectorType DetectorType
+	detector     Detector
+}
 
 type ResourceProviderFactory struct {
 	// detectors holds all possible detector types.
@@ -52,40 +62,57 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 	detectorConfigs ResourceDetectorConfig,
 	detectorTypes ...DetectorType,
 ) (*ResourceProvider, error) {
-	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
+	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes, failOnMissingMetadata)
 	if err != nil {
 		return nil, err
 	}
 
-	provider := NewResourceProvider(params.Logger, timeout, failOnMissingMetadata, detectors...)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
+	provider := NewResourceProvider(params.Logger, telemetryBuilder, timeout, detectors...)
+
+	// Register observer for the detected-attribute count.
+	if err := telemetryBuilder.RegisterResourcedetectionAttributesDetectedCallback(func(_ context.Context, o metric.Int64Observer) error {
+		if r := provider.detectedResource.Load(); r != nil {
+			o.Observe(int64(r.resource.Attributes().Len()))
+		}
+		return nil
+	}); err != nil {
+		telemetryBuilder.Shutdown()
+		return nil, err
+	}
+
 	return provider, nil
 }
 
-func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType) ([]Detector, error) {
-	detectors := make([]Detector, 0, len(detectorTypes))
+func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType, failOnMissingMetadata bool) ([]detectorEntry, error) {
+	detectors := make([]detectorEntry, 0, len(detectorTypes))
 	for _, detectorType := range detectorTypes {
 		detectorFactory, ok := f.detectors[detectorType]
 		if !ok {
 			return nil, fmt.Errorf("invalid detector key: %v", detectorType)
 		}
 
-		detector, err := detectorFactory(params, detectorConfigs.GetConfigFromType(detectorType))
+		detector, err := detectorFactory(params, detectorConfigs.GetConfigFromType(detectorType), failOnMissingMetadata)
 		if err != nil {
 			return nil, fmt.Errorf("failed creating detector type %q: %w", detectorType, err)
 		}
 
-		detectors = append(detectors, detector)
+		detectors = append(detectors, detectorEntry{detectorType: detectorType, detector: detector})
 	}
 
 	return detectors, nil
 }
 
 type ResourceProvider struct {
-	logger                *zap.Logger
-	timeout               time.Duration
-	detectors             []Detector
-	failOnMissingMetadata bool
-	detectedResource      atomic.Pointer[resourceResult]
+	logger           *zap.Logger
+	telemetry        *metadata.TelemetryBuilder
+	timeout          time.Duration
+	detectors        []detectorEntry
+	detectedResource atomic.Pointer[resourceResult]
 
 	// Refresh loop control
 	refreshInterval time.Duration
@@ -102,13 +129,13 @@ type resourceResult struct {
 	err       error
 }
 
-func NewResourceProvider(logger *zap.Logger, timeout time.Duration, failOnMissingMetadata bool, detectors ...Detector) *ResourceProvider {
+func NewResourceProvider(logger *zap.Logger, telemetry *metadata.TelemetryBuilder, timeout time.Duration, detectors ...detectorEntry) *ResourceProvider {
 	return &ResourceProvider{
-		logger:                logger,
-		timeout:               timeout,
-		detectors:             detectors,
-		failOnMissingMetadata: failOnMissingMetadata,
-		refreshInterval:       0, // No periodic refresh by default
+		logger:          logger,
+		telemetry:       telemetry,
+		timeout:         timeout,
+		detectors:       detectors,
+		refreshInterval: 0, // No periodic refresh by default
 	}
 }
 
@@ -159,11 +186,25 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 	p.logger.Info("began detecting resource information")
 
 	resultsChan := make([]chan resourceResult, len(p.detectors))
-	for i, detector := range p.detectors {
+	for i, entry := range p.detectors {
 		ch := make(chan resourceResult, 1)
 		resultsChan[i] = ch
 
-		go func(detector Detector, ch chan resourceResult) {
+		go func(entry detectorEntry, ch chan resourceResult) {
+			startTime := time.Now()
+			detectorAttr := attribute.String("detector", string(entry.detectorType))
+
+			// record emits the per-detector result and duration. On failure, failErr
+			// classifies the error.type on the results counter.
+			record := func(outcome string, failErr error) {
+				base := []attribute.KeyValue{detectorAttr, attribute.String("outcome", outcome)}
+				p.telemetry.ResourcedetectionDetectorDuration.Record(ctx, time.Since(startTime).Seconds(), metric.WithAttributes(base...))
+				if failErr != nil {
+					base = append(base, semconv.ErrorType(failErr))
+				}
+				p.telemetry.ResourcedetectionDetectorResults.Add(ctx, 1, metric.WithAttributes(base...))
+			}
+
 			sleep := backoff.ExponentialBackOff{
 				InitialInterval:     1 * time.Second,
 				RandomizationFactor: 1.5,
@@ -171,17 +212,26 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 			}
 			sleep.Reset()
 
+			// Classify error.type from the first attempt's error: it's the deterministic
+			// root cause, whereas the last attempt's error often just reflects the context
+			// deadline firing rather than why the detector actually failed.
+			var firstErr error
 			for {
-				r, schemaURL, err := detector.Detect(ctx, p.failOnMissingMetadata)
+				r, schemaURL, err := entry.detector.Detect(ctx)
 				if err == nil {
+					record("success", nil)
 					ch <- resourceResult{resource: r, schemaURL: schemaURL}
 					return
 				}
+				if firstErr == nil {
+					firstErr = err
+				}
 
-				p.logger.Warn("failed to detect resource", zap.Error(err))
+				p.logger.Warn("failed to detect resource", zap.String("detector", string(entry.detectorType)), zap.Error(err))
 
 				next := sleep.NextBackOff()
 				if next == backoff.Stop {
+					record("failure", firstErr)
 					ch <- resourceResult{err: err}
 					return
 				}
@@ -191,21 +241,20 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 				case <-ctx.Done():
 					p.logger.Warn("context was cancelled", zap.Error(ctx.Err()))
 					timer.Stop()
+					record("failure", firstErr)
 					ch <- resourceResult{err: err}
 					return
 				case <-timer.C:
 					// retry
 				}
 			}
-		}(detector, ch)
+		}(entry, ch)
 	}
 
 	for _, ch := range resultsChan {
 		result := <-ch
 		if result.err != nil {
-			if metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.IsEnabled() {
-				joinedErr = errors.Join(joinedErr, result.err)
-			}
+			joinedErr = errors.Join(joinedErr, result.err)
 			continue
 		}
 		successes++
@@ -215,22 +264,15 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 
 	p.logger.Info("detected resource information", zap.Any("resource", res.Attributes().AsRaw()))
 
-	// Determine the error to return based on feature gate setting.
 	var returnErr error
-	if metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.IsEnabled() {
-		// Feature gate enabled: return joined errors (if any)
-		if successes == 0 && joinedErr == nil {
-			returnErr = errors.New("resource detection failed: no detectors succeeded")
-		} else {
-			returnErr = joinedErr
-		}
+	if successes == 0 && joinedErr == nil {
+		returnErr = errors.New("resource detection failed: no detectors succeeded")
+	} else {
+		returnErr = joinedErr
 	}
 
 	// If all detectors failed, return empty resource.
 	if successes == 0 {
-		if !metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.IsEnabled() {
-			p.logger.Warn("resource detection failed but error propagation is disabled")
-		}
 		return pcommon.NewResource(), "", returnErr
 	}
 
@@ -312,6 +354,7 @@ func (p *ResourceProvider) StopRefreshing() {
 			close(p.stopCh)
 			p.wg.Wait()
 		}
+		p.telemetry.Shutdown()
 	})
 }
 

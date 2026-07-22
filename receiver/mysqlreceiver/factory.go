@@ -39,7 +39,7 @@ func createDefaultConfig() component.Config {
 			Endpoint:  "localhost:3306",
 			Transport: confignet.TransportTypeTCP,
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		StatementEvents: StatementEventsConfig{
 			DigestTextLimit: defaultStatementEventsDigestTextLimit,
@@ -91,10 +91,19 @@ func createLogsReceiver(
 
 	opts := make([]scraperhelper.ControllerOption, 0)
 
+	// Shared query-plan cache so that a plan fetched by scrapeTopQueries() can be
+	// reused by scrapeQuerySamples() without a second EXPLAIN call.
+	// Only create when at least one event scraper is enabled; creating unconditionally
+	// spawns a background goroutine even when no scraping occurs.
+	var sharedPlanCache *expirable.LRU[string, string]
+	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled || cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled {
+		sharedPlanCache = newTTLCache[string](cfg.TopQueryCollection.QueryPlanCacheSize, cfg.TopQueryCollection.QueryPlanCacheTTL)
+	}
+
 	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		// we have 2 updated only attributes. so we set the cache size accordingly.
 		// TODO: parameterize this cache size.
-		ns := newMySQLScraper(params, cfg, newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*2*2)), newTTLCache[string](cfg.TopQueryCollection.QueryPlanCacheSize, cfg.TopQueryCollection.QueryPlanCacheTTL))
+		ns := newMySQLScraper(params, cfg, newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*2*2)), sharedPlanCache)
 		s, err := scraper.NewLogs(
 			ns.scrapeTopQueryFunc,
 			scraper.WithStart(ns.start),
@@ -112,9 +121,7 @@ func createLogsReceiver(
 	}
 
 	if cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled {
-		// query sample collection does not need cache, but we do not want to make it
-		// nil, so create one size 1 cache as a placeholder.
-		ns := newMySQLScraper(params, cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+		ns := newMySQLScraper(params, cfg, newCache[int64](1), sharedPlanCache)
 		s, err := scraper.NewLogs(
 			ns.scrapeQuerySampleFunc,
 			scraper.WithStart(ns.start),

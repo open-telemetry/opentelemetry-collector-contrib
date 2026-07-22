@@ -55,9 +55,24 @@ func (_m *mockBlobClient) listBlobs(ctx context.Context, containerName string) (
 	return r0, r1
 }
 
+// DeleteBlob provides a mock function with given fields: ctx, containerName, blobName
+func (_m *mockBlobClient) deleteBlob(ctx context.Context, containerName, blobName string) error {
+	ret := _m.Called(ctx, containerName, blobName)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, containerName, blobName)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 func newMockBlobClient() *mockBlobClient {
 	blobClient := &mockBlobClient{}
 	blobClient.On("readBlob", mock.Anything, mock.Anything, mock.Anything).Return(&bytes.Buffer{}, nil)
 	blobClient.On("listBlobs", mock.Anything, mock.Anything).Return([]string{}, nil)
+	blobClient.On("deleteBlob", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	return blobClient
 }

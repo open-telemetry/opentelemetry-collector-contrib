@@ -8,6 +8,7 @@ package sumologicexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -30,7 +31,19 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	qs := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	qConfig := exporterhelper.NewDefaultQueueConfig()
+	qConfig.QueueSize = 1024000
+	qConfig.Batch = configoptional.Default(exporterhelper.BatchConfig{
+		FlushTimeout: 1 * time.Second,
+		Sizer:        exporterhelper.RequestSizerTypeItems,
+		MinSize:      1024,
+		MaxSize:      2048,
+	})
+	qs := configoptional.Default(qConfig)
+	retryConfig := configretry.NewDefaultBackOffConfig()
+	retryConfig.Multiplier = DefaultRetryOnFailureMultiplier
+	retryConfig.MaxInterval = DefaultRetryOnFailureMaxInterval
+	retryConfig.MaxElapsedTime = DefaultRetryOnFailureMaxElapsedTime
 
 	return &Config{
 		MaxRequestBodySize: DefaultMaxRequestBodySize,
@@ -39,7 +52,7 @@ func createDefaultConfig() component.Config {
 		Client:             DefaultClient,
 
 		ClientConfig:         createDefaultClientConfig(),
-		BackOffConfig:        configretry.NewDefaultBackOffConfig(),
+		BackOffConfig:        retryConfig,
 		QueueSettings:        qs,
 		StickySessionEnabled: DefaultStickySessionEnabled,
 	}

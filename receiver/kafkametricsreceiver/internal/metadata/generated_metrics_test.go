@@ -67,21 +67,21 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["KafkaBrokerLogRetentionPeriod"] = mb.metricKafkaBrokerLogRetentionPeriod.config.AggregationStrategy
-			aggMap["KafkaConsumerGroupLag"] = mb.metricKafkaConsumerGroupLag.config.AggregationStrategy
-			aggMap["KafkaConsumerGroupLagSum"] = mb.metricKafkaConsumerGroupLagSum.config.AggregationStrategy
-			aggMap["KafkaConsumerGroupMembers"] = mb.metricKafkaConsumerGroupMembers.config.AggregationStrategy
-			aggMap["KafkaConsumerGroupOffset"] = mb.metricKafkaConsumerGroupOffset.config.AggregationStrategy
-			aggMap["KafkaConsumerGroupOffsetSum"] = mb.metricKafkaConsumerGroupOffsetSum.config.AggregationStrategy
-			aggMap["KafkaPartitionCurrentOffset"] = mb.metricKafkaPartitionCurrentOffset.config.AggregationStrategy
-			aggMap["KafkaPartitionOldestOffset"] = mb.metricKafkaPartitionOldestOffset.config.AggregationStrategy
-			aggMap["KafkaPartitionReplicas"] = mb.metricKafkaPartitionReplicas.config.AggregationStrategy
-			aggMap["KafkaPartitionReplicasInSync"] = mb.metricKafkaPartitionReplicasInSync.config.AggregationStrategy
-			aggMap["KafkaTopicLogRetentionPeriod"] = mb.metricKafkaTopicLogRetentionPeriod.config.AggregationStrategy
-			aggMap["KafkaTopicLogRetentionSize"] = mb.metricKafkaTopicLogRetentionSize.config.AggregationStrategy
-			aggMap["KafkaTopicMinInsyncReplicas"] = mb.metricKafkaTopicMinInsyncReplicas.config.AggregationStrategy
-			aggMap["KafkaTopicPartitions"] = mb.metricKafkaTopicPartitions.config.AggregationStrategy
-			aggMap["KafkaTopicReplicationFactor"] = mb.metricKafkaTopicReplicationFactor.config.AggregationStrategy
+			aggMap["kafka.broker.log_retention_period"] = mb.metricKafkaBrokerLogRetentionPeriod.config.AggregationStrategy
+			aggMap["kafka.consumer_group.lag"] = mb.metricKafkaConsumerGroupLag.config.AggregationStrategy
+			aggMap["kafka.consumer_group.lag_sum"] = mb.metricKafkaConsumerGroupLagSum.config.AggregationStrategy
+			aggMap["kafka.consumer_group.members"] = mb.metricKafkaConsumerGroupMembers.config.AggregationStrategy
+			aggMap["kafka.consumer_group.offset"] = mb.metricKafkaConsumerGroupOffset.config.AggregationStrategy
+			aggMap["kafka.consumer_group.offset_sum"] = mb.metricKafkaConsumerGroupOffsetSum.config.AggregationStrategy
+			aggMap["kafka.partition.current_offset"] = mb.metricKafkaPartitionCurrentOffset.config.AggregationStrategy
+			aggMap["kafka.partition.oldest_offset"] = mb.metricKafkaPartitionOldestOffset.config.AggregationStrategy
+			aggMap["kafka.partition.replicas"] = mb.metricKafkaPartitionReplicas.config.AggregationStrategy
+			aggMap["kafka.partition.replicas_in_sync"] = mb.metricKafkaPartitionReplicasInSync.config.AggregationStrategy
+			aggMap["kafka.topic.log_retention_period"] = mb.metricKafkaTopicLogRetentionPeriod.config.AggregationStrategy
+			aggMap["kafka.topic.log_retention_size"] = mb.metricKafkaTopicLogRetentionSize.config.AggregationStrategy
+			aggMap["kafka.topic.min_insync_replicas"] = mb.metricKafkaTopicMinInsyncReplicas.config.AggregationStrategy
+			aggMap["kafka.topic.partitions"] = mb.metricKafkaTopicPartitions.config.AggregationStrategy
+			aggMap["kafka.topic.replication_factor"] = mb.metricKafkaTopicReplicationFactor.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -96,67 +96,57 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaBrokerLogRetentionPeriodDataPoint(ts, 3, "broker-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaBrokersDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "group-val", "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupLagDataPoint(ts, 3, "group-val-2", "topic-val-2", 10)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 1, "group-val", "topic-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 3, "group-val-2", "topic-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 1, "group-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 3, "group-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 1, "group-val", "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 3, "group-val-2", "topic-val-2", 10)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 1, "group-val", "topic-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 3, "group-val-2", "topic-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 1, "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 3, "topic-val-2", 10)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 1, "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 3, "topic-val-2", 10)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionReplicasDataPoint(ts, 1, "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaPartitionReplicasDataPoint(ts, 3, "topic-val-2", 10)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "topic-val", 9)
@@ -181,7 +171,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaTopicMinInsyncReplicasDataPoint(ts, 3, "topic-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "topic-val")

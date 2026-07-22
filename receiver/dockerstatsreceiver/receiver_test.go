@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	ctypes "github.com/docker/docker/api/types/container"
+	ctypes "github.com/moby/moby/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -434,7 +434,7 @@ func TestRecordBaseMetrics(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		err := r.recordBaseMetrics(
 			pcommon.NewTimestampFromTime(now),
-			&ctypes.ContainerJSONBase{
+			&ctypes.InspectResponse{
 				State: &ctypes.State{
 					StartedAt: started,
 				},
@@ -451,7 +451,7 @@ func TestRecordBaseMetrics(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		err := r.recordBaseMetrics(
 			pcommon.NewTimestampFromTime(now),
-			&ctypes.ContainerJSONBase{
+			&ctypes.InspectResponse{
 				State: &ctypes.State{
 					StartedAt: "bad date",
 				},

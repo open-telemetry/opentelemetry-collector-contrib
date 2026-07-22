@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	farotranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/faroreceiver/internal/metadata"
 )
 
 const faroPath = "/"
@@ -53,6 +54,11 @@ func newFaroReceiver(cfg *Config, set *receiver.Settings) (*faroReceiver, error)
 		return nil, err
 	}
 
+	r.telemetryBuilder, err = metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
 	return r, nil
 }
 
@@ -65,7 +71,8 @@ type faroReceiver struct {
 	nextTraces consumer.Traces
 	nextLogs   consumer.Logs
 
-	obsrepHTTP *receiverhelper.ObsReport
+	obsrepHTTP       *receiverhelper.ObsReport
+	telemetryBuilder *metadata.TelemetryBuilder
 
 	settings *receiver.Settings
 }
@@ -169,20 +176,28 @@ func (r *faroReceiver) handleFaroRequest(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
+	ctx := req.Context()
+	r.telemetryBuilder.FaroLogIngested.Add(ctx, int64(len(payload.Logs)))
+	r.telemetryBuilder.FaroMeasurementIngested.Add(ctx, int64(len(payload.Measurements)))
+	r.telemetryBuilder.FaroExceptionIngested.Add(ctx, int64(len(payload.Exceptions)))
+	r.telemetryBuilder.FaroEventIngested.Add(ctx, int64(len(payload.Events)))
+
 	var errors []string
 
 	if r.nextTraces != nil {
-		traces, translatorErr := farotranslator.TranslateToTraces(req.Context(), payload)
-		if translatorErr != nil {
+		traces, translatorErr := farotranslator.TranslateToTraces(ctx, payload)
+		switch {
+		case translatorErr != nil:
 			errors = append(errors, fmt.Sprintf("failed to translate traces: %v", translatorErr))
-		} else {
-			if traces.SpanCount() == 0 {
-				r.settings.Logger.Debug("Faro traces are nil, skipping")
-			} else {
-				consumeErr := r.nextTraces.ConsumeTraces(req.Context(), traces)
-				if consumeErr != nil {
-					errors = append(errors, fmt.Sprintf("failed to pass traces to next consumer: %v", consumeErr))
-				}
+		case traces.SpanCount() == 0:
+			r.settings.Logger.Debug("Faro traces are nil, skipping")
+		default:
+			spanCount := traces.SpanCount()
+			obsCtx := r.obsrepHTTP.StartTracesOp(ctx)
+			consumeErr := r.nextTraces.ConsumeTraces(obsCtx, traces)
+			r.obsrepHTTP.EndTracesOp(obsCtx, "json", spanCount, consumeErr)
+			if consumeErr != nil {
+				errors = append(errors, fmt.Sprintf("failed to pass traces to next consumer: %v", consumeErr))
 			}
 		}
 	}
@@ -192,17 +207,19 @@ func (r *faroReceiver) handleFaroRequest(resp http.ResponseWriter, req *http.Req
 	}
 
 	if r.nextLogs != nil {
-		logs, translatorErr := farotranslator.TranslateToLogs(req.Context(), payload)
-		if translatorErr != nil {
+		logs, translatorErr := farotranslator.TranslateToLogs(ctx, payload)
+		switch {
+		case translatorErr != nil:
 			errors = append(errors, fmt.Sprintf("failed to translate logs: %v", translatorErr))
-		} else {
-			if logs.LogRecordCount() == 0 {
-				r.settings.Logger.Debug("Faro logs are nil, skipping")
-			} else {
-				consumeErr := r.nextLogs.ConsumeLogs(req.Context(), logs)
-				if consumeErr != nil {
-					errors = append(errors, fmt.Sprintf("failed to pass logs to next consumer: %v", consumeErr))
-				}
+		case logs.LogRecordCount() == 0:
+			r.settings.Logger.Debug("Faro logs are nil, skipping")
+		default:
+			logRecordCount := logs.LogRecordCount()
+			obsCtx := r.obsrepHTTP.StartLogsOp(ctx)
+			consumeErr := r.nextLogs.ConsumeLogs(obsCtx, logs)
+			r.obsrepHTTP.EndLogsOp(obsCtx, "json", logRecordCount, consumeErr)
+			if consumeErr != nil {
+				errors = append(errors, fmt.Sprintf("failed to pass logs to next consumer: %v", consumeErr))
 			}
 		}
 	}

@@ -51,7 +51,7 @@ properties:
     description: Your Coralogix private key (sensitive) for authentication
     $ref: go.opentelemetry.io/collector/config/configopaque.string
   private_link:
-    description: Use AWS PrivateLink for the domain
+    description: PrivateLink, when enabled, automatically routes telemetry to the AWS PrivateLink ingress endpoint (ingress.private.<domain>) for the configured domain. AWS PrivateLink provides private connectivity between VPCs, supported AWS services, and on-premises networks without exposing traffic to the public internet. If the domain already contains "private.", no additional prefix is added. For up-to-date PrivateLink endpoints, see https://coralogix.com/docs/integrations/aws/aws-privatelink/aws-privatelink/#privatelink-endpoints
     type: boolean
   profiles:
     description: The Coralogix profiles ingress endpoint (gRPC only)

@@ -8,8 +8,10 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"sort"
 	"sync"
 	"testing"
@@ -20,12 +22,15 @@ import (
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
+	"golang.org/x/oauth2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -398,6 +403,117 @@ func TestNewFranzKafkaConsumer_InitialOffset(t *testing.T) {
 	}
 }
 
+func TestBalancerOptFromStrategies(t *testing.T) {
+	balancerExtID := component.MustNewID("my_balancer")
+	type testcase struct {
+		strategy   configkafka.GroupRebalanceStrategy
+		strategies []configkafka.GroupRebalanceStrategy
+		host       component.Host
+		wantNil    bool
+		wantErr    string
+	}
+	for name, tc := range map[string]testcase{
+		"empty": {
+			strategy: "",
+			host:     componenttest.NewNopHost(),
+			wantNil:  true,
+		},
+		"range": {
+			strategy: configkafka.RangeBalanceStrategy,
+			host:     componenttest.NewNopHost(),
+		},
+		"roundrobin": {
+			strategy: configkafka.RoundRobinBalanceStrategy,
+			host:     componenttest.NewNopHost(),
+		},
+		"sticky": {
+			strategy: configkafka.StickyBalanceStrategy,
+			host:     componenttest.NewNopHost(),
+		},
+		"cooperative-sticky": {
+			strategy: configkafka.CooperativeStickyBalanceStrategy,
+			host:     componenttest.NewNopHost(),
+		},
+		"strategies_only": {
+			strategies: []configkafka.GroupRebalanceStrategy{
+				configkafka.CooperativeStickyBalanceStrategy,
+			},
+			host: componenttest.NewNopHost(),
+		},
+		"strategies_resolve_empty": {
+			strategies: []configkafka.GroupRebalanceStrategy{""},
+			host:       componenttest.NewNopHost(),
+			wantErr:    "group_rebalance_strategies has no valid group rebalance strategies",
+		},
+		"strategies_extension_not_found": {
+			strategies: []configkafka.GroupRebalanceStrategy{
+				configkafka.CooperativeStickyBalanceStrategy,
+				"my_balancer",
+			},
+			host:    componenttest.NewNopHost(),
+			wantErr: `group_rebalance_strategies[1] extension "my_balancer" not found`,
+		},
+		"extension_not_found": {
+			strategy: "my_balancer",
+			host:     componenttest.NewNopHost(),
+			wantErr:  `group_rebalance_strategy extension "my_balancer" not found`,
+		},
+		"extension_wrong_type": {
+			strategy: "my_balancer",
+			host: &mockHost{extensions: map[component.ID]component.Component{
+				balancerExtID: &nopComponent{},
+			}},
+			wantErr: `group_rebalance_strategy extension "my_balancer" does not implement kgo.GroupBalancer`,
+		},
+		"extension_ok": {
+			strategy: "my_balancer",
+			host: &mockHost{extensions: map[component.ID]component.Component{
+				balancerExtID: &mockGroupBalancer{},
+			}},
+		},
+		"invalid_id": {
+			strategy: "!!!invalid!!!",
+			host:     componenttest.NewNopHost(),
+			wantErr:  `group_rebalance_strategy "!!!invalid!!!" is not a built-in strategy or a valid extension ID`,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			opt, err := balancerOptFromStrategies(tc.strategy, tc.strategies, tc.host)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			if tc.wantNil {
+				assert.Nil(t, opt)
+			} else {
+				assert.NotNil(t, opt)
+			}
+		})
+	}
+}
+
+func TestBalancersFromStrategies(t *testing.T) {
+	balancerExtID := component.MustNewID("my_balancer")
+	host := &mockHost{extensions: map[component.ID]component.Component{
+		balancerExtID: &mockGroupBalancer{},
+	}}
+
+	balancers, err := balancersFromStrategies(
+		[]configkafka.GroupRebalanceStrategy{
+			configkafka.CooperativeStickyBalanceStrategy,
+			"my_balancer",
+		},
+		host,
+	)
+
+	require.NoError(t, err)
+	require.Len(t, balancers, 2)
+	assert.Equal(t, "cooperative-sticky", balancers[0].ProtocolName())
+	assert.Equal(t, "mock", balancers[1].ProtocolName())
+}
+
 func fetchRecords(ctx context.Context, client *kgo.Client, wantRecords int) <-chan kgo.Fetches {
 	fetchChan := make(chan kgo.Fetches)
 	go func() {
@@ -577,4 +693,150 @@ func TestNewFranzClient_And_Admin(t *testing.T) {
 	assert.NotEmpty(t, md.Brokers)
 	_, ok := md.Topics["meta-topic"]
 	assert.True(t, ok)
+}
+
+func TestConfigureKgoKerberos(t *testing.T) {
+	for name, tc := range map[string]struct {
+		cfg         configkafka.KerberosConfig
+		wantErrIs   error
+		wantErrText string
+	}{
+		"password_auth": {
+			cfg: configkafka.KerberosConfig{
+				ServiceName: "kafka",
+				Realm:       "EXAMPLE.COM",
+				Username:    "user",
+				Password:    "pass",
+			},
+		},
+		"disable_fast_negotiation": {
+			cfg: configkafka.KerberosConfig{
+				ServiceName:     "kafka",
+				Username:        "user",
+				Password:        "pass",
+				DisablePAFXFAST: true,
+			},
+		},
+		"bad_config_path": {
+			cfg: configkafka.KerberosConfig{
+				ServiceName: "kafka",
+				ConfigPath:  filepath.Join("nonexistent", "krb5.conf"),
+			},
+			wantErrText: "configuration file could not be opened",
+		},
+		"bad_keytab_path": {
+			cfg: configkafka.KerberosConfig{
+				ServiceName: "kafka",
+				Username:    "user",
+				KeyTabPath:  filepath.Join("nonexistent", "krb5.keytab"),
+			},
+			wantErrIs: fs.ErrNotExist,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			opt, err := configureKgoKerberos(&tc.cfg)
+			if tc.wantErrIs != nil {
+				require.ErrorIs(t, err, tc.wantErrIs)
+				return
+			}
+			if tc.wantErrText != "" {
+				require.ErrorContains(t, err, tc.wantErrText)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, opt)
+		})
+	}
+}
+
+func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER(t *testing.T) {
+	opt, err := configureKgoSASL(&configkafka.SASLConfig{
+		Mechanism: AWSMSKIAMOAUTHBEARER,
+		AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
+	}, componenttest.NewNopHost())
+	require.NoError(t, err)
+	require.NotNil(t, opt)
+}
+
+func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
+	extID := component.MustNewID("oauth2client")
+
+	t.Run("missing_extension", func(t *testing.T) {
+		_, err := configureKgoSASL(&configkafka.SASLConfig{
+			Mechanism:              OAUTHBEARER,
+			OAuthBearerTokenSource: extID,
+		}, componenttest.NewNopHost())
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "is not configured")
+	})
+
+	t.Run("present_extension", func(t *testing.T) {
+		host := &mockHost{extensions: map[component.ID]component.Component{
+			extID: &mockTokenSource{token: "tok"},
+		}}
+		opt, err := configureKgoSASL(&configkafka.SASLConfig{
+			Mechanism:              OAUTHBEARER,
+			OAuthBearerTokenSource: extID,
+		}, host)
+		require.NoError(t, err)
+		require.NotNil(t, opt)
+	})
+}
+
+func TestConfigureKgoSASL_UnsupportedMechanism(t *testing.T) {
+	_, err := configureKgoSASL(&configkafka.SASLConfig{
+		Mechanism: "BOGUS",
+	}, componenttest.NewNopHost())
+	require.ErrorContains(t, err, "unsupported SASL mechanism")
+}
+
+// mockHost is a minimal component.Host that returns a fixed extension map.
+type mockHost struct {
+	extensions map[component.ID]component.Component
+}
+
+func (m *mockHost) GetExtensions() map[component.ID]component.Component {
+	return m.extensions
+}
+
+// nopComponent is a component.Component that does not implement GroupBalancer.
+type nopComponent struct {
+	extension.Extension
+}
+
+// mockTokenSource is a contextTokenSource extension used to test OAUTHBEARER.
+type mockTokenSource struct {
+	extension.Extension
+	token string
+}
+
+func (m *mockTokenSource) Token(context.Context) (*oauth2.Token, error) {
+	return &oauth2.Token{AccessToken: m.token}, nil
+}
+
+// mockGroupBalancer is a no-op kgo.GroupBalancer used in tests.
+type mockGroupBalancer struct {
+	extension.Extension
+}
+
+var _ kgo.GroupBalancer = (*mockGroupBalancer)(nil)
+
+func (*mockGroupBalancer) ProtocolName() string {
+	return "mock"
+}
+
+func (*mockGroupBalancer) JoinGroupMetadata([]string, map[string][]int32, int32) []byte {
+	return nil
+}
+
+func (*mockGroupBalancer) ParseSyncAssignment([]byte) (map[string][]int32, error) {
+	return nil, nil
+}
+
+func (*mockGroupBalancer) MemberBalancer([]kmsg.JoinGroupResponseMember) (kgo.GroupMemberBalancer, map[string]struct{}, error) {
+	return nil, nil, nil
+}
+
+func (*mockGroupBalancer) IsCooperative() bool {
+	return false
 }

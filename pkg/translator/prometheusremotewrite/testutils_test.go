@@ -141,7 +141,7 @@ func getPromLabels(lbs ...string) []prompb.Label {
 	pbLbs := prompb.Labels{
 		Labels: []prompb.Label{},
 	}
-	for i := 0; i < len(lbs); i += 2 {
+	for i := 0; i+1 < len(lbs); i += 2 {
 		pbLbs.Labels = append(pbLbs.Labels, getLabel(lbs[i], lbs[i+1]))
 	}
 	return pbLbs.Labels

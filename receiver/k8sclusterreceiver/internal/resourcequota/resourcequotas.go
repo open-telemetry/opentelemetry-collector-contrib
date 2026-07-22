@@ -13,12 +13,17 @@ import (
 )
 
 func RecordMetrics(mb *metadata.MetricsBuilder, rq *corev1.ResourceQuota, ts pcommon.Timestamp) {
+	e := metadata.NewK8sResourcequotaEntity(string(rq.UID))
+	e.SetK8sResourcequotaName(rq.Name)
+	e.SetK8sNamespaceName(rq.Namespace)
+	eb := mb.ForK8sResourcequota(e)
+
 	for k, v := range rq.Status.Hard {
 		val := v.Value()
 		if strings.HasSuffix(string(k), ".cpu") {
 			val = v.MilliValue()
 		}
-		mb.RecordK8sResourceQuotaHardLimitDataPoint(ts, val, string(k)) //nolint:staticcheck
+		eb.RecordK8sResourceQuotaHardLimitDataPoint(ts, val, string(k))
 	}
 
 	for k, v := range rq.Status.Used {
@@ -26,12 +31,8 @@ func RecordMetrics(mb *metadata.MetricsBuilder, rq *corev1.ResourceQuota, ts pco
 		if strings.HasSuffix(string(k), ".cpu") {
 			val = v.MilliValue()
 		}
-		mb.RecordK8sResourceQuotaUsedDataPoint(ts, val, string(k)) //nolint:staticcheck
+		eb.RecordK8sResourceQuotaUsedDataPoint(ts, val, string(k))
 	}
 
-	rb := mb.NewResourceBuilder()
-	rb.SetK8sResourcequotaUID(string(rq.UID))
-	rb.SetK8sResourcequotaName(rq.Name)
-	rb.SetK8sNamespaceName(rq.Namespace)
-	mb.EmitForResource(metadata.WithResource(rb.Emit())) //nolint:staticcheck
+	eb.Emit()
 }

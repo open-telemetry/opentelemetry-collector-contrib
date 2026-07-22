@@ -23,8 +23,8 @@ body:
       - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
-      - cmd/schemagen
       - cmd/telemetrygen
+      - config/configdbauth
       - confmap/provider/aesprovider
       - confmap/provider/googlesecretmanagerprovider
       - confmap/provider/s3provider
@@ -98,6 +98,7 @@ body:
       - extension/bearertokenauth
       - extension/cgroupruntime
       - extension/datadog
+      - extension/dbauth
       - extension/encoding
       - extension/encoding/avrologencoding
       - extension/encoding/awscloudwatchmetricstreamsencoding
@@ -117,6 +118,7 @@ body:
       - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/k8sleaderelector
+      - extension/mcp
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/cfgardenobserver
@@ -137,6 +139,7 @@ body:
       - extension/storage/filestorage
       - extension/storage/redisstorage
       - extension/sumologic
+      - extension/tailstorage/pebbletailstorage
       - internal/aws
       - internal/collectd
       - internal/common
@@ -195,12 +198,16 @@ body:
       - pkg/xk8stest
       - pkg/xstreamencoding
       - processor/attributes
+      - processor/awsecsattributes
+      - processor/cardinalityguardian
       - processor/coralogix
       - processor/cumulativetodelta
       - processor/deltatocumulative
       - processor/deltatorate
-      - processor/dnslookup
+      - processor/drain
+      - processor/dynamicsampling
       - processor/filter
+      - processor/genainormalizer
       - processor/geoip
       - processor/groupbyattrs
       - processor/groupbytrace
@@ -234,11 +241,14 @@ body:
       - processor/resourcedetection/internal/vultr
       - processor/schema
       - processor/span
+      - processor/spanpruning
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
+      - processor/transform/internal/logparsingfuncs
       - processor/unroll
       - receiver/activedirectoryds
+      - receiver/activedirectoryinv
       - receiver/aerospike
       - receiver/apache
       - receiver/apachespark
@@ -297,7 +307,6 @@ body:
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
-      - receiver/jmx
       - receiver/journald
       - receiver/k8scluster
       - receiver/k8sevents

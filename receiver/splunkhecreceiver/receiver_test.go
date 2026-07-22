@@ -63,6 +63,17 @@ func Test_splunkhecreceiver_NewReceiver(t *testing.T) {
 		config       Config
 		logsConsumer consumer.Logs
 	}
+	happyPathServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	happyPathServerConfig.WriteTimeout = defaultServerTimeout
+	happyPathServerConfig.ReadHeaderTimeout = defaultServerTimeout
+	happyPathServerConfig.IdleTimeout = 0
+	happyPathServerConfig.KeepAlivesEnabled = false
+	happyPathServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:1234",
+	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -87,12 +98,7 @@ func Test_splunkhecreceiver_NewReceiver(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  "localhost:1234",
-						},
-					},
+					ServerConfig: happyPathServerConfig,
 				},
 				logsConsumer: consumertest.NewNop(),
 			},
@@ -1365,6 +1371,23 @@ func Test_splunkhecReceiver_Start(t *testing.T) {
 			assert.NoError(t, rcv.Shutdown(t.Context()))
 		})
 	}
+}
+
+func Test_splunkhecReceiver_ServerTimeoutsFromConfig(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.NetAddr.Endpoint = "localhost:0"
+	config.WriteTimeout = 60 * time.Second
+	config.ReadHeaderTimeout = 5 * time.Second
+
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	require.NoError(t, err)
+	rcv.logsConsumer = new(consumertest.LogsSink)
+
+	require.NoError(t, rcv.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, rcv.Shutdown(t.Context())) })
+
+	assert.Equal(t, 60*time.Second, rcv.server.WriteTimeout)
+	assert.Equal(t, 5*time.Second, rcv.server.ReadHeaderTimeout)
 }
 
 func Test_splunkhecReceiver_handleAck(t *testing.T) {

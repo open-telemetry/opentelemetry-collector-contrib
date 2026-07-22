@@ -2,7 +2,8 @@
 # ClickHouse Exporter
 | Status        |           |
 | ------------- |-----------|
-| Stability     | [alpha]: metrics   |
+| Stability     | [development]: profiles   |
+|               | [alpha]: metrics   |
 |               | [beta]: traces, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fclickhouse%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fclickhouse) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fclickhouse%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fclickhouse) |
@@ -10,6 +11,7 @@
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@hanjm](https://www.github.com/hanjm), [@Frapschen](https://www.github.com/Frapschen), [@SpencerTorres](https://www.github.com/SpencerTorres) |
 | Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
 
+[development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -25,12 +27,28 @@ This exporter supports sending OpenTelemetry data to [ClickHouse](https://clickh
 > If 10 bytes of columns are extracted, the speed is expected to be around 100-200 million rows per second.
 
 Note:
-Always
-add [batch-processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor) to
-collector pipeline,
-as [ClickHouse document says:](https://clickhouse.com/docs/en/introduction/performance/#performance-when-inserting-data)
-> We recommend inserting data in packets of at least 1000 rows, or no more than a single request per second. When
-> inserting to a MergeTree table from a tab-separated dump, the insertion speed can be from 50 to 200 MB/s.
+**Batching Recommendation**
+For optimal performance, [ClickHouse recommends](https://clickhouse.com/docs/en/introduction/performance/#performance-when-inserting-data) inserting data in large batches:
+> We recommend inserting data in packets of at least 5000 rows, or no more than a single request per second. When inserting to a MergeTree table from a tab-separated dump, the insertion speed can be from 50 to 200 MB/s.
+
+To achieve this natively, enable batching within the exporter's `sending_queue` configuration. You do not need to add the external `batch` processor to your collector pipeline. Relying on the exporter's internal batching is the recommended approach to avoid data-loss issues associated with the external processor.
+
+Enable it by adding a `batch` block inside `sending_queue`:
+
+```yaml
+exporters:
+  clickhouse:
+    endpoint: tcp://127.0.0.1:9000
+    sending_queue:
+      # num_consumers controls how many batches are inserted into ClickHouse
+      # concurrently.
+      num_consumers: 10
+      batch:
+        min_size: 5000      # rows per INSERT (items sizer); tune to your workload
+        flush_timeout: 5s   # flush a partial batch after this delay
+```
+
+If you are migrating from a pipeline that uses the standalone `batch` processor, remove `batch` from the pipeline's `processors` list and configure `sending_queue.batch` instead. For durability across restarts, also set `sending_queue.storage` to a [storage extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage) so queued batches survive a crash (at-least-once delivery).
 
 ## Visualization Tools
 
@@ -50,18 +68,25 @@ If the official plugin doesn't meet your needs, you can try the [Altinity plugin
 ```sql
 SELECT toDateTime(toStartOfInterval(Timestamp, INTERVAL 60 second)) as time, SeverityText, count() as count
 FROM otel_logs
-WHERE time >= NOW() - INTERVAL 1 HOUR
+WHERE toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
+  AND Timestamp >= NOW() - INTERVAL 1 HOUR
 GROUP BY SeverityText, time
 ORDER BY time;
 ```
+
+The default logs table is ordered by `(toStartOfFiveMinutes(Timestamp), ServiceName, Timestamp)`.
+For time range queries, filter on both `toStartOfFiveMinutes(Timestamp)` and `Timestamp`, and order by the tuple `(toStartOfFiveMinutes(Timestamp), Timestamp)` to use the primary key's read-in-order optimization.
+Apply `toStartOfFiveMinutes` to the range bound as well (e.g. `toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)`) so the time bucket bounds are not truncated off the scan.
 
 - Find any log.
 
 ```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
-WHERE Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+WHERE toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
+  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with specific service.
@@ -70,8 +95,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE ServiceName = 'clickhouse-exporter'
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with specific attribute.
@@ -80,8 +107,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE LogAttributes['container_name'] = '/example_flog_1'
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with body contain string token.
@@ -90,8 +119,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE hasToken(Body, 'http')
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with body contain string.
@@ -100,8 +131,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE Body like '%http%'
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with body regexp match string.
@@ -110,8 +143,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE match(Body, 'http')
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with body json extract.
@@ -120,8 +155,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE JSONExtractFloat(Body, 'bytes') > 1000
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 ### Traces
@@ -260,13 +297,29 @@ limit 100
 The OTLP Metrics [define two type value for one datapoint](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L358),
 clickhouse only use one value of float64 to store them.
 
+### Profiles
+
+> [!IMPORTANT]
+> Profiles support is at `development` stability. The OpenTelemetry profiling signal itself is
+> pre-GA (the OTLP profiles protocol is in `v1development`), so the schema and behavior may change
+> in a backwards-incompatible way. To send profiles through a collector pipeline you must enable the
+> `service.profilesSupport` feature gate (`--feature-gates=+service.profilesSupport`).
+>
+> **The profiles table requires ClickHouse 26.2 or newer.** It always uses `text` (full-text-search)
+> indexes and does not fall back to `bloom_filter` on older server versions. If you manage the schema
+> yourself (`create_schema: false`), you can adapt the DDL for an older version.
+
+Profiles are stored as one denormalized row per OTLP `Sample`. The interned `ProfilesDictionary`
+(strings, functions, locations, mappings, links, attributes) is resolved at write time so each row
+is self-contained and can be queried without joins.
+
 ## Performance Guide
 
 A single ClickHouse instance with 32 CPU cores and 128 GB RAM can handle around 20 TB (20 Billion) logs per day,
 the data compression ratio is 7 ~ 11, the compressed data store in disk is 1.8 TB ~ 2.85 TB,
 add more clickhouse node to cluster can increase linearly.
 
-The otel-collector with `otlp receiver/batch processor/clickhouse tcp exporter` can process
+The otel-collector with `otlp receiver/clickhouse tcp exporter` (with `sending_queue` batching enabled) can process
 around 40k/s logs entry per CPU cores, add more collector node can increase linearly.
 
 ## Configuration options
@@ -278,7 +331,9 @@ The following settings are required:
   - http protocol `http://addr1:port,addr2:port` or https `https://addr1:port,addr2:port`
   - clickhouse protocol `clickhouse://addr1:port,addr2:port` or TLS `clickhouse://addr1:port,addr2:port?secure=true`
 
-Many other ClickHouse specific options can be configured through query parameters e.g. `addr?dial_timeout=5s&compress=lz4`. For a full list of options see the [ClickHouse driver documentation](https://github.com/ClickHouse/clickhouse-go/blob/b2f9409ba1c7bb239a4f6553a6da347f3f5f1330/clickhouse_options.go#L174)
+  When multiple endpoints are provided, the driver handles load balancing and automatic failover. By default, it uses `in_order` strategy (tries endpoints in the order specified). Alternatively, use `connection_open_strategy=round_robin` (distributes connections evenly) or `connection_open_strategy=random` (randomly selects endpoints) in `connection_params`. See [connection_open_strategy documentation](https://pkg.go.dev/github.com/ClickHouse/clickhouse-go/v2#readme-connection-strategy).
+
+Many other ClickHouse specific options can be configured through query parameters e.g. `addr?dial_timeout=5s&compress=lz4`. For a full list of options see the [ClickHouse driver documentation](https://pkg.go.dev/github.com/ClickHouse/clickhouse-go/v2#readme-connection-settings-reference)
 
 Connection options:
 
@@ -286,7 +341,7 @@ Connection options:
 - `password` (default = ): The authentication password.
 - `ttl` (default = 0): The data time-to-live example 30m, 48h. Also, 0 means no ttl.
 - `database` (default = default): The database name. Overrides the database defined in `endpoint` when this setting is not equal to `default`.
-- `connection_params` (default = {}). Params is the extra connection parameters with map format. Query parameters provided in `endpoint` will be individually overwritten if present in this map.
+- `connection_params` (default = {}). Extra connection parameters with map format. Query parameters provided in `endpoint` will be individually overwritten if present in this map. Parameters can be either driver parameters (e.g., `connection_open_strategy`, `max_open_conns`) that control client-side behavior, or ClickHouse session settings (e.g., `max_execution_time`) that are passed to the server. See the [driver parameters list](https://pkg.go.dev/github.com/ClickHouse/clickhouse-go/v2#Options) for recognized driver options; all others are treated as session settings.
 - `create_schema` (default = true): When set to true, will run DDL to create the database and tables. (See [schema management](#schema-management))
 - `compress` (default = lz4): Controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4). Ignored if `compress` is set in the `endpoint` or `connection_params`.
 - `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
@@ -301,6 +356,7 @@ ClickHouse tables:
 
 - `logs_table_name` (default = otel_logs): The table name for logs.
 - `traces_table_name` (default = otel_traces): The table name for traces.
+- `profiles_table_name` (default = otel_profiles): The table name for profiles.
 - `metrics_tables`
     - `gauge`
         - `name` (default = "otel_metrics_gauge")
@@ -331,8 +387,16 @@ Processing:
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `sending_queue`
     - `enabled` (default = true)
-    - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-    - `queue_size` (default = 1000): Maximum number of batches kept in memory before dropping data.
+    - `num_consumers` (default = 10): Number of concurrent consumers that dequeue and insert data into ClickHouse. Enabling `batch` does not reduce this parallelism, only the (cheap) queue reader becomes single-threaded, while inserts still run on up to `num_consumers` workers. Ignored if `enabled` is `false`.
+    - `queue_size` (default = 1000): Maximum size of the queue, measured in `sizer` units. Data is dropped when the queue is full unless `block_on_overflow` is enabled.
+    - `sizer` (default = `requests`): How `queue_size` is measured. One of `requests`, `items`, or `bytes`.
+    - `block_on_overflow` (default = false): If `true`, waits for space when the queue is full instead of dropping data (applies backpressure to the pipeline).
+    - `storage` (default = none): Name of a [storage extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage) for a persistent, crash-safe queue. When unset, the queue is in-memory and is lost on restart.
+    - `batch` (disabled by default): Batches data inside the sending queue. Add an empty `batch: {}` to enable it with the defaults below. This replaces the standalone `batch` processor; see the batching recommendation near the top of this document.
+        - `flush_timeout` (default = 200ms): Time after which a batch is sent regardless of size.
+        - `min_size` (default = 8192): Minimum batch size before it is sent, in `batch.sizer` units.
+        - `max_size` (default = 0): Maximum batch size; `0` means no limit. When set, larger batches are split, and it must be `>= min_size`.
+        - `sizer` (default = `items`): How batch size is measured. One of `items` or `bytes` (not `requests`). If unset, inherits `sending_queue.sizer`.
 - `retry_on_failure`
     - `enabled` (default = true)
     - `initial_interval` (default = 5s): The Time to wait after the first failure before retrying; ignored if `enabled`
@@ -399,7 +463,10 @@ As mentioned in the previous section, the exporter is able to detect which colum
 Here are some columns you can add to your table to update the schema:
 
 ```sql
--- These 3 columns are part of one feature, you must add all 3 at once.
+-- EventName
+ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1));
+
+-- JSON tables only. These 3 columns are part of one feature, you must add all 3 at once.
 ALTER TABLE otel.otel_logs
   ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
   ADD COLUMN IF NOT EXISTS ScopeAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
@@ -409,10 +476,7 @@ ALTER TABLE otel.otel_logs
   ADD INDEX IF NOT EXISTS idx_scope_attr_keys ScopeAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
   ADD INDEX IF NOT EXISTS idx_log_attr_keys LogAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1;
 
--- EventName
-ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1)),
-
--- These 2 columns are part of one feature, you must add all 2 at once.
+-- JSON tables only. These 2 columns are part of one feature, you must add all 2 at once.
 ALTER TABLE otel.otel_traces
   ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
   ADD COLUMN IF NOT EXISTS SpanAttributesKeys  Array(LowCardinality(String)) CODEC(ZSTD(1)),

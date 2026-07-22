@@ -27,6 +27,7 @@ type intervalProcessor struct {
 	cancel context.CancelFunc
 	logger *zap.Logger
 
+	wg        sync.WaitGroup
 	stateLock sync.Mutex
 
 	md                 pmetric.Metrics
@@ -70,23 +71,27 @@ func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics
 
 func (p *intervalProcessor) Start(_ context.Context, _ component.Host) error {
 	exportTicker := time.NewTicker(p.config.Interval)
-	go func() {
+	p.wg.Go(func() {
 		for {
 			select {
 			case <-p.ctx.Done():
 				exportTicker.Stop()
+				// Flush remaining buffered metrics before exiting.
+				// Use context.Background() since p.ctx is already cancelled.
+				p.exportMetrics(context.Background())
 				return
 			case <-exportTicker.C:
-				p.exportMetrics()
+				p.exportMetrics(p.ctx)
 			}
 		}
-	}()
+	})
 
 	return nil
 }
 
 func (p *intervalProcessor) Shutdown(_ context.Context) error {
 	p.cancel()
+	p.wg.Wait()
 	return nil
 }
 
@@ -201,7 +206,7 @@ func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP
 	}
 }
 
-func (p *intervalProcessor) exportMetrics() {
+func (p *intervalProcessor) exportMetrics(ctx context.Context) {
 	md := func() pmetric.Metrics {
 		p.stateLock.Lock()
 		defer p.stateLock.Unlock()
@@ -223,7 +228,7 @@ func (p *intervalProcessor) exportMetrics() {
 		return out
 	}()
 
-	if err := p.nextConsumer.ConsumeMetrics(p.ctx, md); err != nil {
+	if err := p.nextConsumer.ConsumeMetrics(ctx, md); err != nil {
 		p.logger.Error("Metrics export failed", zap.Error(err))
 	}
 }

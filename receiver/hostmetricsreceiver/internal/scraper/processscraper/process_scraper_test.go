@@ -86,7 +86,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+			metricsBuilderConfig := metadata.NewDefaultMetricsBuilderConfig()
 			if runtime.GOOS == "darwin" {
 				// disable darwin unsupported default metric
 				metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
@@ -388,11 +388,11 @@ func getMetricSlice(t *testing.T, rm pmetric.ResourceMetrics) pmetric.MetricSlic
 func TestScrapeMetrics_NewError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	_, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{Include: MatchConfig{Names: []string{"test"}}, MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
+	_, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{Include: MatchConfig{Names: []string{"test"}}, MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process include filters:", err.Error())
 
-	_, err = newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{Exclude: MatchConfig{Names: []string{"test"}}, MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
+	_, err = newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{Exclude: MatchConfig{Names: []string{"test"}}, MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process exclude filters:", err.Error())
 }
@@ -400,7 +400,7 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
+	scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()})
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
 
 	scraper.getProcessHandles = func(context.Context) (processHandles, error) { return nil, errors.New("err1") }
@@ -665,7 +665,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			scrapeProcessDelay, _ := time.ParseDuration(test.scrapeProcessDelay)
-			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+			metricsBuilderConfig := metadata.NewDefaultMetricsBuilderConfig()
 			enableLinuxOnlyMetrics(&metricsBuilderConfig.Metrics)
 
 			config := &Config{
@@ -918,7 +918,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				}
 			}
 
-			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+			metricsBuilderConfig := metadata.NewDefaultMetricsBuilderConfig()
 			if runtime.GOOS != "darwin" {
 				enableOptionalMetrics(&metricsBuilderConfig.Metrics)
 			} else {
@@ -1208,7 +1208,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			if test.skipTestCase {
 				t.Skipf("skipping test %v on %v", test.name, runtime.GOOS)
 			}
-			config := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+			config := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 			if !test.omitConfigField {
 				config.MuteProcessNameError = test.muteProcessNameError
 				config.MuteProcessExeError = test.muteProcessExeError
@@ -1276,7 +1276,7 @@ func newErroringHandleMock() *processHandleMock {
 func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+	metricsBuilderConfig := metadata.NewDefaultMetricsBuilderConfig()
 
 	metricsBuilderConfig.Metrics.ProcessCPUTime.Enabled = false
 	metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
@@ -1345,7 +1345,7 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 	for i := range testCases {
 		testCase := testCases[i]
 		t.Run(testCase.name, func(t *testing.T) {
-			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+			metricsBuilderConfig := metadata.NewDefaultMetricsBuilderConfig()
 
 			metricsBuilderConfig.Metrics.ProcessCPUTime.Enabled = testCase.processCPUTimes
 			metricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled = testCase.processCPUUtilization

@@ -312,6 +312,41 @@ func Test_SetMapValue_NilKey(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func Test_SetMapValue_NilClearsValue(t *testing.T) {
+	m := pcommon.NewMap()
+	keys := []ottl.Key[any]{
+		&pathtest.Key[any]{
+			S: ottltest.Strp("test"),
+		},
+	}
+	err := ctxutil.SetMapValue[any](t.Context(), nil, m, keys, nil)
+	require.NoError(t, err)
+
+	val, ok := m.Get("test")
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeEmpty, val.Type())
+}
+
+func Test_SetMap_NilClearsMap(t *testing.T) {
+	m := pcommon.NewMap()
+	m.PutStr("foo", "bar")
+	err := ctxutil.SetMap(m, nil)
+	require.NoError(t, err)
+	assert.Equal(t, 0, m.Len())
+}
+
+func Test_GetMap_NilReturnsEmptyMap(t *testing.T) {
+	m, err := ctxutil.GetMap(nil)
+	require.NoError(t, err)
+	assert.Equal(t, 0, m.Len())
+}
+
+func Test_GetMap_FromRawError(t *testing.T) {
+	// A map[string]any containing an unsupported value type causes FromRaw to error.
+	_, err := ctxutil.GetMap(map[string]any{"key": struct{}{}})
+	require.Error(t, err)
+}
+
 func Test_SetMap(t *testing.T) {
 	createMap := func() pcommon.Map {
 		m := pcommon.NewMap()
@@ -321,13 +356,13 @@ func Test_SetMap(t *testing.T) {
 	tests := []struct {
 		name     string
 		val      any
-		err      error
+		err      string
 		expected any
 	}{
 		{
 			name:     "invalid type",
 			val:      "invalid",
-			err:      nil, // This is an issue in SetMap(), not returning an error here.
+			err:      "unsupported type provided for setting a pcommon.Map: string",
 			expected: pcommon.NewMap(),
 		},
 		{
@@ -346,10 +381,11 @@ func Test_SetMap(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := pcommon.NewMap()
 			err := ctxutil.SetMap(m, tt.val)
-			if tt.err != nil {
-				require.Equal(t, tt.err, err)
+			if tt.err != "" {
+				require.EqualError(t, err, tt.err)
 				return
 			}
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, m)
 		})
 	}

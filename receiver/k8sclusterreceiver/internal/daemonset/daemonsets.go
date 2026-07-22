@@ -27,16 +27,15 @@ func Transform(ds *appsv1.DaemonSet) *appsv1.DaemonSet {
 }
 
 func RecordMetrics(mb *metadata.MetricsBuilder, ds *appsv1.DaemonSet, ts pcommon.Timestamp) {
-	mb.RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts, int64(ds.Status.CurrentNumberScheduled)) //nolint:staticcheck
-	mb.RecordK8sDaemonsetDesiredScheduledNodesDataPoint(ts, int64(ds.Status.DesiredNumberScheduled)) //nolint:staticcheck
-	mb.RecordK8sDaemonsetMisscheduledNodesDataPoint(ts, int64(ds.Status.NumberMisscheduled))         //nolint:staticcheck
-	mb.RecordK8sDaemonsetReadyNodesDataPoint(ts, int64(ds.Status.NumberReady))                       //nolint:staticcheck
-
-	rb := mb.NewResourceBuilder()
-	rb.SetK8sNamespaceName(ds.Namespace)
-	rb.SetK8sDaemonsetName(ds.Name)
-	rb.SetK8sDaemonsetUID(string(ds.UID))
-	mb.EmitForResource(metadata.WithResource(rb.Emit())) //nolint:staticcheck
+	e := metadata.NewK8sDaemonsetEntity(string(ds.UID))
+	e.SetK8sDaemonsetName(ds.Name)
+	e.SetK8sNamespaceName(ds.Namespace)
+	eb := mb.ForK8sDaemonset(e)
+	eb.RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts, int64(ds.Status.CurrentNumberScheduled))
+	eb.RecordK8sDaemonsetDesiredScheduledNodesDataPoint(ts, int64(ds.Status.DesiredNumberScheduled))
+	eb.RecordK8sDaemonsetMisscheduledNodesDataPoint(ts, int64(ds.Status.NumberMisscheduled))
+	eb.RecordK8sDaemonsetReadyNodesDataPoint(ts, int64(ds.Status.NumberReady))
+	eb.Emit()
 }
 
 func GetMetadata(ds *appsv1.DaemonSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

@@ -65,6 +65,29 @@ signal_to_metrics:
         monotonic: true
 ```
 
+### Path context prefixes in OTTL expressions
+
+OTTL strings in `conditions`, `value`, `count`, and `keys_expression` may use
+context path prefixes to disambiguate the target of a path.
+
+Unprefixed paths continue to work. It is recommended to use the new syntax to avoid
+future breaking changes.
+
+**Example (recommended):**
+
+```yaml
+signal_to_metrics:
+  spans:
+    - name: http.trace.span.duration
+      attributes:
+        - key: http.response.status_code
+      conditions:
+        - resource.attributes["service.name"] != nil
+      sum:
+        value: Int(Seconds(span.end_time - span.start_time))
+        monotonic: true
+```
+
 ### Error Handling
 
 The `error_mode` configuration option determines how the connector handles errors that occur while processing OTTL expressions:

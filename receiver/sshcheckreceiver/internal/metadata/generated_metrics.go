@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -12,18 +13,27 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
+)
+
 var MetricsInfo = metricsInfo{
 	SshcheckDuration: metricInfo{
 		Name: "sshcheck.duration",
 	},
 	SshcheckError: metricInfo{
-		Name: "sshcheck.error",
+		Name:       "sshcheck.error",
+		Attributes: []string{"error.message"},
 	},
 	SshcheckSftpDuration: metricInfo{
 		Name: "sshcheck.sftp_duration",
 	},
 	SshcheckSftpError: metricInfo{
-		Name: "sshcheck.sftp_error",
+		Name:       "sshcheck.sftp_error",
+		Attributes: []string{"error.message"},
 	},
 	SshcheckSftpStatus: metricInfo{
 		Name: "sshcheck.sftp_status",
@@ -43,13 +53,14 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSshcheckDuration struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   SshcheckDurationMetricConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
 }
 
 // init fills sshcheck.duration metric with initial data.
@@ -86,7 +97,7 @@ func (m *metricSshcheckDuration) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSshcheckDuration(cfg MetricConfig) metricSshcheckDuration {
+func newMetricSshcheckDuration(cfg SshcheckDurationMetricConfig) metricSshcheckDuration {
 	m := metricSshcheckDuration{config: cfg}
 
 	if cfg.Enabled {
@@ -97,9 +108,10 @@ func newMetricSshcheckDuration(cfg MetricConfig) metricSshcheckDuration {
 }
 
 type metricSshcheckError struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric            // data buffer for generated metric.
+	config        SshcheckErrorMetricConfig // metric config provided by user.
+	capacity      int                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills sshcheck.error metric with initial data.
@@ -111,17 +123,48 @@ func (m *metricSshcheckError) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSshcheckError) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, errorMessageAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SshcheckErrorMetricAttributeKeyErrorMessage) {
+		dp.Attributes().PutStr("error.message", errorMessageAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("error.message", errorMessageAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -134,13 +177,18 @@ func (m *metricSshcheckError) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSshcheckError) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSshcheckError(cfg MetricConfig) metricSshcheckError {
+func newMetricSshcheckError(cfg SshcheckErrorMetricConfig) metricSshcheckError {
 	m := metricSshcheckError{config: cfg}
 
 	if cfg.Enabled {
@@ -151,9 +199,9 @@ func newMetricSshcheckError(cfg MetricConfig) metricSshcheckError {
 }
 
 type metricSshcheckSftpDuration struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   SshcheckSftpDurationMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills sshcheck.sftp_duration metric with initial data.
@@ -190,7 +238,7 @@ func (m *metricSshcheckSftpDuration) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSshcheckSftpDuration(cfg MetricConfig) metricSshcheckSftpDuration {
+func newMetricSshcheckSftpDuration(cfg SshcheckSftpDurationMetricConfig) metricSshcheckSftpDuration {
 	m := metricSshcheckSftpDuration{config: cfg}
 
 	if cfg.Enabled {
@@ -201,9 +249,10 @@ func newMetricSshcheckSftpDuration(cfg MetricConfig) metricSshcheckSftpDuration 
 }
 
 type metricSshcheckSftpError struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        SshcheckSftpErrorMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills sshcheck.sftp_error metric with initial data.
@@ -215,17 +264,48 @@ func (m *metricSshcheckSftpError) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSshcheckSftpError) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, errorMessageAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SshcheckSftpErrorMetricAttributeKeyErrorMessage) {
+		dp.Attributes().PutStr("error.message", errorMessageAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("error.message", errorMessageAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -238,13 +318,18 @@ func (m *metricSshcheckSftpError) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSshcheckSftpError) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSshcheckSftpError(cfg MetricConfig) metricSshcheckSftpError {
+func newMetricSshcheckSftpError(cfg SshcheckSftpErrorMetricConfig) metricSshcheckSftpError {
 	m := metricSshcheckSftpError{config: cfg}
 
 	if cfg.Enabled {
@@ -255,9 +340,9 @@ func newMetricSshcheckSftpError(cfg MetricConfig) metricSshcheckSftpError {
 }
 
 type metricSshcheckSftpStatus struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   SshcheckSftpStatusMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills sshcheck.sftp_status metric with initial data.
@@ -296,7 +381,7 @@ func (m *metricSshcheckSftpStatus) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSshcheckSftpStatus(cfg MetricConfig) metricSshcheckSftpStatus {
+func newMetricSshcheckSftpStatus(cfg SshcheckSftpStatusMetricConfig) metricSshcheckSftpStatus {
 	m := metricSshcheckSftpStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -307,9 +392,9 @@ func newMetricSshcheckSftpStatus(cfg MetricConfig) metricSshcheckSftpStatus {
 }
 
 type metricSshcheckStatus struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric             // data buffer for generated metric.
+	config   SshcheckStatusMetricConfig // metric config provided by user.
+	capacity int                        // max observed number of data points added to the metric.
 }
 
 // init fills sshcheck.status metric with initial data.
@@ -348,7 +433,7 @@ func (m *metricSshcheckStatus) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSshcheckStatus(cfg MetricConfig) metricSshcheckStatus {
+func newMetricSshcheckStatus(cfg SshcheckStatusMetricConfig) metricSshcheckStatus {
 	m := metricSshcheckStatus{config: cfg}
 
 	if cfg.Enabled {

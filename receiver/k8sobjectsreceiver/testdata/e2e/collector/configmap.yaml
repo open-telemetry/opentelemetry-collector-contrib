@@ -34,11 +34,11 @@ data:
               - replace_match(body["object"]["metadata"]["creationTimestamp"], "*", "2000-01-01T00:00:00Z")
               - replace_match(body["object"]["metadata"]["managedFields"][0]["time"], "*", "2000-01-01T00:00:00Z")
     receivers:
-      k8sobjects:
+      k8s_objects:
         objects:
           - name: namespaces
             mode: pull
-      k8sobjects/watch:
+      k8s_objects/watch:
         objects:
           - name: namespaces
             mode: watch
@@ -59,8 +59,8 @@ data:
           exporters:
           - otlp_grpc
           receivers:
-          - k8sobjects
-          - k8sobjects/watch
+          - k8s_objects
+          - k8s_objects/watch
           processors:
           - transform/k8sobjectsNS
           - transform/k8sobjectsWatch

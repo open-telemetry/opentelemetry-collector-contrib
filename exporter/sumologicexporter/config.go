@@ -190,4 +190,10 @@ const (
 	DefaultDropRoutingAttribute string = ""
 	// DefaultStickySessionEnabled defines default StickySessionEnabled value
 	DefaultStickySessionEnabled bool = false
+	// DefaultRetryOnFailureMultiplier defines default retry_on_failure multiplier value
+	DefaultRetryOnFailureMultiplier float64 = 1.2
+	// DefaultRetryOnFailureMaxInterval defines default retry_on_failure max_interval value
+	DefaultRetryOnFailureMaxInterval time.Duration = 5 * time.Minute
+	// DefaultRetryOnFailureMaxElapsedTime defines default retry_on_failure max_elapsed_time value
+	DefaultRetryOnFailureMaxElapsedTime time.Duration = 1 * time.Hour
 )

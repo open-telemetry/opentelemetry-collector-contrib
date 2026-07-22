@@ -1,0 +1,72 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: test-namespace
+        - key: k8s.persistentvolumeclaim.name
+          value:
+            stringValue: test-pvc-1
+        - key: k8s.persistentvolumeclaim.uid
+          value:
+            stringValue: test-pvc-1-uid
+        - key: k8s.storageclass.name
+          value:
+            stringValue: standard
+      entityRefs:
+        - descriptionKeys:
+            - k8s.persistentvolumeclaim.name
+          idKeys:
+            - k8s.persistentvolumeclaim.uid
+          type: k8s.persistentvolumeclaim
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: The current phase of the PersistentVolumeClaim (1 for the current phase, 0 for others).
+            name: k8s.persistentvolumeclaim.status.phase
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: k8s.persistentvolumeclaim.status.phase
+                      value:
+                        stringValue: Bound
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asInt: "0"
+                  attributes:
+                    - key: k8s.persistentvolumeclaim.status.phase
+                      value:
+                        stringValue: Lost
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asInt: "0"
+                  attributes:
+                    - key: k8s.persistentvolumeclaim.status.phase
+                      value:
+                        stringValue: Pending
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            unit: '{persistentvolumeclaim}'
+          - description: The actual storage capacity provisioned for the PersistentVolumeClaim. Only available when bound.
+            name: k8s.persistentvolumeclaim.storage.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "10737418240"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            unit: By
+          - description: The storage requested by the PersistentVolumeClaim.
+            name: k8s.persistentvolumeclaim.storage.request
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "5368709120"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+          version: latest

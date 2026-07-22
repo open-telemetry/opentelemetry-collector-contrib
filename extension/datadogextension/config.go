@@ -36,6 +36,14 @@ type Config struct {
 	// Valid values: "", "kubernetes", "bare-metal", "docker", "ecs-fargate", "eks-fargate".
 	// Defaults to "" (unset) if not configured.
 	InstallationMethod string `mapstructure:"installation_method"`
+	// GatewayService is the k8s Service fronting the gateway collector pods.
+	// Set by gateway collectors. Format: "service" or "namespace/service".
+	// Together with cluster_name, it forms the join key for fleet topology queries.
+	GatewayService string `mapstructure:"gateway_service"`
+	// GatewayDestination is the k8s Service that this collector forwards telemetry to.
+	// Set by agent/daemonset collectors. Format: "service" or "namespace/service".
+	// Must match gateway_service on the receiving gateway collector.
+	GatewayDestination string `mapstructure:"gateway_destination"`
 }
 
 // Validate ensures that the configuration is valid.
