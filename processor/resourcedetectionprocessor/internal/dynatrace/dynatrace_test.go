@@ -25,7 +25,7 @@ invalid-entry
 `
 
 func TestDetectorNewDetector(t *testing.T) {
-	d, err := NewDetector(processor.Settings{}, nil)
+	d, err := NewDetector(processor.Settings{}, nil, false)
 
 	require.NoError(t, err)
 	require.NotNil(t, d)
@@ -43,7 +43,7 @@ func TestDetector_DetectFromProperties(t *testing.T) {
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zap.NewNop(),
 		},
-	}, nil)
+	}, nil, false)
 
 	require.NoError(t, err)
 
@@ -52,7 +52,7 @@ func TestDetector_DetectFromProperties(t *testing.T) {
 	require.NoError(t, createTestFile(tempDir, dtHostMetadataProperties, testPropertiesFile))
 	d.(*Detector).enrichmentDirectory = tempDir
 
-	resource, _, err := d.Detect(t.Context(), false)
+	resource, _, err := d.Detect(t.Context())
 
 	require.NoError(t, err)
 	require.NotNil(t, resource)
@@ -80,14 +80,14 @@ func TestDetector_DetectNoFileAvailable(t *testing.T) {
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zap.NewNop(),
 		},
-	}, nil)
+	}, nil, false)
 
 	require.NoError(t, err)
 	tempDir := t.TempDir()
 
 	d.(*Detector).enrichmentDirectory = tempDir
 
-	resource, _, err := d.Detect(t.Context(), false)
+	resource, _, err := d.Detect(t.Context())
 
 	require.NoError(t, err)
 	require.NotNil(t, resource)

@@ -19,9 +19,9 @@ func TestLambda(t *testing.T) {
 	t.Setenv(awsLambdaFunctionNameEnvVar, functionName)
 
 	// Call Lambda Resource detector to detect resources
-	lambdaDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	lambdaDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
-	res, _, err := lambdaDetector.Detect(ctx, false)
+	res, _, err := lambdaDetector.Detect(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 
@@ -35,9 +35,9 @@ func TestLambda(t *testing.T) {
 // Tests Lambda resource detector not running in Lambda environment
 func TestNotLambda(t *testing.T) {
 	ctx := t.Context()
-	lambdaDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	lambdaDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
-	res, _, err := lambdaDetector.Detect(ctx, false)
+	res, _, err := lambdaDetector.Detect(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 

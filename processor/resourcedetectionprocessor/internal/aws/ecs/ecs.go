@@ -28,30 +28,31 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	provider ecsutil.MetadataProvider
-	rb       *metadata.ResourceBuilder
+	provider              ecsutil.MetadataProvider
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
-func NewDetector(params processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(params processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	provider, err := ecsutil.NewDetectedTaskMetadataProvider(params.TelemetrySettings)
 	if err != nil {
 		// Allow metadata provider to be created in incompatible environments and just have a noop Detect()
 		var errNTMED endpoints.ErrNoTaskMetadataEndpointDetected
 		if errors.As(err, &errNTMED) {
-			return &Detector{provider: nil}, nil
+			return &Detector{provider: nil, failOnMissingMetadata: failOnMissingMetadata}, nil
 		}
 		return nil, fmt.Errorf("unable to create task metadata provider: %w", err)
 	}
-	return &Detector{provider: provider, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
+	return &Detector{provider: provider, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes), failOnMissingMetadata: failOnMissingMetadata}, nil
 }
 
 // Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
 // TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
-func (d *Detector) Detect(_ context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	// don't attempt to fetch metadata if there's no provider (incompatible env)
 	if d.provider == nil {
-		if failOnMissingMetadata {
+		if d.failOnMissingMetadata {
 			return pcommon.NewResource(), "", errors.New("ecs metadata unavailable: no task metadata endpoint detected")
 		}
 		return pcommon.NewResource(), "", nil
@@ -100,7 +101,7 @@ func (d *Detector) Detect(_ context.Context, failOnMissingMetadata bool) (resour
 	selfMetaData, err := d.provider.FetchContainerMetadata()
 
 	if err != nil || selfMetaData == nil {
-		if err != nil && failOnMissingMetadata {
+		if err != nil && d.failOnMissingMetadata {
 			return pcommon.NewResource(), "", fmt.Errorf("ecs container metadata unavailable: %w", err)
 		}
 		return d.rb.Emit(), "", err

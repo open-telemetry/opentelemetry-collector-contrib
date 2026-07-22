@@ -55,11 +55,11 @@ func TestDetect(t *testing.T) {
 		}
 		cfg := CreateDefaultConfig()
 
-		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg, false)
 		require.NoError(t, err)
 		det.(*Detector).provider = md
 
-		res, schemaURL, err := det.Detect(t.Context(), false)
+		res, schemaURL, err := det.Detect(t.Context())
 		require.NoError(t, err)
 		assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
@@ -86,10 +86,10 @@ func TestDetect(t *testing.T) {
 func TestDetect_ProbeFails_ReturnsEmptyResourceNoError(t *testing.T) {
 	withOracleCloudProbe(t, false, func() {
 		cfg := CreateDefaultConfig()
-		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg, false)
 		require.NoError(t, err)
 
-		res, schemaURL, err := det.Detect(t.Context(), false)
+		res, schemaURL, err := det.Detect(t.Context())
 		require.NoError(t, err)
 		assert.Empty(t, res.Attributes().AsRaw())
 		assert.Empty(t, schemaURL)
@@ -105,11 +105,11 @@ func TestDetect_ProbeSucceeds_MetadataFails_ReturnsError(t *testing.T) {
 			err: assert.AnError,
 		}
 		cfg := CreateDefaultConfig()
-		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg, true)
 		require.NoError(t, err)
 		det.(*Detector).provider = md
 
-		res, schemaURL, err := det.Detect(t.Context(), true)
+		res, schemaURL, err := det.Detect(t.Context())
 		require.Error(t, err)
 		assert.Empty(t, res.Attributes().AsRaw())
 		assert.Empty(t, schemaURL)
@@ -125,11 +125,11 @@ func TestDetect_ProbeSucceeds_MetadataFails_FlagFalse_ReturnsEmpty(t *testing.T)
 			err: assert.AnError,
 		}
 		cfg := CreateDefaultConfig()
-		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg, false)
 		require.NoError(t, err)
 		det.(*Detector).provider = md
 
-		res, schemaURL, err := det.Detect(t.Context(), false)
+		res, schemaURL, err := det.Detect(t.Context())
 		require.NoError(t, err)
 		assert.Empty(t, res.Attributes().AsRaw())
 		assert.Empty(t, schemaURL)
@@ -155,11 +155,11 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 		cfg := CreateDefaultConfig()
 		cfg.ResourceAttributes.K8sClusterName.Enabled = false
 
-		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg, false)
 		require.NoError(t, err)
 		det.(*Detector).provider = md
 
-		res, schemaURL, err := det.Detect(t.Context(), false)
+		res, schemaURL, err := det.Detect(t.Context())
 		require.NoError(t, err)
 		assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 

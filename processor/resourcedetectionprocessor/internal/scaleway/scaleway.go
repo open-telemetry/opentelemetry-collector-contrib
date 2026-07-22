@@ -31,30 +31,32 @@ var newScalewayClient = instance.NewMetadataAPI
 
 // Detector is a Scaleway metadata detector.
 type Detector struct {
-	client *instance.MetadataAPI
-	logger *zap.Logger
-	rb     *metadata.ResourceBuilder
+	client                *instance.MetadataAPI
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new Scaleway metadata detector.
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	cli := newScalewayClient()
 
 	return &Detector{
-		client: cli,
-		logger: p.Logger,
-		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		client:                cli,
+		logger:                p.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones.
-func (d *Detector) Detect(_ context.Context, failOnMissingMetadata bool) (pcommon.Resource, string, error) {
+func (d *Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	md, err := d.client.GetMetadata()
 	if err != nil || md == nil {
 		d.logger.Debug("Scaleway detector: not running on Scaleway or metadata unavailable", zap.Error(err))
-		if failOnMissingMetadata {
+		if d.failOnMissingMetadata {
 			if err == nil {
 				err = errors.New("scaleway metadata is nil")
 			}

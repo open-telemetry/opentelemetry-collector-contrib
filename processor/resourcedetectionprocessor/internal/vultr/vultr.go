@@ -37,23 +37,23 @@ type Detector struct {
 }
 
 // NewDetector creates a new Vultr metadata detector.
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	return &Detector{
 		provider:              newVultrProvider(),
 		logger:                p.Logger,
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
-		failOnMissingMetadata: cfg.FailOnMissingMetadata,
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 // Detect queries the Vultr metadata service and returns a populated resource.
-func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (pcommon.Resource, string, error) {
+func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
 	md, err := d.provider.Metadata(ctx)
 	if err != nil {
 		d.logger.Debug("Vultr metadata unavailable", zap.Error(err))
-		if d.failOnMissingMetadata || failOnMissingMetadata {
+		if d.failOnMissingMetadata {
 			return pcommon.NewResource(), "", err
 		}
 		return pcommon.NewResource(), "", nil

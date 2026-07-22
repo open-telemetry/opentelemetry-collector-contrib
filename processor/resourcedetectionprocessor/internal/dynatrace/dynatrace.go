@@ -34,7 +34,7 @@ type Detector struct {
 	logger              *zap.Logger
 }
 
-func NewDetector(set processor.Settings, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, _ internal.DetectorConfig, _ bool) (internal.Detector, error) {
 	enrichmentDir := "/var/lib/dynatrace/enrichment"
 	if runtime.GOOS == "windows" {
 		// Windows default is "%ProgramData%\dynatrace\enrichment"
@@ -54,7 +54,7 @@ func NewDetector(set processor.Settings, _ internal.DetectorConfig) (internal.De
 	}, nil
 }
 
-func (d Detector) Detect(_ context.Context, _ bool) (pcommon.Resource, string, error) {
+func (d Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	res := pcommon.NewResource()
 
 	if err := d.readPropertiesFile(res.Attributes()); err != nil {

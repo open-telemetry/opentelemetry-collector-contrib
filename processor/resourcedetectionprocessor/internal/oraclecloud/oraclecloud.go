@@ -26,24 +26,26 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is an Oracle Cloud metadata detector
 type Detector struct {
-	provider oraclecloud.Provider
-	logger   *zap.Logger
-	rb       *metadata.ResourceBuilder
+	provider              oraclecloud.Provider
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new Oracle Cloud metadata detector
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	return &Detector{
-		provider: oraclecloud.NewProvider(),
-		logger:   p.Logger,
-		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		provider:              oraclecloud.NewProvider(),
+		logger:                p.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	// 1. Fast probe for Oracle Cloud platform
 	if !oraclecloud.IsRunningOnOracleCloudFunc(ctx) {
 		d.logger.Debug("Oracle Cloud platform probe failed – not running on Oracle Cloud. Returning empty resource.")
@@ -54,7 +56,7 @@ func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (reso
 	compute, err := d.provider.Metadata(ctx)
 	if err != nil {
 		d.logger.Debug("Oracle Cloud detected but failed to retrieve metadata!", zap.Error(err))
-		if failOnMissingMetadata {
+		if d.failOnMissingMetadata {
 			return pcommon.NewResource(), "", fmt.Errorf("failed to get Oracle Cloud metadata: %w", err)
 		}
 		return pcommon.NewResource(), "", nil

@@ -38,7 +38,7 @@ type Detector struct {
 }
 
 // NewDetector creates a Nova detector.
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	rs, err := compileRegexes(cfg.Labels)
@@ -51,14 +51,14 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		metadataProvider:      novaprovider.NewProvider(),
 		labelRegexes:          rs,
-		failOnMissingMetadata: cfg.FailOnMissingMetadata,
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
-func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	if _, err = d.metadataProvider.InstanceID(ctx); err != nil {
 		d.logger.Debug("OpenStack Nova metadata unavailable", zap.Error(err))
-		if d.failOnMissingMetadata || failOnMissingMetadata {
+		if d.failOnMissingMetadata {
 			return pcommon.NewResource(), "", err
 		}
 		return pcommon.NewResource(), "", nil

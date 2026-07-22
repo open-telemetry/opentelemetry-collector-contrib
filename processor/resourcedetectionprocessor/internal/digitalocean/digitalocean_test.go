@@ -48,7 +48,7 @@ func TestNewDetector(t *testing.T) {
 		)
 	}
 
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	require.NotNil(t, det)
 }
@@ -78,10 +78,10 @@ func TestDigitalOceanDetector_Detect_OK_JSON(t *testing.T) {
 		)
 	}
 
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := det.Detect(t.Context(), false)
+	res, schemaURL, err := det.Detect(t.Context())
 	require.NoError(t, err)
 	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
@@ -113,10 +113,10 @@ func TestDigitalOceanDetector_NotOnDigitalOcean_JSON(t *testing.T) {
 		)
 	}
 
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := det.Detect(t.Context(), false)
+	res, schemaURL, err := det.Detect(t.Context())
 	require.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 	assert.Empty(t, schemaURL)

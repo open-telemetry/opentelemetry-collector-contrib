@@ -42,10 +42,10 @@ func TestDetect(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
-	res, schemaURL, err := k8sDetector.Detect(t.Context(), false)
+	res, schemaURL, err := k8sDetector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
@@ -68,10 +68,10 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
-	res, schemaURL, err := k8sDetector.Detect(t.Context(), false)
+	res, schemaURL, err := k8sDetector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)

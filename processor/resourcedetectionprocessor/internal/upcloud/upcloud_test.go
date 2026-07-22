@@ -49,7 +49,7 @@ func TestNewDetector(t *testing.T) {
 		},
 	})
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
@@ -71,10 +71,10 @@ func TestUpcloudDetector_Detect_OK(t *testing.T) {
 		},
 	})
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context(), false)
+	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
 	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
@@ -91,10 +91,10 @@ func TestUpcloudDetector_Detect_OK(t *testing.T) {
 func TestUpcloudDetector_NotOnUpcloud(t *testing.T) {
 	withFakeProvider(t, &fakeProvider{err: errors.New("no metadata")})
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context(), false)
+	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 	assert.Empty(t, schemaURL)
@@ -106,10 +106,10 @@ func TestUpcloudDetector_FailOnMissingMetadata(t *testing.T) {
 	cfg := CreateDefaultConfig()
 	cfg.FailOnMissingMetadata = true
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, true)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context(), false)
+	res, schemaURL, err := d.Detect(t.Context())
 	require.Error(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 	assert.Empty(t, schemaURL)

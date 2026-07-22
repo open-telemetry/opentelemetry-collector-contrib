@@ -61,7 +61,7 @@ type Detector struct {
 	tagsFromIMDS          bool
 }
 
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	awsConfig, err := config.LoadDefaultConfig(context.Background())
 	awsConfig.Retryer = func() aws.Retryer {
@@ -84,15 +84,15 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 		logger:                set.Logger,
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		ec2ClientBuilder:      &ec2ClientBuilder{},
-		failOnMissingMetadata: cfg.FailOnMissingMetadata,
+		failOnMissingMetadata: failOnMissingMetadata,
 		tagsFromIMDS:          cfg.TagsFromIMDS,
 	}, nil
 }
 
-func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	if _, err = d.metadataProvider.InstanceID(ctx); err != nil {
 		d.logger.Debug("EC2 metadata unavailable", zap.Error(err))
-		if d.failOnMissingMetadata || failOnMissingMetadata {
+		if d.failOnMissingMetadata {
 			return pcommon.NewResource(), "", err
 		}
 		return pcommon.NewResource(), "", nil

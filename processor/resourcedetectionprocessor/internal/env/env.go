@@ -37,11 +37,11 @@ var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct{}
 
-func NewDetector(processor.Settings, internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(processor.Settings, internal.DetectorConfig, bool) (internal.Detector, error) {
 	return &Detector{}, nil
 }
 
-func (*Detector) Detect(_ context.Context, _ bool) (resource pcommon.Resource, schemaURL string, err error) {
+func (*Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	res := pcommon.NewResource()
 
 	labels := strings.TrimSpace(os.Getenv(envVar))

@@ -55,10 +55,10 @@ func TestDetect(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
-	res, schemaURL, err := k8sDetector.Detect(t.Context(), false)
+	res, schemaURL, err := k8sDetector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
@@ -85,7 +85,7 @@ func TestDetectClusterUIDSkipsOnForbidden(t *testing.T) {
 	t.Setenv("K8S_NODE_NAME", "mainNode")
 
 	core, logs := observer.New(zapcore.WarnLevel)
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	k8sDetector.(*detector).logger = zap.New(core)
@@ -109,7 +109,7 @@ func TestDetectClusterUIDErrorsOnTransientFailure(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	_, _, err = k8sDetector.Detect(t.Context())
@@ -130,10 +130,10 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
-	res, schemaURL, err := k8sDetector.Detect(t.Context(), false)
+	res, schemaURL, err := k8sDetector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)

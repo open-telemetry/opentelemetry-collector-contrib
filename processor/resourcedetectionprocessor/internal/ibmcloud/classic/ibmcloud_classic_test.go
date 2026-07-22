@@ -18,7 +18,7 @@ import (
 
 func TestNewDetector(t *testing.T) {
 	cfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg)
+	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg, false)
 	require.NoError(t, err)
 	require.NotNil(t, d)
 }
@@ -39,7 +39,7 @@ func TestDetect(t *testing.T) {
 		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
 
-	res, schemaURL, err := detector.Detect(t.Context(), false)
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.NotEmpty(t, schemaURL)
 
@@ -67,7 +67,7 @@ func TestDetectError(t *testing.T) {
 		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
 
-	res, schemaURL, err := detector.Detect(t.Context(), false)
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err) // errors are swallowed, not returned
 	assert.Empty(t, schemaURL)
 	assert.Equal(t, 0, res.Attributes().Len())
@@ -80,12 +80,13 @@ func TestDetectErrorWithFailOnMissingMetadata(t *testing.T) {
 	mp.On("InstanceMetadata").Return(nil, errors.New("connection refused"))
 
 	detector := &Detector{
-		provider: mp,
-		logger:   processortest.NewNopSettings(metadata.Type).Logger,
-		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+		provider:              mp,
+		logger:                processortest.NewNopSettings(metadata.Type).Logger,
+		rb:                    metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+		failOnMissingMetadata: true,
 	}
 
-	res, schemaURL, err := detector.Detect(t.Context(), true)
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "ibmcloud classic metadata unavailable")
 	assert.ErrorContains(t, err, "connection refused") // verify original error is wrapped
@@ -115,7 +116,7 @@ func TestDetectWithDisabledAttributes(t *testing.T) {
 		rb:       metadata.NewResourceBuilder(cfg),
 	}
 
-	res, schemaURL, err := detector.Detect(t.Context(), false)
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.NotEmpty(t, schemaURL)
 

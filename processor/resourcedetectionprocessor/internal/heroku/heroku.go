@@ -23,21 +23,23 @@ const (
 )
 
 // NewDetector returns a detector which can detect resource attributes on Heroku
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	return &detector{
-		logger: set.Logger,
-		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		logger:                set.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 type detector struct {
-	logger *zap.Logger
-	rb     *metadata.ResourceBuilder
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 // Detect detects heroku metadata and returns a resource with the available ones
-func (d *detector) Detect(_ context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	dynoIDMissing := false
 	if dynoID, ok := os.LookupEnv("HEROKU_DYNO_ID"); ok {
 		d.rb.SetServiceInstanceID(dynoID)
@@ -52,7 +54,7 @@ func (d *detector) Detect(_ context.Context, failOnMissingMetadata bool) (resour
 		herokuAppIDMissing = true
 	}
 	if dynoIDMissing && herokuAppIDMissing {
-		if failOnMissingMetadata {
+		if d.failOnMissingMetadata {
 			return pcommon.NewResource(), "", errors.New("heroku metadata unavailable: HEROKU_DYNO_ID and HEROKU_APP_ID env vars not set")
 		}
 		d.logger.Debug("Heroku metadata is missing. Please check metadata is enabled.")

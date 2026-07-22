@@ -34,19 +34,20 @@ const (
 var _ internal.Detector = (*detector)(nil)
 
 type detector struct {
-	logger *zap.Logger
-	rb     *metadata.ResourceBuilder
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	return &detector{logger: set.Logger, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
+	return &detector{logger: set.Logger, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes), failOnMissingMetadata: failOnMissingMetadata}, nil
 }
 
-func (d *detector) Detect(_ context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	functionName, ok := os.LookupEnv(awsLambdaFunctionNameEnvVar)
 	if !ok || functionName == "" {
-		if failOnMissingMetadata {
+		if d.failOnMissingMetadata {
 			return pcommon.NewResource(), "", errors.New("lambda metadata unavailable: " + awsLambdaFunctionNameEnvVar + " env var not set")
 		}
 		d.logger.Debug("Unable to identify AWS Lambda environment")

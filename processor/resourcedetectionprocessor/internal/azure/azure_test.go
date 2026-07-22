@@ -20,7 +20,7 @@ import (
 
 func TestNewDetector(t *testing.T) {
 	dcfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), dcfg)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), dcfg, false)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
@@ -58,7 +58,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 		},
 		rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
-	res, schemaURL, err := detector.Detect(t.Context(), false)
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	mp.AssertExpectations(t)
@@ -103,7 +103,7 @@ func TestDetectEmptyComputerNameFallsBackToVMName(t *testing.T) {
 		provider: mp,
 		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
-	res, _, err := detector.Detect(t.Context(), false)
+	res, _, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	mp.AssertExpectations(t)
 
@@ -136,7 +136,7 @@ func TestDetectEmptyFieldsOmitted(t *testing.T) {
 		provider: mp,
 		rb:       metadata.NewResourceBuilder(cfg),
 	}
-	res, _, err := detector.Detect(t.Context(), false)
+	res, _, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	mp.AssertExpectations(t)
 
@@ -156,7 +156,7 @@ func TestDetectError(t *testing.T) {
 		logger:   zap.NewNop(),
 		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
-	res, _, err := detector.Detect(t.Context(), false)
+	res, _, err := detector.Detect(t.Context())
 	assert.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 }

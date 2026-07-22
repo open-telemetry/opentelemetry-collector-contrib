@@ -27,17 +27,18 @@ const (
 )
 
 type Detector struct {
-	provider           azure.Provider
-	resourceAttributes metadata.ResourceAttributesConfig
+	provider              azure.Provider
+	resourceAttributes    metadata.ResourceAttributesConfig
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new AKS detector
-func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	return &Detector{provider: azure.NewProvider(), resourceAttributes: cfg.ResourceAttributes}, nil
+	return &Detector{provider: azure.NewProvider(), resourceAttributes: cfg.ResourceAttributes, failOnMissingMetadata: failOnMissingMetadata}, nil
 }
 
-func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	res := pcommon.NewResource()
 
 	if !onK8s() {
@@ -47,7 +48,7 @@ func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (reso
 	m, err := d.provider.Metadata(ctx)
 	// If we can't get a response from the metadata endpoint, we're not running in Azure
 	if err != nil {
-		if failOnMissingMetadata {
+		if d.failOnMissingMetadata {
 			return res, "", fmt.Errorf("aks metadata unavailable: %w", err)
 		}
 		return res, "", nil

@@ -52,7 +52,7 @@ func TestNewDetector(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), tt.cfg)
+			detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), tt.cfg, false)
 			if tt.shouldError {
 				require.Error(t, err)
 				require.Nil(t, detector)
@@ -130,7 +130,7 @@ func TestDetector_Detect(t *testing.T) {
 				failOnMissingMetadata: tt.failOnMissingMetadata,
 			}
 
-			got, _, err := d.Detect(t.Context(), false)
+			got, _, err := d.Detect(t.Context())
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {

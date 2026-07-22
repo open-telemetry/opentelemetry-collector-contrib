@@ -35,7 +35,7 @@ const (
 // * Cloud Run.
 // * Cloud Functions.
 // * Bare Metal Solutions (BMS).
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	labelKeyRegexes, err := compileLabelRegexes(cfg)
@@ -44,23 +44,25 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	}
 
 	return &detector{
-		logger:           set.Logger,
-		detector:         gcp.NewDetector(),
-		rb:               localMetadata.NewResourceBuilder(cfg.ResourceAttributes),
-		labelKeyRegexes:  labelKeyRegexes,
-		gceClientBuilder: &instancesRESTBuilder{},
+		logger:                set.Logger,
+		detector:              gcp.NewDetector(),
+		rb:                    localMetadata.NewResourceBuilder(cfg.ResourceAttributes),
+		labelKeyRegexes:       labelKeyRegexes,
+		gceClientBuilder:      &instancesRESTBuilder{},
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 type detector struct {
-	logger           *zap.Logger
-	detector         gcpDetector
-	rb               *localMetadata.ResourceBuilder
-	labelKeyRegexes  []*regexp.Regexp
-	gceClientBuilder instancesBuilder
+	logger                *zap.Logger
+	detector              gcpDetector
+	rb                    *localMetadata.ResourceBuilder
+	labelKeyRegexes       []*regexp.Regexp
+	gceClientBuilder      instancesBuilder
+	failOnMissingMetadata bool
 }
 
-func (d *detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	if d.detector.CloudPlatform() == gcp.BareMetalSolution {
 		d.rb.SetCloudProvider(conventions.CloudProviderGCP.Value.AsString())
 		errs := d.rb.SetFromCallable(d.rb.SetCloudAccountID, d.detector.BareMetalSolutionProjectID)
@@ -187,7 +189,7 @@ func (d *detector) Detect(ctx context.Context, failOnMissingMetadata bool) (reso
 		// We don't support this platform yet, so just return with what we have
 	}
 
-	if failOnMissingMetadata && errs != nil {
+	if d.failOnMissingMetadata && errs != nil {
 		return pcommon.NewResource(), "", errs
 	}
 	return d.rb.Emit(), conventions.SchemaURL, errs

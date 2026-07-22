@@ -48,13 +48,14 @@ const (
 
 // detector for EKS
 type detector struct {
-	cfg          Config
-	logger       *zap.Logger
-	imdsProvider imdsprovider.Provider
-	apiProvider  apiprovider.Provider
-	ra           metadata.ResourceAttributesConfig
-	rb           *metadata.ResourceBuilder
-	utils        detectorUtils
+	cfg                   Config
+	logger                *zap.Logger
+	imdsProvider          imdsprovider.Provider
+	apiProvider           apiprovider.Provider
+	ra                    metadata.ResourceAttributesConfig
+	rb                    *metadata.ResourceBuilder
+	utils                 detectorUtils
+	failOnMissingMetadata bool
 }
 
 type eksDetectorUtils struct {
@@ -72,7 +73,7 @@ var _ internal.Detector = (*detector)(nil)
 var _ detectorUtils = (*eksDetectorUtils)(nil)
 
 // NewDetector returns a resource detector that will detect AWS EKS resources.
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	utils := &eksDetectorUtils{cfg: cfg, logger: set.Logger}
 
@@ -88,26 +89,27 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	}
 
 	return &detector{
-		cfg:          cfg,
-		logger:       set.Logger,
-		apiProvider:  apiProvider,
-		imdsProvider: imdsprovider.NewProvider(awsConfig),
-		ra:           cfg.ResourceAttributes,
-		rb:           metadata.NewResourceBuilder(cfg.ResourceAttributes),
-		utils:        utils,
+		cfg:                   cfg,
+		logger:                set.Logger,
+		apiProvider:           apiProvider,
+		imdsProvider:          imdsprovider.NewProvider(awsConfig),
+		ra:                    cfg.ResourceAttributes,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		utils:                 utils,
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
-func (d *detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	// Check if running on EKS.
 	if isEKS, err := d.isEKS(ctx); err != nil || !isEKS {
 		if err != nil {
 			d.logger.Debug("Unable to identify EKS environment", zap.Error(err))
-			if failOnMissingMetadata {
+			if d.failOnMissingMetadata {
 				return pcommon.NewResource(), "", fmt.Errorf("eks metadata unavailable: %w", err)
 			}
-		} else if failOnMissingMetadata {
+		} else if d.failOnMissingMetadata {
 			return pcommon.NewResource(), "", errors.New("eks metadata unavailable: not running on EKS")
 		}
 		return pcommon.NewResource(), "", nil

@@ -368,7 +368,7 @@ func TestDetect(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			res, schema, err := tc.detector.Detect(t.Context(), false)
+			res, schema, err := tc.detector.Detect(t.Context())
 			if tc.expectErr {
 				assert.Error(t, err)
 			} else {
@@ -515,7 +515,7 @@ func TestGCELabels(t *testing.T) {
 				err: tt.builderErr,
 			}
 
-			res, _, err := d.Detect(t.Context(), false)
+			res, _, err := d.Detect(t.Context())
 			assert.NoError(t, err)
 
 			attrs := res.Attributes()
