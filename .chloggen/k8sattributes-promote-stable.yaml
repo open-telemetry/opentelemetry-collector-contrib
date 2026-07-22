@@ -16,15 +16,20 @@ issues: [49152]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Promote the following feature gates from alpha to beta (enabled by default):
-  - `processor.k8sattributes.EmitV1K8sConventions`: emits stable semconv attribute names (e.g. `k8s.pod.label.*` singular form).
-  - `processor.k8sattributes.DontEmitV0K8sConventions`: disables legacy semconv attribute names (e.g. `k8s.pod.labels.*` plural form).
-  - `processor.k8sattributes.telemetry.enableNewFormatMetrics`: enables new-format internal telemetry metrics.
-  - `processor.k8sattributes.telemetry.disableOldFormatMetrics`: disables old-format internal telemetry metrics.
-  Users relying on the legacy names should disable these gates or migrate to the stable names.
-  It is advised that dual emission is used for the migration period. This can be achieved through the feature gates:
-  `--feature-gates=-processor.k8sattributes.DontEmitV0K8sConventions,processor.k8sattributes.EmitV1K8sConventions`.
-  More information can be found at the respective documentation [section](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/k8sattributesprocessor/README.md#semantic-conventions-compatibility).
+  - Promote the following feature gates from alpha to beta (enabled by default):
+    - `processor.k8sattributes.EmitV1K8sConventions`: emits stable semconv attribute names (e.g. `k8s.pod.label.*` singular form).
+    - `processor.k8sattributes.DontEmitV0K8sConventions`: disables legacy semconv attribute names (e.g. `k8s.pod.labels.*` plural form).
+    - `processor.k8sattributes.telemetry.enableNewFormatMetrics`: enables new-format internal telemetry metrics.
+    - `processor.k8sattributes.telemetry.disableOldFormatMetrics`: disables old-format internal telemetry metrics.
+    Users relying on the legacy names should disable these gates or migrate to the stable names.
+    It is advised that dual emission is used for the migration period. This can be achieved through the feature gates:
+    `--feature-gates=-processor.k8sattributes.DontEmitV0K8sConventions,processor.k8sattributes.EmitV1K8sConventions`.
+    More information can be found at the respective documentation [section](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/k8sattributesprocessor/README.md#semantic-conventions-compatibility).
+  - Remove the deprecated `deployment_name_from_replicaset` option. Deployment names are always
+    derived from the ReplicaSet name heuristic; the ReplicaSet informer still runs when
+    `k8s.deployment.uid` is enabled or deployment labels/annotations are extracted.
+    Users that set this setting to `false` can get the same informer based behaviour following
+    what is described at the respective documentation [section](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/k8sattributesprocessor/README.md#configuring-recommended-resource-attributes).
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
