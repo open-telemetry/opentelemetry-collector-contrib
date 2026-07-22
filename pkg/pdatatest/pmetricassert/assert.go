@@ -392,22 +392,11 @@ func compareAttributes(expected, actual map[string]any) error {
 }
 
 func compareRegexAttribute(key string, expectedValue, actualValue any) error {
-	pattern, ok := expectedValue.(string)
-	if !ok {
-		return fmt.Errorf("attribute %q/regex must be a string pattern", key)
-	}
-	actualStr, ok := actualValue.(string)
-	if !ok {
-		return fmt.Errorf("attribute %q must be a string to match /regex (got %T)", key, actualValue)
-	}
-	re, err := regexp.Compile("^(?:" + pattern + ")$")
+	matcher, err := newAttributeRegexMatcher(key, expectedValue)
 	if err != nil {
-		return fmt.Errorf("attribute %q/regex has invalid pattern %q: %w", key, pattern, err)
+		return err
 	}
-	if !re.MatchString(actualStr) {
-		return fmt.Errorf("attribute %q value %q does not match regex %q", key, actualStr, pattern)
-	}
-	return nil
+	return matcher.validate(key, actualValue)
 }
 
 func boolPtrEqual(a, b *bool) bool {

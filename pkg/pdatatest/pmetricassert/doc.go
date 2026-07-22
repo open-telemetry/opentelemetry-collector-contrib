@@ -12,6 +12,8 @@
 // Attribute keys may use /exists when the key must be present but its value is
 // volatile, or /regex to match a volatile string value with a full-string
 // regular expression. The scope version field supports the same operators.
+// [WithAttributeExists] and [WithAttributeRegex] generate these matchers when
+// writing snapshots.
 //
 // See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48079
 // for the design discussion and roadmap of operator-suffix grammar
