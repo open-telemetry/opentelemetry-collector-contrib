@@ -36,6 +36,8 @@ properties:
   dataset:
     description: The Observability indices would follow the recommended for immutable data stream ingestion pattern using the data_stream concepts. See https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/ Index pattern will follow the next naming template ss4o_{type}-{dataset}-{namespace}
     type: string
+  http:
+    $ref: go.opentelemetry.io/collector/config/confighttp.client_config
   logs_index:
     description: LogsIndex configures the index, index alias, or data stream name logs should be indexed in. https://opensearch.org/docs/latest/im-plugin/index/ https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
     type: string
@@ -59,7 +61,6 @@ properties:
   traces_index_time_format:
     type: string
 allOf:
-  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
   - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
   - $ref: mappings_settings

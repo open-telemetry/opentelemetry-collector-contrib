@@ -8,6 +8,8 @@ all_set:
       enabled: true
     oracledb.buffer_cache.block.changes:
       enabled: true
+    oracledb.buffer_cache.block.changes.rate:
+      enabled: true
     oracledb.buffer_cache.block.gets:
       enabled: true
     oracledb.buffer_cache.utilization:
@@ -83,7 +85,11 @@ all_set:
       enabled: true
     oracledb.host.cpu.utilization:
       enabled: true
+    oracledb.io.requests.rate:
+      enabled: true
     oracledb.io.single_block.read.latency:
+      enabled: true
+    oracledb.io.throughput.rate:
       enabled: true
     oracledb.jvm.memory.committed:
       enabled: true
@@ -100,6 +106,8 @@ all_set:
       enabled: true
       attributes: ["oracledb.session.type"]
     oracledb.logical_reads:
+      enabled: true
+    oracledb.logical_reads.rate:
       enabled: true
     oracledb.logons:
       enabled: true
@@ -137,9 +145,18 @@ all_set:
     oracledb.physical_io.requests:
       enabled: true
       attributes: ["disk.io.direction","disk.io.block_size"]
+    oracledb.physical_io.requests.rate:
+      enabled: true
+      attributes: ["disk.io.direction"]
     oracledb.physical_io.transferred:
       enabled: true
       attributes: ["disk.io.direction","disk.io.type"]
+    oracledb.physical_io.transferred.rate:
+      enabled: true
+      attributes: ["disk.io.direction"]
+    oracledb.physical_operations.rate:
+      enabled: true
+      attributes: ["disk.io.direction"]
     oracledb.physical_read_io_requests:
       enabled: true
     oracledb.physical_reads:
@@ -175,6 +192,8 @@ all_set:
       enabled: true
       attributes: ["oracledb.redo.retry.type"]
     oracledb.redo.size:
+      enabled: true
+    oracledb.redo.size.rate:
       enabled: true
     oracledb.redo.time:
       enabled: true
@@ -290,6 +309,8 @@ reaggregate_set:
       enabled: true
     oracledb.buffer_cache.block.changes:
       enabled: true
+    oracledb.buffer_cache.block.changes.rate:
+      enabled: true
     oracledb.buffer_cache.block.gets:
       enabled: true
     oracledb.buffer_cache.utilization:
@@ -365,7 +386,11 @@ reaggregate_set:
       enabled: true
     oracledb.host.cpu.utilization:
       enabled: true
+    oracledb.io.requests.rate:
+      enabled: true
     oracledb.io.single_block.read.latency:
+      enabled: true
+    oracledb.io.throughput.rate:
       enabled: true
     oracledb.jvm.memory.committed:
       enabled: true
@@ -382,6 +407,8 @@ reaggregate_set:
       enabled: true
       attributes: []
     oracledb.logical_reads:
+      enabled: true
+    oracledb.logical_reads.rate:
       enabled: true
     oracledb.logons:
       enabled: true
@@ -419,7 +446,16 @@ reaggregate_set:
     oracledb.physical_io.requests:
       enabled: true
       attributes: []
+    oracledb.physical_io.requests.rate:
+      enabled: true
+      attributes: []
     oracledb.physical_io.transferred:
+      enabled: true
+      attributes: []
+    oracledb.physical_io.transferred.rate:
+      enabled: true
+      attributes: []
+    oracledb.physical_operations.rate:
       enabled: true
       attributes: []
     oracledb.physical_read_io_requests:
@@ -457,6 +493,8 @@ reaggregate_set:
       enabled: true
       attributes: []
     oracledb.redo.size:
+      enabled: true
+    oracledb.redo.size.rate:
       enabled: true
     oracledb.redo.time:
       enabled: true
@@ -572,6 +610,8 @@ none_set:
       enabled: false
     oracledb.buffer_cache.block.changes:
       enabled: false
+    oracledb.buffer_cache.block.changes.rate:
+      enabled: false
     oracledb.buffer_cache.block.gets:
       enabled: false
     oracledb.buffer_cache.utilization:
@@ -647,7 +687,11 @@ none_set:
       enabled: false
     oracledb.host.cpu.utilization:
       enabled: false
+    oracledb.io.requests.rate:
+      enabled: false
     oracledb.io.single_block.read.latency:
+      enabled: false
+    oracledb.io.throughput.rate:
       enabled: false
     oracledb.jvm.memory.committed:
       enabled: false
@@ -664,6 +708,8 @@ none_set:
       enabled: false
       attributes: ["oracledb.session.type"]
     oracledb.logical_reads:
+      enabled: false
+    oracledb.logical_reads.rate:
       enabled: false
     oracledb.logons:
       enabled: false
@@ -701,9 +747,18 @@ none_set:
     oracledb.physical_io.requests:
       enabled: false
       attributes: ["disk.io.direction","disk.io.block_size"]
+    oracledb.physical_io.requests.rate:
+      enabled: false
+      attributes: ["disk.io.direction"]
     oracledb.physical_io.transferred:
       enabled: false
       attributes: ["disk.io.direction","disk.io.type"]
+    oracledb.physical_io.transferred.rate:
+      enabled: false
+      attributes: ["disk.io.direction"]
+    oracledb.physical_operations.rate:
+      enabled: false
+      attributes: ["disk.io.direction"]
     oracledb.physical_read_io_requests:
       enabled: false
     oracledb.physical_reads:
@@ -739,6 +794,8 @@ none_set:
       enabled: false
       attributes: ["oracledb.redo.retry.type"]
     oracledb.redo.size:
+      enabled: false
+    oracledb.redo.size.rate:
       enabled: false
     oracledb.redo.time:
       enabled: false

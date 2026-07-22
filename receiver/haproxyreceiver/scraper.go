@@ -39,8 +39,8 @@ type haproxyScraper struct {
 
 func (s *haproxyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var records []map[string]string
-	if u, notURLerr := url.Parse(s.cfg.Endpoint); notURLerr == nil && strings.HasPrefix(u.Scheme, "http") {
-		resp, err := s.httpClient.Get(s.cfg.Endpoint + ";csv")
+	if u, notURLerr := url.Parse(s.cfg.ClientConfig.Endpoint); notURLerr == nil && strings.HasPrefix(u.Scheme, "http") {
+		resp, err := s.httpClient.Get(s.cfg.ClientConfig.Endpoint + ";csv")
 		if err != nil {
 			return pmetric.NewMetrics(), err
 		}
@@ -55,7 +55,7 @@ func (s *haproxyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	} else {
 		var d net.Dialer
-		c, err := d.DialContext(ctx, "unix", s.cfg.Endpoint)
+		c, err := d.DialContext(ctx, "unix", s.cfg.ClientConfig.Endpoint)
 		if err != nil {
 			return pmetric.NewMetrics(), err
 		}
@@ -282,7 +282,7 @@ func (s *haproxyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		rb.SetHaproxyProxyName(record["pxname"])
 		rb.SetHaproxyServiceName(record["svname"])
 		rb.SetHaproxyServerState(record["status"])
-		rb.SetHaproxyAddr(s.cfg.Endpoint)
+		rb.SetHaproxyAddr(s.cfg.ClientConfig.Endpoint)
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
@@ -318,7 +318,7 @@ func (*haproxyScraper) readStats(buf []byte) ([]map[string]string, error) {
 
 func (s *haproxyScraper) start(ctx context.Context, host component.Host) error {
 	var err error
-	s.httpClient, err = s.cfg.ToClient(ctx, host.GetExtensions(), s.telemetrySettings)
+	s.httpClient, err = s.cfg.ClientConfig.ToClient(ctx, host.GetExtensions(), s.telemetrySettings)
 	return err
 }
 

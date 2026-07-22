@@ -229,7 +229,7 @@ func runMetricsExport(t *testing.T, cfg *Config, metrics pmetric.Metrics, expect
 	}
 
 	factory := NewFactory()
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 	cfg.UseMultiMetricFormat = useMultiMetricsFormat
 
@@ -281,7 +281,7 @@ func runTraceExport(t *testing.T, testConfig *Config, traces ptrace.Traces, expe
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = testConfig.DisableCompression
 	cfg.MaxContentLengthTraces = testConfig.MaxContentLengthTraces
 	cfg.Token = "1234-1234"
@@ -343,7 +343,7 @@ func runLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatchesNum in
 		panic(err)
 	}
 
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
 	rr := make(chan receivedRequest)
@@ -1321,7 +1321,7 @@ func TestErrorReceived(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
@@ -1373,7 +1373,7 @@ func TestErrorReceivedForbidden(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
@@ -1433,7 +1433,7 @@ func TestInvalidURL(t *testing.T) {
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
-	cfg.Endpoint = "ftp://example.com:134"
+	cfg.ClientConfig.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
@@ -1466,7 +1466,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
@@ -1507,7 +1507,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
@@ -1542,7 +1542,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
@@ -2547,7 +2547,7 @@ func runBatchedLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatche
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
 	// Buffered channel so the async handler goroutines never block.

@@ -803,7 +803,7 @@ func (s *Supervisor) startHealthCheckServer() error {
 	})
 
 	healthCheckServerPort := s.config.HealthCheck.Port()
-	server, err := s.config.HealthCheck.ToServer(
+	server, err := s.config.HealthCheck.ServerConfig.ToServer(
 		s.runCtx,
 		nil,
 		s.telemetrySettings.TelemetrySettings,
@@ -814,7 +814,7 @@ func (s *Supervisor) startHealthCheckServer() error {
 	}
 	s.healthCheckServer = server
 
-	listener, err := s.config.HealthCheck.ToListener(s.runCtx)
+	listener, err := s.config.HealthCheck.ServerConfig.ToListener(s.runCtx)
 	if err != nil {
 		return fmt.Errorf("failed to listen on port %d: %w", healthCheckServerPort, err)
 	}
