@@ -4,6 +4,7 @@
 package postgresqlreceiver
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -74,16 +75,18 @@ func TestGetDatabaseConflicts(t *testing.T) {
 	}
 }
 
-func TestGetExecutionDurationStats(t *testing.T) {
-	const baseSQL = "SELECT pd.datname AS datname, SUM(pss.total_exec_time) / 1000.0 AS execution_duration_seconds FROM pg_stat_statements pss JOIN pg_database pd ON pss.dbid = pd.oid"
-	columns := []string{"datname", "execution_duration_seconds"}
+func TestGetExecutionTimeStats(t *testing.T) {
+	const baseSQL = "SELECT pd.datname AS datname, SUM(pss.total_exec_time) / 1000.0 AS execution_time_seconds FROM pg_stat_statements pss JOIN pg_database pd ON pss.dbid = pd.oid"
+	columns := []string{"datname", "execution_time_seconds"}
 
 	tests := []struct {
 		name        string
 		databases   []string
 		expectedSQL string
 		rows        *sqlmock.Rows
+		queryErr    error
 		expected    map[databaseName]float64
+		wantErr     bool
 	}{
 		{
 			name:        "all databases",
@@ -119,6 +122,23 @@ func TestGetExecutionDurationStats(t *testing.T) {
 				"otel": 2.5,
 			},
 		},
+		{
+			name:        "query error when pg_stat_statements is unavailable",
+			databases:   nil,
+			expectedSQL: baseSQL + " GROUP BY datname;",
+			queryErr:    errors.New(`relation "pg_stat_statements" does not exist`),
+			expected:    nil,
+			wantErr:     true,
+		},
+		{
+			name:        "row scan error on non-numeric value",
+			databases:   nil,
+			expectedSQL: baseSQL + " GROUP BY datname;",
+			rows: sqlmock.NewRows(columns).
+				AddRow("otel", "not-a-number"),
+			expected: map[databaseName]float64{},
+			wantErr:  true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -129,10 +149,18 @@ func TestGetExecutionDurationStats(t *testing.T) {
 
 			client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
 
-			mock.ExpectQuery(tc.expectedSQL).WillReturnRows(tc.rows)
+			if tc.queryErr != nil {
+				mock.ExpectQuery(tc.expectedSQL).WillReturnError(tc.queryErr)
+			} else {
+				mock.ExpectQuery(tc.expectedSQL).WillReturnRows(tc.rows)
+			}
 
-			stats, err := client.getExecutionDurationStats(t.Context(), tc.databases)
-			require.NoError(t, err)
+			stats, err := client.getExecutionTimeStats(t.Context(), tc.databases)
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 			assert.Equal(t, tc.expected, stats)
 			require.NoError(t, mock.ExpectationsWereMet())
 		})

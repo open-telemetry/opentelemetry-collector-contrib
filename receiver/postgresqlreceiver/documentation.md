@@ -405,7 +405,7 @@ Number of queries canceled due to conflicts with recovery on this database. Conf
 | postgresql.conflict.type | The type of recovery conflict that caused a query to be canceled on a standby server. | Str: ``tablespace``, ``lock``, ``snapshot``, ``bufferpin``, ``deadlock`` | Recommended | - |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
-### postgresql.query.execution.duration
+### postgresql.query.execution.time
 
 The total time spent executing SQL statements in the database.
 

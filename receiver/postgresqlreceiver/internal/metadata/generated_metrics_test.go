@@ -83,7 +83,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["postgresql.index.size"] = mb.metricPostgresqlIndexSize.config.AggregationStrategy
 			aggMap["postgresql.operations"] = mb.metricPostgresqlOperations.config.AggregationStrategy
 			aggMap["postgresql.query.conflicts"] = mb.metricPostgresqlQueryConflicts.config.AggregationStrategy
-			aggMap["postgresql.query.execution.duration"] = mb.metricPostgresqlQueryExecutionDuration.config.AggregationStrategy
+			aggMap["postgresql.query.execution.time"] = mb.metricPostgresqlQueryExecutionTime.config.AggregationStrategy
 			aggMap["postgresql.replication.data_delay"] = mb.metricPostgresqlReplicationDataDelay.config.AggregationStrategy
 			aggMap["postgresql.rollbacks"] = mb.metricPostgresqlRollbacks.config.AggregationStrategy
 			aggMap["postgresql.rows"] = mb.metricPostgresqlRows.config.AggregationStrategy
@@ -218,9 +218,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordPostgresqlQueryExecutionDurationDataPoint(ts, 1, "db.namespace-val")
+			mb.RecordPostgresqlQueryExecutionTimeDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlQueryExecutionDurationDataPoint(ts, 3, "db.namespace-val-2")
+				mb.RecordPostgresqlQueryExecutionTimeDataPoint(ts, 3, "db.namespace-val-2")
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -351,7 +351,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricPostgresqlIndexSize.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlOperations.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlQueryConflicts.aggDataPoints)
-				assert.Empty(t, mb.metricPostgresqlQueryExecutionDuration.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlQueryExecutionTime.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlReplicationDataDelay.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlRollbacks.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlRows.aggDataPoints)
@@ -1205,10 +1205,10 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
 					}
-				case "postgresql.query.execution.duration":
+				case "postgresql.query.execution.time":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["postgresql.query.execution.duration"], "Found a duplicate in the metrics slice: postgresql.query.execution.duration")
-						validatedMetrics["postgresql.query.execution.duration"] = true
+						assert.False(t, validatedMetrics["postgresql.query.execution.time"], "Found a duplicate in the metrics slice: postgresql.query.execution.time")
+						validatedMetrics["postgresql.query.execution.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The total time spent executing SQL statements in the database.", mi.Description())
@@ -1224,8 +1224,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["postgresql.query.execution.duration"], "Found a duplicate in the metrics slice: postgresql.query.execution.duration")
-						validatedMetrics["postgresql.query.execution.duration"] = true
+						assert.False(t, validatedMetrics["postgresql.query.execution.time"], "Found a duplicate in the metrics slice: postgresql.query.execution.time")
+						validatedMetrics["postgresql.query.execution.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The total time spent executing SQL statements in the database.", mi.Description())
@@ -1236,7 +1236,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["postgresql.query.execution.duration"] {
+						switch aggMap["postgresql.query.execution.time"] {
 						case "sum":
 							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
 						case "avg":

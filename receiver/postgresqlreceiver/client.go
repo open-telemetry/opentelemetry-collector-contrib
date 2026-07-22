@@ -53,7 +53,7 @@ var errNoLastArchive = errors.New("no last archive found, not able to calculate 
 type client interface {
 	Close() error
 	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
-	getExecutionDurationStats(ctx context.Context, databases []string) (map[databaseName]float64, error)
+	getExecutionTimeStats(ctx context.Context, databases []string) (map[databaseName]float64, error)
 	getDatabaseConflicts(ctx context.Context, databases []string) (map[databaseName]databaseConflictStats, error)
 	getDatabaseLocks(ctx context.Context) ([]databaseLocks, error)
 	getBGWriterStats(ctx context.Context) (*bgStat, error)
@@ -305,13 +305,13 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 	return dbStats, errs
 }
 
-// getExecutionDurationStats returns, per database, the cumulative time (in seconds) spent executing
+// getExecutionTimeStats returns, per database, the cumulative time (in seconds) spent executing
 // SQL statements. It aggregates the total_exec_time column of pg_stat_statements (reported in
 // milliseconds) across all currently tracked statements and requires the pg_stat_statements
 // extension to be installed.
-func (c *postgreSQLClient) getExecutionDurationStats(ctx context.Context, databases []string) (map[databaseName]float64, error) {
+func (c *postgreSQLClient) getExecutionTimeStats(ctx context.Context, databases []string) (map[databaseName]float64, error) {
 	query := filterQueryByDatabases(
-		"SELECT pd.datname AS datname, SUM(pss.total_exec_time) / 1000.0 AS execution_duration_seconds FROM pg_stat_statements pss JOIN pg_database pd ON pss.dbid = pd.oid",
+		"SELECT pd.datname AS datname, SUM(pss.total_exec_time) / 1000.0 AS execution_time_seconds FROM pg_stat_statements pss JOIN pg_database pd ON pss.dbid = pd.oid",
 		databases,
 		true,
 	)
@@ -327,14 +327,14 @@ func (c *postgreSQLClient) getExecutionDurationStats(ctx context.Context, databa
 
 	for rows.Next() {
 		var datname string
-		var executionDuration float64
-		err = rows.Scan(&datname, &executionDuration)
+		var executionTime float64
+		err = rows.Scan(&datname, &executionTime)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
 		if datname != "" {
-			stats[databaseName(datname)] = executionDuration
+			stats[databaseName(datname)] = executionTime
 		}
 	}
 	return stats, multierr.Append(errs, rows.Err())

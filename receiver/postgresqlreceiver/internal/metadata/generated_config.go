@@ -870,23 +870,23 @@ func (ms *PostgresqlQueryConflictsMetricConfig) Validate() error {
 	return nil
 }
 
-// PostgresqlQueryExecutionDurationMetricAttributeKey specifies the key of an attribute for the postgresql.query.execution.duration metric.
-type PostgresqlQueryExecutionDurationMetricAttributeKey string
+// PostgresqlQueryExecutionTimeMetricAttributeKey specifies the key of an attribute for the postgresql.query.execution.time metric.
+type PostgresqlQueryExecutionTimeMetricAttributeKey string
 
 const (
-	PostgresqlQueryExecutionDurationMetricAttributeKeyDbNamespace PostgresqlQueryExecutionDurationMetricAttributeKey = "db.namespace"
+	PostgresqlQueryExecutionTimeMetricAttributeKeyDbNamespace PostgresqlQueryExecutionTimeMetricAttributeKey = "db.namespace"
 )
 
-// PostgresqlQueryExecutionDurationMetricConfig provides config for the postgresql.query.execution.duration metric.
-type PostgresqlQueryExecutionDurationMetricConfig struct {
+// PostgresqlQueryExecutionTimeMetricConfig provides config for the postgresql.query.execution.time metric.
+type PostgresqlQueryExecutionTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []PostgresqlQueryExecutionDurationMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlQueryExecutionTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *PostgresqlQueryExecutionDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *PostgresqlQueryExecutionTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -900,12 +900,12 @@ func (ms *PostgresqlQueryExecutionDurationMetricConfig) Unmarshal(parser *confma
 	return nil
 }
 
-func (ms *PostgresqlQueryExecutionDurationMetricConfig) Validate() error {
+func (ms *PostgresqlQueryExecutionTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlQueryExecutionDurationMetricAttributeKeyDbNamespace:
+		case PostgresqlQueryExecutionTimeMetricAttributeKeyDbNamespace:
 		default:
-			return fmt.Errorf("metric postgresql.query.execution.duration doesn't have an attribute %v, valid attributes: [db.namespace]", val)
+			return fmt.Errorf("metric postgresql.query.execution.time doesn't have an attribute %v, valid attributes: [db.namespace]", val)
 		}
 	}
 
@@ -1735,7 +1735,7 @@ type MetricsConfig struct {
 	PostgresqlIndexSize                PostgresqlIndexSizeMetricConfig                `mapstructure:"postgresql.index.size"`
 	PostgresqlOperations               PostgresqlOperationsMetricConfig               `mapstructure:"postgresql.operations"`
 	PostgresqlQueryConflicts           PostgresqlQueryConflictsMetricConfig           `mapstructure:"postgresql.query.conflicts"`
-	PostgresqlQueryExecutionDuration   PostgresqlQueryExecutionDurationMetricConfig   `mapstructure:"postgresql.query.execution.duration"`
+	PostgresqlQueryExecutionTime       PostgresqlQueryExecutionTimeMetricConfig       `mapstructure:"postgresql.query.execution.time"`
 	PostgresqlReplicationDataDelay     PostgresqlReplicationDataDelayMetricConfig     `mapstructure:"postgresql.replication.data_delay"`
 	PostgresqlRollbacks                PostgresqlRollbacksMetricConfig                `mapstructure:"postgresql.rollbacks"`
 	PostgresqlRows                     PostgresqlRowsMetricConfig                     `mapstructure:"postgresql.rows"`
@@ -1849,10 +1849,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []PostgresqlQueryConflictsMetricAttributeKey{PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType, PostgresqlQueryConflictsMetricAttributeKeyDbNamespace},
 		},
-		PostgresqlQueryExecutionDuration: PostgresqlQueryExecutionDurationMetricConfig{
+		PostgresqlQueryExecutionTime: PostgresqlQueryExecutionTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlQueryExecutionDurationMetricAttributeKey{PostgresqlQueryExecutionDurationMetricAttributeKeyDbNamespace},
+			EnabledAttributes:   []PostgresqlQueryExecutionTimeMetricAttributeKey{PostgresqlQueryExecutionTimeMetricAttributeKeyDbNamespace},
 		},
 		PostgresqlReplicationDataDelay: PostgresqlReplicationDataDelayMetricConfig{
 			Enabled:             true,

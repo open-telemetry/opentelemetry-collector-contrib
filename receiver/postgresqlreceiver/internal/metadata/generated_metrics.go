@@ -3,14 +3,13 @@
 package metadata
 
 import (
-	"slices"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"slices"
+	"time"
 )
 
 const (
@@ -383,8 +382,8 @@ var MetricsInfo = metricsInfo{
 		Name:       "postgresql.query.conflicts",
 		Attributes: []string{"postgresql.conflict.type", "db.namespace"},
 	},
-	PostgresqlQueryExecutionDuration: metricInfo{
-		Name:       "postgresql.query.execution.duration",
+	PostgresqlQueryExecutionTime: metricInfo{
+		Name:       "postgresql.query.execution.time",
 		Attributes: []string{"db.namespace"},
 	},
 	PostgresqlReplicationDataDelay: metricInfo{
@@ -477,7 +476,7 @@ type metricsInfo struct {
 	PostgresqlIndexSize                metricInfo
 	PostgresqlOperations               metricInfo
 	PostgresqlQueryConflicts           metricInfo
-	PostgresqlQueryExecutionDuration   metricInfo
+	PostgresqlQueryExecutionTime       metricInfo
 	PostgresqlReplicationDataDelay     metricInfo
 	PostgresqlRollbacks                metricInfo
 	PostgresqlRows                     metricInfo
@@ -2196,16 +2195,16 @@ func newMetricPostgresqlQueryConflicts(cfg PostgresqlQueryConflictsMetricConfig)
 	return m
 }
 
-type metricPostgresqlQueryExecutionDuration struct {
-	data          pmetric.Metric                               // data buffer for generated metric.
-	config        PostgresqlQueryExecutionDurationMetricConfig // metric config provided by user.
-	capacity      int                                          // max observed number of data points added to the metric.
-	aggDataPoints []float64                                    // slice containing number of aggregated datapoints at each index
+type metricPostgresqlQueryExecutionTime struct {
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        PostgresqlQueryExecutionTimeMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
 }
 
-// init fills postgresql.query.execution.duration metric with initial data.
-func (m *metricPostgresqlQueryExecutionDuration) init() {
-	m.data.SetName("postgresql.query.execution.duration")
+// init fills postgresql.query.execution.time metric with initial data.
+func (m *metricPostgresqlQueryExecutionTime) init() {
+	m.data.SetName("postgresql.query.execution.time")
 	m.data.SetDescription("The total time spent executing SQL statements in the database.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
@@ -2215,7 +2214,7 @@ func (m *metricPostgresqlQueryExecutionDuration) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricPostgresqlQueryExecutionDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string) {
+func (m *metricPostgresqlQueryExecutionTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2223,7 +2222,7 @@ func (m *metricPostgresqlQueryExecutionDuration) recordDataPoint(start pcommon.T
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, PostgresqlQueryExecutionDurationMetricAttributeKeyDbNamespace) {
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlQueryExecutionTimeMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 
@@ -2257,14 +2256,14 @@ func (m *metricPostgresqlQueryExecutionDuration) recordDataPoint(start pcommon.T
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricPostgresqlQueryExecutionDuration) updateCapacity() {
+func (m *metricPostgresqlQueryExecutionTime) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricPostgresqlQueryExecutionDuration) emit(metrics pmetric.MetricSlice) {
+func (m *metricPostgresqlQueryExecutionTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
@@ -2277,8 +2276,8 @@ func (m *metricPostgresqlQueryExecutionDuration) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricPostgresqlQueryExecutionDuration(cfg PostgresqlQueryExecutionDurationMetricConfig) metricPostgresqlQueryExecutionDuration {
-	m := metricPostgresqlQueryExecutionDuration{config: cfg}
+func newMetricPostgresqlQueryExecutionTime(cfg PostgresqlQueryExecutionTimeMetricConfig) metricPostgresqlQueryExecutionTime {
+	m := metricPostgresqlQueryExecutionTime{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3838,7 +3837,7 @@ type MetricsBuilder struct {
 	metricPostgresqlIndexSize                metricPostgresqlIndexSize
 	metricPostgresqlOperations               metricPostgresqlOperations
 	metricPostgresqlQueryConflicts           metricPostgresqlQueryConflicts
-	metricPostgresqlQueryExecutionDuration   metricPostgresqlQueryExecutionDuration
+	metricPostgresqlQueryExecutionTime       metricPostgresqlQueryExecutionTime
 	metricPostgresqlReplicationDataDelay     metricPostgresqlReplicationDataDelay
 	metricPostgresqlRollbacks                metricPostgresqlRollbacks
 	metricPostgresqlRows                     metricPostgresqlRows
@@ -3901,7 +3900,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(mbc.Metrics.PostgresqlIndexSize),
 		metricPostgresqlOperations:               newMetricPostgresqlOperations(mbc.Metrics.PostgresqlOperations),
 		metricPostgresqlQueryConflicts:           newMetricPostgresqlQueryConflicts(mbc.Metrics.PostgresqlQueryConflicts),
-		metricPostgresqlQueryExecutionDuration:   newMetricPostgresqlQueryExecutionDuration(mbc.Metrics.PostgresqlQueryExecutionDuration),
+		metricPostgresqlQueryExecutionTime:       newMetricPostgresqlQueryExecutionTime(mbc.Metrics.PostgresqlQueryExecutionTime),
 		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(mbc.Metrics.PostgresqlReplicationDataDelay),
 		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(mbc.Metrics.PostgresqlRollbacks),
 		metricPostgresqlRows:                     newMetricPostgresqlRows(mbc.Metrics.PostgresqlRows),
@@ -4065,7 +4064,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlIndexSize.emit(ils.Metrics())
 	mb.metricPostgresqlOperations.emit(ils.Metrics())
 	mb.metricPostgresqlQueryConflicts.emit(ils.Metrics())
-	mb.metricPostgresqlQueryExecutionDuration.emit(ils.Metrics())
+	mb.metricPostgresqlQueryExecutionTime.emit(ils.Metrics())
 	mb.metricPostgresqlReplicationDataDelay.emit(ils.Metrics())
 	mb.metricPostgresqlRollbacks.emit(ils.Metrics())
 	mb.metricPostgresqlRows.emit(ils.Metrics())
@@ -4214,9 +4213,9 @@ func (mb *MetricsBuilder) RecordPostgresqlQueryConflictsDataPoint(ts pcommon.Tim
 	mb.metricPostgresqlQueryConflicts.recordDataPoint(mb.startTime, ts, val, postgresqlConflictTypeAttributeValue.String(), dbNamespaceAttributeValue)
 }
 
-// RecordPostgresqlQueryExecutionDurationDataPoint adds a data point to postgresql.query.execution.duration metric.
-func (mb *MetricsBuilder) RecordPostgresqlQueryExecutionDurationDataPoint(ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string) {
-	mb.metricPostgresqlQueryExecutionDuration.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
+// RecordPostgresqlQueryExecutionTimeDataPoint adds a data point to postgresql.query.execution.time metric.
+func (mb *MetricsBuilder) RecordPostgresqlQueryExecutionTimeDataPoint(ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string) {
+	mb.metricPostgresqlQueryExecutionTime.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
 }
 
 // RecordPostgresqlReplicationDataDelayDataPoint adds a data point to postgresql.replication.data_delay metric.

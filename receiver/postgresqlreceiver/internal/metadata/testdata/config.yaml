@@ -57,7 +57,7 @@ all_set:
     postgresql.query.conflicts:
       enabled: true
       attributes: ["postgresql.conflict.type","db.namespace"]
-    postgresql.query.execution.duration:
+    postgresql.query.execution.time:
       enabled: true
       attributes: ["db.namespace"]
     postgresql.replication.data_delay:
@@ -192,7 +192,7 @@ reaggregate_set:
     postgresql.query.conflicts:
       enabled: true
       attributes: []
-    postgresql.query.execution.duration:
+    postgresql.query.execution.time:
       enabled: true
       attributes: []
     postgresql.replication.data_delay:
@@ -327,7 +327,7 @@ none_set:
     postgresql.query.conflicts:
       enabled: false
       attributes: ["postgresql.conflict.type","db.namespace"]
-    postgresql.query.execution.duration:
+    postgresql.query.execution.time:
       enabled: false
       attributes: ["db.namespace"]
     postgresql.replication.data_delay:

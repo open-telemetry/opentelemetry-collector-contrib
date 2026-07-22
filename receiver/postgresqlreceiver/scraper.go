@@ -186,11 +186,11 @@ func legacyMetricAttributes[T ~string](attributes []T) []T {
 
 type dbRetrieval struct {
 	sync.RWMutex
-	activityMap          map[databaseName]int64
-	dbSizeMap            map[databaseName]int64
-	dbStats              map[databaseName]databaseStats
-	dbConflictStats      map[databaseName]databaseConflictStats
-	executionDurationMap map[databaseName]float64
+	activityMap      map[databaseName]int64
+	dbSizeMap        map[databaseName]int64
+	dbStats          map[databaseName]databaseStats
+	dbConflictStats  map[databaseName]databaseConflictStats
+	executionTimeMap map[databaseName]float64
 }
 
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
@@ -223,11 +223,11 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	var errs errsMux
 	r := &dbRetrieval{
-		activityMap:          make(map[databaseName]int64),
-		dbSizeMap:            make(map[databaseName]int64),
-		dbStats:              make(map[databaseName]databaseStats),
-		dbConflictStats:      make(map[databaseName]databaseConflictStats),
-		executionDurationMap: make(map[databaseName]float64),
+		activityMap:      make(map[databaseName]int64),
+		dbSizeMap:        make(map[databaseName]int64),
+		dbStats:          make(map[databaseName]databaseStats),
+		dbConflictStats:  make(map[databaseName]databaseConflictStats),
+		executionTimeMap: make(map[databaseName]float64),
 	}
 	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
@@ -551,9 +551,9 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 	// pg_stat_statements is queried separately and only when the metric is enabled, since it
 	// requires the pg_stat_statements extension and would otherwise add an unnecessary query
 	// (that errors when the extension is absent) on every scrape.
-	if p.config.Metrics.PostgresqlQueryExecutionDuration.Enabled {
+	if p.config.Metrics.PostgresqlQueryExecutionTime.Enabled {
 		wg.Add(1)
-		go p.retrieveExecutionDuration(ctx, wg, listClient, databases, r, errs)
+		go p.retrieveExecutionTime(ctx, wg, listClient, databases, r, errs)
 	}
 
 	wg.Wait()
@@ -582,8 +582,8 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlBlksHitDataPoint(now, stats.blksHit, db)
 		p.mb.RecordPostgresqlBlksReadDataPoint(now, stats.blksRead, db)
 	}
-	if executionDuration, ok := r.executionDurationMap[dbName]; ok {
-		p.mb.RecordPostgresqlQueryExecutionDurationDataPoint(now, executionDuration, db)
+	if executionTime, ok := r.executionTimeMap[dbName]; ok {
+		p.mb.RecordPostgresqlQueryExecutionTimeDataPoint(now, executionTime, db)
 	}
 	if conflicts, ok := r.dbConflictStats[dbName]; ok {
 		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflTablespace, metadata.AttributePostgresqlConflictTypeTablespace, db)
@@ -877,7 +877,7 @@ func (p *postgreSQLScraper) retrieveDatabaseConflicts(
 	r.Unlock()
 }
 
-func (p *postgreSQLScraper) retrieveExecutionDuration(
+func (p *postgreSQLScraper) retrieveExecutionTime(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	client client,
@@ -886,14 +886,14 @@ func (p *postgreSQLScraper) retrieveExecutionDuration(
 	errs *errsMux,
 ) {
 	defer wg.Done()
-	executionDuration, err := client.getExecutionDurationStats(ctx, databases)
+	executionTime, err := client.getExecutionTimeStats(ctx, databases)
 	if err != nil {
-		p.logger.Error("Errors encountered while fetching execution duration", zap.Error(err))
+		p.logger.Error("Errors encountered while fetching execution time", zap.Error(err))
 		errs.addPartial(err)
 		return
 	}
 	r.Lock()
-	r.executionDurationMap = executionDuration
+	r.executionTimeMap = executionTime
 	r.Unlock()
 }
 

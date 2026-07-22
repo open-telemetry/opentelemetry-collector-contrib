@@ -525,7 +525,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [postgresql.conflict.type, db.namespace]
-  postgresql.query.execution.duration:
+  postgresql.query.execution.time:
     enabled: false
     description: The total time spent executing SQL statements in the database.
     stability: development
