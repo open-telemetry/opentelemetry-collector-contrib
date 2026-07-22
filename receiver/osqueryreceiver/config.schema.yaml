@@ -6,5 +6,10 @@ properties:
     type: array
     items:
       type: string
+  collections:
+    type: array
+    items:
+      type: string
+      enum: [system_info, package_info, os_info, secureboot_info, users_info]
 allOf:
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
