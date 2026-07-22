@@ -23,7 +23,7 @@ type Config struct {
 	exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	QueueConfig                  configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	RetryConfig                  configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
-	configgrpc.ClientConfig      `mapstructure:",squash"`
+	ClientConfig                 configgrpc.ClientConfig                                  `mapstructure:",squash"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -44,11 +44,11 @@ func (c *Config) Validate() error {
 		return fmt.Errorf(`invalid port "%s"`, port)
 	}
 
-	switch c.Compression {
+	switch c.ClientConfig.Compression {
 	case "":
 	case "zstd":
 	default:
-		return fmt.Errorf("unsupported compression method %q", c.Compression)
+		return fmt.Errorf("unsupported compression method %q", c.ClientConfig.Compression)
 	}
 
 	return nil
@@ -57,14 +57,14 @@ func (c *Config) Validate() error {
 // TODO: move this to configgrpc.ClientConfig to avoid this code duplication (copied from OTLP exporter).
 func (c *Config) sanitizedEndpoint() string {
 	switch {
-	case strings.HasPrefix(c.Endpoint, "http://"):
-		return strings.TrimPrefix(c.Endpoint, "http://")
-	case strings.HasPrefix(c.Endpoint, "https://"):
-		return strings.TrimPrefix(c.Endpoint, "https://")
-	case strings.HasPrefix(c.Endpoint, "dns://"):
+	case strings.HasPrefix(c.ClientConfig.Endpoint, "http://"):
+		return strings.TrimPrefix(c.ClientConfig.Endpoint, "http://")
+	case strings.HasPrefix(c.ClientConfig.Endpoint, "https://"):
+		return strings.TrimPrefix(c.ClientConfig.Endpoint, "https://")
+	case strings.HasPrefix(c.ClientConfig.Endpoint, "dns://"):
 		r := regexp.MustCompile(`^dns:///?`)
-		return r.ReplaceAllString(c.Endpoint, "")
+		return r.ReplaceAllString(c.ClientConfig.Endpoint, "")
 	default:
-		return c.Endpoint
+		return c.ClientConfig.Endpoint
 	}
 }

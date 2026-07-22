@@ -24,11 +24,12 @@ func TestPathGetSetter(t *testing.T) {
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
 	tests := []struct {
-		name     string
-		path     ottl.Path[*testContext]
-		orig     any
-		newVal   any
-		modified func(is pcommon.InstrumentationScope)
+		name       string
+		path       ottl.Path[*testContext]
+		orig       any
+		newVal     any
+		modified   func(is pcommon.InstrumentationScope)
+		nilNoError bool // true if the setter accepts nil without returning an error
 	}{
 		{
 			name: "instrumentation_scope name",
@@ -64,7 +65,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes",
+			name:       "attributes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
@@ -75,7 +77,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes raw map",
+			name:       "attributes raw map",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
@@ -86,7 +89,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes string",
+			name:       "attributes string",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -113,7 +117,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes bool",
+			name:       "attributes bool",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -129,7 +134,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes int",
+			name:       "attributes int",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -145,7 +151,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes float",
+			name:       "attributes float",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -161,7 +168,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes bytes",
+			name:       "attributes bytes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -177,7 +185,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array empty",
+			name:       "attributes array empty",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -196,7 +205,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array string",
+			name:       "attributes array string",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -216,7 +226,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array bool",
+			name:       "attributes array bool",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -236,7 +247,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array int",
+			name:       "attributes array int",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -256,7 +268,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array float",
+			name:       "attributes array float",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -276,7 +289,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array bytes",
+			name:       "attributes array bytes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -296,7 +310,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes nested",
+			name:       "attributes nested",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -322,7 +337,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes nested new values",
+			name:       "attributes nested new values",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -379,6 +395,15 @@ func TestPathGetSetter(t *testing.T) {
 			// Verify that setting an invalid type returns an error
 			err = accessor.Set(t.Context(), ctx, struct{}{})
 			require.Error(t, err)
+
+			// Verify nil handling: setters for scalar and struct paths return an error, while
+			// setters for pcommon.Value, map, and slice paths accept nil and clear to empty.
+			err = accessor.Set(t.Context(), newTestContext(createInstrumentationScope()), nil)
+			if tt.nilNoError {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
 
 			expectedIS := createInstrumentationScope()
 			tt.modified(expectedIS)

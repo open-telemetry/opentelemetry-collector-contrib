@@ -20,29 +20,34 @@ import (
 func TestPathGetSetter(t *testing.T) {
 	tsNow := time.Now().UTC()
 	tests := []struct {
-		path string
-		val  any
-		keys []ottl.Key[*profileSampleContext]
+		path       string
+		val        any
+		keys       []ottl.Key[*profileSampleContext]
+		nilNoError bool
 	}{
 		{
-			path: "values",
-			val:  []int64{73, 74, 75},
+			path:       "values",
+			val:        []int64{73, 74, 75},
+			nilNoError: true,
 		},
 		{
-			path: "attribute_indices",
-			val:  []int64{97, 98, 99},
+			path:       "attribute_indices",
+			val:        []int64{97, 98, 99},
+			nilNoError: true,
 		},
 		{
 			path: "link_index",
 			val:  int64(44),
 		},
 		{
-			path: "timestamps_unix_nano",
-			val:  []int64{tsNow.Unix(), 2, 3},
+			path:       "timestamps_unix_nano",
+			val:        []int64{tsNow.Unix(), 2, 3},
+			nilNoError: true,
 		},
 		{
-			path: "timestamps",
-			val:  []time.Time{tsNow},
+			path:       "timestamps",
+			val:        []time.Time{tsNow},
+			nilNoError: true,
 		},
 	}
 
@@ -74,6 +79,14 @@ func TestPathGetSetter(t *testing.T) {
 			// Verify that setting an invalid type returns an error
 			err = accessor.Set(t.Context(), newProfileSampleContext(sample, dictionary), struct{}{})
 			require.Error(t, err)
+
+			// Verify nil handling
+			err = accessor.Set(t.Context(), newProfileSampleContext(sample, dictionary), nil)
+			if tt.nilNoError {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
 		})
 	}
 }
