@@ -92,6 +92,18 @@ func TestQueryContents(t *testing.T) {
 			expectedQueryValFilename: "indexPhysicalQueryWithInstanceName.txt",
 		},
 		{
+			name:                     "Test availability group query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerAvailabilityGroupQuery,
+			expectedQueryValFilename: "availabilityGroupQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test availability group query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerAvailabilityGroupQuery,
+			expectedQueryValFilename: "availabilityGroupQueryWithInstanceName.txt",
+		},
+		{
 			name:                     "Test CPU memory query without instance name",
 			instanceName:             "",
 			getQuery:                 getSQLServerCPUMemoryQuery,

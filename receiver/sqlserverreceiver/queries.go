@@ -1148,6 +1148,53 @@ func getSQLServerWaitStatsQuery(instanceName string) string {
 	return r.Replace(sqlServerWaitStatsQuery)
 }
 
+const sqlServerAvailabilityGroupQuery = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('IsHadrEnabled') != 1 RETURN;
+
+DECLARE
+	 @SqlStatement AS nvarchar(max)
+	,@MajorMinorVersion AS int = CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),4) AS int) * 100 + CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),3) AS int)
+	,@SecondaryLagCol AS nvarchar(max) = N'NULL'
+
+IF @MajorMinorVersion >= 1300 BEGIN
+	SET @SecondaryLagCol = N'sec.[secondary_lag_seconds]'
+END
+
+SET @SqlStatement = N'
+SELECT
+	ag.[name]                                               AS [availability_group_name]
+	,DB_NAME(sec.[database_id])                             AS [database_name]
+	,ar.[replica_server_name]                               AS [replica_name]
+	,sec.[log_send_queue_size]                              AS [log_send_queue_size]
+	,sec.[log_send_rate]                                    AS [log_send_rate]
+	,sec.[redo_queue_size]                                  AS [redo_queue_size]
+	,sec.[redo_rate]                                        AS [redo_rate]
+	,' + @SecondaryLagCol + N'                              AS [secondary_lag]
+	,REPLACE(@@SERVERNAME,''\'','':'')                      AS [sql_instance]
+	,HOST_NAME()                                            AS [computer_name]
+FROM sys.dm_hadr_database_replica_states AS sec WITH (NOLOCK)
+INNER JOIN sys.availability_replicas AS ar WITH (NOLOCK)
+	ON sec.[replica_id] = ar.[replica_id]
+INNER JOIN sys.availability_groups AS ag WITH (NOLOCK)
+	ON ar.[group_id] = ag.[group_id]
+WHERE sec.[is_primary_replica] = 0{filter_instance_name}
+ORDER BY ag.[name], ar.[replica_server_name], DB_NAME(sec.[database_id]);'
+
+EXEC sp_executesql @SqlStatement;
+`
+
+func getSQLServerAvailabilityGroupQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\n\tAND @@SERVERNAME = ''%s''", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerAvailabilityGroupQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerAvailabilityGroupQuery)
+}
+
 // sqlServerIndexPhysicalStatsQuery collects per-index physical stats (fragmentation, page count,
 // page density, record count) across all user databases. On on-prem/MI a cursor iterates over
 // sys.databases so that sys.indexes and sys.objects can be joined within each database context,

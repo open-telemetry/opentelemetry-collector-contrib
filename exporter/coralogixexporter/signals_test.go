@@ -181,7 +181,7 @@ func TestSignalExporter_AuthorizationHeader(t *testing.T) {
 		require.NoError(t, exp.shutdown(t.Context()))
 	}()
 
-	authHeader, ok := wrapper.config.Headers.Get("Authorization")
+	authHeader, ok := wrapper.config.ClientConfig.Headers.Get("Authorization")
 	require.True(t, ok, "Authorization header should be present")
 	assert.Equal(t, configopaque.String("Bearer "+privateKey), authHeader, "Authorization header should be in Bearer format")
 
@@ -263,7 +263,7 @@ func TestSignalExporter_CustomHeadersAndAuthorization(t *testing.T) {
 				require.NoError(t, exp.shutdown(t.Context()))
 			}()
 
-			headers := wrapper.config.Headers
+			headers := wrapper.config.ClientConfig.Headers
 			require.Len(t, headers, 3)
 
 			authHeader, ok := headers.Get("Authorization")
@@ -348,7 +348,7 @@ func TestSignalExporter_HTTPClientWithDomainAndSignalSettings(t *testing.T) {
 			}
 
 			if tt.signalEndpoint != "" {
-				cfg.Logs.Endpoint = tt.signalEndpoint
+				cfg.Logs.ClientConfig.Endpoint = tt.signalEndpoint
 			}
 
 			exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
@@ -425,7 +425,7 @@ func TestSignalExporter_GRPCClientWithDomainAndSignalSettings(t *testing.T) {
 			}
 
 			if tt.signalEndpoint != "" {
-				cfg.Logs.Endpoint = tt.signalEndpoint
+				cfg.Logs.ClientConfig.Endpoint = tt.signalEndpoint
 			}
 
 			exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
