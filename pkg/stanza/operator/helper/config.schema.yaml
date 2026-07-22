@@ -7,6 +7,11 @@ $defs:
         type: object
         additionalProperties:
           $ref: expr_string_config
+  auth_config:
+    description: AuthConfig configures an optional server authenticator for connection-based stanza inputs, such as the tcp input. It is meant to be embedded by operators that accept network connections so they can delegate authentication to a standard extensionauth.Server extension.
+    type: object
+    allOf:
+      - $ref: go.opentelemetry.io/collector/config/configauth.config
   basic_config:
     description: BasicConfig provides a basic implemention for an operator config.
     type: object

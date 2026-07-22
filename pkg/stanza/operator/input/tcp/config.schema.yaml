@@ -5,6 +5,9 @@ $defs:
     properties:
       add_attributes:
         type: boolean
+      auth:
+        x-pointer: true
+        $ref: /pkg/stanza/operator/helper.auth_config
       encoding:
         type: string
       listen_address:
