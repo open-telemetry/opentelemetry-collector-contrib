@@ -223,11 +223,7 @@ func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now
 	s.processCurrentOp(ctx, operations, now)
 
 	rb := s.lb.NewResourceBuilder()
-	rb.SetServerAddress(serverAddress)
-	rb.SetServerPort(serverPort)
-	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
-	rb.SetServiceName(defaultServiceName)
-	rb.SetServiceNamespace("")
+	s.setResourceAttributes(rb, serverAddress, serverPort)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 }
 
@@ -539,6 +535,14 @@ func clientAddressAndPort(clientAddr string) (string, int64) {
 	return host, parsedPort
 }
 
+func (s *mongodbScraper) setResourceAttributes(rb *metadata.ResourceBuilder, serverAddress string, serverPort int64) {
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
+	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
+	rb.SetServiceName(defaultServiceName)
+	rb.SetServiceNamespace("")
+}
+
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {
 	dbNames, err := s.client.ListDatabaseNames(ctx, bson.D{})
 	if err != nil {
@@ -579,11 +583,7 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 
 	// Emit single resource for the server
 	rb := s.mb.NewResourceBuilder()
-	rb.SetServerAddress(serverAddress)
-	rb.SetServerPort(serverPort)
-	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
-	rb.SetServiceName(defaultServiceName)
-	rb.SetServiceNamespace("")
+	s.setResourceAttributes(rb, serverAddress, serverPort)
 	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
