@@ -16,6 +16,8 @@ status:
     active: [justinianvoss22, dyl10s, ishleenk17]
     seeking_new: true
 
+override_value_enabled: true
+
 resource_attributes:
   server.address:
     description: The address of the MongoDB host.
@@ -28,6 +30,14 @@ resource_attributes:
   service.instance.id:
     description: A unique identifier of the MongoDB resource as a UUID v5, derived from server address and port.
     enabled: true
+    type: string
+  service.name:
+    description: "Logical name of the service. When enabled, defaults to unknown_service:mongodb."
+    enabled: false
+    type: string
+  service.namespace:
+    description: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
+    enabled: false
     type: string
 
 attributes:

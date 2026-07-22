@@ -99,6 +99,21 @@ all_set:
     postgresql.tup_updated:
       enabled: true
       attributes: ["db.namespace"]
+    postgresql.vector.insert.duration:
+      enabled: true
+      attributes: ["db.namespace"]
+    postgresql.vector.insert.rows:
+      enabled: true
+      attributes: ["db.namespace"]
+    postgresql.vector.search.calls:
+      enabled: true
+      attributes: ["postgresql.distance.function.name","db.namespace"]
+    postgresql.vector.search.duration:
+      enabled: true
+      attributes: ["postgresql.distance.function.name","db.namespace"]
+    postgresql.vector.search.rows_returned:
+      enabled: true
+      attributes: ["postgresql.distance.function.name","db.namespace"]
     postgresql.wal.age:
       enabled: true
     postgresql.wal.delay:
@@ -229,6 +244,21 @@ reaggregate_set:
       enabled: true
       attributes: []
     postgresql.tup_updated:
+      enabled: true
+      attributes: []
+    postgresql.vector.insert.duration:
+      enabled: true
+      attributes: []
+    postgresql.vector.insert.rows:
+      enabled: true
+      attributes: []
+    postgresql.vector.search.calls:
+      enabled: true
+      attributes: []
+    postgresql.vector.search.duration:
+      enabled: true
+      attributes: []
+    postgresql.vector.search.rows_returned:
       enabled: true
       attributes: []
     postgresql.wal.age:
@@ -363,6 +393,21 @@ none_set:
     postgresql.tup_updated:
       enabled: false
       attributes: ["db.namespace"]
+    postgresql.vector.insert.duration:
+      enabled: false
+      attributes: ["db.namespace"]
+    postgresql.vector.insert.rows:
+      enabled: false
+      attributes: ["db.namespace"]
+    postgresql.vector.search.calls:
+      enabled: false
+      attributes: ["postgresql.distance.function.name","db.namespace"]
+    postgresql.vector.search.duration:
+      enabled: false
+      attributes: ["postgresql.distance.function.name","db.namespace"]
+    postgresql.vector.search.rows_returned:
+      enabled: false
+      attributes: ["postgresql.distance.function.name","db.namespace"]
     postgresql.wal.age:
       enabled: false
     postgresql.wal.delay:

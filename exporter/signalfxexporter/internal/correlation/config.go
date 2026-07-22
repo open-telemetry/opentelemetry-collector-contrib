@@ -38,8 +38,8 @@ func DefaultConfig() *Config {
 
 // Config defines configuration for correlation via traces.
 type Config struct {
-	confighttp.ClientConfig `mapstructure:",squash"`
-	correlations.Config     `mapstructure:",squash"`
+	ClientConfig        confighttp.ClientConfig `mapstructure:",squash"`
+	correlations.Config `mapstructure:",squash"`
 
 	// How long to wait after a trace span's service name is last seen before
 	// uncorrelating that service.
@@ -49,11 +49,11 @@ type Config struct {
 }
 
 func (c *Config) validate() error {
-	if c.Endpoint == "" {
+	if c.ClientConfig.Endpoint == "" {
 		return errors.New("`correlation.endpoint` not specified")
 	}
 
-	_, err := url.Parse(c.Endpoint)
+	_, err := url.Parse(c.ClientConfig.Endpoint)
 	if err != nil {
 		return err
 	}

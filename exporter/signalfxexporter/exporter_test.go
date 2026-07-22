@@ -209,7 +209,7 @@ func TestConsumeMetrics(t *testing.T) {
 				ClientConfig: clientConfig,
 			}
 
-			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ClientConfig.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, true)
@@ -565,9 +565,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
 			for k, v := range tt.additionalHeaders {
-				cfg.Headers.Set(k, configopaque.String(v))
+				cfg.ClientConfig.Headers.Set(k, configopaque.String(v))
 			}
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
@@ -687,9 +687,9 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
 			for k, v := range tt.additionalHeaders {
-				cfg.Headers.Set(k, configopaque.String(v))
+				cfg.ClientConfig.Headers.Set(k, configopaque.String(v))
 			}
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
@@ -789,7 +789,7 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
@@ -957,7 +957,7 @@ func TestConsumeEventData(t *testing.T) {
 				ClientConfig: clientConfig,
 			}
 
-			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ClientConfig.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			eventClient := &sfxEventClient{
@@ -1049,7 +1049,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
@@ -2045,7 +2045,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 				ClientConfig: clientConfig,
 			}
 
-			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ClientConfig.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, false)

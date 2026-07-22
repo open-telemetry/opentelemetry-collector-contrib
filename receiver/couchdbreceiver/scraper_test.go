@@ -108,7 +108,7 @@ func TestScrape(t *testing.T) {
 			{
 				Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to fetch couchdb stats"},
 				Context: []zapcore.Field{
-					zap.String("endpoint", cfg.Endpoint),
+					zap.String("endpoint", cfg.ClientConfig.Endpoint),
 					zap.Error(errors.New("bad response")),
 				},
 			},
@@ -131,7 +131,7 @@ func TestStart(t *testing.T) {
 	t.Run("start fail", func(t *testing.T) {
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.TLS.CAFile = "/non/existent"
+		cfg.ClientConfig.TLS.CAFile = "/non/existent"
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"
 		require.NoError(t, xconfmap.Validate(cfg))
