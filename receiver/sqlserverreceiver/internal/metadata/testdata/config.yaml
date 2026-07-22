@@ -5,6 +5,15 @@ all_set:
       enabled: true
     sqlserver.attention.rate:
       enabled: true
+    sqlserver.availability_group.database_replica.queue.rate:
+      enabled: true
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name","sqlserver.availability_group.queue.type"]
+    sqlserver.availability_group.database_replica.queue.size:
+      enabled: true
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name","sqlserver.availability_group.queue.type"]
+    sqlserver.availability_group.database_replica.secondary_lag:
+      enabled: true
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name"]
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -242,6 +251,15 @@ reaggregate_set:
       enabled: true
     sqlserver.attention.rate:
       enabled: true
+    sqlserver.availability_group.database_replica.queue.rate:
+      enabled: true
+      attributes: []
+    sqlserver.availability_group.database_replica.queue.size:
+      enabled: true
+      attributes: []
+    sqlserver.availability_group.database_replica.secondary_lag:
+      enabled: true
+      attributes: []
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -479,6 +497,15 @@ none_set:
       enabled: false
     sqlserver.attention.rate:
       enabled: false
+    sqlserver.availability_group.database_replica.queue.rate:
+      enabled: false
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name","sqlserver.availability_group.queue.type"]
+    sqlserver.availability_group.database_replica.queue.size:
+      enabled: false
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name","sqlserver.availability_group.queue.type"]
+    sqlserver.availability_group.database_replica.secondary_lag:
+      enabled: false
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name"]
     sqlserver.batch.request.rate:
       enabled: false
     sqlserver.batch.sql_compilation.rate:

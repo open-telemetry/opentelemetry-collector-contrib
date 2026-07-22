@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -114,6 +115,7 @@ func TestValidate(t *testing.T) {
 			ControllerConfig:      scraperhelper.NewDefaultControllerConfig(),
 			MetricsBuilderConfig:  metadata.NewDefaultMetricsBuilderConfig(),
 			QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: 0},
+			TopQueryCollection:    defaultTopQueryCollection(),
 		}
 		err := xconfmap.Validate(cfg)
 		require.ErrorContains(t, err, "query_sample_collection.max_rows_per_query must be greater than 0")
@@ -136,6 +138,7 @@ func TestValidate(t *testing.T) {
 				ControllerConfig:      scraperhelper.NewDefaultControllerConfig(),
 				MetricsBuilderConfig:  metadata.NewDefaultMetricsBuilderConfig(),
 				QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: defaultMaxRowsPerQuery},
+				TopQueryCollection:    defaultTopQueryCollection(),
 			}
 			err := xconfmap.Validate(cfg)
 			if tc.expected == nil {
@@ -190,6 +193,7 @@ func TestBadTLSConfigs(t *testing.T) {
 				ClientConfig:          tc.tlsConfig,
 				MetricsBuilderConfig:  metadata.NewDefaultMetricsBuilderConfig(),
 				QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: defaultMaxRowsPerQuery},
+				TopQueryCollection:    defaultTopQueryCollection(),
 			}
 			err := xconfmap.Validate(cfg)
 			if tc.expectError {
@@ -392,4 +396,154 @@ func TestLoadConfigSRV(t *testing.T) {
 	expected.CollectionInterval = time.Minute
 
 	require.Equal(t, expected, cfg)
+}
+
+// defaultTopQueryCollection returns a fully-populated TopQueryCollection
+// matching the factory defaults, so validation-focused unit tests can vary
+// one field at a time.
+func defaultTopQueryCollection() TopQueryCollection {
+	return TopQueryCollection{
+		CollectionInterval:     defaultTopQueryCollectionInterval,
+		MaxQuerySampleCount:    defaultMaxQuerySampleCount,
+		MaxExplainEachInterval: defaultMaxExplainEachInterval,
+		TopQueryCount:          defaultTopQueryCount,
+		QueryPlanCacheSize:     defaultQueryPlanCacheSize,
+		QueryPlanCacheTTL:      defaultQueryPlanCacheTTL,
+	}
+}
+
+func TestValidateTopQueryCollection(t *testing.T) {
+	baseCfg := func() *Config {
+		lbc := metadata.DefaultLogsBuilderConfig()
+		lbc.Events.DbServerTopQuery.Enabled = true
+		return &Config{
+			Hosts:                 []confignet.TCPAddrConfig{{Endpoint: "localhost:27017"}},
+			ControllerConfig:      scraperhelper.NewDefaultControllerConfig(),
+			MetricsBuilderConfig:  metadata.NewDefaultMetricsBuilderConfig(),
+			LogsBuilderConfig:     lbc,
+			QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: defaultMaxRowsPerQuery},
+			TopQueryCollection:    defaultTopQueryCollection(),
+		}
+	}
+
+	testCases := []struct {
+		desc      string
+		mutate    func(c *TopQueryCollection)
+		errSubstr string // empty => expect no error
+	}{
+		{
+			desc:   "defaults are valid",
+			mutate: func(*TopQueryCollection) {},
+		},
+		{
+			desc:      "top_query_count zero is invalid",
+			mutate:    func(c *TopQueryCollection) { c.TopQueryCount = 0 },
+			errSubstr: "top_query_collection.top_query_count must be greater than 0",
+		},
+		{
+			desc:      "top_query_count negative is invalid",
+			mutate:    func(c *TopQueryCollection) { c.TopQueryCount = -1 },
+			errSubstr: "top_query_collection.top_query_count must be greater than 0",
+		},
+		{
+			desc:      "max_query_sample_count zero is invalid",
+			mutate:    func(c *TopQueryCollection) { c.MaxQuerySampleCount = 0 },
+			errSubstr: "top_query_collection.max_query_sample_count must be greater than 0",
+		},
+		{
+			desc:      "max_query_sample_count negative is invalid",
+			mutate:    func(c *TopQueryCollection) { c.MaxQuerySampleCount = -5 },
+			errSubstr: "top_query_collection.max_query_sample_count must be greater than 0",
+		},
+		{
+			desc:   "max_explain_each_interval zero is valid (disables explain)",
+			mutate: func(c *TopQueryCollection) { c.MaxExplainEachInterval = 0 },
+		},
+		{
+			desc:      "max_explain_each_interval negative is invalid",
+			mutate:    func(c *TopQueryCollection) { c.MaxExplainEachInterval = -1 },
+			errSubstr: "top_query_collection.max_explain_each_interval must not be negative",
+		},
+		{
+			desc:   "query_plan_cache_size zero is valid (disables caching)",
+			mutate: func(c *TopQueryCollection) { c.QueryPlanCacheSize = 0 },
+		},
+		{
+			desc:      "query_plan_cache_size negative is invalid",
+			mutate:    func(c *TopQueryCollection) { c.QueryPlanCacheSize = -1 },
+			errSubstr: "top_query_collection.query_plan_cache_size must not be negative",
+		},
+		{
+			desc:      "collection_interval zero is invalid",
+			mutate:    func(c *TopQueryCollection) { c.CollectionInterval = 0 },
+			errSubstr: "top_query_collection.collection_interval must be greater than 0",
+		},
+		{
+			desc:      "collection_interval negative is invalid",
+			mutate:    func(c *TopQueryCollection) { c.CollectionInterval = -time.Second },
+			errSubstr: "top_query_collection.collection_interval must be greater than 0",
+		},
+		{
+			desc:      "query_plan_cache_ttl zero is invalid",
+			mutate:    func(c *TopQueryCollection) { c.QueryPlanCacheTTL = 0 },
+			errSubstr: "top_query_collection.query_plan_cache_ttl must be greater than 0",
+		},
+		{
+			desc:      "query_plan_cache_ttl negative is invalid",
+			mutate:    func(c *TopQueryCollection) { c.QueryPlanCacheTTL = -time.Second },
+			errSubstr: "top_query_collection.query_plan_cache_ttl must be greater than 0",
+		},
+		{
+			desc: "top_query_count larger than max_query_sample_count is valid (independent knobs)",
+			mutate: func(c *TopQueryCollection) {
+				c.MaxQuerySampleCount = 10
+				c.TopQueryCount = 50
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg := baseCfg()
+			tc.mutate(&cfg.TopQueryCollection)
+			err := xconfmap.Validate(cfg)
+			if tc.errSubstr == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, tc.errSubstr)
+			}
+		})
+	}
+}
+
+// TestValidateTopQueryCollection_PartialUserConfig exercises the mapstructure
+// merge path: a user's partial `top_query_collection` block should inherit
+// unspecified fields from createDefaultConfig, so validation still passes.
+func TestValidateTopQueryCollection_PartialUserConfig(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	// Simulate a user who only overrides top_query_count via mapstructure
+	// decoding into the already-populated struct returned by createDefaultConfig.
+	partial := map[string]any{
+		"top_query_collection": map[string]any{
+			"top_query_count": int64(50),
+		},
+	}
+	require.NoError(t, decodeInto(cfg, partial))
+	require.Equal(t, int64(50), cfg.TopQueryCollection.TopQueryCount)
+	// All other fields keep their factory defaults.
+	require.Equal(t, defaultMaxQuerySampleCount, cfg.TopQueryCollection.MaxQuerySampleCount)
+	require.Equal(t, defaultMaxExplainEachInterval, cfg.TopQueryCollection.MaxExplainEachInterval)
+	require.Equal(t, defaultQueryPlanCacheSize, cfg.TopQueryCollection.QueryPlanCacheSize)
+	require.Equal(t, defaultQueryPlanCacheTTL, cfg.TopQueryCollection.QueryPlanCacheTTL)
+	require.Equal(t, defaultTopQueryCollectionInterval, cfg.TopQueryCollection.CollectionInterval)
+
+	require.NoError(t, xconfmap.Validate(cfg))
+}
+
+// decodeInto merges a raw config map into an already-populated Config the
+// same way the collector runtime does, exercising the mapstructure defaults
+// preservation path.
+func decodeInto(cfg *Config, raw map[string]any) error {
+	return confmap.NewFromStringMap(raw).Unmarshal(cfg)
 }
