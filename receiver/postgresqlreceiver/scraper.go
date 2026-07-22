@@ -429,6 +429,15 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			continue
 		}
 
+		// Skip rows with a NULL db.namespace, which can happen when a database
+		// is dropped while its statistics remain in pg_stat_statements. The
+		// INNER JOIN in topQueryTemplate.tmpl already excludes these; this is a
+		// defence-in-depth guard against the nil type assertion panic.
+		if row[string(semconv.DBNamespaceKey)] == nil {
+			logger.Debug("skipping row with nil db.namespace (database may have been dropped)", zap.Any("row", row))
+			continue
+		}
+
 		for columnName, info := range updatedOnly {
 			var valInAtts float64
 			_val := row[dbAttributePrefix+columnName]

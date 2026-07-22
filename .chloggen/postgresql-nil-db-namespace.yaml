@@ -1,0 +1,16 @@
+change_type: bug_fix
+
+component: receiver/postgresql
+
+note: "Fix a panic in collectTopQuery when pg_stat_statements contains entries from deleted databases"
+
+issues: [45713]
+
+subtext: |
+  When a database is dropped while its statistics remain in pg_stat_statements,
+  the top-query collection joined those orphaned rows with a nil db.namespace and
+  panicked on a type assertion. The pg_database join is now an INNER JOIN so such
+  rows are excluded at query time, with a nil guard in the scraper as a
+  defence-in-depth measure.
+
+change_logs: [user]
