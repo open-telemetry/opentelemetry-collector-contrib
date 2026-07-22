@@ -742,156 +742,96 @@ func TestHashing(t *testing.T) {
 }
 
 func TestCompactionOnStartWithCorruption(t *testing.T) {
-	ctx := t.Context()
+	testCases := []struct {
+		name         string
+		recreate     bool
+		expectBackup bool
+		expectError  bool
+	}{
+		{
+			name:         "recreate enabled - backup and recreate on compaction panic",
+			recreate:     true,
+			expectBackup: true,
+		},
+		{
+			name:        "recreate disabled - error on compaction panic",
+			expectError: true,
+		},
+	}
 
-	t.Run("recreate enabled - backup and recreate on compaction panic", func(t *testing.T) {
-		f := NewFactory()
-		logCore, logObserver := observer.New(zap.DebugLevel)
-		logger := zap.New(logCore)
-		set := extensiontest.NewNopSettings(f.Type())
-		set.Logger = logger
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctx := t.Context()
+			f := NewFactory()
+			logCore, logObserver := observer.New(zap.DebugLevel)
+			set := extensiontest.NewNopSettings(f.Type())
+			set.Logger = zap.New(logCore)
+			tempDir := t.TempDir()
 
-		tempDir := t.TempDir()
+			cfg := f.CreateDefaultConfig().(*Config)
+			cfg.Directory = tempDir
+			cfg.Compaction.Directory = tempDir
+			cfg.Compaction.OnStart = false // Initial creation: don't compact yet
+			cfg.Recreate = testCase.recreate
 
-		// Create a client and add some data
-		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.Directory = tempDir
-		cfg.Compaction.Directory = tempDir
-		cfg.Compaction.OnStart = false // Don't compact on first creation
-		cfg.Recreate = true
+			ext, err := f.Create(ctx, set, cfg)
+			require.NoError(t, err)
+			se, ok := ext.(storage.Extension)
+			require.True(t, ok)
+			require.NoError(t, se.Start(ctx, componenttest.NewNopHost()))
 
-		extension, err := f.Create(ctx, set, cfg)
-		require.NoError(t, err)
+			client, err := se.GetClient(ctx, component.KindReceiver, newTestEntity("my_component"), "")
+			require.NoError(t, err)
+			require.NoError(t, client.Set(ctx, "key1", []byte("value1")))
+			require.NoError(t, client.Close(ctx))
+			require.NoError(t, se.Shutdown(ctx))
 
-		se, ok := extension.(storage.Extension)
-		require.True(t, ok)
-		require.NoError(t, se.Start(ctx, componenttest.NewNopHost()))
-
-		client, err := se.GetClient(ctx, component.KindReceiver, newTestEntity("my_component"), "")
-		require.NoError(t, err)
-
-		// Add some data
-		err = client.Set(ctx, "key1", []byte("value1"))
-		require.NoError(t, err)
-
-		// Close the client
-		require.NoError(t, client.Close(ctx))
-		require.NoError(t, se.Shutdown(ctx))
-
-		// Now create a new extension with OnStart=true and inject a panicking compaction function
-		cfg.Compaction.OnStart = true
-		extension2, err := f.Create(ctx, set, cfg)
-		require.NoError(t, err)
-
-		se2, ok := extension2.(storage.Extension)
-		require.True(t, ok)
-
-		// Inject a compaction function that panics
-		lfs2, ok := se2.(*localFileStorage)
-		require.True(t, ok)
-		lfs2.compactFunc = func(c *fileStorageClient, dir string, timeout time.Duration, maxTxSize int64) error {
-			panic("simulated compaction panic due to corruption")
-		}
-
-		require.NoError(t, se2.Start(ctx, componenttest.NewNopHost()))
-
-		// Attempt to get a client - should succeed after backup and recreate
-		client2, err := se2.GetClient(ctx, component.KindReceiver, newTestEntity("my_component"), "")
-		require.NoError(t, err)
-		require.NotNil(t, client2)
-
-		// Verify backup was created
-		files, err := os.ReadDir(tempDir)
-		require.NoError(t, err)
-		hasBackup := false
-		for _, f := range files {
-			if strings.Contains(f.Name(), ".backup") {
-				hasBackup = true
-				break
+			cfg.Compaction.OnStart = true
+			ext, err = f.Create(ctx, set, cfg)
+			require.NoError(t, err)
+			se, ok = ext.(storage.Extension)
+			require.True(t, ok)
+			lfs, ok := se.(*localFileStorage)
+			require.True(t, ok)
+			lfs.compactFunc = func(*fileStorageClient, string, time.Duration, int64) error {
+				panic("simulated compaction panic due to corruption")
 			}
-		}
-		require.True(t, hasBackup, "backup file should be created after compaction panic")
 
-		// Verify new database is empty (recreated fresh)
-		val, err := client2.Get(ctx, "key1")
-		require.NoError(t, err)
-		require.Nil(t, val, "new database should be empty after recreation")
+			client, err = se.GetClient(ctx, component.KindReceiver, newTestEntity("my_component"), "")
+			require.NotEmpty(t, logObserver.FilterMessage("panic during on_start compaction, database may be corrupted").All())
 
-		// Verify we can write to the new database
-		err = client2.Set(ctx, "key2", []byte("value2"))
-		require.NoError(t, err)
-		val, err = client2.Get(ctx, "key2")
-		require.NoError(t, err)
-		require.Equal(t, []byte("value2"), val)
+			if testCase.expectError {
+				require.ErrorContains(t, err, "compaction failed due to panic")
+				require.Nil(t, client)
+				require.NoError(t, se.Shutdown(ctx))
+				return
+			}
 
-		// Verify warning was logged
-		require.Greater(t, len(logObserver.FilterMessage("panic during on_start compaction, database may be corrupted").All()), 0)
-		require.Greater(t, len(logObserver.FilterMessage("Corrupted database file renamed").All()), 0)
+			require.NoError(t, err)
+			require.NotNil(t, client)
+			if testCase.expectBackup {
+				files, readErr := os.ReadDir(tempDir)
+				require.NoError(t, readErr)
+				require.Condition(t, func() bool {
+					for _, file := range files {
+						if strings.Contains(file.Name(), ".backup") {
+							return true
+						}
+					}
+					return false
+				}, "backup file should be created after compaction panic")
+				require.NotEmpty(t, logObserver.FilterMessage("Corrupted database file renamed").All())
+			}
 
-		require.NoError(t, client2.Close(ctx))
-		require.NoError(t, se2.Shutdown(ctx))
-	})
-
-	t.Run("recreate disabled - error on compaction panic", func(t *testing.T) {
-		f := NewFactory()
-		logCore, logObserver := observer.New(zap.DebugLevel)
-		logger := zap.New(logCore)
-		set := extensiontest.NewNopSettings(f.Type())
-		set.Logger = logger
-
-		tempDir := t.TempDir()
-
-		// Create a client and add some data
-		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.Directory = tempDir
-		cfg.Compaction.Directory = tempDir
-		cfg.Compaction.OnStart = false
-		cfg.Recreate = false // Recreate disabled
-
-		extension, err := f.Create(ctx, set, cfg)
-		require.NoError(t, err)
-
-		se, ok := extension.(storage.Extension)
-		require.True(t, ok)
-		require.NoError(t, se.Start(ctx, componenttest.NewNopHost()))
-
-		client, err := se.GetClient(ctx, component.KindReceiver, newTestEntity("my_component"), "")
-		require.NoError(t, err)
-
-		// Add some data
-		err = client.Set(ctx, "key1", []byte("value1"))
-		require.NoError(t, err)
-
-		// Close the client
-		require.NoError(t, client.Close(ctx))
-		require.NoError(t, se.Shutdown(ctx))
-
-		// Now create a new extension with OnStart=true and inject a panicking compaction function
-		cfg.Compaction.OnStart = true
-		extension2, err := f.Create(ctx, set, cfg)
-		require.NoError(t, err)
-
-		se2, ok := extension2.(storage.Extension)
-		require.True(t, ok)
-
-		// Inject a compaction function that panics
-		lfs2, ok := se2.(*localFileStorage)
-		require.True(t, ok)
-		lfs2.compactFunc = func(c *fileStorageClient, dir string, timeout time.Duration, maxTxSize int64) error {
-			panic("simulated compaction panic due to corruption")
-		}
-
-		require.NoError(t, se2.Start(ctx, componenttest.NewNopHost()))
-
-		// Attempt to get a client - should return an error since Recreate is false
-		client2, err := se2.GetClient(ctx, component.KindReceiver, newTestEntity("my_component"), "")
-		require.Error(t, err)
-		require.Nil(t, client2)
-		require.Contains(t, err.Error(), "compaction failed due to panic")
-
-		// Verify warning was logged
-		require.Greater(t, len(logObserver.FilterMessage("panic during on_start compaction, database may be corrupted").All()), 0)
-
-		require.NoError(t, se2.Shutdown(ctx))
-	})
+			value, err := client.Get(ctx, "key1")
+			require.NoError(t, err)
+			require.Nil(t, value, "new database should be empty after recreation")
+			require.NoError(t, client.Set(ctx, "key2", []byte("value2")))
+			value, err = client.Get(ctx, "key2")
+			require.NoError(t, err)
+			require.Equal(t, []byte("value2"), value)
+			require.NoError(t, client.Close(ctx))
+			require.NoError(t, se.Shutdown(ctx))
+		})
+	}
 }
