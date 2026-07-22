@@ -595,6 +595,36 @@ query sample
  | Any Slice | - |
 | mongodb.operation.wait.details | Details about what the MongoDB operation is waiting on. | Any Str | - |
 
+### db.server.top_query
+
+Emits one event per slow query execution. The top N slowest executions per scrape window are emitted.
+Note: when database profiling is disabled, the receiver falls back to MongoDB's diagnostic log (`getLog`), a fixed-size ring buffer (~1024 entries) that may rotate slow-query entries out before the next scrape on busy servers; enable the profiler for reliable capture.
+
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.collection.name | The MongoDB collection being accessed within the database stated in db.namespace. | Any Str | - |
+| db.namespace | The name of a database. | Any Str | - |
+| db.operation.name | The name of the MongoDB command being executed (e.g. find, aggregate, insert). | Any Str | - |
+| db.query.text | The obfuscated MongoDB command statement. | Any Str | - |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``mongodb`` | - |
+| mongodb.cursor.id | The identifier of the cursor. | Any Str | - |
+| mongodb.cursor.originating_command | The obfuscated command that originally created the cursor. | Any Str | - |
+| mongodb.explain_plan.hash | FNV-64a hash of the obfuscated explain plan structure, identifying the execution plan shape. | Any Str | - |
+| mongodb.explain_plan.text | The obfuscated query explain plan, if collection is enabled. | Any Str | - |
+| mongodb.operation.comment | The comments attached to the MongoDB command. String comments are reported as-is; array comments are expanded into multiple entries; non-string values are reported as MongoDB Extended JSON. | Any Slice | - |
+| mongodb.operation.cpu.time | CPU time in seconds for this query execution. | Any Double | - |
+| mongodb.operation.docs_examined | Number of documents examined by this query execution. | Any Int | - |
+| mongodb.operation.docs_returned | Number of documents returned by this query execution. | Any Int | - |
+| mongodb.operation.duration | The duration of the MongoDB operation in seconds. | Any Double | - |
+| mongodb.operation.keys_examined | Number of index keys examined by this query execution. | Any Int | - |
+| mongodb.operation.plan.summary | Summary of the execution plan for the MongoDB operation. | Any Str | - |
+| mongodb.operation.response_length | Response length in bytes for this query execution. | Any Int | - |
+| mongodb.operation.type | The raw MongoDB operation type from `$currentOp.op` (e.g. query, insert, update, remove, getmore, command). | Any Str | - |
+| mongodb.query.truncated | Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output. | Any Bool | - |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
@@ -602,3 +632,5 @@ query sample
 | server.address | The address of the MongoDB host. | Any Str | true | - | - |
 | server.port | The port of the MongoDB host. | Any Int | false | - | - |
 | service.instance.id | A unique identifier of the MongoDB resource as a UUID v5, derived from server address and port. | Any Str | true | - | - |
+| service.name | Logical name of the service. When enabled, defaults to unknown_service:mongodb. | Any Str | false | - | - |
+| service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |

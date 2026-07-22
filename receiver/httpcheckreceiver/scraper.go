@@ -202,9 +202,9 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 	var expandedTargets []*targetConfig
 
 	for _, target := range h.cfg.Targets {
-		if target.Timeout == 0 {
+		if target.ClientConfig.Timeout == 0 {
 			// Set a reasonable timeout to prevent hanging requests
-			target.Timeout = 30 * time.Second
+			target.ClientConfig.Timeout = 30 * time.Second
 		}
 
 		// Create a unified list of endpoints
@@ -212,13 +212,13 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 		if len(target.Endpoints) > 0 {
 			allEndpoints = append(allEndpoints, target.Endpoints...) // Add all endpoints
 		}
-		if target.Endpoint != "" {
-			allEndpoints = append(allEndpoints, target.Endpoint) // Add single endpoint
+		if target.ClientConfig.Endpoint != "" {
+			allEndpoints = append(allEndpoints, target.ClientConfig.Endpoint) // Add single endpoint
 		}
 
 		// Process each endpoint in the unified list
 		for _, endpoint := range allEndpoints {
-			client, clientErr := target.ToClient(ctx, host.GetExtensions(), h.settings)
+			client, clientErr := target.ClientConfig.ToClient(ctx, host.GetExtensions(), h.settings)
 			if clientErr != nil {
 				h.settings.Logger.Error("failed to initialize HTTP client", zap.String("endpoint", endpoint), zap.Error(clientErr))
 				err = multierr.Append(err, clientErr)
@@ -227,7 +227,7 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 
 			// Clone the target and assign the specific endpoint
 			targetClone := *target
-			targetClone.Endpoint = endpoint
+			targetClone.ClientConfig.Endpoint = endpoint
 
 			h.clients = append(h.clients, client)
 			expandedTargets = append(expandedTargets, &targetClone) // Add the cloned target to expanded targets
@@ -296,7 +296,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			req, err := http.NewRequestWithContext(
 				httptrace.WithClientTrace(ctx, trace),
 				h.cfg.Targets[targetIndex].Method,
-				h.cfg.Targets[targetIndex].Endpoint,
+				h.cfg.Targets[targetIndex].ClientConfig.Endpoint,
 				requestBody,
 			)
 			if err != nil {
@@ -305,7 +305,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			}
 
 			// Add headers to the request
-			for key, value := range h.cfg.Targets[targetIndex].Headers.Iter {
+			for key, value := range h.cfg.Targets[targetIndex].ClientConfig.Headers.Iter {
 				req.Header.Set(key, value.String()) // Convert configopaque.String to string
 			}
 
@@ -354,7 +354,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			// emit the same data point twice per scrape.
 			// Record timing breakdown metrics
 			dnsNs, tcpNs, tlsNs, requestNs, responseNs := timing.getDurations()
-			endpoint := h.cfg.Targets[targetIndex].Endpoint
+			endpoint := h.cfg.Targets[targetIndex].ClientConfig.Endpoint
 
 			h.mb.RecordHttpcheckDurationDataPoint(
 				now,
@@ -431,7 +431,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 					h.mb.RecordHttpcheckStatusDataPoint(
 						now,
 						int64(0),
-						h.cfg.Targets[targetIndex].Endpoint,
+						h.cfg.Targets[targetIndex].ClientConfig.Endpoint,
 						int64(0), // Use 0 as status code when the class doesn't match
 						req.Method,
 						class,

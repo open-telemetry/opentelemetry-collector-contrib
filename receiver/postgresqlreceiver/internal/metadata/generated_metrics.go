@@ -200,6 +200,48 @@ var MapAttributePostgresqlConflictType = map[string]AttributePostgresqlConflictT
 	"deadlock":   AttributePostgresqlConflictTypeDeadlock,
 }
 
+// AttributePostgresqlDistanceFunctionName specifies the value postgresql.distance.function.name attribute.
+type AttributePostgresqlDistanceFunctionName int
+
+const (
+	_ AttributePostgresqlDistanceFunctionName = iota
+	AttributePostgresqlDistanceFunctionNameCosine
+	AttributePostgresqlDistanceFunctionNameL2
+	AttributePostgresqlDistanceFunctionNameInnerProduct
+	AttributePostgresqlDistanceFunctionNameL1
+	AttributePostgresqlDistanceFunctionNameHamming
+	AttributePostgresqlDistanceFunctionNameJaccard
+)
+
+// String returns the string representation of the AttributePostgresqlDistanceFunctionName.
+func (av AttributePostgresqlDistanceFunctionName) String() string {
+	switch av {
+	case AttributePostgresqlDistanceFunctionNameCosine:
+		return "cosine"
+	case AttributePostgresqlDistanceFunctionNameL2:
+		return "l2"
+	case AttributePostgresqlDistanceFunctionNameInnerProduct:
+		return "inner_product"
+	case AttributePostgresqlDistanceFunctionNameL1:
+		return "l1"
+	case AttributePostgresqlDistanceFunctionNameHamming:
+		return "hamming"
+	case AttributePostgresqlDistanceFunctionNameJaccard:
+		return "jaccard"
+	}
+	return ""
+}
+
+// MapAttributePostgresqlDistanceFunctionName is a helper map of string to AttributePostgresqlDistanceFunctionName attribute value.
+var MapAttributePostgresqlDistanceFunctionName = map[string]AttributePostgresqlDistanceFunctionName{
+	"cosine":        AttributePostgresqlDistanceFunctionNameCosine,
+	"l2":            AttributePostgresqlDistanceFunctionNameL2,
+	"inner_product": AttributePostgresqlDistanceFunctionNameInnerProduct,
+	"l1":            AttributePostgresqlDistanceFunctionNameL1,
+	"hamming":       AttributePostgresqlDistanceFunctionNameHamming,
+	"jaccard":       AttributePostgresqlDistanceFunctionNameJaccard,
+}
+
 // AttributeSource specifies the value source attribute.
 type AttributeSource int
 
@@ -439,6 +481,26 @@ var MetricsInfo = metricsInfo{
 		Name:       "postgresql.tup_updated",
 		Attributes: []string{"db.namespace"},
 	},
+	PostgresqlVectorInsertDuration: metricInfo{
+		Name:       "postgresql.vector.insert.duration",
+		Attributes: []string{"db.namespace"},
+	},
+	PostgresqlVectorInsertRows: metricInfo{
+		Name:       "postgresql.vector.insert.rows",
+		Attributes: []string{"db.namespace"},
+	},
+	PostgresqlVectorSearchCalls: metricInfo{
+		Name:       "postgresql.vector.search.calls",
+		Attributes: []string{"postgresql.distance.function.name", "db.namespace"},
+	},
+	PostgresqlVectorSearchDuration: metricInfo{
+		Name:       "postgresql.vector.search.duration",
+		Attributes: []string{"postgresql.distance.function.name", "db.namespace"},
+	},
+	PostgresqlVectorSearchRowsReturned: metricInfo{
+		Name:       "postgresql.vector.search.rows_returned",
+		Attributes: []string{"postgresql.distance.function.name", "db.namespace"},
+	},
 	PostgresqlWalAge: metricInfo{
 		Name: "postgresql.wal.age",
 	},
@@ -487,6 +549,11 @@ type metricsInfo struct {
 	PostgresqlTupInserted              metricInfo
 	PostgresqlTupReturned              metricInfo
 	PostgresqlTupUpdated               metricInfo
+	PostgresqlVectorInsertDuration     metricInfo
+	PostgresqlVectorInsertRows         metricInfo
+	PostgresqlVectorSearchCalls        metricInfo
+	PostgresqlVectorSearchDuration     metricInfo
+	PostgresqlVectorSearchRowsReturned metricInfo
 	PostgresqlWalAge                   metricInfo
 	PostgresqlWalDelay                 metricInfo
 	PostgresqlWalLag                   metricInfo
@@ -3478,6 +3545,470 @@ func newMetricPostgresqlTupUpdated(cfg PostgresqlTupUpdatedMetricConfig) metricP
 	return m
 }
 
+type metricPostgresqlVectorInsertDuration struct {
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        PostgresqlVectorInsertDurationMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                                  // slice containing number of aggregated datapoints at each index
+}
+
+// init fills postgresql.vector.insert.duration metric with initial data.
+func (m *metricPostgresqlVectorInsertDuration) init() {
+	m.data.SetName("postgresql.vector.insert.duration")
+	m.data.SetDescription("The cumulative execution time of statements that insert vectors into pgvector tables.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricPostgresqlVectorInsertDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlVectorInsertDurationMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlVectorInsertDuration) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlVectorInsertDuration) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlVectorInsertDuration(cfg PostgresqlVectorInsertDurationMetricConfig) metricPostgresqlVectorInsertDuration {
+	m := metricPostgresqlVectorInsertDuration{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlVectorInsertRows struct {
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        PostgresqlVectorInsertRowsMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
+}
+
+// init fills postgresql.vector.insert.rows metric with initial data.
+func (m *metricPostgresqlVectorInsertRows) init() {
+	m.data.SetName("postgresql.vector.insert.rows")
+	m.data.SetDescription("The number of vectors inserted into pgvector tables.")
+	m.data.SetUnit("{vectors}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricPostgresqlVectorInsertRows) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlVectorInsertRowsMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlVectorInsertRows) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlVectorInsertRows) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlVectorInsertRows(cfg PostgresqlVectorInsertRowsMetricConfig) metricPostgresqlVectorInsertRows {
+	m := metricPostgresqlVectorInsertRows{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlVectorSearchCalls struct {
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        PostgresqlVectorSearchCallsMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+}
+
+// init fills postgresql.vector.search.calls metric with initial data.
+func (m *metricPostgresqlVectorSearchCalls) init() {
+	m.data.SetName("postgresql.vector.search.calls")
+	m.data.SetDescription("The number of vector similarity search operations executed, grouped by the distance function used.")
+	m.data.SetUnit("{search}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricPostgresqlVectorSearchCalls) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, postgresqlDistanceFunctionNameAttributeValue string, dbNamespaceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlVectorSearchCallsMetricAttributeKeyPostgresqlDistanceFunctionName) {
+		dp.Attributes().PutStr("postgresql.distance.function.name", postgresqlDistanceFunctionNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlVectorSearchCallsMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlVectorSearchCalls) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlVectorSearchCalls) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlVectorSearchCalls(cfg PostgresqlVectorSearchCallsMetricConfig) metricPostgresqlVectorSearchCalls {
+	m := metricPostgresqlVectorSearchCalls{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlVectorSearchDuration struct {
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        PostgresqlVectorSearchDurationMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                                  // slice containing number of aggregated datapoints at each index
+}
+
+// init fills postgresql.vector.search.duration metric with initial data.
+func (m *metricPostgresqlVectorSearchDuration) init() {
+	m.data.SetName("postgresql.vector.search.duration")
+	m.data.SetDescription("The cumulative execution time of vector similarity searches, grouped by the distance function used.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricPostgresqlVectorSearchDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, postgresqlDistanceFunctionNameAttributeValue string, dbNamespaceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlVectorSearchDurationMetricAttributeKeyPostgresqlDistanceFunctionName) {
+		dp.Attributes().PutStr("postgresql.distance.function.name", postgresqlDistanceFunctionNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlVectorSearchDurationMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlVectorSearchDuration) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlVectorSearchDuration) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlVectorSearchDuration(cfg PostgresqlVectorSearchDurationMetricConfig) metricPostgresqlVectorSearchDuration {
+	m := metricPostgresqlVectorSearchDuration{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlVectorSearchRowsReturned struct {
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        PostgresqlVectorSearchRowsReturnedMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
+}
+
+// init fills postgresql.vector.search.rows_returned metric with initial data.
+func (m *metricPostgresqlVectorSearchRowsReturned) init() {
+	m.data.SetName("postgresql.vector.search.rows_returned")
+	m.data.SetDescription("The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.")
+	m.data.SetUnit("{rows}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricPostgresqlVectorSearchRowsReturned) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, postgresqlDistanceFunctionNameAttributeValue string, dbNamespaceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlVectorSearchRowsReturnedMetricAttributeKeyPostgresqlDistanceFunctionName) {
+		dp.Attributes().PutStr("postgresql.distance.function.name", postgresqlDistanceFunctionNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlVectorSearchRowsReturnedMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlVectorSearchRowsReturned) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlVectorSearchRowsReturned) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlVectorSearchRowsReturned(cfg PostgresqlVectorSearchRowsReturnedMetricConfig) metricPostgresqlVectorSearchRowsReturned {
+	m := metricPostgresqlVectorSearchRowsReturned{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricPostgresqlWalAge struct {
 	data     pmetric.Metric               // data buffer for generated metric.
 	config   PostgresqlWalAgeMetricConfig // metric config provided by user.
@@ -3756,6 +4287,11 @@ type MetricsBuilder struct {
 	metricPostgresqlTupInserted              metricPostgresqlTupInserted
 	metricPostgresqlTupReturned              metricPostgresqlTupReturned
 	metricPostgresqlTupUpdated               metricPostgresqlTupUpdated
+	metricPostgresqlVectorInsertDuration     metricPostgresqlVectorInsertDuration
+	metricPostgresqlVectorInsertRows         metricPostgresqlVectorInsertRows
+	metricPostgresqlVectorSearchCalls        metricPostgresqlVectorSearchCalls
+	metricPostgresqlVectorSearchDuration     metricPostgresqlVectorSearchDuration
+	metricPostgresqlVectorSearchRowsReturned metricPostgresqlVectorSearchRowsReturned
 	metricPostgresqlWalAge                   metricPostgresqlWalAge
 	metricPostgresqlWalDelay                 metricPostgresqlWalDelay
 	metricPostgresqlWalLag                   metricPostgresqlWalLag
@@ -3818,6 +4354,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricPostgresqlTupInserted:              newMetricPostgresqlTupInserted(mbc.Metrics.PostgresqlTupInserted),
 		metricPostgresqlTupReturned:              newMetricPostgresqlTupReturned(mbc.Metrics.PostgresqlTupReturned),
 		metricPostgresqlTupUpdated:               newMetricPostgresqlTupUpdated(mbc.Metrics.PostgresqlTupUpdated),
+		metricPostgresqlVectorInsertDuration:     newMetricPostgresqlVectorInsertDuration(mbc.Metrics.PostgresqlVectorInsertDuration),
+		metricPostgresqlVectorInsertRows:         newMetricPostgresqlVectorInsertRows(mbc.Metrics.PostgresqlVectorInsertRows),
+		metricPostgresqlVectorSearchCalls:        newMetricPostgresqlVectorSearchCalls(mbc.Metrics.PostgresqlVectorSearchCalls),
+		metricPostgresqlVectorSearchDuration:     newMetricPostgresqlVectorSearchDuration(mbc.Metrics.PostgresqlVectorSearchDuration),
+		metricPostgresqlVectorSearchRowsReturned: newMetricPostgresqlVectorSearchRowsReturned(mbc.Metrics.PostgresqlVectorSearchRowsReturned),
 		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(mbc.Metrics.PostgresqlWalAge),
 		metricPostgresqlWalDelay:                 newMetricPostgresqlWalDelay(mbc.Metrics.PostgresqlWalDelay),
 		metricPostgresqlWalLag:                   newMetricPostgresqlWalLag(mbc.Metrics.PostgresqlWalLag),
@@ -3981,6 +4522,11 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlTupInserted.emit(ils.Metrics())
 	mb.metricPostgresqlTupReturned.emit(ils.Metrics())
 	mb.metricPostgresqlTupUpdated.emit(ils.Metrics())
+	mb.metricPostgresqlVectorInsertDuration.emit(ils.Metrics())
+	mb.metricPostgresqlVectorInsertRows.emit(ils.Metrics())
+	mb.metricPostgresqlVectorSearchCalls.emit(ils.Metrics())
+	mb.metricPostgresqlVectorSearchDuration.emit(ils.Metrics())
+	mb.metricPostgresqlVectorSearchRowsReturned.emit(ils.Metrics())
 	mb.metricPostgresqlWalAge.emit(ils.Metrics())
 	mb.metricPostgresqlWalDelay.emit(ils.Metrics())
 	mb.metricPostgresqlWalLag.emit(ils.Metrics())
@@ -4183,6 +4729,31 @@ func (mb *MetricsBuilder) RecordPostgresqlTupReturnedDataPoint(ts pcommon.Timest
 // RecordPostgresqlTupUpdatedDataPoint adds a data point to postgresql.tup_updated metric.
 func (mb *MetricsBuilder) RecordPostgresqlTupUpdatedDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
 	mb.metricPostgresqlTupUpdated.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
+}
+
+// RecordPostgresqlVectorInsertDurationDataPoint adds a data point to postgresql.vector.insert.duration metric.
+func (mb *MetricsBuilder) RecordPostgresqlVectorInsertDurationDataPoint(ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string) {
+	mb.metricPostgresqlVectorInsertDuration.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
+}
+
+// RecordPostgresqlVectorInsertRowsDataPoint adds a data point to postgresql.vector.insert.rows metric.
+func (mb *MetricsBuilder) RecordPostgresqlVectorInsertRowsDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+	mb.metricPostgresqlVectorInsertRows.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
+}
+
+// RecordPostgresqlVectorSearchCallsDataPoint adds a data point to postgresql.vector.search.calls metric.
+func (mb *MetricsBuilder) RecordPostgresqlVectorSearchCallsDataPoint(ts pcommon.Timestamp, val int64, postgresqlDistanceFunctionNameAttributeValue AttributePostgresqlDistanceFunctionName, dbNamespaceAttributeValue string) {
+	mb.metricPostgresqlVectorSearchCalls.recordDataPoint(mb.startTime, ts, val, postgresqlDistanceFunctionNameAttributeValue.String(), dbNamespaceAttributeValue)
+}
+
+// RecordPostgresqlVectorSearchDurationDataPoint adds a data point to postgresql.vector.search.duration metric.
+func (mb *MetricsBuilder) RecordPostgresqlVectorSearchDurationDataPoint(ts pcommon.Timestamp, val float64, postgresqlDistanceFunctionNameAttributeValue AttributePostgresqlDistanceFunctionName, dbNamespaceAttributeValue string) {
+	mb.metricPostgresqlVectorSearchDuration.recordDataPoint(mb.startTime, ts, val, postgresqlDistanceFunctionNameAttributeValue.String(), dbNamespaceAttributeValue)
+}
+
+// RecordPostgresqlVectorSearchRowsReturnedDataPoint adds a data point to postgresql.vector.search.rows_returned metric.
+func (mb *MetricsBuilder) RecordPostgresqlVectorSearchRowsReturnedDataPoint(ts pcommon.Timestamp, val int64, postgresqlDistanceFunctionNameAttributeValue AttributePostgresqlDistanceFunctionName, dbNamespaceAttributeValue string) {
+	mb.metricPostgresqlVectorSearchRowsReturned.recordDataPoint(mb.startTime, ts, val, postgresqlDistanceFunctionNameAttributeValue.String(), dbNamespaceAttributeValue)
 }
 
 // RecordPostgresqlWalAgeDataPoint adds a data point to postgresql.wal.age metric.
