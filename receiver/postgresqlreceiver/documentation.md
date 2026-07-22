@@ -405,6 +405,20 @@ Number of queries canceled due to conflicts with recovery on this database. Conf
 | postgresql.conflict.type | The type of recovery conflict that caused a query to be canceled on a standby server. | Str: ``tablespace``, ``lock``, ``snapshot``, ``bufferpin``, ``deadlock`` | Recommended | - |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
+### postgresql.query.execution.duration
+
+The total time spent executing SQL statements in the database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+
 ### postgresql.sequential_scans
 
 The number of sequential scans.

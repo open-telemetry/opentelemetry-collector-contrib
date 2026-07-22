@@ -53,6 +53,7 @@ var errNoLastArchive = errors.New("no last archive found, not able to calculate 
 type client interface {
 	Close() error
 	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
+	getExecutionDurationStats(ctx context.Context, databases []string) (map[databaseName]float64, error)
 	getDatabaseConflicts(ctx context.Context, databases []string) (map[databaseName]databaseConflictStats, error)
 	getDatabaseLocks(ctx context.Context) ([]databaseLocks, error)
 	getBGWriterStats(ctx context.Context) (*bgStat, error)
@@ -302,6 +303,41 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 		}
 	}
 	return dbStats, errs
+}
+
+// getExecutionDurationStats returns, per database, the cumulative time (in seconds) spent executing
+// SQL statements. It aggregates the total_exec_time column of pg_stat_statements (reported in
+// milliseconds) across all currently tracked statements and requires the pg_stat_statements
+// extension to be installed.
+func (c *postgreSQLClient) getExecutionDurationStats(ctx context.Context, databases []string) (map[databaseName]float64, error) {
+	query := filterQueryByDatabases(
+		"SELECT pd.datname AS datname, SUM(pss.total_exec_time) / 1000.0 AS execution_duration_seconds FROM pg_stat_statements pss JOIN pg_database pd ON pss.dbid = pd.oid",
+		databases,
+		true,
+	)
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var errs error
+	stats := map[databaseName]float64{}
+
+	for rows.Next() {
+		var datname string
+		var executionDuration float64
+		err = rows.Scan(&datname, &executionDuration)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		if datname != "" {
+			stats[databaseName(datname)] = executionDuration
+		}
+	}
+	return stats, multierr.Append(errs, rows.Err())
 }
 
 // databaseConflictStats holds the per-database query cancellation counters from

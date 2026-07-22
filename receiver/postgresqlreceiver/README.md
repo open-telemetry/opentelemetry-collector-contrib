@@ -206,3 +206,7 @@ This gate is mutually exclusive with `receiver.postgresql.separateSchemaAttr` â€
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+
+> [!NOTE]
+> The optional `postgresql.query.execution.duration` metric requires the `pg_stat_statements` extension to be
+> installed and enabled.
