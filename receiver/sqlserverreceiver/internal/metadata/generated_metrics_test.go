@@ -75,6 +75,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.database.tempdb.space"] = mb.metricSqlserverDatabaseTempdbSpace.config.AggregationStrategy
 			aggMap["sqlserver.disk.io.rate"] = mb.metricSqlserverDiskIoRate.config.AggregationStrategy
 			aggMap["sqlserver.disk.io.throughput"] = mb.metricSqlserverDiskIoThroughput.config.AggregationStrategy
+			aggMap["sqlserver.host.memory.usage"] = mb.metricSqlserverHostMemoryUsage.config.AggregationStrategy
 			aggMap["sqlserver.index.fragmentation"] = mb.metricSqlserverIndexFragmentation.config.AggregationStrategy
 			aggMap["sqlserver.index.page.count"] = mb.metricSqlserverIndexPageCount.config.AggregationStrategy
 			aggMap["sqlserver.index.page.utilization"] = mb.metricSqlserverIndexPageUtilization.config.AggregationStrategy
@@ -84,7 +85,6 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.memory.area"] = mb.metricSqlserverMemoryArea.config.AggregationStrategy
 			aggMap["sqlserver.memory.cache.object.count"] = mb.metricSqlserverMemoryCacheObjectCount.config.AggregationStrategy
 			aggMap["sqlserver.memory.page.count"] = mb.metricSqlserverMemoryPageCount.config.AggregationStrategy
-			aggMap["sqlserver.memory.physical"] = mb.metricSqlserverMemoryPhysical.config.AggregationStrategy
 			aggMap["sqlserver.os.wait.duration"] = mb.metricSqlserverOsWaitDuration.config.AggregationStrategy
 			aggMap["sqlserver.page.life_expectancy"] = mb.metricSqlserverPageLifeExpectancy.config.AggregationStrategy
 			aggMap["sqlserver.page.operation.rate"] = mb.metricSqlserverPageOperationRate.config.AggregationStrategy
@@ -197,15 +197,15 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverDeadlockRateDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverDiskIoRateDataPoint(ts, 1, AttributeDirectionRead, "disk.drive-val")
+			mb.RecordSqlserverDiskIoRateDataPoint(ts, 1, AttributeDiskIoDirectionRead, "disk.drive-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverDiskIoRateDataPoint(ts, 3, AttributeDirectionWrite, "disk.drive-val-2")
+				mb.RecordSqlserverDiskIoRateDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "disk.drive-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverDiskIoThroughputDataPoint(ts, 1, AttributeDirectionRead, "disk.drive-val")
+			mb.RecordSqlserverDiskIoThroughputDataPoint(ts, 1, AttributeDiskIoDirectionRead, "disk.drive-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverDiskIoThroughputDataPoint(ts, 3, AttributeDirectionWrite, "disk.drive-val-2")
+				mb.RecordSqlserverDiskIoThroughputDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "disk.drive-val-2")
 			}
 
 			allMetricsCount++
@@ -216,6 +216,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSqlserverGhostRecordSkippedRateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverHostMemoryUsageDataPoint(ts, 1, AttributeSystemMemoryStateTotal)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverHostMemoryUsageDataPoint(ts, 3, AttributeSystemMemoryStateAvailable)
+			}
 
 			allMetricsCount++
 			mb.RecordSqlserverIndexFragmentationDataPoint(ts, 1, "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
@@ -320,12 +326,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverMemoryPageCountDataPoint(ts, 1, AttributePagePoolCache)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverMemoryPageCountDataPoint(ts, 3, AttributePagePoolTotal)
-			}
-
-			allMetricsCount++
-			mb.RecordSqlserverMemoryPhysicalDataPoint(ts, 1, AttributeMemoryStateTotal)
-			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverMemoryPhysicalDataPoint(ts, 3, AttributeMemoryStateAvailable)
 			}
 
 			allMetricsCount++
@@ -505,6 +505,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverDatabaseTempdbSpace.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDiskIoRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDiskIoThroughput.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverHostMemoryUsage.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverIndexFragmentation.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverIndexPageCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverIndexPageUtilization.aggDataPoints)
@@ -514,7 +515,6 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverMemoryArea.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryCacheObjectCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryPageCount.aggDataPoints)
-				assert.Empty(t, mb.metricSqlserverMemoryPhysical.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverOsWaitDuration.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverPageLifeExpectancy.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverPageOperationRate.aggDataPoints)
@@ -1089,9 +1089,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						directionAttrVal, ok := dp.Attributes().Get("direction")
+						diskIoDirectionAttrVal, ok := dp.Attributes().Get("disk.io.direction")
 						assert.True(t, ok)
-						assert.Equal(t, "read", directionAttrVal.Str())
+						assert.Equal(t, "read", diskIoDirectionAttrVal.Str())
 						diskDriveAttrVal, ok := dp.Attributes().Get("disk.drive")
 						assert.True(t, ok)
 						assert.Equal(t, "disk.drive-val", diskDriveAttrVal.Str())
@@ -1116,7 +1116,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("direction")
+						_, ok := dp.Attributes().Get("disk.io.direction")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("disk.drive")
 						assert.False(t, ok)
@@ -1134,9 +1134,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						directionAttrVal, ok := dp.Attributes().Get("direction")
+						diskIoDirectionAttrVal, ok := dp.Attributes().Get("disk.io.direction")
 						assert.True(t, ok)
-						assert.Equal(t, "read", directionAttrVal.Str())
+						assert.Equal(t, "read", diskIoDirectionAttrVal.Str())
 						diskDriveAttrVal, ok := dp.Attributes().Get("disk.drive")
 						assert.True(t, ok)
 						assert.Equal(t, "disk.drive-val", diskDriveAttrVal.Str())
@@ -1161,7 +1161,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("direction")
+						_, ok := dp.Attributes().Get("disk.io.direction")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("disk.drive")
 						assert.False(t, ok)
@@ -1208,6 +1208,46 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.host.memory.usage":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.host.memory.usage"], "Found a duplicate in the metrics slice: sqlserver.host.memory.usage")
+						validatedMetrics["sqlserver.host.memory.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Physical memory on the host as observed by SQL Server, broken down by state (total or available).", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						systemMemoryStateAttrVal, ok := dp.Attributes().Get("system.memory.state")
+						assert.True(t, ok)
+						assert.Equal(t, "total", systemMemoryStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.host.memory.usage"], "Found a duplicate in the metrics slice: sqlserver.host.memory.usage")
+						validatedMetrics["sqlserver.host.memory.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Physical memory on the host as observed by SQL Server, broken down by state (total or available).", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.host.memory.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("system.memory.state")
+						assert.False(t, ok)
+					}
 				case "sqlserver.index.fragmentation":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["sqlserver.index.fragmentation"], "Found a duplicate in the metrics slice: sqlserver.index.fragmentation")
@@ -1859,46 +1899,6 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("page.pool")
-						assert.False(t, ok)
-					}
-				case "sqlserver.memory.physical":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.memory.physical"], "Found a duplicate in the metrics slice: sqlserver.memory.physical")
-						validatedMetrics["sqlserver.memory.physical"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Physical memory on the host as observed by SQL Server, broken down by state (total or available).", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						memoryStateAttrVal, ok := dp.Attributes().Get("memory.state")
-						assert.True(t, ok)
-						assert.Equal(t, "total", memoryStateAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["sqlserver.memory.physical"], "Found a duplicate in the metrics slice: sqlserver.memory.physical")
-						validatedMetrics["sqlserver.memory.physical"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Physical memory on the host as observed by SQL Server, broken down by state (total or available).", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["sqlserver.memory.physical"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("memory.state")
 						assert.False(t, ok)
 					}
 				case "sqlserver.memory.usage":

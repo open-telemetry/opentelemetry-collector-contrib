@@ -31,19 +31,19 @@ resourceMetrics:
               dataPoints:
                 - asInt: "8589934592"
                   attributes:
-                    - key: memory.state
+                    - key: system.memory.state
                       value:
                         stringValue: available
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "17179869184"
                   attributes:
-                    - key: memory.state
+                    - key: system.memory.state
                       value:
                         stringValue: total
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.memory.physical
+            name: sqlserver.host.memory.usage
             unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver

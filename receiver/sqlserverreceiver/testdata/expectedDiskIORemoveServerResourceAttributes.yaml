@@ -23,22 +23,22 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 41.15
                   attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
                     - key: disk.drive
                       value:
                         stringValue: C
+                    - key: disk.io.direction
+                      value:
+                        stringValue: read
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asDouble: 22.63
                   attributes:
-                    - key: direction
-                      value:
-                        stringValue: write
                     - key: disk.drive
                       value:
                         stringValue: C
+                    - key: disk.io.direction
+                      value:
+                        stringValue: write
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.disk.io.rate
@@ -48,22 +48,22 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 4.194304e+06
                   attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
                     - key: disk.drive
                       value:
                         stringValue: C
+                    - key: disk.io.direction
+                      value:
+                        stringValue: read
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asDouble: 2.097152e+06
                   attributes:
-                    - key: direction
-                      value:
-                        stringValue: write
                     - key: disk.drive
                       value:
                         stringValue: C
+                    - key: disk.io.direction
+                      value:
+                        stringValue: write
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.disk.io.throughput
@@ -95,22 +95,22 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 32.92
                   attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
                     - key: disk.drive
                       value:
                         stringValue: D
+                    - key: disk.io.direction
+                      value:
+                        stringValue: read
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asDouble: 18.106666666666666
                   attributes:
-                    - key: direction
-                      value:
-                        stringValue: write
                     - key: disk.drive
                       value:
                         stringValue: D
+                    - key: disk.io.direction
+                      value:
+                        stringValue: write
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.disk.io.rate
@@ -120,22 +120,22 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 8.388608e+06
                   attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
                     - key: disk.drive
                       value:
                         stringValue: D
+                    - key: disk.io.direction
+                      value:
+                        stringValue: read
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asDouble: 4.194304e+06
                   attributes:
-                    - key: direction
-                      value:
-                        stringValue: write
                     - key: disk.drive
                       value:
                         stringValue: D
+                    - key: disk.io.direction
+                      value:
+                        stringValue: write
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.disk.io.throughput

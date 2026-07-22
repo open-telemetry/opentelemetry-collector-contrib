@@ -126,7 +126,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverTransactionRate.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
 	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
-	cfg.Metrics.SqlserverMemoryPhysical.Enabled = enabled
+	cfg.Metrics.SqlserverHostMemoryUsage.Enabled = enabled
 	cfg.Metrics.SqlserverWorkerRequestCount.Enabled = enabled
 	cfg.Metrics.SqlserverWorkerThreadCount.Enabled = enabled
 	cfg.Metrics.SqlserverWorktableCacheHitRatio.Enabled = enabled
@@ -1397,7 +1397,7 @@ func TestRecordCPUMemoryMetrics(t *testing.T) {
 	cfg.Port = 1433
 	assert.NoError(t, cfg.Validate())
 	cfg.Metrics.SqlserverCPUUtilization.Enabled = true
-	cfg.Metrics.SqlserverMemoryPhysical.Enabled = true
+	cfg.Metrics.SqlserverHostMemoryUsage.Enabled = true
 
 	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
@@ -1434,7 +1434,7 @@ func TestRecordCPUMemoryMetrics(t *testing.T) {
 				switch m.Name() {
 				case metadata.MetricsInfo.SqlserverCPUUtilization.Name:
 					totalDP += m.Gauge().DataPoints().Len()
-				case metadata.MetricsInfo.SqlserverMemoryPhysical.Name:
+				case metadata.MetricsInfo.SqlserverHostMemoryUsage.Name:
 					totalDP += m.Gauge().DataPoints().Len()
 				}
 			}
@@ -1507,7 +1507,7 @@ func TestIsCPUMemoryQueryEnabled(t *testing.T) {
 	assert.True(t, isCPUMemoryQueryEnabled(metrics))
 
 	metrics.SqlserverCPUUtilization.Enabled = false
-	metrics.SqlserverMemoryPhysical.Enabled = true
+	metrics.SqlserverHostMemoryUsage.Enabled = true
 	assert.True(t, isCPUMemoryQueryEnabled(metrics))
 }
 

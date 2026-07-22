@@ -57,16 +57,19 @@ all_set:
       enabled: true
     sqlserver.disk.io.rate:
       enabled: true
-      attributes: ["direction","disk.drive"]
+      attributes: ["disk.io.direction","disk.drive"]
     sqlserver.disk.io.throughput:
       enabled: true
-      attributes: ["direction","disk.drive"]
+      attributes: ["disk.io.direction","disk.drive"]
     sqlserver.error.rate:
       enabled: true
     sqlserver.extent.operation.rate:
       enabled: true
     sqlserver.ghost_record.skipped.rate:
       enabled: true
+    sqlserver.host.memory.usage:
+      enabled: true
+      attributes: ["system.memory.state"]
     sqlserver.index.fragmentation:
       enabled: true
       attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
@@ -128,9 +131,6 @@ all_set:
     sqlserver.memory.page.count:
       enabled: true
       attributes: ["page.pool"]
-    sqlserver.memory.physical:
-      enabled: true
-      attributes: ["memory.state"]
     sqlserver.memory.usage:
       enabled: true
     sqlserver.os.wait.duration:
@@ -315,6 +315,9 @@ reaggregate_set:
       enabled: true
     sqlserver.ghost_record.skipped.rate:
       enabled: true
+    sqlserver.host.memory.usage:
+      enabled: true
+      attributes: []
     sqlserver.index.fragmentation:
       enabled: true
       attributes: []
@@ -374,9 +377,6 @@ reaggregate_set:
     sqlserver.memory.grants.pending.count:
       enabled: true
     sqlserver.memory.page.count:
-      enabled: true
-      attributes: []
-    sqlserver.memory.physical:
       enabled: true
       attributes: []
     sqlserver.memory.usage:
@@ -553,16 +553,19 @@ none_set:
       enabled: false
     sqlserver.disk.io.rate:
       enabled: false
-      attributes: ["direction","disk.drive"]
+      attributes: ["disk.io.direction","disk.drive"]
     sqlserver.disk.io.throughput:
       enabled: false
-      attributes: ["direction","disk.drive"]
+      attributes: ["disk.io.direction","disk.drive"]
     sqlserver.error.rate:
       enabled: false
     sqlserver.extent.operation.rate:
       enabled: false
     sqlserver.ghost_record.skipped.rate:
       enabled: false
+    sqlserver.host.memory.usage:
+      enabled: false
+      attributes: ["system.memory.state"]
     sqlserver.index.fragmentation:
       enabled: false
       attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
@@ -624,9 +627,6 @@ none_set:
     sqlserver.memory.page.count:
       enabled: false
       attributes: ["page.pool"]
-    sqlserver.memory.physical:
-      enabled: false
-      attributes: ["memory.state"]
     sqlserver.memory.usage:
       enabled: false
     sqlserver.os.wait.duration:

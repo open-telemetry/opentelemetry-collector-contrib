@@ -477,7 +477,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | Recommended | - |
+| disk.io.direction | The direction of disk I/O operations. | Str: ``read``, ``write`` | Recommended | - |
 | disk.drive | The first character of the database file path. On Windows this is the drive letter (e.g. C); on Linux this is always /. | Any Str | Recommended | - |
 
 ### sqlserver.disk.io.throughput
@@ -494,7 +494,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | Recommended | - |
+| disk.io.direction | The direction of disk I/O operations. | Str: ``read``, ``write`` | Recommended | - |
 | disk.drive | The first character of the database file path. On Windows this is the drive letter (e.g. C); on Linux this is always /. | Any Str | Recommended | - |
 
 ### sqlserver.error.rate
@@ -536,6 +536,22 @@ Rate of ghosted records skipped during scans.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {record}/s | Gauge | Double | Development |
+
+### sqlserver.host.memory.usage
+
+Physical memory on the host as observed by SQL Server, broken down by state (total or available).
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| system.memory.state | The state of the physical memory on the host. | Str: ``total``, ``available`` | Recommended | - |
 
 ### sqlserver.index.fragmentation
 
@@ -849,22 +865,6 @@ This metric is only available when the receiver is configured to directly connec
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | page.pool | The type of page pool in the SQL Server buffer manager. | Str: ``cache``, ``total``, ``target``, ``database``, ``stolen``, ``reserved``, ``free`` | Recommended | - |
-
-### sqlserver.memory.physical
-
-Physical memory on the host as observed by SQL Server, broken down by state (total or available).
-
-This metric is only available when the receiver is configured to directly connect to SQL Server.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| memory.state | The state of the physical memory on the host. | Str: ``total``, ``available`` | Recommended | - |
 
 ### sqlserver.memory.usage
 

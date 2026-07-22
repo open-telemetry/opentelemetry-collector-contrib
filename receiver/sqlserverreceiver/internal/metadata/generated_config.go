@@ -671,8 +671,8 @@ func (ms *SqlserverDeadlockRateMetricConfig) Unmarshal(parser *confmap.Conf) err
 type SqlserverDiskIoRateMetricAttributeKey string
 
 const (
-	SqlserverDiskIoRateMetricAttributeKeyDirection SqlserverDiskIoRateMetricAttributeKey = "direction"
-	SqlserverDiskIoRateMetricAttributeKeyDiskDrive SqlserverDiskIoRateMetricAttributeKey = "disk.drive"
+	SqlserverDiskIoRateMetricAttributeKeyDiskIoDirection SqlserverDiskIoRateMetricAttributeKey = "disk.io.direction"
+	SqlserverDiskIoRateMetricAttributeKeyDiskDrive       SqlserverDiskIoRateMetricAttributeKey = "disk.drive"
 )
 
 // SqlserverDiskIoRateMetricConfig provides config for the sqlserver.disk.io.rate metric.
@@ -701,9 +701,9 @@ func (ms *SqlserverDiskIoRateMetricConfig) Unmarshal(parser *confmap.Conf) error
 func (ms *SqlserverDiskIoRateMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverDiskIoRateMetricAttributeKeyDirection, SqlserverDiskIoRateMetricAttributeKeyDiskDrive:
+		case SqlserverDiskIoRateMetricAttributeKeyDiskIoDirection, SqlserverDiskIoRateMetricAttributeKeyDiskDrive:
 		default:
-			return fmt.Errorf("metric sqlserver.disk.io.rate doesn't have an attribute %v, valid attributes: [direction, disk.drive]", val)
+			return fmt.Errorf("metric sqlserver.disk.io.rate doesn't have an attribute %v, valid attributes: [disk.io.direction, disk.drive]", val)
 		}
 	}
 
@@ -720,8 +720,8 @@ func (ms *SqlserverDiskIoRateMetricConfig) Validate() error {
 type SqlserverDiskIoThroughputMetricAttributeKey string
 
 const (
-	SqlserverDiskIoThroughputMetricAttributeKeyDirection SqlserverDiskIoThroughputMetricAttributeKey = "direction"
-	SqlserverDiskIoThroughputMetricAttributeKeyDiskDrive SqlserverDiskIoThroughputMetricAttributeKey = "disk.drive"
+	SqlserverDiskIoThroughputMetricAttributeKeyDiskIoDirection SqlserverDiskIoThroughputMetricAttributeKey = "disk.io.direction"
+	SqlserverDiskIoThroughputMetricAttributeKeyDiskDrive       SqlserverDiskIoThroughputMetricAttributeKey = "disk.drive"
 )
 
 // SqlserverDiskIoThroughputMetricConfig provides config for the sqlserver.disk.io.throughput metric.
@@ -750,9 +750,9 @@ func (ms *SqlserverDiskIoThroughputMetricConfig) Unmarshal(parser *confmap.Conf)
 func (ms *SqlserverDiskIoThroughputMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverDiskIoThroughputMetricAttributeKeyDirection, SqlserverDiskIoThroughputMetricAttributeKeyDiskDrive:
+		case SqlserverDiskIoThroughputMetricAttributeKeyDiskIoDirection, SqlserverDiskIoThroughputMetricAttributeKeyDiskDrive:
 		default:
-			return fmt.Errorf("metric sqlserver.disk.io.throughput doesn't have an attribute %v, valid attributes: [direction, disk.drive]", val)
+			return fmt.Errorf("metric sqlserver.disk.io.throughput doesn't have an attribute %v, valid attributes: [disk.io.direction, disk.drive]", val)
 		}
 	}
 
@@ -822,6 +822,54 @@ func (ms *SqlserverGhostRecordSkippedRateMetricConfig) Unmarshal(parser *confmap
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverHostMemoryUsageMetricAttributeKey specifies the key of an attribute for the sqlserver.host.memory.usage metric.
+type SqlserverHostMemoryUsageMetricAttributeKey string
+
+const (
+	SqlserverHostMemoryUsageMetricAttributeKeySystemMemoryState SqlserverHostMemoryUsageMetricAttributeKey = "system.memory.state"
+)
+
+// SqlserverHostMemoryUsageMetricConfig provides config for the sqlserver.host.memory.usage metric.
+type SqlserverHostMemoryUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverHostMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverHostMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverHostMemoryUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverHostMemoryUsageMetricAttributeKeySystemMemoryState:
+		default:
+			return fmt.Errorf("metric sqlserver.host.memory.usage doesn't have an attribute %v, valid attributes: [system.memory.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -1600,54 +1648,6 @@ func (ms *SqlserverMemoryPageCountMetricConfig) Validate() error {
 		case SqlserverMemoryPageCountMetricAttributeKeyPagePool:
 		default:
 			return fmt.Errorf("metric sqlserver.memory.page.count doesn't have an attribute %v, valid attributes: [page.pool]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// SqlserverMemoryPhysicalMetricAttributeKey specifies the key of an attribute for the sqlserver.memory.physical metric.
-type SqlserverMemoryPhysicalMetricAttributeKey string
-
-const (
-	SqlserverMemoryPhysicalMetricAttributeKeyMemoryState SqlserverMemoryPhysicalMetricAttributeKey = "memory.state"
-)
-
-// SqlserverMemoryPhysicalMetricConfig provides config for the sqlserver.memory.physical metric.
-type SqlserverMemoryPhysicalMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverMemoryPhysicalMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *SqlserverMemoryPhysicalMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SqlserverMemoryPhysicalMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SqlserverMemoryPhysicalMetricAttributeKeyMemoryState:
-		default:
-			return fmt.Errorf("metric sqlserver.memory.physical doesn't have an attribute %v, valid attributes: [memory.state]", val)
 		}
 	}
 
@@ -2829,6 +2829,7 @@ type MetricsConfig struct {
 	SqlserverErrorRate                          SqlserverErrorRateMetricConfig                          `mapstructure:"sqlserver.error.rate"`
 	SqlserverExtentOperationRate                SqlserverExtentOperationRateMetricConfig                `mapstructure:"sqlserver.extent.operation.rate"`
 	SqlserverGhostRecordSkippedRate             SqlserverGhostRecordSkippedRateMetricConfig             `mapstructure:"sqlserver.ghost_record.skipped.rate"`
+	SqlserverHostMemoryUsage                    SqlserverHostMemoryUsageMetricConfig                    `mapstructure:"sqlserver.host.memory.usage"`
 	SqlserverIndexFragmentation                 SqlserverIndexFragmentationMetricConfig                 `mapstructure:"sqlserver.index.fragmentation"`
 	SqlserverIndexPageCount                     SqlserverIndexPageCountMetricConfig                     `mapstructure:"sqlserver.index.page.count"`
 	SqlserverIndexPageUtilization               SqlserverIndexPageUtilizationMetricConfig               `mapstructure:"sqlserver.index.page.utilization"`
@@ -2855,7 +2856,6 @@ type MetricsConfig struct {
 	SqlserverMemoryCacheObjectCount             SqlserverMemoryCacheObjectCountMetricConfig             `mapstructure:"sqlserver.memory.cache.object.count"`
 	SqlserverMemoryGrantsPendingCount           SqlserverMemoryGrantsPendingCountMetricConfig           `mapstructure:"sqlserver.memory.grants.pending.count"`
 	SqlserverMemoryPageCount                    SqlserverMemoryPageCountMetricConfig                    `mapstructure:"sqlserver.memory.page.count"`
-	SqlserverMemoryPhysical                     SqlserverMemoryPhysicalMetricConfig                     `mapstructure:"sqlserver.memory.physical"`
 	SqlserverMemoryUsage                        SqlserverMemoryUsageMetricConfig                        `mapstructure:"sqlserver.memory.usage"`
 	SqlserverOsWaitDuration                     SqlserverOsWaitDurationMetricConfig                     `mapstructure:"sqlserver.os.wait.duration"`
 	SqlserverPageAllocationRate                 SqlserverPageAllocationRateMetricConfig                 `mapstructure:"sqlserver.page.allocation.rate"`
@@ -2987,12 +2987,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverDiskIoRate: SqlserverDiskIoRateMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverDiskIoRateMetricAttributeKey{SqlserverDiskIoRateMetricAttributeKeyDirection, SqlserverDiskIoRateMetricAttributeKeyDiskDrive},
+			EnabledAttributes:   []SqlserverDiskIoRateMetricAttributeKey{SqlserverDiskIoRateMetricAttributeKeyDiskIoDirection, SqlserverDiskIoRateMetricAttributeKeyDiskDrive},
 		},
 		SqlserverDiskIoThroughput: SqlserverDiskIoThroughputMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverDiskIoThroughputMetricAttributeKey{SqlserverDiskIoThroughputMetricAttributeKeyDirection, SqlserverDiskIoThroughputMetricAttributeKeyDiskDrive},
+			EnabledAttributes:   []SqlserverDiskIoThroughputMetricAttributeKey{SqlserverDiskIoThroughputMetricAttributeKeyDiskIoDirection, SqlserverDiskIoThroughputMetricAttributeKeyDiskDrive},
 		},
 		SqlserverErrorRate: SqlserverErrorRateMetricConfig{
 			Enabled: false,
@@ -3002,6 +3002,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverGhostRecordSkippedRate: SqlserverGhostRecordSkippedRateMetricConfig{
 			Enabled: false,
+		},
+		SqlserverHostMemoryUsage: SqlserverHostMemoryUsageMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverHostMemoryUsageMetricAttributeKey{SqlserverHostMemoryUsageMetricAttributeKeySystemMemoryState},
 		},
 		SqlserverIndexFragmentation: SqlserverIndexFragmentationMetricConfig{
 			Enabled:             false,
@@ -3098,11 +3103,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverMemoryPageCountMetricAttributeKey{SqlserverMemoryPageCountMetricAttributeKeyPagePool},
-		},
-		SqlserverMemoryPhysical: SqlserverMemoryPhysicalMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverMemoryPhysicalMetricAttributeKey{SqlserverMemoryPhysicalMetricAttributeKeyMemoryState},
 		},
 		SqlserverMemoryUsage: SqlserverMemoryUsageMetricConfig{
 			Enabled: false,

@@ -104,6 +104,11 @@ attributes:
     description: The first character of the database file path. On Windows this is the drive letter (e.g. C); on Linux this is always /.
     type: string
     requirement_level: recommended
+  disk.io.direction:
+    description: The direction of disk I/O operations.
+    type: string
+    requirement_level: recommended
+    enum: [read, write]
   file_type:
     description: The type of file being monitored.
     type: string
@@ -117,11 +122,6 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [target, total, sql_cache, optimizer, connection, granted_workspace, max_workspace]
-  memory.state:
-    description: The state of the physical memory on the host.
-    type: string
-    requirement_level: recommended
-    enum: [total, available]
   network.peer.address:
     description: IP address of the peer client.
     type: string
@@ -402,6 +402,11 @@ attributes:
     description: Number of writes performed by the query.
     type: int
     requirement_level: recommended
+  system.memory.state:
+    description: The state of the physical memory on the host.
+    type: string
+    requirement_level: recommended
+    enum: [total, available]
   table.state:
     description: The state of the table.
     type: string
@@ -747,7 +752,7 @@ metrics:
     unit: "{operations}/s"
     gauge:
       value_type: double
-    attributes: [direction, disk.drive]
+    attributes: [disk.io.direction, disk.drive]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
   sqlserver.disk.io.throughput:
     enabled: false
@@ -756,7 +761,7 @@ metrics:
     unit: "By/s"
     gauge:
       value_type: double
-    attributes: [direction, disk.drive]
+    attributes: [disk.io.direction, disk.drive]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
   sqlserver.error.rate:
     enabled: false
@@ -784,6 +789,15 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.host.memory.usage:
+    enabled: false
+    description: Physical memory on the host as observed by SQL Server, broken down by state (total or available).
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [system.memory.state]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.fragmentation:
     enabled: false
     description: Average fragmentation percentage of the index.
@@ -1020,15 +1034,6 @@ metrics:
     gauge:
       value_type: int
     attributes: [page.pool]
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
-  sqlserver.memory.physical:
-    enabled: false
-    description: Physical memory on the host as observed by SQL Server, broken down by state (total or available).
-    stability: development
-    unit: By
-    gauge:
-      value_type: int
-    attributes: [memory.state]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.memory.usage:
     enabled: false
