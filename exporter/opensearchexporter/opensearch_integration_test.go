@@ -41,11 +41,12 @@ func setupOpenSearch(t *testing.T) string {
 	t.Helper()
 
 	req := testcontainers.ContainerRequest{
-		Image:        "opensearchproject/opensearch:2.11.0",
+		Image:        "opensearchproject/opensearch:3.6.0",
 		ExposedPorts: []string{"9200/tcp"},
 		Env: map[string]string{
-			"discovery.type":          "single-node",
-			"DISABLE_SECURITY_PLUGIN": "true",
+			"discovery.type":              "single-node",
+			"DISABLE_SECURITY_PLUGIN":     "true",
+			"DISABLE_INSTALL_DEMO_CONFIG": "true",
 		},
 		WaitingFor: wait.ForHTTP("/_cluster/health").
 			WithPort("9200/tcp").
