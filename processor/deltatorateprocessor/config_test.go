@@ -60,3 +60,48 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadDeprecatedConfig(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		id           component.ID
+		expected     component.Config
+		errorMessage string
+	}{
+		{
+			id: component.NewIDWithName(metadata.DeprecatedType, ""),
+			expected: &Config{
+				Metrics: []string{
+					"metric1",
+					"metric2",
+				},
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.DeprecatedType, "missing_name"),
+			errorMessage: "metric names are missing",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_deprecated.yaml"))
+			require.NoError(t, err)
+
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			if tt.expected == nil {
+				assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
+				return
+			}
+			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
