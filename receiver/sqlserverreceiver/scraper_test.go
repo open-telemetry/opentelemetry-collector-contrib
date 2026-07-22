@@ -52,8 +52,8 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
 	cfg.Metrics.SqlserverDeadlockRate.Enabled = enabled
-	cfg.Metrics.SqlserverDiskOperationRate.Enabled = enabled
-	cfg.Metrics.SqlserverDiskIoRate.Enabled = enabled
+	cfg.Metrics.SqlserverDiskOperations.Enabled = enabled
+	cfg.Metrics.SqlserverDiskIo.Enabled = enabled
 	cfg.Metrics.SqlserverErrorRate.Enabled = enabled
 	cfg.Metrics.SqlserverExtentOperationRate.Enabled = enabled
 	cfg.Metrics.SqlserverGhostRecordSkippedRate.Enabled = enabled
@@ -126,6 +126,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverTransactionRate.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
 	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
+	cfg.Metrics.SqlserverHostMemoryLimit.Enabled = enabled
 	cfg.Metrics.SqlserverHostMemoryUsage.Enabled = enabled
 	cfg.Metrics.SqlserverWorkerRequestCount.Enabled = enabled
 	cfg.Metrics.SqlserverWorkerThreadCount.Enabled = enabled
@@ -1450,8 +1451,8 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 	cfg.Server = "0.0.0.0"
 	cfg.Port = 1433
 	assert.NoError(t, cfg.Validate())
-	cfg.Metrics.SqlserverDiskOperationRate.Enabled = true
-	cfg.Metrics.SqlserverDiskIoRate.Enabled = true
+	cfg.Metrics.SqlserverDiskOperations.Enabled = true
+	cfg.Metrics.SqlserverDiskIo.Enabled = true
 
 	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
@@ -1486,10 +1487,10 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 			for k := 0; k < sm.Metrics().Len(); k++ {
 				m := sm.Metrics().At(k)
 				switch m.Name() {
-				case metadata.MetricsInfo.SqlserverDiskOperationRate.Name:
-					totalDP += m.Gauge().DataPoints().Len()
-				case metadata.MetricsInfo.SqlserverDiskIoRate.Name:
-					totalDP += m.Gauge().DataPoints().Len()
+				case metadata.MetricsInfo.SqlserverDiskOperations.Name:
+					totalDP += m.Sum().DataPoints().Len()
+				case metadata.MetricsInfo.SqlserverDiskIo.Name:
+					totalDP += m.Sum().DataPoints().Len()
 				}
 			}
 		}
@@ -1507,6 +1508,10 @@ func TestIsCPUMemoryQueryEnabled(t *testing.T) {
 	assert.True(t, isCPUMemoryQueryEnabled(metrics))
 
 	metrics.SqlserverCPUUtilization.Enabled = false
+	metrics.SqlserverHostMemoryLimit.Enabled = true
+	assert.True(t, isCPUMemoryQueryEnabled(metrics))
+
+	metrics.SqlserverHostMemoryLimit.Enabled = false
 	metrics.SqlserverHostMemoryUsage.Enabled = true
 	assert.True(t, isCPUMemoryQueryEnabled(metrics))
 }
@@ -1517,10 +1522,10 @@ func TestIsDiskIOQueryEnabled(t *testing.T) {
 	metrics := &metadata.MetricsConfig{}
 	assert.False(t, isDiskIOQueryEnabled(metrics))
 
-	metrics.SqlserverDiskOperationRate.Enabled = true
+	metrics.SqlserverDiskOperations.Enabled = true
 	assert.True(t, isDiskIOQueryEnabled(metrics))
 
-	metrics.SqlserverDiskOperationRate.Enabled = false
-	metrics.SqlserverDiskIoRate.Enabled = true
+	metrics.SqlserverDiskOperations.Enabled = false
+	metrics.SqlserverDiskIo.Enabled = true
 	assert.True(t, isDiskIOQueryEnabled(metrics))
 }

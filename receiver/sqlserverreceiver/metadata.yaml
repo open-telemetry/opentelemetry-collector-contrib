@@ -399,14 +399,14 @@ attributes:
     type: int
     requirement_level: recommended
   system.filesystem.drive:
-    description: The drive identifier of the disk hosting SQL Server database files. On Windows this is the drive letter (e.g. C); on Linux this is always /.
+    description: The drive prefix of the database file path. On Windows this is the drive letter and separator (e.g. C:\); on Linux this is always /.
     type: string
     requirement_level: recommended
   system.memory.state:
     description: The state of the physical memory on the host.
     type: string
     requirement_level: recommended
-    enum: [total, available]
+    enum: [used, free]
   table.state:
     description: The state of the table.
     type: string
@@ -607,9 +607,9 @@ metrics:
       input_type: string
   sqlserver.cpu.utilization:
     enabled: false
-    description: System-wide CPU utilization as observed by the SQL Server scheduler monitor, expressed as a percentage (0–100). This reflects host-wide CPU usage, not the SQL Server process alone.
+    description: System-wide CPU utilization on the host that SQL Server is running on, expressed as a fraction between 0 and 1.
     stability: development
-    unit: "%"
+    unit: "1"
     gauge:
       value_type: double
     attributes: []
@@ -745,22 +745,26 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-  sqlserver.disk.io.rate:
+  sqlserver.disk.io:
     enabled: false
-    description: Bytes per second read from and written to disk drives hosting SQL Server database files.
+    description: Cumulative bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.
     stability: development
-    unit: "By/s"
-    gauge:
-      value_type: double
+    unit: "By"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
     attributes: [disk.io.direction, system.filesystem.drive]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
-  sqlserver.disk.operation.rate:
+  sqlserver.disk.operations:
     enabled: false
-    description: Read and write operations per second on disk drives hosting SQL Server database files.
+    description: Cumulative read and write operations on disk drives hosting SQL Server database files since SQL Server last started.
     stability: development
-    unit: "{operations}/s"
-    gauge:
-      value_type: double
+    unit: "{operations}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
     attributes: [disk.io.direction, system.filesystem.drive]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
   sqlserver.error.rate:
@@ -789,9 +793,18 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.host.memory.limit:
+    enabled: false
+    description: Total physical memory installed on the host as observed by SQL Server.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.host.memory.usage:
     enabled: false
-    description: Physical memory on the host as observed by SQL Server, broken down by state (total or available).
+    description: Physical memory usage on the host as observed by SQL Server, broken down by state.
     stability: development
     unit: By
     gauge:

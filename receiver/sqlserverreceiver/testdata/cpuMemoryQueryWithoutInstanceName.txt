@@ -10,9 +10,10 @@ SELECT
 	 'sqlserver_cpu_memory' AS [measurement]
 	,REPLACE(@@SERVERNAME,'\',':') AS [sql_instance]
 	,HOST_NAME() AS [computer_name]
-	,100 - y.SystemIdle AS [cpu_utilization]
-	,m.total_physical_memory_kb * 1024 AS [memory_total_bytes]
-	,m.available_physical_memory_kb * 1024 AS [memory_available_bytes]
+	,(100 - y.SystemIdle) / 100.0 AS [cpu_utilization]
+	,m.total_physical_memory_kb * 1024 AS [memory_limit_bytes]
+	,(m.total_physical_memory_kb - m.available_physical_memory_kb) * 1024 AS [memory_used_bytes]
+	,m.available_physical_memory_kb * 1024 AS [memory_free_bytes]
 FROM (
 	SELECT TOP 1
 		CAST(record AS XML).value('(./Record/SchedulerMonitorEvent/SystemHealth/SystemIdle)[1]','int') AS SystemIdle

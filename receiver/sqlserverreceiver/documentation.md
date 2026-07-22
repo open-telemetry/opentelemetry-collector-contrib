@@ -282,13 +282,13 @@ Number of CPUs.
 
 ### sqlserver.cpu.utilization
 
-System-wide CPU utilization as observed by the SQL Server scheduler monitor, expressed as a percentage (0–100). This reflects host-wide CPU usage, not the SQL Server process alone.
+System-wide CPU utilization on the host that SQL Server is running on, expressed as a fraction between 0 and 1.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | Development |
+| 1 | Gauge | Double | Development |
 
 ### sqlserver.cursor.count
 
@@ -463,39 +463,39 @@ Total number of deadlocks.
 | ---- | ----------- | ---------- | --------- |
 | {deadlocks}/s | Gauge | Double | Development |
 
-### sqlserver.disk.io.rate
+### sqlserver.disk.io
 
-Bytes per second read from and written to disk drives hosting SQL Server database files.
+Cumulative bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By/s | Gauge | Double | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | The direction of disk I/O operations. | Str: ``read``, ``write`` | Recommended | - |
-| system.filesystem.drive | The drive identifier of the disk hosting SQL Server database files. On Windows this is the drive letter (e.g. C); on Linux this is always /. | Any Str | Recommended | - |
+| system.filesystem.drive | The drive prefix of the database file path. On Windows this is the drive letter and separator (e.g. C:\); on Linux this is always /. | Any Str | Recommended | - |
 
-### sqlserver.disk.operation.rate
+### sqlserver.disk.operations
 
-Read and write operations per second on disk drives hosting SQL Server database files.
+Cumulative read and write operations on disk drives hosting SQL Server database files since SQL Server last started.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {operations}/s | Gauge | Double | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | The direction of disk I/O operations. | Str: ``read``, ``write`` | Recommended | - |
-| system.filesystem.drive | The drive identifier of the disk hosting SQL Server database files. On Windows this is the drive letter (e.g. C); on Linux this is always /. | Any Str | Recommended | - |
+| system.filesystem.drive | The drive prefix of the database file path. On Windows this is the drive letter and separator (e.g. C:\); on Linux this is always /. | Any Str | Recommended | - |
 
 ### sqlserver.error.rate
 
@@ -537,9 +537,19 @@ Rate of ghosted records skipped during scans.
 | ---- | ----------- | ---------- | --------- |
 | {record}/s | Gauge | Double | Development |
 
+### sqlserver.host.memory.limit
+
+Total physical memory installed on the host as observed by SQL Server.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
 ### sqlserver.host.memory.usage
 
-Physical memory on the host as observed by SQL Server, broken down by state (total or available).
+Physical memory usage on the host as observed by SQL Server, broken down by state.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -551,7 +561,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| system.memory.state | The state of the physical memory on the host. | Str: ``total``, ``available`` | Recommended | - |
+| system.memory.state | The state of the physical memory on the host. | Str: ``used``, ``free`` | Recommended | - |
 
 ### sqlserver.index.fragmentation
 

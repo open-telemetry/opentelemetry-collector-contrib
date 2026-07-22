@@ -1285,9 +1285,10 @@ SELECT
 	 'sqlserver_cpu_memory' AS [measurement]
 	,REPLACE(@@SERVERNAME,'\',':') AS [sql_instance]
 	,HOST_NAME() AS [computer_name]
-	,100 - y.SystemIdle AS [cpu_utilization]
-	,m.total_physical_memory_kb * 1024 AS [memory_total_bytes]
-	,m.available_physical_memory_kb * 1024 AS [memory_available_bytes]
+	,(100 - y.SystemIdle) / 100.0 AS [cpu_utilization]
+	,m.total_physical_memory_kb * 1024 AS [memory_limit_bytes]
+	,(m.total_physical_memory_kb - m.available_physical_memory_kb) * 1024 AS [memory_used_bytes]
+	,m.available_physical_memory_kb * 1024 AS [memory_free_bytes]
 FROM (
 	SELECT TOP 1
 		CAST(record AS XML).value('(./Record/SchedulerMonitorEvent/SystemHealth/SystemIdle)[1]','int') AS SystemIdle
@@ -1325,17 +1326,22 @@ SELECT
 	 'sqlserver_disk_io' AS [measurement]
 	,REPLACE(@@SERVERNAME,'\',':') AS [sql_instance]
 	,HOST_NAME() AS [computer_name]
-	,LEFT(mf.physical_name, 1) AS [disk_drive]
+	,CASE
+		WHEN mf.physical_name LIKE '[A-Z]:\%' THEN LEFT(mf.physical_name, 3)
+		ELSE '/'
+	END AS [disk_drive]
 	,SUM(vfs.num_of_reads) AS [read_ops]
 	,SUM(vfs.num_of_writes) AS [write_ops]
 	,SUM(vfs.num_of_bytes_read) AS [read_bytes]
 	,SUM(vfs.num_of_bytes_written) AS [write_bytes]
-	,MAX(vfs.sample_ms) / 1000.0 AS [sample_seconds]
 FROM sys.dm_io_virtual_file_stats(NULL, NULL) vfs
 INNER JOIN sys.master_files mf ON vfs.database_id = mf.database_id AND vfs.file_id = mf.file_id
 WHERE 1=1
 {filter_instance_name}
-GROUP BY LEFT(mf.physical_name, 1)
+GROUP BY CASE
+		WHEN mf.physical_name LIKE '[A-Z]:\%' THEN LEFT(mf.physical_name, 3)
+		ELSE '/'
+	END
 OPTION(RECOMPILE)
 `
 

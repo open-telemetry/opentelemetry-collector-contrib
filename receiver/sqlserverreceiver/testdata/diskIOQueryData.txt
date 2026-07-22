@@ -3,22 +3,20 @@
     "measurement": "sqlserver_disk_io",
     "sql_instance": "testhost",
     "computer_name": "testhost",
-    "disk_drive": "C",
+    "disk_drive": "C:\\",
     "read_ops": "12345",
     "write_ops": "6789",
     "read_bytes": "1258291200",
-    "write_bytes": "629145600",
-    "sample_seconds": "300.0"
+    "write_bytes": "629145600"
   },
   {
     "measurement": "sqlserver_disk_io",
     "sql_instance": "testhost",
     "computer_name": "testhost",
-    "disk_drive": "D",
+    "disk_drive": "D:\\",
     "read_ops": "9876",
     "write_ops": "5432",
     "read_bytes": "2516582400",
-    "write_bytes": "1258291200",
-    "sample_seconds": "300.0"
+    "write_bytes": "1258291200"
   }
 ]

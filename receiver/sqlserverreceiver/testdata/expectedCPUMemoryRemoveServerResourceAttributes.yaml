@@ -18,29 +18,37 @@ resourceMetrics:
             stringValue: testhost
     scopeMetrics:
       - metrics:
-          - description: System-wide CPU utilization as observed by the SQL Server scheduler monitor, expressed as a percentage (0–100). This reflects host-wide CPU usage, not the SQL Server process alone.
+          - description: System-wide CPU utilization on the host that SQL Server is running on, expressed as a fraction between 0 and 1.
             gauge:
               dataPoints:
-                - asDouble: 42.5
+                - asDouble: 0.425
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.cpu.utilization
-            unit: '%'
-          - description: Physical memory on the host as observed by SQL Server, broken down by state (total or available).
+            unit: "1"
+          - description: Total physical memory installed on the host as observed by SQL Server.
+            gauge:
+              dataPoints:
+                - asInt: "17179869184"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.host.memory.limit
+            unit: By
+          - description: Physical memory usage on the host as observed by SQL Server, broken down by state.
             gauge:
               dataPoints:
                 - asInt: "8589934592"
                   attributes:
                     - key: system.memory.state
                       value:
-                        stringValue: available
+                        stringValue: free
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "17179869184"
+                - asInt: "8589934592"
                   attributes:
                     - key: system.memory.state
                       value:
-                        stringValue: total
+                        stringValue: used
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.host.memory.usage

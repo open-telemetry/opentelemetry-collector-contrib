@@ -55,10 +55,10 @@ all_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
-    sqlserver.disk.io.rate:
+    sqlserver.disk.io:
       enabled: true
       attributes: ["disk.io.direction","system.filesystem.drive"]
-    sqlserver.disk.operation.rate:
+    sqlserver.disk.operations:
       enabled: true
       attributes: ["disk.io.direction","system.filesystem.drive"]
     sqlserver.error.rate:
@@ -66,6 +66,8 @@ all_set:
     sqlserver.extent.operation.rate:
       enabled: true
     sqlserver.ghost_record.skipped.rate:
+      enabled: true
+    sqlserver.host.memory.limit:
       enabled: true
     sqlserver.host.memory.usage:
       enabled: true
@@ -303,10 +305,10 @@ reaggregate_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
-    sqlserver.disk.io.rate:
+    sqlserver.disk.io:
       enabled: true
       attributes: []
-    sqlserver.disk.operation.rate:
+    sqlserver.disk.operations:
       enabled: true
       attributes: []
     sqlserver.error.rate:
@@ -314,6 +316,8 @@ reaggregate_set:
     sqlserver.extent.operation.rate:
       enabled: true
     sqlserver.ghost_record.skipped.rate:
+      enabled: true
+    sqlserver.host.memory.limit:
       enabled: true
     sqlserver.host.memory.usage:
       enabled: true
@@ -551,10 +555,10 @@ none_set:
       enabled: false
     sqlserver.deadlock.rate:
       enabled: false
-    sqlserver.disk.io.rate:
+    sqlserver.disk.io:
       enabled: false
       attributes: ["disk.io.direction","system.filesystem.drive"]
-    sqlserver.disk.operation.rate:
+    sqlserver.disk.operations:
       enabled: false
       attributes: ["disk.io.direction","system.filesystem.drive"]
     sqlserver.error.rate:
@@ -562,6 +566,8 @@ none_set:
     sqlserver.extent.operation.rate:
       enabled: false
     sqlserver.ghost_record.skipped.rate:
+      enabled: false
+    sqlserver.host.memory.limit:
       enabled: false
     sqlserver.host.memory.usage:
       enabled: false

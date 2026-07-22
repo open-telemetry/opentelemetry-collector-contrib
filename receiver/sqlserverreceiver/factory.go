@@ -376,6 +376,7 @@ func isCPUMemoryQueryEnabled(metrics *metadata.MetricsConfig) bool {
 	}
 
 	return metrics.SqlserverCPUUtilization.Enabled ||
+		metrics.SqlserverHostMemoryLimit.Enabled ||
 		metrics.SqlserverHostMemoryUsage.Enabled
 }
 
@@ -384,6 +385,6 @@ func isDiskIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		return false
 	}
 
-	return metrics.SqlserverDiskOperationRate.Enabled ||
-		metrics.SqlserverDiskIoRate.Enabled
+	return metrics.SqlserverDiskOperations.Enabled ||
+		metrics.SqlserverDiskIo.Enabled
 }
