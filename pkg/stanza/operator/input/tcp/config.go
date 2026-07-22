@@ -71,6 +71,7 @@ type BaseConfig struct {
 	Encoding         string                  `mapstructure:"encoding,omitempty"`
 	SplitConfig      split.Config            `mapstructure:"multiline,omitempty"`
 	TrimConfig       trim.Config             `mapstructure:",squash"`
+	Auth             *helper.AuthConfig      `mapstructure:"auth,omitempty"`
 	SplitFuncBuilder SplitFuncBuilder        `mapstructure:"-"`
 }
 
@@ -138,6 +139,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 			Max: 3 * time.Second,
 		},
 		resolver: resolver,
+		auth:     c.Auth,
 	}
 
 	if c.TLS != nil {

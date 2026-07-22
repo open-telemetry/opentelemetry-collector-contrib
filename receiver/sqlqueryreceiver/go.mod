@@ -161,8 +161,10 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/collector/config/configauth v1.63.1-0.20260721190914-bc198f44aa6e // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.157.1-0.20260721190914-bc198f44aa6e // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.157.1-0.20260721190914-bc198f44aa6e // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v1.63.1-0.20260721190914-bc198f44aa6e // indirect
 	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260721190914-bc198f44aa6e // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.157.1-0.20260721190914-bc198f44aa6e // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.157.1-0.20260721190914-bc198f44aa6e // indirect
