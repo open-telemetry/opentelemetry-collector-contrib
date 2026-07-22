@@ -80,12 +80,13 @@ func getTranslationConfiguration(settings Settings) (withSuffixes, utf8Allowed b
 
 func newPrometheusConverter(settings Settings) *prometheusConverter {
 	withSuffixes, utf8Allowed := getTranslationConfiguration(settings)
+	permissiveSanitization := prometheus.DropSanitizationGate.IsEnabled()
 
 	return &prometheusConverter{
 		unique:      map[uint64]*prompb.TimeSeries{},
 		conflicts:   map[uint64][]*prompb.TimeSeries{},
 		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: withSuffixes, Namespace: settings.Namespace, UTF8Allowed: utf8Allowed},
-		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled(), PreserveMultipleUnderscores: prometheus.DropSanitizationGate.IsEnabled(), UTF8Allowed: utf8Allowed},
+		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !permissiveSanitization, PreserveMultipleUnderscores: permissiveSanitization, UTF8Allowed: utf8Allowed},
 		unitNamer:   otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed},
 	}
 }
