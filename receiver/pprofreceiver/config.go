@@ -50,7 +50,7 @@ type SelfConfig struct {
 
 // ServerConfig configures an HTTP server that accepts pushed pprof data.
 type ServerConfig struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
