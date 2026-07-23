@@ -245,6 +245,8 @@ func TestScraperWithExecutionTime(t *testing.T) {
 
 	runTest(true, "expected_execution_time_schemaattr.yaml")
 	runTest(false, "expected_execution_time.yaml")
+}
+
 func TestScraperVectorMetrics(t *testing.T) {
 	factory := new(mockClientFactory)
 	factory.initMocks([]string{"otel"})
