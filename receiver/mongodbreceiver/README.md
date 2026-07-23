@@ -140,6 +140,13 @@ receivers:
       collection_interval: 60s
       top_query_count: 500
       max_explain_each_interval: 250
+    resource_attributes:
+      service.name:
+        enabled: true
+        override_value: "my-mongodb-service"  # defaults to unknown_service:mongodb
+      service.namespace:
+        enabled: true
+        override_value: "production"           # defaults to empty string
 ```
 
 ### Example Configuration (MongoDB Atlas / SRV)
