@@ -21,34 +21,18 @@ func NewSettings(tt *componenttest.Telemetry) extension.Settings {
 	return set
 }
 
-func AssertEqualExtensionPebbleTailStorageAppendErrors(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExtensionPebbleTailStorageOperations(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_extension_pebble_tail_storage_append_errors",
-		Description: "Count of errors returned by the Pebble tail storage extension Append operation [Development]",
-		Unit:        "{errors}",
+		Name:        "otelcol_extension_pebble_tail_storage_operations",
+		Description: "Count of Pebble tail storage operations by operation and outcome [Development]",
+		Unit:        "{operations}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_extension_pebble_tail_storage_append_errors")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualExtensionPebbleTailStorageDeleteErrors(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_extension_pebble_tail_storage_delete_errors",
-		Description: "Count of errors returned by the Pebble tail storage extension Delete operation [Development]",
-		Unit:        "{errors}",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: true,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_extension_pebble_tail_storage_delete_errors")
+	got, err := tt.GetMetric("otelcol_extension_pebble_tail_storage_operations")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
@@ -65,22 +49,6 @@ func AssertEqualExtensionPebbleTailStorageReadErrors(t *testing.T, tt *component
 		},
 	}
 	got, err := tt.GetMetric("otelcol_extension_pebble_tail_storage_read_errors")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualExtensionPebbleTailStorageTakeErrors(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_extension_pebble_tail_storage_take_errors",
-		Description: "Count of errors returned by the Pebble tail storage extension Take operation [Development]",
-		Unit:        "{errors}",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: true,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_extension_pebble_tail_storage_take_errors")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

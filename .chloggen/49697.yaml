@@ -7,7 +7,7 @@ change_type: enhancement
 component: extension/pebble_tail_storage
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add extension telemetry counters for Pebble tail storage operation failures and read-path failures
+note: Add extension telemetry counters for Pebble tail storage operations and read-path failures
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49697]
@@ -17,10 +17,8 @@ issues: [49697]
 # Use pipe (|) for multiline entries.
 subtext: |
   Adds the following metrics:
-    - `otelcol_extension_pebble_tail_storage_append_errors`
-    - `otelcol_extension_pebble_tail_storage_delete_errors`
+    - `otelcol_extension_pebble_tail_storage_operations` (`operation`=`append|take|delete`, `outcome`=`success|failure`)
     - `otelcol_extension_pebble_tail_storage_read_errors`
-    - `otelcol_extension_pebble_tail_storage_take_errors`
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
