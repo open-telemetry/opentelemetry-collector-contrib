@@ -301,17 +301,17 @@ func TestHTTPProtocolDoesNotAutoPopulateProfilesEndpoint(t *testing.T) {
 
 	assert.Equal(t, "http", oCfg.Protocol)
 	assert.True(t, isEmpty(oCfg.Profiles.Endpoint), "profiles endpoint should not be auto-populated when using HTTP protocol")
-	assert.False(t, isEmpty(oCfg.Logs.Endpoint), "logs endpoint should be auto-populated")
-	assert.False(t, isEmpty(oCfg.Metrics.Endpoint), "metrics endpoint should be auto-populated")
-	assert.False(t, isEmpty(oCfg.Traces.Endpoint), "traces endpoint should be auto-populated")
+	assert.False(t, isEmpty(oCfg.Logs.ClientConfig.Endpoint), "logs endpoint should be auto-populated")
+	assert.False(t, isEmpty(oCfg.Metrics.ClientConfig.Endpoint), "metrics endpoint should be auto-populated")
+	assert.False(t, isEmpty(oCfg.Traces.ClientConfig.Endpoint), "traces endpoint should be auto-populated")
 
-	assert.Contains(t, oCfg.Logs.Endpoint, "https://", "logs endpoint should have https:// scheme")
-	assert.Contains(t, oCfg.Metrics.Endpoint, "https://", "metrics endpoint should have https:// scheme")
-	assert.Contains(t, oCfg.Traces.Endpoint, "https://", "traces endpoint should have https:// scheme")
+	assert.Contains(t, oCfg.Logs.ClientConfig.Endpoint, "https://", "logs endpoint should have https:// scheme")
+	assert.Contains(t, oCfg.Metrics.ClientConfig.Endpoint, "https://", "metrics endpoint should have https:// scheme")
+	assert.Contains(t, oCfg.Traces.ClientConfig.Endpoint, "https://", "traces endpoint should have https:// scheme")
 
-	assert.Equal(t, "https://ingress.coralogix.com:443", oCfg.Traces.Endpoint)
-	assert.Equal(t, "https://ingress.coralogix.com:443", oCfg.Metrics.Endpoint)
-	assert.Equal(t, "https://ingress.coralogix.com:443", oCfg.Logs.Endpoint)
+	assert.Equal(t, "https://ingress.coralogix.com:443", oCfg.Traces.ClientConfig.Endpoint)
+	assert.Equal(t, "https://ingress.coralogix.com:443", oCfg.Metrics.ClientConfig.Endpoint)
+	assert.Equal(t, "https://ingress.coralogix.com:443", oCfg.Logs.ClientConfig.Endpoint)
 
 	assert.NoError(t, oCfg.Validate())
 
@@ -796,9 +796,9 @@ func TestDomainSettingsCompressionMerge(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			require.NoError(t, cfg.Unmarshal(conf))
 
-			assert.Equal(t, tt.wantLogsCompression, cfg.Logs.Compression)
-			assert.Equal(t, tt.wantMetricsCompression, cfg.Metrics.Compression)
-			assert.Equal(t, tt.wantTracesCompression, cfg.Traces.Compression)
+			assert.Equal(t, tt.wantLogsCompression, cfg.Logs.ClientConfig.Compression)
+			assert.Equal(t, tt.wantMetricsCompression, cfg.Metrics.ClientConfig.Compression)
+			assert.Equal(t, tt.wantTracesCompression, cfg.Traces.ClientConfig.Compression)
 			assert.Equal(t, tt.wantProfilesCompression, cfg.Profiles.Compression)
 			assert.Equal(t, tt.wantLogsAcceptEncoding, cfg.Logs.AcceptEncoding)
 			assert.Equal(t, tt.wantMetricsAcceptEncoding, cfg.Metrics.AcceptEncoding)

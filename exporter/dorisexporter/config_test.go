@@ -30,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultCfg := createDefaultConfig()
-	defaultCfg.(*Config).Endpoint = "http://localhost:8030"
+	defaultCfg.(*Config).ClientConfig.Endpoint = "http://localhost:8030"
 	defaultCfg.(*Config).MySQLEndpoint = "localhost:9030"
 	err = defaultCfg.(*Config).Validate()
 	require.NoError(t, err)
