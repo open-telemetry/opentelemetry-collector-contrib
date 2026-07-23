@@ -4,7 +4,6 @@
 package config
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -28,8 +27,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/provider/envprovider"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
@@ -56,22 +53,7 @@ func Load(configFile string) (Supervisor, error) {
 		return Supervisor{}, errors.New("path to config file cannot be empty")
 	}
 
-	resolverSettings := confmap.ResolverSettings{
-		URIs: []string{configFile},
-		ProviderFactories: []confmap.ProviderFactory{
-			fileprovider.NewFactory(),
-			envprovider.NewFactory(),
-		},
-		ConverterFactories: []confmap.ConverterFactory{},
-		DefaultScheme:      "env",
-	}
-
-	resolver, err := confmap.NewResolver(resolverSettings)
-	if err != nil {
-		return Supervisor{}, err
-	}
-
-	conf, err := resolver.Resolve(context.Background())
+	conf, err := ResolveURI(configFile)
 	if err != nil {
 		return Supervisor{}, err
 	}
@@ -240,6 +222,7 @@ type Agent struct {
 	OpAMPServerPort             int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs             bool              `mapstructure:"passthrough_logs"`
 	CollectorCrashLogSnippetKiB int               `mapstructure:"collector_crash_log_snippet_kib"`
+	AutomaticConfigRollback     bool              `mapstructure:"automatic_config_rollback"`
 	UseHUPConfigReload          bool              `mapstructure:"use_hup_config_reload"`
 	ValidateConfig              bool              `mapstructure:"validate_config"`
 	ConfigFiles                 []string          `mapstructure:"config_files"`
@@ -248,6 +231,8 @@ type Agent struct {
 	// StartupFallbackConfigs is an ordered list of fallback configuration files to use
 	// when the OpAMP server is unreachable. Configs are merged in order.
 	StartupFallbackConfigs []string `mapstructure:"startup_fallback_configs"`
+	// Package configures how collector executable updates are formatted and verified.
+	Package AgentPackage `mapstructure:"package"`
 }
 
 func (a Agent) Validate() error {
@@ -337,6 +322,8 @@ func (a Agent) validateFallbackConfigsWithColBin() error {
 	for _, cfgPath := range a.StartupFallbackConfigs {
 		cfgValidateCommand = append(cfgValidateCommand, "--config", cfgPath)
 	}
+	cfgValidateCommand = append(cfgValidateCommand, a.Arguments...)
+
 	cmd := exec.Command(cfgValidateCommand[0], cfgValidateCommand[1:]...) // #nosec G204
 
 	cmd.Stdout = os.Stdout
@@ -388,13 +375,13 @@ type Telemetry struct {
 }
 
 type HealthCheck struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 func (h HealthCheck) Port() int64 {
-	_, port, err := net.SplitHostPort(h.NetAddr.Endpoint)
+	_, port, err := net.SplitHostPort(h.ServerConfig.NetAddr.Endpoint)
 	if err != nil {
 		return 0
 	}
@@ -482,6 +469,9 @@ func DefaultSupervisor() Supervisor {
 			PassthroughLogs:             false,
 			CollectorCrashLogSnippetKiB: 0,
 			ValidateConfig:              false,
+			Package: AgentPackage{
+				Verifier: Verifier{Type: VerifierTypeNone},
+			},
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{

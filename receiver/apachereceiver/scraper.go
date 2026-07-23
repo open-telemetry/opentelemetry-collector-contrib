@@ -49,7 +49,7 @@ func newApacheScraper(
 }
 
 func (r *apacheScraper) start(ctx context.Context, host component.Host) error {
-	httpClient, err := r.cfg.ToClient(ctx, host.GetExtensions(), r.settings)
+	httpClient, err := r.cfg.ClientConfig.ToClient(ctx, host.GetExtensions(), r.settings)
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func addPartialIfError(errs *scrapererror.ScrapeErrors, err error) {
 
 // GetStats collects metric stats by making a get request at an endpoint.
 func (r *apacheScraper) GetStats() (string, error) {
-	resp, err := r.httpClient.Get(r.cfg.Endpoint)
+	resp, err := r.httpClient.Get(r.cfg.ClientConfig.Endpoint)
 	if err != nil {
 		return "", err
 	}

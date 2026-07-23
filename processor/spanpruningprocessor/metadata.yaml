@@ -1,5 +1,6 @@
 display_name: Span Pruning Processor
-type: spanpruning
+type: span_pruning
+deprecated_type: spanpruning
 
 status:
   class: processor

@@ -42,9 +42,12 @@ This processor is useful for reducing trace data volume while preserving meaning
 
 ## Configuration
 
+> **Note:** This processor was renamed from `spanpruning` to `span_pruning` to match the snake_case naming convention.
+> The deprecated component type `spanpruning` is still accepted as an alias and will log a deprecation warning.
+
 ```yaml
 processors:
-  spanpruning:
+  span_pruning:
     # OTTL conditions to select which traces to prune
     # When empty, all traces are pruned (default behavior)
     # When set, only traces where at least one span matches any condition are pruned
@@ -363,7 +366,7 @@ The processor supports two statistical methods for outlier detection:
 
 ```yaml
 processors:
-  spanpruning:
+  span_pruning:
     enable_outlier_analysis: true
     outlier_analysis:
       method: iqr                # or "mad" for more robustness
@@ -420,7 +423,7 @@ When `outlier_analysis.preserve_outliers: true`, detected outlier spans are **ke
 
 ```yaml
 processors:
-  spanpruning:
+  span_pruning:
     enable_outlier_analysis: true
     outlier_analysis:
       preserve_outliers: true         # Keep outliers as individual spans
@@ -484,7 +487,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [groupbytrace, spanpruning, batch]
+      processors: [groupbytrace, span_pruning, batch]
       exporters: [otlp]
 ```
 
@@ -495,7 +498,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [tail_sampling, spanpruning, batch]
+      processors: [tail_sampling, span_pruning, batch]
       exporters: [otlp]
 ```
 

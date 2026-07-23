@@ -271,6 +271,14 @@ Number of changes that were part of an update or delete operation made to blocks
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {change} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.buffer_cache.block.changes.rate
+
+Rate of changes applied to blocks in the buffer cache.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {change}/s | Gauge | Double | Development |
+
 ### oracledb.buffer_cache.block.gets
 
 Number of current-mode block gets satisfied from the buffer cache. Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested regardless of where they are satisfied.
@@ -333,6 +341,14 @@ Number of times a consistent read was requested for a block from the buffer cach
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {gets} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.cpu.usage.rate
+
+CPU consumption rate, in CPU-seconds used per second.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
 ### oracledb.cursor.cache.hits
 
 Total count of session cursor cache hits, where an existing cached cursor is reused to avoid a soft parse.
@@ -349,6 +365,14 @@ Number of cursors currently held in the session cursor cache.
 | ---- | ----------- | ---------- | --------- |
 | {cursor} | Gauge | Int | Development |
 
+### oracledb.cursor.cache.utilization
+
+Percentage of cursor executions that reused a cursor in the session cursor cache.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
+
 ### oracledb.cursor.open
 
 Number of currently open cursors in the Oracle instance.
@@ -356,6 +380,14 @@ Number of currently open cursors in the Oracle instance.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {cursor} | Gauge | Int | Development |
+
+### oracledb.cursor.open.rate
+
+Rate of cursors opened.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cursor}/s | Gauge | Double | Development |
 
 ### oracledb.data_dictionary.hit_ratio
 
@@ -393,7 +425,7 @@ Total wall-clock time spent in database calls.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.session.type | Class of session the database time is attributed to. | Str: ``foreground`` | Recommended | - |
+| oracledb.session.type | Class of session the activity is attributed to. | Str: ``background``, ``foreground`` | Recommended | - |
 
 ### oracledb.db_block_gets
 
@@ -419,6 +451,14 @@ Number of DML statements that were executed in parallel
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {statements} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.enqueue.deadlocks.rate
+
+Rate of enqueue deadlocks.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {deadlock}/s | Gauge | Double | Development |
+
 ### oracledb.enqueue.operations
 
 Total count of enqueue (lock) operations.
@@ -432,6 +472,14 @@ Total count of enqueue (lock) operations.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.enqueue.type | Type of enqueue (lock) operation reported by Oracle. | Str: ``conversions``, ``releases``, ``requests``, ``timeouts``, ``waits`` | Recommended | - |
+
+### oracledb.enqueue.timeouts.rate
+
+Rate of enqueue timeouts.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {timeout}/s | Gauge | Double | Development |
 
 ### oracledb.execution.utilization
 
@@ -447,6 +495,44 @@ Fraction of executions that did not require a parse, as computed by Oracle V$SYS
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.parse.type | Type of parse operation (e.g., soft). | Str: ``soft`` | Recommended | - |
 
+### oracledb.executions.rate
+
+Rate of SQL statement executions.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {execution}/s | Gauge | Double | Development |
+
+### oracledb.gc.current_block.time
+
+Cumulative time spent transferring current blocks between instances over RAC cache fusion.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| network.io.direction | Direction of the network transfer. | Str: ``receive``, ``transmit`` | Recommended | - |
+
+### oracledb.hard_parses.rate
+
+Rate of hard parses.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {parse}/s | Gauge | Double | Development |
+
+### oracledb.host.cpu.usage.rate
+
+Host CPU consumption rate across all cores, in CPU-seconds used per second.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
 ### oracledb.host.cpu.utilization
 
 Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idle+Busy)).
@@ -454,6 +540,54 @@ Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idl
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+### oracledb.io.requests.rate
+
+Rate of I/O requests issued by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {request}/s | Gauge | Double | Development |
+
+### oracledb.io.single_block.read.latency
+
+Average latency of a synchronous single-block read.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+### oracledb.io.throughput.rate
+
+Rate of I/O bytes transferred by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
+
+### oracledb.jvm.memory.committed
+
+Committed (total) size of Oracle's in-database JVM (OJVM) call heap.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### oracledb.jvm.memory.live
+
+Size of live objects in Oracle's in-database JVM (OJVM) call heap.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### oracledb.jvm.memory.used
+
+Used size of Oracle's in-database JVM (OJVM) call heap.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
 
 ### oracledb.library_cache.utilization
 
@@ -477,6 +611,28 @@ Total count of LOB (large object) I/O operations.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 
+### oracledb.lock.time
+
+Cumulative time spent on transaction lock activity.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.session.type | Class of session the activity is attributed to. | Str: ``background``, ``foreground`` | Recommended | - |
+
+### oracledb.logical_reads.rate
+
+Rate of logical reads performed by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {read}/s | Gauge | Double | Development |
+
 ### oracledb.logons
 
 Number of logon operations
@@ -484,6 +640,22 @@ Number of logon operations
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {operation} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.logons.rate
+
+Rate of logon operations.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {logon}/s | Gauge | Double | Development |
+
+### oracledb.os.swaps
+
+Number of OS swap operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {swap} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.parallel_operations_downgraded_1_to_25_pct
 
@@ -571,6 +743,14 @@ Fraction of parse calls that were soft parses, as computed by Oracle V$SYSMETRIC
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+### oracledb.pga.cache.utilization
+
+Percentage of PGA work-area memory requests satisfied without spilling to temporary disk.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
+
 ### oracledb.physical_io.cache_writes
 
 Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$sysstat name physical writes from cache.
@@ -594,6 +774,20 @@ Number of physical I/O requests issued to storage. Sourced from v$sysstat names 
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 | disk.io.block_size | Multi-block vs single-block (all) I/O request grouping. | Str: ``all``, ``multi`` | Recommended | - |
 
+### oracledb.physical_io.requests.rate
+
+Rate of physical I/O requests issued to storage.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {request}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+
 ### oracledb.physical_io.transferred
 
 Total physical I/O bytes transferred between Oracle and storage. Sums across all data files. Sourced from v$sysstat names physical read/write bytes (disk.io.type=buffered) and physical read/write total bytes (disk.io.type=total).
@@ -608,6 +802,34 @@ Total physical I/O bytes transferred between Oracle and storage. Sums across all
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 | disk.io.type | Whether the I/O bytes are buffered (cache-mediated) or total (raw transfer count). | Str: ``buffered``, ``total`` | Recommended | - |
+
+### oracledb.physical_io.transferred.rate
+
+Rate of physical I/O bytes transferred between Oracle and storage.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+
+### oracledb.physical_operations.rate
+
+Rate of physical read and write operations performed by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {operation}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 
 ### oracledb.physical_read_io_requests
 
@@ -656,6 +878,14 @@ Number of SELECT statements executed in parallel
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {queries} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.recovery.blocks
+
+Number of blocks read during instance or media recovery.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {block} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.recycle_bin.limit
 
@@ -729,6 +959,14 @@ Amount of redo generated.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
 
+### oracledb.redo.size.rate
+
+Rate of redo bytes generated by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
+
 ### oracledb.redo.time
 
 Time spent in each phase of the redo pipeline.
@@ -774,6 +1012,56 @@ Total number of rows returned by full-table scans.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {row} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.session.average
+
+Average number of sessions over the metric interval.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {session} | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| session_status | Session status | Any Str | Recommended | - |
+
+### oracledb.session.stored_procedure.memory
+
+Memory currently allocated for stored procedures in the session.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### oracledb.session.wait.time
+
+Cumulative time sessions spent in waits.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.session.wait.state | Whether the session wait time/count is for idle or non-idle wait events. | Str: ``non_idle`` | Recommended | - |
+
+### oracledb.session.waits
+
+Cumulative number of waits across sessions.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {wait} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.session.wait.state | Whether the session wait time/count is for idle or non-idle wait events. | Str: ``non_idle`` | Recommended | - |
+
 ### oracledb.sga.limit
 
 Maximum size of the System Global Area (SGA).
@@ -803,6 +1091,20 @@ Fraction of the shared pool that is currently free, as computed by Oracle V$SYSM
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+### oracledb.smon.posts
+
+Number of times SMON was posted to perform recovery.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {post} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.smon.type | Type of recovery SMON was posted to perform. | Str: ``instance``, ``transaction`` | Recommended | - |
 
 ### oracledb.sort.operations
 
@@ -860,7 +1162,7 @@ Bytes transferred via SQL*Net between Oracle and clients/dblinks. Sourced from v
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| network.io.direction | Direction of the SQL*Net network transfer. | Str: ``receive``, ``transmit`` | Recommended | - |
+| network.io.direction | Direction of the network transfer. | Str: ``receive``, ``transmit`` | Recommended | - |
 | destination.type | Type of the SQL*Net destination endpoint (client application or remote database link). | Str: ``client``, ``dblink`` | Recommended | - |
 
 ### oracledb.storage.usage
@@ -902,6 +1204,36 @@ Current number of processes that are either running or in the ready state, waiti
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {process} | Gauge | Double | Development |
+
+### oracledb.transaction.response.time
+
+Average response time per transaction.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+### oracledb.transaction.rollbacks
+
+Total number of transactions rolled back.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {rollback} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.transactions.rate
+
+Rate of user transactions.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {transaction}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.transaction.type | The type of user transaction. | Str: ``commit``, ``rollback`` | Recommended | - |
 
 ## Default Events
 
