@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"golang.org/x/mod/semver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -34,6 +36,11 @@ const (
 	sendTimeout     = 10 * time.Second
 	stopTimeout     = 10 * time.Second
 	shutdownTimeout = 10 * time.Second
+
+	// minWeaverVersion is the oldest otel/weaver version supported by this
+	// package: v0.22.1 introduced the --output=http flag that returns the
+	// live-check report in the /stop response.
+	minWeaverVersion = "v0.22.1"
 )
 
 // WeaverOption configures the Weaver container used for a live-check test.
@@ -41,7 +48,8 @@ type WeaverOption func(*weaverOptions)
 
 // WithVersion selects the otel/weaver image version to use.
 // Defaults to "latest"; must be v0.22.1+ (the first version with
-// --output=http support).
+// --output=http support). Semver versions older than that fail the
+// test immediately; non-semver tags are passed to Docker as-is.
 func WithVersion(version string) WeaverOption {
 	return func(o *weaverOptions) { o.version = version }
 }
@@ -55,6 +63,29 @@ func WithRegistry(registry string) WeaverOption {
 type weaverOptions struct {
 	version  string
 	registry string
+}
+
+// validateWeaverVersion rejects semver versions older than minWeaverVersion.
+// Tags that don't parse as semver (e.g. "latest", digests) are passed
+// through so Docker can resolve them.
+func validateWeaverVersion(version string) error {
+	if version == "" || version == "latest" {
+		return nil
+	}
+	// The semver package only accepts "v"-prefixed versions, but Docker
+	// tags come both ways; normalize a copy for the comparison while
+	// keeping the original for the error message.
+	normalized := version
+	if !strings.HasPrefix(normalized, "v") {
+		normalized = "v" + normalized
+	}
+	if !semver.IsValid(normalized) {
+		return nil
+	}
+	if semver.Compare(normalized, minWeaverVersion) < 0 {
+		return fmt.Errorf("weaver version %q is not supported: this package relies on --output=http, which requires %s or newer", version, minWeaverVersion)
+	}
+	return nil
 }
 
 // TestLogs validates the provided logs against semantic conventions using
@@ -102,6 +133,10 @@ func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context,
 	options := &weaverOptions{version: "latest"}
 	for _, opt := range opts {
 		opt(options)
+	}
+
+	if err := validateWeaverVersion(options.version); err != nil {
+		tb.Fatal(err)
 	}
 
 	ctx := tb.Context()
