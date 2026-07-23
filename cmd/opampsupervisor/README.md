@@ -149,6 +149,31 @@ For more details on the healthcheck configuration, see the see the [full list of
 
 Note that the healthceck endpoint is not enabled by default. To enable it, you must explicitly set at least the `endpoint` field in the configuration.
 
+## Gateway
+
+The Supervisor can optionally act as an OpAMP gateway, accepting downstream agent connections and multiplexing their messages over its existing upstream connection. This is useful on resource-constrained IoT devices where deploying a full collector instance just to host the `opampgateway` extension is not feasible.
+
+### Configuration
+
+```yaml
+gateway:
+  enabled: true
+  listen_endpoint: ws://0.0.0.0:4320/v1/opamp
+  max_agents: 100
+```
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `enabled` | `false` | Enable the gateway listener |
+| `listen_endpoint` | (required if enabled) | WebSocket endpoint for downstream agents |
+| `max_agents` | `100` | Maximum number of concurrent downstream agent connections |
+
+### How it works
+
+When enabled, the supervisor opens a WebSocket listener on `listen_endpoint`. Downstream agents connect to this endpoint using the standard OpAMP protocol. The supervisor forwards their messages upstream through its existing connection to the OpAMP server and routes responses back to the correct downstream agent.
+
+Each downstream agent remains individually identifiable to the upstream server by its own instance UID.
+
 ## Startup Fallback Configuration
 
 The Supervisor supports a startup fallback configuration mechanism that provides resilience when the OpAMP server is unreachable at startup and there's no previous configuration state persisted in disk. This is useful for ensuring the Collector can start with a known-good configuration during network outages or server maintenance. When the Supervisor successfully connects to the OpAMP server, the regular configuration (indicated by `agent::config_files`) is restored and any potential remote configuration received from the OpAMP server is applied.
