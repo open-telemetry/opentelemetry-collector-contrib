@@ -688,6 +688,14 @@ func (s *Supervisor) startGateway() error {
 		s.opampClient,
 	)
 
+	// Register the gateway relay capability so the upstream server knows to
+	// route responses for relayed agents back as CustomMessages.
+	if err := s.opampClient.SetCustomCapabilities(&protobufs.CustomCapabilities{
+		Capabilities: []string{"io.opentelemetry.opamp.gateway"},
+	}); err != nil {
+		s.telemetrySettings.Logger.Warn("Failed to register gateway capability", zap.Error(err))
+	}
+
 	return s.gateway.Start(s.runCtx)
 }
 
@@ -2572,10 +2580,14 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		haveMessageForAgent = true
 	}
 
-	// Proxy server messages to opamp extension
+	// Proxy server messages to opamp extension (or gateway if applicable)
 	if msg.CustomMessage != nil {
-		messageToAgent.CustomMessage = msg.CustomMessage
-		haveMessageForAgent = true
+		if s.gateway != nil && msg.CustomMessage.GetCapability() == "io.opentelemetry.opamp.gateway" {
+			s.gateway.OnCustomMessageFromServer(msg.CustomMessage)
+		} else {
+			messageToAgent.CustomMessage = msg.CustomMessage
+			haveMessageForAgent = true
+		}
 	}
 
 	// Send any messages that need proxying to the agent.
