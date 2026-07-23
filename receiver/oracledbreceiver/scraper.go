@@ -75,6 +75,16 @@ const (
 	sysmetricPhysicalWritesPerSec               = "Physical Writes Per Sec"
 	sysmetricRedoGeneratedPerSec                = "Redo Generated Per Sec" // #nosec G101 -- Oracle V$SYSMETRIC metric name, not a credential
 
+	// V$SYSMETRIC workload rates (group_id=2, ~60s interval)
+	sysmetricEnqueueDeadlocksPerSec = "Enqueue Deadlocks Per Sec"
+	sysmetricEnqueueTimeoutsPerSec  = "Enqueue Timeouts Per Sec"
+	sysmetricExecutionsPerSec       = "Executions Per Sec"
+	sysmetricHardParseCountPerSec   = "Hard Parse Count Per Sec"
+	sysmetricLogonsPerSec           = "Logons Per Sec"
+	sysmetricOpenCursorsPerSec      = "Open Cursors Per Sec"
+	sysmetricUserCommitsPerSec      = "User Commits Per Sec"
+	sysmetricUserRollbacksPerSec    = "User Rollbacks Per Sec"
+
 	consistentGets                 = "consistent gets"
 	cpuTime                        = "CPU used by this session"
 	dbBlockGets                    = "db block gets"
@@ -1265,7 +1275,14 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequestsRate.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferredRate.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalOperationsRate.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbRedoSizeRate.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbRedoSizeRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCursorOpenRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbEnqueueDeadlocksRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbEnqueueTimeoutsRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbExecutionsRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbHardParsesRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbLogonsRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTransactionsRate.Enabled
 	if !anySysmetricEnabled {
 		return
 	}
@@ -1408,6 +1425,39 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 		case sysmetricRedoGeneratedPerSec:
 			if s.metricsBuilderConfig.Metrics.OracledbRedoSizeRate.Enabled {
 				s.mb.RecordOracledbRedoSizeRateDataPoint(now, val)
+			}
+		// V$SYSMETRIC workload rates
+		case sysmetricEnqueueDeadlocksPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbEnqueueDeadlocksRate.Enabled {
+				s.mb.RecordOracledbEnqueueDeadlocksRateDataPoint(now, val)
+			}
+		case sysmetricEnqueueTimeoutsPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbEnqueueTimeoutsRate.Enabled {
+				s.mb.RecordOracledbEnqueueTimeoutsRateDataPoint(now, val)
+			}
+		case sysmetricExecutionsPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbExecutionsRate.Enabled {
+				s.mb.RecordOracledbExecutionsRateDataPoint(now, val)
+			}
+		case sysmetricHardParseCountPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbHardParsesRate.Enabled {
+				s.mb.RecordOracledbHardParsesRateDataPoint(now, val)
+			}
+		case sysmetricLogonsPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbLogonsRate.Enabled {
+				s.mb.RecordOracledbLogonsRateDataPoint(now, val)
+			}
+		case sysmetricOpenCursorsPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbCursorOpenRate.Enabled {
+				s.mb.RecordOracledbCursorOpenRateDataPoint(now, val)
+			}
+		case sysmetricUserCommitsPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbTransactionsRate.Enabled {
+				s.mb.RecordOracledbTransactionsRateDataPoint(now, val, metadata.AttributeOracledbTransactionTypeCommit)
+			}
+		case sysmetricUserRollbacksPerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbTransactionsRate.Enabled {
+				s.mb.RecordOracledbTransactionsRateDataPoint(now, val, metadata.AttributeOracledbTransactionTypeRollback)
 			}
 		}
 	}
