@@ -39,14 +39,14 @@ type Config struct {
 }
 
 type WebHook struct {
-	confighttp.ServerConfig `mapstructure:",squash"`       // squash ensures fields are correctly decoded in embedded struct
-	Path                    string                         `mapstructure:"path"`             // path for data collection. Default is /events
-	HealthPath              string                         `mapstructure:"health_path"`      // path for health check api. Default is /health_check
-	RequiredHeaders         map[string]configopaque.String `mapstructure:"required_headers"` // optional setting to set one or more required headers for all requests to have (except the health check)
-	GitHubHeaders           GitHubHeaders                  `mapstructure:",squash"`          // GitLab headers set by default
-	Secret                  string                         `mapstructure:"secret"`           // secret for webhook
-	ServiceName             string                         `mapstructure:"service_name"`
-	IncludeSpanEvents       bool                           `mapstructure:"include_span_events"` // attach raw webhook event JSON as span events
+	ServerConfig      confighttp.ServerConfig        `mapstructure:",squash"`          // squash ensures fields are correctly decoded in embedded struct
+	Path              string                         `mapstructure:"path"`             // path for data collection. Default is /events
+	HealthPath        string                         `mapstructure:"health_path"`      // path for health check api. Default is /health_check
+	RequiredHeaders   map[string]configopaque.String `mapstructure:"required_headers"` // optional setting to set one or more required headers for all requests to have (except the health check)
+	GitHubHeaders     GitHubHeaders                  `mapstructure:",squash"`          // GitLab headers set by default
+	Secret            string                         `mapstructure:"secret"`           // secret for webhook
+	ServiceName       string                         `mapstructure:"service_name"`
+	IncludeSpanEvents bool                           `mapstructure:"include_span_events"` // attach raw webhook event JSON as span events
 }
 
 type GitHubHeaders struct {
@@ -78,15 +78,15 @@ func (cfg *Config) Validate() error {
 
 	maxReadWriteTimeout, _ := time.ParseDuration("10s")
 
-	if cfg.WebHook.NetAddr.Endpoint == "" {
+	if cfg.WebHook.ServerConfig.NetAddr.Endpoint == "" {
 		errs = multierr.Append(errs, errMissingEndpointFromConfig)
 	}
 
-	if cfg.WebHook.ReadTimeout > maxReadWriteTimeout {
+	if cfg.WebHook.ServerConfig.ReadTimeout > maxReadWriteTimeout {
 		errs = multierr.Append(errs, errReadTimeoutExceedsMaxValue)
 	}
 
-	if cfg.WebHook.WriteTimeout > maxReadWriteTimeout {
+	if cfg.WebHook.ServerConfig.WriteTimeout > maxReadWriteTimeout {
 		errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
 	}
 
