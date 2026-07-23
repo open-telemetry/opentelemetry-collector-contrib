@@ -5,27 +5,27 @@ package supervisor
 
 import (
 	"context"
-	"encoding/hex"
+	"net"
 	"sync"
 	"testing"
 
+	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
-	serverTypes "github.com/open-telemetry/opamp-go/server/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/protobuf/proto"
 )
 
-// mockOpAMPClient implements the minimal client.OpAMPClient interface for testing.
-type mockOpAMPClient struct {
+// mockGatewayClient implements the minimal client.OpAMPClient interface for testing.
+type mockGatewayClient struct {
 	mu              sync.Mutex
 	sentMessages    []*protobufs.CustomMessage
 	sendErr         error
 	sendingChanOpen bool
 }
 
-func (m *mockOpAMPClient) SendCustomMessage(message *protobufs.CustomMessage) (chan struct{}, error) {
+func (m *mockGatewayClient) SendCustomMessage(message *protobufs.CustomMessage) (chan struct{}, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.sendErr != nil {
@@ -38,45 +38,51 @@ func (m *mockOpAMPClient) SendCustomMessage(message *protobufs.CustomMessage) (c
 }
 
 // Satisfy the rest of the client.OpAMPClient interface with no-ops.
-func (m *mockOpAMPClient) Start(_ context.Context, _ interface{}) error { return nil }
-func (m *mockOpAMPClient) Stop(_ context.Context) error                 { return nil }
-func (m *mockOpAMPClient) SetAgentDescription(_ *protobufs.AgentDescription) error {
+func (m *mockGatewayClient) Start(_ context.Context, _ types.StartSettings) error { return nil }
+func (m *mockGatewayClient) Stop(_ context.Context) error                         { return nil }
+func (m *mockGatewayClient) SetAgentDescription(_ *protobufs.AgentDescription) error {
 	return nil
 }
-func (m *mockOpAMPClient) AgentDescription() *protobufs.AgentDescription { return nil }
-func (m *mockOpAMPClient) SetHealth(_ *protobufs.ComponentHealth) error   { return nil }
-func (m *mockOpAMPClient) UpdateEffectiveConfig(_ context.Context) error  { return nil }
-func (m *mockOpAMPClient) SetRemoteConfigStatus(_ *protobufs.RemoteConfigStatus) error {
+func (m *mockGatewayClient) AgentDescription() *protobufs.AgentDescription         { return nil }
+func (m *mockGatewayClient) SetHealth(_ *protobufs.ComponentHealth) error           { return nil }
+func (m *mockGatewayClient) UpdateEffectiveConfig(_ context.Context) error          { return nil }
+func (m *mockGatewayClient) SetRemoteConfigStatus(_ *protobufs.RemoteConfigStatus) error {
 	return nil
 }
-func (m *mockOpAMPClient) SetPackageStatuses(_ *protobufs.PackageStatuses) error       { return nil }
-func (m *mockOpAMPClient) SetCapabilities(_ *protobufs.AgentCapabilities) error        { return nil }
-func (m *mockOpAMPClient) SetCustomCapabilities(_ *protobufs.CustomCapabilities) error { return nil }
-func (m *mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) error               { return nil }
-func (m *mockOpAMPClient) SetAvailableComponents(_ *protobufs.AvailableComponents) error {
+func (m *mockGatewayClient) SetPackageStatuses(_ *protobufs.PackageStatuses) error { return nil }
+func (m *mockGatewayClient) RequestConnectionSettings(_ *protobufs.ConnectionSettingsRequest) error {
+	return nil
+}
+func (m *mockGatewayClient) SetConnectionSettingsStatus(_ *protobufs.ConnectionSettingsStatus) error {
+	return nil
+}
+func (m *mockGatewayClient) SetCapabilities(_ *protobufs.AgentCapabilities) error        { return nil }
+func (m *mockGatewayClient) SetCustomCapabilities(_ *protobufs.CustomCapabilities) error { return nil }
+func (m *mockGatewayClient) SetFlags(_ protobufs.AgentToServerFlags)                     {}
+func (m *mockGatewayClient) SetAvailableComponents(_ *protobufs.AvailableComponents) error {
 	return nil
 }
 
-// mockConnection implements serverTypes.Connection for testing.
-type mockConnection struct {
+// mockGatewayConn implements serverTypes.Connection for testing.
+type mockGatewayConn struct {
 	mu       sync.Mutex
 	messages []*protobufs.ServerToAgent
 }
 
-func (c *mockConnection) Send(_ context.Context, msg *protobufs.ServerToAgent) error {
+func (c *mockGatewayConn) Send(_ context.Context, msg *protobufs.ServerToAgent) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.messages = append(c.messages, msg)
 	return nil
 }
 
-func (c *mockConnection) Disconnect() error { return nil }
+func (c *mockGatewayConn) Disconnect() error { return nil }
 
-func (c *mockConnection) Connection() serverTypes.Connection { return c }
+func (c *mockGatewayConn) Connection() net.Conn { return nil }
 
 func TestGateway_OnMessage_ForwardsUpstream(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	mockClient := &mockOpAMPClient{}
+	mockClient := &mockGatewayClient{}
 
 	gw := NewGateway(logger, GatewayConfig{
 		Enabled:        true,
@@ -84,7 +90,7 @@ func TestGateway_OnMessage_ForwardsUpstream(t *testing.T) {
 		MaxAgents:      10,
 	}, mockClient)
 
-	conn := &mockConnection{}
+	conn := &mockGatewayConn{}
 	instanceUID := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
 		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10}
 
@@ -115,7 +121,7 @@ func TestGateway_OnMessage_ForwardsUpstream(t *testing.T) {
 
 func TestGateway_OnConnectionClose_RemovesAgent(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	mockClient := &mockOpAMPClient{}
+	mockClient := &mockGatewayClient{}
 
 	gw := NewGateway(logger, GatewayConfig{
 		Enabled:        true,
@@ -123,7 +129,7 @@ func TestGateway_OnConnectionClose_RemovesAgent(t *testing.T) {
 		MaxAgents:      10,
 	}, mockClient)
 
-	conn := &mockConnection{}
+	conn := &mockGatewayConn{}
 	instanceUID := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
 		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10}
 
@@ -137,7 +143,7 @@ func TestGateway_OnConnectionClose_RemovesAgent(t *testing.T) {
 
 func TestGateway_MaxAgents_RejectsOverLimit(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	mockClient := &mockOpAMPClient{}
+	mockClient := &mockGatewayClient{}
 
 	gw := NewGateway(logger, GatewayConfig{
 		Enabled:        true,
@@ -147,7 +153,7 @@ func TestGateway_MaxAgents_RejectsOverLimit(t *testing.T) {
 
 	// Connect two agents
 	for i := range 2 {
-		conn := &mockConnection{}
+		conn := &mockGatewayConn{}
 		uid := make([]byte, 16)
 		uid[0] = byte(i)
 		gw.onMessage(context.Background(), conn, &protobufs.AgentToServer{InstanceUid: uid})
@@ -162,7 +168,7 @@ func TestGateway_MaxAgents_RejectsOverLimit(t *testing.T) {
 
 func TestGateway_OnCustomMessageFromServer_RoutesToAgent(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	mockClient := &mockOpAMPClient{}
+	mockClient := &mockGatewayClient{}
 
 	gw := NewGateway(logger, GatewayConfig{
 		Enabled:        true,
@@ -170,7 +176,7 @@ func TestGateway_OnCustomMessageFromServer_RoutesToAgent(t *testing.T) {
 		MaxAgents:      10,
 	}, mockClient)
 
-	conn := &mockConnection{}
+	conn := &mockGatewayConn{}
 	instanceUID := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
 		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10}
 
@@ -202,7 +208,7 @@ func TestGateway_OnCustomMessageFromServer_RoutesToAgent(t *testing.T) {
 
 func TestGateway_OnCustomMessageFromServer_UnknownAgent(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	mockClient := &mockOpAMPClient{}
+	mockClient := &mockGatewayClient{}
 
 	gw := NewGateway(logger, GatewayConfig{
 		Enabled:        true,
@@ -223,12 +229,11 @@ func TestGateway_OnCustomMessageFromServer_UnknownAgent(t *testing.T) {
 		Data:       payload,
 	})
 
-	_ = hex.EncodeToString(unknownUID) // just to use the import
 }
 
 func TestGateway_DefaultMaxAgents(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	mockClient := &mockOpAMPClient{}
+	mockClient := &mockGatewayClient{}
 
 	gw := NewGateway(logger, GatewayConfig{
 		Enabled:        true,
