@@ -247,7 +247,7 @@ func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
 			t.Fatal(err)
 		}
 
-		db, err := internal.NewClickhouseClientFromOptions(opt)
+		db, err := internal.NewClickhouseClientFromOptions(opt, true)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -329,9 +329,9 @@ If you want to see support for an extension added, open an issue.
 If `extensions` are configured but the gate is disabled, the Supervisor
 will not start and the error message names the gate to enable.
 
-These are instances of extensions specific to the Supervisor and are 
+These are instances of extensions specific to the Supervisor and are
 distinct from any extensions configured to run inside the managed
-Collector configuration. Supervisor extensions are loaded and managed by the 
+Collector configuration. Supervisor extensions are loaded and managed by the
 Supervisor process itself.
 
 Supervisor extensions are configured under a top-level `extensions:` key
@@ -354,6 +354,7 @@ Referencing an unknown extension type, or providing invalid configuration
 for a known one, produces a startup error.
 
 The list of available extensions is below:
+
 - [Bearer Token Authenticator Extension](../../../extension/bearertokenauthextension/README.md)
 - [Basic Auth Authenticator Extension](../../../extension/basicauthextension/README.md)
 - [OAuth2 Client Credentials Authenticator Extension](../../../extension/oauth2clientauthextension/README.md)
@@ -401,6 +402,31 @@ Note that the fallback configurations are intentionally a standalone configurati
 and is not merged with the `agent::config_files` setting. This ensures predictable fallback
 behavior without dependencies on other configuration files. The OpAMP extension
 configuration is automatically added to maintain Supervisor-Collector communication.
+
+### Automatic Remote Configuration Rollback
+
+The Supervisor supports automatic rollback when a remote configuration received from
+the OpAMP backend causes the Collector to fail to start correctly. This feature is
+disabled by default and can be enabled in the Supervisor configuration file:
+
+```yaml
+agent:
+  automatic_config_rollback: true
+```
+
+When enabled, the Supervisor will watch the health of the Collector after applying remote
+configurations received from the OpAMP backend and it will cache the last working one in
+disk, besides the last received. If a remote configurations causes the Collector
+to fail to start correctly, the Supervisor will automatically swap to the last working one
+and restart the Collector.
+
+If the Collector becomes healthy again, a new "APPLIED" status
+will be reported for the last working configuration. In case it fails to start the last
+working remote configuration, the Supervisor will continue to retry to start it following
+its normal retry strategy.
+
+This helps to avoid the Collector being stuck in a non-working state due to issues with the
+remote configuration received from the OpAMP backend.
 
 ### Executing Collector
 
@@ -755,7 +781,7 @@ This configuration and the upgrade behavior is only used when the `accepts_packa
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `agent.package.agent_binary` | string | `"otelcol-contrib"` (Linux/macOS), `"otelcol-contrib.exe"` (Windows) | Name of the collector binary as it appears in the archive the supervisor downloads. Required when using archive format. |
+| `agent.package.agent_binary` | string | `"otelcol-contrib"` (Linux/macOS), `"otelcol-contrib.exe"` (Windows) | Name of the collector binary as it appears inside the archive the supervisor downloads. Used to locate the binary in archives that bundle multiple files. The archive format itself is detected from the download URL and Content-Type header, not configured. |
 | `agent.package.verifier.type` | string | `"cosign"` | Specifies which verification type should be used. Specific verifier configuration options are defined below. |
 
 The Supervisor configuration allows for other verification mechanisms to be added in the future. The list of
@@ -799,7 +825,7 @@ In order to use the Cosign verification process, the `agent.package.verifier.typ
 The following table contains the available configuration options for Cosign verification.
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
+| ----------- | ------ | --------- | ------------- |
 | `agent.package.verifier.cosign.github_workflow_repository` | string | `"open-telemetry/opentelemetry-collector-releases"` | The GitHub repository that generated & signed the collector binary in a workflow. Can be set to empty string to skip verifying the repository field in the certificate. |
 | `agent.package.verifier.cosign.identities` | array | See below | A list of identities to verify the signature matches against. Each identity must specify one of (`issuer` OR `issuer_regex`) AND one of (`subject` OR `subject_regex`). Only one identity needs to match for verification to pass. |
 | `agent.package.verifier.cosign.identities.issuer` | string | `"https://token.actions.githubusercontent.com"` | The exact OIDC Issuer for the identity. Cannot be used with `issuer_regex`. |
@@ -910,27 +936,27 @@ This process of signature verification requires several things.
 A list of configurable options include:
 
 - A set of identities (issuer/subject pairs) to verify the signature against.
-    - By default, this will be issuer/subject used to sign the agent release
+  - By default, this will be issuer/subject used to sign the agent release
         from the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases)
         repository.
 - (optional) the name of the github repository that generated the artifact.
-    - By default, this is "open-telemetry/opentelemetry-collector-releases".
-    - This field may be explicitly set empty to skip verifying the repository field
+  - By default, this is "open-telemetry/opentelemetry-collector-releases".
+  - This field may be explicitly set empty to skip verifying the repository field
         in the certificate
 
 Additionally various public keys and root certificates are needed. These are retrieved by the supervisor at startup.
 
 - A set of [Fulcio](https://github.com/sigstore/fulcio) root certificates.
-    - These certificates are retrieved from "https://tuf-repo-cdn.sigstore.dev"
+  - These certificates are retrieved from "<https://tuf-repo-cdn.sigstore.dev>"
         on startup.
 - A set of trusted Rekor public keys.
-    - These public keys are retrieved from "https://tuf-repo-cdn.sigstore.dev"
+  - These public keys are retrieved from "<https://tuf-repo-cdn.sigstore.dev>"
         on startup.
 - A set of trusted certificate transparency (CT) log public keys
-    - These certificates are retrieved from "https://tuf-repo-cdn.sigstore.dev"
+  - These certificates are retrieved from "<https://tuf-repo-cdn.sigstore.dev>"
         on startup.
 - A URL of a running [Rekor](https://github.com/sigstore/rekor) instance.
-    - This is hardcoded to be the public Rekor instance, "https://rekor.sigstore.dev".
+  - This is hardcoded to be the public Rekor instance, "<https://rekor.sigstore.dev>".
 
 For a more in depth explanation of how Cosign/Sigstore works, see
 [Sigstore's docs](https://docs.sigstore.dev/about/overview/#how-sigstore-works).

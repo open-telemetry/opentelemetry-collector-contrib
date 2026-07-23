@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
@@ -455,9 +456,13 @@ func TestConvertPprofToProfiles_LabelValidationErrors(t *testing.T) {
 			},
 		}
 
-		_, err := ConvertPprofToProfiles(makeProfile(sample))
+		pprof := makeProfile(sample)
+
+		require.NoError(t, pprof.CheckValid())
+
+		_, err := ConvertPprofToProfiles(pprof)
 		require.Error(t, err)
-		require.ErrorIs(t, err, errPprofInvalid)
+		require.EqualError(t, err, fmt.Sprintf("labels with multiple values (%d) are not supported", 2))
 	})
 
 	t.Run("numeric label with multiple values", func(t *testing.T) {
@@ -471,7 +476,24 @@ func TestConvertPprofToProfiles_LabelValidationErrors(t *testing.T) {
 
 		_, err := ConvertPprofToProfiles(makeProfile(sample))
 		require.Error(t, err)
-		require.ErrorIs(t, err, errPprofInvalid)
+		require.EqualError(t, err, fmt.Sprintf("numeric labels with multiple values (%d) are not supported", 2))
+	})
+
+	t.Run("numeric unit with multiple values", func(t *testing.T) {
+		sample := &profile.Sample{
+			Location: []*profile.Location{baseLocation},
+			Value:    []int64{10},
+			NumLabel: map[string][]int64{
+				"n": {1},
+			},
+			NumUnit: map[string][]string{
+				"n": {"a", "b"},
+			},
+		}
+
+		_, err := ConvertPprofToProfiles(makeProfile(sample))
+		require.Error(t, err)
+		require.EqualError(t, err, fmt.Sprintf("numeric units with multiple values (%d) are not supported", 2))
 	})
 }
 
@@ -532,7 +554,33 @@ func TestConvertPprofToProfiles_LabelAndNumUnitPaths(t *testing.T) {
 
 	p := out.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
 	require.Equal(t, 1, p.Samples().Len())
-	require.GreaterOrEqual(t, p.Samples().At(0).AttributeIndices().Len(), 4)
+	require.Equal(t, 4, p.Samples().At(0).AttributeIndices().Len())
+	for _, attrIdx := range p.Samples().At(0).AttributeIndices().All() {
+		require.NotZero(t, attrIdx)
+		attr := out.Dictionary().AttributeTable().At(int(attrIdx))
+		keyIdx := attr.KeyStrindex()
+		require.NotZero(t, keyIdx)
+		key := out.Dictionary().StringTable().At(int(keyIdx))
+		switch key {
+		case "label.with.unit":
+			require.Equal(t, "v", attr.Value().AsString())
+			require.Zero(t, attr.UnitStrindex())
+		case "label.no.unit":
+			require.Equal(t, "x", attr.Value().AsString())
+			require.Zero(t, attr.UnitStrindex())
+		case "num.with.unit":
+			require.Equal(t, int64(7), attr.Value().Int())
+			unitIdx := attr.UnitStrindex()
+			require.NotZero(t, unitIdx)
+			unit := out.Dictionary().StringTable().At(int(unitIdx))
+			require.Equal(t, "ms", unit)
+		case "num.no.unit":
+			require.Equal(t, int64(8), attr.Value().Int())
+			require.Zero(t, attr.UnitStrindex())
+		default:
+			t.Errorf("unexpected key: %s", key)
+		}
+	}
 	require.GreaterOrEqual(t, p.AttributeIndices().Len(), 3)
 }
 
@@ -688,14 +736,26 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 		{
 			Location: []*profile.Location{loc1},
 			Value:    []int64{5, 512, 3, 256},
+			Label: map[string][]string{
+				"user": {"123"},
+			},
 		},
 		{
 			Location: []*profile.Location{loc2},
 			Value:    []int64{10, 1024, 7, 768},
+			NumLabel: map[string][]int64{
+				"thread.id": {456},
+			},
 		},
 		{
 			Location: []*profile.Location{loc1, loc2},
 			Value:    []int64{15, 2048, 12, 1536},
+			NumLabel: map[string][]int64{
+				"limit": {789},
+			},
+			NumUnit: map[string][]string{
+				"limit": {"KB"},
+			},
 		},
 	}
 
@@ -786,6 +846,9 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 			require.Equal(t, val, roundTrip.Sample[i].Value[j])
 		}
 		require.Equal(t, prof.TimeNanos, roundTrip.TimeNanos)
+		require.Equal(t, prof.Sample[i].Label, roundTrip.Sample[i].Label)
+		require.Equal(t, prof.Sample[i].NumLabel, roundTrip.Sample[i].NumLabel)
+		require.Equal(t, prof.Sample[i].NumUnit, roundTrip.Sample[i].NumUnit)
 	}
 }
 
@@ -823,6 +886,9 @@ func TestDefaultSampleTypeConvention(t *testing.T) {
 		{
 			Location: []*profile.Location{loc},
 			Value:    []int64{100, 200, 300, 400}, // values for each sample type
+			Label: map[string][]string{
+				"user": {"root"},
+			},
 		},
 	}
 
