@@ -193,6 +193,9 @@ type Supervisor struct {
 	healthCheckServer   *http.Server
 	healthCheckServerWG sync.WaitGroup
 
+	// gateway accepts downstream OpAMP agents and multiplexes over the upstream connection
+	gateway *Gateway
+
 	telemetrySettings telemetrySettings
 
 	featureGates map[string]struct{}
@@ -663,7 +666,29 @@ func (s *Supervisor) startOpAMP() error {
 		return err
 	}
 
+	if err := s.startGateway(); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (s *Supervisor) startGateway() error {
+	if !s.config.Gateway.Enabled {
+		return nil
+	}
+
+	s.gateway = NewGateway(
+		s.telemetrySettings.Logger,
+		GatewayConfig{
+			Enabled:        s.config.Gateway.Enabled,
+			ListenEndpoint: s.config.Gateway.ListenEndpoint,
+			MaxAgents:      s.config.Gateway.MaxAgents,
+		},
+		s.opampClient,
+	)
+
+	return s.gateway.Start(s.runCtx)
 }
 
 func (s *Supervisor) startOpAMPClient() error {
@@ -2304,6 +2329,16 @@ func (s *Supervisor) Shutdown() {
 			s.telemetrySettings.Logger.Error("Could not stop the OpAMP Server")
 		} else {
 			s.telemetrySettings.Logger.Debug("OpAMP server stopped.")
+		}
+	}
+
+	if s.gateway != nil {
+		s.telemetrySettings.Logger.Debug("Stopping OpAMP gateway...")
+		ctx, cancel := context.WithTimeout(s.runCtx, 5*time.Second)
+		defer cancel()
+
+		if err := s.gateway.Stop(ctx); err != nil {
+			s.telemetrySettings.Logger.Error("Could not stop the OpAMP gateway", zap.Error(err))
 		}
 	}
 
