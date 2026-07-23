@@ -64,7 +64,7 @@ func newBenchmarkKubeletClient(tb testing.TB, filters Filters) *WatchClient {
 	return wc
 }
 
-func makeBenchmarkKubeletPods(n int, uidOffset int) []api_v1.Pod {
+func makeBenchmarkKubeletPods(n, uidOffset int) []api_v1.Pod {
 	pods := make([]api_v1.Pod, 0, n)
 	for i := range n {
 		idx := uidOffset + i
