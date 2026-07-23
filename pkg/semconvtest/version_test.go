@@ -20,6 +20,7 @@ func TestValidateWeaverVersion(t *testing.T) {
 		{name: "minimum supported version passes", version: "v0.22.1", wantErr: false},
 		{name: "older version rejected", version: "v0.21.2", wantErr: true},
 		{name: "missing v prefix is normalized", version: "0.23.0", wantErr: false},
+		{name: "missing v prefix on old version rejected", version: "0.21.0", wantErr: true},
 		{name: "non-semver tag passed through", version: "sha-abc123", wantErr: false},
 	}
 	for _, tt := range tests {
