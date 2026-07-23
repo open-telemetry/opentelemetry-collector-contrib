@@ -97,6 +97,11 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["postgresql.tup_inserted"] = mb.metricPostgresqlTupInserted.config.AggregationStrategy
 			aggMap["postgresql.tup_returned"] = mb.metricPostgresqlTupReturned.config.AggregationStrategy
 			aggMap["postgresql.tup_updated"] = mb.metricPostgresqlTupUpdated.config.AggregationStrategy
+			aggMap["postgresql.vector.insert.duration"] = mb.metricPostgresqlVectorInsertDuration.config.AggregationStrategy
+			aggMap["postgresql.vector.insert.rows"] = mb.metricPostgresqlVectorInsertRows.config.AggregationStrategy
+			aggMap["postgresql.vector.search.calls"] = mb.metricPostgresqlVectorSearchCalls.config.AggregationStrategy
+			aggMap["postgresql.vector.search.duration"] = mb.metricPostgresqlVectorSearchDuration.config.AggregationStrategy
+			aggMap["postgresql.vector.search.rows_returned"] = mb.metricPostgresqlVectorSearchRowsReturned.config.AggregationStrategy
 			aggMap["postgresql.wal.delay"] = mb.metricPostgresqlWalDelay.config.AggregationStrategy
 			aggMap["postgresql.wal.lag"] = mb.metricPostgresqlWalLag.config.AggregationStrategy
 
@@ -299,6 +304,36 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlTupUpdatedDataPoint(ts, 3, "db.namespace-val-2")
 			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlVectorInsertDurationDataPoint(ts, 1, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlVectorInsertDurationDataPoint(ts, 3, "db.namespace-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlVectorInsertRowsDataPoint(ts, 1, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlVectorInsertRowsDataPoint(ts, 3, "db.namespace-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlVectorSearchCallsDataPoint(ts, 1, AttributePostgresqlDistanceFunctionNameCosine, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlVectorSearchCallsDataPoint(ts, 3, AttributePostgresqlDistanceFunctionNameL2, "db.namespace-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlVectorSearchDurationDataPoint(ts, 1, AttributePostgresqlDistanceFunctionNameCosine, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlVectorSearchDurationDataPoint(ts, 3, AttributePostgresqlDistanceFunctionNameL2, "db.namespace-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlVectorSearchRowsReturnedDataPoint(ts, 1, AttributePostgresqlDistanceFunctionNameCosine, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlVectorSearchRowsReturnedDataPoint(ts, 3, AttributePostgresqlDistanceFunctionNameL2, "db.namespace-val-2")
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlWalAgeDataPoint(ts, 1)
@@ -358,6 +393,11 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricPostgresqlTupInserted.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlTupReturned.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlTupUpdated.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlVectorInsertDuration.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlVectorInsertRows.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlVectorSearchCalls.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlVectorSearchDuration.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlVectorSearchRowsReturned.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlWalDelay.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlWalLag.aggDataPoints)
 			}
@@ -1832,6 +1872,241 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
+				case "postgresql.vector.insert.duration":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.vector.insert.duration"], "Found a duplicate in the metrics slice: postgresql.vector.insert.duration")
+						validatedMetrics["postgresql.vector.insert.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The cumulative execution time of statements that insert vectors into pgvector tables.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.vector.insert.duration"], "Found a duplicate in the metrics slice: postgresql.vector.insert.duration")
+						validatedMetrics["postgresql.vector.insert.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The cumulative execution time of statements that insert vectors into pgvector tables.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["postgresql.vector.insert.duration"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
+				case "postgresql.vector.insert.rows":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.vector.insert.rows"], "Found a duplicate in the metrics slice: postgresql.vector.insert.rows")
+						validatedMetrics["postgresql.vector.insert.rows"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of vectors inserted into pgvector tables.", mi.Description())
+						assert.Equal(t, "{vectors}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.vector.insert.rows"], "Found a duplicate in the metrics slice: postgresql.vector.insert.rows")
+						validatedMetrics["postgresql.vector.insert.rows"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of vectors inserted into pgvector tables.", mi.Description())
+						assert.Equal(t, "{vectors}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.vector.insert.rows"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
+				case "postgresql.vector.search.calls":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.vector.search.calls"], "Found a duplicate in the metrics slice: postgresql.vector.search.calls")
+						validatedMetrics["postgresql.vector.search.calls"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of vector similarity search operations executed, grouped by the distance function used.", mi.Description())
+						assert.Equal(t, "{search}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						postgresqlDistanceFunctionNameAttrVal, ok := dp.Attributes().Get("postgresql.distance.function.name")
+						assert.True(t, ok)
+						assert.Equal(t, "cosine", postgresqlDistanceFunctionNameAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.vector.search.calls"], "Found a duplicate in the metrics slice: postgresql.vector.search.calls")
+						validatedMetrics["postgresql.vector.search.calls"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of vector similarity search operations executed, grouped by the distance function used.", mi.Description())
+						assert.Equal(t, "{search}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.vector.search.calls"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("postgresql.distance.function.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
+				case "postgresql.vector.search.duration":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.vector.search.duration"], "Found a duplicate in the metrics slice: postgresql.vector.search.duration")
+						validatedMetrics["postgresql.vector.search.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The cumulative execution time of vector similarity searches, grouped by the distance function used.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						postgresqlDistanceFunctionNameAttrVal, ok := dp.Attributes().Get("postgresql.distance.function.name")
+						assert.True(t, ok)
+						assert.Equal(t, "cosine", postgresqlDistanceFunctionNameAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.vector.search.duration"], "Found a duplicate in the metrics slice: postgresql.vector.search.duration")
+						validatedMetrics["postgresql.vector.search.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The cumulative execution time of vector similarity searches, grouped by the distance function used.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["postgresql.vector.search.duration"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("postgresql.distance.function.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
+				case "postgresql.vector.search.rows_returned":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.vector.search.rows_returned"], "Found a duplicate in the metrics slice: postgresql.vector.search.rows_returned")
+						validatedMetrics["postgresql.vector.search.rows_returned"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.", mi.Description())
+						assert.Equal(t, "{rows}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						postgresqlDistanceFunctionNameAttrVal, ok := dp.Attributes().Get("postgresql.distance.function.name")
+						assert.True(t, ok)
+						assert.Equal(t, "cosine", postgresqlDistanceFunctionNameAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.vector.search.rows_returned"], "Found a duplicate in the metrics slice: postgresql.vector.search.rows_returned")
+						validatedMetrics["postgresql.vector.search.rows_returned"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.", mi.Description())
+						assert.Equal(t, "{rows}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.vector.search.rows_returned"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("postgresql.distance.function.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
 					}
 				case "postgresql.wal.age":

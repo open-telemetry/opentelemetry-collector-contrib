@@ -190,6 +190,11 @@ attributes:
       - bufferpin
       - deadlock
     requirement_level: recommended
+  postgresql.distance.function.name:
+    description: The vector distance (similarity) function used by the query, one of the pgvector distance functions.
+    type: string
+    enum: [cosine, l2, inner_product, l1, hamming, jaccard]
+    requirement_level: recommended
   postgresql.index.name:
     description: The name of the index on a table.
     type: string
@@ -663,6 +668,74 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [db.namespace]
+  postgresql.vector.insert.duration:
+    attributes: [db.namespace]
+    description: The cumulative execution time of statements that insert vectors into pgvector tables.
+    stability: development
+    enabled: false
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    extended_documentation: |
+      Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+      extension in the scanned database.
+  postgresql.vector.insert.rows:
+    attributes: [db.namespace]
+    description: The number of vectors inserted into pgvector tables.
+    stability: development
+    enabled: false
+    unit: "{vectors}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    extended_documentation: |
+      Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+      extension in the scanned database.
+  postgresql.vector.search.calls:
+    attributes: [postgresql.distance.function.name, db.namespace]
+    description: The number of vector similarity search operations executed, grouped by the distance function used.
+    stability: development
+    enabled: false
+    unit: "{search}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    extended_documentation: |
+      Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+      extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+      additionally require pgvector 0.7.0 or later.
+  postgresql.vector.search.duration:
+    attributes: [postgresql.distance.function.name, db.namespace]
+    description: The cumulative execution time of vector similarity searches, grouped by the distance function used.
+    stability: development
+    enabled: false
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    extended_documentation: |
+      Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+      extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+      additionally require pgvector 0.7.0 or later.
+  postgresql.vector.search.rows_returned:
+    attributes: [postgresql.distance.function.name, db.namespace]
+    description: The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.
+    stability: development
+    enabled: false
+    unit: "{rows}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    extended_documentation: |
+      Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+      extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+      additionally require pgvector 0.7.0 or later.
   postgresql.wal.age:
     description: Age of the oldest WAL file.
     extended_documentation: |
