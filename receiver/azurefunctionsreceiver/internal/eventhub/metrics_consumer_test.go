@@ -49,17 +49,17 @@ func makeMetricsWithoutDataPoints() pmetric.Metrics {
 
 func TestMetricsConsumer_ConsumeEvents(t *testing.T) {
 	tests := map[string]struct {
-		content          [][]byte
-		metadata         map[string]string
-		unmarshaler      pmetric.Unmarshaler
-		wantErr          string
-		wantBatches      int
+		content            [][]byte
+		metadata           map[string]string
+		unmarshaler        pmetric.Unmarshaler
+		wantErr            string
+		wantBatches        int
 		wantDataPointCount int
 	}{
 		"success_single_message": {
-			content:         [][]byte{[]byte("m1")},
-			metadata:        map[string]string{AttrEventHubName: "single"},
-			unmarshaler:     &fakeMetricsUnmarshaler{metrics: makeMetrics()},
+			content:            [][]byte{[]byte("m1")},
+			metadata:           map[string]string{AttrEventHubName: "single"},
+			unmarshaler:        &fakeMetricsUnmarshaler{metrics: makeMetrics()},
 			wantBatches:        1,
 			wantDataPointCount: 1,
 		},
