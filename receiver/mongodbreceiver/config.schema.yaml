@@ -5,6 +5,27 @@ $defs:
       max_rows_per_query:
         type: integer
         x-customType: uint64
+  top_query_collection:
+    description: TopQueryCollection holds configuration for the db.server.top_query log event collection.
+    type: object
+    properties:
+      collection_interval:
+        type: string
+        format: duration
+      max_explain_each_interval:
+        type: integer
+        x-customType: int64
+      max_query_sample_count:
+        type: integer
+        x-customType: int64
+      query_plan_cache_size:
+        type: integer
+      query_plan_cache_ttl:
+        type: string
+        format: duration
+      top_query_count:
+        type: integer
+        x-customType: int64
 type: object
 properties:
   auth_mechanism:
@@ -33,6 +54,8 @@ properties:
   timeout:
     type: string
     format: duration
+  top_query_collection:
+    $ref: top_query_collection
   username:
     type: string
 allOf:

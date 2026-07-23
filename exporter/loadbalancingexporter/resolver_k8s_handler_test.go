@@ -57,40 +57,39 @@ func TestConvertToEndpoints(tst *testing.T) {
 		returnNames       bool
 		includedEndpoints []*discoveryv1.EndpointSlice
 		expectedEndpoints map[string]bool
-		wantNil           bool
+		wantOk            bool
 	}{
 		{
 			name:              "return hostnames",
 			returnNames:       true,
 			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpoints2},
 			expectedEndpoints: map[string]bool{"pod-1": true, "pod-2": true},
-			wantNil:           false,
+			wantOk:            true,
 		},
 		{
 			name:              "return IPs",
 			returnNames:       false,
 			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpoints2, endpoints3},
 			expectedEndpoints: map[string]bool{"192.168.10.101": true, "192.168.10.102": true, "192.168.10.103": true},
-			wantNil:           false,
+			wantOk:            true,
 		},
 		{
-			name:              "missing hostname",
+			// An endpoint missing its hostname is skipped rather than discarding
+			// the whole slice: the endpoints that do have hostnames are still
+			// returned, and ok is false to signal that some were skipped.
+			name:              "missing hostname is skipped, others returned",
 			returnNames:       true,
 			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpoints3},
-			expectedEndpoints: nil,
-			wantNil:           true,
+			expectedEndpoints: map[string]bool{"pod-1": true},
+			wantOk:            false,
 		},
 	}
 
 	for _, tt := range tests {
 		tst.Run(tt.name, func(tst *testing.T) {
 			ok, res := convertToEndpoints(tt.returnNames, tt.includedEndpoints...)
-			if tt.wantNil {
-				assert.Nil(tst, res)
-			} else {
-				assert.Equal(tst, tt.expectedEndpoints, res)
-			}
-			assert.Equal(tst, !tt.wantNil, ok)
+			assert.Equal(tst, tt.expectedEndpoints, res)
+			assert.Equal(tst, tt.wantOk, ok)
 		})
 	}
 }

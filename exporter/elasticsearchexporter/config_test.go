@@ -323,32 +323,32 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "confighttp_endpoint"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 			}),
 		},
 		{
 			id:         component.NewIDWithName(metadata.Type, "compression_none"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 
-				cfg.Compression = "none"
+				cfg.ClientConfig.Compression = "none"
 			}),
 		},
 		{
 			id:         component.NewIDWithName(metadata.Type, "compression_gzip"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 
-				cfg.Compression = "gzip"
+				cfg.ClientConfig.Compression = "gzip"
 			}),
 		},
 		{
 			id:         component.NewIDWithName(metadata.Type, "include_source_on_error"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 				includeSource := true
 				cfg.IncludeSourceOnError = &includeSource
 			}),
@@ -357,7 +357,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "metadata_keys"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.MetadataKeys = []string{"x-test-1", "x-test-2"}
 			}),
@@ -366,7 +366,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "sendingqueue_disabled"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.QueueBatchConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 			}),
@@ -375,7 +375,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "sendingqueue_enabled"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.QueueBatchConfig.Get().NumConsumers = 100
 				cfg.QueueBatchConfig.Get().Batch = configoptional.Some(
@@ -392,7 +392,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "backward_compat_for_deprecated_cfgs/new_config_takes_priority"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.NumWorkers = 11
 				cfg.Flush = FlushSettings{
@@ -411,7 +411,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "backward_compat_for_deprecated_cfgs/fallback_to_old_cfg"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.NumWorkers = 11
 				cfg.Flush = FlushSettings{
@@ -430,7 +430,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "suppress_conflict_errors"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.SuppressConflictErrors = true
 			}),
@@ -439,7 +439,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "retry_on_document_status"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 				cfg.Retry.RetryOnStatus = []int{http.StatusTooManyRequests, http.StatusInternalServerError}
 				cfg.Retry.RetryOnDocumentStatus = []int{http.StatusBadRequest, http.StatusConflict}
 			}),
@@ -448,7 +448,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "retry_on_document_status_empty"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 				cfg.Retry.RetryOnStatus = []int{http.StatusTooManyRequests, http.StatusInternalServerError}
 				cfg.Retry.RetryOnDocumentStatus = []int{}
 			}),
@@ -519,7 +519,7 @@ func TestConfig_Validate(t *testing.T) {
 		},
 		"endpoint and endpoints both set": {
 			config: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "http://test:9200"
+				cfg.ClientConfig.Endpoint = "http://test:9200"
 				cfg.Endpoints = []string{"http://test:9200"}
 			}),
 			err: "exactly one of [endpoint, endpoints, cloudid] must be specified",
@@ -540,7 +540,7 @@ func TestConfig_Validate(t *testing.T) {
 		"compression unsupported": {
 			config: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoints = []string{"http://test:9200"}
-				cfg.Compression = configcompression.TypeSnappy
+				cfg.ClientConfig.Compression = configcompression.TypeSnappy
 			}),
 			err: `compression must be one of [none, gzip]`,
 		},
