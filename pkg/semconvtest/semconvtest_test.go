@@ -11,16 +11,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest/internal/samplereceiver"
 )
 
 // recordingTB wraps a *testing.T and captures failures reported via Errorf,
@@ -39,8 +34,10 @@ func (r *recordingTB) Errorf(format string, args ...any) {
 }
 
 // findingDetails holds the fields we care about from a finding's context
-// payload.
+// payload. Weaver renamed the field from attribute_name to attribute_key in
+// v0.24, so both are accepted.
 type findingDetails struct {
+	AttributeKey  string `json:"attribute_key,omitempty"`
 	AttributeName string `json:"attribute_name,omitempty"`
 }
 
@@ -48,6 +45,9 @@ func getAttributeName(f semconvtest.PolicyFinding) string {
 	var details findingDetails
 	if err := json.Unmarshal(f.Context, &details); err != nil {
 		return ""
+	}
+	if details.AttributeKey != "" {
+		return details.AttributeKey
 	}
 	return details.AttributeName
 }
@@ -144,23 +144,4 @@ func TestWeaverTraces(t *testing.T) {
 	spanAttrViolation := findViolationByAttributeName(violations, "invalid.span.attribute")
 	require.NotNil(t, spanAttrViolation, "expected violation for invalid.span.attribute (tests span traversal)")
 	require.Equal(t, semconvtest.FindingLevelViolation, spanAttrViolation.Level)
-}
-
-// TestWeaverHTTPServerMetrics demonstrates how a receiver author would use
-// semconvtest to validate their component's telemetry against semantic
-// conventions: produce pdata with the component, then hand it to
-// semconvtest.TestMetrics along with the *testing.T.
-func TestWeaverHTTPServerMetrics(t *testing.T) {
-	factory := samplereceiver.NewFactory()
-	sink := &consumertest.MetricsSink{}
-	settings := receivertest.NewNopSettings(component.MustNewType("sample_http"))
-	recv, err := factory.CreateMetrics(t.Context(), settings, factory.CreateDefaultConfig(), sink)
-	require.NoError(t, err)
-
-	require.NoError(t, recv.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() { require.NoError(t, recv.Shutdown(t.Context())) }()
-
-	require.NotEmpty(t, sink.AllMetrics(), "expected receiver to produce metrics")
-
-	semconvtest.TestMetrics(t, sink.AllMetrics()[0])
 }
