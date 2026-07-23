@@ -4,8 +4,8 @@ go 1.25.0
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/client v1.62.1-0.20260715151533-47267b188b26
-	google.golang.org/grpc v1.82.0
+	go.opentelemetry.io/collector/client v1.63.1-0.20260721190914-bc198f44aa6e
+	google.golang.org/grpc v1.82.1
 )
 
 require (

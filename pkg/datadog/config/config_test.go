@@ -300,15 +300,15 @@ func TestUnmarshal(t *testing.T) {
 	maxIdleConn := 300
 	maxIdleConnPerHost := 150
 	maxConnPerHost := 250
-	cfgWithHTTPConfigs.ReadBufferSize = 100
-	cfgWithHTTPConfigs.WriteBufferSize = 200
-	cfgWithHTTPConfigs.Timeout = 10 * time.Second
-	cfgWithHTTPConfigs.MaxIdleConns = maxIdleConn
-	cfgWithHTTPConfigs.MaxIdleConnsPerHost = maxIdleConnPerHost
-	cfgWithHTTPConfigs.MaxConnsPerHost = maxConnPerHost
-	cfgWithHTTPConfigs.IdleConnTimeout = idleConnTimeout
-	cfgWithHTTPConfigs.DisableKeepAlives = true
-	cfgWithHTTPConfigs.TLS.InsecureSkipVerify = true
+	cfgWithHTTPConfigs.ClientConfig.ReadBufferSize = 100
+	cfgWithHTTPConfigs.ClientConfig.WriteBufferSize = 200
+	cfgWithHTTPConfigs.ClientConfig.Timeout = 10 * time.Second
+	cfgWithHTTPConfigs.ClientConfig.MaxIdleConns = maxIdleConn
+	cfgWithHTTPConfigs.ClientConfig.MaxIdleConnsPerHost = maxIdleConnPerHost
+	cfgWithHTTPConfigs.ClientConfig.MaxConnsPerHost = maxConnPerHost
+	cfgWithHTTPConfigs.ClientConfig.IdleConnTimeout = idleConnTimeout
+	cfgWithHTTPConfigs.ClientConfig.DisableKeepAlives = true
+	cfgWithHTTPConfigs.ClientConfig.TLS.InsecureSkipVerify = true
 	cfgWithHTTPConfigs.warnings = nil
 
 	tests := []struct {

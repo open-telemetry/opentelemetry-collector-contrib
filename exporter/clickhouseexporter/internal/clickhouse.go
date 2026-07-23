@@ -25,10 +25,13 @@ func DatabaseFromDSN(dsn string) (string, error) {
 }
 
 // NewClickhouseClientFromOptions creates a new ClickHouse client from a clickhouse.Options struct.
-func NewClickhouseClientFromOptions(opt *clickhouse.Options) (driver.Conn, error) {
-	// Always connect to default database since configured database may not exist yet.
-	// TODO: only do this if createSchema is true
-	opt.Auth.Database = DefaultDatabase
+// When createSchema is true, connects to the default database since the configured database may
+// not exist yet (it will be created by the schema DDL). When false, connects directly to the
+// configured database.
+func NewClickhouseClientFromOptions(opt *clickhouse.Options, createSchema bool) (driver.Conn, error) {
+	if createSchema {
+		opt.Auth.Database = DefaultDatabase
+	}
 
 	conn, err := clickhouse.Open(opt)
 	if err != nil {
