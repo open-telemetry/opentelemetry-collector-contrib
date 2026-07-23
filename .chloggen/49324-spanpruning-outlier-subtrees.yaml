@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: processor/spanpruning
+component: processor/span_pruning
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Preserve whole outlier subtrees instead of individual spans and detect outliers at every aggregation level, so a slow interior span (e.g. one slow handler among many) keeps its entire subtree.
