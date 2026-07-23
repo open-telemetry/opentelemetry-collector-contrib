@@ -36,6 +36,7 @@ func TestLoadConfig(t *testing.T) {
 				HashFunction:       MD5,
 				AllowedValues:      []string{".+@mycompany.com"},
 				Summary:            debug,
+				SkipConditions:     []string{"resource.attributes[\"service.name\"] == \"payments\""},
 				DBSanitizer: db.DBSanitizerConfig{
 					SQLConfig: db.SQLConfig{
 						Enabled: false,

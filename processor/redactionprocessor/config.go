@@ -87,6 +87,9 @@ type Config struct {
 
 	// URLSanitization is a flag to sanitize URLs by removing UUIDs, timestamps, and other non-essential information
 	URLSanitization url.URLSanitizationConfig `mapstructure:"url_sanitizer"`
+
+	// SkipConditions is a list of OTTL-style conditions used to skip redaction for matching telemetry.
+	SkipConditions []string `mapstructure:"skip_conditions"`
 }
 
 func (u HashFunction) String() string {
