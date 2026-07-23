@@ -136,6 +136,15 @@ This exporter maps OpenTelemetry  [trace](https://opentelemetry.io/docs/referenc
 | Host                          | The host.name extracted from [Host resource semantics](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/host/). If empty , the hostname of the exporter is used                                  |
 | ResourceAttributes            | The resource attributes JSON map as specified in open telemetry [resource semantics](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/)                                                        |
 
+#### Histogram metric rows
+
+For histogram metrics, the exporter emits multiple rows per data point:
+- `<name>_sum` — the sum of all observed values
+- `<name>_count` — the number of observations
+- `<name>_min` — the minimum observed value (only emitted when the SDK provides it, e.g., .NET SDK v1.5.0+)
+- `<name>_max` — the maximum observed value (only emitted when the SDK provides it)
+- `<name>_bucket` — one row per explicit bound (cumulative count), plus a `+Inf` bucket
+
 ### Logs
 
 | ADX Table column              | Description / OpenTelemetry attribute                 |
