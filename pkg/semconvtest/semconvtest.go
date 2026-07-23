@@ -64,7 +64,7 @@ type weaverOptions struct {
 func TestLogs(tb testing.TB, logs plog.Logs, opts ...WeaverOption) []PolicyFinding {
 	tb.Helper()
 	return runLiveCheck(tb, opts, func(ctx context.Context, clients *pdataClients) error {
-		_, err := clients.consumeLogs(ctx, logs)
+		_, err := clients.exportLogs(ctx, logs)
 		return err
 	})
 }
@@ -76,7 +76,7 @@ func TestLogs(tb testing.TB, logs plog.Logs, opts ...WeaverOption) []PolicyFindi
 func TestMetrics(tb testing.TB, metrics pmetric.Metrics, opts ...WeaverOption) []PolicyFinding {
 	tb.Helper()
 	return runLiveCheck(tb, opts, func(ctx context.Context, clients *pdataClients) error {
-		_, err := clients.consumeMetrics(ctx, metrics)
+		_, err := clients.exportMetrics(ctx, metrics)
 		return err
 	})
 }
@@ -88,7 +88,7 @@ func TestMetrics(tb testing.TB, metrics pmetric.Metrics, opts ...WeaverOption) [
 func TestTraces(tb testing.TB, traces ptrace.Traces, opts ...WeaverOption) []PolicyFinding {
 	tb.Helper()
 	return runLiveCheck(tb, opts, func(ctx context.Context, clients *pdataClients) error {
-		_, err := clients.consumeTraces(ctx, traces)
+		_, err := clients.exportTraces(ctx, traces)
 		return err
 	})
 }
@@ -296,17 +296,17 @@ func newPdataClients(endpoint string) (*pdataClients, error) {
 	return &clients, nil
 }
 
-func (clients *pdataClients) consumeLogs(ctx context.Context, logs plog.Logs) (plogotlp.ExportResponse, error) {
+func (clients *pdataClients) exportLogs(ctx context.Context, logs plog.Logs) (plogotlp.ExportResponse, error) {
 	plogReq := plogotlp.NewExportRequestFromLogs(logs)
 	return clients.logs.Export(ctx, plogReq)
 }
 
-func (clients *pdataClients) consumeMetrics(ctx context.Context, metrics pmetric.Metrics) (pmetricotlp.ExportResponse, error) {
+func (clients *pdataClients) exportMetrics(ctx context.Context, metrics pmetric.Metrics) (pmetricotlp.ExportResponse, error) {
 	pmetricReq := pmetricotlp.NewExportRequestFromMetrics(metrics)
 	return clients.metrics.Export(ctx, pmetricReq)
 }
 
-func (clients *pdataClients) consumeTraces(ctx context.Context, traces ptrace.Traces) (ptraceotlp.ExportResponse, error) {
+func (clients *pdataClients) exportTraces(ctx context.Context, traces ptrace.Traces) (ptraceotlp.ExportResponse, error) {
 	ptraceReq := ptraceotlp.NewExportRequestFromTraces(traces)
 	return clients.traces.Export(ctx, ptraceReq)
 }
