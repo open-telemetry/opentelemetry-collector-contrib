@@ -6,33 +6,24 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_extension_pebble_tail_storage_append_errors
+### otelcol_extension_pebble_tail_storage_operations
 
-Count of errors returned by the Pebble tail storage extension Append operation
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {errors} | Sum | Int | true | Development |
-
-### otelcol_extension_pebble_tail_storage_delete_errors
-
-Count of errors returned by the Pebble tail storage extension Delete operation
+Count of Pebble tail storage operations by operation and outcome
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {errors} | Sum | Int | true | Development |
+| {operations} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| operation | The Pebble tail storage operation. | Str: ``append``, ``take``, ``delete`` | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
 ### otelcol_extension_pebble_tail_storage_read_errors
 
 Count of Pebble tail storage read-path iterator creation, value read, payload decode, and iterator terminal errors
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {errors} | Sum | Int | true | Development |
-
-### otelcol_extension_pebble_tail_storage_take_errors
-
-Count of errors returned by the Pebble tail storage extension Take operation
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
