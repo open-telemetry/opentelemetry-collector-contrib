@@ -138,6 +138,15 @@ This exporter maps OpenTelemetry  [trace](https://opentelemetry.io/docs/referenc
 | ResourceAttributes            | The resource attributes JSON map as specified in open telemetry [resource semantics](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/)                                                        |
 | Exemplars                     | Optional. Only populated when `include_exemplars` is `true`. A JSON array of [exemplars](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exemplars) attached to the datapoint, each `{value, timestamp, trace_id, span_id, attributes}`. The `trace_id`/`span_id` use the same hex format as the traces table, so exemplars can be joined to the traces table to go from an aggregate metric to the exact trace. Integer exemplars are preserved as integers rather than widened to floating point. Non-finite double values are written as the strings `"NaN"`, `"Infinity"` and `"-Infinity"`, since JSON cannot represent them. `value` is omitted for an exemplar that records no value. For histograms, exemplars are attached to the `_count` row. |
 
+#### Histogram metric rows
+
+For histogram metrics, the exporter emits multiple rows per data point:
+- `<name>_sum` — the sum of all observed values
+- `<name>_count` — the number of observations
+- `<name>_min` — the minimum observed value (only emitted when the SDK provides it, e.g., .NET SDK v1.5.0+)
+- `<name>_max` — the maximum observed value (only emitted when the SDK provides it)
+- `<name>_bucket` — one row per explicit bound (cumulative count), plus a `+Inf` bucket
+
 ### Logs
 
 | ADX Table column              | Description / OpenTelemetry attribute                 |

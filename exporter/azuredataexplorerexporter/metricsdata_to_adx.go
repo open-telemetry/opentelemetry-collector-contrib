@@ -28,10 +28,18 @@ const (
 	sumsuffix = "sum"
 	// Count used in summary , histogram and also in exponential histogram
 	countsuffix = "count"
+	// Min observed value in a histogram data point
+	minsuffix = "min"
+	// Max observed value in a histogram data point
+	maxsuffix = "max"
 	// Indicates the sum that is used in both summary and in histogram
 	sumdescription = "(Sum total of samples)"
 	// Count used in summary , histogram and also in exponential histogram
 	countdescription = "(Count of samples)"
+	// Min observed value description
+	mindescription = "(Minimum value observed)"
+	// Max observed value description
+	maxdescription = "(Maximum value observed)"
 )
 
 // This is derived from the specification https://opentelemetry.io/docs/reference/specification/metrics/datamodel/
@@ -209,6 +217,21 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					fmt.Sprintf("%s%s", md.Description(), sumdescription),
 					pmetric.MetricTypeHistogram),
 				countMetric)
+			// Emit min and max when available from the SDK
+			if dataPoint.HasMin() {
+				adxMetrics = append(adxMetrics,
+					createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), dataPoint.Min,
+						fmt.Sprintf("%s_%s", md.Name(), minsuffix),
+						fmt.Sprintf("%s%s", md.Description(), mindescription),
+						pmetric.MetricTypeHistogram))
+			}
+			if dataPoint.HasMax() {
+				adxMetrics = append(adxMetrics,
+					createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), dataPoint.Max,
+						fmt.Sprintf("%s_%s", md.Name(), maxsuffix),
+						fmt.Sprintf("%s%s", md.Description(), maxdescription),
+						pmetric.MetricTypeHistogram))
+			}
 			// Spec says counts is optional but if present it must have one more
 			// element than the bounds array.
 			if counts.Len() == 0 || counts.Len() != bounds.Len()+1 {

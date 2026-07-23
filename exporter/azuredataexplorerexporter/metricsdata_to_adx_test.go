@@ -362,6 +362,214 @@ func Test_mapToAdxMetric(t *testing.T) {
 			},
 		},
 		{
+			name:       "histogram_with_min_max",
+			resourceFn: newDummyResource,
+			metricDataFn: func() pmetric.Metric {
+				histogram := pmetric.NewMetric()
+				histogram.SetName("http.server.duration")
+				histogram.SetUnit("milliseconds")
+				histogram.SetDescription("measures the duration of the inbound HTTP request")
+				histogram.SetEmptyHistogram()
+				histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
+				histogramPt.ExplicitBounds().FromRaw(distributionBounds)
+				histogramPt.BucketCounts().FromRaw(distributionCounts)
+				histogramPt.SetSum(23)
+				histogramPt.SetCount(7)
+				histogramPt.SetMin(1.5)
+				histogramPt.SetMax(10.2)
+				histogramPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				return histogram
+			},
+			configFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+
+			expectedAdxMetrics: []*adxMetric{
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_sum",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", sumdescription),
+					MetricValue:        23,
+					Host:               testhost,
+					MetricAttributes:   mmap,
+					ResourceAttributes: rmap,
+				},
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_count",
+					MetricType:         "Histogram",
+					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", countdescription),
+					MetricValue:        7,
+					MetricUnit:         "milliseconds",
+					MetricAttributes:   mmap,
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_min",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", mindescription),
+					MetricValue:        1.5,
+					MetricAttributes:   mmap,
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_max",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", maxdescription),
+					MetricValue:        10.2,
+					MetricAttributes:   mmap,
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+				// The list of buckets
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        4,
+					MetricAttributes:   newMapFromAttr(`{"le":"1"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        6,
+					MetricAttributes:   newMapFromAttr(`{"le":"2"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        9,
+					MetricAttributes:   newMapFromAttr(`{"le":"4"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        14,
+					MetricAttributes:   newMapFromAttr(`{"le":"+Inf"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+			},
+		},
+		{
+			name:       "histogram_without_min_max",
+			resourceFn: newDummyResource,
+			metricDataFn: func() pmetric.Metric {
+				histogram := pmetric.NewMetric()
+				histogram.SetName("http.server.duration")
+				histogram.SetUnit("milliseconds")
+				histogram.SetDescription("measures the duration of the inbound HTTP request")
+				histogram.SetEmptyHistogram()
+				histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
+				histogramPt.ExplicitBounds().FromRaw(distributionBounds)
+				histogramPt.BucketCounts().FromRaw(distributionCounts)
+				histogramPt.SetSum(23)
+				histogramPt.SetCount(7)
+				// Explicitly NOT setting Min/Max
+				histogramPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				return histogram
+			},
+			configFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+
+			expectedAdxMetrics: []*adxMetric{
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_sum",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", sumdescription),
+					MetricValue:        23,
+					Host:               testhost,
+					MetricAttributes:   mmap,
+					ResourceAttributes: rmap,
+				},
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_count",
+					MetricType:         "Histogram",
+					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", countdescription),
+					MetricValue:        7,
+					MetricUnit:         "milliseconds",
+					MetricAttributes:   mmap,
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+				// No _min or _max rows since HasMin()/HasMax() are false
+				// The list of buckets
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        4,
+					MetricAttributes:   newMapFromAttr(`{"le":"1"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        6,
+					MetricAttributes:   newMapFromAttr(`{"le":"2"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        9,
+					MetricAttributes:   newMapFromAttr(`{"le":"4"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        14,
+					MetricAttributes:   newMapFromAttr(`{"le":"+Inf"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+			},
+		},
+		{
 			name:       "nil_gauge_value",
 			resourceFn: newDummyResource,
 			metricDataFn: func() pmetric.Metric {
