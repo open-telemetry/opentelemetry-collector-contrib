@@ -1547,6 +1547,249 @@ func (ms *PostgresqlTupUpdatedMetricConfig) Validate() error {
 	return nil
 }
 
+// PostgresqlVectorInsertDurationMetricAttributeKey specifies the key of an attribute for the postgresql.vector.insert.duration metric.
+type PostgresqlVectorInsertDurationMetricAttributeKey string
+
+const (
+	PostgresqlVectorInsertDurationMetricAttributeKeyDbNamespace PostgresqlVectorInsertDurationMetricAttributeKey = "db.namespace"
+)
+
+// PostgresqlVectorInsertDurationMetricConfig provides config for the postgresql.vector.insert.duration metric.
+type PostgresqlVectorInsertDurationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlVectorInsertDurationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlVectorInsertDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlVectorInsertDurationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlVectorInsertDurationMetricAttributeKeyDbNamespace:
+		default:
+			return fmt.Errorf("metric postgresql.vector.insert.duration doesn't have an attribute %v, valid attributes: [db.namespace]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlVectorInsertRowsMetricAttributeKey specifies the key of an attribute for the postgresql.vector.insert.rows metric.
+type PostgresqlVectorInsertRowsMetricAttributeKey string
+
+const (
+	PostgresqlVectorInsertRowsMetricAttributeKeyDbNamespace PostgresqlVectorInsertRowsMetricAttributeKey = "db.namespace"
+)
+
+// PostgresqlVectorInsertRowsMetricConfig provides config for the postgresql.vector.insert.rows metric.
+type PostgresqlVectorInsertRowsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlVectorInsertRowsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlVectorInsertRowsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlVectorInsertRowsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlVectorInsertRowsMetricAttributeKeyDbNamespace:
+		default:
+			return fmt.Errorf("metric postgresql.vector.insert.rows doesn't have an attribute %v, valid attributes: [db.namespace]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlVectorSearchCallsMetricAttributeKey specifies the key of an attribute for the postgresql.vector.search.calls metric.
+type PostgresqlVectorSearchCallsMetricAttributeKey string
+
+const (
+	PostgresqlVectorSearchCallsMetricAttributeKeyPostgresqlDistanceFunctionName PostgresqlVectorSearchCallsMetricAttributeKey = "postgresql.distance.function.name"
+	PostgresqlVectorSearchCallsMetricAttributeKeyDbNamespace                    PostgresqlVectorSearchCallsMetricAttributeKey = "db.namespace"
+)
+
+// PostgresqlVectorSearchCallsMetricConfig provides config for the postgresql.vector.search.calls metric.
+type PostgresqlVectorSearchCallsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlVectorSearchCallsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlVectorSearchCallsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlVectorSearchCallsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlVectorSearchCallsMetricAttributeKeyPostgresqlDistanceFunctionName, PostgresqlVectorSearchCallsMetricAttributeKeyDbNamespace:
+		default:
+			return fmt.Errorf("metric postgresql.vector.search.calls doesn't have an attribute %v, valid attributes: [postgresql.distance.function.name, db.namespace]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlVectorSearchDurationMetricAttributeKey specifies the key of an attribute for the postgresql.vector.search.duration metric.
+type PostgresqlVectorSearchDurationMetricAttributeKey string
+
+const (
+	PostgresqlVectorSearchDurationMetricAttributeKeyPostgresqlDistanceFunctionName PostgresqlVectorSearchDurationMetricAttributeKey = "postgresql.distance.function.name"
+	PostgresqlVectorSearchDurationMetricAttributeKeyDbNamespace                    PostgresqlVectorSearchDurationMetricAttributeKey = "db.namespace"
+)
+
+// PostgresqlVectorSearchDurationMetricConfig provides config for the postgresql.vector.search.duration metric.
+type PostgresqlVectorSearchDurationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlVectorSearchDurationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlVectorSearchDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlVectorSearchDurationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlVectorSearchDurationMetricAttributeKeyPostgresqlDistanceFunctionName, PostgresqlVectorSearchDurationMetricAttributeKeyDbNamespace:
+		default:
+			return fmt.Errorf("metric postgresql.vector.search.duration doesn't have an attribute %v, valid attributes: [postgresql.distance.function.name, db.namespace]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlVectorSearchRowsReturnedMetricAttributeKey specifies the key of an attribute for the postgresql.vector.search.rows_returned metric.
+type PostgresqlVectorSearchRowsReturnedMetricAttributeKey string
+
+const (
+	PostgresqlVectorSearchRowsReturnedMetricAttributeKeyPostgresqlDistanceFunctionName PostgresqlVectorSearchRowsReturnedMetricAttributeKey = "postgresql.distance.function.name"
+	PostgresqlVectorSearchRowsReturnedMetricAttributeKeyDbNamespace                    PostgresqlVectorSearchRowsReturnedMetricAttributeKey = "db.namespace"
+)
+
+// PostgresqlVectorSearchRowsReturnedMetricConfig provides config for the postgresql.vector.search.rows_returned metric.
+type PostgresqlVectorSearchRowsReturnedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlVectorSearchRowsReturnedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlVectorSearchRowsReturnedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlVectorSearchRowsReturnedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlVectorSearchRowsReturnedMetricAttributeKeyPostgresqlDistanceFunctionName, PostgresqlVectorSearchRowsReturnedMetricAttributeKeyDbNamespace:
+		default:
+			return fmt.Errorf("metric postgresql.vector.search.rows_returned doesn't have an attribute %v, valid attributes: [postgresql.distance.function.name, db.namespace]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // PostgresqlWalAgeMetricConfig provides config for the postgresql.wal.age metric.
 type PostgresqlWalAgeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1701,6 +1944,11 @@ type MetricsConfig struct {
 	PostgresqlTupInserted              PostgresqlTupInsertedMetricConfig              `mapstructure:"postgresql.tup_inserted"`
 	PostgresqlTupReturned              PostgresqlTupReturnedMetricConfig              `mapstructure:"postgresql.tup_returned"`
 	PostgresqlTupUpdated               PostgresqlTupUpdatedMetricConfig               `mapstructure:"postgresql.tup_updated"`
+	PostgresqlVectorInsertDuration     PostgresqlVectorInsertDurationMetricConfig     `mapstructure:"postgresql.vector.insert.duration"`
+	PostgresqlVectorInsertRows         PostgresqlVectorInsertRowsMetricConfig         `mapstructure:"postgresql.vector.insert.rows"`
+	PostgresqlVectorSearchCalls        PostgresqlVectorSearchCallsMetricConfig        `mapstructure:"postgresql.vector.search.calls"`
+	PostgresqlVectorSearchDuration     PostgresqlVectorSearchDurationMetricConfig     `mapstructure:"postgresql.vector.search.duration"`
+	PostgresqlVectorSearchRowsReturned PostgresqlVectorSearchRowsReturnedMetricConfig `mapstructure:"postgresql.vector.search.rows_returned"`
 	PostgresqlWalAge                   PostgresqlWalAgeMetricConfig                   `mapstructure:"postgresql.wal.age"`
 	PostgresqlWalDelay                 PostgresqlWalDelayMetricConfig                 `mapstructure:"postgresql.wal.delay"`
 	PostgresqlWalLag                   PostgresqlWalLagMetricConfig                   `mapstructure:"postgresql.wal.lag"`
@@ -1869,6 +2117,31 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []PostgresqlTupUpdatedMetricAttributeKey{PostgresqlTupUpdatedMetricAttributeKeyDbNamespace},
+		},
+		PostgresqlVectorInsertDuration: PostgresqlVectorInsertDurationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlVectorInsertDurationMetricAttributeKey{PostgresqlVectorInsertDurationMetricAttributeKeyDbNamespace},
+		},
+		PostgresqlVectorInsertRows: PostgresqlVectorInsertRowsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlVectorInsertRowsMetricAttributeKey{PostgresqlVectorInsertRowsMetricAttributeKeyDbNamespace},
+		},
+		PostgresqlVectorSearchCalls: PostgresqlVectorSearchCallsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlVectorSearchCallsMetricAttributeKey{PostgresqlVectorSearchCallsMetricAttributeKeyPostgresqlDistanceFunctionName, PostgresqlVectorSearchCallsMetricAttributeKeyDbNamespace},
+		},
+		PostgresqlVectorSearchDuration: PostgresqlVectorSearchDurationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlVectorSearchDurationMetricAttributeKey{PostgresqlVectorSearchDurationMetricAttributeKeyPostgresqlDistanceFunctionName, PostgresqlVectorSearchDurationMetricAttributeKeyDbNamespace},
+		},
+		PostgresqlVectorSearchRowsReturned: PostgresqlVectorSearchRowsReturnedMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlVectorSearchRowsReturnedMetricAttributeKey{PostgresqlVectorSearchRowsReturnedMetricAttributeKeyPostgresqlDistanceFunctionName, PostgresqlVectorSearchRowsReturnedMetricAttributeKeyDbNamespace},
 		},
 		PostgresqlWalAge: PostgresqlWalAgeMetricConfig{
 			Enabled: true,
