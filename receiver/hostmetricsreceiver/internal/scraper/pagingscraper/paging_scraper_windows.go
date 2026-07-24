@@ -51,7 +51,7 @@ type pagingScraper struct {
 	// for mocking
 	bootTime           func(context.Context) (uint64, error)
 	pageFileStats      func() ([]*pageFileStats, error)
-	perfCounterFactory func(*zap.Logger, string, string, string) (winperfcounters.PerfCounterWatcher, error)
+	perfCounterFactory func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
 }
 
 // newPagingScraper creates a Paging Scraper
@@ -73,25 +73,25 @@ func (s *pagingScraper) start(ctx context.Context, _ component.Host) error {
 
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 
-	s.pageReadsPerfCounter, err = s.perfCounterFactory(s.settings.Logger, memory, "", pageReadsPerSec)
+	s.pageReadsPerfCounter, err = s.perfCounterFactory(memory, "", pageReadsPerSec, winperfcounters.WithLogger(s.settings.Logger))
 	if err != nil {
 		s.settings.Logger.Error("Failed to create performance counter to read pages read / sec", zap.Error(err))
 		s.skipScrape = true
 	}
 
-	s.pageWritesPerfCounter, err = s.perfCounterFactory(s.settings.Logger, memory, "", pageWritesPerSec)
+	s.pageWritesPerfCounter, err = s.perfCounterFactory(memory, "", pageWritesPerSec, winperfcounters.WithLogger(s.settings.Logger))
 	if err != nil {
 		s.settings.Logger.Error("Failed to create performance counter to write pages read / sec", zap.Error(err))
 		s.skipScrape = true
 	}
 
-	s.pageFaultsPerfCounter, err = s.perfCounterFactory(s.settings.Logger, memory, "", pageFaultsPerSec)
+	s.pageFaultsPerfCounter, err = s.perfCounterFactory(memory, "", pageFaultsPerSec, winperfcounters.WithLogger(s.settings.Logger))
 	if err != nil {
 		s.settings.Logger.Error("Failed to create performance counter for page faults / sec", zap.Error(err))
 		s.skipScrape = true
 	}
 
-	s.pageMajFaultsPerfCounter, err = s.perfCounterFactory(s.settings.Logger, memory, "", pageMajPerSec)
+	s.pageMajFaultsPerfCounter, err = s.perfCounterFactory(memory, "", pageMajPerSec, winperfcounters.WithLogger(s.settings.Logger))
 	if err != nil {
 		s.settings.Logger.Error("Failed to create performance counter for major, aka hard, page faults / sec", zap.Error(err))
 		s.skipScrape = true

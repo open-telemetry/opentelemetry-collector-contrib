@@ -47,18 +47,26 @@ type perfCounter struct {
 	logger *zap.Logger
 }
 
+type WatcherOption func(*perfCounter)
+
+func WithLogger(l *zap.Logger) WatcherOption {
+	return func(pc *perfCounter) { pc.logger = l }
+}
+
 // NewWatcher creates new PerfCounterWatcher by provided parts of its path.
-func NewWatcher(logger *zap.Logger, object, instance, counterName string) (PerfCounterWatcher, error) {
-	return NewWatcherFromPath(logger, counterPath(object, instance, counterName))
+func NewWatcher(object, instance, counterName string, opts ...WatcherOption) (PerfCounterWatcher, error) {
+	return NewWatcherFromPath(counterPath(object, instance, counterName), opts...)
 }
 
 // NewWatcherFromPath creates new PerfCounterWatcher by provided path.
-func NewWatcherFromPath(logger *zap.Logger, path string) (PerfCounterWatcher, error) {
+func NewWatcherFromPath(path string, opts ...WatcherOption) (PerfCounterWatcher, error) {
 	counter, err := newPerfCounter(path, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create perf counter with path %v: %w", path, err)
 	}
-	counter.logger = logger
+	for _, opt := range opts {
+		opt(counter)
+	}
 	return counter, nil
 }
 
@@ -148,12 +156,13 @@ func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
 
 	vals, err := pc.query.GetFormattedCounterArrayDouble(pc.handle)
 	if err != nil {
-		if IsTransientError(err) {
+		if IsIgnorableError(err) {
 			if pc.logger != nil {
 				pc.logger.Debug("Transient error scraping performance counter", zap.String("counter", pc.path), zap.Error(err))
 			}
 			return nil, err
 		}
+
 		return nil, fmt.Errorf("failed to format data for performance counter '%s': %w", pc.path, err)
 	}
 
@@ -172,12 +181,13 @@ func (pc *perfCounter) ScrapeRawValues() ([]RawCounterValue, error) {
 
 	vals, err := pc.query.GetRawCounterArray(pc.handle)
 	if err != nil {
-		if IsTransientError(err) {
+		if IsIgnorableError(err) {
 			if pc.logger != nil {
 				pc.logger.Debug("Transient error scraping raw performance counter", zap.String("counter", pc.path), zap.Error(err))
 			}
 			return nil, err
 		}
+
 		return nil, fmt.Errorf("failed to get raw data for performance counter '%s': %w", pc.path, err)
 	}
 
@@ -197,26 +207,28 @@ func (pc *perfCounter) ScrapeRawValue(rawValue *int64) (bool, error) {
 
 	*rawValue, err = pc.query.GetRawCounterValue(pc.handle)
 	if err != nil {
-		if IsTransientError(err) {
+		if IsIgnorableError(err) {
 			if pc.logger != nil {
 				pc.logger.Debug("Transient error scraping raw performance counter value", zap.String("counter", pc.path), zap.Error(err))
 			}
 			return false, err
 		}
+
 		return false, fmt.Errorf("failed to get raw data for performance counter '%s': %w", pc.path, err)
 	}
 
 	return true, nil
 }
 
-// IsTransientError returns true if the error is a transient PDH error, such as invalid data due to a process terminating.
-func IsTransientError(err error) bool {
+// IsIgnorableError checks if an error is a transient PDH error that can be safely ignored.
+func IsIgnorableError(err error) bool {
 	var pdhErr *win_perf_counters.PdhError
-	if errors.As(err, &pdhErr) && (pdhErr.ErrorCode == win_perf_counters.PDH_INVALID_DATA || pdhErr.ErrorCode == win_perf_counters.PDH_CSTATUS_INVALID_DATA) {
+	if errors.As(err, &pdhErr) && (pdhErr.ErrorCode == win_perf_counters.PDH_INVALID_DATA || pdhErr.ErrorCode == win_perf_counters.PDH_NO_DATA || pdhErr.ErrorCode == win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR) {
 		return true
 	}
 	return false
 }
+
 
 // ExpandWildCardPath examines the local computer and returns those counter paths that match the given counter path which contains wildcard characters.
 func ExpandWildCardPath(counterPath string) ([]string, error) {

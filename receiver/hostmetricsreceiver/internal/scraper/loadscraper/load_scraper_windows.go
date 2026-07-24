@@ -83,7 +83,7 @@ func startSampling(_ context.Context, logger *zap.Logger) error {
 }
 
 func newSampler(logger *zap.Logger) (*sampler, error) {
-	perfCounterWatcher, err := perfCounterFactory(logger, system, "", processorQueueLength)
+	perfCounterWatcher, err := perfCounterFactory(system, "", processorQueueLength, winperfcounters.WithLogger(logger))
 	if err != nil {
 		return nil, err
 	}

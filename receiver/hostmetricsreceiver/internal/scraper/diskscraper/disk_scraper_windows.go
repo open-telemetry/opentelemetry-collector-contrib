@@ -68,7 +68,7 @@ type diskScraper struct {
 
 	// for mocking
 	bootTime           func(ctx context.Context) (uint64, error)
-	perfCounterFactory func(*zap.Logger, string, string, string) (winperfcounters.PerfCounterWatcher, error)
+	perfCounterFactory func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
 }
 
 // newDiskScraper creates a Disk Scraper
@@ -111,7 +111,7 @@ func (s *diskScraper) start(ctx context.Context, _ component.Host) error {
 	// Initialize the performance counter watchers
 	s.perfCounters = make([]winperfcounters.PerfCounterWatcher, len(counterNames))
 	for i, counterName := range counterNames {
-		s.perfCounters[i], err = s.perfCounterFactory(s.settings.Logger, logicalDisk, "*", counterName)
+		s.perfCounters[i], err = s.perfCounterFactory(logicalDisk, "*", counterName, winperfcounters.WithLogger(s.settings.Logger))
 		if err != nil {
 			s.skipScrape = true
 			s.settings.Logger.Error(

@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
 )
 
@@ -47,7 +46,7 @@ func TestCounterPath(t *testing.T) {
 
 // Test_Scraping_Wildcard tests that wildcard instances pull out values
 func Test_Scraping_Wildcard(t *testing.T) {
-	watcher, err := NewWatcher(zap.NewNop(), "LogicalDisk", "*", "Free Megabytes")
+	watcher, err := NewWatcher("LogicalDisk", "*", "Free Megabytes")
 	require.NoError(t, err)
 
 	values, err := watcher.ScrapeData()
@@ -69,7 +68,7 @@ func Test_Scraping_Wildcard(t *testing.T) {
 }
 
 func TestWatcher_ScrapeRawValue(t *testing.T) {
-	watcher, err := NewWatcher(zap.NewNop(), "Memory", "", "Page Reads/Sec")
+	watcher, err := NewWatcher("Memory", "", "Page Reads/Sec")
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, watcher.Close())
@@ -83,7 +82,7 @@ func TestWatcher_ScrapeRawValue(t *testing.T) {
 }
 
 func TestWatcher_ScrapeRawValue_NoData(t *testing.T) {
-	watcher, err := NewWatcher(zap.NewNop(), ".NET CLR Memory", "NonExistingInstance", "% Time in GC")
+	watcher, err := NewWatcher(".NET CLR Memory", "NonExistingInstance", "% Time in GC")
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, watcher.Close())

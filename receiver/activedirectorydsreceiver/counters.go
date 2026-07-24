@@ -63,6 +63,9 @@ func (w *watchers) Scrape(name string) (float64, error) {
 
 	cv, err := v.ScrapeData()
 	if err != nil {
+		if winperfcounters.IsIgnorableError(err) {
+			return 0, nil
+		}
 		return 0, err
 	}
 
@@ -234,5 +237,5 @@ type defaultWatcherCreator struct {
 }
 
 func (c defaultWatcherCreator) Create(counterName string) (winperfcounters.PerfCounterWatcher, error) {
-	return winperfcounters.NewWatcher(c.logger, object, instanceName, counterName)
+	return winperfcounters.NewWatcher(object, instanceName, counterName, winperfcounters.WithLogger(c.logger))
 }

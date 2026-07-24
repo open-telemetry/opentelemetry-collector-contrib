@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -70,7 +69,7 @@ func TestScrape_Error(t *testing.T) {
 			scraper, err := newDiskScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{})
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
-			scraper.perfCounterFactory = func(*zap.Logger, string, string, string) (winperfcounters.PerfCounterWatcher, error) {
+			scraper.perfCounterFactory = func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
 				return &testmocks.PerfCounterWatcherMock{
 					ScrapeErr: test.scrapeErr,
 				}, nil
@@ -96,7 +95,7 @@ func TestScrape_Error(t *testing.T) {
 func TestStart_Error(t *testing.T) {
 	testCases := []struct {
 		name                  string
-		newPerfCounterFactory func(*zap.Logger, string, string, string) (winperfcounters.PerfCounterWatcher, error)
+		newPerfCounterFactory func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
 		expectedSkipScrape    bool
 	}{
 		{
@@ -104,7 +103,7 @@ func TestStart_Error(t *testing.T) {
 		},
 		{
 			name: "new_perf_counter_watcher_fails",
-			newPerfCounterFactory: func(*zap.Logger, string, string, string) (winperfcounters.PerfCounterWatcher, error) {
+			newPerfCounterFactory: func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
 				return nil, errors.New("err1")
 			},
 			expectedSkipScrape: true,
