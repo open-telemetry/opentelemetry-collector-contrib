@@ -141,6 +141,46 @@ func createMockCertFile(t *testing.T, expiry time.Time) string {
 	return tmpFile.Name()
 }
 
+// createMockCertsWithSharedIdentity creates two certificates that share the same common
+// name, issuer and SANs, but that have different serial numbers and public keys.
+func createMockCertsWithSharedIdentity(t *testing.T) []*x509.Certificate {
+	t.Helper()
+
+	issuerKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	issuerTemplate := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "shared.example.com"},
+		DNSNames:     []string{"shared.example.com", "*.shared.example.com"},
+		NotBefore:    time.Now().Add(-1 * time.Hour),
+		NotAfter:     time.Now().Add(24 * time.Hour),
+		IsCA:         true,
+	}
+	issuerCertDER, err := x509.CreateCertificate(rand.Reader, issuerTemplate, issuerTemplate, &issuerKey.PublicKey, issuerKey)
+	require.NoError(t, err)
+	issuerCert, err := x509.ParseCertificate(issuerCertDER)
+	require.NoError(t, err)
+
+	leafKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	leafTemplate := &x509.Certificate{
+		// Only the serial number and the public key differ between the two certs.
+		SerialNumber: big.NewInt(int64(100)),
+		Subject:      pkix.Name{CommonName: "shared.example.com"},
+		DNSNames:     []string{"shared.example.com", "*.shared.example.com"},
+		NotBefore:    time.Now().Add(-1 * time.Hour),
+		NotAfter:     time.Now().Add(24 * time.Hour),
+	}
+	leafCertDER, err := x509.CreateCertificate(rand.Reader, leafTemplate, issuerCert, &leafKey.PublicKey, issuerKey)
+	require.NoError(t, err)
+	leafCert, err := x509.ParseCertificate(leafCertDER)
+	require.NoError(t, err)
+
+	return []*x509.Certificate{leafCert, issuerCert}
+}
+
 // createMockJKSFile creates a JKS keystore containing a single TrustedCertificateEntry
 // and returns its absolute path.
 func createMockJKSFile(t *testing.T, expiry time.Time, password string, numTrustedCerts, numPrivateKeys int) string {
@@ -921,6 +961,63 @@ func TestScrape_AllPEMCertificates(t *testing.T) {
 		timeLeft := dp.IntValue()
 		assert.Positive(t, timeLeft, "Time left should be positive for a valid cert")
 	}
+}
+
+func TestScrape_SameIdentityCertificatesHaveDifferentFingerprints(t *testing.T) {
+	certs := createMockCertsWithSharedIdentity(t)
+
+	// The SAN and fingerprint attributes are opt-in, so enable them explicitly.
+	mbCfg := metadata.NewDefaultMetricsBuilderConfig()
+	mbCfg.Metrics.TlscheckTimeLeft.EnabledAttributes = []metadata.TlscheckTimeLeftMetricAttributeKey{
+		metadata.TlscheckTimeLeftMetricAttributeKeyTlscheckX509Issuer,
+		metadata.TlscheckTimeLeftMetricAttributeKeyTlscheckX509Cn,
+		metadata.TlscheckTimeLeftMetricAttributeKeyTlscheckX509San,
+		metadata.TlscheckTimeLeftMetricAttributeKeyTlscheckX509Fingerprint,
+	}
+
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "shared.example.com:443",
+				},
+				ScrapeAllCerts: true,
+			},
+		},
+		MetricsBuilderConfig: mbCfg,
+	}
+	factory := receivertest.NewNopFactory()
+	settings := receivertest.NewNopSettings(factory.Type())
+	s := newScraper(cfg, settings, func(_ string) (tls.ConnectionState, error) {
+		return tls.ConnectionState{PeerCertificates: certs}, nil
+	})
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 2, metrics.ResourceMetrics().Len())
+
+	fingerprints := make(map[string]bool)
+	for i := range metrics.ResourceMetrics().Len() {
+		dps := metrics.ResourceMetrics().At(i).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints()
+		require.Equal(t, 1, dps.Len())
+		attributes := dps.At(0).Attributes()
+
+		// The certs are indistinguishable by common name, issuer and SANs
+		issuer, _ := attributes.Get("tlscheck.x509.issuer")
+		assert.Equal(t, "CN=shared.example.com", issuer.AsString())
+		commonName, _ := attributes.Get("tlscheck.x509.cn")
+		assert.Equal(t, "shared.example.com", commonName.AsString())
+		sans, ok := attributes.Get("tlscheck.x509.san")
+		require.True(t, ok)
+		assert.Equal(t, []any{"shared.example.com", "*.shared.example.com"}, sans.Slice().AsRaw())
+
+		fingerprint, ok := attributes.Get("tlscheck.x509.fingerprint")
+		require.True(t, ok, "Certificate %d should have a fingerprint attribute", i)
+		require.NotEmpty(t, fingerprint.AsString(), "Certificate %d should have a non-empty fingerprint", i)
+		fingerprints[fingerprint.AsString()] = true
+	}
+
+	require.Len(t, fingerprints, 2, "Certificates with different serial numbers and public keys should have different fingerprints")
 }
 
 func TestValidateEndpoint(t *testing.T) {

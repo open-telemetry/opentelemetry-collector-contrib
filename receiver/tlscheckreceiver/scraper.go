@@ -5,8 +5,10 @@ package tlscheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -159,10 +161,14 @@ func (s *scraper) extractCertsMetrics(target string, certs []*x509.Certificate, 
 			sans = append(sans, emailAddress)
 		}
 
+		h := sha256.New()
+		h.Write(cert.Raw)
+		fingerprint := hex.EncodeToString(h.Sum(nil))
+
 		timeLeft := cert.NotAfter.Sub(currentTime).Seconds()
 		timeLeftInt := int64(timeLeft)
 
-		mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, sans)
+		mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, sans, fingerprint)
 		metrics := mb.Emit(metadata.WithResource(resource))
 		metrics.ResourceMetrics().At(0).MoveTo(resourceMetrics.AppendEmpty())
 	}
