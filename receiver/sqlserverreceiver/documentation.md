@@ -518,7 +518,7 @@ Total number of deadlocks.
 
 ### sqlserver.disk.io
 
-Cumulative bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.
+Cumulative bytes read from and written to files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
 
 This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
 
@@ -535,7 +535,7 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.disk.operations
 
-Cumulative read and write operations on disk drives hosting SQL Server database files since SQL Server last started.
+Cumulative read and write operations on files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
 
 This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
 
@@ -592,7 +592,7 @@ Rate of ghosted records skipped during scans.
 
 ### sqlserver.host.memory.limit
 
-Total physical memory installed on the host as observed by SQL Server.
+Total physical memory available to SQL Server on the host.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -602,7 +602,7 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.host.memory.usage
 
-Physical memory usage on the host as observed by SQL Server, broken down by state.
+Physical memory usage available to SQL Server on the host, broken down by state.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 

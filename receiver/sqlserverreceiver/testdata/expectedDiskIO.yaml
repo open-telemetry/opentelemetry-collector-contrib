@@ -24,7 +24,7 @@ resourceMetrics:
             stringValue: testhost
     scopeMetrics:
       - metrics:
-          - description: Cumulative bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.
+          - description: Cumulative bytes read from and written to files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
             name: sqlserver.disk.io
             sum:
               aggregationTemporality: 2
@@ -51,7 +51,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: By
-          - description: Cumulative read and write operations on disk drives hosting SQL Server database files since SQL Server last started.
+          - description: Cumulative read and write operations on files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
             name: sqlserver.disk.operations
             sum:
               aggregationTemporality: 2
@@ -106,7 +106,7 @@ resourceMetrics:
             stringValue: testhost
     scopeMetrics:
       - metrics:
-          - description: Cumulative bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.
+          - description: Cumulative bytes read from and written to files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
             name: sqlserver.disk.io
             sum:
               aggregationTemporality: 2
@@ -133,7 +133,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: By
-          - description: Cumulative read and write operations on disk drives hosting SQL Server database files since SQL Server last started.
+          - description: Cumulative read and write operations on files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
             name: sqlserver.disk.operations
             sum:
               aggregationTemporality: 2
@@ -188,7 +188,7 @@ resourceMetrics:
             stringValue: testhost
     scopeMetrics:
       - metrics:
-          - description: Cumulative bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.
+          - description: Cumulative bytes read from and written to files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
             name: sqlserver.disk.io
             sum:
               aggregationTemporality: 2
@@ -215,7 +215,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: By
-          - description: Cumulative read and write operations on disk drives hosting SQL Server database files since SQL Server last started.
+          - description: Cumulative read and write operations on files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
             name: sqlserver.disk.operations
             sum:
               aggregationTemporality: 2

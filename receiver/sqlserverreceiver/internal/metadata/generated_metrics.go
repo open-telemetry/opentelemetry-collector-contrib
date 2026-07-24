@@ -3062,7 +3062,7 @@ type metricSqlserverDiskIo struct {
 // init fills sqlserver.disk.io metric with initial data.
 func (m *metricSqlserverDiskIo) init() {
 	m.data.SetName("sqlserver.disk.io")
-	m.data.SetDescription("Cumulative bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.")
+	m.data.SetDescription("Cumulative bytes read from and written to files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3156,7 +3156,7 @@ type metricSqlserverDiskOperations struct {
 // init fills sqlserver.disk.operations metric with initial data.
 func (m *metricSqlserverDiskOperations) init() {
 	m.data.SetName("sqlserver.disk.operations")
-	m.data.SetDescription("Cumulative read and write operations on disk drives hosting SQL Server database files since SQL Server last started.")
+	m.data.SetDescription("Cumulative read and write operations on files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3403,7 +3403,7 @@ type metricSqlserverHostMemoryLimit struct {
 // init fills sqlserver.host.memory.limit metric with initial data.
 func (m *metricSqlserverHostMemoryLimit) init() {
 	m.data.SetName("sqlserver.host.memory.limit")
-	m.data.SetDescription("Total physical memory installed on the host as observed by SQL Server.")
+	m.data.SetDescription("Total physical memory available to SQL Server on the host.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
@@ -3454,7 +3454,7 @@ type metricSqlserverHostMemoryUsage struct {
 // init fills sqlserver.host.memory.usage metric with initial data.
 func (m *metricSqlserverHostMemoryUsage) init() {
 	m.data.SetName("sqlserver.host.memory.usage")
-	m.data.SetDescription("Physical memory usage on the host as observed by SQL Server, broken down by state.")
+	m.data.SetDescription("Physical memory usage available to SQL Server on the host, broken down by state.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

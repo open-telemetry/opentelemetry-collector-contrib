@@ -1254,7 +1254,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.disk.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.", mi.Description())
+						assert.Equal(t, "Cumulative bytes read from and written to files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1274,7 +1274,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.disk.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.", mi.Description())
+						assert.Equal(t, "Cumulative bytes read from and written to files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1303,7 +1303,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.disk.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative read and write operations on disk drives hosting SQL Server database files since SQL Server last started.", mi.Description())
+						assert.Equal(t, "Cumulative read and write operations on files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1323,7 +1323,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.disk.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative read and write operations on disk drives hosting SQL Server database files since SQL Server last started.", mi.Description())
+						assert.Equal(t, "Cumulative read and write operations on files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1393,7 +1393,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["sqlserver.host.memory.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Total physical memory installed on the host as observed by SQL Server.", mi.Description())
+					assert.Equal(t, "Total physical memory available to SQL Server on the host.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1406,7 +1406,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.host.memory.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Physical memory usage on the host as observed by SQL Server, broken down by state.", mi.Description())
+						assert.Equal(t, "Physical memory usage available to SQL Server on the host, broken down by state.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -1421,7 +1421,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.host.memory.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Physical memory usage on the host as observed by SQL Server, broken down by state.", mi.Description())
+						assert.Equal(t, "Physical memory usage available to SQL Server on the host, broken down by state.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())

@@ -787,7 +787,7 @@ metrics:
     attributes: []
   sqlserver.disk.io:
     enabled: false
-    description: Cumulative bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.
+    description: Cumulative bytes read from and written to files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
     stability: development
     unit: "By"
     sum:
@@ -798,7 +798,7 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
   sqlserver.disk.operations:
     enabled: false
-    description: Cumulative read and write operations on disk drives hosting SQL Server database files since SQL Server last started.
+    description: Cumulative read and write operations on files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
     stability: development
     unit: "{operations}"
     sum:
@@ -835,7 +835,7 @@ metrics:
     attributes: []
   sqlserver.host.memory.limit:
     enabled: false
-    description: Total physical memory installed on the host as observed by SQL Server.
+    description: Total physical memory available to SQL Server on the host.
     stability: development
     unit: By
     gauge:
@@ -844,7 +844,7 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.host.memory.usage:
     enabled: false
-    description: Physical memory usage on the host as observed by SQL Server, broken down by state.
+    description: Physical memory usage available to SQL Server on the host, broken down by state.
     stability: development
     unit: By
     gauge:
