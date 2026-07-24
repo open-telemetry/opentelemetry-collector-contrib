@@ -14,17 +14,17 @@ require (
 	github.com/shirou/gopsutil/v4 v4.26.6
 	github.com/stretchr/testify v1.11.1
 	github.com/tilinna/clock v1.1.0
-	go.opentelemetry.io/collector/component v1.63.1-0.20260721190914-bc198f44aa6e
+	go.opentelemetry.io/collector/component v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260721190914-bc198f44aa6e
-	go.opentelemetry.io/collector/confmap v1.63.1-0.20260721190914-bc198f44aa6e
+	go.opentelemetry.io/collector/confmap v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/confmap/xconfmap v0.157.1-0.20260721190914-bc198f44aa6e
-	go.opentelemetry.io/collector/consumer v1.63.1-0.20260721190914-bc198f44aa6e
+	go.opentelemetry.io/collector/consumer v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/consumer/consumertest v0.157.1-0.20260721190914-bc198f44aa6e
-	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260721190914-bc198f44aa6e
+	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/filter v0.157.1-0.20260721190914-bc198f44aa6e
-	go.opentelemetry.io/collector/pdata v1.63.1-0.20260721190914-bc198f44aa6e
-	go.opentelemetry.io/collector/pipeline v1.63.1-0.20260721190914-bc198f44aa6e
-	go.opentelemetry.io/collector/receiver v1.63.1-0.20260721190914-bc198f44aa6e
+	go.opentelemetry.io/collector/pdata v1.63.1-0.20260723141305-52e6bf4aaaba
+	go.opentelemetry.io/collector/pipeline v1.63.1-0.20260723141305-52e6bf4aaaba
+	go.opentelemetry.io/collector/receiver v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/receiver/receivertest v0.157.1-0.20260721190914-bc198f44aa6e
 	go.opentelemetry.io/collector/receiver/xreceiver v0.157.1-0.20260721190914-bc198f44aa6e
 	go.opentelemetry.io/collector/scraper v0.157.1-0.20260721190914-bc198f44aa6e
