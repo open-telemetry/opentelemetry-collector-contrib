@@ -5,15 +5,37 @@ all_set:
       enabled: true
     sqlserver.attention.rate:
       enabled: true
+    sqlserver.availability_group.database_replica.queue.rate:
+      enabled: true
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name","sqlserver.availability_group.queue.type"]
+    sqlserver.availability_group.database_replica.queue.size:
+      enabled: true
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name","sqlserver.availability_group.queue.type"]
+    sqlserver.availability_group.database_replica.secondary_lag:
+      enabled: true
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name"]
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
       enabled: true
     sqlserver.batch.sql_recompilation.rate:
       enabled: true
+    sqlserver.clr.execution.time:
+      enabled: true
     sqlserver.computer.uptime:
       enabled: true
+    sqlserver.connection.reset.rate:
+      enabled: true
     sqlserver.cpu.count:
+      enabled: true
+    sqlserver.cursor.count:
+      enabled: true
+      attributes: ["cursor.state"]
+    sqlserver.cursor.memory.usage:
+      enabled: true
+    sqlserver.cursor.plan.count:
+      enabled: true
+    sqlserver.cursor.request.rate:
       enabled: true
     sqlserver.database.backup_or_restore.rate:
       enabled: true
@@ -40,12 +62,29 @@ all_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
+    sqlserver.error.rate:
+      enabled: true
     sqlserver.extent.operation.rate:
       enabled: true
     sqlserver.ghost_record.skipped.rate:
       enabled: true
+    sqlserver.index.fragmentation:
+      enabled: true
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
+    sqlserver.index.page.count:
+      enabled: true
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
+    sqlserver.index.page.utilization:
+      enabled: true
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
+    sqlserver.index.record.count:
+      enabled: true
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
     sqlserver.index.search.rate:
       enabled: true
+    sqlserver.index.size:
+      enabled: true
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
     sqlserver.latch.superlatch.count:
       enabled: true
     sqlserver.latch.superlatch.transition.rate:
@@ -57,6 +96,14 @@ all_set:
       enabled: true
     sqlserver.latch.wait_time.total:
       enabled: true
+    sqlserver.lock.block.count:
+      enabled: true
+    sqlserver.lock.escalation.rate:
+      enabled: true
+    sqlserver.lock.memory:
+      enabled: true
+    sqlserver.lock.request.rate:
+      enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
     sqlserver.lock.wait.count:
@@ -64,6 +111,8 @@ all_set:
     sqlserver.lock.wait.rate:
       enabled: true
     sqlserver.lock.wait_time.avg:
+      enabled: true
+    sqlserver.lock.wait_time.total:
       enabled: true
     sqlserver.login.rate:
       enabled: true
@@ -131,9 +180,17 @@ all_set:
       enabled: true
     sqlserver.scan_point.revalidation.rate:
       enabled: true
+    sqlserver.stored_procedure.invocation.rate:
+      enabled: true
     sqlserver.table.count:
       enabled: true
       attributes: ["table.state","table.status"]
+    sqlserver.task.count:
+      enabled: true
+      attributes: ["task.state"]
+    sqlserver.task.rate:
+      enabled: true
+      attributes: ["task.result"]
     sqlserver.transaction.delay:
       enabled: true
     sqlserver.transaction.mirror_write.rate:
@@ -156,6 +213,12 @@ all_set:
       enabled: true
     sqlserver.user.connection.count:
       enabled: true
+    sqlserver.worker.request.count:
+      enabled: true
+      attributes: ["request.state"]
+    sqlserver.worker.thread.count:
+      enabled: true
+      attributes: ["worker.state"]
     sqlserver.worktable.cache.hit_ratio:
       enabled: true
   events:
@@ -188,15 +251,37 @@ reaggregate_set:
       enabled: true
     sqlserver.attention.rate:
       enabled: true
+    sqlserver.availability_group.database_replica.queue.rate:
+      enabled: true
+      attributes: []
+    sqlserver.availability_group.database_replica.queue.size:
+      enabled: true
+      attributes: []
+    sqlserver.availability_group.database_replica.secondary_lag:
+      enabled: true
+      attributes: []
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
       enabled: true
     sqlserver.batch.sql_recompilation.rate:
       enabled: true
+    sqlserver.clr.execution.time:
+      enabled: true
     sqlserver.computer.uptime:
       enabled: true
+    sqlserver.connection.reset.rate:
+      enabled: true
     sqlserver.cpu.count:
+      enabled: true
+    sqlserver.cursor.count:
+      enabled: true
+      attributes: []
+    sqlserver.cursor.memory.usage:
+      enabled: true
+    sqlserver.cursor.plan.count:
+      enabled: true
+    sqlserver.cursor.request.rate:
       enabled: true
     sqlserver.database.backup_or_restore.rate:
       enabled: true
@@ -223,12 +308,29 @@ reaggregate_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
+    sqlserver.error.rate:
+      enabled: true
     sqlserver.extent.operation.rate:
       enabled: true
     sqlserver.ghost_record.skipped.rate:
       enabled: true
+    sqlserver.index.fragmentation:
+      enabled: true
+      attributes: []
+    sqlserver.index.page.count:
+      enabled: true
+      attributes: []
+    sqlserver.index.page.utilization:
+      enabled: true
+      attributes: []
+    sqlserver.index.record.count:
+      enabled: true
+      attributes: []
     sqlserver.index.search.rate:
       enabled: true
+    sqlserver.index.size:
+      enabled: true
+      attributes: []
     sqlserver.latch.superlatch.count:
       enabled: true
     sqlserver.latch.superlatch.transition.rate:
@@ -240,6 +342,14 @@ reaggregate_set:
       enabled: true
     sqlserver.latch.wait_time.total:
       enabled: true
+    sqlserver.lock.block.count:
+      enabled: true
+    sqlserver.lock.escalation.rate:
+      enabled: true
+    sqlserver.lock.memory:
+      enabled: true
+    sqlserver.lock.request.rate:
+      enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
     sqlserver.lock.wait.count:
@@ -247,6 +357,8 @@ reaggregate_set:
     sqlserver.lock.wait.rate:
       enabled: true
     sqlserver.lock.wait_time.avg:
+      enabled: true
+    sqlserver.lock.wait_time.total:
       enabled: true
     sqlserver.login.rate:
       enabled: true
@@ -314,7 +426,15 @@ reaggregate_set:
       enabled: true
     sqlserver.scan_point.revalidation.rate:
       enabled: true
+    sqlserver.stored_procedure.invocation.rate:
+      enabled: true
     sqlserver.table.count:
+      enabled: true
+      attributes: []
+    sqlserver.task.count:
+      enabled: true
+      attributes: []
+    sqlserver.task.rate:
       enabled: true
       attributes: []
     sqlserver.transaction.delay:
@@ -339,6 +459,12 @@ reaggregate_set:
       enabled: true
     sqlserver.user.connection.count:
       enabled: true
+    sqlserver.worker.request.count:
+      enabled: true
+      attributes: []
+    sqlserver.worker.thread.count:
+      enabled: true
+      attributes: []
     sqlserver.worktable.cache.hit_ratio:
       enabled: true
   events:
@@ -371,15 +497,37 @@ none_set:
       enabled: false
     sqlserver.attention.rate:
       enabled: false
+    sqlserver.availability_group.database_replica.queue.rate:
+      enabled: false
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name","sqlserver.availability_group.queue.type"]
+    sqlserver.availability_group.database_replica.queue.size:
+      enabled: false
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name","sqlserver.availability_group.queue.type"]
+    sqlserver.availability_group.database_replica.secondary_lag:
+      enabled: false
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name"]
     sqlserver.batch.request.rate:
       enabled: false
     sqlserver.batch.sql_compilation.rate:
       enabled: false
     sqlserver.batch.sql_recompilation.rate:
       enabled: false
+    sqlserver.clr.execution.time:
+      enabled: false
     sqlserver.computer.uptime:
       enabled: false
+    sqlserver.connection.reset.rate:
+      enabled: false
     sqlserver.cpu.count:
+      enabled: false
+    sqlserver.cursor.count:
+      enabled: false
+      attributes: ["cursor.state"]
+    sqlserver.cursor.memory.usage:
+      enabled: false
+    sqlserver.cursor.plan.count:
+      enabled: false
+    sqlserver.cursor.request.rate:
       enabled: false
     sqlserver.database.backup_or_restore.rate:
       enabled: false
@@ -406,12 +554,29 @@ none_set:
       enabled: false
     sqlserver.deadlock.rate:
       enabled: false
+    sqlserver.error.rate:
+      enabled: false
     sqlserver.extent.operation.rate:
       enabled: false
     sqlserver.ghost_record.skipped.rate:
       enabled: false
+    sqlserver.index.fragmentation:
+      enabled: false
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
+    sqlserver.index.page.count:
+      enabled: false
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
+    sqlserver.index.page.utilization:
+      enabled: false
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
+    sqlserver.index.record.count:
+      enabled: false
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
     sqlserver.index.search.rate:
       enabled: false
+    sqlserver.index.size:
+      enabled: false
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
     sqlserver.latch.superlatch.count:
       enabled: false
     sqlserver.latch.superlatch.transition.rate:
@@ -423,6 +588,14 @@ none_set:
       enabled: false
     sqlserver.latch.wait_time.total:
       enabled: false
+    sqlserver.lock.block.count:
+      enabled: false
+    sqlserver.lock.escalation.rate:
+      enabled: false
+    sqlserver.lock.memory:
+      enabled: false
+    sqlserver.lock.request.rate:
+      enabled: false
     sqlserver.lock.timeout.rate:
       enabled: false
     sqlserver.lock.wait.count:
@@ -430,6 +603,8 @@ none_set:
     sqlserver.lock.wait.rate:
       enabled: false
     sqlserver.lock.wait_time.avg:
+      enabled: false
+    sqlserver.lock.wait_time.total:
       enabled: false
     sqlserver.login.rate:
       enabled: false
@@ -497,9 +672,17 @@ none_set:
       enabled: false
     sqlserver.scan_point.revalidation.rate:
       enabled: false
+    sqlserver.stored_procedure.invocation.rate:
+      enabled: false
     sqlserver.table.count:
       enabled: false
       attributes: ["table.state","table.status"]
+    sqlserver.task.count:
+      enabled: false
+      attributes: ["task.state"]
+    sqlserver.task.rate:
+      enabled: false
+      attributes: ["task.result"]
     sqlserver.transaction.delay:
       enabled: false
     sqlserver.transaction.mirror_write.rate:
@@ -522,6 +705,12 @@ none_set:
       enabled: false
     sqlserver.user.connection.count:
       enabled: false
+    sqlserver.worker.request.count:
+      enabled: false
+      attributes: ["request.state"]
+    sqlserver.worker.thread.count:
+      enabled: false
+      attributes: ["worker.state"]
     sqlserver.worktable.cache.hit_ratio:
       enabled: false
   events:

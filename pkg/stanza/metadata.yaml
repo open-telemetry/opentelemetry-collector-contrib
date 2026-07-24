@@ -6,7 +6,7 @@ status:
   stability:
     beta: [logs]
   codeowners:
-    active: [andrzej-stencel]
+    active: [andrzej-stencel, atoulme]
     emeritus: [djaglowski]
     seeking_new: true
 

@@ -70,6 +70,11 @@ func (s *ssoTracesExporter) Start(ctx context.Context, host component.Host) erro
 
 	s.client = client
 
+	if s.config.ManageIndexTemplate {
+		tm := newTemplateManager(client, s.telemetry.Logger)
+		tm.ensureTemplates(ctx)
+	}
+
 	return nil
 }
 

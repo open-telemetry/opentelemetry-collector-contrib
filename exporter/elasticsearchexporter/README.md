@@ -107,8 +107,8 @@ Documents are statically or dynamically routed to the target index / data stream
 2. "Dynamic - Index attribute mode": Route to index name specified in `elasticsearch.index` attribute (precedence: log record / data point / span attribute > scope attribute > resource attribute) if the attribute exists. [^3]
 3. "Dynamic - Data stream routing mode": Route to data stream constructed from `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`,
 where `data_stream.type` is `logs` for log records, `metrics` for data points, and `traces` for spans, and is static. [^3]
-In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`) can be dynamically set from attributes.
-The resulting documents will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
+  In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`, `traces`, `profiles`, `synthetics`) can be dynamically set from attributes.
+  The resulting documents will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
    1. `data_stream.dataset` or `data_stream.namespace` in attributes (precedence: log record / data point / span attribute > scope attribute > resource attribute)
    2. Otherwise, if a scope attribute with the name `encoding.format` exists and contains a string value, `data_stream.dataset` will be set to this value. 
 
@@ -360,7 +360,8 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `max_retries` (default=2): Number of HTTP request retries. To disable retries, set `retry::enabled` to `false` instead of setting `max_retries` to `0`.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
-  - `retry_on_status` (default=[429]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it defaults to `[429]`.
+  - `retry_on_status` (default=[429]): Status codes that trigger request level retries. To avoid duplicates, it defaults to `[429]`.
+  - `retry_on_document_status` (default=same as `retry_on_status`): Status codes that trigger document level retries for failed documents in successful bulk HTTP responses. Set to `[]` to disable document level retries by status code while keeping request level retries configured through `retry_on_status`.
 - `sending_queue`: Configures the queueing and batching behaviour. Below are the defaults (which may vary from standard defaults), for full configuration check the [`exporterhelper` docs][exporterhelper].
   - `enabled` (default=true): Enable queueing and batching behaviour.
   - `num_consumers` (default=10): Number of consumers that dequeue batches.

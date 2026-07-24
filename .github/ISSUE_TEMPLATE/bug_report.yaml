@@ -24,6 +24,7 @@ body:
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
+      - config/configdbauth
       - confmap/provider/aesprovider
       - confmap/provider/googlesecretmanagerprovider
       - confmap/provider/s3provider
@@ -97,6 +98,7 @@ body:
       - extension/bearertokenauth
       - extension/cgroupruntime
       - extension/datadog
+      - extension/dbauth
       - extension/encoding
       - extension/encoding/avrologencoding
       - extension/encoding/awscloudwatchmetricstreamsencoding
@@ -305,7 +307,6 @@ body:
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
-      - receiver/jmx
       - receiver/journald
       - receiver/k8scluster
       - receiver/k8sevents

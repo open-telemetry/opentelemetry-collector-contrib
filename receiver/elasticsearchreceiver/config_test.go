@@ -124,7 +124,7 @@ func TestValidateEndpoint(t *testing.T) {
 			t.Parallel()
 
 			cfg := NewFactory().CreateDefaultConfig().(*Config)
-			cfg.Endpoint = testCase.rawURL
+			cfg.ClientConfig.Endpoint = testCase.rawURL
 
 			err := xconfmap.Validate(cfg)
 
