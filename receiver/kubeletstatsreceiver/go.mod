@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.157.0
@@ -20,6 +21,7 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.157.1-0.20260721190914-bc198f44aa6e
 	go.opentelemetry.io/collector/consumer v1.63.1-0.20260721190914-bc198f44aa6e
 	go.opentelemetry.io/collector/consumer/consumertest v0.157.1-0.20260721190914-bc198f44aa6e
+	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260721190914-bc198f44aa6e
 	go.opentelemetry.io/collector/filter v0.157.1-0.20260721190914-bc198f44aa6e
 	go.opentelemetry.io/collector/pdata v1.63.1-0.20260721190914-bc198f44aa6e
 	go.opentelemetry.io/collector/pipeline v1.63.1-0.20260721190914-bc198f44aa6e
@@ -88,7 +90,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.157.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.157.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
@@ -113,7 +114,6 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.157.1-0.20260721190914-bc198f44aa6e // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.63.1-0.20260721190914-bc198f44aa6e // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.157.1-0.20260721190914-bc198f44aa6e // indirect
-	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260721190914-bc198f44aa6e // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.157.1-0.20260721190914-bc198f44aa6e // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.157.1-0.20260721190914-bc198f44aa6e // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.157.1-0.20260721190914-bc198f44aa6e // indirect
