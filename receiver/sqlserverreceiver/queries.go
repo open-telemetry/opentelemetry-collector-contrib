@@ -1322,8 +1322,8 @@ func getSQLServerIndexPhysicalStatsQuery(instanceName string) string {
 // sys.dm_os_ring_buffers and sys.dm_os_sys_memory as observed by SQL Server.
 const sqlServerCPUMemoryQuery string = `
 SET DEADLOCK_PRIORITY -10;
-IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
-	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, or Azure SQL Managed Instance. This query is only supported on these editions.';
 	RAISERROR (@ErrorMessage,11,1)
 	RETURN
 END
