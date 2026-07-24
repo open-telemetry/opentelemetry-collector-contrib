@@ -3840,12 +3840,12 @@ func buildEventsHeavyTrace(spanCount, eventsPerSpan, resourceAttrCount int) ptra
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().PutStr("service.name", "events-bench")
-	for i := 0; i < resourceAttrCount; i++ {
+	for i := range resourceAttrCount {
 		rs.Resource().Attributes().PutStr(fmt.Sprintf("resource.attr.%d", i), fmt.Sprintf("value-%d", i))
 	}
 	ils := rs.ScopeSpans().AppendEmpty()
 	now := time.Now()
-	for i := 0; i < spanCount; i++ {
+	for i := range spanCount {
 		s := ils.Spans().AppendEmpty()
 		s.SetName(fmt.Sprintf("op-%d", i%10))
 		s.SetKind(ptrace.SpanKindServer)
@@ -3855,7 +3855,7 @@ func buildEventsHeavyTrace(spanCount, eventsPerSpan, resourceAttrCount int) ptra
 		s.SetTraceID([16]byte{byte(i), 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 		s.SetSpanID([8]byte{byte(i), 2, 3, 4, 5, 6, 7, 8})
 		s.Attributes().PutStr("http.method", "GET")
-		for e := 0; e < eventsPerSpan; e++ {
+		for e := range eventsPerSpan {
 			ev := s.Events().AppendEmpty()
 			ev.SetName("exception")
 			ev.Attributes().PutStr(exceptionTypeAttrName, fmt.Sprintf("ErrType-%d", e%3))
@@ -3868,13 +3868,13 @@ func buildEventsHeavyTrace(spanCount, eventsPerSpan, resourceAttrCount int) ptra
 func buildResourceHeavyTrace(resourceCount, extraAttrCount int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	now := time.Now()
-	for r := 0; r < resourceCount; r++ {
+	for r := range resourceCount {
 		rs := traces.ResourceSpans().AppendEmpty()
 		attrs := rs.Resource().Attributes()
 		attrs.PutStr("service.name", fmt.Sprintf("svc-%d", r%5))
 		attrs.PutStr("telemetry.sdk.language", "go")
 		attrs.PutStr("telemetry.sdk.name", "opentelemetry")
-		for i := 0; i < extraAttrCount; i++ {
+		for i := range extraAttrCount {
 			attrs.PutStr(fmt.Sprintf("extra.attr.%d", i), fmt.Sprintf("v-%d-%d", r, i))
 		}
 		ils := rs.ScopeSpans().AppendEmpty()
