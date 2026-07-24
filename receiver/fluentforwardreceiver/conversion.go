@@ -239,7 +239,7 @@ func parseOptions(dc *msgp.Reader) (optionsMap, error) {
 	if err != nil {
 		return nil, msgp.WrapError(err, "Option")
 	}
-	out := make(optionsMap, optionLen)
+	out := make(optionsMap)
 
 	for optionLen > 0 {
 		optionLen--
@@ -286,7 +286,6 @@ func (fe *forwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 		return msgp.WrapError(err, "Record")
 	}
 
-	fe.EnsureCapacity(int(entryLen))
 	for i := 0; i < int(entryLen); i++ {
 		lr := fe.AppendEmpty()
 
