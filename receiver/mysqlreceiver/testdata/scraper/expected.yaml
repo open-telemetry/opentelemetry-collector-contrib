@@ -940,6 +940,25 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: s
+          - description: The number of open resources.
+            gauge:
+              dataPoints:
+                - asInt: "367"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: file
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "370"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: table
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mysql.resources.open
+            unit: "1"
           - description: The number of InnoDB row locks.
             name: mysql.row_locks
             sum:
@@ -992,6 +1011,16 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: updated
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of threads that have taken more than slow_launch_time seconds to create.
+            name: mysql.slow_launch_threads
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "414"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true

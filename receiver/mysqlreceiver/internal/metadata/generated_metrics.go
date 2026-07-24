@@ -664,6 +664,32 @@ var MapAttributeMysqlxThreads = map[string]AttributeMysqlxThreads{
 	"active":    AttributeMysqlxThreadsActive,
 }
 
+// AttributeOpenResources specifies the value open_resources attribute.
+type AttributeOpenResources int
+
+const (
+	_ AttributeOpenResources = iota
+	AttributeOpenResourcesFile
+	AttributeOpenResourcesTable
+)
+
+// String returns the string representation of the AttributeOpenResources.
+func (av AttributeOpenResources) String() string {
+	switch av {
+	case AttributeOpenResourcesFile:
+		return "file"
+	case AttributeOpenResourcesTable:
+		return "table"
+	}
+	return ""
+}
+
+// MapAttributeOpenResources is a helper map of string to AttributeOpenResources attribute value.
+var MapAttributeOpenResources = map[string]AttributeOpenResources{
+	"file":  AttributeOpenResourcesFile,
+	"table": AttributeOpenResourcesTable,
+}
+
 // AttributeOpenedResources specifies the value opened_resources attribute.
 type AttributeOpenedResources int
 
@@ -1167,6 +1193,10 @@ var MetricsInfo = metricsInfo{
 	MysqlReplicaTimeBehindSource: metricInfo{
 		Name: "mysql.replica.time_behind_source",
 	},
+	MysqlResourcesOpen: metricInfo{
+		Name:       "mysql.resources.open",
+		Attributes: []string{"open_resources"},
+	},
 	MysqlRowLocks: metricInfo{
 		Name:       "mysql.row_locks",
 		Attributes: []string{"row_locks"},
@@ -1174,6 +1204,9 @@ var MetricsInfo = metricsInfo{
 	MysqlRowOperations: metricInfo{
 		Name:       "mysql.row_operations",
 		Attributes: []string{"row_operations"},
+	},
+	MysqlSlowLaunchThreads: metricInfo{
+		Name: "mysql.slow_launch_threads",
 	},
 	MysqlSorts: metricInfo{
 		Name:       "mysql.sorts",
@@ -1271,8 +1304,10 @@ type metricsInfo struct {
 	MysqlQuerySlowCount          metricInfo
 	MysqlReplicaSQLDelay         metricInfo
 	MysqlReplicaTimeBehindSource metricInfo
+	MysqlResourcesOpen           metricInfo
 	MysqlRowLocks                metricInfo
 	MysqlRowOperations           metricInfo
+	MysqlSlowLaunchThreads       metricInfo
 	MysqlSorts                   metricInfo
 	MysqlStatementEventCount     metricInfo
 	MysqlStatementEventWaitTime  metricInfo
@@ -3654,6 +3689,95 @@ func newMetricMysqlReplicaTimeBehindSource(cfg MysqlReplicaTimeBehindSourceMetri
 	return m
 }
 
+type metricMysqlResourcesOpen struct {
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        MysqlResourcesOpenMetricConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
+}
+
+// init fills mysql.resources.open metric with initial data.
+func (m *metricMysqlResourcesOpen) init() {
+	m.data.SetName("mysql.resources.open")
+	m.data.SetDescription("The number of open resources.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricMysqlResourcesOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, openResourcesAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MysqlResourcesOpenMetricAttributeKeyOpenResources) {
+		dp.Attributes().PutStr("kind", openResourcesAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlResourcesOpen) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlResourcesOpen) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlResourcesOpen(cfg MysqlResourcesOpenMetricConfig) metricMysqlResourcesOpen {
+	m := metricMysqlResourcesOpen{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlRowLocks struct {
 	data          pmetric.Metric            // data buffer for generated metric.
 	config        MysqlRowLocksMetricConfig // metric config provided by user.
@@ -3828,6 +3952,58 @@ func (m *metricMysqlRowOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlRowOperations(cfg MysqlRowOperationsMetricConfig) metricMysqlRowOperations {
 	m := metricMysqlRowOperations{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlSlowLaunchThreads struct {
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   MysqlSlowLaunchThreadsMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
+}
+
+// init fills mysql.slow_launch_threads metric with initial data.
+func (m *metricMysqlSlowLaunchThreads) init() {
+	m.data.SetName("mysql.slow_launch_threads")
+	m.data.SetDescription("The number of threads that have taken more than slow_launch_time seconds to create.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlSlowLaunchThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlSlowLaunchThreads) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlSlowLaunchThreads) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlSlowLaunchThreads(cfg MysqlSlowLaunchThreadsMetricConfig) metricMysqlSlowLaunchThreads {
+	m := metricMysqlSlowLaunchThreads{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5356,8 +5532,10 @@ type MetricsBuilder struct {
 	metricMysqlQuerySlowCount          metricMysqlQuerySlowCount
 	metricMysqlReplicaSQLDelay         metricMysqlReplicaSQLDelay
 	metricMysqlReplicaTimeBehindSource metricMysqlReplicaTimeBehindSource
+	metricMysqlResourcesOpen           metricMysqlResourcesOpen
 	metricMysqlRowLocks                metricMysqlRowLocks
 	metricMysqlRowOperations           metricMysqlRowOperations
+	metricMysqlSlowLaunchThreads       metricMysqlSlowLaunchThreads
 	metricMysqlSorts                   metricMysqlSorts
 	metricMysqlStatementEventCount     metricMysqlStatementEventCount
 	metricMysqlStatementEventWaitTime  metricMysqlStatementEventWaitTime
@@ -5429,8 +5607,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlQuerySlowCount:          newMetricMysqlQuerySlowCount(mbc.Metrics.MysqlQuerySlowCount),
 		metricMysqlReplicaSQLDelay:         newMetricMysqlReplicaSQLDelay(mbc.Metrics.MysqlReplicaSQLDelay),
 		metricMysqlReplicaTimeBehindSource: newMetricMysqlReplicaTimeBehindSource(mbc.Metrics.MysqlReplicaTimeBehindSource),
+		metricMysqlResourcesOpen:           newMetricMysqlResourcesOpen(mbc.Metrics.MysqlResourcesOpen),
 		metricMysqlRowLocks:                newMetricMysqlRowLocks(mbc.Metrics.MysqlRowLocks),
 		metricMysqlRowOperations:           newMetricMysqlRowOperations(mbc.Metrics.MysqlRowOperations),
+		metricMysqlSlowLaunchThreads:       newMetricMysqlSlowLaunchThreads(mbc.Metrics.MysqlSlowLaunchThreads),
 		metricMysqlSorts:                   newMetricMysqlSorts(mbc.Metrics.MysqlSorts),
 		metricMysqlStatementEventCount:     newMetricMysqlStatementEventCount(mbc.Metrics.MysqlStatementEventCount),
 		metricMysqlStatementEventWaitTime:  newMetricMysqlStatementEventWaitTime(mbc.Metrics.MysqlStatementEventWaitTime),
@@ -5585,8 +5765,10 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlQuerySlowCount.emit(ils.Metrics())
 	mb.metricMysqlReplicaSQLDelay.emit(ils.Metrics())
 	mb.metricMysqlReplicaTimeBehindSource.emit(ils.Metrics())
+	mb.metricMysqlResourcesOpen.emit(ils.Metrics())
 	mb.metricMysqlRowLocks.emit(ils.Metrics())
 	mb.metricMysqlRowOperations.emit(ils.Metrics())
+	mb.metricMysqlSlowLaunchThreads.emit(ils.Metrics())
 	mb.metricMysqlSorts.emit(ils.Metrics())
 	mb.metricMysqlStatementEventCount.emit(ils.Metrics())
 	mb.metricMysqlStatementEventWaitTime.emit(ils.Metrics())
@@ -5904,6 +6086,16 @@ func (mb *MetricsBuilder) RecordMysqlReplicaTimeBehindSourceDataPoint(ts pcommon
 	mb.metricMysqlReplicaTimeBehindSource.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordMysqlResourcesOpenDataPoint adds a data point to mysql.resources.open metric.
+func (mb *MetricsBuilder) RecordMysqlResourcesOpenDataPoint(ts pcommon.Timestamp, inputVal string, openResourcesAttributeValue AttributeOpenResources) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlResourcesOpen, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlResourcesOpen.recordDataPoint(mb.startTime, ts, val, openResourcesAttributeValue.String())
+	return nil
+}
+
 // RecordMysqlRowLocksDataPoint adds a data point to mysql.row_locks metric.
 func (mb *MetricsBuilder) RecordMysqlRowLocksDataPoint(ts pcommon.Timestamp, inputVal string, rowLocksAttributeValue AttributeRowLocks) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -5921,6 +6113,16 @@ func (mb *MetricsBuilder) RecordMysqlRowOperationsDataPoint(ts pcommon.Timestamp
 		return fmt.Errorf("failed to parse int64 for MysqlRowOperations, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlRowOperations.recordDataPoint(mb.startTime, ts, val, rowOperationsAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlSlowLaunchThreadsDataPoint adds a data point to mysql.slow_launch_threads metric.
+func (mb *MetricsBuilder) RecordMysqlSlowLaunchThreadsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlSlowLaunchThreads, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlSlowLaunchThreads.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

@@ -502,6 +502,28 @@ This field is an indication of how “late” the replica is.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | false | Development |
 
+### mysql.resources.open
+
+The number of open resources.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| kind | The kind of the resource. | Str: ``file``, ``table`` | Recommended | - |
+
+### mysql.slow_launch_threads
+
+The number of threads that have taken more than slow_launch_time seconds to create.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | Development |
+
 ### mysql.statement_event.count
 
 Summary of current and recent statement events.

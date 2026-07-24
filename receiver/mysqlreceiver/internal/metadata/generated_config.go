@@ -1176,6 +1176,54 @@ func (ms *MysqlReplicaTimeBehindSourceMetricConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
+// MysqlResourcesOpenMetricAttributeKey specifies the key of an attribute for the mysql.resources.open metric.
+type MysqlResourcesOpenMetricAttributeKey string
+
+const (
+	MysqlResourcesOpenMetricAttributeKeyOpenResources MysqlResourcesOpenMetricAttributeKey = "kind"
+)
+
+// MysqlResourcesOpenMetricConfig provides config for the mysql.resources.open metric.
+type MysqlResourcesOpenMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlResourcesOpenMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlResourcesOpenMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlResourcesOpenMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlResourcesOpenMetricAttributeKeyOpenResources:
+		default:
+			return fmt.Errorf("metric mysql.resources.open doesn't have an attribute %v, valid attributes: [kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MysqlRowLocksMetricAttributeKey specifies the key of an attribute for the mysql.row_locks metric.
 type MysqlRowLocksMetricAttributeKey string
 
@@ -1269,6 +1317,26 @@ func (ms *MysqlRowOperationsMetricConfig) Validate() error {
 		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
+	return nil
+}
+
+// MysqlSlowLaunchThreadsMetricConfig provides config for the mysql.slow_launch_threads metric.
+type MysqlSlowLaunchThreadsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlSlowLaunchThreadsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -2065,8 +2133,10 @@ type MetricsConfig struct {
 	MysqlQuerySlowCount          MysqlQuerySlowCountMetricConfig          `mapstructure:"mysql.query.slow.count"`
 	MysqlReplicaSQLDelay         MysqlReplicaSQLDelayMetricConfig         `mapstructure:"mysql.replica.sql_delay"`
 	MysqlReplicaTimeBehindSource MysqlReplicaTimeBehindSourceMetricConfig `mapstructure:"mysql.replica.time_behind_source"`
+	MysqlResourcesOpen           MysqlResourcesOpenMetricConfig           `mapstructure:"mysql.resources.open"`
 	MysqlRowLocks                MysqlRowLocksMetricConfig                `mapstructure:"mysql.row_locks"`
 	MysqlRowOperations           MysqlRowOperationsMetricConfig           `mapstructure:"mysql.row_operations"`
+	MysqlSlowLaunchThreads       MysqlSlowLaunchThreadsMetricConfig       `mapstructure:"mysql.slow_launch_threads"`
 	MysqlSorts                   MysqlSortsMetricConfig                   `mapstructure:"mysql.sorts"`
 	MysqlStatementEventCount     MysqlStatementEventCountMetricConfig     `mapstructure:"mysql.statement_event.count"`
 	MysqlStatementEventWaitTime  MysqlStatementEventWaitTimeMetricConfig  `mapstructure:"mysql.statement_event.wait.time"`
@@ -2217,6 +2287,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		MysqlReplicaTimeBehindSource: MysqlReplicaTimeBehindSourceMetricConfig{
 			Enabled: false,
 		},
+		MysqlResourcesOpen: MysqlResourcesOpenMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MysqlResourcesOpenMetricAttributeKey{MysqlResourcesOpenMetricAttributeKeyOpenResources},
+		},
 		MysqlRowLocks: MysqlRowLocksMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
@@ -2226,6 +2301,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlRowOperationsMetricAttributeKey{MysqlRowOperationsMetricAttributeKeyRowOperations},
+		},
+		MysqlSlowLaunchThreads: MysqlSlowLaunchThreadsMetricConfig{
+			Enabled: false,
 		},
 		MysqlSorts: MysqlSortsMetricConfig{
 			Enabled:             true,

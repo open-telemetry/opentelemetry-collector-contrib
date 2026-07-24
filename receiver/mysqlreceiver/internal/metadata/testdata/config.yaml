@@ -81,12 +81,17 @@ all_set:
       enabled: true
     mysql.replica.time_behind_source:
       enabled: true
+    mysql.resources.open:
+      enabled: true
+      attributes: ["kind"]
     mysql.row_locks:
       enabled: true
       attributes: ["kind"]
     mysql.row_operations:
       enabled: true
       attributes: ["operation"]
+    mysql.slow_launch_threads:
+      enabled: true
     mysql.sorts:
       enabled: true
       attributes: ["kind"]
@@ -234,12 +239,17 @@ reaggregate_set:
       enabled: true
     mysql.replica.time_behind_source:
       enabled: true
+    mysql.resources.open:
+      enabled: true
+      attributes: []
     mysql.row_locks:
       enabled: true
       attributes: []
     mysql.row_operations:
       enabled: true
       attributes: []
+    mysql.slow_launch_threads:
+      enabled: true
     mysql.sorts:
       enabled: true
       attributes: []
@@ -387,12 +397,17 @@ none_set:
       enabled: false
     mysql.replica.time_behind_source:
       enabled: false
+    mysql.resources.open:
+      enabled: false
+      attributes: ["kind"]
     mysql.row_locks:
       enabled: false
       attributes: ["kind"]
     mysql.row_operations:
       enabled: false
       attributes: ["operation"]
+    mysql.slow_launch_threads:
+      enabled: false
     mysql.sorts:
       enabled: false
       attributes: ["kind"]
