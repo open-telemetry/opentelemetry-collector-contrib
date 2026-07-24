@@ -1369,32 +1369,53 @@ IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
 	RETURN
 END
 
+DECLARE
+	 @SqlStatement AS nvarchar(max)
+	,@EngineEdition AS INT = CAST(SERVERPROPERTY('EngineEdition') AS INT)
+	,@JoinClause AS nvarchar(max) = ''
+
+IF @EngineEdition = 5
+BEGIN
+	SET @JoinClause = N'
+INNER JOIN sys.database_files AS mf WITH (NOLOCK)
+	ON vfs.[database_id] = DB_ID() AND vfs.[file_id] = mf.[file_id]'
+END
+ELSE
+BEGIN
+	SET @JoinClause = N'
+INNER JOIN sys.master_files AS mf WITH (NOLOCK)
+	ON vfs.[database_id] = mf.[database_id] AND vfs.[file_id] = mf.[file_id]'
+END
+
+SET @SqlStatement = N'
 SELECT
-	 'sqlserver_disk_io' AS [measurement]
-	,REPLACE(@@SERVERNAME,'\',':') AS [sql_instance]
+	 ''sqlserver_disk_io'' AS [measurement]
+	,REPLACE(@@SERVERNAME,''\'','':'') AS [sql_instance]
 	,HOST_NAME() AS [computer_name]
 	,CASE
-		WHEN mf.physical_name LIKE '[A-Z]:\%' THEN LEFT(mf.physical_name, 3)
-		ELSE '/'
+		WHEN mf.physical_name LIKE ''[A-Z]:\%'' THEN LEFT(mf.physical_name, 3)
+		ELSE ''/''
 	END AS [disk_drive]
 	,SUM(vfs.num_of_reads) AS [read_ops]
 	,SUM(vfs.num_of_writes) AS [write_ops]
 	,SUM(vfs.num_of_bytes_read) AS [read_bytes]
 	,SUM(vfs.num_of_bytes_written) AS [write_bytes]
-FROM sys.dm_io_virtual_file_stats(NULL, NULL) vfs
-INNER JOIN sys.master_files mf ON vfs.database_id = mf.database_id AND vfs.file_id = mf.file_id
+FROM sys.dm_io_virtual_file_stats(NULL, NULL) vfs'
++ @JoinClause + N'
 WHERE 1=1
 {filter_instance_name}
 GROUP BY CASE
-		WHEN mf.physical_name LIKE '[A-Z]:\%' THEN LEFT(mf.physical_name, 3)
-		ELSE '/'
+		WHEN mf.physical_name LIKE ''[A-Z]:\%'' THEN LEFT(mf.physical_name, 3)
+		ELSE ''/''
 	END
-OPTION(RECOMPILE)
+OPTION(RECOMPILE)'
+
+EXEC sp_executesql @SqlStatement
 `
 
 func getSQLServerDiskIOQuery(instanceName string) string {
 	if instanceName != "" {
-		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
+		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = ''%s''", instanceName)
 		r := strings.NewReplacer("{filter_instance_name}", whereClause)
 		return r.Replace(sqlServerDiskIOQuery)
 	}
