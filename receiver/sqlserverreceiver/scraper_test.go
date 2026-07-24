@@ -1405,6 +1405,7 @@ func TestRecordCPUMemoryMetrics(t *testing.T) {
 	cfg.Port = 1433
 	assert.NoError(t, cfg.Validate())
 	cfg.Metrics.SqlserverCPUUtilization.Enabled = true
+	cfg.Metrics.SqlserverHostMemoryLimit.Enabled = true
 	cfg.Metrics.SqlserverHostMemoryUsage.Enabled = true
 
 	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
@@ -1431,8 +1432,10 @@ func TestRecordCPUMemoryMetrics(t *testing.T) {
 	actualMetrics, err := cpuMemScraper.ScrapeMetrics(t.Context())
 	assert.NoError(t, err)
 
-	// Verify 3 data points: 1 cpu utilization + 2 memory physical (total, available)
+	// Verify 4 data points: 1 cpu utilization + 1 memory limit + 2 memory usage (used, free)
 	var totalDP int
+	var cpuVal, limitVal, usedVal, freeVal float64
+	var sawCPU, sawLimit, sawUsed, sawFree bool
 	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
 		rm := actualMetrics.ResourceMetrics().At(i)
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
@@ -1441,14 +1444,46 @@ func TestRecordCPUMemoryMetrics(t *testing.T) {
 				m := sm.Metrics().At(k)
 				switch m.Name() {
 				case metadata.MetricsInfo.SqlserverCPUUtilization.Name:
-					totalDP += m.Gauge().DataPoints().Len()
+					dps := m.Gauge().DataPoints()
+					totalDP += dps.Len()
+					for d := 0; d < dps.Len(); d++ {
+						cpuVal = dps.At(d).DoubleValue()
+						sawCPU = true
+					}
+				case metadata.MetricsInfo.SqlserverHostMemoryLimit.Name:
+					dps := m.Gauge().DataPoints()
+					totalDP += dps.Len()
+					for d := 0; d < dps.Len(); d++ {
+						limitVal = float64(dps.At(d).IntValue())
+						sawLimit = true
+					}
 				case metadata.MetricsInfo.SqlserverHostMemoryUsage.Name:
-					totalDP += m.Gauge().DataPoints().Len()
+					dps := m.Gauge().DataPoints()
+					totalDP += dps.Len()
+					for d := 0; d < dps.Len(); d++ {
+						state, _ := dps.At(d).Attributes().Get("system.memory.state")
+						switch state.Str() {
+						case "used":
+							usedVal = float64(dps.At(d).IntValue())
+							sawUsed = true
+						case "free":
+							freeVal = float64(dps.At(d).IntValue())
+							sawFree = true
+						}
+					}
 				}
 			}
 		}
 	}
-	assert.Equal(t, 3, totalDP)
+	assert.Equal(t, 4, totalDP)
+	assert.True(t, sawCPU, "cpu utilization data point should be emitted")
+	assert.True(t, sawLimit, "host memory limit data point should be emitted")
+	assert.True(t, sawUsed, "host memory usage used data point should be emitted")
+	assert.True(t, sawFree, "host memory usage free data point should be emitted")
+	assert.InDelta(t, 0.425, cpuVal, 0.0001)
+	assert.Equal(t, float64(17179869184), limitVal)
+	assert.Equal(t, float64(8589934592), usedVal)
+	assert.Equal(t, float64(8589934592), freeVal)
 }
 
 func TestRecordDiskIOMetrics(t *testing.T) {
@@ -1485,7 +1520,7 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 	actualMetrics, err := diskScraper.ScrapeMetrics(t.Context())
 	assert.NoError(t, err)
 
-	// 2 drives x (2 directions for operations + 2 directions for bytes) = 8 data points
+	// 3 drives x (2 directions for operations + 2 directions for bytes) = 12 data points
 	var totalDP int
 	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
 		rm := actualMetrics.ResourceMetrics().At(i)
@@ -1502,7 +1537,7 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 			}
 		}
 	}
-	assert.Equal(t, 8, totalDP)
+	assert.Equal(t, 12, totalDP)
 }
 
 func TestIsCPUMemoryQueryEnabled(t *testing.T) {

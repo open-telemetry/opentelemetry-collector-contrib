@@ -218,15 +218,15 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverDeadlockRateDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverDiskIoDataPoint(ts, 1, AttributeDiskIoDirectionRead, "system.filesystem.drive-val")
+			mb.RecordSqlserverDiskIoDataPoint(ts, 1, AttributeDiskIoDirectionRead, "sqlserver.file.path.prefix-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverDiskIoDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "system.filesystem.drive-val-2")
+				mb.RecordSqlserverDiskIoDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "sqlserver.file.path.prefix-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverDiskOperationsDataPoint(ts, 1, AttributeDiskIoDirectionRead, "system.filesystem.drive-val")
+			mb.RecordSqlserverDiskOperationsDataPoint(ts, 1, AttributeDiskIoDirectionRead, "sqlserver.file.path.prefix-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverDiskOperationsDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "system.filesystem.drive-val-2")
+				mb.RecordSqlserverDiskOperationsDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "sqlserver.file.path.prefix-val-2")
 			}
 
 			allMetricsCount++
@@ -1266,9 +1266,9 @@ func TestMetricsBuilder(t *testing.T) {
 						diskIoDirectionAttrVal, ok := dp.Attributes().Get("disk.io.direction")
 						assert.True(t, ok)
 						assert.Equal(t, "read", diskIoDirectionAttrVal.Str())
-						systemFilesystemDriveAttrVal, ok := dp.Attributes().Get("system.filesystem.drive")
+						sqlserverFilePathPrefixAttrVal, ok := dp.Attributes().Get("sqlserver.file.path.prefix")
 						assert.True(t, ok)
-						assert.Equal(t, "system.filesystem.drive-val", systemFilesystemDriveAttrVal.Str())
+						assert.Equal(t, "sqlserver.file.path.prefix-val", sqlserverFilePathPrefixAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.disk.io"], "Found a duplicate in the metrics slice: sqlserver.disk.io")
 						validatedMetrics["sqlserver.disk.io"] = true
@@ -1294,7 +1294,7 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("disk.io.direction")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("system.filesystem.drive")
+						_, ok = dp.Attributes().Get("sqlserver.file.path.prefix")
 						assert.False(t, ok)
 					}
 				case "sqlserver.disk.operations":
@@ -1315,9 +1315,9 @@ func TestMetricsBuilder(t *testing.T) {
 						diskIoDirectionAttrVal, ok := dp.Attributes().Get("disk.io.direction")
 						assert.True(t, ok)
 						assert.Equal(t, "read", diskIoDirectionAttrVal.Str())
-						systemFilesystemDriveAttrVal, ok := dp.Attributes().Get("system.filesystem.drive")
+						sqlserverFilePathPrefixAttrVal, ok := dp.Attributes().Get("sqlserver.file.path.prefix")
 						assert.True(t, ok)
-						assert.Equal(t, "system.filesystem.drive-val", systemFilesystemDriveAttrVal.Str())
+						assert.Equal(t, "sqlserver.file.path.prefix-val", sqlserverFilePathPrefixAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.disk.operations"], "Found a duplicate in the metrics slice: sqlserver.disk.operations")
 						validatedMetrics["sqlserver.disk.operations"] = true
@@ -1343,7 +1343,7 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("disk.io.direction")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("system.filesystem.drive")
+						_, ok = dp.Attributes().Get("sqlserver.file.path.prefix")
 						assert.False(t, ok)
 					}
 				case "sqlserver.error.rate":

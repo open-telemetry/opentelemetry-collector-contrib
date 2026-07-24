@@ -18,5 +18,15 @@
     "write_ops": "5432",
     "read_bytes": "2516582400",
     "write_bytes": "1258291200"
+  },
+  {
+    "measurement": "sqlserver_disk_io",
+    "sql_instance": "testhost",
+    "computer_name": "testhost",
+    "disk_drive": "\\\\fileserver\\sqldata",
+    "read_ops": "3333",
+    "write_ops": "1111",
+    "read_bytes": "524288000",
+    "write_bytes": "262144000"
   }
 ]

@@ -1394,6 +1394,9 @@ SELECT
 	,HOST_NAME() AS [computer_name]
 	,CASE
 		WHEN mf.physical_name LIKE ''[A-Z]:\%'' THEN LEFT(mf.physical_name, 3)
+		WHEN mf.physical_name LIKE ''\\_%\_%\%'' THEN LEFT(mf.physical_name,
+			CHARINDEX(''\'', mf.physical_name,
+				CHARINDEX(''\'', mf.physical_name, 3) + 1) - 1)
 		ELSE ''/''
 	END AS [disk_drive]
 	,SUM(vfs.num_of_reads) AS [read_ops]
@@ -1406,6 +1409,9 @@ WHERE 1=1
 {filter_instance_name}
 GROUP BY CASE
 		WHEN mf.physical_name LIKE ''[A-Z]:\%'' THEN LEFT(mf.physical_name, 3)
+		WHEN mf.physical_name LIKE ''\\_%\_%\%'' THEN LEFT(mf.physical_name,
+			CHARINDEX(''\'', mf.physical_name,
+				CHARINDEX(''\'', mf.physical_name, 3) + 1) - 1)
 		ELSE ''/''
 	END
 OPTION(RECOMPILE)'

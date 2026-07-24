@@ -820,8 +820,8 @@ func (ms *SqlserverDeadlockRateMetricConfig) Unmarshal(parser *confmap.Conf) err
 type SqlserverDiskIoMetricAttributeKey string
 
 const (
-	SqlserverDiskIoMetricAttributeKeyDiskIoDirection       SqlserverDiskIoMetricAttributeKey = "disk.io.direction"
-	SqlserverDiskIoMetricAttributeKeySystemFilesystemDrive SqlserverDiskIoMetricAttributeKey = "system.filesystem.drive"
+	SqlserverDiskIoMetricAttributeKeyDiskIoDirection         SqlserverDiskIoMetricAttributeKey = "disk.io.direction"
+	SqlserverDiskIoMetricAttributeKeySqlserverFilePathPrefix SqlserverDiskIoMetricAttributeKey = "sqlserver.file.path.prefix"
 )
 
 // SqlserverDiskIoMetricConfig provides config for the sqlserver.disk.io metric.
@@ -850,9 +850,9 @@ func (ms *SqlserverDiskIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *SqlserverDiskIoMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverDiskIoMetricAttributeKeyDiskIoDirection, SqlserverDiskIoMetricAttributeKeySystemFilesystemDrive:
+		case SqlserverDiskIoMetricAttributeKeyDiskIoDirection, SqlserverDiskIoMetricAttributeKeySqlserverFilePathPrefix:
 		default:
-			return fmt.Errorf("metric sqlserver.disk.io doesn't have an attribute %v, valid attributes: [disk.io.direction, system.filesystem.drive]", val)
+			return fmt.Errorf("metric sqlserver.disk.io doesn't have an attribute %v, valid attributes: [disk.io.direction, sqlserver.file.path.prefix]", val)
 		}
 	}
 
@@ -869,8 +869,8 @@ func (ms *SqlserverDiskIoMetricConfig) Validate() error {
 type SqlserverDiskOperationsMetricAttributeKey string
 
 const (
-	SqlserverDiskOperationsMetricAttributeKeyDiskIoDirection       SqlserverDiskOperationsMetricAttributeKey = "disk.io.direction"
-	SqlserverDiskOperationsMetricAttributeKeySystemFilesystemDrive SqlserverDiskOperationsMetricAttributeKey = "system.filesystem.drive"
+	SqlserverDiskOperationsMetricAttributeKeyDiskIoDirection         SqlserverDiskOperationsMetricAttributeKey = "disk.io.direction"
+	SqlserverDiskOperationsMetricAttributeKeySqlserverFilePathPrefix SqlserverDiskOperationsMetricAttributeKey = "sqlserver.file.path.prefix"
 )
 
 // SqlserverDiskOperationsMetricConfig provides config for the sqlserver.disk.operations metric.
@@ -899,9 +899,9 @@ func (ms *SqlserverDiskOperationsMetricConfig) Unmarshal(parser *confmap.Conf) e
 func (ms *SqlserverDiskOperationsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverDiskOperationsMetricAttributeKeyDiskIoDirection, SqlserverDiskOperationsMetricAttributeKeySystemFilesystemDrive:
+		case SqlserverDiskOperationsMetricAttributeKeyDiskIoDirection, SqlserverDiskOperationsMetricAttributeKeySqlserverFilePathPrefix:
 		default:
-			return fmt.Errorf("metric sqlserver.disk.operations doesn't have an attribute %v, valid attributes: [disk.io.direction, system.filesystem.drive]", val)
+			return fmt.Errorf("metric sqlserver.disk.operations doesn't have an attribute %v, valid attributes: [disk.io.direction, sqlserver.file.path.prefix]", val)
 		}
 	}
 
@@ -3175,12 +3175,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverDiskIo: SqlserverDiskIoMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SqlserverDiskIoMetricAttributeKey{SqlserverDiskIoMetricAttributeKeyDiskIoDirection, SqlserverDiskIoMetricAttributeKeySystemFilesystemDrive},
+			EnabledAttributes:   []SqlserverDiskIoMetricAttributeKey{SqlserverDiskIoMetricAttributeKeyDiskIoDirection, SqlserverDiskIoMetricAttributeKeySqlserverFilePathPrefix},
 		},
 		SqlserverDiskOperations: SqlserverDiskOperationsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SqlserverDiskOperationsMetricAttributeKey{SqlserverDiskOperationsMetricAttributeKeyDiskIoDirection, SqlserverDiskOperationsMetricAttributeKeySystemFilesystemDrive},
+			EnabledAttributes:   []SqlserverDiskOperationsMetricAttributeKey{SqlserverDiskOperationsMetricAttributeKeyDiskIoDirection, SqlserverDiskOperationsMetricAttributeKeySqlserverFilePathPrefix},
 		},
 		SqlserverErrorRate: SqlserverErrorRateMetricConfig{
 			Enabled: false,

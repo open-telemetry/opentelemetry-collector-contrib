@@ -66,10 +66,10 @@ all_set:
       enabled: true
     sqlserver.disk.io:
       enabled: true
-      attributes: ["disk.io.direction","system.filesystem.drive"]
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
     sqlserver.disk.operations:
       enabled: true
-      attributes: ["disk.io.direction","system.filesystem.drive"]
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
     sqlserver.error.rate:
       enabled: true
     sqlserver.extent.operation.rate:
@@ -584,10 +584,10 @@ none_set:
       enabled: false
     sqlserver.disk.io:
       enabled: false
-      attributes: ["disk.io.direction","system.filesystem.drive"]
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
     sqlserver.disk.operations:
       enabled: false
-      attributes: ["disk.io.direction","system.filesystem.drive"]
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
     sqlserver.error.rate:
       enabled: false
     sqlserver.extent.operation.rate:

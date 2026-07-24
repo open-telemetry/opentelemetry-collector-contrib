@@ -129,12 +129,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverDiskIo: SqlserverDiskIoMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SqlserverDiskIoMetricAttributeKey{SqlserverDiskIoMetricAttributeKeyDiskIoDirection, SqlserverDiskIoMetricAttributeKeySystemFilesystemDrive},
+						EnabledAttributes:   []SqlserverDiskIoMetricAttributeKey{SqlserverDiskIoMetricAttributeKeyDiskIoDirection, SqlserverDiskIoMetricAttributeKeySqlserverFilePathPrefix},
 					},
 					SqlserverDiskOperations: SqlserverDiskOperationsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SqlserverDiskOperationsMetricAttributeKey{SqlserverDiskOperationsMetricAttributeKeyDiskIoDirection, SqlserverDiskOperationsMetricAttributeKeySystemFilesystemDrive},
+						EnabledAttributes:   []SqlserverDiskOperationsMetricAttributeKey{SqlserverDiskOperationsMetricAttributeKeyDiskIoDirection, SqlserverDiskOperationsMetricAttributeKeySqlserverFilePathPrefix},
 					},
 					SqlserverErrorRate: SqlserverErrorRateMetricConfig{
 						Enabled: true,
@@ -513,12 +513,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverDiskIo: SqlserverDiskIoMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SqlserverDiskIoMetricAttributeKey{SqlserverDiskIoMetricAttributeKeyDiskIoDirection, SqlserverDiskIoMetricAttributeKeySystemFilesystemDrive},
+						EnabledAttributes:   []SqlserverDiskIoMetricAttributeKey{SqlserverDiskIoMetricAttributeKeyDiskIoDirection, SqlserverDiskIoMetricAttributeKeySqlserverFilePathPrefix},
 					},
 					SqlserverDiskOperations: SqlserverDiskOperationsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SqlserverDiskOperationsMetricAttributeKey{SqlserverDiskOperationsMetricAttributeKeyDiskIoDirection, SqlserverDiskOperationsMetricAttributeKeySystemFilesystemDrive},
+						EnabledAttributes:   []SqlserverDiskOperationsMetricAttributeKey{SqlserverDiskOperationsMetricAttributeKeyDiskIoDirection, SqlserverDiskOperationsMetricAttributeKeySqlserverFilePathPrefix},
 					},
 					SqlserverErrorRate: SqlserverErrorRateMetricConfig{
 						Enabled: false,
@@ -914,7 +914,7 @@ func TestSqlserverDiskIoMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverDiskIoMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.disk.io doesn't have an attribute invalid, valid attributes: [disk.io.direction, system.filesystem.drive]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.disk.io doesn't have an attribute invalid, valid attributes: [disk.io.direction, sqlserver.file.path.prefix]")
 
 	cfg = DefaultMetricsConfig().SqlserverDiskIo
 	cfg.AggregationStrategy = "invalid"
@@ -926,7 +926,7 @@ func TestSqlserverDiskOperationsMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverDiskOperationsMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.disk.operations doesn't have an attribute invalid, valid attributes: [disk.io.direction, system.filesystem.drive]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.disk.operations doesn't have an attribute invalid, valid attributes: [disk.io.direction, sqlserver.file.path.prefix]")
 
 	cfg = DefaultMetricsConfig().SqlserverDiskOperations
 	cfg.AggregationStrategy = "invalid"

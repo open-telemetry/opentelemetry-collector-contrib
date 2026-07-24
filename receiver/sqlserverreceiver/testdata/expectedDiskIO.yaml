@@ -34,7 +34,7 @@ resourceMetrics:
                     - key: disk.io.direction
                       value:
                         stringValue: read
-                    - key: system.filesystem.drive
+                    - key: sqlserver.file.path.prefix
                       value:
                         stringValue: C:\
                   startTimeUnixNano: "1000000"
@@ -44,7 +44,7 @@ resourceMetrics:
                     - key: disk.io.direction
                       value:
                         stringValue: write
-                    - key: system.filesystem.drive
+                    - key: sqlserver.file.path.prefix
                       value:
                         stringValue: C:\
                   startTimeUnixNano: "1000000"
@@ -61,7 +61,7 @@ resourceMetrics:
                     - key: disk.io.direction
                       value:
                         stringValue: read
-                    - key: system.filesystem.drive
+                    - key: sqlserver.file.path.prefix
                       value:
                         stringValue: C:\
                   startTimeUnixNano: "1000000"
@@ -71,7 +71,7 @@ resourceMetrics:
                     - key: disk.io.direction
                       value:
                         stringValue: write
-                    - key: system.filesystem.drive
+                    - key: sqlserver.file.path.prefix
                       value:
                         stringValue: C:\
                   startTimeUnixNano: "1000000"
@@ -116,7 +116,7 @@ resourceMetrics:
                     - key: disk.io.direction
                       value:
                         stringValue: read
-                    - key: system.filesystem.drive
+                    - key: sqlserver.file.path.prefix
                       value:
                         stringValue: D:\
                   startTimeUnixNano: "1000000"
@@ -126,7 +126,7 @@ resourceMetrics:
                     - key: disk.io.direction
                       value:
                         stringValue: write
-                    - key: system.filesystem.drive
+                    - key: sqlserver.file.path.prefix
                       value:
                         stringValue: D:\
                   startTimeUnixNano: "1000000"
@@ -143,7 +143,7 @@ resourceMetrics:
                     - key: disk.io.direction
                       value:
                         stringValue: read
-                    - key: system.filesystem.drive
+                    - key: sqlserver.file.path.prefix
                       value:
                         stringValue: D:\
                   startTimeUnixNano: "1000000"
@@ -153,9 +153,91 @@ resourceMetrics:
                     - key: disk.io.direction
                       value:
                         stringValue: write
-                    - key: system.filesystem.drive
+                    - key: sqlserver.file.path.prefix
                       value:
                         stringValue: D:\
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: testhost
+    scopeMetrics:
+      - metrics:
+          - description: Cumulative bytes read from and written to disk drives hosting SQL Server database files since SQL Server last started.
+            name: sqlserver.disk.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "524288000"
+                  attributes:
+                    - key: disk.io.direction
+                      value:
+                        stringValue: read
+                    - key: sqlserver.file.path.prefix
+                      value:
+                        stringValue: \\fileserver\sqldata
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "262144000"
+                  attributes:
+                    - key: disk.io.direction
+                      value:
+                        stringValue: write
+                    - key: sqlserver.file.path.prefix
+                      value:
+                        stringValue: \\fileserver\sqldata
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Cumulative read and write operations on disk drives hosting SQL Server database files since SQL Server last started.
+            name: sqlserver.disk.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3333"
+                  attributes:
+                    - key: disk.io.direction
+                      value:
+                        stringValue: read
+                    - key: sqlserver.file.path.prefix
+                      value:
+                        stringValue: \\fileserver\sqldata
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1111"
+                  attributes:
+                    - key: disk.io.direction
+                      value:
+                        stringValue: write
+                    - key: sqlserver.file.path.prefix
+                      value:
+                        stringValue: \\fileserver\sqldata
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true

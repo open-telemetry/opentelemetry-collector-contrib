@@ -940,11 +940,11 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverDiskIo: metricInfo{
 		Name:       "sqlserver.disk.io",
-		Attributes: []string{"disk.io.direction", "system.filesystem.drive"},
+		Attributes: []string{"disk.io.direction", "sqlserver.file.path.prefix"},
 	},
 	SqlserverDiskOperations: metricInfo{
 		Name:       "sqlserver.disk.operations",
-		Attributes: []string{"disk.io.direction", "system.filesystem.drive"},
+		Attributes: []string{"disk.io.direction", "sqlserver.file.path.prefix"},
 	},
 	SqlserverErrorRate: metricInfo{
 		Name:       "sqlserver.error.rate",
@@ -3071,7 +3071,7 @@ func (m *metricSqlserverDiskIo) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverDiskIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string, systemFilesystemDriveAttributeValue string) {
+func (m *metricSqlserverDiskIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string, sqlserverFilePathPrefixAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3082,8 +3082,8 @@ func (m *metricSqlserverDiskIo) recordDataPoint(start pcommon.Timestamp, ts pcom
 	if slices.Contains(m.config.EnabledAttributes, SqlserverDiskIoMetricAttributeKeyDiskIoDirection) {
 		dp.Attributes().PutStr("disk.io.direction", diskIoDirectionAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverDiskIoMetricAttributeKeySystemFilesystemDrive) {
-		dp.Attributes().PutStr("system.filesystem.drive", systemFilesystemDriveAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverDiskIoMetricAttributeKeySqlserverFilePathPrefix) {
+		dp.Attributes().PutStr("sqlserver.file.path.prefix", sqlserverFilePathPrefixAttributeValue)
 	}
 
 	var s string
@@ -3165,7 +3165,7 @@ func (m *metricSqlserverDiskOperations) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverDiskOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string, systemFilesystemDriveAttributeValue string) {
+func (m *metricSqlserverDiskOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string, sqlserverFilePathPrefixAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3176,8 +3176,8 @@ func (m *metricSqlserverDiskOperations) recordDataPoint(start pcommon.Timestamp,
 	if slices.Contains(m.config.EnabledAttributes, SqlserverDiskOperationsMetricAttributeKeyDiskIoDirection) {
 		dp.Attributes().PutStr("disk.io.direction", diskIoDirectionAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverDiskOperationsMetricAttributeKeySystemFilesystemDrive) {
-		dp.Attributes().PutStr("system.filesystem.drive", systemFilesystemDriveAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverDiskOperationsMetricAttributeKeySqlserverFilePathPrefix) {
+		dp.Attributes().PutStr("sqlserver.file.path.prefix", sqlserverFilePathPrefixAttributeValue)
 	}
 
 	var s string
@@ -8384,13 +8384,13 @@ func (mb *MetricsBuilder) RecordSqlserverDeadlockRateDataPoint(ts pcommon.Timest
 }
 
 // RecordSqlserverDiskIoDataPoint adds a data point to sqlserver.disk.io metric.
-func (mb *MetricsBuilder) RecordSqlserverDiskIoDataPoint(ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue AttributeDiskIoDirection, systemFilesystemDriveAttributeValue string) {
-	mb.metricSqlserverDiskIo.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), systemFilesystemDriveAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverDiskIoDataPoint(ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue AttributeDiskIoDirection, sqlserverFilePathPrefixAttributeValue string) {
+	mb.metricSqlserverDiskIo.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), sqlserverFilePathPrefixAttributeValue)
 }
 
 // RecordSqlserverDiskOperationsDataPoint adds a data point to sqlserver.disk.operations metric.
-func (mb *MetricsBuilder) RecordSqlserverDiskOperationsDataPoint(ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue AttributeDiskIoDirection, systemFilesystemDriveAttributeValue string) {
-	mb.metricSqlserverDiskOperations.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), systemFilesystemDriveAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverDiskOperationsDataPoint(ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue AttributeDiskIoDirection, sqlserverFilePathPrefixAttributeValue string) {
+	mb.metricSqlserverDiskOperations.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), sqlserverFilePathPrefixAttributeValue)
 }
 
 // RecordSqlserverErrorRateDataPoint adds a data point to sqlserver.error.rate metric.

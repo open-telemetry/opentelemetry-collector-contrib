@@ -223,6 +223,10 @@ attributes:
     type: string
     requirement_level: required
     enum: [allocated, deallocated]
+  sqlserver.file.path.prefix:
+    description: The path prefix identifying the storage location of SQL Server database files.
+    type: string
+    requirement_level: recommended
   sqlserver.index.id:
     description: The identifier of the index.
     type: int
@@ -410,10 +414,6 @@ attributes:
   sqlserver.writes:
     description: Number of writes performed by the query.
     type: int
-    requirement_level: recommended
-  system.filesystem.drive:
-    description: The drive prefix of the database file path.
-    type: string
     requirement_level: recommended
   system.memory.state:
     description: The state of the physical memory on the host.
@@ -794,7 +794,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
       value_type: int
-    attributes: [disk.io.direction, system.filesystem.drive]
+    attributes: [disk.io.direction, sqlserver.file.path.prefix]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
   sqlserver.disk.operations:
     enabled: false
@@ -805,7 +805,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
       value_type: int
-    attributes: [disk.io.direction, system.filesystem.drive]
+    attributes: [disk.io.direction, sqlserver.file.path.prefix]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
   sqlserver.error.rate:
     enabled: false

@@ -531,7 +531,7 @@ This metric is only available when the receiver is configured to directly connec
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | The direction of disk I/O operations. | Str: ``read``, ``write`` | Recommended | - |
-| system.filesystem.drive | The drive prefix of the database file path. | Any Str | Recommended | - |
+| sqlserver.file.path.prefix | The path prefix identifying the storage location of SQL Server database files. | Any Str | Recommended | - |
 
 ### sqlserver.disk.operations
 
@@ -548,7 +548,7 @@ This metric is only available when the receiver is configured to directly connec
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | The direction of disk I/O operations. | Str: ``read``, ``write`` | Recommended | - |
-| system.filesystem.drive | The drive prefix of the database file path. | Any Str | Recommended | - |
+| sqlserver.file.path.prefix | The path prefix identifying the storage location of SQL Server database files. | Any Str | Recommended | - |
 
 ### sqlserver.error.rate
 
