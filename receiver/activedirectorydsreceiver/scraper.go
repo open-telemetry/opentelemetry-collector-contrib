@@ -22,15 +22,15 @@ import (
 )
 
 type activeDirectoryDSScraper struct {
+	logger *zap.Logger
 	mb     *metadata.MetricsBuilder
 	w      *watchers
-	logger *zap.Logger
 }
 
 func newActiveDirectoryDSScraper(mbc metadata.MetricsBuilderConfig, params receiver.Settings) *activeDirectoryDSScraper {
 	return &activeDirectoryDSScraper{
-		mb:     metadata.NewMetricsBuilder(mbc, params),
 		logger: params.Logger,
+		mb:     metadata.NewMetricsBuilder(mbc, params),
 	}
 }
 

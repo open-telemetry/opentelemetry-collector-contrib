@@ -544,14 +544,3 @@ func PdhGetRawCounterArrayW(hCounter PDH_HCOUNTER, lpdwBufferSize, lpdwBufferCou
 
 	return uint32(ret)
 }
-
-// IsIgnorablePDHError checks if the uint32 return code represents a known,
-// transient PDH error (such as a process terminating between sample collections)
-// that should be skipped rather than failing the entire scrape operation.
-func IsIgnorablePDHError(ret uint32) bool {
-	switch ret {
-	case PDH_INVALID_DATA, PDH_NO_DATA, PDH_CALC_NEGATIVE_DENOMINATOR:
-		return true
-	}
-	return false
-}

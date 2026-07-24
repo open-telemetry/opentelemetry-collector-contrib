@@ -6,14 +6,12 @@
 package winperfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 
 import (
-	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters/internal/third_party/telegraf/win_perf_counters"
+	"go.uber.org/zap"
+	"golang.org/x/sys/windows"
 )
 
 func TestCounterPath(t *testing.T) {
@@ -49,23 +47,29 @@ func TestCounterPath(t *testing.T) {
 
 // Test_Scraping_Wildcard tests that wildcard instances pull out values
 func Test_Scraping_Wildcard(t *testing.T) {
-	watcher, err := NewWatcher("LogicalDisk", "*", "Free Megabytes")
+	watcher, err := NewWatcher(zap.NewNop(), "LogicalDisk", "*", "Free Megabytes")
 	require.NoError(t, err)
 
 	values, err := watcher.ScrapeData()
 	require.NoError(t, err)
 
-	// In some environments (like GitHub Actions runners or Windows VMs), windows.GetLogicalDrives()
-	// returns a bitmask that includes drives that do not have performance counters enabled or available
-	// (e.g. unmounted volumes, CD-ROM drives, or hidden partitions). Because of this, we cannot
-	// reliably assert that len(values) >= numDrives. We assert that at least one drive is returned
-	// and no error occurred, while logging the actual values returned for visibility.
-	require.GreaterOrEqual(t, len(values), 1, "expected at least 1 drive instance returned by the wildcard query")
-	t.Logf("Wildcard query returned %d instances: %v", len(values), values)
+	// Count the number of logical drives
+	drives, err := windows.GetLogicalDrives()
+	require.NoError(t, err)
+
+	numDrives := 0
+	for drives != 0 {
+		if drives&1 != 0 {
+			numDrives++
+		}
+		drives >>= 1
+	}
+
+	require.GreaterOrEqual(t, len(values), numDrives)
 }
 
 func TestWatcher_ScrapeRawValue(t *testing.T) {
-	watcher, err := NewWatcher("Memory", "", "Page Reads/Sec")
+	watcher, err := NewWatcher(zap.NewNop(), "Memory", "", "Page Reads/Sec")
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, watcher.Close())
@@ -79,7 +83,7 @@ func TestWatcher_ScrapeRawValue(t *testing.T) {
 }
 
 func TestWatcher_ScrapeRawValue_NoData(t *testing.T) {
-	watcher, err := NewWatcher("Process", "NonExistingInstance", "% Processor Time")
+	watcher, err := NewWatcher(zap.NewNop(), ".NET CLR Memory", "NonExistingInstance", "% Time in GC")
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, watcher.Close())
@@ -135,7 +139,7 @@ func TestNewPerfCounter_CollectOnStartup(t *testing.T) {
 
 func TestPerfCounter_Close(t *testing.T) {
 	pc, err := newPerfCounter(`\Memory\Committed Bytes`, false)
-	require.NoError(t, err, "Failed to create performance counter: %v", err)
+	require.NoError(t, err)
 
 	err = pc.Close()
 	require.NoError(t, err, "Failed to close initialized performance counter query: %v", err)
@@ -147,7 +151,7 @@ func TestPerfCounter_Close(t *testing.T) {
 }
 
 func TestPerfCounter_NonExistentInstance_NoError(t *testing.T) {
-	pc, err := newPerfCounter(`\Process(NonExistentInstance)\% Processor Time`, true)
+	pc, err := newPerfCounter(`\.NET CLR Memory(NonExistentInstance)\% Time in GC`, true)
 	require.NoError(t, err)
 
 	data, err := pc.ScrapeData()
@@ -376,25 +380,4 @@ func Test_InstanceNameIndexing(t *testing.T) {
 			assert.Equal(t, test.expected, actual)
 		})
 	}
-}
-
-func TestIsIgnorableError(t *testing.T) {
-	// Real PdhError wrapped with %w
-	pdhErr := win_perf_counters.NewPdhError(win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR)
-	wrappedErr := fmt.Errorf("failed to collect: %w", pdhErr)
-	assert.True(t, IsIgnorableError(wrappedErr))
-
-	pdhErrNoData := win_perf_counters.NewPdhError(win_perf_counters.PDH_NO_DATA)
-	wrappedErrNoData := fmt.Errorf("failed to collect: %w", pdhErrNoData)
-	assert.True(t, IsIgnorableError(wrappedErrNoData))
-
-	pdhErrInvalidData := win_perf_counters.NewPdhError(win_perf_counters.PDH_INVALID_DATA)
-	wrappedErrInvalidData := fmt.Errorf("failed to collect: %w", pdhErrInvalidData)
-	assert.True(t, IsIgnorableError(wrappedErrInvalidData))
-
-	pdhErrOther := win_perf_counters.NewPdhError(win_perf_counters.PDH_CSTATUS_NO_MACHINE)
-	wrappedErrOther := fmt.Errorf("failed to collect: %w", pdhErrOther)
-	assert.False(t, IsIgnorableError(wrappedErrOther))
-
-	assert.False(t, IsIgnorableError(errors.New("some other error")))
 }

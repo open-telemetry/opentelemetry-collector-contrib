@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -126,7 +127,7 @@ func TestScrape_Errors(t *testing.T) {
 				defaultPageFaultsPerSec int64 = 300
 				defaultPageMajPerSec    int64 = 200
 			)
-			scraper.perfCounterFactory = func(_, _, counter string, _ ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
+			scraper.perfCounterFactory = func(_ *zap.Logger, _, _, counter string) (winperfcounters.PerfCounterWatcher, error) {
 				perfCounterMock := &testmocks.PerfCounterWatcherMock{}
 				switch counter {
 				case pageReadsPerSec:
@@ -232,7 +233,7 @@ func TestPagingScrapeWithRealData(t *testing.T) {
 func TestStart_Error(t *testing.T) {
 	testCases := []struct {
 		name                  string
-		newPerfCounterFactory func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
+		newPerfCounterFactory func(*zap.Logger, string, string, string) (winperfcounters.PerfCounterWatcher, error)
 		expectedSkipScrape    bool
 	}{
 		{
@@ -241,7 +242,7 @@ func TestStart_Error(t *testing.T) {
 		},
 		{
 			name: "new_perf_counter_watcher_fails",
-			newPerfCounterFactory: func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
+			newPerfCounterFactory: func(*zap.Logger, string, string, string) (winperfcounters.PerfCounterWatcher, error) {
 				return nil, errors.New("err1")
 			},
 			expectedSkipScrape: true,

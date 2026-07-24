@@ -65,7 +65,7 @@ func (w *mockPerfCounter) Close() error {
 func mockPerfCounterFactoryInvocations(mpcs ...mockPerfCounter) newWatcherFunc {
 	invocationNum := 0
 
-	return func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
+	return func(*zap.Logger, string, string, string) (winperfcounters.PerfCounterWatcher, error) {
 		if invocationNum == len(mpcs) {
 			return nil, fmt.Errorf("invoked watcher %d times but only %d were setup", invocationNum+1, len(mpcs))
 		}
@@ -175,9 +175,9 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				},
 				PerfCounters: []ObjectConfig{
 					{
-						Object:    "Process",
+						Object:    ".NET CLR Memory",
 						Instances: []string{"NoMatchingInstance*"},
-						Counters:  []CounterConfig{{Name: "% Processor Time", MetricRep: MetricRep{Name: "no.matching.instance"}}},
+						Counters:  []CounterConfig{{Name: "% Time in GC", MetricRep: MetricRep{Name: "no.matching.instance"}}},
 					},
 				},
 				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute, InitialDelay: time.Second},
@@ -234,28 +234,29 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			require.Equal(t, 0, obs.Len())
 			require.NoError(t, err)
 
-			expectedMetrics, err := golden.ReadMetrics(test.expectedMetricPath)
-			require.NoError(t, err)
-
 			var actualMetrics pmetric.Metrics
 			require.EventuallyWithT(t, func(c *assert.CollectT) {
 				actualMetrics, err = scraper.scrape(t.Context())
 				assert.NoError(c, err)
-				assert.NoError(c, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-					// Scraping test host means static values, timestamps and instance counts are unreliable. ScopeMetrics order is also unpredictable.
-					// The check only takes the first instance of multi-instance counters and assumes that the other instances would be included.
-					pmetrictest.IgnoreSubsequentDataPoints("cpu.idle"),
-					pmetrictest.IgnoreSubsequentDataPoints("processor.time"),
-					pmetrictest.IgnoreMetricsOrder(),
-					pmetrictest.IgnoreScopeMetricsOrder(),
-					pmetrictest.IgnoreResourceMetricsOrder(),
-					pmetrictest.IgnoreMetricValues(),
-					pmetrictest.IgnoreTimestamp(),
-				))
 			}, 20*time.Second, 1*time.Second)
 
 			err = scraper.shutdown(t.Context())
+
 			require.NoError(t, err)
+			expectedMetrics, err := golden.ReadMetrics(test.expectedMetricPath)
+			require.NoError(t, err)
+
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				// Scraping test host means static values, timestamps and instance counts are unreliable. ScopeMetrics order is also unpredictable.
+				// The check only takes the first instance of multi-instance counters and assumes that the other instances would be included.
+				pmetrictest.IgnoreSubsequentDataPoints("cpu.idle"),
+				pmetrictest.IgnoreSubsequentDataPoints("processor.time"),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreTimestamp(),
+			))
 		})
 	}
 }
@@ -337,7 +338,7 @@ func TestInitWatchers(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			s := &windowsPerfCountersScraper{cfg: &Config{PerfCounters: test.cfgs}, newWatcher: winperfcounters.NewWatcher, settings: componenttest.NewNopTelemetrySettings()}
+			s := &windowsPerfCountersScraper{cfg: &Config{PerfCounters: test.cfgs}, newWatcher: winperfcounters.NewWatcher}
 			watchers, errs := s.initWatchers()
 			if test.expectedErr != "" {
 				require.EqualError(t, errs, test.expectedErr)

@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -36,8 +37,8 @@ type iisReceiver struct {
 	mb                      *metadata.MetricsBuilder
 
 	// for mocking
-	newWatcher         func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
-	newWatcherFromPath func(string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
+	newWatcher         func(*zap.Logger, string, string, string) (winperfcounters.PerfCounterWatcher, error)
+	newWatcherFromPath func(*zap.Logger, string) (winperfcounters.PerfCounterWatcher, error)
 	expandWildcardPath func(string) ([]string, error)
 }
 
@@ -156,20 +157,15 @@ func (rcvr *iisReceiver) scrapeInstanceMetrics(wrs []watcherRecorder, instanceTo
 	}
 }
 
+var negativeDenominatorError = "A counter with a negative denominator value was detected.\r\n"
+
 func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(appToRecorders map[string][]valRecorder) {
-	if !rcvr.config.Metrics.IisRequestQueueAgeMax.Enabled {
-		return
-	}
-
-	watchedInstances := map[string]bool{}
-
 	for _, wr := range rcvr.queueMaxAgeWatchers {
-		watchedInstances[wr.instance] = true
 		counterValues, err := wr.watcher.ScrapeData()
 
 		var value float64
 		switch {
-		case err != nil && winperfcounters.IsIgnorableError(err):
+		case err != nil && strings.HasSuffix(err.Error(), negativeDenominatorError):
 			// This error occurs when there are no items in the queue;
 			// in this case, we would like to emit a 0 instead of logging an error (this is an expected scenario).
 			value = 0
@@ -177,10 +173,8 @@ func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(appToRecorders map[string][]va
 			rcvr.params.Logger.Warn("some performance counters could not be scraped; ", zap.Error(err))
 			continue
 		case len(counterValues) == 0:
-			// No counters scraped, meaning the queue is likely empty (e.g., PDH_NO_DATA or PDH_CALC_NEGATIVE_DENOMINATOR dropped items),
-			// or the instance is temporarily offline (e.g. app-pool restart, so the instance was omitted from the results).
-			// In either case, we safely emit a 0 instead of skipping the metric or returning an unknown state.
-			value = 0
+			// No counters scraped
+			continue
 		default:
 			value = counterValues[0].Value
 		}
@@ -190,19 +184,6 @@ func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(appToRecorders map[string][]va
 				val:    value,
 				record: recordMaxQueueItemAge,
 			})
-	}
-
-	// For any app pool that was discovered but didn't have a MaxQueueItemAge watcher
-	// (likely because its HTTP queue was empty at startup and the instance didn't exist yet),
-	// we emit a 0 value to avoid dropping the metric.
-	for appPool := range appToRecorders {
-		if !watchedInstances[appPool] {
-			appToRecorders[appPool] = append(appToRecorders[appPool],
-				valRecorder{
-					val:    0,
-					record: recordMaxQueueItemAge,
-				})
-		}
 	}
 }
 
@@ -232,7 +213,7 @@ func (rcvr *iisReceiver) buildWatcherRecorders(confs []perfCounterRecorderConf, 
 
 	for _, pcr := range confs {
 		for perfCounterName, recorder := range pcr.recorders {
-			w, err := rcvr.newWatcher(pcr.object, pcr.instance, perfCounterName, winperfcounters.WithLogger(rcvr.params.Logger))
+			w, err := rcvr.newWatcher(rcvr.params.Logger, pcr.object, pcr.instance, perfCounterName)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 				continue
@@ -277,7 +258,7 @@ func (rcvr *iisReceiver) buildMaxQueueItemAgeWatchers(scrapeErrors *scrapererror
 			continue
 		}
 
-		watcher, err := rcvr.newWatcherFromPath(path, winperfcounters.WithLogger(rcvr.params.Logger))
+		watcher, err := rcvr.newWatcherFromPath(rcvr.params.Logger, path)
 		if err != nil {
 			scrapeErrors.AddPartial(1, fmt.Errorf("failed to create watcher from %q: %w", path, err))
 			continue

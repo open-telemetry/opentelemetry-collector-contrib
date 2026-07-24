@@ -33,7 +33,7 @@ var (
 	loadAvgFactor15m = 1 / math.Exp(samplingFrequency.Seconds()/(15*time.Minute).Seconds())
 
 	// perfCounterFactory is used to facilitate testing
-	perfCounterFactory: winperfcounters.NewWatcher,
+	perfCounterFactory = winperfcounters.NewWatcher
 )
 
 var (
@@ -83,7 +83,7 @@ func startSampling(_ context.Context, logger *zap.Logger) error {
 }
 
 func newSampler(logger *zap.Logger) (*sampler, error) {
-	perfCounterWatcher, err := perfCounterFactory(system, "", processorQueueLength, winperfcounters.WithLogger(logger))
+	perfCounterWatcher, err := perfCounterFactory(logger, system, "", processorQueueLength)
 	if err != nil {
 		return nil, err
 	}
