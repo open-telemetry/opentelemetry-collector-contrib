@@ -268,6 +268,52 @@ func TestMetricTracker_Convert(t *testing.T) {
 	})
 }
 
+func TestMetricTracker_Convert_ExponentialHistogramReset(t *testing.T) {
+	miExpHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeExponentialHistogram,
+		MetricIsMonotonic:      true,
+		Attributes:             pcommon.NewMap(),
+	}
+
+	expHist := func(count uint64) ValuePoint {
+		return ValuePoint{
+			ObservedTimestamp: pcommon.NewTimestampFromTime(time.Now()),
+			ExponentialHistogramValue: &ExponentialHistogramPoint{
+				Count:    count,
+				Sum:      float64(count),
+				Positive: ExponentialBuckets{Offset: 0, BucketCounts: []uint64{count}},
+			},
+		}
+	}
+
+	m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+	convert := func(count uint64) (DeltaValue, bool, string) {
+		return m.Convert(MetricPoint{Identity: miExpHist, Value: expHist(count)})
+	}
+
+	// Baseline, then a normal increasing point.
+	_, valid, _ := convert(100)
+	require.True(t, valid)
+	out, valid, reason := convert(150)
+	require.True(t, valid)
+	assert.Empty(t, reason)
+	assert.EqualValues(t, 50, out.ExponentialHistogramPoint.Count)
+
+	// Counter restart: cumulative count drops, so this point is a reset and is dropped.
+	_, valid, reason = convert(20)
+	assert.False(t, valid)
+	assert.Equal(t, ReasonReset, reason)
+
+	// The point after a reset must be converted against the restarted baseline (20),
+	// exactly like the sum and plain-histogram paths recover on the very next point.
+	out, valid, reason = convert(40)
+	require.True(t, valid, "point after reset should convert, not be dropped as another reset")
+	assert.Empty(t, reason)
+	assert.EqualValues(t, 20, out.ExponentialHistogramPoint.Count)
+}
+
 func Test_metricTracker_removeStale(t *testing.T) {
 	currentTime := pcommon.Timestamp(100)
 	freshPoint := ValuePoint{
