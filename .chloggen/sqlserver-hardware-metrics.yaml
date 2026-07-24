@@ -4,7 +4,8 @@ note: Add opt-in metrics for monitoring host-level CPU, memory, and disk I/O as 
 issues: [0]
 subtext: |
   - `sqlserver.cpu.utilization`
-  - `sqlserver.memory.physical`
-  - `sqlserver.disk.io.rate`
-  - `sqlserver.disk.io.throughput`
+  - `sqlserver.host.memory.limit`
+  - `sqlserver.host.memory.usage`
+  - `sqlserver.disk.io`
+  - `sqlserver.disk.operations`
 change_logs: [user]
