@@ -3699,7 +3699,7 @@ type metricMysqlResourcesOpen struct {
 // init fills mysql.resources.open metric with initial data.
 func (m *metricMysqlResourcesOpen) init() {
 	m.data.SetName("mysql.resources.open")
-	m.data.SetDescription("The number of open resources.")
+	m.data.SetDescription("The number of currently open resources.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

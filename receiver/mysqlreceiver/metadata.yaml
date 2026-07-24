@@ -671,7 +671,7 @@ metrics:
     attributes: []
   mysql.resources.open:
     enabled: false
-    description: The number of open resources.
+    description: The number of currently open resources.
     stability: development
     unit: "1"
     gauge:

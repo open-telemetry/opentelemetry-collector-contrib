@@ -940,7 +940,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: s
-          - description: The number of open resources.
+          - description: The number of currently open resources.
             gauge:
               dataPoints:
                 - asInt: "367"

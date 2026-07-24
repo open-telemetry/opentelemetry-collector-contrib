@@ -504,7 +504,7 @@ This field is an indication of how “late” the replica is.
 
 ### mysql.resources.open
 
-The number of open resources.
+The number of currently open resources.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

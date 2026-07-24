@@ -1509,7 +1509,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["mysql.resources.open"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The number of open resources.", mi.Description())
+						assert.Equal(t, "The number of currently open resources.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -1524,7 +1524,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["mysql.resources.open"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The number of open resources.", mi.Description())
+						assert.Equal(t, "The number of currently open resources.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
