@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.157.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.157.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.157.1-0.20260721144046-68240e438284
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.157.0
 	github.com/stretchr/testify v1.11.1
@@ -63,7 +63,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.83.0-devel.0.20260714134811-fee4bbf7ff73 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.83.0-devel.0.20260723174943-dbdf7e37527d // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.80.2 // indirect
