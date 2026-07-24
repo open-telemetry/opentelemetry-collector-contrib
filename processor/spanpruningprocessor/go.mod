@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/gobwas/glob v0.2.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.154.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.157.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.63.1-0.20260723141305-52e6bf4aaaba
