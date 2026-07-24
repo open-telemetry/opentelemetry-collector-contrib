@@ -667,11 +667,11 @@ func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 
 	span0 := ptrace.NewSpan()
 	span0.SetName("c")
-	k0 := c.buildKey("ab", span0, dimensionList{}, dimensionList{}, pcommon.NewMap(), false)
+	k0 := c.buildKey("ab", span0, dimensionList{}, dimensionList{}, pcommon.NewMap(), nil, false)
 
 	span1 := ptrace.NewSpan()
 	span1.SetName("bc")
-	k1 := c.buildKey("a", span1, dimensionList{}, dimensionList{}, pcommon.NewMap(), false)
+	k1 := c.buildKey("a", span1, dimensionList{}, dimensionList{}, pcommon.NewMap(), nil, false)
 
 	assert.NotEqual(t, k0, k1)
 	assert.Equal(t, metrics.Key("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
@@ -687,7 +687,7 @@ func TestBuildKeyExcludeDimensionsAll(t *testing.T) {
 
 	span0 := ptrace.NewSpan()
 	span0.SetName("spanName")
-	k0 := c.buildKey("serviceName", span0, dimensionList{}, dimensionList{}, pcommon.NewMap(), false)
+	k0 := c.buildKey("serviceName", span0, dimensionList{}, dimensionList{}, pcommon.NewMap(), nil, false)
 	assert.Equal(t, metrics.Key(""), k0)
 }
 
@@ -700,7 +700,7 @@ func TestBuildKeyExcludeWrongDimensions(t *testing.T) {
 
 	span0 := ptrace.NewSpan()
 	span0.SetName("spanName")
-	k0 := c.buildKey("serviceName", span0, dimensionList{}, dimensionList{}, pcommon.NewMap(), false)
+	k0 := c.buildKey("serviceName", span0, dimensionList{}, dimensionList{}, pcommon.NewMap(), nil, false)
 	assert.Equal(t, metrics.Key("serviceName"), k0)
 }
 
@@ -824,7 +824,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			span0 := ptrace.NewSpan()
 			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
-			key := c.buildKey("ab", span0, dimensionList{}, tc.optionalDims, resAttr, false)
+			key := c.buildKey("ab", span0, dimensionList{}, tc.optionalDims, resAttr, nil, false)
 			assert.Equal(t, metrics.Key(tc.wantKey), key)
 		})
 	}
@@ -977,7 +977,7 @@ func TestBuildAttributesWithDimensions(t *testing.T) {
 			resAttr := pcommon.NewMap()
 			assert.NoError(t, resAttr.FromRaw(tt.resourceAttrMap))
 
-			attrs := p.buildAttributes("test_service", span, resAttr, tt.dimensions, tt.optionalDimensions, pcommon.NewInstrumentationScope(), false)
+			attrs := p.buildAttributes("test_service", span, resAttr, nil, tt.dimensions, tt.optionalDimensions, pcommon.NewInstrumentationScope(), false)
 			assert.Equal(t, len(tt.want), attrs.Len())
 			for k, v := range tt.want {
 				val, ok := attrs.Get(k)
@@ -2549,7 +2549,7 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), dimensionList{}, dimensionList{}, tt.instrumentationScope, false)
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, dimensionList{}, dimensionList{}, tt.instrumentationScope, false)
 
 			// +1 for the sampling.method attribute when enabled
 			assert.Equal(t, len(tt.want)+1, attrs.Len())
@@ -2864,7 +2864,7 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), dimensionList{}, dimensionList{}, tt.instrumentationScope, false)
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, dimensionList{}, dimensionList{}, tt.instrumentationScope, false)
 
 			// +1 for the sampling.method attribute that's always added
 			assert.Equal(t, len(tt.want)+1, attrs.Len())
@@ -2920,7 +2920,7 @@ func TestBuildAttributes_AdjustedCount(t *testing.T) {
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), dimensionList{}, dimensionList{}, pcommon.NewInstrumentationScope(), tt.isAdjustedCount)
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, dimensionList{}, dimensionList{}, pcommon.NewInstrumentationScope(), tt.isAdjustedCount)
 
 			val, ok := attrs.Get(metricAttrSamplingMethod)
 			assert.Equal(t, tt.expectAttribute, ok, "sampling.method attribute presence")
@@ -3801,4 +3801,91 @@ func BenchmarkConnectorConsumeTraces_AdjustedCountCache(b *testing.B) {
 			_ = conn.ConsumeTraces(ctx, traces)
 		}
 	})
+}
+
+// BenchmarkConnectorConsumeTraces_EventsEnabled measures the events.enabled path with
+// several resource attributes and multiple events per span.
+func BenchmarkConnectorConsumeTraces_EventsEnabled(b *testing.B) {
+	conn, err := newConnectorImp(stringp("defaultNullValue"), disabledHistogramsConfig, disabledExemplarsConfig, enabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+	require.NoError(b, err)
+
+	traces := buildEventsHeavyTrace(50, 5, 20)
+	ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		assert.NoError(b, conn.ConsumeTraces(ctx, traces))
+	}
+}
+
+// BenchmarkConnectorConsumeTraces_ResourceMetricsKeyAttributes measures createResourceKey
+// when a small key attribute list is configured on resources with many attributes.
+func BenchmarkConnectorConsumeTraces_ResourceMetricsKeyAttributes(b *testing.B) {
+	keyAttrs := []string{"service.name", "telemetry.sdk.language"}
+	conn, err := newConnectorImp(stringp("defaultNullValue"), disabledHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, keyAttrs, 1000, clockwork.NewFakeClock(), false)
+	require.NoError(b, err)
+
+	traces := buildResourceHeavyTrace(20, 30)
+	ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		assert.NoError(b, conn.ConsumeTraces(ctx, traces))
+	}
+}
+
+func buildEventsHeavyTrace(spanCount, eventsPerSpan, resourceAttrCount int) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", "events-bench")
+	for i := 0; i < resourceAttrCount; i++ {
+		rs.Resource().Attributes().PutStr(fmt.Sprintf("resource.attr.%d", i), fmt.Sprintf("value-%d", i))
+	}
+	ils := rs.ScopeSpans().AppendEmpty()
+	now := time.Now()
+	for i := 0; i < spanCount; i++ {
+		s := ils.Spans().AppendEmpty()
+		s.SetName(fmt.Sprintf("op-%d", i%10))
+		s.SetKind(ptrace.SpanKindServer)
+		s.Status().SetCode(ptrace.StatusCodeError)
+		s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+		s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
+		s.SetTraceID([16]byte{byte(i), 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+		s.SetSpanID([8]byte{byte(i), 2, 3, 4, 5, 6, 7, 8})
+		s.Attributes().PutStr("http.method", "GET")
+		for e := 0; e < eventsPerSpan; e++ {
+			ev := s.Events().AppendEmpty()
+			ev.SetName("exception")
+			ev.Attributes().PutStr(exceptionTypeAttrName, fmt.Sprintf("ErrType-%d", e%3))
+			ev.Attributes().PutStr("exception.message", fmt.Sprintf("boom-%d", e))
+		}
+	}
+	return traces
+}
+
+func buildResourceHeavyTrace(resourceCount, extraAttrCount int) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	now := time.Now()
+	for r := 0; r < resourceCount; r++ {
+		rs := traces.ResourceSpans().AppendEmpty()
+		attrs := rs.Resource().Attributes()
+		attrs.PutStr("service.name", fmt.Sprintf("svc-%d", r%5))
+		attrs.PutStr("telemetry.sdk.language", "go")
+		attrs.PutStr("telemetry.sdk.name", "opentelemetry")
+		for i := 0; i < extraAttrCount; i++ {
+			attrs.PutStr(fmt.Sprintf("extra.attr.%d", i), fmt.Sprintf("v-%d-%d", r, i))
+		}
+		ils := rs.ScopeSpans().AppendEmpty()
+		s := ils.Spans().AppendEmpty()
+		s.SetName("/ping")
+		s.SetKind(ptrace.SpanKindServer)
+		s.Status().SetCode(ptrace.StatusCodeOk)
+		s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+		s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
+		s.SetTraceID([16]byte{byte(r), 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+		s.SetSpanID([8]byte{byte(r), 2, 3, 4, 5, 6, 7, 8})
+	}
+	return traces
 }
