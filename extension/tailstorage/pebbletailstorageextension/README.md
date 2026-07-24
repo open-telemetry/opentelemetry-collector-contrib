@@ -35,7 +35,9 @@ treat the directory as ephemeral.
 
 - `directory` (required): directory used to store Pebble DB files.
 - `max_storage_size_mib` (optional): maximum on-disk size observed for the Pebble tail
-  store. `0` keeps the existing unlimited behavior.
+  store. The limit is best-effort because Pebble may perform filesystem operations
+  asynchronously. After the last periodic size observation exceeds the limit, new
+  appends fail. `0` keeps the existing unlimited behavior.
 
 The size limit protects normal runtime disk usage for this extension. It does not make
 the storage durable across restarts. Startup still clears any existing Pebble database.
