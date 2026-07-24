@@ -412,7 +412,7 @@ attributes:
     type: int
     requirement_level: recommended
   system.filesystem.drive:
-    description: The drive prefix of the database file path. On Windows this is the drive letter and separator (e.g. C:\); on Linux this is always /.
+    description: The drive prefix of the database file path.
     type: string
     requirement_level: recommended
   system.memory.state:
