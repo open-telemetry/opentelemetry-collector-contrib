@@ -24,7 +24,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "https://faro.example.com/collect"
+	cfg.ClientConfig.Endpoint = "https://faro.example.com/collect"
 
 	set := exporter.Settings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
