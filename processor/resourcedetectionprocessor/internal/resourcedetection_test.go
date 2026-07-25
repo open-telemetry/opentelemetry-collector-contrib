@@ -725,6 +725,26 @@ func TestDetectRetryBudgetBoundsHungAttemptWithNoClientTimeout(t *testing.T) {
 	assert.Less(t, time.Since(start), 5*time.Second, "hung attempt should have been bounded by MaxElapsedTime, not left to run forever")
 }
 
+func TestDetectRetryBudgetBoundsAttemptEvenWithLargerClientTimeout(t *testing.T) {
+	retryConfig := configretry.BackOffConfig{
+		Enabled:         true,
+		InitialInterval: 10 * time.Millisecond,
+		MaxInterval:     10 * time.Millisecond,
+		MaxElapsedTime:  50 * time.Millisecond,
+	}
+	p, err := newTestResourceProvider(retryConfig, hangingDetector{})
+	require.NoError(t, err)
+
+	start := time.Now()
+	// client.Timeout is far larger than MaxElapsedTime; the session must still
+	// be bounded by MaxElapsedTime, not left to run for the full client.Timeout.
+	err = p.Refresh(t.Context(), &http.Client{Timeout: 5 * time.Second})
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Less(t, time.Since(start), 1*time.Second, "attempt should have been bounded by MaxElapsedTime, not by the larger client.Timeout")
+}
+
 // newTestResourceProvider builds a provider with a nop telemetry builder, assigning
 // each detector a synthetic type.
 func newTestResourceProvider(backoffConfig configretry.BackOffConfig, detectors ...Detector) (*ResourceProvider, error) {

@@ -150,17 +150,20 @@ func (p *ResourceProvider) Get(_ context.Context, _ *http.Client) (pcommon.Resou
 
 // Refresh recomputes the resource, replacing any previous result.
 func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) error {
-	// Bound the session with a ctx deadline whenever something else doesn't
-	// already bound it: client.Timeout when there's no retry budget, or
-	// MaxElapsedTime when there's a budget but no per-attempt cap.
+	// MaxElapsedTime, when set, is the definitive bound on the whole retry
+	// session: apply it regardless of client.Timeout, since backoff.Retry only
+	// checks elapsed time between attempts, not during one — a per-attempt cap
+	// larger than MaxElapsedTime would otherwise let a single attempt overrun
+	// the budget. Otherwise fall back to client.Timeout so a single-shot or
+	// unbounded-retry session still can't hang forever.
 	switch {
-	case p.backoffConfig.MaxElapsedTime == 0 && client.Timeout > 0:
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
-		defer cancel()
-	case p.backoffConfig.MaxElapsedTime > 0 && client.Timeout == 0:
+	case p.backoffConfig.MaxElapsedTime > 0:
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, p.backoffConfig.MaxElapsedTime)
+		defer cancel()
+	case client.Timeout > 0:
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
 		defer cancel()
 	}
 
