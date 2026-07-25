@@ -63,9 +63,6 @@ func (w *watchers) Scrape(name string) (float64, error) {
 
 	cv, err := v.ScrapeData()
 	if err != nil {
-		if winperfcounters.IsIgnorableError(err) {
-			return 0, nil
-		}
 		return 0, err
 	}
 
