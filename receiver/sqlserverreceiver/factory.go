@@ -67,6 +67,10 @@ func createDefaultConfig() component.Config {
 func setupQueries(cfg *Config) []string {
 	var queries []string
 
+	if isAvailabilityGroupQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerAvailabilityGroupQuery(cfg.InstanceName))
+	}
+
 	if isDatabaseIOQueryEnabled(&cfg.Metrics) {
 		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
 	}
@@ -390,6 +394,16 @@ func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.C
 	}
 
 	return opts, provider, nil
+}
+
+func isAvailabilityGroupQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.Enabled ||
+		metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueSize.Enabled ||
+		metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueRate.Enabled
 }
 
 func isDatabaseIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
