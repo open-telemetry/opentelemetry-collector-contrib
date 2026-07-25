@@ -157,9 +157,7 @@ func (rcvr *iisReceiver) scrapeInstanceMetrics(wrs []watcherRecorder, instanceTo
 }
 
 func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(appToRecorders map[string][]valRecorder) {
-	watchedInstances := map[string]bool{}
 	for _, wr := range rcvr.queueMaxAgeWatchers {
-		watchedInstances[wr.instance] = true
 		counterValues, err := wr.watcher.ScrapeData()
 
 		var value float64
@@ -183,16 +181,6 @@ func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(appToRecorders map[string][]va
 				val:    value,
 				record: recordMaxQueueItemAge,
 			})
-	}
-
-	for appPool := range appToRecorders {
-		if !watchedInstances[appPool] {
-			appToRecorders[appPool] = append(appToRecorders[appPool],
-				valRecorder{
-					val:    0,
-					record: recordMaxQueueItemAge,
-				})
-		}
 	}
 }
 

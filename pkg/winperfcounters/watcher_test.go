@@ -51,8 +51,11 @@ func Test_Scraping_Wildcard(t *testing.T) {
 	values, err := watcher.ScrapeData()
 	require.NoError(t, err)
 
-	// In some environments, windows.GetLogicalDrives() returns a bitmask that includes drives
-	// that do not have performance counters enabled. We assert that at least one drive is returned.
+	// windows.GetLogicalDrives() returns a bitmask of all available logical drives. However,
+	// some of these drives may permanently lack the LogicalDisk performance counter
+	// (e.g., drives with no media or disconnected mounts). This is a deterministic
+	// property of the environment and is unrelated to transient PDH errors or IsIgnorableError.
+	// Thus, we assert that at least one drive is returned rather than matching the exact count.
 	require.GreaterOrEqual(t, len(values), 1, "expected at least 1 drive instance returned by the wildcard query")
 	t.Logf("Wildcard query returned %d instances: %v", len(values), values)
 }

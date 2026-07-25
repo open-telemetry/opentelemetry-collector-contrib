@@ -319,6 +319,9 @@ func (pc *perfCounter) collectDataForScrape() (bool, error) {
 		}
 
 		if pdhErr.ErrorCode == win_perf_counters.PDH_NO_DATA {
+			if pc.logger != nil {
+				pc.logger.Debug("Transient error collecting data for performance counter", zap.String("counter", pc.path), zap.Error(err))
+			}
 			// No data is available for the counter, so no error but also no data
 			return false, nil
 		}
@@ -329,6 +332,9 @@ func (pc *perfCounter) collectDataForScrape() (bool, error) {
 			// Wait one second and retry once
 			time.Sleep(time.Second)
 			if retryErr := pc.query.CollectData(); retryErr != nil {
+				if pc.logger != nil {
+					pc.logger.Debug("Transient error collecting data for performance counter after retry", zap.String("counter", pc.path), zap.Error(err))
+				}
 				return false, fmt.Errorf("failed retry for performance counter '%s': %w", pc.path, err)
 			}
 		}
