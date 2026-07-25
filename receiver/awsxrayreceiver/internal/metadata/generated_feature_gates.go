@@ -11,7 +11,7 @@ var ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate = featuregate.GlobalRegi
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the receiver will stop emitting the legacy HTTP semantic conventions (http.method, http.url, http.status_code)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45084"),
-	featuregate.WithRegisterFromVersion("v0.157.0"),
+	featuregate.WithRegisterFromVersion("v0.158.0"),
 )
 
 var ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -19,5 +19,5 @@ var ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate = featuregate.GlobalRegistry
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the receiver will emit the stable HTTP semantic conventions (http.request.method, url.full, http.response.status_code)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45084"),
-	featuregate.WithRegisterFromVersion("v0.157.0"),
+	featuregate.WithRegisterFromVersion("v0.158.0"),
 )
