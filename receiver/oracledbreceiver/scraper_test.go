@@ -185,6 +185,25 @@ var queryResponses = map[string][]metricRow{
 		{"METRIC_NAME": "PGA Cache Hit %", "VALUE": "92.10"},
 		{"METRIC_NAME": "CPU Usage Per Sec", "VALUE": "150.00"},
 		{"METRIC_NAME": "Host CPU Usage Per Sec", "VALUE": "320.00"},
+		{"METRIC_NAME": "DB Block Changes Per Sec", "VALUE": "256.0"},
+		{"METRIC_NAME": "I/O Megabytes per Second", "VALUE": "5.0"},
+		{"METRIC_NAME": "I/O Requests per Second", "VALUE": "59.0"},
+		{"METRIC_NAME": "Logical Reads Per Sec", "VALUE": "512.0"},
+		{"METRIC_NAME": "Physical Read Total Bytes Per Sec", "VALUE": "1048576.0"},
+		{"METRIC_NAME": "Physical Read Total IO Requests Per Sec", "VALUE": "42.0"},
+		{"METRIC_NAME": "Physical Reads Per Sec", "VALUE": "128.0"},
+		{"METRIC_NAME": "Physical Write Total Bytes Per Sec", "VALUE": "524288.0"},
+		{"METRIC_NAME": "Physical Write Total IO Requests Per Sec", "VALUE": "17.0"},
+		{"METRIC_NAME": "Physical Writes Per Sec", "VALUE": "64.0"},
+		{"METRIC_NAME": "Redo Generated Per Sec", "VALUE": "2048.0"},
+		{"METRIC_NAME": "Enqueue Deadlocks Per Sec", "VALUE": "0.05"},
+		{"METRIC_NAME": "Enqueue Timeouts Per Sec", "VALUE": "0.50"},
+		{"METRIC_NAME": "Executions Per Sec", "VALUE": "1500.50"},
+		{"METRIC_NAME": "Hard Parse Count Per Sec", "VALUE": "3.75"},
+		{"METRIC_NAME": "Logons Per Sec", "VALUE": "1.20"},
+		{"METRIC_NAME": "Open Cursors Per Sec", "VALUE": "42.10"},
+		{"METRIC_NAME": "User Commits Per Sec", "VALUE": "85.60"},
+		{"METRIC_NAME": "User Rollbacks Per Sec", "VALUE": "2.40"},
 	},
 }
 
@@ -1454,6 +1473,21 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			cfg.Metrics.OracledbPgaCacheUtilization.Enabled = true
 			cfg.Metrics.OracledbSessionAverage.Enabled = true
 			cfg.Metrics.OracledbTransactionResponseTime.Enabled = true
+			cfg.Metrics.OracledbBufferCacheBlockChangesRate.Enabled = true
+			cfg.Metrics.OracledbIoRequestsRate.Enabled = true
+			cfg.Metrics.OracledbIoThroughputRate.Enabled = true
+			cfg.Metrics.OracledbLogicalReadsRate.Enabled = true
+			cfg.Metrics.OracledbPhysicalIoRequestsRate.Enabled = true
+			cfg.Metrics.OracledbPhysicalIoTransferredRate.Enabled = true
+			cfg.Metrics.OracledbPhysicalOperationsRate.Enabled = true
+			cfg.Metrics.OracledbRedoSizeRate.Enabled = true
+			cfg.Metrics.OracledbCursorOpenRate.Enabled = true
+			cfg.Metrics.OracledbEnqueueDeadlocksRate.Enabled = true
+			cfg.Metrics.OracledbEnqueueTimeoutsRate.Enabled = true
+			cfg.Metrics.OracledbExecutionsRate.Enabled = true
+			cfg.Metrics.OracledbHardParsesRate.Enabled = true
+			cfg.Metrics.OracledbLogonsRate.Enabled = true
+			cfg.Metrics.OracledbTransactionsRate.Enabled = true
 
 			scrpr := oracleScraper{
 				logger: zap.NewNop(),
@@ -1519,8 +1553,76 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			assert.InDelta(t, 1.50, metricMap["oracledb.cpu.usage.rate"], floatDelta)
 			// 320 cs/s -> 3.2 CPU cores
 			assert.InDelta(t, 3.20, metricMap["oracledb.host.cpu.usage.rate"], floatDelta)
+			// V$SYSMETRIC I/O rates (no attribute).
+			assert.InDelta(t, 59.0, metricMap["oracledb.io.requests.rate"], floatDelta)
+			// 5 MB/s -> 5242880 By/s
+			assert.InDelta(t, 5242880.0, metricMap["oracledb.io.throughput.rate"], floatDelta)
+			assert.InDelta(t, 256.0, metricMap["oracledb.buffer_cache.block.changes.rate"], floatDelta)
+			assert.InDelta(t, 2048.0, metricMap["oracledb.redo.size.rate"], floatDelta)
+			assert.InDelta(t, 512.0, metricMap["oracledb.logical_reads.rate"], floatDelta)
+
+			// Consolidated read/write rates (disk.io.direction attribute).
+			dirMap := sysmetricDirectionValues(metrics)
+			assert.InDelta(t, 1048576.0, dirMap["oracledb.physical_io.transferred.rate"]["read"], floatDelta)
+			assert.InDelta(t, 524288.0, dirMap["oracledb.physical_io.transferred.rate"]["write"], floatDelta)
+			assert.InDelta(t, 42.0, dirMap["oracledb.physical_io.requests.rate"]["read"], floatDelta)
+			assert.InDelta(t, 17.0, dirMap["oracledb.physical_io.requests.rate"]["write"], floatDelta)
+			assert.InDelta(t, 128.0, dirMap["oracledb.physical_operations.rate"]["read"], floatDelta)
+			assert.InDelta(t, 64.0, dirMap["oracledb.physical_operations.rate"]["write"], floatDelta)
+
+			// V$SYSMETRIC workload rates.
+			assert.InDelta(t, 1500.50, metricMap["oracledb.executions.rate"], floatDelta)
+			assert.InDelta(t, 3.75, metricMap["oracledb.hard_parses.rate"], floatDelta)
+			assert.InDelta(t, 42.10, metricMap["oracledb.cursor.open.rate"], floatDelta)
+			assert.InDelta(t, 1.20, metricMap["oracledb.logons.rate"], floatDelta)
+			assert.InDelta(t, 0.50, metricMap["oracledb.enqueue.timeouts.rate"], floatDelta)
+			assert.InDelta(t, 0.05, metricMap["oracledb.enqueue.deadlocks.rate"], floatDelta)
+
+			// oracledb.transactions.rate carries commit and rollback data points.
+			txnRates := make(map[string]float64)
+			for i := 0; i < metrics.Len(); i++ {
+				metric := metrics.At(i)
+				if metric.Name() != "oracledb.transactions.rate" {
+					continue
+				}
+				dps := metric.Gauge().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dp := dps.At(j)
+					txnType, ok := dp.Attributes().Get("oracledb.transaction.type")
+					require.True(t, ok)
+					txnRates[txnType.Str()] = dp.DoubleValue()
+				}
+			}
+			assert.InDelta(t, 85.60, txnRates["commit"], floatDelta)
+			assert.InDelta(t, 2.40, txnRates["rollback"], floatDelta)
 		})
 	}
+}
+
+// sysmetricDirectionValues collects gauge data points keyed by metric name then by
+// the disk.io.direction attribute value, so consolidated read/write rates can be
+// asserted independently.
+func sysmetricDirectionValues(metrics pmetric.MetricSlice) map[string]map[string]float64 {
+	out := make(map[string]map[string]float64)
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		if metric.Type() != pmetric.MetricTypeGauge {
+			continue
+		}
+		dps := metric.Gauge().DataPoints()
+		for j := 0; j < dps.Len(); j++ {
+			dp := dps.At(j)
+			dir, ok := dp.Attributes().Get("disk.io.direction")
+			if !ok {
+				continue
+			}
+			if out[metric.Name()] == nil {
+				out[metric.Name()] = make(map[string]float64)
+			}
+			out[metric.Name()][dir.Str()] = dp.DoubleValue()
+		}
+	}
+	return out
 }
 
 func TestGetInstanceId(t *testing.T) {

@@ -107,7 +107,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestInvalidConfigValidation(t *testing.T) {
 	configuration := loadSuccessfulConfig(t)
-	configuration.RLPGateway.Endpoint = "https://[invalid"
+	configuration.RLPGateway.ClientConfig.Endpoint = "https://[invalid"
 	require.Error(t, configuration.Validate())
 
 	configuration = loadSuccessfulConfig(t)
