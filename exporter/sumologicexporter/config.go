@@ -22,7 +22,7 @@ import (
 
 // Config defines configuration for Sumo Logic exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`                                 // squash ensures fields are correctly decoded in embedded struct.
+	ClientConfig              confighttp.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
@@ -81,18 +81,18 @@ func (cfg *Config) Validate() error {
 		return errors.New("support for compress_encoding configuration has been removed, in favor of compression")
 	}
 
-	if cfg.Timeout < 1 || cfg.Timeout > maxTimeout {
-		return fmt.Errorf("timeout must be between 1 and 55 seconds, got %v", cfg.Timeout)
+	if cfg.ClientConfig.Timeout < 1 || cfg.ClientConfig.Timeout > maxTimeout {
+		return fmt.Errorf("timeout must be between 1 and 55 seconds, got %v", cfg.ClientConfig.Timeout)
 	}
 
-	switch cfg.Compression {
+	switch cfg.ClientConfig.Compression {
 	case configcompression.TypeGzip:
 	case configcompression.TypeDeflate:
 	case configcompression.TypeZstd:
 	case NoCompression:
 
 	default:
-		return fmt.Errorf("invalid compression encoding type: %v", cfg.Compression)
+		return fmt.Errorf("invalid compression encoding type: %v", cfg.ClientConfig.Compression)
 	}
 
 	switch cfg.LogFormat {
@@ -114,13 +114,13 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
 	}
 
-	if cfg.Endpoint == "" && !cfg.Auth.HasValue() {
+	if cfg.ClientConfig.Endpoint == "" && !cfg.ClientConfig.Auth.HasValue() {
 		return errors.New("no endpoint and no auth extension specified")
 	}
 
-	if _, err := url.Parse(cfg.Endpoint); err != nil {
+	if _, err := url.Parse(cfg.ClientConfig.Endpoint); err != nil {
 		return fmt.Errorf("failed parsing endpoint URL: %s; err: %w",
-			cfg.Endpoint, err,
+			cfg.ClientConfig.Endpoint, err,
 		)
 	}
 

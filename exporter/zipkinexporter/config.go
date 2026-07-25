@@ -20,7 +20,7 @@ type Config struct {
 
 	// Configures the exporter client.
 	// The Endpoint to send the Zipkin trace data to (e.g.: http://some.url:9411/api/v2/spans).
-	confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	Format string `mapstructure:"format"`
 
@@ -31,7 +31,7 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.Endpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" {
 		return errors.New("endpoint required")
 	}
 	return nil

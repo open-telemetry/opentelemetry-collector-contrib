@@ -639,6 +639,19 @@ metrics:
       value_type: int
     attributes: []
 
+feature_gates:
+  - id: receiver.kubeletstats.cpuUsageScrapeBased
+    stage: alpha
+    description: >-
+      When enabled, container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage
+      (and the cpu utilization metrics derived from them) are calculated by the
+      receiver as the rate of the corresponding *.cpu.time counter between
+      consecutive scrapes, instead of being read directly from the kubelet's
+      UsageNanoCores value.
+    from_version: v0.156.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49477
+    skip_strict_validation: true
+
 tests:
   config:
     ca_file: "testdata/testcert.crt"
