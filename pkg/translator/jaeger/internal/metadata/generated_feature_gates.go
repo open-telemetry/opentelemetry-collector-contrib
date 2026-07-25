@@ -11,7 +11,7 @@ var PkgTranslatorJaegerDontEmitV0HTTPConventionsFeatureGate = featuregate.Global
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the Jaeger translator no longer emits the deprecated http.status_code attribute (semconv v1.25.0). Requires pkg.translator.jaeger.EmitV1HttpConventions to also be enabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45036"),
-	featuregate.WithRegisterFromVersion("v0.157.0"),
+	featuregate.WithRegisterFromVersion("v0.158.0"),
 )
 
 var PkgTranslatorJaegerEmitV1HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -19,5 +19,5 @@ var PkgTranslatorJaegerEmitV1HTTPConventionsFeatureGate = featuregate.GlobalRegi
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the Jaeger translator emits http.response.status_code (semconv v1.40.0) instead of the deprecated http.status_code (semconv v1.25.0)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45036"),
-	featuregate.WithRegisterFromVersion("v0.157.0"),
+	featuregate.WithRegisterFromVersion("v0.158.0"),
 )
