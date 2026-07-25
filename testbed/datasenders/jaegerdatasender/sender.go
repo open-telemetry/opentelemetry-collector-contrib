@@ -79,14 +79,14 @@ type jaegerConfig struct {
 	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
-	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	ClientConfig configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }
 
 var _ component.Config = (*jaegerConfig)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *jaegerConfig) Validate() error {
-	if cfg.Endpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" {
 		return errors.New("must have a non-empty \"endpoint\"")
 	}
 	return nil
@@ -97,8 +97,8 @@ func (cfg *jaegerConfig) Validate() error {
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
 func (je *jaegerGRPCDataSender) newTracesExporter(set exporter.Settings) (exporter.Traces, error) {
 	cfg := jaegerConfig{}
-	cfg.Endpoint = je.GetEndpoint().String()
-	cfg.TLS = configtls.ClientConfig{
+	cfg.ClientConfig.Endpoint = je.GetEndpoint().String()
+	cfg.ClientConfig.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
 
@@ -106,7 +106,7 @@ func (je *jaegerGRPCDataSender) newTracesExporter(set exporter.Settings) (export
 		name:                      set.ID.String(),
 		settings:                  set.TelemetrySettings,
 		metadata:                  metadata.New(nil),
-		waitForReady:              cfg.WaitForReady,
+		waitForReady:              cfg.ClientConfig.WaitForReady,
 		connStateReporterInterval: time.Second,
 		stopCh:                    make(chan struct{}),
 		clientSettings:            &cfg.ClientConfig,

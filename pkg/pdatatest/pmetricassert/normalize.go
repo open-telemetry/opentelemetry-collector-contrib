@@ -103,6 +103,9 @@ func normalize(m pmetric.Metrics, opts writeOptions) *document {
 							dp.BucketCounts = extDP.bucketCounts
 						}
 					}
+					if opts.includeHistogramExplicitBounds && extDP.explicitBounds != nil {
+						dp.ExplicitBounds = extDP.explicitBounds
+					}
 					mAgg.datapoints[key] = dp
 				}
 			}
@@ -210,7 +213,7 @@ type extractedDatapoint struct {
 	sum            *float64
 	minVal         *float64
 	maxVal         *float64
-	explicitBounds []float64
+	explicitBounds *[]float64
 	bucketCounts   []uint64
 }
 
@@ -254,9 +257,8 @@ func extractDatapoints(metric pmetric.Metric) []extractedDatapoint {
 				maxVal := dp.Max()
 				edp.maxVal = &maxVal
 			}
-			if dp.ExplicitBounds().Len() > 0 {
-				edp.explicitBounds = dp.ExplicitBounds().AsRaw()
-			}
+			bounds := dp.ExplicitBounds().AsRaw()
+			edp.explicitBounds = &bounds
 			if dp.BucketCounts().Len() > 0 {
 				edp.bucketCounts = dp.BucketCounts().AsRaw()
 			}

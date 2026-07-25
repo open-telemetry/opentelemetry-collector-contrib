@@ -63,7 +63,7 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 type Config struct {
 	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	confighttp.ClientConfig   `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	ClientConfig              confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// AccessToken is the authentication token provided by SignalFx.
 	AccessToken configopaque.String `mapstructure:"access_token"`
@@ -232,7 +232,7 @@ func (cfg *Config) Validate() error {
 			` "ingest_url" and "api_url" should be explicitly set`)
 	}
 
-	if cfg.Timeout < 0 {
+	if cfg.ClientConfig.Timeout < 0 {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 
