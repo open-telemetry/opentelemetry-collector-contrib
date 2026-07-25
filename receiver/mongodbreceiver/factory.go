@@ -21,8 +21,14 @@ import (
 )
 
 const (
-	defaultMongoDBPort     = 27017
-	defaultMaxRowsPerQuery = 100
+	defaultMongoDBPort                = 27017
+	defaultMaxRowsPerQuery            = 100
+	defaultMaxQuerySampleCount        = int64(1000)
+	defaultMaxExplainEachInterval     = int64(250)
+	defaultTopQueryCount              = int64(500)
+	defaultQueryPlanCacheSize         = 500
+	defaultQueryPlanCacheTTL          = 10 * time.Minute
+	defaultTopQueryCollectionInterval = 60 * time.Second
 )
 
 var defaultEndpoint = "localhost:" + strconv.Itoa(defaultMongoDBPort)
@@ -49,6 +55,14 @@ func createDefaultConfig() component.Config {
 		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		QuerySampleCollection: QuerySampleCollection{
 			MaxRowsPerQuery: defaultMaxRowsPerQuery,
+		},
+		TopQueryCollection: TopQueryCollection{
+			CollectionInterval:     defaultTopQueryCollectionInterval,
+			MaxQuerySampleCount:    defaultMaxQuerySampleCount,
+			MaxExplainEachInterval: defaultMaxExplainEachInterval,
+			TopQueryCount:          defaultTopQueryCount,
+			QueryPlanCacheSize:     defaultQueryPlanCacheSize,
+			QueryPlanCacheTTL:      defaultQueryPlanCacheTTL,
 		},
 		ClientConfig: configtls.ClientConfig{},
 	}
@@ -100,6 +114,27 @@ func createLogsReceiver(_ context.Context, params receiver.Settings, rConf compo
 						return s, nil
 					}, metadata.LogsStability)), nil))
 	}
+
+	if cfg.Events.DbServerTopQuery.Enabled {
+		tqms := newMongodbScraper(params, cfg)
+		tqms.planCache = buildPlanCache(cfg, params.Logger)
+		tqs, err := scraper.NewLogs(
+			tqms.scrapeTopQueryLogs,
+			scraper.WithStart(tqms.start),
+			scraper.WithShutdown(tqms.shutdown),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create top_query log scraper: %w", err)
+		}
+		opts = append(
+			opts,
+			scraperhelper.AddFactoryWithConfig(
+				scraper.NewFactory(
+					metadata.Type, nil, scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
+						return tqs, nil
+					}, metadata.LogsStability)), nil))
+	}
+
 	return scraperhelper.NewLogsController(
 		&cfg.ControllerConfig, params, consumer, opts...)
 }

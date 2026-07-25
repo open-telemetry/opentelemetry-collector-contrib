@@ -288,7 +288,13 @@ func appendFaaSHTTPAttributes(includeStatus bool, attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventions.ServerAddressKey), "api.opentelemetry.io")
 	}
 	attrMap.PutStr(string(conventionsv125.HTTPTargetKey), "/blog/posts")
-	attrMap.PutStr(string(conventionsv119.HTTPFlavorKey), "2")
+	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventionsv119.HTTPFlavorKey), "2")
+	}
+	if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.NetworkProtocolNameKey), "http")
+		attrMap.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
+	}
 	if includeStatus {
 		attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
 	}
@@ -363,7 +369,13 @@ func appendHTTPServerAttributes(includeStatus bool, attrMap pcommon.Map) {
 		attrMap.PutInt(string(conventions.ServerPortKey), 443)
 	}
 	attrMap.PutStr(string(conventionsv125.HTTPTargetKey), "/blog/posts")
-	attrMap.PutStr(string(conventionsv119.HTTPFlavorKey), "2")
+	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventionsv119.HTTPFlavorKey), "2")
+	}
+	if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.NetworkProtocolNameKey), "http")
+		attrMap.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
+	}
 	if includeStatus {
 		attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
 	}
@@ -389,11 +401,11 @@ func appendMessagingProducerAttributes(attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventions.MessagingSystemKey), "nats")
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventionsv116.MessagingDestinationKey), "time.us.east.atlanta")
+		attrMap.PutStr(string(conventionsv119.MessagingDestinationKindKey), "topic")
 	}
 	if metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventions.MessagingDestinationNameKey), "time.us.east.atlanta")
 	}
-	attrMap.PutStr(string(conventionsv119.MessagingDestinationKindKey), "topic")
 	attrMap.PutStr(string(conventions.MessagingMessageIDKey), "AA7C5438-D93A-43C8-9961-55613204648F")
 	attrMap.PutInt("messaging.sequence", 1)
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
@@ -485,7 +497,13 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
 	}
 	attrMap.PutStr(string(conventionsv125.NetHostNameKey), "api22.opentelemetry.io")
 	attrMap.PutStr(string(conventionsv125.HTTPTargetKey), "/blog/posts")
-	attrMap.PutStr(string(conventionsv119.HTTPFlavorKey), "2")
+	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventionsv119.HTTPFlavorKey), "2")
+	}
+	if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.NetworkProtocolNameKey), "http")
+		attrMap.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
+	}
 	if includeStatus {
 		attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
 		attrMap.PutStr("http.status_text", "Created")

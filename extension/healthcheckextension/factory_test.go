@@ -54,7 +54,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 func TestFactory_CreateLegacyExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
@@ -63,7 +63,7 @@ func TestFactory_CreateLegacyExtension(t *testing.T) {
 
 func TestLegacyExtensionLifecycle(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	hcExt, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
@@ -75,7 +75,7 @@ func TestLegacyExtensionLifecycle(t *testing.T) {
 	runtime.Gosched()
 
 	client := &http.Client{}
-	url := "http://" + cfg.NetAddr.Endpoint + cfg.Path
+	url := "http://" + cfg.ServerConfig.NetAddr.Endpoint + cfg.Path
 
 	resp, err := client.Get(url)
 	require.NoError(t, err)
@@ -90,7 +90,7 @@ func TestLegacyExtensionPortAlreadyInUse(t *testing.T) {
 	defer ln.Close()
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = endpoint
+	cfg.ServerConfig.NetAddr.Endpoint = endpoint
 
 	hcExt, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
@@ -106,7 +106,7 @@ func TestFactory_CreateV2Extension(t *testing.T) {
 	})
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)

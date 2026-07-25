@@ -57,7 +57,7 @@ type HecTelemetry struct {
 
 // Config defines configuration for Splunk exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`
+	ClientConfig              confighttp.ClientConfig                                  `mapstructure:",squash"`
 	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
@@ -131,7 +131,7 @@ type Config struct {
 }
 
 func (cfg *Config) getURL() (out *url.URL, err error) {
-	out, err = url.Parse(cfg.Endpoint)
+	out, err = url.Parse(cfg.ClientConfig.Endpoint)
 	if err != nil {
 		return out, err
 	}
@@ -147,7 +147,7 @@ func (cfg *Config) Validate() error {
 	if !cfg.LogDataEnabled && !cfg.ProfilingDataEnabled {
 		return errors.New(`either "log_data_enabled" or "profiling_data_enabled" has to be true`)
 	}
-	if cfg.Endpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" {
 		return errors.New(`requires a non-empty "endpoint"`)
 	}
 	_, err := cfg.getURL()
