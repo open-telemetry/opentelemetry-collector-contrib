@@ -73,3 +73,36 @@ func TestCollect(t *testing.T) {
 	require.Equal(t, plog.SeverityNumberInfo, queryLogRecord.SeverityNumber())
 	require.Equal(t, 2, queryLogRecord.Attributes().Len())
 }
+
+func TestCollect_Collections(t *testing.T) {
+	makeClient := func(string) (client, error) {
+		return testClient{
+			queryResult: []map[string]string{
+				{
+					"hostname": "test-host",
+				},
+			},
+		}, nil
+	}
+	cfg := &Config{Collections: []string{"system_info"}}
+	rcvr := &osQueryReceiver{
+		config:       cfg,
+		logger:       zap.NewNop(),
+		createClient: makeClient,
+		collections:  resolveCollections(cfg.Collections, zap.NewNop()),
+	}
+	ld, err := rcvr.collect(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, ld.ResourceLogs().Len())
+
+	logRecord := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	collectionAttr, ok := logRecord.Attributes().Get("collection")
+	require.True(t, ok)
+	require.Equal(t, "system_info", collectionAttr.AsString())
+}
+
+func TestCollect_UnknownCollectionIsSkipped(t *testing.T) {
+	cfg := &Config{Collections: []string{"not_a_real_collection"}}
+	resolved := resolveCollections(cfg.Collections, zap.NewNop())
+	require.Empty(t, resolved)
+}

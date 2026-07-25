@@ -18,9 +18,17 @@ output to logs.
 
 ## Configuration
 
-The following settings are required:
+At least one of `queries` or `collections` must be specified.
 
 - `queries`: list of queries to run on an osquery daemon
+- `collections`: list of predefined, named collections to run on an osquery daemon. Each named
+  collection resolves to a query that is maintained by this receiver; some collections pick their
+  query based on the host's operating system. Valid values:
+  - `system_info`: hostname, UUID, CPU, and memory information from `system_info`
+  - `package_info`: installed packages (homebrew on macOS; deb/rpm on Linux)
+  - `os_info`: OS name, version, build, and platform from `os_version`
+  - `secureboot_info`: secure boot status from `secureboot`
+  - `users_info`: local user accounts and their groups
 
 The following settings are optional:
 
@@ -42,4 +50,7 @@ Example queries and data sources for querying are available in the [osquery docs
     queries:
       - "select * from certificates"
       - "select * from block_devices"
+    collections:
+      - system_info
+      - package_info
 ```

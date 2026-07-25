@@ -15,6 +15,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/osqueryreceiver/internal/collection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/osqueryreceiver/internal/metadata"
 )
 
@@ -43,6 +44,7 @@ type osQueryReceiver struct {
 	config       *Config
 	logger       *zap.Logger
 	createClient func(socket string) (client, error)
+	collections  []collection.Collection
 }
 
 func newOsQueryReceiver(cfg *Config, set receiver.Settings) *osQueryReceiver {
@@ -50,7 +52,23 @@ func newOsQueryReceiver(cfg *Config, set receiver.Settings) *osQueryReceiver {
 		config:       cfg,
 		logger:       set.Logger,
 		createClient: makeOsQueryClient,
+		collections:  resolveCollections(cfg.Collections, set.Logger),
 	}
+}
+
+// resolveCollections converts the configured collection names into their Collection
+// implementations, logging and skipping any name that fails to resolve.
+func resolveCollections(names []string, logger *zap.Logger) []collection.Collection {
+	resolved := make([]collection.Collection, 0, len(names))
+	for _, name := range names {
+		c, err := collection.New(name)
+		if err != nil {
+			logger.Warn("Skipping unknown collection", zap.String("collection", name), zap.Error(err))
+			continue
+		}
+		resolved = append(resolved, c)
+	}
+	return resolved
 }
 
 func (or *osQueryReceiver) connect(retries int) (client, error) {
@@ -65,7 +83,7 @@ func (or *osQueryReceiver) connect(retries int) (client, error) {
 	return c, err
 }
 
-func (or *osQueryReceiver) runQuery(ctx context.Context, ld plog.Logs, query string) error {
+func (or *osQueryReceiver) runQuery(ctx context.Context, ld plog.Logs, query, collectionName string) error {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	or.logger.Debug("Running query", zap.String("query", query))
@@ -91,6 +109,9 @@ func (or *osQueryReceiver) runQuery(ctx context.Context, ld plog.Logs, query str
 		lr.SetSeverityNumber(plog.SeverityNumberInfo)
 		lr.SetSeverityText("INFO")
 		lr.Body().SetStr(query)
+		if collectionName != "" {
+			lr.Attributes().PutStr("collection", collectionName)
+		}
 		for k, v := range row {
 			lr.Attributes().PutStr(k, v)
 		}
@@ -102,7 +123,10 @@ func (or *osQueryReceiver) collect(ctx context.Context) (plog.Logs, error) {
 	ld := plog.NewLogs()
 	var errs []error
 	for _, query := range or.config.Queries {
-		errs = append(errs, or.runQuery(ctx, ld, query))
+		errs = append(errs, or.runQuery(ctx, ld, query, ""))
+	}
+	for _, c := range or.collections {
+		errs = append(errs, or.runQuery(ctx, ld, c.GetQuery(), c.GetName()))
 	}
 	return ld, errors.Join(errs...)
 }
