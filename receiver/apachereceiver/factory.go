@@ -81,7 +81,7 @@ func createMetricsReceiver(
 		return nil, errors.New("the receiver.apache.disableOldFormatMetrics feature gate requires receiver.apache.enableNewFormatMetrics to also be enabled")
 	}
 
-	serverName, port, err := parseResourceAttributes(cfg.Endpoint)
+	serverName, port, err := parseResourceAttributes(cfg.ClientConfig.Endpoint)
 	if err != nil {
 		return nil, err
 	}

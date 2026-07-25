@@ -30,12 +30,12 @@ var _ extensioncapabilities.PipelineWatcher = (*healthCheckExtension)(nil)
 
 func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) error {
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
-	ln, err := hc.config.ToListener(ctx)
+	ln, err := hc.config.ServerConfig.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", hc.config.NetAddr.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", hc.config.ServerConfig.NetAddr.Endpoint, err)
 	}
 
-	hc.server, err = hc.config.ToServer(ctx, host.GetExtensions(), hc.settings, nil)
+	hc.server, err = hc.config.ServerConfig.ToServer(ctx, host.GetExtensions(), hc.settings, nil)
 	if err != nil {
 		return err
 	}

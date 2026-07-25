@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/go-version"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -25,8 +26,11 @@ type client interface {
 	DBStats(ctx context.Context, DBName string) (bson.M, error)
 	TopStats(ctx context.Context) (bson.M, error)
 	IndexStats(ctx context.Context, DBName, collectionName string) ([]bson.M, error)
-	RunCommand(ctx context.Context, db string, command bson.M) (bson.M, error)
+	// RunCommand accepts any BSON-serializable command (bson.M or bson.D).
+	RunCommand(ctx context.Context, db string, command any) (bson.M, error)
 	CurrentOp(ctx context.Context) ([]bson.M, error)
+	FindProfileDocs(ctx context.Context, dbName string, sinceTime, upperBound time.Time, maxRows int64) ([]slowQueryEntry, error)
+	GetLog(ctx context.Context) (bson.A, error)
 }
 
 // mongodbClient is a mongodb metric scraper client
@@ -50,8 +54,9 @@ var newClient = func(_ context.Context, config *Config, logger *zap.Logger, seco
 	}, nil
 }
 
-// RunCommand executes a query against a database. Relies on connection to be established via `Connect()`
-func (c *mongodbClient) RunCommand(ctx context.Context, database string, command bson.M) (bson.M, error) {
+// RunCommand executes a command against a database. Accepts bson.M or bson.D —
+// use bson.D when key ordering matters (e.g. the explain command wrapping a bson.D value).
+func (c *mongodbClient) RunCommand(ctx context.Context, database string, command any) (bson.M, error) {
 	db := c.Database(database)
 	result := db.RunCommand(ctx, command)
 
@@ -150,6 +155,52 @@ func (c *mongodbClient) CurrentOp(ctx context.Context) ([]bson.M, error) {
 		return nil, err
 	}
 	return operations, nil
+}
+
+// FindProfileDocs queries system.profile in the given database for docs whose
+// `ts` falls in (sinceTime, upperBound], sorts them by `millis` descending
+// server-side, and returns at most maxRows documents.
+func (c *mongodbClient) FindProfileDocs(ctx context.Context, dbName string, sinceTime, upperBound time.Time, maxRows int64) ([]slowQueryEntry, error) {
+	coll := c.Database(dbName).Collection("system.profile")
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.D{
+			{Key: "ts", Value: bson.D{
+				{Key: "$gt", Value: sinceTime},
+				{Key: "$lte", Value: upperBound},
+			}},
+		}}},
+		{{Key: "$sort", Value: bson.D{{Key: "millis", Value: -1}}}},
+		{{Key: "$limit", Value: maxRows}},
+	}
+	cursor, err := coll.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	var docs []slowQueryEntry
+	if err := cursor.All(ctx, &docs); err != nil {
+		return nil, err
+	}
+	return docs, nil
+}
+
+// GetLog returns the raw log entries from the MongoDB diagnostic ring buffer (getLog "global").
+// Returns bson.A directly — each element is a string — avoiding a full []string copy.
+// The caller iterates in reverse for early exit on out-of-window entries.
+func (c *mongodbClient) GetLog(ctx context.Context) (bson.A, error) {
+	result, err := c.RunCommand(ctx, "admin", bson.M{"getLog": "global"})
+	if err != nil {
+		return nil, err
+	}
+	raw, ok := result["log"]
+	if !ok {
+		return nil, nil
+	}
+	arr, ok := raw.(bson.A)
+	if !ok {
+		return nil, fmt.Errorf("unexpected log type: %T", raw)
+	}
+	return arr, nil
 }
 
 // GetVersion returns a result of the version of mongo the client is connected to so adjustments in collection protocol can

@@ -70,10 +70,10 @@ func TestScraper(t *testing.T) {
 			defer func() { apacheMock.Close() }()
 
 			cfg := createDefaultConfig().(*Config)
-			cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
+			cfg.ClientConfig.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
 			require.NoError(t, xconfmap.Validate(cfg))
 
-			serverName, port, err := parseResourceAttributes(cfg.Endpoint)
+			serverName, port, err := parseResourceAttributes(cfg.ClientConfig.Endpoint)
 			require.NoError(t, err)
 			scraper := newApacheScraper(receivertest.NewNopSettings(metadata.Type), cfg, serverName, port)
 
