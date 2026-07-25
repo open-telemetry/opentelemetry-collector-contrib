@@ -26,7 +26,7 @@ func TestValidConfig(t *testing.T) {
 	cfg.Username = "otel"
 	cfg.Password = "otel"
 
-	require.Equal(t, defaultEndpoint, cfg.Endpoint)
+	require.Equal(t, defaultEndpoint, cfg.ClientConfig.Endpoint)
 	require.NoError(t, xconfmap.Validate(cfg))
 }
 
