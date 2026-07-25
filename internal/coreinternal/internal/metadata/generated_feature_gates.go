@@ -51,7 +51,7 @@ var InternalCoreinternalGoldendatasetDontEmitV0NetworkV125ConventionsFeatureGate
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv v1.25.0 attributes (net.host.port, net.peer.name, net.peer.port, net.transport)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45297"),
-	featuregate.WithRegisterFromVersion("v0.157.0"),
+	featuregate.WithRegisterFromVersion("v0.158.0"),
 )
 
 var InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -107,7 +107,7 @@ var InternalCoreinternalGoldendatasetEmitV1NetworkV125ConventionsFeatureGate = f
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with network.transport, server.address, server.port, and client.port instead of the deprecated net.transport, net.peer.name, net.host.port, and net.peer.port (semconv v1.25.0)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45297"),
-	featuregate.WithRegisterFromVersion("v0.157.0"),
+	featuregate.WithRegisterFromVersion("v0.158.0"),
 )
 
 var InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
