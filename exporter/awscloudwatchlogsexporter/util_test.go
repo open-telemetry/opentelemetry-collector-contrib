@@ -95,7 +95,7 @@ func TestReplacePatternValidPod(t *testing.T) {
 
 	attrMap := map[string]any{
 		"aws.eks.cluster.name": "test-cluster-name",
-		"PodName":              "test-pod-001",
+		"pod":                  "test-pod-001",
 	}
 
 	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
