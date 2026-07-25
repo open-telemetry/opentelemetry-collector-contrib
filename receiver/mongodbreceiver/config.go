@@ -28,6 +28,7 @@ type Config struct {
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	metadata.LogsBuilderConfig    `mapstructure:",squash"`
 	QuerySampleCollection         QuerySampleCollection `mapstructure:"query_sample_collection"`
+	TopQueryCollection            TopQueryCollection    `mapstructure:"top_query_collection,omitempty"`
 	// Deprecated - Transport option will be removed in v0.102.0
 	Hosts                   []confignet.TCPAddrConfig `mapstructure:"hosts"`
 	Scheme                  string                    `mapstructure:"scheme"`
@@ -46,6 +47,16 @@ type QuerySampleCollection struct {
 
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+// TopQueryCollection holds configuration for the db.server.top_query log event collection.
+type TopQueryCollection struct {
+	CollectionInterval     time.Duration `mapstructure:"collection_interval"`
+	MaxQuerySampleCount    int64         `mapstructure:"max_query_sample_count"`
+	MaxExplainEachInterval int64         `mapstructure:"max_explain_each_interval"`
+	TopQueryCount          int64         `mapstructure:"top_query_count"`
+	QueryPlanCacheSize     int           `mapstructure:"query_plan_cache_size"`
+	QueryPlanCacheTTL      time.Duration `mapstructure:"query_plan_cache_ttl"`
 }
 
 func (c *Config) Validate() error {
@@ -80,6 +91,27 @@ func (c *Config) Validate() error {
 
 	if _, tlsErr := c.LoadTLSConfig(context.Background()); tlsErr != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
+	}
+
+	if c.Events.DbServerTopQuery.Enabled {
+		if c.TopQueryCollection.TopQueryCount <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.top_query_count must be greater than 0"))
+		}
+		if c.TopQueryCollection.MaxQuerySampleCount <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.max_query_sample_count must be greater than 0"))
+		}
+		if c.TopQueryCollection.MaxExplainEachInterval < 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.max_explain_each_interval must not be negative"))
+		}
+		if c.TopQueryCollection.QueryPlanCacheSize < 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.query_plan_cache_size must not be negative"))
+		}
+		if c.TopQueryCollection.CollectionInterval <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.collection_interval must be greater than 0"))
+		}
+		if c.TopQueryCollection.QueryPlanCacheTTL <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.query_plan_cache_ttl must be greater than 0"))
+		}
 	}
 
 	return err

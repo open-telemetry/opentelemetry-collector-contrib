@@ -19,7 +19,7 @@ import (
 // Config is the configuration for the NSX receiver
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	confighttp.ClientConfig        `mapstructure:",squash"`
+	ClientConfig                   confighttp.ClientConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	Username                       string              `mapstructure:"username"`
 	Password                       configopaque.String `mapstructure:"password"`
@@ -28,14 +28,14 @@ type Config struct {
 // Validate returns if the NSX configuration is valid
 func (c *Config) Validate() error {
 	var err error
-	if c.Endpoint == "" {
+	if c.ClientConfig.Endpoint == "" {
 		err = multierr.Append(err, errors.New("no manager endpoint was specified"))
 		return err
 	}
 
-	res, err := url.Parse(c.Endpoint)
+	res, err := url.Parse(c.ClientConfig.Endpoint)
 	if err != nil {
-		err = multierr.Append(err, fmt.Errorf("unable to parse url %s: %w", c.Endpoint, err))
+		err = multierr.Append(err, fmt.Errorf("unable to parse url %s: %w", c.ClientConfig.Endpoint, err))
 		return err
 	}
 
