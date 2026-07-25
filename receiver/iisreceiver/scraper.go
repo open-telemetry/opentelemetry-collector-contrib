@@ -156,8 +156,6 @@ func (rcvr *iisReceiver) scrapeInstanceMetrics(wrs []watcherRecorder, instanceTo
 	}
 }
 
-var negativeDenominatorError = "A counter with a negative denominator value was detected.\r\n"
-
 func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(appToRecorders map[string][]valRecorder) {
 	watchedInstances := map[string]bool{}
 	for _, wr := range rcvr.queueMaxAgeWatchers {

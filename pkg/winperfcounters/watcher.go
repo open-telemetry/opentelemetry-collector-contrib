@@ -229,7 +229,6 @@ func IsIgnorableError(err error) bool {
 	return false
 }
 
-
 // ExpandWildCardPath examines the local computer and returns those counter paths that match the given counter path which contains wildcard characters.
 func ExpandWildCardPath(counterPath string) ([]string, error) {
 	return win_perf_counters.ExpandWildCardPath(counterPath)
