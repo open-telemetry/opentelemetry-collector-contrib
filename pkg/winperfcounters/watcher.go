@@ -226,6 +226,13 @@ func IsIgnorableError(err error) bool {
 	if errors.As(err, &pdhErr) && (pdhErr.ErrorCode == win_perf_counters.PDH_INVALID_DATA || pdhErr.ErrorCode == win_perf_counters.PDH_NO_DATA || pdhErr.ErrorCode == win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR) {
 		return true
 	}
+	type ignorable interface {
+		IsIgnorable() bool
+	}
+	var ignErr ignorable
+	if errors.As(err, &ignErr) {
+		return ignErr.IsIgnorable()
+	}
 	return false
 }
 
