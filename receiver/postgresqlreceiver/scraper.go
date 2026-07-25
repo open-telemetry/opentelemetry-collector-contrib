@@ -242,6 +242,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		p.recordDatabase(now, database, r, numTables)
 		p.collectIndexes(ctx, now, dbClient, database, &errs)
 		p.collectFunctions(ctx, now, dbClient, database, &errs)
+		p.collectVectorStats(ctx, now, dbClient, database, &errs)
 	}
 
 	p.mb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
@@ -702,6 +703,104 @@ func (p *postgreSQLScraper) collectFunctions(
 			p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 		}
 	}
+}
+
+// collectVectorStats collects the pgvector search and insert metrics. Search and insert stats are
+// gathered by dedicated helpers that record datapoints carrying the db.namespace attribute. In the
+// legacy per-entity resource model the search and insert metrics share the same database-level
+// resource, so this is the one place that builds that resource and emits them together; in OTel
+// semconv mode they are flushed with the single server-level resource at the end of scrape.
+func (p *postgreSQLScraper) collectVectorStats(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	database string,
+	errs *errsMux,
+) {
+	searchRecorded := p.recordVectorSearchStats(ctx, now, client, database, errs)
+	insertRecorded := p.recordVectorInsertStats(ctx, now, client, database, errs)
+
+	if p.useOTelSemconv || (!searchRecorded && !insertRecorded) {
+		return
+	}
+
+	rb := p.setupLegacyResourceBuilder(p.mb.NewResourceBuilder(), database, "", "", "")
+	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+}
+
+// recordVectorSearchStats records the vector search metrics into the metrics builder and reports
+// whether any datapoints were recorded. It does not emit a ResourceMetrics itself; collectVectorStats
+// performs the consolidated emit.
+func (p *postgreSQLScraper) recordVectorSearchStats(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	database string,
+	errs *errsMux,
+) bool {
+	// All metrics are opt-in and derived from the same pg_stat_statements query, so skip
+	// the collection entirely unless at least one of them is enabled.
+	if !p.config.Metrics.PostgresqlVectorSearchCalls.Enabled &&
+		!p.config.Metrics.PostgresqlVectorSearchDuration.Enabled &&
+		!p.config.Metrics.PostgresqlVectorSearchRowsReturned.Enabled {
+		return false
+	}
+
+	stats, err := client.getVectorSearchStats(ctx)
+	if err != nil {
+		errs.addPartial(err)
+		return false
+	}
+
+	var recorded bool
+	for _, stat := range stats {
+		distanceFunction, ok := metadata.MapAttributePostgresqlDistanceFunctionName[stat.distanceFunction]
+		if !ok {
+			// A statement matched the vector filter but could not be classified into a known
+			// distance function; skip it rather than emitting an invalid attribute value.
+			p.logger.Debug("skipping unclassified vector distance function", zap.String("postgresql.distance.function.name", stat.distanceFunction))
+			continue
+		}
+		p.mb.RecordPostgresqlVectorSearchCallsDataPoint(now, stat.calls, distanceFunction, database)
+		p.mb.RecordPostgresqlVectorSearchDurationDataPoint(now, stat.totalExecTime, distanceFunction, database)
+		p.mb.RecordPostgresqlVectorSearchRowsReturnedDataPoint(now, stat.rowsReturned, distanceFunction, database)
+		recorded = true
+	}
+
+	return recorded
+}
+
+// recordVectorInsertStats records the vector insert metrics into the metrics builder and reports
+// whether any datapoints were recorded. Like recordVectorSearchStats it does not emit a
+// ResourceMetrics itself; collectVectorStats performs the consolidated emit.
+func (p *postgreSQLScraper) recordVectorInsertStats(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	database string,
+	errs *errsMux,
+) bool {
+	// Both metrics are opt-in and derived from the same pg_stat_statements query, so skip
+	// the collection entirely unless at least one of them is enabled.
+	if !p.config.Metrics.PostgresqlVectorInsertRows.Enabled &&
+		!p.config.Metrics.PostgresqlVectorInsertDuration.Enabled {
+		return false
+	}
+
+	stats, err := client.getVectorInsertStats(ctx)
+	if err != nil {
+		errs.addPartial(err)
+		return false
+	}
+
+	var recorded bool
+	for _, stat := range stats {
+		p.mb.RecordPostgresqlVectorInsertRowsDataPoint(now, stat.rows, database)
+		p.mb.RecordPostgresqlVectorInsertDurationDataPoint(now, stat.totalExecTime, database)
+		recorded = true
+	}
+
+	return recorded
 }
 
 func (p *postgreSQLScraper) collectBGWriterStats(
