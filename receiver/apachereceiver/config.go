@@ -15,7 +15,7 @@ import (
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	confighttp.ClientConfig        `mapstructure:",squash"`
+	ClientConfig                   confighttp.ClientConfig       `mapstructure:",squash"`
 	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
 
 	// prevent unkeyed literal initialization
@@ -31,17 +31,17 @@ var (
 )
 
 func (cfg *Config) Validate() error {
-	u, err := url.Parse(cfg.Endpoint)
+	u, err := url.Parse(cfg.ClientConfig.Endpoint)
 	if err != nil {
-		return fmt.Errorf("invalid endpoint: '%s': %w", cfg.Endpoint, err)
+		return fmt.Errorf("invalid endpoint: '%s': %w", cfg.ClientConfig.Endpoint, err)
 	}
 
 	if u.Hostname() == "" {
-		return fmt.Errorf("missing hostname: '%s'", cfg.Endpoint)
+		return fmt.Errorf("missing hostname: '%s'", cfg.ClientConfig.Endpoint)
 	}
 
 	if u.RawQuery != "auto" {
-		return fmt.Errorf("query must be 'auto': '%s'", cfg.Endpoint)
+		return fmt.Errorf("query must be 'auto': '%s'", cfg.ClientConfig.Endpoint)
 	}
 
 	return nil

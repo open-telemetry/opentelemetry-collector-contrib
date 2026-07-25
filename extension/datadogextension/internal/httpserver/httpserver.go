@@ -112,7 +112,7 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 		}
 	}()
 
-	s.logger.Info("HTTP Server started at " + s.config.NetAddr.Endpoint + s.config.Path)
+	s.logger.Info("HTTP Server started at " + s.config.ServerConfig.NetAddr.Endpoint + s.config.Path)
 	return nil
 }
 

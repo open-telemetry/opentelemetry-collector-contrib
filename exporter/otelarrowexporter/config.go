@@ -33,7 +33,7 @@ type Config struct {
 
 	RetryConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
-	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	ClientConfig configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// Arrow includes settings specific to OTel Arrow.
 	Arrow ArrowConfig `mapstructure:"arrow"`
