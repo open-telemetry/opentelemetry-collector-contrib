@@ -91,7 +91,7 @@ func TestMetricsExporter_Start(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, exp.clientConn)
 	assert.NotNil(t, exp.grpcMetricsExporter)
-	_, ok := exp.config.Metrics.Headers.Get("Authorization")
+	_, ok := exp.config.Metrics.ClientConfig.Headers.Get("Authorization")
 	assert.True(t, ok)
 
 	// Test shutdown

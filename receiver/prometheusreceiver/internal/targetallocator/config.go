@@ -20,11 +20,11 @@ import (
 )
 
 type Config struct {
-	confighttp.ClientConfig `mapstructure:",squash"`
-	Interval                time.Duration         `mapstructure:"interval"`
-	CollectorID             string                `mapstructure:"collector_id"`
-	HTTPSDConfig            *PromHTTPSDConfig     `mapstructure:"http_sd_config"`
-	HTTPScrapeConfig        *PromHTTPClientConfig `mapstructure:"http_scrape_config"`
+	ClientConfig     confighttp.ClientConfig `mapstructure:",squash"`
+	Interval         time.Duration           `mapstructure:"interval"`
+	CollectorID      string                  `mapstructure:"collector_id"`
+	HTTPSDConfig     *PromHTTPSDConfig       `mapstructure:"http_sd_config"`
+	HTTPScrapeConfig *PromHTTPClientConfig   `mapstructure:"http_scrape_config"`
 }
 
 // PromHTTPSDConfig is a redeclaration of promHTTP.SDConfig because we need custom unmarshaling
@@ -33,8 +33,8 @@ type PromHTTPSDConfig promHTTP.SDConfig
 
 func (cfg *Config) Validate() error {
 	// ensure valid endpoint
-	if _, err := url.ParseRequestURI(cfg.Endpoint); err != nil {
-		return fmt.Errorf("TargetAllocator endpoint is not valid: %s", cfg.Endpoint)
+	if _, err := url.ParseRequestURI(cfg.ClientConfig.Endpoint); err != nil {
+		return fmt.Errorf("TargetAllocator endpoint is not valid: %s", cfg.ClientConfig.Endpoint)
 	}
 	// ensure valid collectorID without variables
 	if cfg.CollectorID == "" || strings.Contains(cfg.CollectorID, "${") {
@@ -149,55 +149,55 @@ func configureSDHTTPClientConfigFromTA(httpSD *promHTTP.SDConfig, allocConf *Con
 	httpSD.HTTPClientConfig.FollowRedirects = false
 
 	httpSD.HTTPClientConfig.TLSConfig = commonconfig.TLSConfig{
-		InsecureSkipVerify: allocConf.TLS.InsecureSkipVerify,
-		ServerName:         allocConf.TLS.ServerName,
-		CAFile:             allocConf.TLS.CAFile,
-		CertFile:           allocConf.TLS.CertFile,
-		KeyFile:            allocConf.TLS.KeyFile,
+		InsecureSkipVerify: allocConf.ClientConfig.TLS.InsecureSkipVerify,
+		ServerName:         allocConf.ClientConfig.TLS.ServerName,
+		CAFile:             allocConf.ClientConfig.TLS.CAFile,
+		CertFile:           allocConf.ClientConfig.TLS.CertFile,
+		KeyFile:            allocConf.ClientConfig.TLS.KeyFile,
 	}
 
-	if allocConf.TLS.CAPem != "" {
-		decodedCA, err := base64.StdEncoding.DecodeString(string(allocConf.TLS.CAPem))
+	if allocConf.ClientConfig.TLS.CAPem != "" {
+		decodedCA, err := base64.StdEncoding.DecodeString(string(allocConf.ClientConfig.TLS.CAPem))
 		if err != nil {
 			return fmt.Errorf("failed to decode CA: %w", err)
 		}
 		httpSD.HTTPClientConfig.TLSConfig.CA = string(decodedCA)
 	}
 
-	if allocConf.TLS.CertPem != "" {
-		decodedCert, err := base64.StdEncoding.DecodeString(string(allocConf.TLS.CertPem))
+	if allocConf.ClientConfig.TLS.CertPem != "" {
+		decodedCert, err := base64.StdEncoding.DecodeString(string(allocConf.ClientConfig.TLS.CertPem))
 		if err != nil {
 			return fmt.Errorf("failed to decode Cert: %w", err)
 		}
 		httpSD.HTTPClientConfig.TLSConfig.Cert = string(decodedCert)
 	}
 
-	if allocConf.TLS.KeyPem != "" {
-		decodedKey, err := base64.StdEncoding.DecodeString(string(allocConf.TLS.KeyPem))
+	if allocConf.ClientConfig.TLS.KeyPem != "" {
+		decodedKey, err := base64.StdEncoding.DecodeString(string(allocConf.ClientConfig.TLS.KeyPem))
 		if err != nil {
 			return fmt.Errorf("failed to decode Key: %w", err)
 		}
 		httpSD.HTTPClientConfig.TLSConfig.Key = commonconfig.Secret(decodedKey)
 	}
 
-	if allocConf.TLS.MinVersion != "" {
-		minVersion, err := convertTLSVersion(allocConf.TLS.MinVersion)
+	if allocConf.ClientConfig.TLS.MinVersion != "" {
+		minVersion, err := convertTLSVersion(allocConf.ClientConfig.TLS.MinVersion)
 		if err != nil {
 			return err
 		}
 		httpSD.HTTPClientConfig.TLSConfig.MinVersion = minVersion
 	}
 
-	if allocConf.TLS.MaxVersion != "" {
-		maxVersion, err := convertTLSVersion(allocConf.TLS.MaxVersion)
+	if allocConf.ClientConfig.TLS.MaxVersion != "" {
+		maxVersion, err := convertTLSVersion(allocConf.ClientConfig.TLS.MaxVersion)
 		if err != nil {
 			return err
 		}
 		httpSD.HTTPClientConfig.TLSConfig.MaxVersion = maxVersion
 	}
 
-	if allocConf.ProxyURL != "" {
-		proxyURL, err := url.Parse(allocConf.ProxyURL)
+	if allocConf.ClientConfig.ProxyURL != "" {
+		proxyURL, err := url.Parse(allocConf.ClientConfig.ProxyURL)
 		if err != nil {
 			return err
 		}

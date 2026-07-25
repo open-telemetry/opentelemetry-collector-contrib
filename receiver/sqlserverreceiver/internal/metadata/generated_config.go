@@ -50,6 +50,155 @@ func (ms *SqlserverAttentionRateMetricConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
+// SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.database_replica.queue.rate metric.
+type SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKey string
+
+const (
+	SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKeySqlserverAvailabilityGroupName      SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKey = "sqlserver.availability_group.name"
+	SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKeySqlserverReplicaName                SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKey = "sqlserver.replica.name"
+	SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKeySqlserverAvailabilityGroupQueueType SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKey = "sqlserver.availability_group.queue.type"
+)
+
+// SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricConfig provides config for the sqlserver.availability_group.database_replica.queue.rate metric.
+type SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKeySqlserverReplicaName, SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKeySqlserverAvailabilityGroupQueueType:
+		default:
+			return fmt.Errorf("metric sqlserver.availability_group.database_replica.queue.rate doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, sqlserver.replica.name, sqlserver.availability_group.queue.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.database_replica.queue.size metric.
+type SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey string
+
+const (
+	SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName      SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey = "sqlserver.availability_group.name"
+	SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverReplicaName                SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey = "sqlserver.replica.name"
+	SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupQueueType SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey = "sqlserver.availability_group.queue.type"
+)
+
+// SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricConfig provides config for the sqlserver.availability_group.database_replica.queue.size metric.
+type SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupQueueType:
+		default:
+			return fmt.Errorf("metric sqlserver.availability_group.database_replica.queue.size doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, sqlserver.replica.name, sqlserver.availability_group.queue.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.database_replica.secondary_lag metric.
+type SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKey string
+
+const (
+	SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKeySqlserverAvailabilityGroupName SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKey = "sqlserver.availability_group.name"
+	SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKeySqlserverReplicaName           SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKey = "sqlserver.replica.name"
+)
+
+// SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricConfig provides config for the sqlserver.availability_group.database_replica.secondary_lag metric.
+type SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKeySqlserverReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.availability_group.database_replica.secondary_lag doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, sqlserver.replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // SqlserverBatchRequestRateMetricConfig provides config for the sqlserver.batch.request.rate metric.
 type SqlserverBatchRequestRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2634,98 +2783,101 @@ func (ms *SqlserverWorktableCacheHitRatioMetricConfig) Unmarshal(parser *confmap
 
 // MetricsConfig provides config for sqlserver metrics.
 type MetricsConfig struct {
-	SqlserverAccessScanRate                     SqlserverAccessScanRateMetricConfig                     `mapstructure:"sqlserver.access.scan.rate"`
-	SqlserverAttentionRate                      SqlserverAttentionRateMetricConfig                      `mapstructure:"sqlserver.attention.rate"`
-	SqlserverBatchRequestRate                   SqlserverBatchRequestRateMetricConfig                   `mapstructure:"sqlserver.batch.request.rate"`
-	SqlserverBatchSQLCompilationRate            SqlserverBatchSQLCompilationRateMetricConfig            `mapstructure:"sqlserver.batch.sql_compilation.rate"`
-	SqlserverBatchSQLRecompilationRate          SqlserverBatchSQLRecompilationRateMetricConfig          `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
-	SqlserverClrExecutionTime                   SqlserverClrExecutionTimeMetricConfig                   `mapstructure:"sqlserver.clr.execution.time"`
-	SqlserverComputerUptime                     SqlserverComputerUptimeMetricConfig                     `mapstructure:"sqlserver.computer.uptime"`
-	SqlserverConnectionResetRate                SqlserverConnectionResetRateMetricConfig                `mapstructure:"sqlserver.connection.reset.rate"`
-	SqlserverCPUCount                           SqlserverCPUCountMetricConfig                           `mapstructure:"sqlserver.cpu.count"`
-	SqlserverCursorCount                        SqlserverCursorCountMetricConfig                        `mapstructure:"sqlserver.cursor.count"`
-	SqlserverCursorMemoryUsage                  SqlserverCursorMemoryUsageMetricConfig                  `mapstructure:"sqlserver.cursor.memory.usage"`
-	SqlserverCursorPlanCount                    SqlserverCursorPlanCountMetricConfig                    `mapstructure:"sqlserver.cursor.plan.count"`
-	SqlserverCursorRequestRate                  SqlserverCursorRequestRateMetricConfig                  `mapstructure:"sqlserver.cursor.request.rate"`
-	SqlserverDatabaseBackupOrRestoreRate        SqlserverDatabaseBackupOrRestoreRateMetricConfig        `mapstructure:"sqlserver.database.backup_or_restore.rate"`
-	SqlserverDatabaseCount                      SqlserverDatabaseCountMetricConfig                      `mapstructure:"sqlserver.database.count"`
-	SqlserverDatabaseExecutionErrors            SqlserverDatabaseExecutionErrorsMetricConfig            `mapstructure:"sqlserver.database.execution.errors"`
-	SqlserverDatabaseFullScanRate               SqlserverDatabaseFullScanRateMetricConfig               `mapstructure:"sqlserver.database.full_scan.rate"`
-	SqlserverDatabaseIo                         SqlserverDatabaseIoMetricConfig                         `mapstructure:"sqlserver.database.io"`
-	SqlserverDatabaseLatency                    SqlserverDatabaseLatencyMetricConfig                    `mapstructure:"sqlserver.database.latency"`
-	SqlserverDatabaseOperations                 SqlserverDatabaseOperationsMetricConfig                 `mapstructure:"sqlserver.database.operations"`
-	SqlserverDatabaseTempdbSpace                SqlserverDatabaseTempdbSpaceMetricConfig                `mapstructure:"sqlserver.database.tempdb.space"`
-	SqlserverDatabaseTempdbVersionStoreSize     SqlserverDatabaseTempdbVersionStoreSizeMetricConfig     `mapstructure:"sqlserver.database.tempdb.version_store.size"`
-	SqlserverDeadlockRate                       SqlserverDeadlockRateMetricConfig                       `mapstructure:"sqlserver.deadlock.rate"`
-	SqlserverErrorRate                          SqlserverErrorRateMetricConfig                          `mapstructure:"sqlserver.error.rate"`
-	SqlserverExtentOperationRate                SqlserverExtentOperationRateMetricConfig                `mapstructure:"sqlserver.extent.operation.rate"`
-	SqlserverGhostRecordSkippedRate             SqlserverGhostRecordSkippedRateMetricConfig             `mapstructure:"sqlserver.ghost_record.skipped.rate"`
-	SqlserverIndexFragmentation                 SqlserverIndexFragmentationMetricConfig                 `mapstructure:"sqlserver.index.fragmentation"`
-	SqlserverIndexPageCount                     SqlserverIndexPageCountMetricConfig                     `mapstructure:"sqlserver.index.page.count"`
-	SqlserverIndexPageUtilization               SqlserverIndexPageUtilizationMetricConfig               `mapstructure:"sqlserver.index.page.utilization"`
-	SqlserverIndexRecordCount                   SqlserverIndexRecordCountMetricConfig                   `mapstructure:"sqlserver.index.record.count"`
-	SqlserverIndexSearchRate                    SqlserverIndexSearchRateMetricConfig                    `mapstructure:"sqlserver.index.search.rate"`
-	SqlserverIndexSize                          SqlserverIndexSizeMetricConfig                          `mapstructure:"sqlserver.index.size"`
-	SqlserverLatchSuperlatchCount               SqlserverLatchSuperlatchCountMetricConfig               `mapstructure:"sqlserver.latch.superlatch.count"`
-	SqlserverLatchSuperlatchTransitionRate      SqlserverLatchSuperlatchTransitionRateMetricConfig      `mapstructure:"sqlserver.latch.superlatch.transition.rate"`
-	SqlserverLatchWaitRate                      SqlserverLatchWaitRateMetricConfig                      `mapstructure:"sqlserver.latch.wait.rate"`
-	SqlserverLatchWaitTimeAvg                   SqlserverLatchWaitTimeAvgMetricConfig                   `mapstructure:"sqlserver.latch.wait_time.avg"`
-	SqlserverLatchWaitTimeTotal                 SqlserverLatchWaitTimeTotalMetricConfig                 `mapstructure:"sqlserver.latch.wait_time.total"`
-	SqlserverLockBlockCount                     SqlserverLockBlockCountMetricConfig                     `mapstructure:"sqlserver.lock.block.count"`
-	SqlserverLockEscalationRate                 SqlserverLockEscalationRateMetricConfig                 `mapstructure:"sqlserver.lock.escalation.rate"`
-	SqlserverLockMemory                         SqlserverLockMemoryMetricConfig                         `mapstructure:"sqlserver.lock.memory"`
-	SqlserverLockRequestRate                    SqlserverLockRequestRateMetricConfig                    `mapstructure:"sqlserver.lock.request.rate"`
-	SqlserverLockTimeoutRate                    SqlserverLockTimeoutRateMetricConfig                    `mapstructure:"sqlserver.lock.timeout.rate"`
-	SqlserverLockWaitCount                      SqlserverLockWaitCountMetricConfig                      `mapstructure:"sqlserver.lock.wait.count"`
-	SqlserverLockWaitRate                       SqlserverLockWaitRateMetricConfig                       `mapstructure:"sqlserver.lock.wait.rate"`
-	SqlserverLockWaitTimeAvg                    SqlserverLockWaitTimeAvgMetricConfig                    `mapstructure:"sqlserver.lock.wait_time.avg"`
-	SqlserverLockWaitTimeTotal                  SqlserverLockWaitTimeTotalMetricConfig                  `mapstructure:"sqlserver.lock.wait_time.total"`
-	SqlserverLoginRate                          SqlserverLoginRateMetricConfig                          `mapstructure:"sqlserver.login.rate"`
-	SqlserverLogoutRate                         SqlserverLogoutRateMetricConfig                         `mapstructure:"sqlserver.logout.rate"`
-	SqlserverMemoryArea                         SqlserverMemoryAreaMetricConfig                         `mapstructure:"sqlserver.memory.area"`
-	SqlserverMemoryCacheObjectCount             SqlserverMemoryCacheObjectCountMetricConfig             `mapstructure:"sqlserver.memory.cache.object.count"`
-	SqlserverMemoryGrantsPendingCount           SqlserverMemoryGrantsPendingCountMetricConfig           `mapstructure:"sqlserver.memory.grants.pending.count"`
-	SqlserverMemoryPageCount                    SqlserverMemoryPageCountMetricConfig                    `mapstructure:"sqlserver.memory.page.count"`
-	SqlserverMemoryUsage                        SqlserverMemoryUsageMetricConfig                        `mapstructure:"sqlserver.memory.usage"`
-	SqlserverOsWaitDuration                     SqlserverOsWaitDurationMetricConfig                     `mapstructure:"sqlserver.os.wait.duration"`
-	SqlserverPageAllocationRate                 SqlserverPageAllocationRateMetricConfig                 `mapstructure:"sqlserver.page.allocation.rate"`
-	SqlserverPageBufferCacheFreeListStallsRate  SqlserverPageBufferCacheFreeListStallsRateMetricConfig  `mapstructure:"sqlserver.page.buffer_cache.free_list.stalls.rate"`
-	SqlserverPageBufferCacheHitRatio            SqlserverPageBufferCacheHitRatioMetricConfig            `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
-	SqlserverPageCheckpointFlushRate            SqlserverPageCheckpointFlushRateMetricConfig            `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
-	SqlserverPageCompressionRate                SqlserverPageCompressionRateMetricConfig                `mapstructure:"sqlserver.page.compression.rate"`
-	SqlserverPageLazyWriteRate                  SqlserverPageLazyWriteRateMetricConfig                  `mapstructure:"sqlserver.page.lazy_write.rate"`
-	SqlserverPageLifeExpectancy                 SqlserverPageLifeExpectancyMetricConfig                 `mapstructure:"sqlserver.page.life_expectancy"`
-	SqlserverPageLookupRate                     SqlserverPageLookupRateMetricConfig                     `mapstructure:"sqlserver.page.lookup.rate"`
-	SqlserverPageOperationRate                  SqlserverPageOperationRateMetricConfig                  `mapstructure:"sqlserver.page.operation.rate"`
-	SqlserverPageReadAheadRate                  SqlserverPageReadAheadRateMetricConfig                  `mapstructure:"sqlserver.page.read_ahead.rate"`
-	SqlserverPageSplitRate                      SqlserverPageSplitRateMetricConfig                      `mapstructure:"sqlserver.page.split.rate"`
-	SqlserverParameterizationRate               SqlserverParameterizationRateMetricConfig               `mapstructure:"sqlserver.parameterization.rate"`
-	SqlserverPlanExecutionRate                  SqlserverPlanExecutionRateMetricConfig                  `mapstructure:"sqlserver.plan.execution.rate"`
-	SqlserverProcessesBlocked                   SqlserverProcessesBlockedMetricConfig                   `mapstructure:"sqlserver.processes.blocked"`
-	SqlserverRecompilationRatio                 SqlserverRecompilationRatioMetricConfig                 `mapstructure:"sqlserver.recompilation.ratio"`
-	SqlserverReplicaDataRate                    SqlserverReplicaDataRateMetricConfig                    `mapstructure:"sqlserver.replica.data.rate"`
-	SqlserverResourcePoolDiskOperations         SqlserverResourcePoolDiskOperationsMetricConfig         `mapstructure:"sqlserver.resource_pool.disk.operations"`
-	SqlserverResourcePoolDiskThrottledReadRate  SqlserverResourcePoolDiskThrottledReadRateMetricConfig  `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
-	SqlserverResourcePoolDiskThrottledWriteRate SqlserverResourcePoolDiskThrottledWriteRateMetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
-	SqlserverScanPointRevalidationRate          SqlserverScanPointRevalidationRateMetricConfig          `mapstructure:"sqlserver.scan_point.revalidation.rate"`
-	SqlserverStoredProcedureInvocationRate      SqlserverStoredProcedureInvocationRateMetricConfig      `mapstructure:"sqlserver.stored_procedure.invocation.rate"`
-	SqlserverTableCount                         SqlserverTableCountMetricConfig                         `mapstructure:"sqlserver.table.count"`
-	SqlserverTaskCount                          SqlserverTaskCountMetricConfig                          `mapstructure:"sqlserver.task.count"`
-	SqlserverTaskRate                           SqlserverTaskRateMetricConfig                           `mapstructure:"sqlserver.task.rate"`
-	SqlserverTransactionDelay                   SqlserverTransactionDelayMetricConfig                   `mapstructure:"sqlserver.transaction.delay"`
-	SqlserverTransactionMirrorWriteRate         SqlserverTransactionMirrorWriteRateMetricConfig         `mapstructure:"sqlserver.transaction.mirror_write.rate"`
-	SqlserverTransactionRate                    SqlserverTransactionRateMetricConfig                    `mapstructure:"sqlserver.transaction.rate"`
-	SqlserverTransactionWriteRate               SqlserverTransactionWriteRateMetricConfig               `mapstructure:"sqlserver.transaction.write.rate"`
-	SqlserverTransactionLogFlushDataRate        SqlserverTransactionLogFlushDataRateMetricConfig        `mapstructure:"sqlserver.transaction_log.flush.data.rate"`
-	SqlserverTransactionLogFlushRate            SqlserverTransactionLogFlushRateMetricConfig            `mapstructure:"sqlserver.transaction_log.flush.rate"`
-	SqlserverTransactionLogFlushWaitRate        SqlserverTransactionLogFlushWaitRateMetricConfig        `mapstructure:"sqlserver.transaction_log.flush.wait.rate"`
-	SqlserverTransactionLogGrowthCount          SqlserverTransactionLogGrowthCountMetricConfig          `mapstructure:"sqlserver.transaction_log.growth.count"`
-	SqlserverTransactionLogShrinkCount          SqlserverTransactionLogShrinkCountMetricConfig          `mapstructure:"sqlserver.transaction_log.shrink.count"`
-	SqlserverTransactionLogUsage                SqlserverTransactionLogUsageMetricConfig                `mapstructure:"sqlserver.transaction_log.usage"`
-	SqlserverUserConnectionCount                SqlserverUserConnectionCountMetricConfig                `mapstructure:"sqlserver.user.connection.count"`
-	SqlserverWorkerRequestCount                 SqlserverWorkerRequestCountMetricConfig                 `mapstructure:"sqlserver.worker.request.count"`
-	SqlserverWorkerThreadCount                  SqlserverWorkerThreadCountMetricConfig                  `mapstructure:"sqlserver.worker.thread.count"`
-	SqlserverWorktableCacheHitRatio             SqlserverWorktableCacheHitRatioMetricConfig             `mapstructure:"sqlserver.worktable.cache.hit_ratio"`
+	SqlserverAccessScanRate                               SqlserverAccessScanRateMetricConfig                               `mapstructure:"sqlserver.access.scan.rate"`
+	SqlserverAttentionRate                                SqlserverAttentionRateMetricConfig                                `mapstructure:"sqlserver.attention.rate"`
+	SqlserverAvailabilityGroupDatabaseReplicaQueueRate    SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricConfig    `mapstructure:"sqlserver.availability_group.database_replica.queue.rate"`
+	SqlserverAvailabilityGroupDatabaseReplicaQueueSize    SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricConfig    `mapstructure:"sqlserver.availability_group.database_replica.queue.size"`
+	SqlserverAvailabilityGroupDatabaseReplicaSecondaryLag SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricConfig `mapstructure:"sqlserver.availability_group.database_replica.secondary_lag"`
+	SqlserverBatchRequestRate                             SqlserverBatchRequestRateMetricConfig                             `mapstructure:"sqlserver.batch.request.rate"`
+	SqlserverBatchSQLCompilationRate                      SqlserverBatchSQLCompilationRateMetricConfig                      `mapstructure:"sqlserver.batch.sql_compilation.rate"`
+	SqlserverBatchSQLRecompilationRate                    SqlserverBatchSQLRecompilationRateMetricConfig                    `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
+	SqlserverClrExecutionTime                             SqlserverClrExecutionTimeMetricConfig                             `mapstructure:"sqlserver.clr.execution.time"`
+	SqlserverComputerUptime                               SqlserverComputerUptimeMetricConfig                               `mapstructure:"sqlserver.computer.uptime"`
+	SqlserverConnectionResetRate                          SqlserverConnectionResetRateMetricConfig                          `mapstructure:"sqlserver.connection.reset.rate"`
+	SqlserverCPUCount                                     SqlserverCPUCountMetricConfig                                     `mapstructure:"sqlserver.cpu.count"`
+	SqlserverCursorCount                                  SqlserverCursorCountMetricConfig                                  `mapstructure:"sqlserver.cursor.count"`
+	SqlserverCursorMemoryUsage                            SqlserverCursorMemoryUsageMetricConfig                            `mapstructure:"sqlserver.cursor.memory.usage"`
+	SqlserverCursorPlanCount                              SqlserverCursorPlanCountMetricConfig                              `mapstructure:"sqlserver.cursor.plan.count"`
+	SqlserverCursorRequestRate                            SqlserverCursorRequestRateMetricConfig                            `mapstructure:"sqlserver.cursor.request.rate"`
+	SqlserverDatabaseBackupOrRestoreRate                  SqlserverDatabaseBackupOrRestoreRateMetricConfig                  `mapstructure:"sqlserver.database.backup_or_restore.rate"`
+	SqlserverDatabaseCount                                SqlserverDatabaseCountMetricConfig                                `mapstructure:"sqlserver.database.count"`
+	SqlserverDatabaseExecutionErrors                      SqlserverDatabaseExecutionErrorsMetricConfig                      `mapstructure:"sqlserver.database.execution.errors"`
+	SqlserverDatabaseFullScanRate                         SqlserverDatabaseFullScanRateMetricConfig                         `mapstructure:"sqlserver.database.full_scan.rate"`
+	SqlserverDatabaseIo                                   SqlserverDatabaseIoMetricConfig                                   `mapstructure:"sqlserver.database.io"`
+	SqlserverDatabaseLatency                              SqlserverDatabaseLatencyMetricConfig                              `mapstructure:"sqlserver.database.latency"`
+	SqlserverDatabaseOperations                           SqlserverDatabaseOperationsMetricConfig                           `mapstructure:"sqlserver.database.operations"`
+	SqlserverDatabaseTempdbSpace                          SqlserverDatabaseTempdbSpaceMetricConfig                          `mapstructure:"sqlserver.database.tempdb.space"`
+	SqlserverDatabaseTempdbVersionStoreSize               SqlserverDatabaseTempdbVersionStoreSizeMetricConfig               `mapstructure:"sqlserver.database.tempdb.version_store.size"`
+	SqlserverDeadlockRate                                 SqlserverDeadlockRateMetricConfig                                 `mapstructure:"sqlserver.deadlock.rate"`
+	SqlserverErrorRate                                    SqlserverErrorRateMetricConfig                                    `mapstructure:"sqlserver.error.rate"`
+	SqlserverExtentOperationRate                          SqlserverExtentOperationRateMetricConfig                          `mapstructure:"sqlserver.extent.operation.rate"`
+	SqlserverGhostRecordSkippedRate                       SqlserverGhostRecordSkippedRateMetricConfig                       `mapstructure:"sqlserver.ghost_record.skipped.rate"`
+	SqlserverIndexFragmentation                           SqlserverIndexFragmentationMetricConfig                           `mapstructure:"sqlserver.index.fragmentation"`
+	SqlserverIndexPageCount                               SqlserverIndexPageCountMetricConfig                               `mapstructure:"sqlserver.index.page.count"`
+	SqlserverIndexPageUtilization                         SqlserverIndexPageUtilizationMetricConfig                         `mapstructure:"sqlserver.index.page.utilization"`
+	SqlserverIndexRecordCount                             SqlserverIndexRecordCountMetricConfig                             `mapstructure:"sqlserver.index.record.count"`
+	SqlserverIndexSearchRate                              SqlserverIndexSearchRateMetricConfig                              `mapstructure:"sqlserver.index.search.rate"`
+	SqlserverIndexSize                                    SqlserverIndexSizeMetricConfig                                    `mapstructure:"sqlserver.index.size"`
+	SqlserverLatchSuperlatchCount                         SqlserverLatchSuperlatchCountMetricConfig                         `mapstructure:"sqlserver.latch.superlatch.count"`
+	SqlserverLatchSuperlatchTransitionRate                SqlserverLatchSuperlatchTransitionRateMetricConfig                `mapstructure:"sqlserver.latch.superlatch.transition.rate"`
+	SqlserverLatchWaitRate                                SqlserverLatchWaitRateMetricConfig                                `mapstructure:"sqlserver.latch.wait.rate"`
+	SqlserverLatchWaitTimeAvg                             SqlserverLatchWaitTimeAvgMetricConfig                             `mapstructure:"sqlserver.latch.wait_time.avg"`
+	SqlserverLatchWaitTimeTotal                           SqlserverLatchWaitTimeTotalMetricConfig                           `mapstructure:"sqlserver.latch.wait_time.total"`
+	SqlserverLockBlockCount                               SqlserverLockBlockCountMetricConfig                               `mapstructure:"sqlserver.lock.block.count"`
+	SqlserverLockEscalationRate                           SqlserverLockEscalationRateMetricConfig                           `mapstructure:"sqlserver.lock.escalation.rate"`
+	SqlserverLockMemory                                   SqlserverLockMemoryMetricConfig                                   `mapstructure:"sqlserver.lock.memory"`
+	SqlserverLockRequestRate                              SqlserverLockRequestRateMetricConfig                              `mapstructure:"sqlserver.lock.request.rate"`
+	SqlserverLockTimeoutRate                              SqlserverLockTimeoutRateMetricConfig                              `mapstructure:"sqlserver.lock.timeout.rate"`
+	SqlserverLockWaitCount                                SqlserverLockWaitCountMetricConfig                                `mapstructure:"sqlserver.lock.wait.count"`
+	SqlserverLockWaitRate                                 SqlserverLockWaitRateMetricConfig                                 `mapstructure:"sqlserver.lock.wait.rate"`
+	SqlserverLockWaitTimeAvg                              SqlserverLockWaitTimeAvgMetricConfig                              `mapstructure:"sqlserver.lock.wait_time.avg"`
+	SqlserverLockWaitTimeTotal                            SqlserverLockWaitTimeTotalMetricConfig                            `mapstructure:"sqlserver.lock.wait_time.total"`
+	SqlserverLoginRate                                    SqlserverLoginRateMetricConfig                                    `mapstructure:"sqlserver.login.rate"`
+	SqlserverLogoutRate                                   SqlserverLogoutRateMetricConfig                                   `mapstructure:"sqlserver.logout.rate"`
+	SqlserverMemoryArea                                   SqlserverMemoryAreaMetricConfig                                   `mapstructure:"sqlserver.memory.area"`
+	SqlserverMemoryCacheObjectCount                       SqlserverMemoryCacheObjectCountMetricConfig                       `mapstructure:"sqlserver.memory.cache.object.count"`
+	SqlserverMemoryGrantsPendingCount                     SqlserverMemoryGrantsPendingCountMetricConfig                     `mapstructure:"sqlserver.memory.grants.pending.count"`
+	SqlserverMemoryPageCount                              SqlserverMemoryPageCountMetricConfig                              `mapstructure:"sqlserver.memory.page.count"`
+	SqlserverMemoryUsage                                  SqlserverMemoryUsageMetricConfig                                  `mapstructure:"sqlserver.memory.usage"`
+	SqlserverOsWaitDuration                               SqlserverOsWaitDurationMetricConfig                               `mapstructure:"sqlserver.os.wait.duration"`
+	SqlserverPageAllocationRate                           SqlserverPageAllocationRateMetricConfig                           `mapstructure:"sqlserver.page.allocation.rate"`
+	SqlserverPageBufferCacheFreeListStallsRate            SqlserverPageBufferCacheFreeListStallsRateMetricConfig            `mapstructure:"sqlserver.page.buffer_cache.free_list.stalls.rate"`
+	SqlserverPageBufferCacheHitRatio                      SqlserverPageBufferCacheHitRatioMetricConfig                      `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
+	SqlserverPageCheckpointFlushRate                      SqlserverPageCheckpointFlushRateMetricConfig                      `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
+	SqlserverPageCompressionRate                          SqlserverPageCompressionRateMetricConfig                          `mapstructure:"sqlserver.page.compression.rate"`
+	SqlserverPageLazyWriteRate                            SqlserverPageLazyWriteRateMetricConfig                            `mapstructure:"sqlserver.page.lazy_write.rate"`
+	SqlserverPageLifeExpectancy                           SqlserverPageLifeExpectancyMetricConfig                           `mapstructure:"sqlserver.page.life_expectancy"`
+	SqlserverPageLookupRate                               SqlserverPageLookupRateMetricConfig                               `mapstructure:"sqlserver.page.lookup.rate"`
+	SqlserverPageOperationRate                            SqlserverPageOperationRateMetricConfig                            `mapstructure:"sqlserver.page.operation.rate"`
+	SqlserverPageReadAheadRate                            SqlserverPageReadAheadRateMetricConfig                            `mapstructure:"sqlserver.page.read_ahead.rate"`
+	SqlserverPageSplitRate                                SqlserverPageSplitRateMetricConfig                                `mapstructure:"sqlserver.page.split.rate"`
+	SqlserverParameterizationRate                         SqlserverParameterizationRateMetricConfig                         `mapstructure:"sqlserver.parameterization.rate"`
+	SqlserverPlanExecutionRate                            SqlserverPlanExecutionRateMetricConfig                            `mapstructure:"sqlserver.plan.execution.rate"`
+	SqlserverProcessesBlocked                             SqlserverProcessesBlockedMetricConfig                             `mapstructure:"sqlserver.processes.blocked"`
+	SqlserverRecompilationRatio                           SqlserverRecompilationRatioMetricConfig                           `mapstructure:"sqlserver.recompilation.ratio"`
+	SqlserverReplicaDataRate                              SqlserverReplicaDataRateMetricConfig                              `mapstructure:"sqlserver.replica.data.rate"`
+	SqlserverResourcePoolDiskOperations                   SqlserverResourcePoolDiskOperationsMetricConfig                   `mapstructure:"sqlserver.resource_pool.disk.operations"`
+	SqlserverResourcePoolDiskThrottledReadRate            SqlserverResourcePoolDiskThrottledReadRateMetricConfig            `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
+	SqlserverResourcePoolDiskThrottledWriteRate           SqlserverResourcePoolDiskThrottledWriteRateMetricConfig           `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
+	SqlserverScanPointRevalidationRate                    SqlserverScanPointRevalidationRateMetricConfig                    `mapstructure:"sqlserver.scan_point.revalidation.rate"`
+	SqlserverStoredProcedureInvocationRate                SqlserverStoredProcedureInvocationRateMetricConfig                `mapstructure:"sqlserver.stored_procedure.invocation.rate"`
+	SqlserverTableCount                                   SqlserverTableCountMetricConfig                                   `mapstructure:"sqlserver.table.count"`
+	SqlserverTaskCount                                    SqlserverTaskCountMetricConfig                                    `mapstructure:"sqlserver.task.count"`
+	SqlserverTaskRate                                     SqlserverTaskRateMetricConfig                                     `mapstructure:"sqlserver.task.rate"`
+	SqlserverTransactionDelay                             SqlserverTransactionDelayMetricConfig                             `mapstructure:"sqlserver.transaction.delay"`
+	SqlserverTransactionMirrorWriteRate                   SqlserverTransactionMirrorWriteRateMetricConfig                   `mapstructure:"sqlserver.transaction.mirror_write.rate"`
+	SqlserverTransactionRate                              SqlserverTransactionRateMetricConfig                              `mapstructure:"sqlserver.transaction.rate"`
+	SqlserverTransactionWriteRate                         SqlserverTransactionWriteRateMetricConfig                         `mapstructure:"sqlserver.transaction.write.rate"`
+	SqlserverTransactionLogFlushDataRate                  SqlserverTransactionLogFlushDataRateMetricConfig                  `mapstructure:"sqlserver.transaction_log.flush.data.rate"`
+	SqlserverTransactionLogFlushRate                      SqlserverTransactionLogFlushRateMetricConfig                      `mapstructure:"sqlserver.transaction_log.flush.rate"`
+	SqlserverTransactionLogFlushWaitRate                  SqlserverTransactionLogFlushWaitRateMetricConfig                  `mapstructure:"sqlserver.transaction_log.flush.wait.rate"`
+	SqlserverTransactionLogGrowthCount                    SqlserverTransactionLogGrowthCountMetricConfig                    `mapstructure:"sqlserver.transaction_log.growth.count"`
+	SqlserverTransactionLogShrinkCount                    SqlserverTransactionLogShrinkCountMetricConfig                    `mapstructure:"sqlserver.transaction_log.shrink.count"`
+	SqlserverTransactionLogUsage                          SqlserverTransactionLogUsageMetricConfig                          `mapstructure:"sqlserver.transaction_log.usage"`
+	SqlserverUserConnectionCount                          SqlserverUserConnectionCountMetricConfig                          `mapstructure:"sqlserver.user.connection.count"`
+	SqlserverWorkerRequestCount                           SqlserverWorkerRequestCountMetricConfig                           `mapstructure:"sqlserver.worker.request.count"`
+	SqlserverWorkerThreadCount                            SqlserverWorkerThreadCountMetricConfig                            `mapstructure:"sqlserver.worker.thread.count"`
+	SqlserverWorktableCacheHitRatio                       SqlserverWorktableCacheHitRatioMetricConfig                       `mapstructure:"sqlserver.worktable.cache.hit_ratio"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -2735,6 +2887,21 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverAttentionRate: SqlserverAttentionRateMetricConfig{
 			Enabled: false,
+		},
+		SqlserverAvailabilityGroupDatabaseReplicaQueueRate: SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKeySqlserverReplicaName, SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricAttributeKeySqlserverAvailabilityGroupQueueType},
+		},
+		SqlserverAvailabilityGroupDatabaseReplicaQueueSize: SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupQueueType},
+		},
+		SqlserverAvailabilityGroupDatabaseReplicaSecondaryLag: SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKeySqlserverReplicaName},
 		},
 		SqlserverBatchRequestRate: SqlserverBatchRequestRateMetricConfig{
 			Enabled: true,
