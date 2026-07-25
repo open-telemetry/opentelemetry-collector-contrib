@@ -7,6 +7,30 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.157.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Break lambda arity validation into a separate function. (#49421)
+  This allows statically verifying arity.
+
+### 💡 Enhancements 💡
+
+- `internal/k8sinventory`: Extract checkpoint package and update Observer interface to return startup errors. (#43602)
+  - Extracted `internal/k8sinventory/checkpoint` as a shared package so checkpoint logic can be reused across observer implementations.
+  - The `Observer` interface's `Start` method now returns an error, allowing callers to detect and propagate startup failures.
+  
+- `pkg/ottl`: Add `LambdaActivation.IsArgBound` and variadic lambda argument evaluation helpers. (#49191)
+  - `IsArgBound` reports whether a positional argument maps to a named formal parameter or a blank ("_") placeholder.
+  - Lambda evaluation helpers now normalize only bound arguments.
+  
+- `pkg/pdatatest`: Add `IncludeHistogramExplicitBounds` option to pmetricassert snapshot generation. (#49732)
+  The option includes histogram explicit bounds without including other histogram datapoint values.
+  Snapshot compaction preserves selected histogram datapoint assertion fields, including empty explicit bounds.
+  
+
+<!-- previous-version -->
+
 ## v0.156.0
 
 ### 🛑 Breaking changes 🛑

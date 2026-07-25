@@ -1,4 +1,0 @@
-change_type: enhancement
-component: extension/oidc
-note: Add ignore issuer in config for single provider setup and propagate it to go-oidc.
-issues: [46791]

@@ -16,6 +16,8 @@ status:
     active: [justinianvoss22, dyl10s, ishleenk17]
     seeking_new: true
 
+override_value_enabled: true
+
 resource_attributes:
   server.address:
     description: The address of the MongoDB host.
@@ -28,6 +30,14 @@ resource_attributes:
   service.instance.id:
     description: A unique identifier of the MongoDB resource as a UUID v5, derived from server address and port.
     enabled: true
+    type: string
+  service.name:
+    description: "Logical name of the service. When enabled, defaults to unknown_service:mongodb."
+    enabled: false
+    type: string
+  service.namespace:
+    description: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
+    enabled: false
     type: string
 
 attributes:
@@ -123,23 +133,44 @@ attributes:
   mongodb.cursor.tailable:
     description: Whether the cursor is a tailable cursor.
     type: bool
+  mongodb.explain_plan.hash:
+    description: FNV-64a hash of the obfuscated explain plan structure, identifying the execution plan shape.
+    type: string
+  mongodb.explain_plan.text:
+    description: The obfuscated query explain plan, if collection is enabled.
+    type: string
   mongodb.lsid.id:
     description: The UUID portion of the logical session identifier associated with the MongoDB operation.
     type: string
   mongodb.operation.comment:
     description: The comments attached to the MongoDB command. String comments are reported as-is; array comments are expanded into multiple entries; non-string values are reported as MongoDB Extended JSON.
     type: slice
+  mongodb.operation.cpu.time:
+    description: CPU time in seconds for this query execution.
+    type: double
+  mongodb.operation.docs_examined:
+    description: Number of documents examined by this query execution.
+    type: int
+  mongodb.operation.docs_returned:
+    description: Number of documents returned by this query execution.
+    type: int
   mongodb.operation.duration:
     description: The duration of the MongoDB operation in seconds.
     type: double
   mongodb.operation.id:
     description: Identifier of the MongoDB operation.
     type: string
+  mongodb.operation.keys_examined:
+    description: Number of index keys examined by this query execution.
+    type: int
   mongodb.operation.plan.summary:
     description: Summary of the execution plan for the MongoDB operation.
     type: string
   mongodb.operation.prepared_read_conflict.count:
     description: The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort.
+    type: int
+  mongodb.operation.response_length:
+    description: Response length in bytes for this query execution.
     type: int
   mongodb.operation.state:
     description: Simplified state of the MongoDB operation.
@@ -236,6 +267,32 @@ events:
       - mongodb.operation.yield.count
       - mongodb.operation.wait.type
       - mongodb.operation.wait.details
+
+  db.server.top_query:
+    enabled: false
+    description: |
+      Emits one event per slow query execution. The top N slowest executions per scrape window are emitted.
+      Note: when database profiling is disabled, the receiver falls back to MongoDB's diagnostic log (`getLog`), a fixed-size ring buffer (~1024 entries) that may rotate slow-query entries out before the next scrape on busy servers; enable the profiler for reliable capture.
+    attributes:
+      - db.collection.name
+      - db.namespace
+      - db.operation.name
+      - db.query.text
+      - db.system.name
+      - mongodb.cursor.id
+      - mongodb.cursor.originating_command
+      - mongodb.explain_plan.hash
+      - mongodb.explain_plan.text
+      - mongodb.operation.comment
+      - mongodb.operation.cpu.time
+      - mongodb.operation.docs_examined
+      - mongodb.operation.docs_returned
+      - mongodb.operation.duration
+      - mongodb.operation.keys_examined
+      - mongodb.operation.plan.summary
+      - mongodb.operation.response_length
+      - mongodb.operation.type
+      - mongodb.query.truncated
 
 metrics:
   mongodb.active.reads:
@@ -697,3 +754,10 @@ metrics:
 tests:
   config:
     timeout: 1ms
+    top_query_collection:
+      query_plan_cache_ttl: 1s
+  goleak:
+    ignore:
+      any:
+        - "github.com/cihub/seelog.(*asyncLoopLogger).processQueue"
+        - github.com/hashicorp/golang-lru/v2/expirable.NewLRU[...].func1
