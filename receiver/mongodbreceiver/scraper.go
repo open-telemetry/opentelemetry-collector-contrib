@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
+	lru "github.com/hashicorp/golang-lru/v2/expirable"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.opentelemetry.io/collector/component"
@@ -36,6 +37,7 @@ var (
 )
 
 const (
+	defaultServiceName          = "unknown_service:mongodb"
 	namespaceKey                = "ns"
 	commandKey                  = "command"
 	commentKey                  = "comment"
@@ -74,20 +76,23 @@ func generateInstanceID(serverAddress string, serverPort int64) string {
 }
 
 type mongodbScraper struct {
-	logger             *zap.Logger
-	config             *Config
-	client             client
-	secondaryClients   []client
-	mongoVersion       *version.Version
-	mb                 *metadata.MetricsBuilder
-	lb                 *metadata.LogsBuilder
-	prevReplTimestamp  pcommon.Timestamp
-	prevReplCounts     map[string]int64
-	prevTimestamp      pcommon.Timestamp
-	prevFlushTimestamp pcommon.Timestamp
-	prevCounts         map[string]int64
-	prevFlushCount     int64
-	obfuscator         *obfuscator
+	logger                *zap.Logger
+	config                *Config
+	client                client
+	secondaryClients      []client
+	mongoVersion          *version.Version
+	mb                    *metadata.MetricsBuilder
+	lb                    *metadata.LogsBuilder
+	prevReplTimestamp     pcommon.Timestamp
+	prevReplCounts        map[string]int64
+	prevTimestamp         pcommon.Timestamp
+	prevFlushTimestamp    pcommon.Timestamp
+	prevCounts            map[string]int64
+	prevFlushCount        int64
+	obfuscator            *obfuscator
+	planCache             *lru.LRU[string, string]
+	lastScrapeTime        time.Time // upper bound of the last successful scrape window; used by both profiler and getLog paths
+	lastTopQueryExecution time.Time
 }
 
 func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
@@ -218,9 +223,7 @@ func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now
 	s.processCurrentOp(ctx, operations, now)
 
 	rb := s.lb.NewResourceBuilder()
-	rb.SetServerAddress(serverAddress)
-	rb.SetServerPort(serverPort)
-	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
+	setResourceAttributes(rb, serverAddress, serverPort)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 }
 
@@ -532,6 +535,14 @@ func clientAddressAndPort(clientAddr string) (string, int64) {
 	return host, parsedPort
 }
 
+func setResourceAttributes(rb *metadata.ResourceBuilder, serverAddress string, serverPort int64) {
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
+	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
+	rb.SetServiceName(defaultServiceName)
+	rb.SetServiceNamespace("")
+}
+
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {
 	dbNames, err := s.client.ListDatabaseNames(ctx, bson.D{})
 	if err != nil {
@@ -572,9 +583,7 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 
 	// Emit single resource for the server
 	rb := s.mb.NewResourceBuilder()
-	rb.SetServerAddress(serverAddress)
-	rb.SetServerPort(serverPort)
-	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
+	setResourceAttributes(rb, serverAddress, serverPort)
 	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 

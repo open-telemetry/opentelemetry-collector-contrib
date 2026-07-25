@@ -62,7 +62,7 @@ func TestManagerShutdown(t *testing.T) {
 		Interval:    100 * time.Millisecond,
 		CollectorID: "test-collector",
 	}
-	cfg.Endpoint = server.URL
+	cfg.ClientConfig.Endpoint = server.URL
 	promCfg, err := promconfig.Load("", nil)
 	require.NoError(t, err)
 

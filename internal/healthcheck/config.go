@@ -71,7 +71,7 @@ var _ component.Config = (*Config)(nil)
 // Validate checks if the extension configuration is valid
 func (c *Config) Validate() error {
 	if !c.UseV2 {
-		if c.NetAddr.Endpoint == "" {
+		if c.ServerConfig.NetAddr.Endpoint == "" {
 			return ErrHTTPEndpointRequired
 		}
 		if !strings.HasPrefix(c.Path, "/") {
@@ -85,7 +85,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.HTTPConfig != nil {
-		if c.HTTPConfig.NetAddr.Endpoint == "" {
+		if c.HTTPConfig.ServerConfig.NetAddr.Endpoint == "" {
 			return ErrHTTPEndpointRequired
 		}
 		if c.HTTPConfig.Status.Enabled && !strings.HasPrefix(c.HTTPConfig.Status.Path, "/") {
@@ -96,7 +96,7 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.GRPCConfig != nil && c.GRPCConfig.NetAddr.Endpoint == "" {
+	if c.GRPCConfig != nil && c.GRPCConfig.ServerConfig.NetAddr.Endpoint == "" {
 		return ErrGRPCEndpointRequired
 	}
 
