@@ -249,6 +249,76 @@ func TestTracesPusher_partitioning(t *testing.T) {
 			[]byte(traceID2.String()),
 		}, keys)
 	})
+	t.Run("resource_attribute_partitioning", func(t *testing.T) {
+		// Two resources for the same service but on different hosts must share a key
+		// (partitioning only on service.name), while a third service gets a distinct key.
+		input := ptrace.NewTraces()
+
+		rs1 := input.ResourceSpans().AppendEmpty()
+		rs1.Resource().Attributes().PutStr("service.name", "svc-a")
+		rs1.Resource().Attributes().PutStr("host.name", "host-1")
+		rs1.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("a1")
+
+		rs2 := input.ResourceSpans().AppendEmpty()
+		rs2.Resource().Attributes().PutStr("service.name", "svc-a")
+		rs2.Resource().Attributes().PutStr("host.name", "host-2")
+		rs2.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("a2")
+
+		rs3 := input.ResourceSpans().AppendEmpty()
+		rs3.Resource().Attributes().PutStr("service.name", "svc-b")
+		rs3.Resource().Attributes().PutStr("host.name", "host-3")
+		rs3.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("b1")
+
+		config := createDefaultConfig().(*Config)
+		config.PartitionTracesByResourceAttributes = []string{"service.name"}
+		exp, fakeCluster := newKgoMockTracesExporter(t, *config, componenttest.NewNopHost(), config.Traces.Topic)
+		defer fakeCluster.Close()
+
+		err := exp.exportData(t.Context(), input)
+		require.NoError(t, err)
+
+		// 3 resources -> 3 messages (split per resource).
+		records := fetchKgoRecords(t, fakeCluster.ListenAddrs(), config.Traces.Topic, 3)
+		require.Len(t, records, 3, "expected 3 messages (one per resource)")
+
+		// Map each service to the key(s) observed for it.
+		keysByService := make(map[string][]string)
+		var allTraces []ptrace.Traces
+		for _, record := range records {
+			assert.NotNil(t, record.Key, "partition key must not be nil")
+
+			output, err := (&ptrace.ProtoUnmarshaler{}).UnmarshalTraces(record.Value)
+			require.NoError(t, err)
+			allTraces = append(allTraces, output)
+
+			svc, ok := output.ResourceSpans().At(0).Resource().Attributes().Get("service.name")
+			require.True(t, ok)
+			keysByService[svc.Str()] = append(keysByService[svc.Str()], string(record.Key))
+		}
+
+		// svc-a spans (on two different hosts) must all share the same key, because only
+		// service.name is used for the hash. svc-b must get a different key.
+		require.Len(t, keysByService["svc-a"], 2)
+		assert.Equal(t, keysByService["svc-a"][0], keysByService["svc-a"][1],
+			"same service on different hosts must map to the same key")
+		require.Len(t, keysByService["svc-b"], 1)
+		assert.NotEqual(t, keysByService["svc-a"][0], keysByService["svc-b"][0],
+			"different services must map to different keys")
+
+		// No data lost or altered by the split.
+		combined := allTraces[0]
+		for _, td := range allTraces[1:] {
+			for _, rs := range td.ResourceSpans().All() {
+				rs.CopyTo(combined.ResourceSpans().AppendEmpty())
+			}
+		}
+		assert.NoError(t, ptracetest.CompareTraces(
+			input, combined,
+			ptracetest.IgnoreResourceSpansOrder(),
+			ptracetest.IgnoreScopeSpansOrder(),
+			ptracetest.IgnoreSpansOrder(),
+		))
+	})
 }
 
 func TestTracesPusher_marshal_error(t *testing.T) {
