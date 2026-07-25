@@ -200,10 +200,10 @@ func TestNewPoolClientFactory_AcceptsDBAuth(t *testing.T) {
 	// credential-resolving connector (sql.OpenDB is lazy, so no real dial here) and
 	// caches one per database.
 	f.setCredentialProvider(&staticProvider{secret: "minted-token"})
-	c1, err := f.getClient("db1")
+	c1, err := f.getClient(t.Context(), "db1")
 	require.NoError(t, err)
 	require.NotNil(t, c1)
-	c2, err := f.getClient("db1")
+	c2, err := f.getClient(t.Context(), "db1")
 	require.NoError(t, err)
 	assert.Same(t, c1.(*postgreSQLClient).client, c2.(*postgreSQLClient).client, "the pool caches one *sql.DB per database")
 }

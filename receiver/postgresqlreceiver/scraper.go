@@ -196,7 +196,7 @@ type dbRetrieval struct {
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
 func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	databases := p.config.Databases
-	listClient, err := p.clientFactory.getClient(defaultPostgreSQLDatabase)
+	listClient, err := p.clientFactory.getClient(ctx, defaultPostgreSQLDatabase)
 	if err != nil {
 		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
 		return pmetric.NewMetrics(), err
@@ -231,7 +231,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
 	for _, database := range databases {
-		dbClient, dbErr := p.clientFactory.getClient(database)
+		dbClient, dbErr := p.clientFactory.getClient(ctx, database)
 		if dbErr != nil {
 			errs.add(dbErr)
 			p.logger.Error("Failed to initialize connection to postgres", zap.String("database", database), zap.Error(dbErr))
@@ -262,7 +262,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 }
 
 func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQuery int64) (plog.Logs, error) {
-	dbClient, err := p.clientFactory.getClient(defaultPostgreSQLDatabase)
+	dbClient, err := p.clientFactory.getClient(ctx, defaultPostgreSQLDatabase)
 	if err != nil {
 		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
 		return plog.NewLogs(), err
@@ -382,7 +382,7 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit, topNQuery, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger, collectionTime time.Time) {
 	timestamp := pcommon.NewTimestampFromTime(collectionTime)
 
-	defaultDbClient, err := clientFactory.getClient(defaultPostgreSQLDatabase)
+	defaultDbClient, err := clientFactory.getClient(ctx, defaultPostgreSQLDatabase)
 	if err != nil {
 		logger.Error("failed to create db client for default postgresql database")
 		mux.addPartial(err)
@@ -478,7 +478,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
 		if !ok && explained < maxExplainEachInterval {
 			database := item.Value[string(semconv.DBNamespaceKey)].(string)
-			dbClient, err := clientFactory.getClient(database)
+			dbClient, err := clientFactory.getClient(ctx, database)
 			if err == nil {
 				plan, err = dbClient.explainQuery(rawQuery, queryID, logger)
 				if err != nil {

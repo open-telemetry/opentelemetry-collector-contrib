@@ -17,7 +17,7 @@ import (
 )
 
 type postgreSQLClientFactory interface {
-	getClient(database string) (client, error)
+	getClient(ctx context.Context, database string) (client, error)
 	// setCredentialProvider injects the credential provider resolved from the host
 	// extension map at Start. A nil provider means no db_auth block (static
 	// password).
@@ -56,8 +56,8 @@ func (d *defaultClientFactory) setCredentialProvider(provider dbauth.Provider) {
 	d.baseConfig.credentialProvider = provider
 }
 
-func (d *defaultClientFactory) getClient(database string) (client, error) {
-	db, err := getDB(d.baseConfig, database)
+func (d *defaultClientFactory) getClient(ctx context.Context, database string) (client, error) {
+	db, err := getDB(ctx, d.baseConfig, database)
 	if err != nil {
 		return nil, err
 	}
@@ -96,13 +96,13 @@ func (p *poolClientFactory) setCredentialProvider(provider dbauth.Provider) {
 	p.baseConfig.credentialProvider = provider
 }
 
-func (p *poolClientFactory) getClient(database string) (client, error) {
+func (p *poolClientFactory) getClient(ctx context.Context, database string) (client, error) {
 	p.Lock()
 	defer p.Unlock()
 	db, ok := p.pool[database]
 	if !ok {
 		var err error
-		db, err = getDB(p.baseConfig, database)
+		db, err = getDB(ctx, p.baseConfig, database)
 		if err != nil {
 			return nil, err
 		}
@@ -154,7 +154,7 @@ func (p *poolClientFactory) setPoolSettings(db *sql.DB) {
 	}
 }
 
-func getDB(cfg postgreSQLConfig, database string) (*sql.DB, error) {
+func getDB(ctx context.Context, cfg postgreSQLConfig, database string) (*sql.DB, error) {
 	if database != "" {
 		cfg.database = database
 	}
@@ -166,7 +166,7 @@ func getDB(cfg postgreSQLConfig, database string) (*sql.DB, error) {
 		// driver.Connector.Connect, which database/sql calls per new connection.
 		return sql.OpenDB(&credentialConnector{cfg: cfg}), nil
 	}
-	connectionString, err := cfg.ConnectionString(context.Background())
+	connectionString, err := cfg.ConnectionString(ctx)
 	if err != nil {
 		return nil, err
 	}
