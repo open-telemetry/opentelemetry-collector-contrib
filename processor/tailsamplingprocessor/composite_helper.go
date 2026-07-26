@@ -47,7 +47,8 @@ func getRateAllocationMap(config *CompositeCfg) map[string]float64 {
 	// RateAllocation, so a sub-policy left out of RateAllocation still gets
 	// its equal-share default instead of silently falling back to a zero
 	// value MaxSpansPerSecond (which permanently blocks it from sampling).
-	for _, subPolicy := range config.SubPolicyCfg {
+	for i := range config.SubPolicyCfg {
+		subPolicy := &config.SubPolicyCfg[i]
 		if percent, ok := percentByPolicy[subPolicy.Name]; ok && percent > 0 {
 			rateAllocationsMap[subPolicy.Name] = (float64(percent) / 100) * maxTotalSPS
 		} else {
