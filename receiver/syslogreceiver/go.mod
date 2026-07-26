@@ -4,11 +4,11 @@ go 1.26.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.157.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/collector/confmap v1.70.1-0.20261105234325-55e32ede1d63
-	go.opentelemetry.io/collector/consumer v1.70.1-0.20261105234325-55e32ede1d63 // indirect
+	go.opentelemetry.io/collector/consumer v1.70.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/collector/pdata v1.70.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/collector/receiver v1.70.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
