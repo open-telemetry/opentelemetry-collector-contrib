@@ -920,7 +920,7 @@ func TestEnrichSamplesBatchesInLists(t *testing.T) {
 	const total = 2500 // -> 3 batches: 1000, 1000, 500
 	sessionRows := make([]metricRow, total)
 	statsBySQLID := make(map[string]metricRow, total)
-	for i := 0; i < total; i++ {
+	for i := range total {
 		id := fmt.Sprintf("sqlid_%04d", i)
 		sessionRows[i] = metricRow{"LOOKUP_SQL_ID": id, "LOOKUP_CHILD_NUMBER": "0"}
 		statsBySQLID[id] = metricRow{
