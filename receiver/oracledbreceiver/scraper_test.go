@@ -4,9 +4,11 @@
 package oracledbreceiver
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"maps"
 	"os"
@@ -893,6 +895,71 @@ func twoPassSampleClient(sessionRows []metricRow) func(*sql.DB, string, *zap.Log
 			return &fakeDbClient{Responses: [][]metricRow{cloneRows(sampleStatsRows)}}
 		}
 		return &fakeDbClient{Responses: [][]metricRow{cloneRows(sessionRows)}}
+	}
+}
+
+// capturingClient records each metricRows call so we can assert on the
+// generated SQL and bind args (fakeDbClient discards both).
+type capturingClient struct {
+	sql    string
+	calls  *[]capturedCall
+	respFn func(args []any) []metricRow
+}
+
+type capturedCall struct {
+	sql  string
+	args []any
+}
+
+func (c *capturingClient) metricRows(_ context.Context, args ...any) ([]metricRow, error) {
+	*c.calls = append(*c.calls, capturedCall{sql: c.sql, args: args})
+	return c.respFn(args), nil
+}
+
+func TestEnrichSamplesBatchesInLists(t *testing.T) {
+	const total = 2500 // -> 3 batches: 1000, 1000, 500
+	sessionRows := make([]metricRow, total)
+	statsBySQLID := make(map[string]metricRow, total)
+	for i := 0; i < total; i++ {
+		id := fmt.Sprintf("sqlid_%04d", i)
+		sessionRows[i] = metricRow{"LOOKUP_SQL_ID": id, "LOOKUP_CHILD_NUMBER": "0"}
+		statsBySQLID[id] = metricRow{
+			"SQL_ID": id, "CHILD_NUMBER": "0", "CHILD_ADDRESS": "ADDR_" + id,
+			"PLAN_HASH_VALUE": "1", "SQL_FULLTEXT": "text " + id,
+		}
+	}
+
+	var calls []capturedCall
+	scrpr := oracleScraper{
+		logger:         zap.NewNop(),
+		dbProviderFunc: func() (*sql.DB, error) { return nil, nil },
+		clientProviderFunc: func(_ *sql.DB, q string, _ *zap.Logger) dbClient {
+			return &capturingClient{sql: q, calls: &calls, respFn: func(args []any) []metricRow {
+				out := make([]metricRow, 0, len(args))
+				for _, a := range args {
+					if r, ok := statsBySQLID[a.(string)]; ok {
+						out = append(out, r)
+					}
+				}
+				return out
+			}}
+		},
+	}
+
+	require.NoError(t, scrpr.enrichSamplesWithSQLStats(t.Context(), sessionRows))
+
+	require.Len(t, calls, 3)
+	wantSizes := []int{1000, 1000, 500}
+	for i, call := range calls {
+		assert.Len(t, call.args, wantSizes[i])
+		assert.Equal(t, wantSizes[i], strings.Count(call.sql, ":"),
+			"placeholder count must equal arg count for batch %d", i)
+		assert.Contains(t, call.sql, ":1,", "batch %d must start at :1", i)
+		assert.Contains(t, call.sql, fmt.Sprintf(":%d)", wantSizes[i]),
+			"batch %d must end at :%d", i, wantSizes[i])
+	}
+	for _, row := range sessionRows {
+		assert.Equal(t, "text "+row["LOOKUP_SQL_ID"], row["SQL_FULLTEXT"])
 	}
 }
 

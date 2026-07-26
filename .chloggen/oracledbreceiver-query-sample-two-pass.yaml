@@ -22,7 +22,10 @@ subtext: |
   CHILD_ADDRESS / PLAN_HASH_VALUE from V$SQL for only those sql_ids via
   WHERE SQL_ID IN (...), and joins the results in the collector. Sessions whose
   cursor has aged out of the shared pool are skipped, preserving the previous
-  inner-join semantics.
+  inner-join semantics. Note: the two queries are issued at slightly different SCNs;
+  for actively-executing cursors this is immaterial (they are pinned in the shared
+  pool), but cursors that age out between Pass-1 and Pass-2 will not appear in the
+  output, which matches the previous inner-join semantics.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
