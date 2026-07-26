@@ -15,6 +15,10 @@ func (secureBootCollection) GetQuery() string {
 	return secureBootCollectionQuery
 }
 
+func (secureBootCollection) RowKey(map[string]string) string {
+	return singletonRowKey
+}
+
 func newSecureBootCollection() Collection {
 	return secureBootCollection{}
 }

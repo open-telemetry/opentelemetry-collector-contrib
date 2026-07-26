@@ -40,8 +40,17 @@ type Config struct {
 	ExtensionsSocket               string   `mapstructure:"extensions_socket"`
 	Queries                        []string `mapstructure:"queries"`
 	// Collections lists predefined, named osquery collections to run in addition to Queries.
-	// See validCollections for the allowed values.
+	// See validCollections for the allowed values. Unlike Queries, each collection's rows are
+	// diffed against its last-known state, so only new or modified rows are emitted.
 	Collections []string `mapstructure:"collections"`
+	// SnapshotInterval, if set, additionally emits the full current state of all configured
+	// Collections on this interval, regardless of whether anything changed. Disabled by default.
+	SnapshotInterval time.Duration `mapstructure:"snapshot_interval"`
+	// StorageID names a storage extension to persist each collection's last-known rows across
+	// restarts, so change detection produces correct diffs instead of re-emitting everything
+	// after a restart. If unset, diffing still works within a single collector run, but the
+	// state is lost on restart.
+	StorageID *component.ID `mapstructure:"storage"`
 }
 
 func (c Config) Validate() error {
@@ -53,6 +62,10 @@ func (c Config) Validate() error {
 		if _, ok := validCollections[name]; !ok {
 			return fmt.Errorf("invalid collection %q: must be one of %s", name, validCollections)
 		}
+	}
+
+	if c.SnapshotInterval < 0 {
+		return errors.New("snapshot_interval must not be negative")
 	}
 
 	return nil

@@ -3,6 +3,10 @@
 
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/osqueryreceiver/internal/collection"
 
+// singletonRowKey is the RowKey for collections whose query returns at most
+// one row, where diffing degenerates to "did the one row change".
+const singletonRowKey = "singleton"
+
 const (
 	// system_info
 	systemInfoCollectionName  = "system_info"

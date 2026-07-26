@@ -34,6 +34,20 @@ The following settings are optional:
 
 - `collection_interval` (default = 10s): How often queries are run on the system
 - `extensions_socket` (default = `/var/osquery/osquery.em`): The osquery daemon's extension socket. Used to communicate with osquery on the system.
+- `snapshot_interval` (default = disabled): if set, additionally emits the full current state of all configured
+  `collections` on this interval, regardless of whether anything changed. Useful for bootstrapping a new backend,
+  recovering after data loss, or periodic reconciliation. Has no effect if `collections` is empty.
+- `storage` (default = none): the component ID of a storage extension (eg. `file_storage`) used to persist each
+  collection's last-known rows across restarts. Without it, change detection still works for the lifetime of a single
+  collector run, but state is lost on restart, so the first change-only cycle after a restart re-emits every row.
+
+## Change detection for collections
+
+Unlike `queries`, each `collections` entry's rows are compared against its last-known state on every
+`collection_interval` cycle: only rows that are new or modified since the last run are emitted, and nothing is
+emitted when nothing changed. This keeps steady-state output proportional to what actually changed on the host,
+rather than the full size of the result set. Configure `snapshot_interval` alongside `collection_interval` to also
+get a periodic full baseline.
 
 ## Getting started
 
@@ -45,12 +59,17 @@ Example queries and data sources for querying are available in the [osquery docs
 
 ```
   osquery:
-    collection_internal: 10s
+    collection_interval: 10s
+    snapshot_interval: 24h
     extensions_socket: /var/osquery/osquery.em
+    storage: file_storage
     queries:
       - "select * from certificates"
       - "select * from block_devices"
     collections:
       - system_info
       - package_info
+
+  file_storage:
+    directory: /var/lib/otelcol/osqueryreceiver
 ```

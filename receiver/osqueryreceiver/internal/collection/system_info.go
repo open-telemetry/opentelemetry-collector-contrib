@@ -15,6 +15,10 @@ func (systemInfoCollection) GetQuery() string {
 	return systemInfoCollectionQuery
 }
 
+func (systemInfoCollection) RowKey(map[string]string) string {
+	return singletonRowKey
+}
+
 func newSystemInfoCollection() Collection {
 	return systemInfoCollection{}
 }

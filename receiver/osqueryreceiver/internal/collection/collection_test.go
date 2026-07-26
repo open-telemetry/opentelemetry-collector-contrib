@@ -63,3 +63,20 @@ func TestUserCollection_GetQuery(t *testing.T) {
 	u := userCollection{}
 	assert.Equal(t, userCollectionQueryMap[runtime.GOOS], u.GetQuery())
 }
+
+func TestRowKey_Singleton(t *testing.T) {
+	row := map[string]string{"hostname": "test-host"}
+	for _, c := range []Collection{systemInfoCollection{}, osInfoCollection{}, secureBootCollection{}} {
+		assert.Equal(t, singletonRowKey, c.RowKey(row))
+	}
+}
+
+func TestRowKey_PackageInfo(t *testing.T) {
+	p := packageInfoCollection{}
+	assert.Equal(t, "curl", p.RowKey(map[string]string{"name": "curl", "version": "8.0"}))
+}
+
+func TestRowKey_UserCollection(t *testing.T) {
+	u := userCollection{}
+	assert.Equal(t, "alice", u.RowKey(map[string]string{"username": "alice"}))
+}

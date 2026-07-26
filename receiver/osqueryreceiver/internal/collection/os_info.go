@@ -15,6 +15,10 @@ func (osInfoCollection) GetQuery() string {
 	return osInfoCollectionQuery
 }
 
+func (osInfoCollection) RowKey(map[string]string) string {
+	return singletonRowKey
+}
+
 func newOSInfoCollection() Collection {
 	return osInfoCollection{}
 }

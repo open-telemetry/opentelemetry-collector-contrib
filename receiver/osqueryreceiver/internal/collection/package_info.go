@@ -23,6 +23,10 @@ func (p packageInfoCollection) GetQuery() string {
 	return p.queryForOS(runtime.GOOS)
 }
 
+func (packageInfoCollection) RowKey(row map[string]string) string {
+	return row["name"]
+}
+
 func (packageInfoCollection) queryForOS(goos string) string {
 	switch goos {
 	case "darwin":

@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/osquer
 go 1.25.0
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.0.0-00010101000000-000000000000
 	github.com/osquery/osquery-go v0.0.0-20260226222546-0cc22f415e57
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.62.1-0.20260715151533-47267b188b26
@@ -19,6 +20,8 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 )
+
+require go.opentelemetry.io/collector/extension v1.62.1-0.20260715151533-47267b188b26 // indirect
 
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
@@ -44,6 +47,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.156.1-0.20260715151533-47267b188b26 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.156.1-0.20260715151533-47267b188b26 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.156.1-0.20260715151533-47267b188b26
 	go.opentelemetry.io/collector/featuregate v1.62.1-0.20260715151533-47267b188b26 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.156.1-0.20260715151533-47267b188b26 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.156.1-0.20260715151533-47267b188b26 // indirect
@@ -63,3 +67,5 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage

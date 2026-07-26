@@ -15,7 +15,11 @@ issues: [48570]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  Rows for each `collections` entry are now diffed against their last-known state, so only new or
+  modified rows are emitted on each `collection_interval` cycle instead of the full result set. An
+  optional `snapshot_interval` additionally emits the full current state on its own schedule, and an
+  optional `storage` extension persists per-collection state across restarts.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

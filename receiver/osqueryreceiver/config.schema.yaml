@@ -11,5 +11,9 @@ properties:
     items:
       type: string
       enum: [system_info, package_info, os_info, secureboot_info, users_info]
+  snapshot_interval:
+    type: string
+  storage:
+    type: string
 allOf:
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config

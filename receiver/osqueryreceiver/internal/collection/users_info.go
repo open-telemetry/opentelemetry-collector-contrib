@@ -22,6 +22,10 @@ func (userCollection) GetQuery() string {
 	return userCollectionQueryMap[runtime.GOOS]
 }
 
+func (userCollection) RowKey(row map[string]string) string {
+	return row["username"]
+}
+
 func newUserCollection() Collection {
 	return userCollection{}
 }
