@@ -736,14 +736,26 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 		{
 			Location: []*profile.Location{loc1},
 			Value:    []int64{5, 512, 3, 256},
+			Label: map[string][]string{
+				"user": {"123"},
+			},
 		},
 		{
 			Location: []*profile.Location{loc2},
 			Value:    []int64{10, 1024, 7, 768},
+			NumLabel: map[string][]int64{
+				"thread.id": {456},
+			},
 		},
 		{
 			Location: []*profile.Location{loc1, loc2},
 			Value:    []int64{15, 2048, 12, 1536},
+			NumLabel: map[string][]int64{
+				"limit": {789},
+			},
+			NumUnit: map[string][]string{
+				"limit": {"KB"},
+			},
 		},
 	}
 
@@ -834,6 +846,9 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 			require.Equal(t, val, roundTrip.Sample[i].Value[j])
 		}
 		require.Equal(t, prof.TimeNanos, roundTrip.TimeNanos)
+		require.Equal(t, prof.Sample[i].Label, roundTrip.Sample[i].Label)
+		require.Equal(t, prof.Sample[i].NumLabel, roundTrip.Sample[i].NumLabel)
+		require.Equal(t, prof.Sample[i].NumUnit, roundTrip.Sample[i].NumUnit)
 	}
 }
 
@@ -871,6 +886,9 @@ func TestDefaultSampleTypeConvention(t *testing.T) {
 		{
 			Location: []*profile.Location{loc},
 			Value:    []int64{100, 200, 300, 400}, // values for each sample type
+			Label: map[string][]string{
+				"user": {"root"},
+			},
 		},
 	}
 
