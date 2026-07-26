@@ -1076,7 +1076,7 @@ func TestBlockedValuesAppliedInConfigOrder(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Repeat to make a regression to nondeterministic ordering fail
 			// reliably instead of intermittently.
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				config := &Config{
 					AllowAllKeys:  true,
 					BlockedValues: tt.blockedValues,
