@@ -244,6 +244,69 @@ Number of SQL attentions (client cancellation interrupts) received per second.
 | ---- | ----------- | ---------- | --------- |
 | {attentions}/s | Gauge | Double | Development |
 
+### sqlserver.availability_group.database_replica.queue.rate
+
+Rate at which log data is being sent or redone on a database replica, broken down by queue type (log_send for primary-to-secondary transmission, redo for applying log records on the secondary).
+
+This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+| sqlserver.availability_group.queue.type | The type of availability group queue. | Str: ``log_send``, ``redo`` | Recommended | - |
+
+### sqlserver.availability_group.database_replica.queue.size
+
+Amount of log data waiting to be processed on a database replica, broken down by queue type (log_send for data not yet sent to the secondary, redo for data received but not yet applied).
+
+This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+| sqlserver.availability_group.queue.type | The type of availability group queue. | Str: ``log_send``, ``redo`` | Recommended | - |
+
+### sqlserver.availability_group.database_replica.secondary_lag
+
+Number of seconds the secondary replica is lagging behind the primary replica, measured as the time between the most recent hardened log block on the primary and on the secondary.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+
+### sqlserver.clr.execution.time
+
+Total time spent executing in the CLR. Only non-zero when CLR integration is enabled and CLR code has been executed.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
 ### sqlserver.computer.uptime
 
 Computer uptime.
@@ -269,6 +332,52 @@ Number of CPUs.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {CPUs} | Gauge | Int | Development |
+
+### sqlserver.cursor.count
+
+Number of cursors by state.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cursor} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cursor.state | The state of the cursor. | Str: ``active``, ``cached`` | Recommended | - |
+
+### sqlserver.cursor.memory.usage
+
+Memory used by cursors.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### sqlserver.cursor.plan.count
+
+Number of active cursor plans.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {plan} | Gauge | Int | Development |
+
+### sqlserver.cursor.request.rate
+
+Rate of cursor requests per second.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {request}/s | Gauge | Double | Development |
 
 ### sqlserver.database.backup_or_restore.rate
 
@@ -939,6 +1048,16 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ---------- | --------- |
 | {revalidate}/s | Gauge | Double | Development |
 
+### sqlserver.stored_procedure.invocation.rate
+
+Rate of Service Broker activated stored procedure invocations per second.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {invocation}/s | Gauge | Double | Development |
+
 ### sqlserver.table.count
 
 The number of tables.
@@ -953,6 +1072,38 @@ The number of tables.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | table.state | The state of the table. | Str: ``active``, ``inactive`` | Recommended | - |
 | table.status | The status of the table. | Str: ``temporary``, ``permanent`` | Recommended | - |
+
+### sqlserver.task.count
+
+Number of Service Broker activation tasks by state.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {task} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| task.state | The state of the task. | Str: ``running``, ``limit_reached`` | Recommended | - |
+
+### sqlserver.task.rate
+
+Rate of Service Broker activation tasks by type per second.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {task}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| task.result | The result of the task activation. | Str: ``started``, ``aborted`` | Recommended | - |
 
 ### sqlserver.transaction.delay
 
@@ -969,6 +1120,38 @@ Total number of mirror write transactions.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {transactions}/s | Gauge | Double | Development |
+
+### sqlserver.worker.request.count
+
+Number of worker requests by state.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {request} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| request.state | The state of the worker request. | Str: ``waiting`` | Recommended | - |
+
+### sqlserver.worker.thread.count
+
+Number of worker threads by state.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {thread} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| worker.state | The state of the worker thread. | Str: ``maximum``, ``active``, ``available``, ``waiting_for_cpu`` | Recommended | - |
 
 ### sqlserver.worktable.cache.hit_ratio
 
