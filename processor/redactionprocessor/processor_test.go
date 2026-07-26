@@ -1043,6 +1043,62 @@ func TestMultipleBlockValues(t *testing.T) {
 	}
 }
 
+// TestBlockedValuesAppliedInConfigOrder validates that blocked_values patterns
+// are applied in the order they are listed in the configuration. When two
+// patterns match overlapping regions of the same value, the outcome depends on
+// the application order, so the order must be deterministic and follow the
+// configuration.
+func TestBlockedValuesAppliedInConfigOrder(t *testing.T) {
+	emailPattern := `[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}`
+	postalCodePattern := `\b\d{3}-\d{4}\b`
+	// The local part of this email address also matches the postal code
+	// pattern, so the two patterns overlap on this value.
+	input := "777-7777@example.com"
+
+	testCases := []struct {
+		name          string
+		blockedValues []string
+		expected      string
+	}{
+		{
+			name:          "email pattern first masks the whole address",
+			blockedValues: []string{emailPattern, postalCodePattern},
+			expected:      "****",
+		},
+		{
+			name:          "postal code pattern first masks only the local part",
+			blockedValues: []string{postalCodePattern, emailPattern},
+			expected:      "****@example.com",
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			// Repeat to make a regression to nondeterministic ordering fail
+			// reliably instead of intermittently.
+			for i := 0; i < 10; i++ {
+				config := &Config{
+					AllowAllKeys:  true,
+					BlockedValues: tt.blockedValues,
+				}
+				processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
+				require.NoError(t, err)
+
+				attrs := pcommon.NewMap()
+				attrs.PutStr("email", input)
+				processor.processAttrs(t.Context(), attrs)
+				val, found := attrs.Get("email")
+				require.True(t, found)
+				assert.Equal(t, tt.expected, val.Str())
+
+				body := pcommon.NewValueStr(input)
+				processor.processLogBody(t.Context(), body, pcommon.NewMap())
+				assert.Equal(t, tt.expected, body.Str())
+			}
+		})
+	}
+}
+
 // TestProcessAttrsAppliedTwice validates a use case when data is coming through redaction processor more than once.
 // Existing attributes must be updated, not overridden or ignored.
 func TestProcessAttrsAppliedTwice(t *testing.T) {
