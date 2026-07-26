@@ -1535,15 +1535,24 @@ func (s *oracleScraper) enrichSamplesWithSQLStats(ctx context.Context, rows []me
 		return nil
 	}
 
-	sqlQuery := fmt.Sprintf(samplesStatsQuery, strings.Join(placeholders, ", "))
-	statsRows, err := s.clientProviderFunc(s.db, sqlQuery, s.logger).metricRows(ctx, ids...)
-	if err != nil {
-		return fmt.Errorf("failed to fetch V$SQL stats for query samples: %w", err)
-	}
-
-	stats := make(map[string]metricRow, len(statsRows))
-	for _, sr := range statsRows {
-		stats[sr[sqlIDAttr]+":"+sr[childNumberAttr]] = sr
+	// Oracle IN list is capped at 1000 expressions; batch if needed.
+	const oracleInLimit = 1000
+	stats := make(map[string]metricRow, len(ids))
+	for i := 0; i < len(ids); i += oracleInLimit {
+		end := i + oracleInLimit
+		if end > len(ids) {
+			end = len(ids)
+		}
+		batchIDs := ids[i:end]
+		batchPlaceholders := placeholders[i:end]
+		sqlQuery := fmt.Sprintf(samplesStatsQuery, strings.Join(batchPlaceholders, ", "))
+		statsRows, err := s.clientProviderFunc(s.db, sqlQuery, s.logger).metricRows(ctx, batchIDs...)
+		if err != nil {
+			return fmt.Errorf("failed to fetch V$SQL stats for query samples: %w", err)
+		}
+		for _, sr := range statsRows {
+			stats[sr[sqlIDAttr]+":"+sr[childNumberAttr]] = sr
+		}
 	}
 
 	for _, row := range rows {
