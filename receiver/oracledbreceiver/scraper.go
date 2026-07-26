@@ -1539,10 +1539,7 @@ func (s *oracleScraper) enrichSamplesWithSQLStats(ctx context.Context, rows []me
 	const oracleInLimit = 1000
 	stats := make(map[string]metricRow, len(ids))
 	for i := 0; i < len(ids); i += oracleInLimit {
-		end := i + oracleInLimit
-		if end > len(ids) {
-			end = len(ids)
-		}
+		end := min(i+oracleInLimit, len(ids))
 		batchIDs := ids[i:end]
 		batchPlaceholders := placeholders[i:end]
 		sqlQuery := fmt.Sprintf(samplesStatsQuery, strings.Join(batchPlaceholders, ", "))
