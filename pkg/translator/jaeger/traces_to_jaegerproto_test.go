@@ -9,6 +9,7 @@ import (
 	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -375,5 +376,50 @@ func BenchmarkInternalTracesToJaegerProto(b *testing.B) {
 	for b.Loop() {
 		batches := ProtoFromTraces(td)
 		assert.NotEmpty(b, batches)
+	}
+}
+
+func TestAppendTagsFromAttributesHTTPConventionsMigration(t *testing.T) {
+	cases := []struct {
+		name       string
+		emitV1     bool
+		dontEmitV0 bool
+		expectsV0  bool
+		expectsV1  bool
+	}{
+		{name: "v0 only", emitV1: false, dontEmitV0: false, expectsV0: true, expectsV1: false},
+		{name: "double publish", emitV1: true, dontEmitV0: false, expectsV0: true, expectsV1: true},
+		{name: "v1 only", emitV1: true, dontEmitV0: true, expectsV0: false, expectsV1: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := featuregate.GlobalRegistry().Set("pkg.translator.jaeger.EmitV1HttpConventions", tc.emitV1)
+			assert.NoError(t, err)
+			err = featuregate.GlobalRegistry().Set("pkg.translator.jaeger.DontEmitV0HttpConventions", tc.dontEmitV0)
+			assert.NoError(t, err)
+			t.Cleanup(func() {
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.jaeger.DontEmitV0HttpConventions", false))
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.jaeger.EmitV1HttpConventions", false))
+			})
+
+			attrs := pcommon.NewMap()
+			attrs.PutStr("http.status_code", "500")
+
+			tags := appendTagsFromAttributes(nil, attrs)
+
+			hasV0 := false
+			hasV1 := false
+			for _, tag := range tags {
+				if tag.Key == "http.status_code" {
+					hasV0 = true
+				}
+				if tag.Key == "http.response.status_code" {
+					hasV1 = true
+				}
+			}
+			assert.Equal(t, tc.expectsV0, hasV0)
+			assert.Equal(t, tc.expectsV1, hasV1)
+		})
 	}
 }

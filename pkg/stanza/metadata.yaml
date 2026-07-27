@@ -39,6 +39,17 @@ feature_gates:
     from_version: v0.122.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35456
     skip_strict_validation: true
+  - id: stanza.udp.useStableNetworkAttributes
+    stage: alpha
+    description: >-
+      When enabled, the udp_input operator's `add_attributes` option emits stable network semantic
+      convention attributes (network.transport, network.local.address, server.port, server.address,
+      network.peer.address, client.port, client.address) instead of the deprecated ones
+      (net.transport, net.host.ip, net.host.port, net.host.name, net.peer.ip, net.peer.port,
+      net.peer.name).
+    from_version: v0.157.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49050
+    skip_strict_validation: true
   - id: stanza.windows.eventDrivenScraping
     stage: alpha
     description: >-
