@@ -411,6 +411,8 @@ func TestListMetrics_SinglePage(t *testing.T) {
 	scr := testScraper(cfg)
 	scr.client = mc
 
+	// collectionStartTime is always some time in the past.
+	// the value used in this test is arbitrary (it does not affect the outcome of the test).
 	out, err := scr.listMetrics(t.Context(), time.Now().UTC().Add(-time.Hour))
 	require.NoError(t, err)
 	require.Len(t, out, 1)
@@ -550,6 +552,8 @@ func TestListMetrics_Paginated(t *testing.T) {
 	scr := testScraper(cfg)
 	scr.client = mc
 
+	// collectionStartTime is always some time in the past.
+	// the value used in this test is arbitrary (it does not affect the outcome of the test).
 	out, err := scr.listMetrics(t.Context(), time.Now().UTC().Add(-time.Hour))
 	require.NoError(t, err)
 	require.Len(t, out, 2)
@@ -575,6 +579,8 @@ func TestListMetrics_LimitRespected(t *testing.T) {
 	scr := testScraper(cfg)
 	scr.client = mc
 
+	// collectionStartTime is always some time in the past.
+	// the value used in this test is arbitrary (it does not affect the outcome of the test).
 	out, err := scr.listMetrics(t.Context(), time.Now().UTC().Add(-time.Hour))
 	require.NoError(t, err)
 	require.Len(t, out, 2)
@@ -592,6 +598,8 @@ func TestListMetrics_Error(t *testing.T) {
 	scr := testScraper(cfg)
 	scr.client = mc
 
+	// collectionStartTime is always some time in the past.
+	// the value used in this test is arbitrary (it does not affect the outcome of the test).
 	_, err := scr.listMetrics(t.Context(), time.Now().UTC().Add(-time.Hour))
 	require.Error(t, err)
 }
