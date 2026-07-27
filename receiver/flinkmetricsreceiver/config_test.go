@@ -72,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Endpoint = "http://localhost:8081"
+	expected.ClientConfig.Endpoint = "http://localhost:8081"
 	expected.CollectionInterval = 10 * time.Second
 
 	require.Equal(t, expected, cfg)

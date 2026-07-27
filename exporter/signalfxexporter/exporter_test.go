@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -209,7 +210,7 @@ func TestConsumeMetrics(t *testing.T) {
 				ClientConfig: clientConfig,
 			}
 
-			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ClientConfig.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, true)
@@ -565,9 +566,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
 			for k, v := range tt.additionalHeaders {
-				cfg.Headers.Set(k, configopaque.String(v))
+				cfg.ClientConfig.Headers.Set(k, configopaque.String(v))
 			}
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
@@ -687,9 +688,9 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
 			for k, v := range tt.additionalHeaders {
-				cfg.Headers.Set(k, configopaque.String(v))
+				cfg.ClientConfig.Headers.Set(k, configopaque.String(v))
 			}
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
@@ -789,7 +790,7 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
@@ -957,7 +958,7 @@ func TestConsumeEventData(t *testing.T) {
 				ClientConfig: clientConfig,
 			}
 
-			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ClientConfig.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			eventClient := &sfxEventClient{
@@ -1049,7 +1050,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
@@ -1653,7 +1654,7 @@ func TestTLSIngestConnection(t *testing.T) {
 	}
 }
 
-func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
+func TestDefaultSystemCPUTimeIncludedAndTranslated(t *testing.T) {
 	translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600, make(chan struct{}))
 	require.NoError(t, err)
 	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.", false, true)
@@ -1677,22 +1678,18 @@ func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 	cpuCountSum.DataPoints().AppendEmpty().SetIntValue(32)
 
 	dps := converter.MetricsToSignalFxV2(md)
-	found := map[string]int64{}
+	found := map[string][]*sfxpb.DataPoint{}
 	for _, dp := range dps {
-		if dp.Metric == "cpu.num_processors" || dp.Metric == "cpu.idle" || dp.Metric == "system.cpu.logical.count" {
-			intVal := dp.Value.IntValue
-			require.NotNilf(t, intVal, "unexpected nil IntValue for %q", dp.Metric)
-			found[dp.Metric] = *intVal
-		} else {
-			// account for unexpected w/ test-failing placeholder
-			found[dp.Metric] = -1
-		}
+		found[dp.Metric] = append(found[dp.Metric], dp)
 	}
-	require.Equal(t, map[string]int64{
-		"cpu.num_processors":       32,
-		"cpu.idle":                 0,
-		"system.cpu.logical.count": 32,
-	}, found)
+	require.Len(t, found, 4)
+	require.Len(t, found["system.cpu.time"], 8)
+	require.Len(t, found["cpu.idle"], 1)
+	require.Len(t, found["cpu.num_processors"], 1)
+	require.Len(t, found["system.cpu.logical.count"], 1)
+	require.Equal(t, int64(32), *found["cpu.num_processors"][0].Value.IntValue)
+	require.Equal(t, int64(0), *found["cpu.idle"][0].Value.IntValue)
+	require.Equal(t, int64(32), *found["system.cpu.logical.count"][0].Value.IntValue)
 }
 
 func TestTLSAPIConnection(t *testing.T) {
@@ -1805,7 +1802,15 @@ func newLocalHTTPSTestServer(handler http.Handler) (*httptest.Server, error) {
 	return ts, nil
 }
 
+func BenchmarkExporterConsumeDataWithSFxHistograms(b *testing.B) {
+	benchmarkExporterConsumeDataWithHistograms(b, false, "application/x-protobuf")
+}
+
 func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
+	benchmarkExporterConsumeDataWithHistograms(b, true, otlpProtobufContentType)
+}
+
+func benchmarkExporterConsumeDataWithHistograms(b *testing.B, sendOTLPHistograms bool, expectedContentType string) {
 	batchSize := 1000
 	metrics := pmetric.NewMetrics()
 	tmd := testMetricsData(true)
@@ -1813,19 +1818,28 @@ func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
 		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	var requestCount atomic.Int64
+	var invalidContentType atomic.Bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount.Add(1)
+		if r.Header.Get("Content-Type") != expectedContentType {
+			invalidContentType.Store(true)
+		}
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
 	serverURL, err := url.Parse(server.URL)
-	assert.NoError(b, err)
+	require.NoError(b, err)
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, false)
+	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, !sendOTLPHistograms)
 	require.NoError(b, err)
 	require.NotNil(b, c)
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: serverURL,
+			headers: map[string]string{
+				contentTypeHeader: "application/x-protobuf",
+			},
 			client: &http.Client{
 				Timeout: 1 * time.Second,
 			},
@@ -1833,14 +1847,26 @@ func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
 				return gzip.NewWriter(nil)
 			}},
 		},
-		logger:    zap.NewNop(),
-		converter: c,
+		logger:             zap.NewNop(),
+		converter:          c,
+		sendOTLPHistograms: sendOTLPHistograms,
 	}
 
+	b.ReportAllocs()
 	for b.Loop() {
 		numDroppedTimeSeries, err := dpClient.pushMetricsData(b.Context(), metrics)
-		assert.NoError(b, err)
-		assert.Equal(b, 0, numDroppedTimeSeries)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if numDroppedTimeSeries != 0 {
+			b.Fatalf("dropped %d time series", numDroppedTimeSeries)
+		}
+	}
+	if invalidContentType.Load() {
+		b.Fatalf("expected Content-Type %q", expectedContentType)
+	}
+	if got := requestCount.Load(); got != int64(b.N) {
+		b.Fatalf("sent %d requests, expected %d", got, b.N)
 	}
 }
 
@@ -2049,7 +2075,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 				ClientConfig: clientConfig,
 			}
 
-			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ClientConfig.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, false)

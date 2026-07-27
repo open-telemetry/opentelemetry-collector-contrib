@@ -100,10 +100,18 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = enabled
 	cfg.Metrics.SqlserverScanPointRevalidationRate.Enabled = enabled
 	cfg.Metrics.SqlserverAttentionRate.Enabled = enabled
+	cfg.Metrics.SqlserverClrExecutionTime.Enabled = enabled
+	cfg.Metrics.SqlserverCursorCount.Enabled = enabled
+	cfg.Metrics.SqlserverCursorMemoryUsage.Enabled = enabled
+	cfg.Metrics.SqlserverCursorPlanCount.Enabled = enabled
+	cfg.Metrics.SqlserverCursorRequestRate.Enabled = enabled
 	cfg.Metrics.SqlserverParameterizationRate.Enabled = enabled
 	cfg.Metrics.SqlserverPlanExecutionRate.Enabled = enabled
 	cfg.Metrics.SqlserverRecompilationRatio.Enabled = enabled
+	cfg.Metrics.SqlserverStoredProcedureInvocationRate.Enabled = enabled
 	cfg.Metrics.SqlserverTableCount.Enabled = enabled
+	cfg.Metrics.SqlserverTaskCount.Enabled = enabled
+	cfg.Metrics.SqlserverTaskRate.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionDelay.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionLogFlushDataRate.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionLogFlushRate.Enabled = enabled
@@ -115,8 +123,13 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverTransactionRate.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
 	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
+	cfg.Metrics.SqlserverWorkerRequestCount.Enabled = enabled
+	cfg.Metrics.SqlserverWorkerThreadCount.Enabled = enabled
 	cfg.Metrics.SqlserverWorktableCacheHitRatio.Enabled = enabled
 
+	cfg.Metrics.SqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.Enabled = enabled
+	cfg.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueSize.Enabled = enabled
+	cfg.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueRate.Enabled = enabled
 	cfg.Events.DbServerTopQuery.Enabled = enabled
 	cfg.Events.DbServerQuerySample.Enabled = enabled
 	cfg.Metrics.SqlserverCPUCount.Enabled = enabled
@@ -156,6 +169,9 @@ func TestSuccessfulScrape(t *testing.T) {
 	tests := []struct {
 		removeServerResourceAttributeFeatureGate bool
 		name                                     string
+		// propertiesFixtureFile overrides the fixture returned for the server properties
+		// query. Empty means the default on-prem fixture (propertyQueryData.txt).
+		propertiesFixtureFile string
 	}{
 		{
 			name:                                     "TestSuccessfulScrape with removing server resource attribute feature gate on",
@@ -164,6 +180,15 @@ func TestSuccessfulScrape(t *testing.T) {
 		{
 			name:                                     "TestSuccessfulScrape with removing server resource attribute feature gate off",
 			removeServerResourceAttributeFeatureGate: false,
+		},
+		{
+			// Azure SQL Managed Instance (EngineEdition 8) returns a reduced property column
+			// set: the host/registry columns (service_name, instance_type, ForceEncryption,
+			// Port, PortType, hardware_type) are omitted, none of which the receiver consumes.
+			// The emitted metrics must therefore match the full on-prem golden file, guarding
+			// against a future change that reads a now-absent column without a nil guard.
+			name:                  "TestSuccessfulScrape with Azure SQL Managed Instance property columns",
+			propertiesFixtureFile: "propertyQueryDataManagedInstance.txt",
 		},
 	}
 
@@ -195,10 +220,11 @@ func TestSuccessfulScrape(t *testing.T) {
 				defer assert.NoError(t, scraper.Shutdown(t.Context()))
 
 				scraper.client = mockClient{
-					instanceName:        scraper.config.InstanceName,
-					SQL:                 scraper.sqlQuery,
-					maxQuerySampleCount: 1000,
-					lookbackTime:        20,
+					instanceName:          scraper.config.InstanceName,
+					SQL:                   scraper.sqlQuery,
+					maxQuerySampleCount:   1000,
+					lookbackTime:          20,
+					propertiesFixtureFile: test.propertiesFixtureFile,
 				}
 
 				actualMetrics, err := scraper.ScrapeMetrics(t.Context())
@@ -209,6 +235,8 @@ func TestSuccessfulScrape(t *testing.T) {
 				}
 				var expectedFile string
 				switch scraper.sqlQuery {
+				case getSQLServerAvailabilityGroupQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedAvailabilityGroupMetrics")
 				case getSQLServerDatabaseIOQuery(scraper.config.InstanceName):
 					expectedFile = filepath.Join("testdata", "expectedDatabaseIO")
 				case getSQLServerPerformanceCounterQuery(scraper.config.InstanceName):
@@ -219,6 +247,8 @@ func TestSuccessfulScrape(t *testing.T) {
 					expectedFile = filepath.Join("testdata", "expectedWaitStats")
 				case getSQLServerIndexPhysicalStatsQuery(scraper.config.InstanceName):
 					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics")
+				case getSQLServerWorkerThreadsQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedWorkerThreads")
 				}
 				expectedFile += fileSuffix
 
@@ -359,6 +389,10 @@ type mockClient struct {
 	lookbackTime        uint
 	topQueryCount       uint
 	maxRowsPerQuery     uint64
+	// propertiesFixtureFile, when set, overrides the fixture returned for the
+	// server properties query. Used to exercise the reduced Azure SQL Managed
+	// Instance column shape.
+	propertiesFixtureFile string
 }
 
 type mockInvalidClient struct {
@@ -446,14 +480,22 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 	var err error
 
 	switch mc.SQL {
+	case getSQLServerAvailabilityGroupQuery(mc.instanceName):
+		queryResults, err = readFile("availabilityGroupQueryData.txt")
 	case getSQLServerDatabaseIOQuery(mc.instanceName):
 		queryResults, err = readFile("database_io_scraped_data.txt")
 	case getSQLServerPerformanceCounterQuery(mc.instanceName):
 		queryResults, err = readFile("perfCounterQueryData.txt")
 	case getSQLServerPropertiesQuery(mc.instanceName):
-		queryResults, err = readFile("propertyQueryData.txt")
+		fixture := "propertyQueryData.txt"
+		if mc.propertiesFixtureFile != "" {
+			fixture = mc.propertiesFixtureFile
+		}
+		queryResults, err = readFile(fixture)
 	case getSQLServerWaitStatsQuery(mc.instanceName):
 		queryResults, err = readFile("waitStatsQueryData.txt")
+	case getSQLServerWorkerThreadsQuery(mc.instanceName):
+		queryResults, err = readFile("workerThreadsQueryData.txt")
 	case getSQLServerIndexPhysicalStatsQuery(mc.instanceName):
 		queryResults, err = readFile("indexPhysicalQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
@@ -1244,6 +1286,74 @@ func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) 
 	serverPort, exists := resourceAttributes.Get("server.port")
 	assert.True(t, exists)
 	assert.Equal(t, int64(1434), serverPort.Int())
+}
+
+func TestRecordWorkerThreadMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	assert.NoError(t, cfg.Validate())
+	cfg.Metrics.SqlserverWorkerThreadCount.Enabled = true
+	cfg.Metrics.SqlserverWorkerRequestCount.Enabled = true
+
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotEmpty(t, scrapers)
+
+	var workerScraper *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerWorkerThreadsQuery(cfg.InstanceName) {
+			workerScraper = s
+			break
+		}
+	}
+	assert.NotNil(t, workerScraper, "worker threads scraper should be present")
+
+	err := workerScraper.Start(t.Context(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+	defer assert.NoError(t, workerScraper.Shutdown(t.Context()))
+
+	workerScraper.client = mockClient{
+		instanceName: workerScraper.config.InstanceName,
+		SQL:          workerScraper.sqlQuery,
+	}
+
+	actualMetrics, err := workerScraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	// Verify all five data points: 4 worker.state variants + 1 worker.request.waiting
+	var totalDP int
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				switch m.Name() {
+				case metadata.MetricsInfo.SqlserverWorkerThreadCount.Name:
+					totalDP += m.Gauge().DataPoints().Len()
+				case metadata.MetricsInfo.SqlserverWorkerRequestCount.Name:
+					totalDP += m.Gauge().DataPoints().Len()
+				}
+			}
+		}
+	}
+	assert.Equal(t, 5, totalDP)
+}
+
+func TestIsWorkerThreadsQueryEnabled(t *testing.T) {
+	assert.False(t, isWorkerThreadsQueryEnabled(nil))
+
+	metrics := &metadata.MetricsConfig{}
+	assert.False(t, isWorkerThreadsQueryEnabled(metrics))
+
+	metrics.SqlserverWorkerThreadCount.Enabled = true
+	assert.True(t, isWorkerThreadsQueryEnabled(metrics))
+
+	metrics.SqlserverWorkerThreadCount.Enabled = false
+	metrics.SqlserverWorkerRequestCount.Enabled = true
+	assert.True(t, isWorkerThreadsQueryEnabled(metrics))
 }
 
 func TestRecordDatabaseStatusMetricsUsesResourceBuilderForMetrics(t *testing.T) {

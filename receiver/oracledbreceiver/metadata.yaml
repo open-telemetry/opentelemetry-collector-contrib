@@ -333,6 +333,10 @@ attributes:
   oracledb.status:
     description: Execution state or result of a database query or session.
     type: string
+  oracledb.transaction.type:
+    description: The type of user transaction.
+    type: string
+    enum: [commit, rollback]
   oracledb.user_io_wait_time:
     description: The total time (in seconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta).
     type: double
@@ -491,6 +495,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{change}"
+  oracledb.buffer_cache.block.changes.rate:
+    description: Rate of changes applied to blocks in the buffer cache.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{change}/s"
   oracledb.buffer_cache.block.gets:
     description: Number of current-mode block gets satisfied from the buffer cache. Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested regardless of where they are satisfied.
     enabled: false
@@ -607,6 +618,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{cursor}"
+  oracledb.cursor.open.rate:
+    description: Rate of cursors opened.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{cursor}/s"
   oracledb.data_dictionary.hit_ratio:
     description: Data dictionary cache hit ratio from v$rowcache.
     enabled: false
@@ -684,6 +702,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{statements}"
+  oracledb.enqueue.deadlocks.rate:
+    description: Rate of enqueue deadlocks.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{deadlock}/s"
   oracledb.enqueue.operations:
     description: Total count of enqueue (lock) operations.
     enabled: false
@@ -695,6 +720,13 @@ metrics:
       input_type: string
     unit: "{operation}"
     attributes: [oracledb.enqueue.type]
+  oracledb.enqueue.timeouts.rate:
+    description: Rate of enqueue timeouts.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{timeout}/s"
   oracledb.enqueue_deadlocks:
     description: Total number of deadlocks between table or row locks in different sessions.
     enabled: true
@@ -766,6 +798,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{executions}"
+  oracledb.executions.rate:
+    description: Rate of SQL statement executions.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{execution}/s"
   oracledb.gc.current_block.time:
     attributes:
       - network.io.direction
@@ -787,6 +826,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{parses}"
+  oracledb.hard_parses.rate:
+    description: Rate of hard parses.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{parse}/s"
   oracledb.host.cpu.usage.rate:
     description: Host CPU consumption rate across all cores, in CPU-seconds used per second.
     enabled: false
@@ -801,6 +847,13 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.io.requests.rate:
+    description: Rate of I/O requests issued by the database.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{request}/s"
   oracledb.io.single_block.read.latency:
     description: Average latency of a synchronous single-block read.
     enabled: false
@@ -808,6 +861,13 @@ metrics:
     gauge:
       value_type: double
     unit: s
+  oracledb.io.throughput.rate:
+    description: Rate of I/O bytes transferred by the database.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: By/s
   oracledb.jvm.memory.committed:
     description: Committed (total) size of Oracle's in-database JVM (OJVM) call heap.
     enabled: false
@@ -871,6 +931,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{reads}"
+  oracledb.logical_reads.rate:
+    description: Rate of logical reads performed by the database.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{read}/s"
   oracledb.logons:
     description: Number of logon operations
     enabled: false
@@ -881,6 +948,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{operation}"
+  oracledb.logons.rate:
+    description: Rate of logon operations.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{logon}/s"
   oracledb.os.swaps:
     description: Number of OS swap operations.
     enabled: false
@@ -1033,6 +1107,14 @@ metrics:
       input_type: string
     unit: "{requests}"
     attributes: [disk.io.direction, disk.io.block_size]
+  oracledb.physical_io.requests.rate:
+    description: Rate of physical I/O requests issued to storage.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{request}/s"
+    attributes: [disk.io.direction]
   oracledb.physical_io.transferred:
     description: Total physical I/O bytes transferred between Oracle and storage. Sums across all data files. Sourced from v$sysstat names physical read/write bytes (disk.io.type=buffered) and physical read/write total bytes (disk.io.type=total).
     enabled: false
@@ -1044,6 +1126,22 @@ metrics:
       input_type: string
     unit: By
     attributes: [disk.io.direction, disk.io.type]
+  oracledb.physical_io.transferred.rate:
+    description: Rate of physical I/O bytes transferred between Oracle and storage.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: By/s
+    attributes: [disk.io.direction]
+  oracledb.physical_operations.rate:
+    description: Rate of physical read and write operations performed by the database.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{operation}/s"
+    attributes: [disk.io.direction]
   oracledb.physical_read_io_requests:
     description: Number of read requests for application activity
     enabled: false
@@ -1201,6 +1299,13 @@ metrics:
       value_type: int
       input_type: string
     unit: By
+  oracledb.redo.size.rate:
+    description: Rate of redo bytes generated by the database.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: By/s
   oracledb.redo.time:
     description: Time spent in each phase of the redo pipeline.
     enabled: false
@@ -1458,6 +1563,14 @@ metrics:
       value_type: int
       input_type: string
     unit: "{transactions}"
+  oracledb.transactions.rate:
+    description: Rate of user transactions.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{transaction}/s"
+    attributes: [oracledb.transaction.type]
   oracledb.transactions.usage:
     description: Current count of active transactions.
     enabled: true

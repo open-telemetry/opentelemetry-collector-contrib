@@ -94,7 +94,7 @@ func TestLoadConfig(t *testing.T) {
 func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = ""
+	cfg.ServerConfig.NetAddr.Endpoint = ""
 
 	err := cfg.Validate()
 	assert.EqualError(t, err, "empty endpoint")
@@ -103,7 +103,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 func TestCreateNoPortEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:"
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:"
 
 	err := cfg.Validate()
 	assert.EqualError(t, err, `endpoint port is not a number: strconv.ParseInt: parsing "": invalid syntax`)
@@ -112,7 +112,7 @@ func TestCreateNoPortEndpoint(t *testing.T) {
 func TestCreateLargePortEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:65536"
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:65536"
 
 	err := cfg.Validate()
 	assert.EqualError(t, err, "port number must be between 1 and 65535")
