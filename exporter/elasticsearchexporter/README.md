@@ -76,7 +76,12 @@ service:
 The Elasticsearch exporter supports common [HTTP Configuration Settings][confighttp]. Gzip compression is enabled by default. To disable compression, set `compression` to `none`. Default Compression Level is set to 1 (gzip.BestSpeed).
 As a consequence of supporting [confighttp], the Elasticsearch exporter also supports common [TLS Configuration Settings][configtls].
 
+```yaml
+timeout: 90s
+```
+
 The Elasticsearch exporter sets `timeout` (HTTP request timeout) to 90s by default.
+Note that this is per request and is independent between HTTP request retries.
 All other defaults are as defined by [confighttp].
 
 ### Queuing and batching

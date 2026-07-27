@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger/internal/metadata"
 )
 
 var blankJaegerProtoSpan = new(model.Span)
@@ -234,19 +235,32 @@ func jSpanToInternal(span *model.Span, dest ptrace.Span) {
 
 func jTagsToInternalAttributes(tags []model.KeyValue, dest pcommon.Map) {
 	for _, tag := range tags {
-		switch tag.GetVType() {
-		case model.ValueType_STRING:
-			dest.PutStr(tag.Key, tag.GetVStr())
-		case model.ValueType_BOOL:
-			dest.PutBool(tag.Key, tag.GetVBool())
-		case model.ValueType_INT64:
-			dest.PutInt(tag.Key, tag.GetVInt64())
-		case model.ValueType_FLOAT64:
-			dest.PutDouble(tag.Key, tag.GetVFloat64())
-		case model.ValueType_BINARY:
-			dest.PutEmptyBytes(tag.Key).FromRaw(tag.GetVBinary())
-		default:
-			dest.PutStr(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
+		keys := []string{tag.Key}
+		if tag.Key == string(conventionsv125.HTTPStatusCodeKey) || tag.Key == string(conventions.HTTPResponseStatusCodeKey) {
+			keys = nil
+			if !metadata.PkgTranslatorJaegerDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				keys = append(keys, string(conventionsv125.HTTPStatusCodeKey))
+			}
+			if metadata.PkgTranslatorJaegerEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				keys = append(keys, string(conventions.HTTPResponseStatusCodeKey))
+			}
+		}
+
+		for _, key := range keys {
+			switch tag.GetVType() {
+			case model.ValueType_STRING:
+				dest.PutStr(key, tag.GetVStr())
+			case model.ValueType_BOOL:
+				dest.PutBool(key, tag.GetVBool())
+			case model.ValueType_INT64:
+				dest.PutInt(key, tag.GetVInt64())
+			case model.ValueType_FLOAT64:
+				dest.PutDouble(key, tag.GetVFloat64())
+			case model.ValueType_BINARY:
+				dest.PutEmptyBytes(key).FromRaw(tag.GetVBinary())
+			default:
+				dest.PutStr(key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
+			}
 		}
 	}
 }
@@ -347,17 +361,16 @@ func codeFromAttr(attrVal pcommon.Value) (int64, error) {
 	return val, nil
 }
 
-// getHTTPStatusCodeAttr returns the HTTP status code attribute value, preferring
-// the current semantic convention (http.response.status_code) and falling back
-// to the legacy attribute (http.status_code) for spans produced with older
-// semantic conventions. The legacy key is referenced through semconv v1.25.0 —
-// the last version that still defined HTTPStatusCodeKey before it was removed —
-// rather than a raw string literal.
+// getHTTPStatusCodeAttr returns the HTTP status code attribute value, checking
+// both the deprecated http.status_code (semconv v1.25.0) and the current
+// http.response.status_code (semconv v1.40.0) keys. This ensures span status is
+// still derived from the HTTP status code regardless of which HTTP semantic
+// conventions the Jaeger translator is configured to emit.
 func getHTTPStatusCodeAttr(attrs pcommon.Map) (pcommon.Value, bool) {
-	if httpCodeAttr, ok := attrs.Get(string(conventions.HTTPResponseStatusCodeKey)); ok {
-		return httpCodeAttr, true
+	if attr, ok := attrs.Get(string(conventionsv125.HTTPStatusCodeKey)); ok {
+		return attr, true
 	}
-	return attrs.Get(string(conventionsv125.HTTPStatusCodeKey))
+	return attrs.Get(string(conventions.HTTPResponseStatusCodeKey))
 }
 
 func getStatusCodeFromHTTPStatusAttr(attrVal pcommon.Value, kind ptrace.SpanKind) (ptrace.StatusCode, error) {
