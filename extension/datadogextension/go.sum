@@ -1,7 +1,7 @@
 cloud.google.com/go/compute/metadata v0.9.0 h1:pDUj4QMoPejqq20dK0Pg2N4yG9zIkYGdBtwLoEkH9Zs=
 cloud.google.com/go/compute/metadata v0.9.0/go.mod h1:E0bWwX5wTnLPedCKqk3pJmVgCBSM6qQI1yTBdEb3C10=
-github.com/DataDog/agent-payload/v5 v5.0.201 h1:iQ3rNMRnsNNxe8PmhwrzfdceDPD9wTLKOljdv+N3KsE=
-github.com/DataDog/agent-payload/v5 v5.0.201/go.mod h1:GyA1vuCeRywrNNCbYeR0cOYKE8QkOVNAFDqsH8VNF5M=
+github.com/DataDog/agent-payload/v5 v5.0.203 h1:H5jLFXyCT3daFJXVgcjowNj+cBK6lGkQtt8BWV5FI/U=
+github.com/DataDog/agent-payload/v5 v5.0.203/go.mod h1:GyA1vuCeRywrNNCbYeR0cOYKE8QkOVNAFDqsH8VNF5M=
 github.com/DataDog/datadog-agent/comp/core/config v0.82.0-devel.0.20260624113434-509b872045c2 h1:ZS6H7Nz3rSb5d/5AQsEHqoA72dom38g2dfEnC/jaNLc=
 github.com/DataDog/datadog-agent/comp/core/config v0.82.0-devel.0.20260624113434-509b872045c2/go.mod h1:mdP/1UP97GpAhxFILKAA2NkBCMV/t+Y3u41LO21jk+0=
 github.com/DataDog/datadog-agent/comp/core/delegatedauth v0.81.0 h1:dZpZxTeU0eT0LX7kn2vumY1zleV7yuUFKX/612yk2Us=
@@ -106,10 +106,10 @@ github.com/DataDog/datadog-agent/pkg/tagset v0.81.0 h1:N6JYtMzk8k3Zca3pRHKRNyc5u
 github.com/DataDog/datadog-agent/pkg/tagset v0.81.0/go.mod h1:5r4h+TZyrKW/Hn5cjgGqfoCgsZff9g/ro2KZeI+VE/I=
 github.com/DataDog/datadog-agent/pkg/template v0.81.0 h1:dRpKiDiRn6U0clUxsVUpnjV+0oYtHnaFPwoAoz5c5Zw=
 github.com/DataDog/datadog-agent/pkg/template v0.81.0/go.mod h1:ZUjICHSlN0of0cmWrYk9Pof0DV0eqHSpTUK1NTnN26Y=
-github.com/DataDog/datadog-agent/pkg/trace/log v0.80.2 h1:UqOsp8JHfFSvgJvNGsCw3qaoQW6tfmFDKj3hla7KxeQ=
-github.com/DataDog/datadog-agent/pkg/trace/log v0.80.2/go.mod h1:F/It0SiGdhqPr+AtzH+cxSIvKZmyVhPGyLst0B5hv9w=
-github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.80.2 h1:IREUWMrnhSmY590CXAJOfemUts3zP0G/PwSy4wteeyI=
-github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.80.2/go.mod h1:ab8//Ra6WoXZFSFs+cio/krBLVZcGQTA/enb9rm+/mQ=
+github.com/DataDog/datadog-agent/pkg/trace/log v0.82.0-devel.0.20260708222215-178761812776 h1:ViaBGpVNAKFX1Y79HKDzKEqtRlclhPGIgheC7sgSTmo=
+github.com/DataDog/datadog-agent/pkg/trace/log v0.82.0-devel.0.20260708222215-178761812776/go.mod h1:Vj76uL63Yu1mh+ZlcxInL6YiG7xP2i1NcrIGSP6mXzI=
+github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.82.0-devel.0.20260708222215-178761812776 h1:7gZIRfMVazQpH+0dllhvLpkozJNTmL9tWCOC20OxvFQ=
+github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.82.0-devel.0.20260708222215-178761812776/go.mod h1:hODhadxlTOlKCGRsxvWUY4rzIkBfMszeYMhC/6gL+DM=
 github.com/DataDog/datadog-agent/pkg/util/backoff v0.81.0 h1:I8qH5qsxy9Rz9XEyfC30JQEVn1KCRwqLhWVaV2zvHhs=
 github.com/DataDog/datadog-agent/pkg/util/backoff v0.81.0/go.mod h1:W+L31SBBi4+PnKUTg7p2V6/BNMsh5cSiYdqwKMabl0E=
 github.com/DataDog/datadog-agent/pkg/util/buf v0.81.0 h1:jNnHuEE53/wVZVnXpLuSCL46eSjIeLqzzB+VSHUYQFE=

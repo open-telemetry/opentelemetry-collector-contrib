@@ -93,13 +93,13 @@ require (
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.83.0-devel.0.20260714134811-fee4bbf7ff73 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.83.0-devel.0.20260714134811-fee4bbf7ff73 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.81.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.81.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.82.0-devel.0.20260708222215-178761812776 // indirect
 	github.com/DataDog/datadog-agent/pkg/template v0.81.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace v0.82.0-devel.0.20260708222215-178761812776 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/log v0.81.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/stats v0.81.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.81.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/log v0.82.0-devel.0.20260708222215-178761812776 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/stats v0.82.0-devel.0.20260708222215-178761812776 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.82.0-devel.0.20260708222215-178761812776 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.81.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.80.2 // indirect

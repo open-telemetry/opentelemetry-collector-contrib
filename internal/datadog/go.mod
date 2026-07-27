@@ -61,8 +61,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/serializer v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/template v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/log v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.80.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/log v0.82.0-devel.0.20260708222215-178761812776 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.82.0-devel.0.20260708222215-178761812776 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/executable v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.80.2 // indirect

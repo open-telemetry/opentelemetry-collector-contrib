@@ -55,10 +55,10 @@ github.com/DataDog/datadog-agent/pkg/serializer v0.80.2 h1:KaR0F5//ZWJHf6OGtfJJk
 github.com/DataDog/datadog-agent/pkg/serializer v0.80.2/go.mod h1:f8XbuxOGwDd5AEKDL7PtghnYJ8rHt6u+pDGBidnM/SQ=
 github.com/DataDog/datadog-agent/pkg/template v0.80.2 h1:FrvmI6xloWJ0aaB9tSzk09/PfdHt8cWdtMyuR81VUqA=
 github.com/DataDog/datadog-agent/pkg/template v0.80.2/go.mod h1:ZUjICHSlN0of0cmWrYk9Pof0DV0eqHSpTUK1NTnN26Y=
-github.com/DataDog/datadog-agent/pkg/trace/log v0.80.2 h1:UqOsp8JHfFSvgJvNGsCw3qaoQW6tfmFDKj3hla7KxeQ=
-github.com/DataDog/datadog-agent/pkg/trace/log v0.80.2/go.mod h1:F/It0SiGdhqPr+AtzH+cxSIvKZmyVhPGyLst0B5hv9w=
-github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.80.2 h1:IREUWMrnhSmY590CXAJOfemUts3zP0G/PwSy4wteeyI=
-github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.80.2/go.mod h1:ab8//Ra6WoXZFSFs+cio/krBLVZcGQTA/enb9rm+/mQ=
+github.com/DataDog/datadog-agent/pkg/trace/log v0.82.0-devel.0.20260708222215-178761812776 h1:ViaBGpVNAKFX1Y79HKDzKEqtRlclhPGIgheC7sgSTmo=
+github.com/DataDog/datadog-agent/pkg/trace/log v0.82.0-devel.0.20260708222215-178761812776/go.mod h1:Vj76uL63Yu1mh+ZlcxInL6YiG7xP2i1NcrIGSP6mXzI=
+github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.82.0-devel.0.20260708222215-178761812776 h1:7gZIRfMVazQpH+0dllhvLpkozJNTmL9tWCOC20OxvFQ=
+github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.82.0-devel.0.20260708222215-178761812776/go.mod h1:hODhadxlTOlKCGRsxvWUY4rzIkBfMszeYMhC/6gL+DM=
 github.com/DataDog/datadog-agent/pkg/util/executable v0.80.2 h1:9wyaIrvpduLgUZcUrH/ncUQWewGJ4gEzVSYuGl/leLg=
 github.com/DataDog/datadog-agent/pkg/util/executable v0.80.2/go.mod h1:JMVmy84B+6W5Ky6IqXTnH5JruDcooaN992yizgIbhds=
 github.com/DataDog/datadog-agent/pkg/util/filesystem v0.80.2 h1:ors8wg3K22hMXMw2jq5mALYRm8Yeigpyvs2u6+IDAIE=

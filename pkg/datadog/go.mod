@@ -21,9 +21,9 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.80.2
 	github.com/DataDog/datadog-agent/pkg/serializer v0.80.2
 	github.com/DataDog/datadog-agent/pkg/trace v0.82.0-devel.0.20260708222215-178761812776
-	github.com/DataDog/datadog-agent/pkg/trace/log v0.80.2
-	github.com/DataDog/datadog-agent/pkg/trace/otel v0.80.2
-	github.com/DataDog/datadog-agent/pkg/trace/stats v0.80.2
+	github.com/DataDog/datadog-agent/pkg/trace/log v0.82.0-devel.0.20260708222215-178761812776
+	github.com/DataDog/datadog-agent/pkg/trace/otel v0.82.0-devel.0.20260708222215-178761812776
+	github.com/DataDog/datadog-agent/pkg/trace/stats v0.82.0-devel.0.20260708222215-178761812776
 	github.com/DataDog/datadog-agent/pkg/util/compression v0.80.2
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.80.2
 	github.com/DataDog/datadog-agent/pkg/util/option v0.80.2
@@ -58,7 +58,7 @@ require (
 
 require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.201 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.203 // indirect
 	github.com/DataDog/datadog-agent/comp/core/delegatedauth v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/types v0.80.2 // indirect
@@ -88,12 +88,12 @@ require (
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.83.0-devel.0.20260714134811-fee4bbf7ff73 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.80.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.82.0-devel.0.20260708222215-178761812776 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagger/types v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagset v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/template v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.80.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.82.0-devel.0.20260708222215-178761812776 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/backoff v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/buf v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/defaultpaths v0.81.0-devel.0.20260624113434-509b872045c2 // indirect
