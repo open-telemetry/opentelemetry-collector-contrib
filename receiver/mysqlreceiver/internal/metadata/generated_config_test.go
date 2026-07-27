@@ -159,7 +159,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					MysqlResourcesOpen: MysqlResourcesOpenMetricConfig{
 						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
+						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []MysqlResourcesOpenMetricAttributeKey{MysqlResourcesOpenMetricAttributeKeyOpenResources},
 					},
 					MysqlRowLocks: MysqlRowLocksMetricConfig{
@@ -400,7 +400,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					MysqlResourcesOpen: MysqlResourcesOpenMetricConfig{
 						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
+						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []MysqlResourcesOpenMetricAttributeKey{MysqlResourcesOpenMetricAttributeKeyOpenResources},
 					},
 					MysqlRowLocks: MysqlRowLocksMetricConfig{

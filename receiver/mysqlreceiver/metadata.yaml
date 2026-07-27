@@ -674,9 +674,11 @@ metrics:
     description: The number of currently open resources.
     stability: development
     unit: "1"
-    gauge:
+    sum:
       value_type: int
       input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
     attributes: [open_resources]
   mysql.row_locks:
     enabled: true

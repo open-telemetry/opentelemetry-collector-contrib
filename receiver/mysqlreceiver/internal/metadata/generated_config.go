@@ -2289,7 +2289,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MysqlResourcesOpen: MysqlResourcesOpenMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
+			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlResourcesOpenMetricAttributeKey{MysqlResourcesOpenMetricAttributeKeyOpenResources},
 		},
 		MysqlRowLocks: MysqlRowLocksMetricConfig{

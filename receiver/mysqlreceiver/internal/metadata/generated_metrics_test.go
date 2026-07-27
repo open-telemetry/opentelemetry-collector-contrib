@@ -1507,11 +1507,13 @@ func TestMetricsBuilder(t *testing.T) {
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.resources.open"], "Found a duplicate in the metrics slice: mysql.resources.open")
 						validatedMetrics["mysql.resources.open"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The number of currently open resources.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1522,11 +1524,13 @@ func TestMetricsBuilder(t *testing.T) {
 					} else {
 						assert.False(t, validatedMetrics["mysql.resources.open"], "Found a duplicate in the metrics slice: mysql.resources.open")
 						validatedMetrics["mysql.resources.open"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The number of currently open resources.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

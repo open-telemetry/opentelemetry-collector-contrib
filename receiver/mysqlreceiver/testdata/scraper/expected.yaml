@@ -941,7 +941,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: s
           - description: The number of currently open resources.
-            gauge:
+            name: mysql.resources.open
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "367"
                   attributes:
@@ -957,7 +959,6 @@ resourceMetrics:
                         stringValue: table
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: mysql.resources.open
             unit: "1"
           - description: The number of InnoDB row locks.
             name: mysql.row_locks
