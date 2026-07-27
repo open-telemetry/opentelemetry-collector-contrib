@@ -62,7 +62,7 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlPreparedStatements.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlCommands.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlResourcesOpen.Enabled = true
-		cfg.MetricsBuilderConfig.Metrics.MysqlSlowLaunchThreads.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlThreadsSlowLaunch.Enabled = true
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaSQLDelay.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTimeBehindSource.Enabled = true

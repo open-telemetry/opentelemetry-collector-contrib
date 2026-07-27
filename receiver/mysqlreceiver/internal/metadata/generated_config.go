@@ -1320,26 +1320,6 @@ func (ms *MysqlRowOperationsMetricConfig) Validate() error {
 	return nil
 }
 
-// MysqlSlowLaunchThreadsMetricConfig provides config for the mysql.slow_launch_threads metric.
-type MysqlSlowLaunchThreadsMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *MysqlSlowLaunchThreadsMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
 // MysqlSortsMetricAttributeKey specifies the key of an attribute for the mysql.sorts metric.
 type MysqlSortsMetricAttributeKey string
 
@@ -2033,6 +2013,26 @@ func (ms *MysqlThreadsMetricConfig) Validate() error {
 	return nil
 }
 
+// MysqlThreadsSlowLaunchMetricConfig provides config for the mysql.threads.slow_launch metric.
+type MysqlThreadsSlowLaunchMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlThreadsSlowLaunchMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MysqlTmpResourcesMetricAttributeKey specifies the key of an attribute for the mysql.tmp_resources metric.
 type MysqlTmpResourcesMetricAttributeKey string
 
@@ -2136,7 +2136,6 @@ type MetricsConfig struct {
 	MysqlResourcesOpen           MysqlResourcesOpenMetricConfig           `mapstructure:"mysql.resources.open"`
 	MysqlRowLocks                MysqlRowLocksMetricConfig                `mapstructure:"mysql.row_locks"`
 	MysqlRowOperations           MysqlRowOperationsMetricConfig           `mapstructure:"mysql.row_operations"`
-	MysqlSlowLaunchThreads       MysqlSlowLaunchThreadsMetricConfig       `mapstructure:"mysql.slow_launch_threads"`
 	MysqlSorts                   MysqlSortsMetricConfig                   `mapstructure:"mysql.sorts"`
 	MysqlStatementEventCount     MysqlStatementEventCountMetricConfig     `mapstructure:"mysql.statement_event.count"`
 	MysqlStatementEventWaitTime  MysqlStatementEventWaitTimeMetricConfig  `mapstructure:"mysql.statement_event.wait.time"`
@@ -2151,6 +2150,7 @@ type MetricsConfig struct {
 	MysqlTableSize               MysqlTableSizeMetricConfig               `mapstructure:"mysql.table.size"`
 	MysqlTableOpenCache          MysqlTableOpenCacheMetricConfig          `mapstructure:"mysql.table_open_cache"`
 	MysqlThreads                 MysqlThreadsMetricConfig                 `mapstructure:"mysql.threads"`
+	MysqlThreadsSlowLaunch       MysqlThreadsSlowLaunchMetricConfig       `mapstructure:"mysql.threads.slow_launch"`
 	MysqlTmpResources            MysqlTmpResourcesMetricConfig            `mapstructure:"mysql.tmp_resources"`
 	MysqlUptime                  MysqlUptimeMetricConfig                  `mapstructure:"mysql.uptime"`
 }
@@ -2302,9 +2302,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlRowOperationsMetricAttributeKey{MysqlRowOperationsMetricAttributeKeyRowOperations},
 		},
-		MysqlSlowLaunchThreads: MysqlSlowLaunchThreadsMetricConfig{
-			Enabled: false,
-		},
 		MysqlSorts: MysqlSortsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
@@ -2374,6 +2371,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlThreadsMetricAttributeKey{MysqlThreadsMetricAttributeKeyThreads},
+		},
+		MysqlThreadsSlowLaunch: MysqlThreadsSlowLaunchMetricConfig{
+			Enabled: false,
 		},
 		MysqlTmpResources: MysqlTmpResourcesMetricConfig{
 			Enabled:             true,

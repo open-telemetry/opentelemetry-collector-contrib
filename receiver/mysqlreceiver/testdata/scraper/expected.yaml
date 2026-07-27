@@ -6,7 +6,7 @@ resourceMetrics:
             stringValue: localhost:3306
         - key: service.instance.id
           value:
-            stringValue: placeholder
+            stringValue: 24770532-5e1e-5d8a-8f7c-d5d61b1baf28
     scopeMetrics:
       - metrics:
           - description: The number of data pages in the InnoDB buffer pool.
@@ -672,6 +672,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "256"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: fsyncs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "253"
                   attributes:
                     - key: operation
@@ -691,13 +698,6 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: writes
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "256"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: fsyncs
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -1015,16 +1015,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
-          - description: The number of threads that have taken more than slow_launch_time seconds to create.
-            name: mysql.slow_launch_threads
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "414"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: "1"
           - description: The number of MySQL sorts.
             name: mysql.sorts
             sum:
@@ -1260,7 +1250,7 @@ resourceMetrics:
                         stringValue: a_table
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: "By"
+            unit: By
           - description: The total count of I/O wait events for a table.
             name: mysql.table.io.wait.count
             sum:
@@ -1686,31 +1676,31 @@ resourceMetrics:
               dataPoints:
                 - asInt: "734976"
                   attributes:
+                    - key: kind
+                      value:
+                        stringValue: data
                     - key: schema
                       value:
                         stringValue: a_schema
                     - key: table
                       value:
                         stringValue: a_table
-                    - key: kind
-                      value:
-                        stringValue: data
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: kind
+                      value:
+                        stringValue: index
                     - key: schema
                       value:
                         stringValue: a_schema
                     - key: table
                       value:
                         stringValue: a_table
-                    - key: kind
-                      value:
-                        stringValue: index
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: "By"
+            unit: By
           - description: The number of hits, misses or overflows for open tables cache lookups.
             name: mysql.table_open_cache
             sum:
@@ -1773,6 +1763,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
+          - description: The number of threads that have taken more than slow_launch_time seconds to create.
+            name: mysql.threads.slow_launch
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "414"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
           - description: The number of created temporary resources.
             name: mysql.tmp_resources
             sum:
@@ -1814,4 +1814,3 @@ resourceMetrics:
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
           version: latest
-        

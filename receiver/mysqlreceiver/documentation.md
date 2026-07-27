@@ -516,14 +516,6 @@ The number of currently open resources.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | kind | The kind of the resource. | Str: ``file``, ``table`` | Recommended | - |
 
-### mysql.slow_launch_threads
-
-The number of threads that have taken more than slow_launch_time seconds to create.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | Development |
-
 ### mysql.statement_event.count
 
 Summary of current and recent statement events.
@@ -680,6 +672,14 @@ The number of hits, misses or overflows for open tables cache lookups.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | status | The status of cache access. | Str: ``hit``, ``miss``, ``overflow`` | Recommended | - |
+
+### mysql.threads.slow_launch
+
+The number of threads that have taken more than slow_launch_time seconds to create.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 ## Default Events
 

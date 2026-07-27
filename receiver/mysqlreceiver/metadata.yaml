@@ -700,17 +700,6 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [row_operations]
-  mysql.slow_launch_threads:
-    enabled: false
-    description: The number of threads that have taken more than slow_launch_time seconds to create.
-    stability: development
-    unit: "1"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: []
   mysql.sorts:
     enabled: true
     description: The number of MySQL sorts.
@@ -854,6 +843,17 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [threads]
+  mysql.threads.slow_launch:
+    enabled: false
+    description: The number of threads that have taken more than slow_launch_time seconds to create.
+    stability: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
   mysql.tmp_resources:
     enabled: true
     description: The number of created temporary resources.

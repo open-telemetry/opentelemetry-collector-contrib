@@ -90,8 +90,6 @@ all_set:
     mysql.row_operations:
       enabled: true
       attributes: ["operation"]
-    mysql.slow_launch_threads:
-      enabled: true
     mysql.sorts:
       enabled: true
       attributes: ["kind"]
@@ -134,6 +132,8 @@ all_set:
     mysql.threads:
       enabled: true
       attributes: ["kind"]
+    mysql.threads.slow_launch:
+      enabled: true
     mysql.tmp_resources:
       enabled: true
       attributes: ["resource"]
@@ -248,8 +248,6 @@ reaggregate_set:
     mysql.row_operations:
       enabled: true
       attributes: []
-    mysql.slow_launch_threads:
-      enabled: true
     mysql.sorts:
       enabled: true
       attributes: []
@@ -292,6 +290,8 @@ reaggregate_set:
     mysql.threads:
       enabled: true
       attributes: []
+    mysql.threads.slow_launch:
+      enabled: true
     mysql.tmp_resources:
       enabled: true
       attributes: []
@@ -406,8 +406,6 @@ none_set:
     mysql.row_operations:
       enabled: false
       attributes: ["operation"]
-    mysql.slow_launch_threads:
-      enabled: false
     mysql.sorts:
       enabled: false
       attributes: ["kind"]
@@ -450,6 +448,8 @@ none_set:
     mysql.threads:
       enabled: false
       attributes: ["kind"]
+    mysql.threads.slow_launch:
+      enabled: false
     mysql.tmp_resources:
       enabled: false
       attributes: ["resource"]
