@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -131,6 +132,15 @@ func (s *consumerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, err
 
 	rb := s.mb.NewResourceBuilder()
 	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
+	// Cluster ID needs an extra metadata request here, so only fetch it when enabled.
+	// It is opt-in and loses no data points on failure, so warn rather than error.
+	if s.config.ResourceAttributes.KafkaClusterID.Enabled {
+		if meta, merr := s.adm.BrokerMetadata(ctx); merr != nil {
+			s.settings.Logger.Warn("franz-go: BrokerMetadata failed; kafka.cluster.id will be omitted", zap.Error(merr))
+		} else if meta.Cluster != "" { // skip empty IDs so we never emit an empty-string attribute
+			rb.SetKafkaClusterID(meta.Cluster)
+		}
+	}
 
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrs.Combine()
 }
