@@ -10,7 +10,7 @@ This receiver queries the PostgreSQL [statistics collector](https://www.postgres
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fpostgresql%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fpostgresql) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fpostgresql%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fpostgresql) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_postgresql)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_postgresql&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17), [@Caleb-Hurshman](https://www.github.com/Caleb-Hurshman), [@ebrdarSplunk](https://www.github.com/ebrdarSplunk) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17), [@Caleb-Hurshman](https://www.github.com/Caleb-Hurshman), [@ebrdarSplunk](https://www.github.com/ebrdarSplunk), [@XSAM](https://www.github.com/XSAM), [@akshays-19](https://www.github.com/akshays-19), [@sv-splunk](https://www.github.com/sv-splunk), [@splunk-shanu](https://www.github.com/splunk-shanu) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -47,6 +47,9 @@ The monitoring user must be granted `SELECT` on `pg_stat_database`.
 > ```bash
 > otelcol-contrib --feature-gates=receiver.postgresql.separateSchemaAttr
 > ```
+>
+> **Note:** This gate is mutually exclusive with `receiver.postgresql.useOTelSemconv`. Both cannot be
+> enabled at the same time.
 >
 > See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559 for more details.
 
@@ -94,6 +97,16 @@ to grant the user you are using `pg_monitor`. Take the example from `testdata/in
 GRANT pg_monitor TO otelu;
 ```
 
+To correlate query samples with traces, set the PostgreSQL [`application_name`](https://www.postgresql.org/docs/current/runtime-config-logging.html#GUC-APPLICATION-NAME)
+for the client connection to a valid [W3C `traceparent`](https://www.w3.org/TR/trace-context/#traceparent-header) value before running the query:
+
+```sql
+SET application_name = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+```
+
+When query sample collection observes a valid `traceparent` in `application_name`, the receiver sets the trace ID and span ID on the emitted
+`db.server.query_sample` log record. This enables correlation between the query sample and the originating trace.
+
 The following options are available:
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
 against `pg_stat_activity`.
@@ -128,6 +141,64 @@ separately. This could lead some resources usage and limit this will reduce the 
 This defines the cache's size for query plan.
 - `query_plan_cache_ttl`: (optional, default=1h). How long before the query plan cache got expired. Example values: `1m`, `1h`. 
 - `collection_interval`: (optional, default=60s). This receiver can collect top_query metrics on an interval. If not provided then the global collection_interval takes effect. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+
+### Vector Metrics
+
+The receiver can report [pgvector](https://github.com/pgvector/pgvector) similarity-search and insert activity
+through a set of opt-in metrics.
+
+Prerequisites:
+
+- PostgreSQL 13 or later.
+- The [pgvector](https://github.com/pgvector/pgvector) extension installed in each scanned database. The `l1`,
+  `hamming`, and `jaccard` distance functions additionally require pgvector 0.7.0 or later.
+- The `pg_stat_statements` extension (version 1.8+) installed and enabled in each scanned database (see below).
+
+#### Search metrics
+
+Three metrics report similarity-search activity
+
+- `postgresql.vector.search.calls`: the cumulative number of vector search executions.
+- `postgresql.vector.search.duration`: the cumulative execution time (in seconds) of vector searches.
+- `postgresql.vector.search.rows_returned`: the cumulative number of rows returned by vector searches.
+
+> [!NOTE]
+> The distance function is inferred from the query text alone, so the receiver cannot tell which
+> operator implementation is actually invoked. If the `pg_trgm` extension is also installed, its
+> text-similarity `<->` operator is indistinguishable from pgvector's L2 `<->` operator, so queries
+> such as `ORDER BY text_col <-> 'abc'` may be counted under the `l2` distance function.
+
+#### Insert metrics
+
+These metrics report write activity against pgvector tables
+
+- `postgresql.vector.insert.rows`: the cumulative number of vectors inserted.
+- `postgresql.vector.insert.duration`: the cumulative execution time (in seconds) of those inserts.
+
+All of these metrics are disabled by default. Enable the ones you need via:
+
+```yaml
+receivers:
+  postgresql:
+    metrics:
+      postgresql.vector.search.calls:
+        enabled: true
+      postgresql.vector.search.duration:
+        enabled: true
+      postgresql.vector.search.rows_returned:
+        enabled: true
+      postgresql.vector.insert.rows:
+        enabled: true
+      postgresql.vector.insert.duration:
+        enabled: true
+```
+
+The `pg_stat_statements` extension must be created in every database you want these metrics collected from:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+```
+
 ### Example Configuration
 
 ```yaml
@@ -190,6 +261,15 @@ receivers:
       max_idle: 2
       max_open: 5
 ```
+
+## OpenTelemetry semantic conventions feature gate
+
+The feature gate `receiver.postgresql.useOTelSemconv` (alpha, disabled by default) controls the resource model used by this receiver:
+
+- **Gate disabled (default):** Legacy per-entity resource model. Each database, table, and index emits metrics under a separate resource with `postgresql.database.name`, `postgresql.table.name`, `postgresql.index.name`, and `postgresql.schema.name` as resource attributes. `service.instance.id` is in `host:port` format.
+- **Gate enabled:** Single resource per server. All metrics are emitted under one resource with `server.address`, `server.port`, and `service.instance.id` (UUID v5) as resource attributes, aligning with OpenTelemetry semantic conventions. Metric-level attributes `db.namespace`, `db.collection.name`, and `postgresql.index.name` are present on applicable metrics.
+
+This gate is mutually exclusive with `receiver.postgresql.separateSchemaAttr` — both cannot be enabled simultaneously.
 
 ## Metrics
 

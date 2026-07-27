@@ -67,11 +67,20 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["sqlserver.availability_group.database_replica.queue.rate"] = mb.metricSqlserverAvailabilityGroupDatabaseReplicaQueueRate.config.AggregationStrategy
+			aggMap["sqlserver.availability_group.database_replica.queue.size"] = mb.metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize.config.AggregationStrategy
+			aggMap["sqlserver.availability_group.database_replica.secondary_lag"] = mb.metricSqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.config.AggregationStrategy
+			aggMap["sqlserver.cursor.count"] = mb.metricSqlserverCursorCount.config.AggregationStrategy
 			aggMap["sqlserver.database.count"] = mb.metricSqlserverDatabaseCount.config.AggregationStrategy
 			aggMap["sqlserver.database.io"] = mb.metricSqlserverDatabaseIo.config.AggregationStrategy
 			aggMap["sqlserver.database.latency"] = mb.metricSqlserverDatabaseLatency.config.AggregationStrategy
 			aggMap["sqlserver.database.operations"] = mb.metricSqlserverDatabaseOperations.config.AggregationStrategy
 			aggMap["sqlserver.database.tempdb.space"] = mb.metricSqlserverDatabaseTempdbSpace.config.AggregationStrategy
+			aggMap["sqlserver.index.fragmentation"] = mb.metricSqlserverIndexFragmentation.config.AggregationStrategy
+			aggMap["sqlserver.index.page.count"] = mb.metricSqlserverIndexPageCount.config.AggregationStrategy
+			aggMap["sqlserver.index.page.utilization"] = mb.metricSqlserverIndexPageUtilization.config.AggregationStrategy
+			aggMap["sqlserver.index.record.count"] = mb.metricSqlserverIndexRecordCount.config.AggregationStrategy
+			aggMap["sqlserver.index.size"] = mb.metricSqlserverIndexSize.config.AggregationStrategy
 			aggMap["sqlserver.latch.superlatch.transition.rate"] = mb.metricSqlserverLatchSuperlatchTransitionRate.config.AggregationStrategy
 			aggMap["sqlserver.memory.area"] = mb.metricSqlserverMemoryArea.config.AggregationStrategy
 			aggMap["sqlserver.memory.cache.object.count"] = mb.metricSqlserverMemoryCacheObjectCount.config.AggregationStrategy
@@ -84,6 +93,10 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.replica.data.rate"] = mb.metricSqlserverReplicaDataRate.config.AggregationStrategy
 			aggMap["sqlserver.resource_pool.disk.operations"] = mb.metricSqlserverResourcePoolDiskOperations.config.AggregationStrategy
 			aggMap["sqlserver.table.count"] = mb.metricSqlserverTableCount.config.AggregationStrategy
+			aggMap["sqlserver.task.count"] = mb.metricSqlserverTaskCount.config.AggregationStrategy
+			aggMap["sqlserver.task.rate"] = mb.metricSqlserverTaskRate.config.AggregationStrategy
+			aggMap["sqlserver.worker.request.count"] = mb.metricSqlserverWorkerRequestCount.config.AggregationStrategy
+			aggMap["sqlserver.worker.thread.count"] = mb.metricSqlserverWorkerThreadCount.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -98,6 +111,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSqlserverAttentionRateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueRateDataPoint(ts, 1, "sqlserver.availability_group.name-val", "sqlserver.replica.name-val", AttributeSqlserverAvailabilityGroupQueueTypeLogSend)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueRateDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "sqlserver.replica.name-val-2", AttributeSqlserverAvailabilityGroupQueueTypeRedo)
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueSizeDataPoint(ts, 1, "sqlserver.availability_group.name-val", "sqlserver.replica.name-val", AttributeSqlserverAvailabilityGroupQueueTypeLogSend)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueSizeDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "sqlserver.replica.name-val-2", AttributeSqlserverAvailabilityGroupQueueTypeRedo)
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverAvailabilityGroupDatabaseReplicaSecondaryLagDataPoint(ts, 1, "sqlserver.availability_group.name-val", "sqlserver.replica.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverAvailabilityGroupDatabaseReplicaSecondaryLagDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "sqlserver.replica.name-val-2")
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverBatchRequestRateDataPoint(ts, 1)
@@ -109,10 +140,31 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSqlserverClrExecutionTimeDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordSqlserverComputerUptimeDataPoint(ts, "1")
 
 			allMetricsCount++
+			mb.RecordSqlserverConnectionResetRateDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordSqlserverCPUCountDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordSqlserverCursorCountDataPoint(ts, 1, AttributeCursorStateActive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverCursorCountDataPoint(ts, 3, AttributeCursorStateCached)
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverCursorMemoryUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverCursorPlanCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverCursorRequestRateDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSqlserverDatabaseBackupOrRestoreRateDataPoint(ts, 1)
@@ -160,13 +212,46 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverDeadlockRateDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSqlserverErrorRateDataPoint(ts, 1, AttributeSqlserverErrorCategoryDbOffline)
+
+			allMetricsCount++
 			mb.RecordSqlserverExtentOperationRateDataPoint(ts, 1, AttributeSqlserverExtentOperationTypeAllocated)
 
 			allMetricsCount++
 			mb.RecordSqlserverGhostRecordSkippedRateDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSqlserverIndexFragmentationDataPoint(ts, 1, "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverIndexFragmentationDataPoint(ts, 3, "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverIndexPageCountDataPoint(ts, "1", "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverIndexPageCountDataPoint(ts, "3", "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverIndexPageUtilizationDataPoint(ts, 1, "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverIndexPageUtilizationDataPoint(ts, 3, "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverIndexRecordCountDataPoint(ts, "1", "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverIndexRecordCountDataPoint(ts, "3", "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+			}
+
+			allMetricsCount++
 			mb.RecordSqlserverIndexSearchRateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverIndexSizeDataPoint(ts, "1", "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverIndexSizeDataPoint(ts, "3", "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSqlserverLatchSuperlatchCountDataPoint(ts, 1)
@@ -187,7 +272,19 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverLatchWaitTimeTotalDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverLockTimeoutRateDataPoint(ts, 1)
+			mb.RecordSqlserverLockBlockCountDataPoint(ts, 1, AttributeSqlserverLockBlockTypeAllocated)
+
+			allMetricsCount++
+			mb.RecordSqlserverLockEscalationRateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverLockMemoryDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverLockRequestRateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverLockTimeoutRateDataPoint(ts, 1, AttributeSqlserverLockTimeoutTypeAll)
 
 			allMetricsCount++
 			mb.RecordSqlserverLockWaitCountDataPoint(ts, 1)
@@ -197,6 +294,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverLockWaitTimeAvgDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverLockWaitTimeTotalDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSqlserverLoginRateDataPoint(ts, 1)
@@ -313,9 +413,24 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverScanPointRevalidationRateDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSqlserverStoredProcedureInvocationRateDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordSqlserverTableCountDataPoint(ts, 1, AttributeTableStateActive, AttributeTableStatusTemporary)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverTableCountDataPoint(ts, 3, AttributeTableStateInactive, AttributeTableStatusPermanent)
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverTaskCountDataPoint(ts, 1, AttributeTaskStateRunning)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverTaskCountDataPoint(ts, 3, AttributeTaskStateLimitReached)
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverTaskRateDataPoint(ts, 1, AttributeTaskResultStarted)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverTaskRateDataPoint(ts, 3, AttributeTaskResultAborted)
 			}
 
 			allMetricsCount++
@@ -352,6 +467,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverUserConnectionCountDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSqlserverWorkerRequestCountDataPoint(ts, 1, AttributeRequestStateWaiting)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverWorkerRequestCountDataPoint(ts, 3, AttributeRequestStateWaiting)
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverWorkerThreadCountDataPoint(ts, 1, AttributeWorkerStateMaximum)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverWorkerThreadCountDataPoint(ts, 3, AttributeWorkerStateActive)
+			}
+
+			allMetricsCount++
 			mb.RecordSqlserverWorktableCacheHitRatioDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
@@ -367,11 +494,20 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricSqlserverAvailabilityGroupDatabaseReplicaQueueRate.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverCursorCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseIo.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseLatency.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseOperations.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseTempdbSpace.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverIndexFragmentation.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverIndexPageCount.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverIndexPageUtilization.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverIndexRecordCount.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverIndexSize.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverLatchSuperlatchTransitionRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryArea.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryCacheObjectCount.aggDataPoints)
@@ -384,6 +520,10 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverReplicaDataRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverResourcePoolDiskOperations.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverTableCount.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverTaskCount.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverTaskRate.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverWorkerRequestCount.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverWorkerThreadCount.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
@@ -438,6 +578,151 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.availability_group.database_replica.queue.rate":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.availability_group.database_replica.queue.rate"], "Found a duplicate in the metrics slice: sqlserver.availability_group.database_replica.queue.rate")
+						validatedMetrics["sqlserver.availability_group.database_replica.queue.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rate at which log data is being sent or redone on a database replica, broken down by queue type (log_send for primary-to-secondary transmission, redo for applying log records on the secondary).", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						sqlserverAvailabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.availability_group.name-val", sqlserverAvailabilityGroupNameAttrVal.Str())
+						sqlserverReplicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.replica.name-val", sqlserverReplicaNameAttrVal.Str())
+						sqlserverAvailabilityGroupQueueTypeAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.queue.type")
+						assert.True(t, ok)
+						assert.Equal(t, "log_send", sqlserverAvailabilityGroupQueueTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.availability_group.database_replica.queue.rate"], "Found a duplicate in the metrics slice: sqlserver.availability_group.database_replica.queue.rate")
+						validatedMetrics["sqlserver.availability_group.database_replica.queue.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rate at which log data is being sent or redone on a database replica, broken down by queue type (log_send for primary-to-secondary transmission, redo for applying log records on the secondary).", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.availability_group.database_replica.queue.rate"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.replica.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.availability_group.queue.type")
+						assert.False(t, ok)
+					}
+				case "sqlserver.availability_group.database_replica.queue.size":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.availability_group.database_replica.queue.size"], "Found a duplicate in the metrics slice: sqlserver.availability_group.database_replica.queue.size")
+						validatedMetrics["sqlserver.availability_group.database_replica.queue.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Amount of log data waiting to be processed on a database replica, broken down by queue type (log_send for data not yet sent to the secondary, redo for data received but not yet applied).", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						sqlserverAvailabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.availability_group.name-val", sqlserverAvailabilityGroupNameAttrVal.Str())
+						sqlserverReplicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.replica.name-val", sqlserverReplicaNameAttrVal.Str())
+						sqlserverAvailabilityGroupQueueTypeAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.queue.type")
+						assert.True(t, ok)
+						assert.Equal(t, "log_send", sqlserverAvailabilityGroupQueueTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.availability_group.database_replica.queue.size"], "Found a duplicate in the metrics slice: sqlserver.availability_group.database_replica.queue.size")
+						validatedMetrics["sqlserver.availability_group.database_replica.queue.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Amount of log data waiting to be processed on a database replica, broken down by queue type (log_send for data not yet sent to the secondary, redo for data received but not yet applied).", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.availability_group.database_replica.queue.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.replica.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.availability_group.queue.type")
+						assert.False(t, ok)
+					}
+				case "sqlserver.availability_group.database_replica.secondary_lag":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.availability_group.database_replica.secondary_lag"], "Found a duplicate in the metrics slice: sqlserver.availability_group.database_replica.secondary_lag")
+						validatedMetrics["sqlserver.availability_group.database_replica.secondary_lag"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of seconds the secondary replica is lagging behind the primary replica, measured as the time between the most recent hardened log block on the primary and on the secondary.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						sqlserverAvailabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.availability_group.name-val", sqlserverAvailabilityGroupNameAttrVal.Str())
+						sqlserverReplicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.replica.name-val", sqlserverReplicaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.availability_group.database_replica.secondary_lag"], "Found a duplicate in the metrics slice: sqlserver.availability_group.database_replica.secondary_lag")
+						validatedMetrics["sqlserver.availability_group.database_replica.secondary_lag"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of seconds the secondary replica is lagging behind the primary replica, measured as the time between the most recent hardened log block on the primary and on the secondary.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["sqlserver.availability_group.database_replica.secondary_lag"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.replica.name")
+						assert.False(t, ok)
+					}
 				case "sqlserver.batch.request.rate":
 					assert.False(t, validatedMetrics["sqlserver.batch.request.rate"], "Found a duplicate in the metrics slice: sqlserver.batch.request.rate")
 					validatedMetrics["sqlserver.batch.request.rate"] = true
@@ -474,6 +759,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.clr.execution.time":
+					assert.False(t, validatedMetrics["sqlserver.clr.execution.time"], "Found a duplicate in the metrics slice: sqlserver.clr.execution.time")
+					validatedMetrics["sqlserver.clr.execution.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total time spent executing in the CLR. Only non-zero when CLR integration is enabled and CLR code has been executed.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.computer.uptime":
 					assert.False(t, validatedMetrics["sqlserver.computer.uptime"], "Found a duplicate in the metrics slice: sqlserver.computer.uptime")
 					validatedMetrics["sqlserver.computer.uptime"] = true
@@ -486,6 +785,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.connection.reset.rate":
+					assert.False(t, validatedMetrics["sqlserver.connection.reset.rate"], "Found a duplicate in the metrics slice: sqlserver.connection.reset.rate")
+					validatedMetrics["sqlserver.connection.reset.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of logical connections reset per second.", mi.Description())
+					assert.Equal(t, "{connection}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.cpu.count":
 					assert.False(t, validatedMetrics["sqlserver.cpu.count"], "Found a duplicate in the metrics slice: sqlserver.cpu.count")
 					validatedMetrics["sqlserver.cpu.count"] = true
@@ -498,13 +809,89 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.cursor.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.cursor.count"], "Found a duplicate in the metrics slice: sqlserver.cursor.count")
+						validatedMetrics["sqlserver.cursor.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of cursors by state.", mi.Description())
+						assert.Equal(t, "{cursor}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						cursorStateAttrVal, ok := dp.Attributes().Get("cursor.state")
+						assert.True(t, ok)
+						assert.Equal(t, "active", cursorStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.cursor.count"], "Found a duplicate in the metrics slice: sqlserver.cursor.count")
+						validatedMetrics["sqlserver.cursor.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of cursors by state.", mi.Description())
+						assert.Equal(t, "{cursor}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.cursor.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("cursor.state")
+						assert.False(t, ok)
+					}
+				case "sqlserver.cursor.memory.usage":
+					assert.False(t, validatedMetrics["sqlserver.cursor.memory.usage"], "Found a duplicate in the metrics slice: sqlserver.cursor.memory.usage")
+					validatedMetrics["sqlserver.cursor.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Memory used by cursors.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.cursor.plan.count":
+					assert.False(t, validatedMetrics["sqlserver.cursor.plan.count"], "Found a duplicate in the metrics slice: sqlserver.cursor.plan.count")
+					validatedMetrics["sqlserver.cursor.plan.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of active cursor plans.", mi.Description())
+					assert.Equal(t, "{plan}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.cursor.request.rate":
+					assert.False(t, validatedMetrics["sqlserver.cursor.request.rate"], "Found a duplicate in the metrics slice: sqlserver.cursor.request.rate")
+					validatedMetrics["sqlserver.cursor.request.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Rate of cursor requests per second.", mi.Description())
+					assert.Equal(t, "{request}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.database.backup_or_restore.rate":
 					assert.False(t, validatedMetrics["sqlserver.database.backup_or_restore.rate"], "Found a duplicate in the metrics slice: sqlserver.database.backup_or_restore.rate")
 					validatedMetrics["sqlserver.database.backup_or_restore.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Total number of backups/restores.", mi.Description())
-					assert.Equal(t, "“{backups_or_restores}/s”", mi.Unit())
+					assert.Equal(t, "{backups_or_restores}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -556,7 +943,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of execution errors.", mi.Description())
-					assert.Equal(t, "“{errors}”", mi.Unit())
+					assert.Equal(t, "{errors}", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -758,7 +1145,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Total free space in temporary DB.", mi.Description())
-						assert.Equal(t, "“KB”", mi.Unit())
+						assert.Equal(t, "kBy", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -775,7 +1162,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Total free space in temporary DB.", mi.Description())
-						assert.Equal(t, "“KB”", mi.Unit())
+						assert.Equal(t, "kBy", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -801,7 +1188,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "TempDB version store size.", mi.Description())
-					assert.Equal(t, "“KB”", mi.Unit())
+					assert.Equal(t, "kBy", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -813,12 +1200,27 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Total number of deadlocks.", mi.Description())
-					assert.Equal(t, "“{deadlocks}/s”", mi.Unit())
+					assert.Equal(t, "{deadlocks}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.error.rate":
+					assert.False(t, validatedMetrics["sqlserver.error.rate"], "Found a duplicate in the metrics slice: sqlserver.error.rate")
+					validatedMetrics["sqlserver.error.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of errors raised per second.", mi.Description())
+					assert.Equal(t, "{error}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					sqlserverErrorCategoryAttrVal, ok := dp.Attributes().Get("sqlserver.error.category")
+					assert.True(t, ok)
+					assert.Equal(t, "db_offline", sqlserverErrorCategoryAttrVal.Str())
 				case "sqlserver.extent.operation.rate":
 					assert.False(t, validatedMetrics["sqlserver.extent.operation.rate"], "Found a duplicate in the metrics slice: sqlserver.extent.operation.rate")
 					validatedMetrics["sqlserver.extent.operation.rate"] = true
@@ -846,18 +1248,293 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.index.fragmentation":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.index.fragmentation"], "Found a duplicate in the metrics slice: sqlserver.index.fragmentation")
+						validatedMetrics["sqlserver.index.fragmentation"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Average fragmentation percentage of the index.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
+						assert.True(t, ok)
+						assert.EqualValues(t, 18, sqlserverIndexIDAttrVal.Int())
+						sqlserverObjectNameAttrVal, ok := dp.Attributes().Get("sqlserver.object.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.object.name-val", sqlserverObjectNameAttrVal.Str())
+						sqlserverSchemaNameAttrVal, ok := dp.Attributes().Get("sqlserver.schema.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.schema.name-val", sqlserverSchemaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.index.fragmentation"], "Found a duplicate in the metrics slice: sqlserver.index.fragmentation")
+						validatedMetrics["sqlserver.index.fragmentation"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Average fragmentation percentage of the index.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["sqlserver.index.fragmentation"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.index.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.object.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.schema.name")
+						assert.False(t, ok)
+					}
+				case "sqlserver.index.page.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.index.page.count"], "Found a duplicate in the metrics slice: sqlserver.index.page.count")
+						validatedMetrics["sqlserver.index.page.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of pages in the index.", mi.Description())
+						assert.Equal(t, "{page}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
+						assert.True(t, ok)
+						assert.EqualValues(t, 18, sqlserverIndexIDAttrVal.Int())
+						sqlserverObjectNameAttrVal, ok := dp.Attributes().Get("sqlserver.object.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.object.name-val", sqlserverObjectNameAttrVal.Str())
+						sqlserverSchemaNameAttrVal, ok := dp.Attributes().Get("sqlserver.schema.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.schema.name-val", sqlserverSchemaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.index.page.count"], "Found a duplicate in the metrics slice: sqlserver.index.page.count")
+						validatedMetrics["sqlserver.index.page.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of pages in the index.", mi.Description())
+						assert.Equal(t, "{page}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.index.page.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.index.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.object.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.schema.name")
+						assert.False(t, ok)
+					}
+				case "sqlserver.index.page.utilization":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.index.page.utilization"], "Found a duplicate in the metrics slice: sqlserver.index.page.utilization")
+						validatedMetrics["sqlserver.index.page.utilization"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Average percentage of available data storage space used in all pages of the index.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
+						assert.True(t, ok)
+						assert.EqualValues(t, 18, sqlserverIndexIDAttrVal.Int())
+						sqlserverObjectNameAttrVal, ok := dp.Attributes().Get("sqlserver.object.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.object.name-val", sqlserverObjectNameAttrVal.Str())
+						sqlserverSchemaNameAttrVal, ok := dp.Attributes().Get("sqlserver.schema.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.schema.name-val", sqlserverSchemaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.index.page.utilization"], "Found a duplicate in the metrics slice: sqlserver.index.page.utilization")
+						validatedMetrics["sqlserver.index.page.utilization"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Average percentage of available data storage space used in all pages of the index.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["sqlserver.index.page.utilization"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.index.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.object.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.schema.name")
+						assert.False(t, ok)
+					}
+				case "sqlserver.index.record.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.index.record.count"], "Found a duplicate in the metrics slice: sqlserver.index.record.count")
+						validatedMetrics["sqlserver.index.record.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Total number of records in the index.", mi.Description())
+						assert.Equal(t, "{record}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
+						assert.True(t, ok)
+						assert.EqualValues(t, 18, sqlserverIndexIDAttrVal.Int())
+						sqlserverObjectNameAttrVal, ok := dp.Attributes().Get("sqlserver.object.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.object.name-val", sqlserverObjectNameAttrVal.Str())
+						sqlserverSchemaNameAttrVal, ok := dp.Attributes().Get("sqlserver.schema.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.schema.name-val", sqlserverSchemaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.index.record.count"], "Found a duplicate in the metrics slice: sqlserver.index.record.count")
+						validatedMetrics["sqlserver.index.record.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Total number of records in the index.", mi.Description())
+						assert.Equal(t, "{record}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.index.record.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.index.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.object.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.schema.name")
+						assert.False(t, ok)
+					}
 				case "sqlserver.index.search.rate":
 					assert.False(t, validatedMetrics["sqlserver.index.search.rate"], "Found a duplicate in the metrics slice: sqlserver.index.search.rate")
 					validatedMetrics["sqlserver.index.search.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Total number of index searches.", mi.Description())
-					assert.Equal(t, "“{searches}/s”", mi.Unit())
+					assert.Equal(t, "{searches}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.index.size":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.index.size"], "Found a duplicate in the metrics slice: sqlserver.index.size")
+						validatedMetrics["sqlserver.index.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Total size of the index.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
+						assert.True(t, ok)
+						assert.EqualValues(t, 18, sqlserverIndexIDAttrVal.Int())
+						sqlserverObjectNameAttrVal, ok := dp.Attributes().Get("sqlserver.object.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.object.name-val", sqlserverObjectNameAttrVal.Str())
+						sqlserverSchemaNameAttrVal, ok := dp.Attributes().Get("sqlserver.schema.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.schema.name-val", sqlserverSchemaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.index.size"], "Found a duplicate in the metrics slice: sqlserver.index.size")
+						validatedMetrics["sqlserver.index.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Total size of the index.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.index.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.index.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.object.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.schema.name")
+						assert.False(t, ok)
+					}
 				case "sqlserver.latch.superlatch.count":
 					assert.False(t, validatedMetrics["sqlserver.latch.superlatch.count"], "Found a duplicate in the metrics slice: sqlserver.latch.superlatch.count")
 					validatedMetrics["sqlserver.latch.superlatch.count"] = true
@@ -948,18 +1625,72 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "sqlserver.lock.timeout.rate":
-					assert.False(t, validatedMetrics["sqlserver.lock.timeout.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.timeout.rate")
-					validatedMetrics["sqlserver.lock.timeout.rate"] = true
+				case "sqlserver.lock.block.count":
+					assert.False(t, validatedMetrics["sqlserver.lock.block.count"], "Found a duplicate in the metrics slice: sqlserver.lock.block.count")
+					validatedMetrics["sqlserver.lock.block.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Total number of lock timeouts.", mi.Description())
-					assert.Equal(t, "“{timeouts}/s”", mi.Unit())
+					assert.Equal(t, "Number of lock blocks tracked by the lock manager.", mi.Description())
+					assert.Equal(t, "{block}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					sqlserverLockBlockTypeAttrVal, ok := dp.Attributes().Get("sqlserver.lock.block.type")
+					assert.True(t, ok)
+					assert.Equal(t, "allocated", sqlserverLockBlockTypeAttrVal.Str())
+				case "sqlserver.lock.escalation.rate":
+					assert.False(t, validatedMetrics["sqlserver.lock.escalation.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.escalation.rate")
+					validatedMetrics["sqlserver.lock.escalation.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of lock escalations per second (locks on a table escalated to a larger granularity).", mi.Description())
+					assert.Equal(t, "{escalation}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.lock.memory":
+					assert.False(t, validatedMetrics["sqlserver.lock.memory"], "Found a duplicate in the metrics slice: sqlserver.lock.memory")
+					validatedMetrics["sqlserver.lock.memory"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Total amount of memory used for locks.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.lock.request.rate":
+					assert.False(t, validatedMetrics["sqlserver.lock.request.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.request.rate")
+					validatedMetrics["sqlserver.lock.request.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of new locks and lock conversions per second requested from the lock manager.", mi.Description())
+					assert.Equal(t, "{request}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.lock.timeout.rate":
+					assert.False(t, validatedMetrics["sqlserver.lock.timeout.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.timeout.rate")
+					validatedMetrics["sqlserver.lock.timeout.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of lock timeouts per second.", mi.Description())
+					assert.Equal(t, "{timeout}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					sqlserverLockTimeoutTypeAttrVal, ok := dp.Attributes().Get("sqlserver.lock.timeout.type")
+					assert.True(t, ok)
+					assert.Equal(t, "all", sqlserverLockTimeoutTypeAttrVal.Str())
 				case "sqlserver.lock.wait.count":
 					assert.False(t, validatedMetrics["sqlserver.lock.wait.count"], "Found a duplicate in the metrics slice: sqlserver.lock.wait.count")
 					validatedMetrics["sqlserver.lock.wait.count"] = true
@@ -998,13 +1729,27 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.lock.wait_time.total":
+					assert.False(t, validatedMetrics["sqlserver.lock.wait_time.total"], "Found a duplicate in the metrics slice: sqlserver.lock.wait_time.total")
+					validatedMetrics["sqlserver.lock.wait_time.total"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total wait time in seconds for locks since the last server restart.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.login.rate":
 					assert.False(t, validatedMetrics["sqlserver.login.rate"], "Found a duplicate in the metrics slice: sqlserver.login.rate")
 					validatedMetrics["sqlserver.login.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Total number of logins.", mi.Description())
-					assert.Equal(t, "“{logins}/s”", mi.Unit())
+					assert.Equal(t, "{logins}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1016,7 +1761,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Total number of logouts.", mi.Description())
-					assert.Equal(t, "“{logouts}/s”", mi.Unit())
+					assert.Equal(t, "{logouts}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1162,7 +1907,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Total memory in use.", mi.Description())
-					assert.Equal(t, "KB", mi.Unit())
+					assert.Equal(t, "kBy", mi.Unit())
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1240,7 +1985,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of free list stalls.", mi.Description())
-					assert.Equal(t, "“{stalls}/s”", mi.Unit())
+					assert.Equal(t, "{stalls}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1343,7 +2088,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Total number of page lookups.", mi.Description())
-					assert.Equal(t, "“{lookups}/s”", mi.Unit())
+					assert.Equal(t, "{lookups}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1633,6 +2378,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.stored_procedure.invocation.rate":
+					assert.False(t, validatedMetrics["sqlserver.stored_procedure.invocation.rate"], "Found a duplicate in the metrics slice: sqlserver.stored_procedure.invocation.rate")
+					validatedMetrics["sqlserver.stored_procedure.invocation.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Rate of Service Broker activated stored procedure invocations per second.", mi.Description())
+					assert.Equal(t, "{invocation}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.table.count":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["sqlserver.table.count"], "Found a duplicate in the metrics slice: sqlserver.table.count")
@@ -1640,7 +2397,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The number of tables.", mi.Description())
-						assert.Equal(t, "“{tables}”", mi.Unit())
+						assert.Equal(t, "{tables}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1660,7 +2417,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The number of tables.", mi.Description())
-						assert.Equal(t, "“{tables}”", mi.Unit())
+						assert.Equal(t, "{tables}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1680,6 +2437,86 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("table.state")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("table.status")
+						assert.False(t, ok)
+					}
+				case "sqlserver.task.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.task.count"], "Found a duplicate in the metrics slice: sqlserver.task.count")
+						validatedMetrics["sqlserver.task.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of Service Broker activation tasks by state.", mi.Description())
+						assert.Equal(t, "{task}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						taskStateAttrVal, ok := dp.Attributes().Get("task.state")
+						assert.True(t, ok)
+						assert.Equal(t, "running", taskStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.task.count"], "Found a duplicate in the metrics slice: sqlserver.task.count")
+						validatedMetrics["sqlserver.task.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of Service Broker activation tasks by state.", mi.Description())
+						assert.Equal(t, "{task}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.task.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("task.state")
+						assert.False(t, ok)
+					}
+				case "sqlserver.task.rate":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.task.rate"], "Found a duplicate in the metrics slice: sqlserver.task.rate")
+						validatedMetrics["sqlserver.task.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rate of Service Broker activation tasks by type per second.", mi.Description())
+						assert.Equal(t, "{task}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						taskResultAttrVal, ok := dp.Attributes().Get("task.result")
+						assert.True(t, ok)
+						assert.Equal(t, "started", taskResultAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.task.rate"], "Found a duplicate in the metrics slice: sqlserver.task.rate")
+						validatedMetrics["sqlserver.task.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rate of Service Broker activation tasks by type per second.", mi.Description())
+						assert.Equal(t, "{task}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["sqlserver.task.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("task.result")
 						assert.False(t, ok)
 					}
 				case "sqlserver.transaction.delay":
@@ -1702,7 +2539,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Total number of mirror write transactions.", mi.Description())
-					assert.Equal(t, "“{transactions}/s”", mi.Unit())
+					assert.Equal(t, "{transactions}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1820,6 +2657,86 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.worker.request.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.worker.request.count"], "Found a duplicate in the metrics slice: sqlserver.worker.request.count")
+						validatedMetrics["sqlserver.worker.request.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of worker requests by state.", mi.Description())
+						assert.Equal(t, "{request}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						requestStateAttrVal, ok := dp.Attributes().Get("request.state")
+						assert.True(t, ok)
+						assert.Equal(t, "waiting", requestStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.worker.request.count"], "Found a duplicate in the metrics slice: sqlserver.worker.request.count")
+						validatedMetrics["sqlserver.worker.request.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of worker requests by state.", mi.Description())
+						assert.Equal(t, "{request}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.worker.request.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("request.state")
+						assert.False(t, ok)
+					}
+				case "sqlserver.worker.thread.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.worker.thread.count"], "Found a duplicate in the metrics slice: sqlserver.worker.thread.count")
+						validatedMetrics["sqlserver.worker.thread.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of worker threads by state.", mi.Description())
+						assert.Equal(t, "{thread}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						workerStateAttrVal, ok := dp.Attributes().Get("worker.state")
+						assert.True(t, ok)
+						assert.Equal(t, "maximum", workerStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.worker.thread.count"], "Found a duplicate in the metrics slice: sqlserver.worker.thread.count")
+						validatedMetrics["sqlserver.worker.thread.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of worker threads by state.", mi.Description())
+						assert.Equal(t, "{thread}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.worker.thread.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("worker.state")
+						assert.False(t, ok)
+					}
 				case "sqlserver.worktable.cache.hit_ratio":
 					assert.False(t, validatedMetrics["sqlserver.worktable.cache.hit_ratio"], "Found a duplicate in the metrics slice: sqlserver.worktable.cache.hit_ratio")
 					validatedMetrics["sqlserver.worktable.cache.hit_ratio"] = true

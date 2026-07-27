@@ -25,8 +25,8 @@ var errInvalidEndpoint = errors.New("'endpoint' must be in the form of <scheme>:
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	confighttp.ClientConfig        `mapstructure:",squash"`
-	ApplicationNames               []string `mapstructure:"application_names"`
+	ClientConfig                   confighttp.ClientConfig `mapstructure:",squash"`
+	ApplicationNames               []string                `mapstructure:"application_names"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -34,7 +34,7 @@ type Config struct {
 
 // Validate validates missing and invalid configuration fields.
 func (cfg *Config) Validate() error {
-	_, parseErr := url.Parse(cfg.Endpoint)
+	_, parseErr := url.Parse(cfg.ClientConfig.Endpoint)
 	if parseErr != nil {
 		return errInvalidEndpoint
 	}
