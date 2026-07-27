@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
@@ -143,7 +144,7 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 	assert.True(t, hasOtlphttp, "should have otlp_http exporter")
 }
 
-func TestDataToFlattenedJSONStringIntegration(t *testing.T) {
+func TestDataToYAMLStringIntegration(t *testing.T) {
 	// Load the sample configuration file
 	configPath := filepath.Join("internal", "componentchecker", "testdata", "sample-config.yaml")
 
@@ -162,18 +163,15 @@ func TestDataToFlattenedJSONStringIntegration(t *testing.T) {
 	confMap, err := resolver.Resolve(t.Context())
 	require.NoError(t, err, "should be able to load config file")
 
-	// Test DataToFlattenedJSONString with the loaded configuration
-	jsonString := componentchecker.DataToFlattenedJSONString(confMap.ToStringMap())
+	// Test DataToYAMLString with the loaded configuration
+	yamlString := componentchecker.DataToYAMLString(confMap.ToStringMap())
 
-	// Verify that the result is valid JSON and doesn't contain newlines or carriage returns
-	assert.NotEmpty(t, jsonString, "JSON string should not be empty")
-	assert.NotContains(t, jsonString, "\n", "JSON string should not contain newlines")
-	assert.NotContains(t, jsonString, "\r", "JSON string should not contain carriage returns")
+	// Verify that the result is non-empty valid YAML
+	assert.NotEmpty(t, yamlString, "YAML string should not be empty")
 
-	// Verify it's valid JSON by attempting to unmarshal
 	var result map[string]any
-	err = json.Unmarshal([]byte(jsonString), &result)
-	assert.NoError(t, err, "flattened JSON should be valid JSON")
+	err = yaml.Unmarshal([]byte(yamlString), &result)
+	assert.NoError(t, err, "result should be valid YAML")
 }
 
 // TestFullOtelCollectorPayloadIntegration tests the complete end-to-end flow of:
@@ -348,7 +346,7 @@ func createTestOtelCollectorPayload() *payload.OtelCollectorPayload {
 	}
 
 	// Get flattened configuration
-	fullConfig := componentchecker.DataToFlattenedJSONString(confMap.ToStringMap())
+	fullConfig := componentchecker.DataToYAMLString(confMap.ToStringMap())
 
 	// Prepare base metadata
 	hostname := "test-integration-host"
@@ -567,7 +565,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 		Description: "OpenTelemetry Collector Contrib",
 		Version:     "0.127.0",
 	}
-	fullConfig := componentchecker.DataToFlattenedJSONString(confMap.ToStringMap())
+	fullConfig := componentchecker.DataToYAMLString(confMap.ToStringMap())
 	otelMetadata := payload.PrepareOtelCollectorMetadata(
 		testHostname,
 		"config",

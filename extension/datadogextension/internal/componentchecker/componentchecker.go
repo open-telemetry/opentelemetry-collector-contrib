@@ -5,7 +5,6 @@
 package componentchecker // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
 
 import (
-	"encoding/json"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -14,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
 )
@@ -42,18 +42,21 @@ func isComponentConfigured(typ component.Type, c map[component.ID]component.Conf
 	return false
 }
 
-// DataToFlattenedJSONString is a helper function to ensure payload strings are
-// properly formatted for JSON parsing. This is necessary due to escaped newline
-// characters and whitespace causing failure on parsing when loading into
-// the underlying data platform.
-func DataToFlattenedJSONString(data any) string {
-	replacer := strings.NewReplacer("\r", "", "\n", "")
-	jsonData, err := json.Marshal(data)
+// DataToYAMLString marshals data to a YAML string.
+func DataToYAMLString(data any) (result string) {
+	// yaml.Marshal panics rather than returning an error for some unsupported
+	// types (e.g. channels), unlike encoding/json.Marshal.
+	defer func() {
+		if recover() != nil {
+			result = ""
+		}
+	}()
+
+	yamlData, err := yaml.Marshal(data)
 	if err != nil {
 		return ""
 	}
-	res := replacer.Replace(string(jsonData))
-	return res
+	return string(yamlData)
 }
 
 // PopulateFullComponentsJSON creates a ModuleInfoJSON struct with all components from ModuleInfos

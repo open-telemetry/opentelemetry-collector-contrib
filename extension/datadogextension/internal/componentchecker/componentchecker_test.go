@@ -4,8 +4,8 @@
 package componentchecker // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
 
 import (
-	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,37 +13,10 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
 )
-
-func TestDataToFlattenedJSONString(t *testing.T) {
-	tests := []struct {
-		name     string
-		data     any
-		expected string
-	}{
-		{
-			name: "Simple map without lines",
-			data: map[string]any{
-				"key": "value",
-			},
-			expected: `{"key":"value"}`,
-		},
-		{
-			name:     "Invalid JSON",
-			data:     make(chan int),
-			expected: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := DataToFlattenedJSONString(tt.data)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
 
 func TestPopulateFullComponentsJSON(t *testing.T) {
 	tests := []struct {
@@ -702,32 +675,107 @@ func TestPopulateActiveComponentsAdditionalErrorPaths(t *testing.T) {
 	})
 }
 
-func TestDataToFlattenedJSONStringAdditionalCases(t *testing.T) {
-	t.Run("complex nested structure", func(t *testing.T) {
-		data := map[string]any{
-			"level1": map[string]any{
-				"level2": map[string]any{
-					"key":   "value",
-					"array": []string{"item1", "item2"},
-				},
-				"simple": "test",
+func TestDataToYAMLString(t *testing.T) {
+	tests := []struct {
+		name     string
+		data     any
+		expected string
+	}{
+		{
+			name: "Simple map",
+			data: map[string]any{
+				"key": "value",
 			},
-			"number": 123,
-		}
+			expected: "key: value\n",
+		},
+		{
+			// Regression test: time.Duration must render using its own string
+			// format (e.g. "200ms"), not as a raw nanosecond count. This is the
+			// exact bug this extension used to have when full_configuration was
+			// serialized as JSON instead of YAML, since encoding/json has no
+			// special handling for time.Duration.
+			name: "time.Duration renders as a duration string",
+			data: map[string]any{
+				"timeout": 200 * time.Millisecond,
+			},
+			expected: "timeout: 200ms\n",
+		},
+		{
+			name: "nested maps and slices",
+			data: map[string]any{
+				"receivers": map[string]any{
+					"otlp": map[string]any{
+						"protocols": map[string]any{
+							"grpc": map[string]any{},
+							"http": map[string]any{},
+						},
+					},
+				},
+				"service": map[string]any{
+					"pipelines": map[string]any{
+						"metrics": map[string]any{
+							"receivers": []string{"otlp"},
+							"exporters": []string{"debug", "otlphttp"},
+						},
+					},
+				},
+			},
+			expected: "receivers:\n" +
+				"    otlp:\n" +
+				"        protocols:\n" +
+				"            grpc: {}\n" +
+				"            http: {}\n" +
+				"service:\n" +
+				"    pipelines:\n" +
+				"        metrics:\n" +
+				"            exporters:\n" +
+				"                - debug\n" +
+				"                - otlphttp\n" +
+				"            receivers:\n" +
+				"                - otlp\n",
+		},
+		{
+			name: "string requiring quoting is preserved",
+			data: map[string]any{
+				"password": "yes",
+				"endpoint": "0.0.0.0:4317",
+			},
+			expected: "endpoint: 0.0.0.0:4317\npassword: \"yes\"\n",
+		},
+		{
+			name: "multiline string renders as a literal block",
+			data: map[string]any{
+				"cert": "line1\nline2\n",
+			},
+			expected: "cert: |\n    line1\n    line2\n",
+		},
+		{
+			name:     "empty map",
+			data:     map[string]any{},
+			expected: "{}\n",
+		},
+		{
+			name:     "nil data",
+			data:     nil,
+			expected: "null\n",
+		},
+		{
+			name:     "Invalid YAML",
+			data:     make(chan int),
+			expected: "",
+		},
+	}
 
-		result := DataToFlattenedJSONString(data)
-		assert.NotEmpty(t, result)
-		assert.NotContains(t, result, "\n")
-		assert.NotContains(t, result, "\r")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := DataToYAMLString(tt.data)
+			assert.Equal(t, tt.expected, result)
 
-		// Verify it's valid JSON
-		var parsed map[string]any
-		err := json.Unmarshal([]byte(result), &parsed)
-		assert.NoError(t, err)
-	})
-
-	t.Run("nil input", func(t *testing.T) {
-		result := DataToFlattenedJSONString(nil)
-		assert.Equal(t, "null", result)
-	})
+			if tt.expected != "" {
+				var parsed any
+				err := yaml.Unmarshal([]byte(result), &parsed)
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

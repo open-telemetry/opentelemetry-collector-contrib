@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
@@ -200,7 +201,10 @@ func TestNotifyConfig(t *testing.T) {
 
 		conf := confmap.NewFromStringMap(map[string]any{
 			"receivers": map[string]any{"otlp": nil},
-			"service":   map[string]any{"pipelines": map[string]any{"traces": map[string]any{"receivers": []any{"otlp"}}}},
+			"processors": map[string]any{
+				"batch": map[string]any{"timeout": 200 * time.Millisecond},
+			},
+			"service": map[string]any{"pipelines": map[string]any{"traces": map[string]any{"receivers": []any{"otlp"}}}},
 		})
 		ext.info.modules = service.ModuleInfos{Receiver: map[component.Type]service.ModuleInfo{
 			component.MustNewType("otlp"): {BuilderRef: "gomod.example/otlp v1.0.0"},
@@ -214,6 +218,11 @@ func TestNotifyConfig(t *testing.T) {
 		assert.NotEmpty(t, ext.otelCollectorMetadata.FullComponents)
 		assert.NotEmpty(t, ext.otelCollectorMetadata.ActiveComponents)
 		assert.NotNil(t, ext.httpServer, "http server should be created and started")
+
+		// full_configuration must be valid YAML
+		var parsedConfig map[string]any
+		require.NoError(t, yaml.Unmarshal([]byte(ext.otelCollectorMetadata.FullConfiguration), &parsedConfig))
+		assert.Contains(t, ext.otelCollectorMetadata.FullConfiguration, "timeout: 200ms")
 
 		// Ensure shutdown works cleanly
 		assert.NoError(t, ext.Shutdown(t.Context()))

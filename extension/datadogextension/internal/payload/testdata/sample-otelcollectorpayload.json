@@ -52,7 +52,7 @@
       "description": "OpenTelemetry Collector",
       "version": "0.125.0"
     },
-    "full_configuration": "{\"receivers\":{\"otlp\":{}},\"exporters\":{\"debug\":{}},\"service\":{\"pipelines\":{\"metrics\":{\"receivers\":[\"otlp\"],\"exporters\":[\"debug\"]}}}}",
+    "full_configuration": "receivers:\n  otlp: {}\nexporters:\n  debug: {}\nservice:\n  pipelines:\n    metrics:\n      receivers:\n        - otlp\n      exporters:\n        - debug\n",
     "health_status": "{\"status\":\"healthy\"}",
     "collector_resource_attributes": {},
     "collector_deployment_type": "gateway"
