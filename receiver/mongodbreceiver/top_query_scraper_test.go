@@ -485,9 +485,7 @@ func TestProcessTopQueryEntries_EmitsTopQueryEvent(t *testing.T) {
 	s.processTopQueryEntries(t.Context(), entries, now, defaultMaxExplainEachInterval)
 
 	rb := s.lb.NewResourceBuilder()
-	rb.SetServerAddress("localhost")
-	rb.SetServerPort(27017)
-	rb.SetServiceInstanceID(generateInstanceID("localhost", 27017))
+	setResourceAttributes(rb, "localhost", 27017)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 
 	logs := s.lb.Emit()
@@ -543,9 +541,7 @@ func TestProcessTopQueryEntries_EmitsCommentAndTruncated(t *testing.T) {
 	s.processTopQueryEntries(t.Context(), entries, pcommon.NewTimestampFromTime(time.Now()), defaultMaxExplainEachInterval)
 
 	rb := s.lb.NewResourceBuilder()
-	rb.SetServerAddress("localhost")
-	rb.SetServerPort(27017)
-	rb.SetServiceInstanceID(generateInstanceID("localhost", 27017))
+	setResourceAttributes(rb, "localhost", 27017)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 
 	logs := s.lb.Emit()
@@ -581,9 +577,7 @@ func TestProcessTopQueryEntries_EmitsCursorAndOriginatingCommand(t *testing.T) {
 	s.processTopQueryEntries(t.Context(), entries, pcommon.NewTimestampFromTime(time.Now()), defaultMaxExplainEachInterval)
 
 	rb := s.lb.NewResourceBuilder()
-	rb.SetServerAddress("localhost")
-	rb.SetServerPort(27017)
-	rb.SetServiceInstanceID(generateInstanceID("localhost", 27017))
+	setResourceAttributes(rb, "localhost", 27017)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 
 	logs := s.lb.Emit()
@@ -701,6 +695,52 @@ func TestDoScrapeTopQueryLogs_SelfGateSkipsCollection(t *testing.T) {
 	fc.AssertNotCalled(t, "ServerStatus", mock.Anything, mock.Anything)
 	fc.AssertNotCalled(t, "ListDatabaseNames", mock.Anything, mock.Anything)
 	fc.AssertNotCalled(t, "GetLog", mock.Anything)
+}
+
+func TestScrapeTopQueryLogsResourceAttributes(t *testing.T) {
+	fc := &fakeClient{}
+	serverNow := time.Now().UTC()
+	fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{
+		"host":      "mongo-host:27017",
+		"localTime": bson.DateTime(serverNow.UnixMilli()),
+	}, nil)
+	fc.On("ListDatabaseNames", mock.Anything, bson.M{}, mock.Anything).Return([]string{"appdb"}, nil)
+	// profiler disabled — falls back to getLog
+	fc.On("RunCommand", mock.Anything, "appdb", bson.M{"profile": -1}).Return(bson.M{"was": int32(0)}, nil)
+	logEntry, _ := json.Marshal(map[string]any{
+		"t":   map[string]any{"$date": serverNow.Add(-3 * time.Second).Format(time.RFC3339Nano)},
+		"msg": "Slow query",
+		"attr": map[string]any{
+			"ns":             "appdb.col",
+			"type":           "command",
+			"durationMillis": float64(300),
+			"command":        map[string]any{"find": "col"},
+		},
+	})
+	fc.On("GetLog", mock.Anything).Return(bson.A{string(logEntry)}, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.TopQueryCollection.MaxExplainEachInterval = 0
+	cfg.LogsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.ServiceNamespace.Enabled = true
+
+	s := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+	s.client = fc
+
+	logs, err := s.scrapeTopQueryLogs(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+
+	attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+
+	svcName, ok := attrs.Get("service.name")
+	require.True(t, ok, "service.name resource attribute missing")
+	require.Equal(t, defaultServiceName, svcName.Str())
+
+	svcNS, ok := attrs.Get("service.namespace")
+	require.True(t, ok, "service.namespace resource attribute missing")
+	require.Empty(t, svcNS.Str())
 }
 
 // --- keysOf helper ---

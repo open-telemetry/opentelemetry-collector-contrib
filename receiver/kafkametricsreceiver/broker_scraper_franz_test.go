@@ -130,6 +130,7 @@ func TestBrokerScraperFranz_ScrapeMetricValues(t *testing.T) {
 		ClusterAlias:         "test-cluster",
 	}
 	cfg.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
 	cfg.Metrics.KafkaBrokerLogRetentionPeriod.Enabled = true
 
 	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
@@ -145,6 +146,11 @@ func TestBrokerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	val, ok := rm.Resource().Attributes().Get("kafka.cluster.alias")
 	require.True(t, ok)
 	require.Equal(t, "test-cluster", val.Str())
+
+	// cluster id (opt-in, enabled above) is discovered from cluster metadata ("kfake" by default)
+	idVal, ok := rm.Resource().Attributes().Get("kafka.cluster.id")
+	require.True(t, ok)
+	require.Equal(t, "kfake", idVal.Str())
 
 	ms := rm.ScopeMetrics().At(0).Metrics()
 	var sawBrokers, sawRetention bool
@@ -167,6 +173,32 @@ func TestBrokerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	}
 	require.True(t, sawBrokers, "kafka.brokers not emitted")
 	require.True(t, sawRetention, "kafka.broker.log_retention_period not emitted")
+}
+
+func TestBrokerScraperFranz_EmptyClusterID(t *testing.T) {
+	// An empty cluster_id in metadata must not yield an empty-string attribute, even when enabled.
+	_, clientCfg := kafkatest.NewCluster(t,
+		kfake.SeedTopics(1, "meta-topic"),
+		kfake.ClusterID(""),
+	)
+	cfg := Config{
+		ClientConfig:         clientCfg,
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+	}
+	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
+
+	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
+
+	md, err := s.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+
+	rm := md.ResourceMetrics().At(0)
+	_, ok := rm.Resource().Attributes().Get("kafka.cluster.id")
+	require.False(t, ok, "kafka.cluster.id must be omitted when the broker reports an empty cluster id")
 }
 
 func TestBrokerScraperFranz_ScrapePartialError_UnparseableRetention(t *testing.T) {

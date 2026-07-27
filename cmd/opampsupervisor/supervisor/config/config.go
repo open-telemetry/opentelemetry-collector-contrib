@@ -375,13 +375,13 @@ type Telemetry struct {
 }
 
 type HealthCheck struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 func (h HealthCheck) Port() int64 {
-	_, port, err := net.SplitHostPort(h.NetAddr.Endpoint)
+	_, port, err := net.SplitHostPort(h.ServerConfig.NetAddr.Endpoint)
 	if err != nil {
 		return 0
 	}

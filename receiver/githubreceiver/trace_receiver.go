@@ -42,12 +42,12 @@ func newTracesReceiver(
 	config *Config,
 	traceConsumer consumer.Traces,
 ) (*githubTracesReceiver, error) {
-	if config.WebHook.NetAddr.Endpoint == "" {
+	if config.WebHook.ServerConfig.NetAddr.Endpoint == "" {
 		return nil, errMissingEndpoint
 	}
 
 	transport := "http"
-	if config.WebHook.TLS.HasValue() {
+	if config.WebHook.ServerConfig.TLS.HasValue() {
 		transport = "https"
 	}
 
@@ -78,7 +78,7 @@ func newTracesReceiver(
 }
 
 func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host) error {
-	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.NetAddr.Endpoint, gtr.cfg.WebHook.Path)
+	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.ServerConfig.NetAddr.Endpoint, gtr.cfg.WebHook.Path)
 	gtr.logger.Info("Starting GitHub WebHook receiving server", zap.String("endpoint", endpoint))
 
 	// noop if not nil. if start has not been called before these values should be nil.
@@ -87,7 +87,7 @@ func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host)
 	}
 
 	// create listener from config
-	ln, err := gtr.cfg.WebHook.ToListener(ctx)
+	ln, err := gtr.cfg.WebHook.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host)
 	router.HandleFunc(gtr.cfg.WebHook.Path, gtr.handleReq)
 
 	// webhook server standup and configuration
-	gtr.server, err = gtr.cfg.WebHook.ToServer(ctx, host.GetExtensions(), gtr.settings.TelemetrySettings, router)
+	gtr.server, err = gtr.cfg.WebHook.ServerConfig.ToServer(ctx, host.GetExtensions(), gtr.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}

@@ -35,7 +35,7 @@ const (
 // TransportConfig extends configgrpc.ClientConfig with additional HTTP-specific settings
 type TransportConfig struct {
 	// Embed the gRPC configuration to ensure backward compatibility
-	configgrpc.ClientConfig `mapstructure:",squash"`
+	ClientConfig configgrpc.ClientConfig `mapstructure:",squash"`
 
 	// The following fields are only used when protocol is "http"
 	ProxyURL string        `mapstructure:"proxy_url,omitempty"` // Used only if protocol is http
@@ -47,7 +47,7 @@ type TransportConfig struct {
 }
 
 func (c *TransportConfig) ToHTTPClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	c.Headers.Set("Content-Type", "application/x-protobuf")
+	c.ClientConfig.Headers.Set("Content-Type", "application/x-protobuf")
 
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
@@ -55,12 +55,12 @@ func (c *TransportConfig) ToHTTPClient(ctx context.Context, host component.Host,
 	httpClientConfig.IdleConnTimeout = 0
 	httpClientConfig.ForceAttemptHTTP2 = false
 	httpClientConfig.ProxyURL = c.ProxyURL
-	httpClientConfig.TLS = c.TLS
-	httpClientConfig.ReadBufferSize = c.ReadBufferSize
-	httpClientConfig.WriteBufferSize = c.WriteBufferSize
+	httpClientConfig.TLS = c.ClientConfig.TLS
+	httpClientConfig.ReadBufferSize = c.ClientConfig.ReadBufferSize
+	httpClientConfig.WriteBufferSize = c.ClientConfig.WriteBufferSize
 	httpClientConfig.Timeout = c.Timeout
-	httpClientConfig.Headers = c.Headers
-	httpClientConfig.Compression = c.Compression
+	httpClientConfig.Headers = c.ClientConfig.Headers
+	httpClientConfig.Compression = c.ClientConfig.Compression
 	return httpClientConfig.ToClient(ctx, host.GetExtensions(), settings)
 }
 
@@ -138,43 +138,43 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	_ = setDomainGrpcSettings(c)
 	var err error
 
-	if !isEmpty(c.Domain) && isEmpty(c.Metrics.Endpoint) {
+	if !isEmpty(c.Domain) && isEmpty(c.Metrics.ClientConfig.Endpoint) {
 		c.Metrics, err = setMergedTransportConfigWithConf(conf, c, "metrics", &c.Metrics)
 		if err != nil {
 			return err
 		}
 	}
 
-	if isEmpty(c.Metrics.Endpoint) {
-		c.Metrics.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
+	if isEmpty(c.Metrics.ClientConfig.Endpoint) {
+		c.Metrics.ClientConfig.Endpoint = ensureHTTPScheme(c.DomainSettings.ClientConfig.Endpoint)
 	} else if c.Protocol == httpProtocol {
-		c.Metrics.Endpoint = ensureHTTPScheme(c.Metrics.Endpoint)
+		c.Metrics.ClientConfig.Endpoint = ensureHTTPScheme(c.Metrics.ClientConfig.Endpoint)
 	}
 
-	if !isEmpty(c.Domain) && isEmpty(c.Traces.Endpoint) {
+	if !isEmpty(c.Domain) && isEmpty(c.Traces.ClientConfig.Endpoint) {
 		c.Traces, err = setMergedTransportConfigWithConf(conf, c, "traces", &c.Traces)
 		if err != nil {
 			return err
 		}
 	}
 
-	if isEmpty(c.Traces.Endpoint) {
-		c.Traces.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
+	if isEmpty(c.Traces.ClientConfig.Endpoint) {
+		c.Traces.ClientConfig.Endpoint = ensureHTTPScheme(c.DomainSettings.ClientConfig.Endpoint)
 	} else if c.Protocol == httpProtocol {
-		c.Traces.Endpoint = ensureHTTPScheme(c.Traces.Endpoint)
+		c.Traces.ClientConfig.Endpoint = ensureHTTPScheme(c.Traces.ClientConfig.Endpoint)
 	}
 
-	if !isEmpty(c.Domain) && isEmpty(c.Logs.Endpoint) {
+	if !isEmpty(c.Domain) && isEmpty(c.Logs.ClientConfig.Endpoint) {
 		c.Logs, err = setMergedTransportConfigWithConf(conf, c, "logs", &c.Logs)
 		if err != nil {
 			return err
 		}
 	}
 
-	if isEmpty(c.Logs.Endpoint) {
-		c.Logs.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
+	if isEmpty(c.Logs.ClientConfig.Endpoint) {
+		c.Logs.ClientConfig.Endpoint = ensureHTTPScheme(c.DomainSettings.ClientConfig.Endpoint)
 	} else if c.Protocol == httpProtocol {
-		c.Logs.Endpoint = ensureHTTPScheme(c.Logs.Endpoint)
+		c.Logs.ClientConfig.Endpoint = ensureHTTPScheme(c.Logs.ClientConfig.Endpoint)
 	}
 
 	// Only auto-populate profiles endpoint if protocol is not HTTP (profiles only support gRPC)
@@ -188,8 +188,8 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 	// Only set profiles endpoint fallback if protocol is not HTTP and we have something to fallback to
 	// This avoid validation issues
-	if c.Protocol != httpProtocol && isEmpty(c.Profiles.Endpoint) && !isEmpty(c.DomainSettings.Endpoint) {
-		c.Profiles.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
+	if c.Protocol != httpProtocol && isEmpty(c.Profiles.Endpoint) && !isEmpty(c.DomainSettings.ClientConfig.Endpoint) {
+		c.Profiles.Endpoint = ensureHTTPScheme(c.DomainSettings.ClientConfig.Endpoint)
 	}
 	return nil
 }
@@ -214,9 +214,9 @@ func (c *Config) Validate() error {
 
 	// validate that at least one endpoint is set up correctly
 	if isEmpty(c.Domain) &&
-		isEmpty(c.Traces.Endpoint) &&
-		isEmpty(c.Metrics.Endpoint) &&
-		isEmpty(c.Logs.Endpoint) &&
+		isEmpty(c.Traces.ClientConfig.Endpoint) &&
+		isEmpty(c.Metrics.ClientConfig.Endpoint) &&
+		isEmpty(c.Logs.ClientConfig.Endpoint) &&
 		isEmpty(c.Profiles.Endpoint) {
 		return errors.New("`domain` or `traces.endpoint` or `metrics.endpoint` or `logs.endpoint` or `profiles.endpoint` not specified, please fix the configuration")
 	}
@@ -376,51 +376,51 @@ func setMergedTransportConfig(c *Config, merged *TransportConfig, signalSub *con
 	}
 
 	if signalSub != nil && signalSub.IsSet("compression") {
-		merged.Compression = signalConfig.Compression
+		merged.ClientConfig.Compression = signalConfig.ClientConfig.Compression
 	}
 	if signalSub != nil && signalSub.IsSet("accept_encoding") {
 		merged.AcceptEncoding = signalConfig.AcceptEncoding
 	}
-	if signalConfig.TLS.Insecure || signalConfig.TLS.InsecureSkipVerify || signalConfig.TLS.CAFile != "" {
-		merged.TLS = signalConfig.TLS
+	if signalConfig.ClientConfig.TLS.Insecure || signalConfig.ClientConfig.TLS.InsecureSkipVerify || signalConfig.ClientConfig.TLS.CAFile != "" {
+		merged.ClientConfig.TLS = signalConfig.ClientConfig.TLS
 	}
-	if len(signalConfig.Headers) > 0 {
+	if len(signalConfig.ClientConfig.Headers) > 0 {
 		// MapList.Set copies the backing array, so this does not mutate c.DomainSettings
-		for k, v := range signalConfig.Headers.Iter {
-			merged.Headers.Set(k, v)
+		for k, v := range signalConfig.ClientConfig.Headers.Iter {
+			merged.ClientConfig.Headers.Set(k, v)
 		}
 	}
-	if signalConfig.WriteBufferSize > 0 {
-		merged.WriteBufferSize = signalConfig.WriteBufferSize
+	if signalConfig.ClientConfig.WriteBufferSize > 0 {
+		merged.ClientConfig.WriteBufferSize = signalConfig.ClientConfig.WriteBufferSize
 	}
-	if signalConfig.ReadBufferSize > 0 {
-		merged.ReadBufferSize = signalConfig.ReadBufferSize
+	if signalConfig.ClientConfig.ReadBufferSize > 0 {
+		merged.ClientConfig.ReadBufferSize = signalConfig.ClientConfig.ReadBufferSize
 	}
-	if signalConfig.WaitForReady {
-		merged.WaitForReady = signalConfig.WaitForReady
+	if signalConfig.ClientConfig.WaitForReady {
+		merged.ClientConfig.WaitForReady = signalConfig.ClientConfig.WaitForReady
 	}
-	if signalConfig.BalancerName != "" {
-		merged.BalancerName = signalConfig.BalancerName
+	if signalConfig.ClientConfig.BalancerName != "" {
+		merged.ClientConfig.BalancerName = signalConfig.ClientConfig.BalancerName
 	}
-	if signalConfig.Keepalive.HasValue() {
-		merged.Keepalive = signalConfig.Keepalive
+	if signalConfig.ClientConfig.Keepalive.HasValue() {
+		merged.ClientConfig.Keepalive = signalConfig.ClientConfig.Keepalive
 	}
-	if signalConfig.Auth.HasValue() {
-		merged.Auth = signalConfig.Auth
+	if signalConfig.ClientConfig.Auth.HasValue() {
+		merged.ClientConfig.Auth = signalConfig.ClientConfig.Auth
 	}
 
-	if isEmpty(signalConfig.Endpoint) {
-		merged.Endpoint = setDomainGrpcSettings(c)
+	if isEmpty(signalConfig.ClientConfig.Endpoint) {
+		merged.ClientConfig.Endpoint = setDomainGrpcSettings(c)
 	} else {
-		merged.Endpoint = signalConfig.Endpoint
+		merged.ClientConfig.Endpoint = signalConfig.ClientConfig.Endpoint
 	}
 
 	return merged
 }
 
 func applyTransportDefaults(cfg *TransportConfig) {
-	if cfg.Compression == "" {
-		cfg.Compression = configcompression.TypeGzip
+	if cfg.ClientConfig.Compression == "" {
+		cfg.ClientConfig.Compression = configcompression.TypeGzip
 	}
 	if cfg.AcceptEncoding == "" {
 		cfg.AcceptEncoding = gzip.Name

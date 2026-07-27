@@ -180,7 +180,7 @@ func TestScrape(t *testing.T) {
 
 			ghs := newGitHubScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 			ghs.cfg.GitHubOrg = "open-telemetry"
-			ghs.cfg.Endpoint = server.URL
+			ghs.cfg.ClientConfig.Endpoint = server.URL
 
 			err := ghs.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
@@ -279,7 +279,7 @@ func TestScrapeCapturesTimestampPerRepository(t *testing.T) {
 	cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 	ghs := newGitHubScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	ghs.cfg.GitHubOrg = "open-telemetry"
-	ghs.cfg.Endpoint = server.URL
+	ghs.cfg.ClientConfig.Endpoint = server.URL
 
 	// Inject a monotonically increasing clock. Each call returns a timestamp
 	// one second later than the previous, so different RecordVcs* call sites

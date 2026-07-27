@@ -284,7 +284,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = configopaque.MapList{
+			cfg.ClientConfig.Headers = configopaque.MapList{
 				{Name: "foo", Value: "bah"},
 			}
 		})
@@ -307,7 +307,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = configopaque.MapList{
+			cfg.ClientConfig.Headers = configopaque.MapList{
 				{Name: "User-Agent", Value: "overridden"},
 			}
 		})
@@ -3222,7 +3222,7 @@ func TestExporterAuth(t *testing.T) {
 	done := make(chan struct{}, 1)
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
+		cfg.ClientConfig.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 	})
 	err := exporter.Start(t.Context(), &mockHost{
 		extensions: map[component.ID]component.Component{
@@ -3256,7 +3256,7 @@ func TestExporterBatcher(t *testing.T) {
 			MinSize:      8192,
 			MaxSize:      10000,
 		})
-		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
+		cfg.ClientConfig.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 		cfg.Retry.Enabled = false
 	})
 	err := exporter.Start(t.Context(), &mockHost{
@@ -3294,7 +3294,7 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 	})
 	configSetupFn := func(cfg *Config) {
 		cfg.MetadataKeys = slices.Collect(metadata.Keys())
-		cfg.Auth = configoptional.Some(configauth.Config{
+		cfg.ClientConfig.Auth = configoptional.Some(configauth.Config{
 			AuthenticatorID: testCtxKey,
 		})
 		// Configure sending queue with batching enabled. Batching configuration are

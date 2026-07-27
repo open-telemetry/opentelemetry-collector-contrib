@@ -9,5 +9,7 @@ import (
 
 // Config defines configuration for the InfluxDB receiver.
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
