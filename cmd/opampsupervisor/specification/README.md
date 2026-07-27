@@ -91,15 +91,13 @@ capabilities:
   accepts_opamp_connection_settings: # false if unspecified
 
   # The Supervisor can accept Collector executable package updates.
+  # Enables both the AcceptsPackages and ReportsPackageStatuses OpAMP
+  # capabilities.
   # NOTE: This capability is not yet fully implemented.
   accepts_packages: # false if unspecified
 
   # The Supervisor will report EffectiveConfig to the Server.
   reports_effective_config: # true if unspecified
-
-  # The Supervisor can report the status of Collector package updates.
-  # NOTE: This capability is not yet fully implemented.
-  reports_package_statuses: # false if unspecified
 
   # The Collector will report own metrics to the destination specified by
   # the Server.
@@ -636,8 +634,9 @@ included in AgentDescription is expected to change after the executable
 is updated).
 
 > **Note:** The collector executable update flow is not yet fully implemented.
-> The `accepts_packages` and `reports_package_statuses` capabilities are accepted
-> in configuration but are currently disabled at runtime. See
+> The `accepts_packages` capability (which enables both the AcceptsPackages and
+> ReportsPackageStatuses OpAMP capabilities) is accepted
+> in configuration but is currently disabled at runtime. See
 > [#47272](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272)
 > for implementation progress.
 
