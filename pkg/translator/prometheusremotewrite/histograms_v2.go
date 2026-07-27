@@ -23,10 +23,10 @@ func explicitToNHCBHistogramV2(pt pmetric.HistogramDataPoint) (writev2.Histogram
 	timestamp := convertTimeStamp(pt.Timestamp())
 
 	if pt.Flags().NoRecordedValue() {
-		// Emit a stale marker, mirroring the classic and exponential paths.
+		// Staleness is signaled by a stale-NaN Sum; Count is ignored.
+		// https://prometheus.io/docs/specs/native_histograms/#staleness-markers
 		return writev2.Histogram{
 			Schema:    histogram.CustomBucketsSchema,
-			Count:     &writev2.Histogram_CountInt{CountInt: value.StaleNaN},
 			Sum:       math.Float64frombits(value.StaleNaN),
 			Timestamp: timestamp,
 		}, nil

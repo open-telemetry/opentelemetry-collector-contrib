@@ -27,26 +27,29 @@ func explicitToNHCB(pt pmetric.HistogramDataPoint) (*histogram.Histogram, *histo
 	th := convertnhcb.NewTempHistogram()
 	bounds := pt.ExplicitBounds()
 	counts := pt.BucketCounts()
-	// OTLP buckets are non-cumulative; convertnhcb wants cumulative counts.
+	// OTLP buckets are non-cumulative and omit the implicit +Inf bound;
+	// convertnhcb wants cumulative counts up to and including +Inf.
 	var cumulative uint64
-	for i := 0; i < bounds.Len() && i < counts.Len(); i++ {
-		cumulative += counts.At(i)
-		if err := th.SetBucketCount(bounds.At(i), float64(cumulative)); err != nil {
+	for i := 0; i < bounds.Len()+1; i++ {
+		if i < counts.Len() { // Trailing empty buckets may be omitted.
+			cumulative += counts.At(i)
+		}
+		bound := math.Inf(1)
+		if i < bounds.Len() {
+			bound = bounds.At(i)
+		}
+		if bound == math.Inf(1) && pt.Count() > cumulative {
+			// Buckets under-report the total; the remainder lands in +Inf.
+			cumulative = pt.Count()
+		}
+		if err := th.SetBucketCount(bound, float64(cumulative)); err != nil {
 			return nil, nil, err
 		}
+		if bound == math.Inf(1) {
+			break // Reached +Inf, whether implicit or encoded in bounds.
+		}
 	}
-	// Reconcile the total with the buckets. Convert derives the +Inf bucket as
-	// total - last cumulative, so clamp up to the bucket sum to keep it non-negative
-	// (some sources report a Count below their buckets), but preserve a larger
-	// pt.Count() when the source reports more observations than its buckets account for.
-	total := cumulative
-	if counts.Len() > bounds.Len() { // +Inf overflow bucket
-		total += counts.At(counts.Len() - 1)
-	}
-	if pt.Count() > total {
-		total = pt.Count()
-	}
-	if err := th.SetCount(float64(total)); err != nil {
+	if err := th.SetCount(float64(cumulative)); err != nil {
 		return nil, nil, err
 	}
 	if pt.HasSum() {
@@ -62,10 +65,10 @@ func explicitToNHCBHistogram(pt pmetric.HistogramDataPoint) (prompb.Histogram, e
 	timestamp := convertTimeStamp(pt.Timestamp())
 
 	if pt.Flags().NoRecordedValue() {
-		// Emit a stale marker, mirroring the classic and exponential paths.
+		// Staleness is signaled by a stale-NaN Sum; Count is ignored.
+		// https://prometheus.io/docs/specs/native_histograms/#staleness-markers
 		return prompb.Histogram{
 			Schema:    histogram.CustomBucketsSchema,
-			Count:     &prompb.Histogram_CountInt{CountInt: value.StaleNaN},
 			Sum:       math.Float64frombits(value.StaleNaN),
 			Timestamp: timestamp,
 		}, nil

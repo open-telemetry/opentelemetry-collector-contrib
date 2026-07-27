@@ -139,7 +139,7 @@ func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.Histog
 
 		// Emit an NHCB series under the base name; with KeepClassicHistograms also keep the classic series.
 		// Create the series only on success, so a conversion error leaves no empty series.
-		if settings.ConvertHistogramsToNHCB {
+		if settings.ConvertExplicitHistogramsToNHCB {
 			if h, convErr := explicitToNHCBHistogramV2(pt); convErr != nil {
 				errs = multierr.Append(errs, convErr)
 			} else {

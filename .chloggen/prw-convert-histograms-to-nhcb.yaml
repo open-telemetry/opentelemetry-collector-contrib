@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/prometheus_remote_write
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `convert_histograms_to_nhcb` to convert explicit-bucket (classic) histograms into Native Histograms with Custom Buckets (NHCB) on export, with `keep_classic_histograms` to emit both representations during migration.
+note: Add `convert_explicit_histograms_to_nhcb` to convert explicit-bucket (classic) histograms into Native Histograms with Custom Buckets (NHCB) on export, with `keep_classic_histograms` to emit both representations during migration.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [33661]
@@ -16,7 +16,7 @@ issues: [33661]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  When `convert_histograms_to_nhcb` is set, each OTLP explicit-bucket histogram
+  When `convert_explicit_histograms_to_nhcb` is set, each OTLP explicit-bucket histogram
   is converted to a single NHCB series (schema -53) carrying the bounds as
   CustomValues, instead of the classic `_bucket`/`_sum`/`_count` fan-out. Setting
   `keep_classic_histograms: true` additionally emits the classic series so a

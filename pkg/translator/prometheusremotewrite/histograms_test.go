@@ -12,7 +12,6 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/model/histogram"
-	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"github.com/stretchr/testify/assert"
@@ -502,8 +501,8 @@ func TestExplicitToNHCBHistogram(t *testing.T) {
 			assert.Equal(t, convertTimeStamp(testHistTimestamp), h.Timestamp)
 
 			if tt.stale {
-				assert.Equal(t, value.StaleNaN, h.GetCountInt(), "stale marker count")
-				assert.True(t, math.IsNaN(h.Sum), "stale marker sum")
+				assert.True(t, math.IsNaN(h.Sum), "stale marker signaled by stale-NaN sum")
+				assert.Zero(t, h.GetCountInt(), "stale marker leaves count unset")
 				return
 			}
 

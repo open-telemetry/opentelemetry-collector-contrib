@@ -78,10 +78,10 @@ type Config struct {
 	// forwarded as HTTP request headers on every remote write call.
 	IncludeMetadataKeys []string `mapstructure:"include_metadata_keys"`
 
-	// ConvertHistogramsToNHCB converts explicit-bucket histograms to NHCB (schema -53) instead of classic series.
-	ConvertHistogramsToNHCB bool `mapstructure:"convert_histograms_to_nhcb"`
+	// ConvertExplicitHistogramsToNHCB converts explicit-bucket histograms to NHCB (schema -53) instead of classic series.
+	ConvertExplicitHistogramsToNHCB bool `mapstructure:"convert_explicit_histograms_to_nhcb"`
 
-	// KeepClassicHistograms also emits the classic series alongside NHCB; no effect unless convert_histograms_to_nhcb is set.
+	// KeepClassicHistograms also emits the classic series alongside NHCB; no effect unless convert_explicit_histograms_to_nhcb is set.
 	KeepClassicHistograms bool `mapstructure:"keep_classic_histograms"`
 }
 

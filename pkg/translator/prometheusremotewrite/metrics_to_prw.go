@@ -27,9 +27,9 @@ type Settings struct {
 	AddMetricSuffixes   bool
 	TranslationStrategy string
 	SendMetadata        bool
-	// ConvertHistogramsToNHCB converts explicit-bucket histograms to NHCB (schema -53) instead of classic series.
-	ConvertHistogramsToNHCB bool
-	// KeepClassicHistograms also emits the classic series alongside NHCB; no effect unless ConvertHistogramsToNHCB is set.
+	// ConvertExplicitHistogramsToNHCB converts explicit-bucket histograms to NHCB (schema -53) instead of classic series.
+	ConvertExplicitHistogramsToNHCB bool
+	// KeepClassicHistograms also emits the classic series alongside NHCB; no effect unless ConvertExplicitHistogramsToNHCB is set.
 	KeepClassicHistograms bool
 }
 

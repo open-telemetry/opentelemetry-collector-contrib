@@ -386,7 +386,7 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 		{
 			name:     "NHCB only",
 			metric:   newTestExplicitHistogram,
-			settings: Settings{ConvertHistogramsToNHCB: true},
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true},
 			check: func(t *testing.T, converter *prometheusConverterV2) {
 				require.Len(t, converter.unique, 1, "NHCB-only emits a single native series")
 				for _, series := range converter.unique {
@@ -400,7 +400,7 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 		{
 			name:     "NHCB with classic kept",
 			metric:   newTestExplicitHistogram,
-			settings: Settings{ConvertHistogramsToNHCB: true, KeepClassicHistograms: true},
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true, KeepClassicHistograms: true},
 			check: func(t *testing.T, converter *prometheusConverterV2) {
 				var nativeSeries, classicSamples int
 				for _, series := range converter.unique {
@@ -423,7 +423,7 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 				ex.SetDoubleValue(7)
 				return metric
 			},
-			settings: Settings{ConvertHistogramsToNHCB: true},
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true},
 			check: func(t *testing.T, converter *prometheusConverterV2) {
 				nativeTS := v2SeriesByName(t, converter, "test_hist")
 				require.NotNil(t, nativeTS)
@@ -450,7 +450,7 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 				metric.Histogram().DataPoints().At(0).ExplicitBounds().FromRaw([]float64{1, math.NaN(), 3})
 				return metric
 			},
-			settings: Settings{ConvertHistogramsToNHCB: true, KeepClassicHistograms: true},
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true, KeepClassicHistograms: true},
 			wantErr:  true,
 			check: func(t *testing.T, converter *prometheusConverterV2) {
 				if nativeTS := v2SeriesByName(t, converter, "test_hist"); nativeTS != nil {
