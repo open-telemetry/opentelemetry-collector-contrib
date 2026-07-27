@@ -22,13 +22,11 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                  metric.Meter
-	mu                                     sync.Mutex
-	registrations                          []metric.Registration
-	ExtensionPebbleTailStorageAppendErrors metric.Int64Counter
-	ExtensionPebbleTailStorageDeleteErrors metric.Int64Counter
-	ExtensionPebbleTailStorageReadErrors   metric.Int64Counter
-	ExtensionPebbleTailStorageTakeErrors   metric.Int64Counter
+	meter                                metric.Meter
+	mu                                   sync.Mutex
+	registrations                        []metric.Registration
+	ExtensionPebbleTailStorageOperations metric.Int64Counter
+	ExtensionPebbleTailStorageReadErrors metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -60,27 +58,15 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ExtensionPebbleTailStorageAppendErrors, err = builder.meter.Int64Counter(
-		"otelcol_extension_pebble_tail_storage_append_errors",
-		metric.WithDescription("Count of errors returned by the Pebble tail storage extension Append operation [Development]"),
-		metric.WithUnit("{errors}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ExtensionPebbleTailStorageDeleteErrors, err = builder.meter.Int64Counter(
-		"otelcol_extension_pebble_tail_storage_delete_errors",
-		metric.WithDescription("Count of errors returned by the Pebble tail storage extension Delete operation [Development]"),
-		metric.WithUnit("{errors}"),
+	builder.ExtensionPebbleTailStorageOperations, err = builder.meter.Int64Counter(
+		"otelcol_extension_pebble_tail_storage_operations",
+		metric.WithDescription("Count of Pebble tail storage operations by operation and outcome [Development]"),
+		metric.WithUnit("{operations}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExtensionPebbleTailStorageReadErrors, err = builder.meter.Int64Counter(
 		"otelcol_extension_pebble_tail_storage_read_errors",
 		metric.WithDescription("Count of Pebble tail storage read-path iterator creation, value read, payload decode, and iterator terminal errors [Development]"),
-		metric.WithUnit("{errors}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ExtensionPebbleTailStorageTakeErrors, err = builder.meter.Int64Counter(
-		"otelcol_extension_pebble_tail_storage_take_errors",
-		metric.WithDescription("Count of errors returned by the Pebble tail storage extension Take operation [Development]"),
 		metric.WithUnit("{errors}"),
 	)
 	errs = errors.Join(errs, err)

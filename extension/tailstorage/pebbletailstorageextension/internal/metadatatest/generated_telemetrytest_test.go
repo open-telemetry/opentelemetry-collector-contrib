@@ -19,20 +19,12 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.ExtensionPebbleTailStorageAppendErrors.Add(context.Background(), 1)
-	tb.ExtensionPebbleTailStorageDeleteErrors.Add(context.Background(), 1)
+	tb.ExtensionPebbleTailStorageOperations.Add(context.Background(), 1)
 	tb.ExtensionPebbleTailStorageReadErrors.Add(context.Background(), 1)
-	tb.ExtensionPebbleTailStorageTakeErrors.Add(context.Background(), 1)
-	AssertEqualExtensionPebbleTailStorageAppendErrors(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualExtensionPebbleTailStorageDeleteErrors(t, testTel,
+	AssertEqualExtensionPebbleTailStorageOperations(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExtensionPebbleTailStorageReadErrors(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualExtensionPebbleTailStorageTakeErrors(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 

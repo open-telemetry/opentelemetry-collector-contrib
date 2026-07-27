@@ -12,8 +12,22 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension/internal/metadata"
+)
+
+const (
+	attrOperation = "operation"
+	attrOutcome   = "outcome"
+
+	operationAppend = "append"
+	operationTake   = "take"
+	operationDelete = "delete"
+
+	outcomeSuccess = "success"
+	outcomeFailure = "failure"
 )
 
 type tailStorage interface {
@@ -66,24 +80,33 @@ func (e *pebbleTailStorageExtension) Shutdown(_ context.Context) error {
 
 func (e *pebbleTailStorageExtension) Append(traceID pcommon.TraceID, td ptrace.Traces) error {
 	err := e.storage.Append(traceID, td)
-	if err != nil {
-		e.telemetry.ExtensionPebbleTailStorageAppendErrors.Add(context.Background(), 1)
-	}
+	e.recordOperation(operationAppend, err)
 	return err
 }
 
 func (e *pebbleTailStorageExtension) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 	td, err := e.storage.Take(traceID)
-	if err != nil {
-		e.telemetry.ExtensionPebbleTailStorageTakeErrors.Add(context.Background(), 1)
-	}
+	e.recordOperation(operationTake, err)
 	return td, err
 }
 
 func (e *pebbleTailStorageExtension) Delete(traceID pcommon.TraceID) error {
 	err := e.storage.Delete(traceID)
-	if err != nil {
-		e.telemetry.ExtensionPebbleTailStorageDeleteErrors.Add(context.Background(), 1)
-	}
+	e.recordOperation(operationDelete, err)
 	return err
+}
+
+func (e *pebbleTailStorageExtension) recordOperation(operation string, err error) {
+	outcome := outcomeSuccess
+	if err != nil {
+		outcome = outcomeFailure
+	}
+	e.telemetry.ExtensionPebbleTailStorageOperations.Add(
+		context.Background(),
+		1,
+		metric.WithAttributes(
+			attribute.String(attrOperation, operation),
+			attribute.String(attrOutcome, outcome),
+		),
+	)
 }
