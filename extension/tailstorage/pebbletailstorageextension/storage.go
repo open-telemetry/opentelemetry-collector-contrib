@@ -42,7 +42,6 @@ type storage struct {
 	unmarshaler      ptrace.Unmarshaler
 	marshaler        ptrace.Marshaler
 
-	mu                   sync.Mutex
 	diskUsage            func() uint64
 	stopSizeMonitor      context.CancelFunc
 	sizeMonitorWaitGroup sync.WaitGroup
@@ -82,8 +81,9 @@ func newStorage(ctx context.Context, cfg *Config, logger *zap.Logger) (*storage,
 		s.updateDiskUsage()
 		monitorCtx, cancel := context.WithCancel(context.Background())
 		s.stopSizeMonitor = cancel
-		s.sizeMonitorWaitGroup.Add(1)
-		go s.monitorDiskUsage(monitorCtx)
+		s.sizeMonitorWaitGroup.Go(func() {
+			s.monitorDiskUsage(monitorCtx)
+		})
 	}
 
 	return s, nil
@@ -129,9 +129,6 @@ func (s *storage) Append(traceID pcommon.TraceID, td ptrace.Traces) error {
 		return err
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	if err := s.db.Set(key[:], data, pebble.NoSync); err != nil {
 		return fmt.Errorf("pebble Set error: %w", err)
 	}
@@ -139,9 +136,6 @@ func (s *storage) Append(traceID pcommon.TraceID, td ptrace.Traces) error {
 }
 
 func (s *storage) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	prefix := tracePrefix(traceID)
 	out := s.readByTracePrefix(prefix[:])
 	if out.ResourceSpans().Len() == 0 {
@@ -155,9 +149,6 @@ func (s *storage) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 }
 
 func (s *storage) Delete(traceID pcommon.TraceID) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	prefix := tracePrefix(traceID)
 	// Delete all entries for the trace in one range operation instead of
 	// iterating keys and deleting one-by-one.
@@ -229,8 +220,6 @@ func traceEntryKey(traceID pcommon.TraceID, seq uint64) (key [traceIDBytes + 1 +
 }
 
 func (s *storage) monitorDiskUsage(ctx context.Context) {
-	defer s.sizeMonitorWaitGroup.Done()
-
 	ticker := time.NewTicker(sizeCheckInterval)
 	defer ticker.Stop()
 
