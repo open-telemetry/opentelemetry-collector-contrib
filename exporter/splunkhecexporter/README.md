@@ -194,4 +194,3 @@ service:
 ```
 
 The receiving Splunk instance must have [AlwaysOn Profiling](https://docs.splunk.com/observability/en/apm/profiling/intro-profiling.html) enabled. Refer to the [Splunk Observability Cloud documentation](https://docs.splunk.com/observability/en/apm/profiling/profiling-configuration-reference.html) for details on configuring the profiling backend.
-

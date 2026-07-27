@@ -89,7 +89,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `cmd/opampsupervisor`: Add support for restoring the last working remote configuration when an incoming remote configuration fails to apply (#47192)
   This behavior is controlled under the configuration option `agent.automatic_config_rollback`.
   When an old remote configuration is restored, the agent will report an "applied" status again
-  for this configuraiton.
+  for this configuration.
   
 - `exporter/clickhouse`: Updates the metrics tables default schemas (#49438)
   Reduces Primary Key memory usage and colocates metrics by time more effectively
