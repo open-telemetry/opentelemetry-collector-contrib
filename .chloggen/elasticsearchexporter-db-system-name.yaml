@@ -4,8 +4,8 @@ note: Remove the deprecated `go.opentelemetry.io/otel/semconv/v1.26.0` import an
 issues: [49211]
 subtext: |
   The deprecated attributes `deployment.environment`, `db.system`, and
-  `exception.escaped` (removed from semconv after v1.26.0) are now matched by
-  their literal names, so existing ECS mappings are unchanged. The exporter also
+  `exception.escaped` (removed from semconv after v1.26.0) are now matched
+  via local constants, so existing ECS mappings are unchanged. The exporter also
   now maps `db.system.name` (the current semconv key) in addition to the
   deprecated `db.system` to `span.db.type` in ECS mode.
 change_logs: [user]

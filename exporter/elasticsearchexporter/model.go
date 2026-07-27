@@ -24,6 +24,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
+// Deprecated semantic convention attribute keys. These were removed from the
+// semconv Go module after v1.26.0 and are therefore no longer available as
+// constants in the imported v1.40.0 package. They are matched here as literals
+// to preserve backward compatibility with telemetry emitted by older
+// instrumentation; the conversion maps only read incoming attributes, so keeping
+// them has no effect on the attributes the exporter emits.
+const (
+	// deprecatedDeploymentEnvironmentKey was renamed to deployment.environment.name
+	// (conventions.DeploymentEnvironmentNameKey).
+	deprecatedDeploymentEnvironmentKey = "deployment.environment"
+	// deprecatedDBSystemKey was renamed to db.system.name
+	// (conventions.DBSystemNameKey).
+	deprecatedDBSystemKey = "db.system"
+	// deprecatedExceptionEscapedKey was removed from the semconv spec with no
+	// replacement.
+	deprecatedExceptionEscapedKey = "exception.escaped"
+)
+
 type conversionEntry struct {
 	to               string
 	preserveOriginal bool
@@ -53,7 +71,7 @@ func collectECSFields(maps ...map[string]conversionEntry) map[string]struct{} {
 // SemConv key as-is to become the ECS name.
 var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventions.ServiceInstanceIDKey):         {to: "service.node.name"},
-	"deployment.environment":                         {to: "service.environment"},
+	deprecatedDeploymentEnvironmentKey:               {to: "service.environment"},
 	string(conventions.DeploymentEnvironmentNameKey): {to: "service.environment"},
 	string(conventions.TelemetrySDKNameKey):          {skip: true},
 	string(conventions.TelemetrySDKLanguageKey):      {to: "service.language.name"},
@@ -100,12 +118,12 @@ var (
 		string(conventions.ExceptionMessageKey):     {to: "error.message"},
 		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
 		string(conventions.ExceptionTypeKey):        {to: "error.type"},
-		"exception.escaped":                         {to: "event.error.exception.handled"},
+		deprecatedExceptionEscapedKey:               {to: "event.error.exception.handled"},
 		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
 
 	spanAttrsConversionMap = map[string]conversionEntry{
-		"db.system":                                 {to: "span.db.type"},
+		deprecatedDBSystemKey:                       {to: "span.db.type"},
 		string(conventions.DBSystemNameKey):         {to: "span.db.type"},
 		string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
 		string(conventions.DBQueryTextKey):          {to: "span.db.statement"},
@@ -120,7 +138,7 @@ var (
 		string(conventions.ExceptionTypeKey):       {to: "error.exception.type"},
 		string(conventions.ExceptionMessageKey):    {to: "error.exception.message"},
 		string(conventions.ExceptionStacktraceKey): {to: "error.stack_trace"},
-		"exception.escaped":                        {skip: true}, // processor writes error.exception.handled
+		deprecatedExceptionEscapedKey:              {skip: true}, // processor writes error.exception.handled
 		elasticsearch.DataStreamType:               {skip: true}, // routing only, written by addDataStreamAttributes
 		elasticsearch.DataStreamDataset:            {skip: true},
 		elasticsearch.DataStreamNamespace:          {skip: true},
