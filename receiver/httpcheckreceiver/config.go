@@ -52,12 +52,12 @@ type validationConfig struct {
 
 // targetConfig defines configuration for individual HTTP checks.
 type targetConfig struct {
-	confighttp.ClientConfig `mapstructure:",squash"`
-	Method                  string             `mapstructure:"method"`
-	Endpoints               []string           `mapstructure:"endpoints"`         // Field for a list of endpoints
-	Body                    string             `mapstructure:"body"`              // Request body content
-	AutoContentType         bool               `mapstructure:"auto_content_type"` // Whether to automatically set Content-Type based on body
-	Validations             []validationConfig `mapstructure:"validations"`       // Response validation rules
+	ClientConfig    confighttp.ClientConfig `mapstructure:",squash"`
+	Method          string                  `mapstructure:"method"`
+	Endpoints       []string                `mapstructure:"endpoints"`         // Field for a list of endpoints
+	Body            string                  `mapstructure:"body"`              // Request body content
+	AutoContentType bool                    `mapstructure:"auto_content_type"` // Whether to automatically set Content-Type based on body
+	Validations     []validationConfig      `mapstructure:"validations"`       // Response validation rules
 }
 
 // Unmarshal seeds the embedded ClientConfig with the confighttp defaults before
@@ -69,9 +69,9 @@ func (cfg *targetConfig) Unmarshal(conf *confmap.Conf) error {
 	}
 	cfg.ClientConfig = confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	cfg.MaxIdleConns = 0
-	cfg.IdleConnTimeout = 0
-	cfg.ForceAttemptHTTP2 = false
+	cfg.ClientConfig.MaxIdleConns = 0
+	cfg.ClientConfig.IdleConnTimeout = 0
+	cfg.ClientConfig.ForceAttemptHTTP2 = false
 	return conf.Unmarshal(cfg)
 }
 
@@ -80,13 +80,13 @@ func (cfg *targetConfig) Validate() error {
 	var err error
 
 	// Ensure at least one of 'endpoint' or 'endpoints' is specified.
-	if cfg.Endpoint == "" && len(cfg.Endpoints) == 0 {
+	if cfg.ClientConfig.Endpoint == "" && len(cfg.Endpoints) == 0 {
 		err = multierr.Append(err, errMissingEndpoint)
 	}
 
 	// Validate the single endpoint in ClientConfig.
-	if cfg.Endpoint != "" {
-		if _, parseErr := url.ParseRequestURI(cfg.Endpoint); parseErr != nil {
+	if cfg.ClientConfig.Endpoint != "" {
+		if _, parseErr := url.ParseRequestURI(cfg.ClientConfig.Endpoint); parseErr != nil {
 			err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr))
 		}
 	}

@@ -80,7 +80,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	ext, err := createExtension(ctx, extensiontest.NewNopSettings(extensiontest.NopType), cfg)
