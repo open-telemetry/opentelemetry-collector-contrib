@@ -787,7 +787,7 @@ metrics:
     attributes: []
   sqlserver.disk.io:
     enabled: false
-    description: Cumulative bytes read from and written to files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
+    description: Cumulative bytes transferred to or from files backing SQL Server databases, per I/O direction. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
     stability: development
     unit: "By"
     sum:
@@ -798,9 +798,9 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
   sqlserver.disk.operations:
     enabled: false
-    description: Cumulative read and write operations on files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
+    description: Cumulative I/O operation count on files backing SQL Server databases, per I/O direction. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
     stability: development
-    unit: "{operations}"
+    unit: "{operation}"
     sum:
       monotonic: true
       aggregation_temporality: cumulative

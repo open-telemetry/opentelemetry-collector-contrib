@@ -3062,7 +3062,7 @@ type metricSqlserverDiskIo struct {
 // init fills sqlserver.disk.io metric with initial data.
 func (m *metricSqlserverDiskIo) init() {
 	m.data.SetName("sqlserver.disk.io")
-	m.data.SetDescription("Cumulative bytes read from and written to files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).")
+	m.data.SetDescription("Cumulative bytes transferred to or from files backing SQL Server databases, per I/O direction. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3156,8 +3156,8 @@ type metricSqlserverDiskOperations struct {
 // init fills sqlserver.disk.operations metric with initial data.
 func (m *metricSqlserverDiskOperations) init() {
 	m.data.SetName("sqlserver.disk.operations")
-	m.data.SetDescription("Cumulative read and write operations on files backing SQL Server databases. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).")
-	m.data.SetUnit("{operations}")
+	m.data.SetDescription("Cumulative I/O operation count on files backing SQL Server databases, per I/O direction. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).")
+	m.data.SetUnit("{operation}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
