@@ -168,8 +168,16 @@ func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context, startTime ti
 		}
 	}
 
-	// If the scrape window is within the last 3 hours, set RecentlyActive to reduce the number of metrics returned.
-	if startTime.After(time.Now().UTC().Add(-recentlyActiveThreshold)) {
+	// A configured recently_active value overrides the automatic decision; otherwise set
+	// RecentlyActive when the scrape window is within the last 3 hours to reduce the number
+	// of metrics returned.
+	var recentlyActive bool
+	if override := s.discovery.RecentlyActive.Get(); override != nil {
+		recentlyActive = *override
+	} else {
+		recentlyActive = startTime.After(time.Now().UTC().Add(-recentlyActiveThreshold))
+	}
+	if recentlyActive {
 		input.RecentlyActive = types.RecentlyActivePt3h
 	}
 

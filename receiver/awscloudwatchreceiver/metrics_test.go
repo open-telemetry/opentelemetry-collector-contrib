@@ -472,6 +472,58 @@ func TestListMetrics_RecentlyActiveUnsetWindowBeyondThreshold(t *testing.T) {
 	mc.AssertExpectations(t)
 }
 
+func TestListMetrics_RecentlyActiveOverrideForcesOn(t *testing.T) {
+	mc := &mockMetricsClient{}
+	// recently_active: true forces RecentlyActive=PT3H even when the scrape window is
+	// well beyond the automatic three-hour threshold.
+	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+		return p.RecentlyActive == types.RecentlyActivePt3h
+	}), mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("CPUUtilization")},
+			},
+			NextToken: nil,
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{Limit: 10, RecentlyActive: configoptional.Some(true)},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	_, err := scr.listMetrics(t.Context(), time.Now().UTC().Add(-4*time.Hour))
+	require.NoError(t, err)
+	mc.AssertExpectations(t)
+}
+
+func TestListMetrics_RecentlyActiveOverrideForcesOff(t *testing.T) {
+	mc := &mockMetricsClient{}
+	// recently_active: false disables the filter even when the scrape window is within
+	// the automatic three-hour threshold.
+	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+		return p.RecentlyActive == ""
+	}), mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("CPUUtilization")},
+			},
+			NextToken: nil,
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{Limit: 10, RecentlyActive: configoptional.Some(false)},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	_, err := scr.listMetrics(t.Context(), time.Now().UTC().Add(-30*time.Minute))
+	require.NoError(t, err)
+	mc.AssertExpectations(t)
+}
+
 func TestListMetrics_Paginated(t *testing.T) {
 	token := "next-page"
 	mc := &mockMetricsClient{}
