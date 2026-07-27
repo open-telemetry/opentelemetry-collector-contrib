@@ -90,7 +90,7 @@ func TestPortValidate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := NewFactory().CreateDefaultConfig().(*Config)
-			cfg.Endpoint = tc.endpoint
+			cfg.ClientConfig.Endpoint = tc.endpoint
 			_, port, err := parseResourceAttributes(tc.endpoint)
 
 			if tc.expectError {

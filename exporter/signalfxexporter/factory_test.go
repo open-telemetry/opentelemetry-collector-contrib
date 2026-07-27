@@ -570,6 +570,7 @@ func TestDefaultCPUTranslations(t *testing.T) {
 
 	cpuNumProcessors := m["cpu.num_processors"]
 	require.Len(t, cpuNumProcessors, 1)
+	require.Equal(t, 8, int(*cpuNumProcessors[0].Value.IntValue))
 
 	cpuIdle := m["cpu.idle"]
 	require.Len(t, cpuIdle, 1)
@@ -665,7 +666,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 54, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 46, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 	require.Empty(t, dps)
 }

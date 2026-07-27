@@ -146,6 +146,71 @@ func TestValidateConfig(t *testing.T) {
 			},
 		},
 		{
+			desc:   "HMAC missing secret",
+			expect: errHMACMissingSecret,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				HMACSignature: HMACSignature{
+					Header: "X-Hub-Signature-256",
+					Prefix: "sha256=",
+				},
+			},
+		},
+		{
+			desc:   "HMAC missing header",
+			expect: errHMACMissingHeader,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				HMACSignature: HMACSignature{
+					Secret: "mysecret",
+					Prefix: "sha256=",
+				},
+			},
+		},
+		{
+			desc:   "HMAC missing prefix",
+			expect: errHMACMissingPrefix,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				HMACSignature: HMACSignature{
+					Secret: "mysecret",
+					Header: "X-Hub-Signature-256",
+				},
+			},
+		},
+		{
+			desc:   "HMAC valid config",
+			expect: nil,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				HMACSignature: HMACSignature{
+					Secret: "mysecret",
+					Header: "X-Hub-Signature-256",
+					Prefix: "sha256=",
+				},
+			},
+		},
+		{
 			desc:   "Multiple invalid configs",
 			expect: errs,
 			conf: Config{
@@ -281,7 +346,7 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			err := test.conf.Validate()
 			require.NoError(t, err)
-			require.Equal(t, test.expected, test.conf.MaxRequestBodySize)
+			require.Equal(t, test.expected, test.conf.ServerConfig.MaxRequestBodySize)
 		})
 	}
 }

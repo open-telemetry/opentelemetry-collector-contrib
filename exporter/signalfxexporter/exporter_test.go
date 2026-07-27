@@ -209,7 +209,7 @@ func TestConsumeMetrics(t *testing.T) {
 				ClientConfig: clientConfig,
 			}
 
-			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ClientConfig.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, true)
@@ -565,9 +565,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
 			for k, v := range tt.additionalHeaders {
-				cfg.Headers.Set(k, configopaque.String(v))
+				cfg.ClientConfig.Headers.Set(k, configopaque.String(v))
 			}
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
@@ -687,9 +687,9 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
 			for k, v := range tt.additionalHeaders {
-				cfg.Headers.Set(k, configopaque.String(v))
+				cfg.ClientConfig.Headers.Set(k, configopaque.String(v))
 			}
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
@@ -789,7 +789,7 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
@@ -957,7 +957,7 @@ func TestConsumeEventData(t *testing.T) {
 				ClientConfig: clientConfig,
 			}
 
-			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ClientConfig.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			eventClient := &sfxEventClient{
@@ -1049,7 +1049,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
@@ -1653,7 +1653,7 @@ func TestTLSIngestConnection(t *testing.T) {
 	}
 }
 
-func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
+func TestDefaultSystemCPUTimeIncludedAndTranslated(t *testing.T) {
 	translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600, make(chan struct{}))
 	require.NoError(t, err)
 	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.", false, true)
@@ -1666,29 +1666,29 @@ func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 	m.SetName("system.cpu.time")
 	sum := m.SetEmptySum()
 	for _, state := range []string{"idle", "interrupt", "nice", "softirq", "steal", "system", "user", "wait"} {
-		for cpu := range 32 {
-			dp := sum.DataPoints().AppendEmpty()
-			dp.SetDoubleValue(0)
-			dp.Attributes().PutStr("cpu", fmt.Sprintf("%d", cpu))
-			dp.Attributes().PutStr("state", state)
-		}
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetDoubleValue(0)
+		dp.Attributes().PutStr("state", state)
 	}
+	cpuCount := sm.Metrics().AppendEmpty()
+	cpuCount.SetName("system.cpu.logical.count")
+	cpuCountSum := cpuCount.SetEmptySum()
+	cpuCountSum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	cpuCountSum.DataPoints().AppendEmpty().SetIntValue(32)
+
 	dps := converter.MetricsToSignalFxV2(md)
-	found := map[string]int64{}
+	found := map[string][]*sfxpb.DataPoint{}
 	for _, dp := range dps {
-		if dp.Metric == "cpu.num_processors" || dp.Metric == "cpu.idle" {
-			intVal := dp.Value.IntValue
-			require.NotNilf(t, intVal, "unexpected nil IntValue for %q", dp.Metric)
-			found[dp.Metric] = *intVal
-		} else {
-			// account for unexpected w/ test-failing placeholder
-			found[dp.Metric] = -1
-		}
+		found[dp.Metric] = append(found[dp.Metric], dp)
 	}
-	require.Equal(t, map[string]int64{
-		"cpu.num_processors": 32,
-		"cpu.idle":           0,
-	}, found)
+	require.Len(t, found, 4)
+	require.Len(t, found["system.cpu.time"], 8)
+	require.Len(t, found["cpu.idle"], 1)
+	require.Len(t, found["cpu.num_processors"], 1)
+	require.Len(t, found["system.cpu.logical.count"], 1)
+	require.Equal(t, int64(32), *found["cpu.num_processors"][0].Value.IntValue)
+	require.Equal(t, int64(0), *found["cpu.idle"][0].Value.IntValue)
+	require.Equal(t, int64(32), *found["system.cpu.logical.count"][0].Value.IntValue)
 }
 
 func TestTLSAPIConnection(t *testing.T) {
@@ -2045,7 +2045,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 				ClientConfig: clientConfig,
 			}
 
-			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ClientConfig.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, false)

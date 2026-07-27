@@ -280,10 +280,10 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 
 			// Give a chance for the server goroutine to run.
 			runtime.Gosched()
-			require.Eventuallyf(t, ensureServerRunning(tt.config.NetAddr.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
+			require.Eventuallyf(t, ensureServerRunning(tt.config.ServerConfig.NetAddr.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
 
 			client := &http.Client{}
-			url := "http://" + tt.config.NetAddr.Endpoint + tt.config.Path
+			url := "http://" + tt.config.ServerConfig.NetAddr.Endpoint + tt.config.Path
 
 			// Cast to PipelineWatcher for step functions
 			pw, ok := hcExt.(extensioncapabilities.PipelineWatcher)
