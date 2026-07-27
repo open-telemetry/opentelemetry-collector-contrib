@@ -18,8 +18,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -125,8 +127,9 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 	}
 }
 
-func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) {
+func tcpInputAttributesTest(input []byte, expected []string, stable bool) func(t *testing.T) {
 	return func(t *testing.T) {
+		setStableNetworkAttributesGate(t, stable)
 		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = ":0"
 		cfg.AddAttributes = true
@@ -160,20 +163,36 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		for _, expectedMessage := range expected {
 			select {
 			case entry := <-entryChan:
-				expectedAttributes := map[string]any{
-					"net.transport": "IP.TCP",
-				}
-				if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
-					ip := addr.IP.String()
-					expectedAttributes["net.host.ip"] = addr.IP.String()
-					expectedAttributes["net.host.port"] = strconv.FormatInt(int64(addr.Port), 10)
-					expectedAttributes["net.host.name"] = tcpInput.resolver.GetHostFromIP(ip)
-				}
-				if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
-					ip := addr.IP.String()
-					expectedAttributes["net.peer.ip"] = ip
-					expectedAttributes["net.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
-					expectedAttributes["net.peer.name"] = tcpInput.resolver.GetHostFromIP(ip)
+				expectedAttributes := map[string]any{}
+
+				if stable {
+					expectedAttributes["network.transport"] = "tcp"
+
+					if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
+						expectedAttributes["network.local.address"] = addr.IP.String()
+						expectedAttributes["network.local.port"] = strconv.FormatInt(int64(addr.Port), 10)
+					}
+
+					if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
+						expectedAttributes["network.peer.address"] = addr.IP.String()
+						expectedAttributes["network.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
+					}
+				} else {
+					expectedAttributes["net.transport"] = "IP.TCP"
+
+					if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
+						ip := addr.IP.String()
+						expectedAttributes["net.host.ip"] = ip
+						expectedAttributes["net.host.port"] = strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["net.host.name"] = tcpInput.resolver.GetHostFromIP(ip)
+					}
+
+					if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
+						ip := addr.IP.String()
+						expectedAttributes["net.peer.ip"] = ip
+						expectedAttributes["net.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["net.peer.name"] = tcpInput.resolver.GetHostFromIP(ip)
+					}
 				}
 				require.Equal(t, expectedMessage, entry.Body)
 				require.Equal(t, expectedAttributes, entry.Attributes)
@@ -189,6 +208,28 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 			return
 		}
 	}
+}
+
+func setStableNetworkAttributesGate(t *testing.T, enabled bool) {
+	prev := metadata.StanzaUseStableNetworkAttributesFeatureGate.IsEnabled()
+
+	require.NoError(
+		t,
+		featuregate.GlobalRegistry().Set(
+			metadata.StanzaUseStableNetworkAttributesFeatureGate.ID(),
+			enabled,
+		),
+	)
+
+	t.Cleanup(func() {
+		require.NoError(
+			t,
+			featuregate.GlobalRegistry().Set(
+				metadata.StanzaUseStableNetworkAttributesFeatureGate.ID(),
+				prev,
+			),
+		)
+	})
 }
 
 func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
@@ -366,8 +407,17 @@ func TestTCPInput(t *testing.T) {
 }
 
 func TestTCPInputAattributes(t *testing.T) {
-	t.Run("Simple", tcpInputAttributesTest([]byte("message\n"), []string{"message"}))
-	t.Run("CarriageReturn", tcpInputAttributesTest([]byte("message\r\n"), []string{"message"}))
+	t.Run("SimpleDeprecated",
+		tcpInputAttributesTest([]byte("message\n"), []string{"message"}, false))
+
+	t.Run("SimpleStable",
+		tcpInputAttributesTest([]byte("message\n"), []string{"message"}, true))
+
+	t.Run("CarriageReturnDeprecated",
+		tcpInputAttributesTest([]byte("message\r\n"), []string{"message"}, false))
+
+	t.Run("CarriageReturnStable",
+		tcpInputAttributesTest([]byte("message\r\n"), []string{"message"}, true))
 }
 
 func TestTLSTCPInput(t *testing.T) {

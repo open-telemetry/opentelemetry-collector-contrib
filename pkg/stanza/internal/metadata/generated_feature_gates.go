@@ -38,6 +38,14 @@ var StanzaSynchronousLogEmitterFeatureGate = featuregate.GlobalRegistry().MustRe
 	featuregate.WithRegisterFromVersion("v0.122.0"),
 )
 
+var StanzaUseStableNetworkAttributesFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"stanza.useStableNetworkAttributes",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the `tcp_input` and `udp_input` operators emit stable `network.*` semantic convention attributes instead of the deprecated `net.*` attributes when `add_attributes` is enabled."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49051"),
+	featuregate.WithRegisterFromVersion("v0.156.0"),
+)
+
 var StanzaWindowsEventDrivenScrapingFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"stanza.windows.eventDrivenScraping",
 	featuregate.StageAlpha,

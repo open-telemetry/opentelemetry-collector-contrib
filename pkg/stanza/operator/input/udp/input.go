@@ -12,10 +12,12 @@ import (
 	"strconv"
 	"sync"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -200,19 +202,47 @@ func (i *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, dec *enc
 	}
 
 	if i.addAttributes {
-		entry.AddAttribute("net.transport", "IP.UDP")
-		if addr, ok := i.connection.LocalAddr().(*net.UDPAddr); ok {
-			ip := addr.IP.String()
-			entry.AddAttribute("net.host.ip", addr.IP.String())
-			entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
-			entry.AddAttribute("net.host.name", i.resolver.GetHostFromIP(ip))
-		}
+		if metadata.StanzaUseStableNetworkAttributesFeatureGate.IsEnabled() {
+			entry.AddAttribute(string(semconv.NetworkTransportKey), "udp")
 
-		if addr, ok := remoteAddr.(*net.UDPAddr); ok {
-			ip := addr.IP.String()
-			entry.AddAttribute("net.peer.ip", ip)
-			entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
-			entry.AddAttribute("net.peer.name", i.resolver.GetHostFromIP(ip))
+			if addr, ok := i.connection.LocalAddr().(*net.UDPAddr); ok {
+				entry.AddAttribute(
+					string(semconv.NetworkLocalAddressKey),
+					addr.IP.String(),
+				)
+				entry.AddAttribute(
+					string(semconv.NetworkLocalPortKey),
+					strconv.Itoa(addr.Port),
+				)
+			}
+
+			if addr, ok := remoteAddr.(*net.UDPAddr); ok {
+				ip := addr.IP.String()
+				entry.AddAttribute(
+					string(semconv.NetworkPeerAddressKey),
+					ip,
+				)
+				entry.AddAttribute(
+					string(semconv.NetworkPeerPortKey),
+					strconv.Itoa(addr.Port),
+				)
+			}
+		} else {
+			entry.AddAttribute("net.transport", "IP.UDP")
+
+			if addr, ok := i.connection.LocalAddr().(*net.UDPAddr); ok {
+				ip := addr.IP.String()
+				entry.AddAttribute("net.host.ip", ip)
+				entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
+				entry.AddAttribute("net.host.name", i.resolver.GetHostFromIP(ip))
+			}
+
+			if addr, ok := remoteAddr.(*net.UDPAddr); ok {
+				ip := addr.IP.String()
+				entry.AddAttribute("net.peer.ip", ip)
+				entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+				entry.AddAttribute("net.peer.name", i.resolver.GetHostFromIP(ip))
+			}
 		}
 	}
 

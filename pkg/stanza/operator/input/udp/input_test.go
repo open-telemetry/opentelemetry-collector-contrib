@@ -15,8 +15,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -69,11 +71,13 @@ func udpInputTest(input []byte, expected []string, cfg *Config) func(t *testing.
 	}
 }
 
-func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) {
+func udpInputAttributesTest(input []byte, expected []string, stable bool) func(t *testing.T) {
 	return func(t *testing.T) {
 		cfg := NewConfigWithID("test_input")
 		cfg.ListenAddress = ":0"
 		cfg.AddAttributes = true
+
+		setStableNetworkAttributesGate(t, stable)
 
 		set := componenttest.NewNopTelemetrySettings()
 		op, err := cfg.Build(set)
@@ -106,22 +110,36 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		for _, expectedBody := range expected {
 			select {
 			case entry := <-entryChan:
-				expectedAttributes := map[string]any{
-					"net.transport": "IP.UDP",
-				}
-				// LocalAddr for udpInput.connection is a server address
-				if addr, ok := udpInput.connection.LocalAddr().(*net.UDPAddr); ok {
-					ip := addr.IP.String()
-					expectedAttributes["net.host.ip"] = addr.IP.String()
-					expectedAttributes["net.host.port"] = strconv.FormatInt(int64(addr.Port), 10)
-					expectedAttributes["net.host.name"] = udpInput.resolver.GetHostFromIP(ip)
-				}
-				// LocalAddr for conn is a client (peer) address
-				if addr, ok := conn.LocalAddr().(*net.UDPAddr); ok {
-					ip := addr.IP.String()
-					expectedAttributes["net.peer.ip"] = ip
-					expectedAttributes["net.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
-					expectedAttributes["net.peer.name"] = udpInput.resolver.GetHostFromIP(ip)
+				expectedAttributes := map[string]any{}
+
+				if stable {
+					expectedAttributes["network.transport"] = "udp"
+
+					if addr, ok := udpInput.connection.LocalAddr().(*net.UDPAddr); ok {
+						expectedAttributes["network.local.address"] = addr.IP.String()
+						expectedAttributes["network.local.port"] = strconv.FormatInt(int64(addr.Port), 10)
+					}
+
+					if addr, ok := conn.LocalAddr().(*net.UDPAddr); ok {
+						expectedAttributes["network.peer.address"] = addr.IP.String()
+						expectedAttributes["network.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
+					}
+				} else {
+					expectedAttributes["net.transport"] = "IP.UDP"
+
+					if addr, ok := udpInput.connection.LocalAddr().(*net.UDPAddr); ok {
+						ip := addr.IP.String()
+						expectedAttributes["net.host.ip"] = ip
+						expectedAttributes["net.host.port"] = strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["net.host.name"] = udpInput.resolver.GetHostFromIP(ip)
+					}
+
+					if addr, ok := conn.LocalAddr().(*net.UDPAddr); ok {
+						ip := addr.IP.String()
+						expectedAttributes["net.peer.ip"] = ip
+						expectedAttributes["net.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["net.peer.name"] = udpInput.resolver.GetHostFromIP(ip)
+					}
 				}
 				require.Equal(t, expectedBody, entry.Body)
 				require.Equal(t, expectedAttributes, entry.Attributes)
@@ -137,6 +155,28 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 			return
 		}
 	}
+}
+
+func setStableNetworkAttributesGate(t *testing.T, enabled bool) {
+	prev := metadata.StanzaUseStableNetworkAttributesFeatureGate.IsEnabled()
+
+	require.NoError(
+		t,
+		featuregate.GlobalRegistry().Set(
+			metadata.StanzaUseStableNetworkAttributesFeatureGate.ID(),
+			enabled,
+		),
+	)
+
+	t.Cleanup(func() {
+		require.NoError(
+			t,
+			featuregate.GlobalRegistry().Set(
+				metadata.StanzaUseStableNetworkAttributesFeatureGate.ID(),
+				prev,
+			),
+		)
+	})
 }
 
 func TestInput(t *testing.T) {
@@ -157,10 +197,31 @@ func TestInput(t *testing.T) {
 }
 
 func TestInputAttributes(t *testing.T) {
-	t.Run("Simple", udpInputAttributesTest([]byte("message1"), []string{"message1"}))
-	t.Run("TrailingNewlines", udpInputAttributesTest([]byte("message1\n"), []string{"message1"}))
-	t.Run("TrailingCRNewlines", udpInputAttributesTest([]byte("message1\r\n"), []string{"message1"}))
-	t.Run("NewlineInMessage", udpInputAttributesTest([]byte("message1\nmessage2\n"), []string{"message1\nmessage2"}))
+	tests := []struct {
+		name   string
+		input  []byte
+		output []string
+		stable bool
+	}{
+		{"SimpleLegacy", []byte("message1"), []string{"message1"}, false},
+		{"SimpleStable", []byte("message1"), []string{"message1"}, true},
+
+		{"TrailingNewlinesLegacy", []byte("message1\n"), []string{"message1"}, false},
+		{"TrailingNewlinesStable", []byte("message1\n"), []string{"message1"}, true},
+
+		{"TrailingCRNewlinesLegacy", []byte("message1\r\n"), []string{"message1"}, false},
+		{"TrailingCRNewlinesStable", []byte("message1\r\n"), []string{"message1"}, true},
+
+		{"NewlineInMessageLegacy", []byte("message1\nmessage2\n"), []string{"message1\nmessage2"}, false},
+		{"NewlineInMessageStable", []byte("message1\nmessage2\n"), []string{"message1\nmessage2"}, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.name,
+			udpInputAttributesTest(tt.input, tt.output, tt.stable),
+		)
+	}
 }
 
 func TestFailToBind(t *testing.T) {
