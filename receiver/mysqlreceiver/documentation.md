@@ -673,7 +673,7 @@ The number of hits, misses or overflows for open tables cache lookups.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | status | The status of cache access. | Str: ``hit``, ``miss``, ``overflow`` | Recommended | - |
 
-### mysql.threads.slow_launch
+### mysql.thread.slow_launch
 
 The number of threads that have taken more than slow_launch_time seconds to create.
 

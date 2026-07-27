@@ -1257,12 +1257,12 @@ var MetricsInfo = metricsInfo{
 		Name:       "mysql.table_open_cache",
 		Attributes: []string{"cache_status"},
 	},
+	MysqlThreadSlowLaunch: metricInfo{
+		Name: "mysql.thread.slow_launch",
+	},
 	MysqlThreads: metricInfo{
 		Name:       "mysql.threads",
 		Attributes: []string{"threads"},
-	},
-	MysqlThreadsSlowLaunch: metricInfo{
-		Name: "mysql.threads.slow_launch",
 	},
 	MysqlTmpResources: metricInfo{
 		Name:       "mysql.tmp_resources",
@@ -1320,8 +1320,8 @@ type metricsInfo struct {
 	MysqlTableRows               metricInfo
 	MysqlTableSize               metricInfo
 	MysqlTableOpenCache          metricInfo
+	MysqlThreadSlowLaunch        metricInfo
 	MysqlThreads                 metricInfo
-	MysqlThreadsSlowLaunch       metricInfo
 	MysqlTmpResources            metricInfo
 	MysqlUptime                  metricInfo
 }
@@ -5208,6 +5208,58 @@ func newMetricMysqlTableOpenCache(cfg MysqlTableOpenCacheMetricConfig) metricMys
 	return m
 }
 
+type metricMysqlThreadSlowLaunch struct {
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   MysqlThreadSlowLaunchMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
+}
+
+// init fills mysql.thread.slow_launch metric with initial data.
+func (m *metricMysqlThreadSlowLaunch) init() {
+	m.data.SetName("mysql.thread.slow_launch")
+	m.data.SetDescription("The number of threads that have taken more than slow_launch_time seconds to create.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlThreadSlowLaunch) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlThreadSlowLaunch) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlThreadSlowLaunch) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlThreadSlowLaunch(cfg MysqlThreadSlowLaunchMetricConfig) metricMysqlThreadSlowLaunch {
+	m := metricMysqlThreadSlowLaunch{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlThreads struct {
 	data          pmetric.Metric           // data buffer for generated metric.
 	config        MysqlThreadsMetricConfig // metric config provided by user.
@@ -5291,58 +5343,6 @@ func (m *metricMysqlThreads) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlThreads(cfg MysqlThreadsMetricConfig) metricMysqlThreads {
 	m := metricMysqlThreads{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricMysqlThreadsSlowLaunch struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   MysqlThreadsSlowLaunchMetricConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
-}
-
-// init fills mysql.threads.slow_launch metric with initial data.
-func (m *metricMysqlThreadsSlowLaunch) init() {
-	m.data.SetName("mysql.threads.slow_launch")
-	m.data.SetDescription("The number of threads that have taken more than slow_launch_time seconds to create.")
-	m.data.SetUnit("1")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricMysqlThreadsSlowLaunch) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMysqlThreadsSlowLaunch) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMysqlThreadsSlowLaunch) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricMysqlThreadsSlowLaunch(cfg MysqlThreadsSlowLaunchMetricConfig) metricMysqlThreadsSlowLaunch {
-	m := metricMysqlThreadsSlowLaunch{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5550,8 +5550,8 @@ type MetricsBuilder struct {
 	metricMysqlTableRows               metricMysqlTableRows
 	metricMysqlTableSize               metricMysqlTableSize
 	metricMysqlTableOpenCache          metricMysqlTableOpenCache
+	metricMysqlThreadSlowLaunch        metricMysqlThreadSlowLaunch
 	metricMysqlThreads                 metricMysqlThreads
-	metricMysqlThreadsSlowLaunch       metricMysqlThreadsSlowLaunch
 	metricMysqlTmpResources            metricMysqlTmpResources
 	metricMysqlUptime                  metricMysqlUptime
 }
@@ -5625,8 +5625,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlTableRows:               newMetricMysqlTableRows(mbc.Metrics.MysqlTableRows),
 		metricMysqlTableSize:               newMetricMysqlTableSize(mbc.Metrics.MysqlTableSize),
 		metricMysqlTableOpenCache:          newMetricMysqlTableOpenCache(mbc.Metrics.MysqlTableOpenCache),
+		metricMysqlThreadSlowLaunch:        newMetricMysqlThreadSlowLaunch(mbc.Metrics.MysqlThreadSlowLaunch),
 		metricMysqlThreads:                 newMetricMysqlThreads(mbc.Metrics.MysqlThreads),
-		metricMysqlThreadsSlowLaunch:       newMetricMysqlThreadsSlowLaunch(mbc.Metrics.MysqlThreadsSlowLaunch),
 		metricMysqlTmpResources:            newMetricMysqlTmpResources(mbc.Metrics.MysqlTmpResources),
 		metricMysqlUptime:                  newMetricMysqlUptime(mbc.Metrics.MysqlUptime),
 		resourceAttributeIncludeFilter:     make(map[string]filter.Filter),
@@ -5783,8 +5783,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlTableRows.emit(ils.Metrics())
 	mb.metricMysqlTableSize.emit(ils.Metrics())
 	mb.metricMysqlTableOpenCache.emit(ils.Metrics())
+	mb.metricMysqlThreadSlowLaunch.emit(ils.Metrics())
 	mb.metricMysqlThreads.emit(ils.Metrics())
-	mb.metricMysqlThreadsSlowLaunch.emit(ils.Metrics())
 	mb.metricMysqlTmpResources.emit(ils.Metrics())
 	mb.metricMysqlUptime.emit(ils.Metrics())
 
@@ -6193,6 +6193,16 @@ func (mb *MetricsBuilder) RecordMysqlTableOpenCacheDataPoint(ts pcommon.Timestam
 	return nil
 }
 
+// RecordMysqlThreadSlowLaunchDataPoint adds a data point to mysql.thread.slow_launch metric.
+func (mb *MetricsBuilder) RecordMysqlThreadSlowLaunchDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlThreadSlowLaunch, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlThreadSlowLaunch.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordMysqlThreadsDataPoint adds a data point to mysql.threads metric.
 func (mb *MetricsBuilder) RecordMysqlThreadsDataPoint(ts pcommon.Timestamp, inputVal string, threadsAttributeValue AttributeThreads) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -6200,16 +6210,6 @@ func (mb *MetricsBuilder) RecordMysqlThreadsDataPoint(ts pcommon.Timestamp, inpu
 		return fmt.Errorf("failed to parse int64 for MysqlThreads, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlThreads.recordDataPoint(mb.startTime, ts, val, threadsAttributeValue.String())
-	return nil
-}
-
-// RecordMysqlThreadsSlowLaunchDataPoint adds a data point to mysql.threads.slow_launch metric.
-func (mb *MetricsBuilder) RecordMysqlThreadsSlowLaunchDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for MysqlThreadsSlowLaunch, value was %s: %w", inputVal, err)
-	}
-	mb.metricMysqlThreadsSlowLaunch.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

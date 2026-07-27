@@ -359,15 +359,15 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlTableOpenCacheDataPoint(ts, "3", AttributeCacheStatusMiss)
 			}
+
+			allMetricsCount++
+			mb.RecordMysqlThreadSlowLaunchDataPoint(ts, "1")
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlThreadsDataPoint(ts, "1", AttributeThreadsCached)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlThreadsDataPoint(ts, "3", AttributeThreadsConnected)
 			}
-
-			allMetricsCount++
-			mb.RecordMysqlThreadsSlowLaunchDataPoint(ts, "1")
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlTmpResourcesDataPoint(ts, "1", AttributeTmpResourceDiskTables)
@@ -2312,6 +2312,20 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("status")
 						assert.False(t, ok)
 					}
+				case "mysql.thread.slow_launch":
+					assert.False(t, validatedMetrics["mysql.thread.slow_launch"], "Found a duplicate in the metrics slice: mysql.thread.slow_launch")
+					validatedMetrics["mysql.thread.slow_launch"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of threads that have taken more than slow_launch_time seconds to create.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.threads":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.threads"], "Found a duplicate in the metrics slice: mysql.threads")
@@ -2356,20 +2370,6 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("kind")
 						assert.False(t, ok)
 					}
-				case "mysql.threads.slow_launch":
-					assert.False(t, validatedMetrics["mysql.threads.slow_launch"], "Found a duplicate in the metrics slice: mysql.threads.slow_launch")
-					validatedMetrics["mysql.threads.slow_launch"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "The number of threads that have taken more than slow_launch_time seconds to create.", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.tmp_resources":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.tmp_resources"], "Found a duplicate in the metrics slice: mysql.tmp_resources")

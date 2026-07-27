@@ -129,11 +129,11 @@ all_set:
     mysql.table_open_cache:
       enabled: true
       attributes: ["status"]
+    mysql.thread.slow_launch:
+      enabled: true
     mysql.threads:
       enabled: true
       attributes: ["kind"]
-    mysql.threads.slow_launch:
-      enabled: true
     mysql.tmp_resources:
       enabled: true
       attributes: ["resource"]
@@ -287,11 +287,11 @@ reaggregate_set:
     mysql.table_open_cache:
       enabled: true
       attributes: []
+    mysql.thread.slow_launch:
+      enabled: true
     mysql.threads:
       enabled: true
       attributes: []
-    mysql.threads.slow_launch:
-      enabled: true
     mysql.tmp_resources:
       enabled: true
       attributes: []
@@ -445,11 +445,11 @@ none_set:
     mysql.table_open_cache:
       enabled: false
       attributes: ["status"]
+    mysql.thread.slow_launch:
+      enabled: false
     mysql.threads:
       enabled: false
       attributes: ["kind"]
-    mysql.threads.slow_launch:
-      enabled: false
     mysql.tmp_resources:
       enabled: false
       attributes: ["resource"]

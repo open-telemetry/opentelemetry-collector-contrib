@@ -1965,6 +1965,26 @@ func (ms *MysqlTableOpenCacheMetricConfig) Validate() error {
 	return nil
 }
 
+// MysqlThreadSlowLaunchMetricConfig provides config for the mysql.thread.slow_launch metric.
+type MysqlThreadSlowLaunchMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlThreadSlowLaunchMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MysqlThreadsMetricAttributeKey specifies the key of an attribute for the mysql.threads metric.
 type MysqlThreadsMetricAttributeKey string
 
@@ -2010,26 +2030,6 @@ func (ms *MysqlThreadsMetricConfig) Validate() error {
 		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
-	return nil
-}
-
-// MysqlThreadsSlowLaunchMetricConfig provides config for the mysql.threads.slow_launch metric.
-type MysqlThreadsSlowLaunchMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *MysqlThreadsSlowLaunchMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -2149,8 +2149,8 @@ type MetricsConfig struct {
 	MysqlTableRows               MysqlTableRowsMetricConfig               `mapstructure:"mysql.table.rows"`
 	MysqlTableSize               MysqlTableSizeMetricConfig               `mapstructure:"mysql.table.size"`
 	MysqlTableOpenCache          MysqlTableOpenCacheMetricConfig          `mapstructure:"mysql.table_open_cache"`
+	MysqlThreadSlowLaunch        MysqlThreadSlowLaunchMetricConfig        `mapstructure:"mysql.thread.slow_launch"`
 	MysqlThreads                 MysqlThreadsMetricConfig                 `mapstructure:"mysql.threads"`
-	MysqlThreadsSlowLaunch       MysqlThreadsSlowLaunchMetricConfig       `mapstructure:"mysql.threads.slow_launch"`
 	MysqlTmpResources            MysqlTmpResourcesMetricConfig            `mapstructure:"mysql.tmp_resources"`
 	MysqlUptime                  MysqlUptimeMetricConfig                  `mapstructure:"mysql.uptime"`
 }
@@ -2367,13 +2367,13 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlTableOpenCacheMetricAttributeKey{MysqlTableOpenCacheMetricAttributeKeyCacheStatus},
 		},
+		MysqlThreadSlowLaunch: MysqlThreadSlowLaunchMetricConfig{
+			Enabled: false,
+		},
 		MysqlThreads: MysqlThreadsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlThreadsMetricAttributeKey{MysqlThreadsMetricAttributeKeyThreads},
-		},
-		MysqlThreadsSlowLaunch: MysqlThreadsSlowLaunchMetricConfig{
-			Enabled: false,
 		},
 		MysqlTmpResources: MysqlTmpResourcesMetricConfig{
 			Enabled:             true,

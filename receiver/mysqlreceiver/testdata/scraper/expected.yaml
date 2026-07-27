@@ -1730,6 +1730,16 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
+          - description: The number of threads that have taken more than slow_launch_time seconds to create.
+            name: mysql.thread.slow_launch
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "414"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
           - description: The state of MySQL threads.
             name: mysql.threads
             sum:
@@ -1763,16 +1773,6 @@ resourceMetrics:
                         stringValue: running
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: "1"
-          - description: The number of threads that have taken more than slow_launch_time seconds to create.
-            name: mysql.threads.slow_launch
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "414"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
             unit: "1"
           - description: The number of created temporary resources.
             name: mysql.tmp_resources

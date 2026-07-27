@@ -529,7 +529,7 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 
 		// slow launch threads
 		case "Slow_launch_threads":
-			addPartialIfError(errs, m.mb.RecordMysqlThreadsSlowLaunchDataPoint(now, v))
+			addPartialIfError(errs, m.mb.RecordMysqlThreadSlowLaunchDataPoint(now, v))
 
 		// threads
 		case "Threads_cached":
