@@ -28,7 +28,7 @@ import (
 
 func TestHandleWorkflowRunWithGoldenFile(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -58,7 +58,7 @@ func TestHandleWorkflowRunWithGoldenFile(t *testing.T) {
 
 func TestHandleWorkflowJobWithGoldenFile(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -88,7 +88,7 @@ func TestHandleWorkflowJobWithGoldenFile(t *testing.T) {
 
 func TestHandleWorkflowJobWithGoldenFileSkipped(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -734,7 +734,7 @@ func TestNewJobSpanID_Consistency(t *testing.T) {
 
 func TestHandleWorkflowRunWithSpanEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.NetAddr.Endpoint = "localhost:0"
+	config.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	config.WebHook.IncludeSpanEvents = true // Enable span events
 	consumer := consumertest.NewNop()
 
@@ -781,7 +781,7 @@ func TestHandleWorkflowRunWithSpanEvents(t *testing.T) {
 
 func TestHandleWorkflowJobWithSpanEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.NetAddr.Endpoint = "localhost:0"
+	config.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	config.WebHook.IncludeSpanEvents = true // Enable span events
 	consumer := consumertest.NewNop()
 
@@ -826,7 +826,7 @@ func TestHandleWorkflowJobWithSpanEvents(t *testing.T) {
 
 func TestHandleWorkflowRunWithoutSpanEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.NetAddr.Endpoint = "localhost:0"
+	config.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	// IncludeSpanEvents defaults to false
 	consumer := consumertest.NewNop()
 
@@ -861,7 +861,7 @@ func TestHandleWorkflowRunWithoutSpanEvents(t *testing.T) {
 
 func TestStepSpansHaveNoEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.NetAddr.Endpoint = "localhost:0"
+	config.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	config.WebHook.IncludeSpanEvents = true // Enable span events
 	consumer := consumertest.NewNop()
 
@@ -1164,7 +1164,7 @@ func TestHandleWorkflowJobWithGoldenFile_LegacyGate(t *testing.T) {
 	})
 
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -1206,7 +1206,7 @@ func TestHandleWorkflowJobWithGoldenFileSkipped_LegacyGate(t *testing.T) {
 	})
 
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -1258,7 +1258,7 @@ func TestHandleWorkflowJobWithGoldenFileSkipped_LegacyGate(t *testing.T) {
 // and does NOT error when the gate is disabled (legacy path ignores the ID).
 func TestHandleWorkflowJob_MissingCheckRunID(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
 	require.NoError(t, err)

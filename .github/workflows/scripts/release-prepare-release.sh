@@ -16,8 +16,22 @@ then
     exit 1
 fi
 
+if ! [[ ${CURRENT_STABLE} =~ $PATTERN ]]
+then
+    echo "CURRENT_STABLE should follow a semver format and not be led by a v"
+    exit 1
+fi
+
+if ! [[ ${CANDIDATE_STABLE} =~ $PATTERN ]]
+then
+    echo "CANDIDATE_STABLE should follow a semver format and not be led by a v"
+    exit 1
+fi
+
 # Expand CURRENT_BETA to escape . character by using [.]
 CURRENT_BETA_ESCAPED=${CURRENT_BETA//./[.]}
+# Expand CURRENT_STABLE to escape . character by using [.]
+CURRENT_STABLE_ESCAPED=${CURRENT_STABLE//./[.]}
 
 git config user.name otelbot
 git config user.email 197425009+otelbot@users.noreply.github.com
@@ -37,9 +51,10 @@ git add --all
 git commit -m "changelog update ${CANDIDATE_BETA}"
 
 sed -i.bak "s/${CURRENT_BETA_ESCAPED}/${CANDIDATE_BETA}/g" versions.yaml
+sed -i.bak "s/${CURRENT_STABLE_ESCAPED}/${CANDIDATE_STABLE}/g" versions.yaml
 find . -name "*.bak" -type f -delete
 git add versions.yaml
-git commit -m "update version.yaml ${CANDIDATE_BETA}"
+git commit -m "update version.yaml ${CANDIDATE_BETA} ${CANDIDATE_STABLE}"
 
 sed -i.bak "s/v${CURRENT_BETA_ESCAPED}/v${CANDIDATE_BETA}/g" ./cmd/oteltestbedcol/builder-config.yaml
 sed -i.bak "s/v${CURRENT_BETA_ESCAPED}/v${CANDIDATE_BETA}/g" ./cmd/otelcontribcol/builder-config.yaml
@@ -67,6 +82,7 @@ gh pr create --head "$(git branch --show-current)" --title "[chore] Prepare rele
 The following commands were run to prepare this release:
 - make chlog-update VERSION=v${CANDIDATE_BETA}
 - sed -i.bak s/${CURRENT_BETA_ESCAPED}/${CANDIDATE_BETA}/g versions.yaml
+- sed -i.bak s/${CURRENT_STABLE_ESCAPED}/${CANDIDATE_STABLE}/g versions.yaml
 - make multimod-prerelease
 - make multimod-sync
 "
