@@ -1337,22 +1337,12 @@ top query
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| host.name | The host name of SQL Server | Any Str | true | - | - |
-| server.address | Name of the database host. | Any Str | false | - | - |
-| server.port | Server port number. | Any Int | false | - | - |
+| host.name | The hostname of the machine running the collector. | Any Str | true | - | - |
+| server.address | The address of the SQL Server host. | Any Str | true | - | - |
+| server.port | The port of the SQL Server host. | Any Int | true | - | - |
 | service.instance.id | A unique identifier of the SQL Server instance in the format host:port. In Windows Performance Counter mode the host is derived from computer_name (falling back to the collector host when monitoring locally), with a default port of 1433. | Any Str | true | - | - |
 | service.name | Logical name of the service. When enabled, defaults to unknown_service:microsoft.sql_server. | Any Str | false | - | - |
 | service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |
 | sqlserver.computer.name | The name of the SQL Server instance being monitored. | Any Str | false | - | - |
 | sqlserver.database.name | The name of the SQL Server database. | Any Str | true | - | - |
 | sqlserver.instance.name | The name of the SQL Server instance being monitored. | Any Str | false | - | - |
-
-## Feature Gates
-
-This component has the following feature gates:
-
-| Feature Gate | Stage | Description | From Version | To Version | Reference |
-| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `receiver.sqlserver.RemoveServerResourceAttribute` | alpha | When enabled, the server.address and server.port resource attributes are removed from metrics. | v0.129.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40141) |
-
-For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

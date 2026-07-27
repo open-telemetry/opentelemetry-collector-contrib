@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -57,6 +58,7 @@ type sqlServerScraperHelper struct {
 	lastExecutionTimestamp time.Time
 	obfuscator             *obfuscator
 	serviceInstanceID      string
+	hostName               string
 }
 
 var (
@@ -80,6 +82,13 @@ func newSQLServerScraper(id component.ID,
 		serviceInstanceID = "unknown:1433"
 	}
 
+	// Resolve the hostname of the machine running the collector for the host.name resource attribute.
+	hostName, err := os.Hostname()
+	if err != nil {
+		params.Logger.Warn("Failed to resolve host.name", zap.Error(err))
+		hostName = ""
+	}
+
 	return &sqlServerScraperHelper{
 		id:                     id,
 		config:                 cfg,
@@ -94,6 +103,7 @@ func newSQLServerScraper(id component.ID,
 		lastExecutionTimestamp: time.Unix(0, 0),
 		obfuscator:             newObfuscator(),
 		serviceInstanceID:      serviceInstanceID,
+		hostName:               hostName,
 	}
 }
 
@@ -331,30 +341,25 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetSqlserverComputerName(row[computerNameKey])
 	rb.SetSqlserverInstanceName(row[instanceNameKey])
 
-	hostName := s.config.Server
 	serverAddress := s.config.Server
 	serverPort := int64(s.config.Port)
 
 	if s.config.DataSource != "" {
 		host, port, err := parseDataSource(s.config.DataSource)
 		if err != nil {
-			s.logger.Warn("Failed to parse datasource for host.name attribute, using fallback", zap.Error(err))
+			s.logger.Warn("Failed to parse datasource for server.address attribute, using fallback", zap.Error(err))
 		} else {
-			hostName = host
 			serverAddress = host
 			serverPort = int64(port)
 		}
 	}
 
-	rb.SetHostName(hostName)
+	rb.SetHostName(s.hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
-
-	if !metadata.ReceiverSqlserverRemoveServerResourceAttributeFeatureGate.IsEnabled() {
-		rb.SetServerAddress(serverAddress)
-		rb.SetServerPort(serverPort)
-	}
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
 
 	return rb
 }
