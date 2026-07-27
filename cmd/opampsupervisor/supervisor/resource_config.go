@@ -15,6 +15,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
+// newExperimentalSDK is xotelconf.NewSDK. Do not set OTEL_EXPERIMENTAL_CONFIG_FILE
+// on the Supervisor process: that env var supersedes WithOpenTelemetryConfiguration
+// and can override the Supervisor's configured resource detection. See README.md.
 var newExperimentalSDK = xotelconf.NewSDK
 
 func buildSupervisorResourceConfig(ctx context.Context, cfg *config.ResourceConfig) (*telemetryconfig.Resource, error) {
