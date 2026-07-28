@@ -6,7 +6,7 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| azure.resourcegroup.name | The azure.resourcegroup.name | Any Str | true | - | - |
+| azure.resource_group.name | The azure.resource_group.name | Any Str | true | - | - |
 | azure.vm.name | The azure.vm.name | Any Str | true | - | - |
 | azure.vm.scaleset.name | The azure.vm.scaleset.name | Any Str | true | - | - |
 | azure.vm.size | The azure.vm.size | Any Str | true | - | - |

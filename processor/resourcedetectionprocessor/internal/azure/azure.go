@@ -82,7 +82,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if compute.VMScaleSetName != "" {
 		d.rb.SetAzureVMScalesetName(compute.VMScaleSetName)
 	}
-	d.rb.SetAzureResourcegroupName(compute.ResourceGroupName)
+	d.rb.SetAzureResourceGroupName(compute.ResourceGroupName)
 	res := d.rb.Emit()
 
 	if len(d.tagKeyRegexes) != 0 {

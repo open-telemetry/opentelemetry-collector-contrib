@@ -13,7 +13,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
-			rb.SetAzureResourcegroupName("azure.resourcegroup.name-val")
+			rb.SetAzureResourceGroupName("azure.resource_group.name-val")
 			rb.SetAzureVMName("azure.vm.name-val")
 			rb.SetAzureVMScalesetName("azure.vm.scaleset.name-val")
 			rb.SetAzureVMSize("azure.vm.size-val")
@@ -39,10 +39,10 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-			azureResourcegroupNameAttrVal, ok := res.Attributes().Get("azure.resourcegroup.name")
+			azureResourceGroupNameAttrVal, ok := res.Attributes().Get("azure.resource_group.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "azure.resourcegroup.name-val", azureResourcegroupNameAttrVal.Str())
+				assert.Equal(t, "azure.resource_group.name-val", azureResourceGroupNameAttrVal.Str())
 			}
 			azureVMNameAttrVal, ok := res.Attributes().Get("azure.vm.name")
 			assert.True(t, ok)

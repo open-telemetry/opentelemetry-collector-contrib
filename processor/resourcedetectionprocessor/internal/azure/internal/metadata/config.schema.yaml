@@ -4,8 +4,8 @@ $defs:
     description: ResourceAttributesConfig provides config for azuredetector resource attributes.
     type: object
     properties:
-      azure.resourcegroup.name:
-        description: ResourceAttributeConfig provides common config for a azure.resourcegroup.name resource attribute.
+      azure.resource_group.name:
+        description: ResourceAttributeConfig provides common config for a azure.resource_group.name resource attribute.
         type: object
         properties:
           enabled:

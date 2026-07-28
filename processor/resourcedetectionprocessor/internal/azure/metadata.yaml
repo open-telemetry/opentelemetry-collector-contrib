@@ -9,8 +9,8 @@ status:
     active: [Aneurysm9, dashpole, paulojmdias]
 
 resource_attributes:
-  azure.resourcegroup.name:
-    description: The azure.resourcegroup.name
+  azure.resource_group.name:
+    description: The azure.resource_group.name
     enabled: true
     type: string
   azure.vm.name:
