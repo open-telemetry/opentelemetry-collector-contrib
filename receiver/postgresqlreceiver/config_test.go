@@ -79,9 +79,9 @@ func TestValidate(t *testing.T) {
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
 				cfg.Password = "otel"
-				cfg.ServerName = "notlocalhost"
-				cfg.MinVersion = "1.0"
-				cfg.MaxVersion = "1.0"
+				cfg.ClientConfig.ServerName = "notlocalhost"
+				cfg.ClientConfig.MinVersion = "1.0"
+				cfg.ClientConfig.MaxVersion = "1.0"
 			},
 			expected: []error{
 				fmt.Errorf(ErrNotSupported, "ServerName"),

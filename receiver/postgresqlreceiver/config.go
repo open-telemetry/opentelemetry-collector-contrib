@@ -46,12 +46,12 @@ type QuerySampleCollection struct {
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Username                       string                         `mapstructure:"username"`
-	Password                       configopaque.String            `mapstructure:"password"`
-	Databases                      []string                       `mapstructure:"databases"`
-	ExcludeDatabases               []string                       `mapstructure:"exclude_databases"`
-	confignet.AddrConfig           `mapstructure:",squash"`       // provides Endpoint and Transport
-	configtls.ClientConfig         `mapstructure:"tls,omitempty"` // provides SSL details
+	Username                       string                   `mapstructure:"username"`
+	Password                       configopaque.String      `mapstructure:"password"`
+	Databases                      []string                 `mapstructure:"databases"`
+	ExcludeDatabases               []string                 `mapstructure:"exclude_databases"`
+	confignet.AddrConfig           `mapstructure:",squash"` // provides Endpoint and Transport
+	ClientConfig                   configtls.ClientConfig   `mapstructure:"tls,omitempty"` // provides SSL details
 	ConnectionPool                 `mapstructure:"connection_pool,omitempty"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	metadata.LogsBuilderConfig     `mapstructure:",squash"`
@@ -76,13 +76,13 @@ func (cfg *Config) Validate() error {
 	}
 
 	// The lib/pq module does not support overriding ServerName or specifying supported TLS versions
-	if cfg.ServerName != "" {
+	if cfg.ClientConfig.ServerName != "" {
 		err = multierr.Append(err, fmt.Errorf(ErrNotSupported, "ServerName"))
 	}
-	if cfg.MaxVersion != "" {
+	if cfg.ClientConfig.MaxVersion != "" {
 		err = multierr.Append(err, fmt.Errorf(ErrNotSupported, "MaxVersion"))
 	}
-	if cfg.MinVersion != "" {
+	if cfg.ClientConfig.MinVersion != "" {
 		err = multierr.Append(err, fmt.Errorf(ErrNotSupported, "MinVersion"))
 	}
 
