@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"go.opentelemetry.io/collector/component"
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -31,6 +32,14 @@ func (i *Input) Start(p operator.Persister) error {
 		return i.tcp.Start(p)
 	}
 	return i.udp.Start(p)
+}
+
+// SetHost forwards the component host to the underlying tcp input so it can
+// resolve extensions such as a configured server authenticator.
+func (i *Input) SetHost(host component.Host) {
+	if i.tcp != nil {
+		i.tcp.SetHost(host)
+	}
 }
 
 // Stop will stop listening for messages.

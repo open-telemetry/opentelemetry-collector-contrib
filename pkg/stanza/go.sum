@@ -90,10 +90,14 @@ github.com/valyala/fastjson v1.6.10 h1:/yjJg8jaVQdYR3arGxPE2X5z89xrlhS0eGXdv+ADT
 github.com/valyala/fastjson v1.6.10/go.mod h1:e6FubmQouUNP73jtMLmcbxS6ydWIpOfhz34TSfO3JaE=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
+go.opentelemetry.io/collector/client v1.63.1-0.20260723141305-52e6bf4aaaba h1:gyg49s0b1f7GDNTARZkav3uN7pOJWKCAxQXaxlANJvE=
+go.opentelemetry.io/collector/client v1.63.1-0.20260723141305-52e6bf4aaaba/go.mod h1:IDDEIMIX0AcOptjCsGh1lTs2inBK8+BWCnkiCaTsSHY=
 go.opentelemetry.io/collector/component v1.63.1-0.20260723141305-52e6bf4aaaba h1:l+3aSeQ8hwqMFBHEgdXKmy/E9Bqi7LucbN6oH6otOzo=
 go.opentelemetry.io/collector/component v1.63.1-0.20260723141305-52e6bf4aaaba/go.mod h1:yLGMmT7jUiqvuGvkqlfR1CBi0dRkSV67tq22I08ZMPk=
 go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260723141305-52e6bf4aaaba h1:W78DJ8YwHjuQylmfyRVC/ckIirc5Tw3WVQatrn2W3IY=
 go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260723141305-52e6bf4aaaba/go.mod h1:AUzvlwDat8AHaNRDm+dzQ59uaEXQO1qTWccjkRjqq00=
+go.opentelemetry.io/collector/config/configauth v1.63.1-0.20260723141305-52e6bf4aaaba h1:T9Fx16LXUv+WWcaFSpphIwhP+4lzrOEP4KB/g9ByUGw=
+go.opentelemetry.io/collector/config/configauth v1.63.1-0.20260723141305-52e6bf4aaaba/go.mod h1:BpYQiChCJi1Oe6if5fMv7LhoFUGpgnwCOvwXRU9AZ48=
 go.opentelemetry.io/collector/config/configopaque v1.63.1-0.20260723141305-52e6bf4aaaba h1:hyj+gZhABnGnhEwWVRWofEaarPcJSuZ57Jqm3G5+1nk=
 go.opentelemetry.io/collector/config/configopaque v1.63.1-0.20260723141305-52e6bf4aaaba/go.mod h1:GGIOZ5UUlO6+D81QD3DlH4QrjfEUb/wffq351dPtTa4=
 go.opentelemetry.io/collector/config/configtls v1.63.1-0.20260723141305-52e6bf4aaaba h1:/ibEuiAY6skwum/Nz3+pNY9vNXaORAqDTx+eetK29X0=
@@ -110,6 +114,10 @@ go.opentelemetry.io/collector/consumer/xconsumer v0.157.1-0.20260723141305-52e6b
 go.opentelemetry.io/collector/consumer/xconsumer v0.157.1-0.20260723141305-52e6bf4aaaba/go.mod h1:IepWZ5ZNBUuS5OiCPQaD/Q1buqriiItxaaMYD7nqYdc=
 go.opentelemetry.io/collector/extension v1.63.1-0.20260723141305-52e6bf4aaaba h1:8Wmi/FUX6WzWgdy87IiQ/8p4IMQR+b53kGPL7ka4wiI=
 go.opentelemetry.io/collector/extension v1.63.1-0.20260723141305-52e6bf4aaaba/go.mod h1:K4UQiO/T+B3ex5D5UL0H0Jd7xB3NL12qUHisGiCitbU=
+go.opentelemetry.io/collector/extension/extensionauth v1.63.1-0.20260723141305-52e6bf4aaaba h1:YfW4EW5bOSfVxTUHTdVGPjLyD7wPv/Nd5WFfubHTtcA=
+go.opentelemetry.io/collector/extension/extensionauth v1.63.1-0.20260723141305-52e6bf4aaaba/go.mod h1:LqLfW1MzqFYt/3bszEZ9+h+cuElUrgd7hBlLTbLs1s0=
+go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.157.0 h1:/vZvMCZ1XwKiz+Z2gzbsWGV7INN0p1e04/n59EZtsCU=
+go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.157.0/go.mod h1:O7EbSlnQyvRIe0/VU6Jvz6UPS/loBg7+SA8IVXGIaC4=
 go.opentelemetry.io/collector/extension/xextension v0.157.1-0.20260723141305-52e6bf4aaaba h1:AS4esXJ3JccUp2i74irS4CDUQEussyTahW//Ag7yP9c=
 go.opentelemetry.io/collector/extension/xextension v0.157.1-0.20260723141305-52e6bf4aaaba/go.mod h1:Gegyl4sliQC5IqZNvrO4+HBtkuprxcd17GzGPcLJX5g=
 go.opentelemetry.io/collector/featuregate v1.63.1-0.20260723141305-52e6bf4aaaba h1:oIWMekqjKYlk/vSW8vAPkbGs5wv21zyo3ScCAGsTSVM=
