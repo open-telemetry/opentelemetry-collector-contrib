@@ -125,13 +125,14 @@ func (c *Consumer) gatewayUsageGauge(timestamp uint64, hostname string, tags []s
 func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string, metadata metrics.Metadata) ([]datadogV2.MetricSeries, sketches.SketchSeriesList) {
 	series := c.ms
 	series = append(series, c.runningMetrics(timestamp, buildInfo, metadata)...)
-	if len(tags) > 0 {
-		for i := range series {
-			series[i].Tags = append(series[i].Tags, tags...)
-		}
-		for i := range c.sl {
-			c.sl[i].Tags = append(c.sl[i].Tags, tags...)
-		}
+	if len(tags) == 0 {
+		return series, c.sl
+	}
+	for i := range series {
+		series[i].Tags = append(series[i].Tags, tags...)
+	}
+	for i := range c.sl {
+		c.sl[i].Tags = append(c.sl[i].Tags, tags...)
 	}
 	return series, c.sl
 }
