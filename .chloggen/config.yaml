@@ -172,6 +172,7 @@ components:
     - pkg/stanza
     - pkg/stanza/operator/input/journald
     - pkg/status
+    - pkg/tcp_input
     - pkg/topic
     - pkg/translator/azure
     - pkg/translator/loki
