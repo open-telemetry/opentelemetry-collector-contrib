@@ -2130,7 +2130,13 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			},
 		})
 
-		assert.Equal(t, "test", s.effectiveConfig.Load())
+		assert.Equal(t, &protobufs.EffectiveConfig{
+			ConfigMap: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: []byte("test")},
+				},
+			},
+		}, s.effectiveConfig.Load())
 		assert.True(t, updatedClientEffectiveConfig)
 	})
 	t.Run("EffectiveConfig - Effective config from agent is stored in OpAmpClient; client returns error", func(t *testing.T) {
@@ -2172,7 +2178,13 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			},
 		})
 
-		assert.Equal(t, "test", s.effectiveConfig.Load())
+		assert.Equal(t, &protobufs.EffectiveConfig{
+			ConfigMap: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: []byte("test")},
+				},
+			},
+		}, s.effectiveConfig.Load())
 		assert.True(t, updatedClientEffectiveConfig)
 	})
 	t.Run("EffectiveConfig - Effective config message contains an empty config", func(t *testing.T) {
@@ -2210,8 +2222,12 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			},
 		})
 
-		assert.Empty(t, s.effectiveConfig.Load())
-		assert.False(t, updatedClientEffectiveConfig)
+		assert.Equal(t, &protobufs.EffectiveConfig{
+			ConfigMap: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{},
+			},
+		}, s.effectiveConfig.Load())
+		assert.True(t, updatedClientEffectiveConfig)
 	})
 
 	t.Run("ComponentHealth - Component health from agent is set in OpAmpClient", func(t *testing.T) {
@@ -2798,7 +2814,7 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 		}
 		got := s.createEffectiveConfigMsg()
 
-		assert.Empty(t, got.ConfigMap.ConfigMap[""].Body)
+		assert.Nil(t, got)
 	})
 	t.Run("effective and merged config set - prefer effective config", func(t *testing.T) {
 		s := Supervisor{
@@ -2807,7 +2823,13 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 			telemetrySettings: newNopTelemetrySettings(),
 		}
 
-		s.effectiveConfig.Store("effective")
+		s.effectiveConfig.Store(&protobufs.EffectiveConfig{
+			ConfigMap: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: []byte("effective")},
+				},
+			},
+		})
 		s.cfgState.Store("merged")
 
 		got := s.createEffectiveConfigMsg()
