@@ -54,6 +54,7 @@ internal/metadataproviders
 internal/datadog
 pkg/datadog
 receiver/datadogreceiver
+receiver/dnscheckreceiver
 receiver/jaegerreceiver
 receiver/signalfxreceiver
 pkg/translator/pprof
