@@ -1,7 +1,5 @@
 change_type: bug_fix
-component: cmd/opampsupervisor
-note: "Fix the OpAMP supervisor so that the full effective config map (all named config files) is forwarded to the OpAMP server instead of only the empty-string (\"\") key"
-issues:
-  - 49902
-change_logs:
-  - user
+component: extension/text_encoding
+note: Fix a bug in the text encoding extension where logs were silently truncated if the input had more than 1000 records.
+issues: [49818]
+change_logs: [user]

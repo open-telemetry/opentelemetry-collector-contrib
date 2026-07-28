@@ -896,13 +896,18 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 	}
 
 	if message.EffectiveConfig != nil {
-		span.AddEvent("Received effectiveConfig")
-		s.telemetrySettings.Logger.Debug("Received effective config from agent")
-		s.effectiveConfig.Store(message.EffectiveConfig)
-		err := s.opampClient.UpdateEffectiveConfig(ctx)
-		if err != nil {
-			span.SetStatus(codes.Error, fmt.Sprintf("Could not update effective config: %s", err.Error()))
-			s.telemetrySettings.Logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
+		configMap := message.EffectiveConfig.GetConfigMap()
+		if configMap == nil || len(configMap.GetConfigMap()) == 0 {
+			s.telemetrySettings.Logger.Debug("Received effective config with empty config map, skipping")
+		} else {
+			span.AddEvent("Received effectiveConfig")
+			s.telemetrySettings.Logger.Debug("Received effective config from agent")
+			s.effectiveConfig.Store(message.EffectiveConfig)
+			err := s.opampClient.UpdateEffectiveConfig(ctx)
+			if err != nil {
+				span.SetStatus(codes.Error, fmt.Sprintf("Could not update effective config: %s", err.Error()))
+				s.telemetrySettings.Logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
+			}
 		}
 	}
 
