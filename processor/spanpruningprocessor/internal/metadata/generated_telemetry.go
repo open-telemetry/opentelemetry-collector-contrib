@@ -42,6 +42,7 @@ type TelemetryBuilder struct {
 	ProcessorSpanpruningSpansPruned                  metric.Int64Counter
 	ProcessorSpanpruningSpansReceived                metric.Int64Counter
 	ProcessorSpanpruningTracesProcessed              metric.Int64Counter
+	ProcessorSpanpruningTracesSkipped                metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -176,6 +177,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorSpanpruningTracesProcessed, err = builder.meter.Int64Counter(
 		"otelcol_processor_spanpruning_traces_processed",
 		metric.WithDescription("Total traces processed [Development]"),
+		metric.WithUnit("{traces}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningTracesSkipped, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_traces_skipped",
+		metric.WithDescription("Total traces skipped due to conditions not matching [Development]"),
 		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
