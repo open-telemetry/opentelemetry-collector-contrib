@@ -205,7 +205,7 @@ The list of the populated resource attributes can be found at [GCP Detector Reso
     * cloud.provider ("gcp")
     * cloud.platform ("gcp_kubernetes_engine")
     * cloud.account.id (project id)
-    * cloud.region (only for regional GKE clusters; e.g. "us-central1")
+    * cloud.region (e.g. "us-central1")
     * cloud.availability_zone (only for zonal GKE clusters; e.g. "us-central1-c")
     * k8s.cluster.name
     * host.id (instance id)

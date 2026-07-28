@@ -99,12 +99,12 @@ var (
 
 // newReceiver creates the Splunk HEC receiver with the given configuration.
 func newReceiver(settings receiver.Settings, config Config) (*splunkReceiver, error) {
-	if config.NetAddr.Endpoint == "" {
+	if config.ServerConfig.NetAddr.Endpoint == "" {
 		return nil, errEmptyEndpoint
 	}
 
 	transport := "http"
-	if config.TLS.HasValue() {
+	if config.ServerConfig.TLS.HasValue() {
 		transport = "https"
 	}
 
@@ -153,12 +153,12 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 	mx.NewRoute().HandlerFunc(r.handleReq)
 	// set up the listener
-	ln, err := r.config.ToListener(ctx)
+	ln, err := r.config.ServerConfig.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", r.config.NetAddr.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", r.config.ServerConfig.NetAddr.Endpoint, err)
 	}
 
-	r.server, err = r.config.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, mx)
+	r.server, err = r.config.ServerConfig.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, mx)
 	if err != nil {
 		return err
 	}

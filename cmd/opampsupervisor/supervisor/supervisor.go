@@ -371,12 +371,12 @@ func (s *Supervisor) Start(ctx context.Context) error {
 		return err
 	}
 
-	if s.config.Capabilities.AcceptsPackages || s.config.Capabilities.ReportsPackageStatuses {
+	if s.config.Capabilities.AcceptsPackages {
 		s.telemetrySettings.Logger.Error(
-			"accepts_packages and reports_package_statuses capabilities are not yet fully implemented. " +
+			"accepts_packages capability is not yet fully implemented. " +
 				"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272 for progress.",
 		)
-		return errors.New("accepts_packages and reports_package_statuses capabilities are not yet fully implemented")
+		return errors.New("accepts_packages capability is not yet fully implemented")
 	}
 
 	if err = s.getFeatureGates(); err != nil {
@@ -803,7 +803,7 @@ func (s *Supervisor) startHealthCheckServer() error {
 	})
 
 	healthCheckServerPort := s.config.HealthCheck.Port()
-	server, err := s.config.HealthCheck.ToServer(
+	server, err := s.config.HealthCheck.ServerConfig.ToServer(
 		s.runCtx,
 		nil,
 		s.telemetrySettings.TelemetrySettings,
@@ -814,7 +814,7 @@ func (s *Supervisor) startHealthCheckServer() error {
 	}
 	s.healthCheckServer = server
 
-	listener, err := s.config.HealthCheck.ToListener(s.runCtx)
+	listener, err := s.config.HealthCheck.ServerConfig.ToListener(s.runCtx)
 	if err != nil {
 		return fmt.Errorf("failed to listen on port %d: %w", healthCheckServerPort, err)
 	}

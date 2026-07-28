@@ -50,7 +50,7 @@ type Config struct {
 	DetectorConfig DetectorConfig `mapstructure:",squash"`
 	// HTTP client settings for the detector
 	// Timeout default is 5s
-	confighttp.ClientConfig `mapstructure:",squash"`
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
 	// If > 0, periodically re-run detection for all configured detectors.
 	// When 0 (default), no periodic refresh occurs.
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`

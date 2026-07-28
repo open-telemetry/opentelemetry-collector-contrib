@@ -238,7 +238,7 @@ func (f *factory) getResourceDetectionProcessor(
 
 	// The deprecated per-detector fail_on_missing_metadata fields are OR'd with this
 	// top-level flag inside each affected detector, preserving per-detector scope.
-	provider, err := f.getResourceProvider(params, oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.FailOnMissingMetadata)
+	provider, err := f.getResourceProvider(params, oCfg.ClientConfig.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.FailOnMissingMetadata)
 	if err != nil {
 		return nil, err
 	}
