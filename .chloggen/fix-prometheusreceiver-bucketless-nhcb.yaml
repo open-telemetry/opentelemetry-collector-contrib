@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: receiver/prometheus
+
+note: Prevent the Prometheus receiver from dropping bucketless classic histograms when `convert_classic_histograms_to_nhcb` is enabled.
+
+issues: [22070]
+
+change_logs: [user]

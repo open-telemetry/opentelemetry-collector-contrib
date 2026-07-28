@@ -113,16 +113,10 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	if mg.isNHCB {
 		switch {
 		case mg.hValue != nil:
-			if len(mg.hValue.CustomValues) == 0 {
-				return
-			}
 			bounds = make([]float64, len(mg.hValue.CustomValues))
 			copy(bounds, mg.hValue.CustomValues)
 			bucketCounts = convertNHCBBDeltBuckets(mg.hValue)
 		case mg.fhValue != nil:
-			if len(mg.fhValue.CustomValues) == 0 {
-				return
-			}
 			bounds = make([]float64, len(mg.fhValue.CustomValues))
 			copy(bounds, mg.fhValue.CustomValues)
 			bucketCounts = convertNHCBAbsoluteBuckets(mg.fhValue)

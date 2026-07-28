@@ -1471,6 +1471,54 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 	testComponent(t, targets, nil)
 }
 
+func TestBucketlessHistogramNHCBConversion(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "bucketless-histogram",
+			pages: []mockPrometheusResponse{
+				{
+					code: 200,
+					data: `
+# HELP demo_seconds A histogram without explicit buckets.
+# TYPE demo_seconds histogram
+demo_seconds_sum 123.5
+demo_seconds_count 42
+`,
+				},
+			},
+			validateFunc: func(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
+				verifyNumValidScrapeResults(t, td, resourceMetrics)
+				require.NotEmpty(t, resourceMetrics)
+
+				doCompare(t, "scrape1", td.attributes, resourceMetrics[0], []metricExpectation{
+					{
+						"demo_seconds",
+						pmetric.MetricTypeHistogram,
+						"",
+						[]dataPointExpectation{
+							{
+								histogramPointComparator: []histogramPointComparator{
+									compareHistogram(42, 123.5, nil, []uint64{42}),
+								},
+							},
+						},
+						nil,
+					},
+				})
+			},
+		},
+	}
+
+	testComponent(t, targets, nil, func(cfg *PromConfig) {
+		enabled := true
+		disabled := false
+		for _, scrapeConfig := range cfg.ScrapeConfigs {
+			scrapeConfig.ConvertClassicHistogramsToNHCB = &enabled
+			scrapeConfig.AlwaysScrapeClassicHistograms = &disabled
+		}
+	})
+}
+
 // metric type is defined as 'untyped' in the first metric
 // and, type hint is missing in the 2nd metric
 var untypedMetrics = `
