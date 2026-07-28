@@ -718,8 +718,8 @@ github.com/leodido/ragel-machinery v0.0.0-20190525184631-5f46317e436b h1:11UHH39
 github.com/leodido/ragel-machinery v0.0.0-20190525184631-5f46317e436b/go.mod h1:WZxr2/6a/Ar9bMDc2rN/LJrE/hF6bXE4LPyDSIxwAfg=
 github.com/lightstep/go-expohisto v1.0.0 h1:UPtTS1rGdtehbbAF7o/dhkWLTDI73UifG8LbfQI7cA4=
 github.com/lightstep/go-expohisto v1.0.0/go.mod h1:xDXD0++Mu2FOaItXtdDfksfgxfV0z1TMPa+e/EUd0cs=
-github.com/linode/go-metadata v0.2.4 h1:iif+14PN5T0u/wRnu6i/UlLQrlaFlWvDJzm0Wl9Rn0I=
-github.com/linode/go-metadata v0.2.4/go.mod h1:h6yHiRupdKvyPkydU9g8kUA3QKdAgj3WX2wrF+mUv1c=
+github.com/linode/go-metadata v0.3.0 h1:tWShLi5MOUCG/ifA3jphK26A2y0veQoWwUEMJziRzUQ=
+github.com/linode/go-metadata v0.3.0/go.mod h1:uc58+eNK4Y44wvounLIsx92zaMax32pWz+bQHerKvcs=
 github.com/linode/linodego v1.69.1 h1:f45N2MHR/oece2/ktTTCYmrlfse4//k3NgwcF5zbGZ0=
 github.com/linode/linodego v1.69.1/go.mod h1:Fha0NYsQSx5VZK1HQNJY/z/dIxxkFp+vb5veawbmAUw=
 github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0/go.mod h1:zJYVVT2jmtg6P3p1VtQj7WsuWi/y4VnjVBn7F8KPB3I=
