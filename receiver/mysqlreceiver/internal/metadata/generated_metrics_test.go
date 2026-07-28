@@ -87,7 +87,6 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["mysql.operations"] = mb.metricMysqlOperations.config.AggregationStrategy
 			aggMap["mysql.page_operations"] = mb.metricMysqlPageOperations.config.AggregationStrategy
 			aggMap["mysql.prepared_statements"] = mb.metricMysqlPreparedStatements.config.AggregationStrategy
-			aggMap["mysql.resources.open"] = mb.metricMysqlResourcesOpen.config.AggregationStrategy
 			aggMap["mysql.row_locks"] = mb.metricMysqlRowLocks.config.AggregationStrategy
 			aggMap["mysql.row_operations"] = mb.metricMysqlRowOperations.config.AggregationStrategy
 			aggMap["mysql.sorts"] = mb.metricMysqlSorts.config.AggregationStrategy
@@ -170,6 +169,9 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlDoubleWritesDataPoint(ts, "3", AttributeDoubleWritesWrites)
 			}
+
+			allMetricsCount++
+			mb.RecordMysqlFileOpenDataPoint(ts, "1")
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlHandlersDataPoint(ts, "1", AttributeHandlerCommit)
@@ -263,12 +265,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMysqlReplicaTimeBehindSourceDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordMysqlResourcesOpenDataPoint(ts, "1", AttributeOpenResourcesFile)
-			if tt.name == "reaggregate_set" {
-				mb.RecordMysqlResourcesOpenDataPoint(ts, "3", AttributeOpenResourcesTable)
-			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlRowLocksDataPoint(ts, "1", AttributeRowLocksWaits)
@@ -343,6 +339,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordMysqlTableOpenDataPoint(ts, "1")
+
+			allMetricsCount++
 			mb.RecordMysqlTableRowsDataPoint(ts, 1, "table_name-val", "schema-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlTableRowsDataPoint(ts, 3, "table_name-val-2", "schema-val-2")
@@ -408,7 +407,6 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricMysqlOperations.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlPageOperations.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlPreparedStatements.aggDataPoints)
-				assert.Empty(t, mb.metricMysqlResourcesOpen.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlRowLocks.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlRowOperations.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlSorts.aggDataPoints)
@@ -847,6 +845,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("kind")
 						assert.False(t, ok)
 					}
+				case "mysql.file.open":
+					assert.False(t, validatedMetrics["mysql.file.open"], "Found a duplicate in the metrics slice: mysql.file.open")
+					validatedMetrics["mysql.file.open"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of currently open files.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.handlers":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.handlers"], "Found a duplicate in the metrics slice: mysql.handlers")
@@ -1503,50 +1513,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "mysql.resources.open":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["mysql.resources.open"], "Found a duplicate in the metrics slice: mysql.resources.open")
-						validatedMetrics["mysql.resources.open"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of currently open resources.", mi.Description())
-						assert.Equal(t, "1", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						openResourcesAttrVal, ok := dp.Attributes().Get("kind")
-						assert.True(t, ok)
-						assert.Equal(t, "file", openResourcesAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["mysql.resources.open"], "Found a duplicate in the metrics slice: mysql.resources.open")
-						validatedMetrics["mysql.resources.open"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of currently open resources.", mi.Description())
-						assert.Equal(t, "1", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["mysql.resources.open"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("kind")
-						assert.False(t, ok)
-					}
 				case "mysql.row_locks":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.row_locks"], "Found a duplicate in the metrics slice: mysql.row_locks")
@@ -2165,6 +2131,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("kind")
 						assert.False(t, ok)
 					}
+				case "mysql.table.open":
+					assert.False(t, validatedMetrics["mysql.table.open"], "Found a duplicate in the metrics slice: mysql.table.open")
+					validatedMetrics["mysql.table.open"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of currently open tables.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.table.rows":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.table.rows"], "Found a duplicate in the metrics slice: mysql.table.rows")

@@ -416,6 +416,14 @@ Errors that occur during the client connection process.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` | Recommended | - |
 
+### mysql.file.open
+
+The number of currently open files.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
 ### mysql.joins
 
 The number of joins that perform table scans.
@@ -501,20 +509,6 @@ This field is an indication of how “late” the replica is.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | false | Development |
-
-### mysql.resources.open
-
-The number of currently open resources.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| kind | The kind of the resource. | Str: ``file``, ``table`` | Recommended | - |
 
 ### mysql.statement_event.count
 
@@ -627,6 +621,14 @@ The total table lock wait write events times.
 | schema | The schema of the object. | Any Str | Recommended | - |
 | table | Table name for event or process. | Any Str | Recommended | - |
 | kind | Write operation types. | Str: ``allow_write``, ``concurrent_insert``, ``low_priority``, ``normal``, ``external`` | Recommended | - |
+
+### mysql.table.open
+
+The number of currently open tables.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
 
 ### mysql.table.rows
 

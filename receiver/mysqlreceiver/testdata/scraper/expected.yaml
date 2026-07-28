@@ -329,6 +329,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
+          - description: The number of currently open files.
+            gauge:
+              dataPoints:
+                - asInt: "367"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mysql.file.open
+            unit: "1"
           - description: The number of requests to various MySQL handlers.
             name: mysql.handlers
             sum:
@@ -940,26 +948,6 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: s
-          - description: The number of currently open resources.
-            name: mysql.resources.open
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "367"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: file
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "370"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: table
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: "1"
           - description: The number of InnoDB row locks.
             name: mysql.row_locks
             sum:
@@ -1654,6 +1642,14 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: ns
+          - description: The number of currently open tables.
+            gauge:
+              dataPoints:
+                - asInt: "370"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mysql.table.open
+            unit: "1"
           - description: The number of rows for a given table.
             name: mysql.table.rows
             sum:

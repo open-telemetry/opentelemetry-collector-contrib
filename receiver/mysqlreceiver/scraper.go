@@ -543,9 +543,9 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 
 		// open resources
 		case "Open_files":
-			addPartialIfError(errs, m.mb.RecordMysqlResourcesOpenDataPoint(now, v, metadata.AttributeOpenResourcesFile))
+			addPartialIfError(errs, m.mb.RecordMysqlFileOpenDataPoint(now, v))
 		case "Open_tables":
-			addPartialIfError(errs, m.mb.RecordMysqlResourcesOpenDataPoint(now, v, metadata.AttributeOpenResourcesTable))
+			addPartialIfError(errs, m.mb.RecordMysqlTableOpenDataPoint(now, v))
 
 		// opened resources
 		case "Opened_files":

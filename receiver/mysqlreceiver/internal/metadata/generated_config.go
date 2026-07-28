@@ -454,6 +454,26 @@ func (ms *MysqlDoubleWritesMetricConfig) Validate() error {
 	return nil
 }
 
+// MysqlFileOpenMetricConfig provides config for the mysql.file.open metric.
+type MysqlFileOpenMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlFileOpenMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MysqlHandlersMetricAttributeKey specifies the key of an attribute for the mysql.handlers metric.
 type MysqlHandlersMetricAttributeKey string
 
@@ -1176,54 +1196,6 @@ func (ms *MysqlReplicaTimeBehindSourceMetricConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// MysqlResourcesOpenMetricAttributeKey specifies the key of an attribute for the mysql.resources.open metric.
-type MysqlResourcesOpenMetricAttributeKey string
-
-const (
-	MysqlResourcesOpenMetricAttributeKeyOpenResources MysqlResourcesOpenMetricAttributeKey = "kind"
-)
-
-// MysqlResourcesOpenMetricConfig provides config for the mysql.resources.open metric.
-type MysqlResourcesOpenMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []MysqlResourcesOpenMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *MysqlResourcesOpenMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *MysqlResourcesOpenMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case MysqlResourcesOpenMetricAttributeKeyOpenResources:
-		default:
-			return fmt.Errorf("metric mysql.resources.open doesn't have an attribute %v, valid attributes: [kind]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
 // MysqlRowLocksMetricAttributeKey specifies the key of an attribute for the mysql.row_locks metric.
 type MysqlRowLocksMetricAttributeKey string
 
@@ -1818,6 +1790,26 @@ func (ms *MysqlTableLockWaitWriteTimeMetricConfig) Validate() error {
 	return nil
 }
 
+// MysqlTableOpenMetricConfig provides config for the mysql.table.open metric.
+type MysqlTableOpenMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlTableOpenMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MysqlTableRowsMetricAttributeKey specifies the key of an attribute for the mysql.table.rows metric.
 type MysqlTableRowsMetricAttributeKey string
 
@@ -2114,6 +2106,7 @@ type MetricsConfig struct {
 	MysqlConnectionCount         MysqlConnectionCountMetricConfig         `mapstructure:"mysql.connection.count"`
 	MysqlConnectionErrors        MysqlConnectionErrorsMetricConfig        `mapstructure:"mysql.connection.errors"`
 	MysqlDoubleWrites            MysqlDoubleWritesMetricConfig            `mapstructure:"mysql.double_writes"`
+	MysqlFileOpen                MysqlFileOpenMetricConfig                `mapstructure:"mysql.file.open"`
 	MysqlHandlers                MysqlHandlersMetricConfig                `mapstructure:"mysql.handlers"`
 	MysqlIndexIoWaitCount        MysqlIndexIoWaitCountMetricConfig        `mapstructure:"mysql.index.io.wait.count"`
 	MysqlIndexIoWaitTime         MysqlIndexIoWaitTimeMetricConfig         `mapstructure:"mysql.index.io.wait.time"`
@@ -2133,7 +2126,6 @@ type MetricsConfig struct {
 	MysqlQuerySlowCount          MysqlQuerySlowCountMetricConfig          `mapstructure:"mysql.query.slow.count"`
 	MysqlReplicaSQLDelay         MysqlReplicaSQLDelayMetricConfig         `mapstructure:"mysql.replica.sql_delay"`
 	MysqlReplicaTimeBehindSource MysqlReplicaTimeBehindSourceMetricConfig `mapstructure:"mysql.replica.time_behind_source"`
-	MysqlResourcesOpen           MysqlResourcesOpenMetricConfig           `mapstructure:"mysql.resources.open"`
 	MysqlRowLocks                MysqlRowLocksMetricConfig                `mapstructure:"mysql.row_locks"`
 	MysqlRowOperations           MysqlRowOperationsMetricConfig           `mapstructure:"mysql.row_operations"`
 	MysqlSorts                   MysqlSortsMetricConfig                   `mapstructure:"mysql.sorts"`
@@ -2146,6 +2138,7 @@ type MetricsConfig struct {
 	MysqlTableLockWaitReadTime   MysqlTableLockWaitReadTimeMetricConfig   `mapstructure:"mysql.table.lock_wait.read.time"`
 	MysqlTableLockWaitWriteCount MysqlTableLockWaitWriteCountMetricConfig `mapstructure:"mysql.table.lock_wait.write.count"`
 	MysqlTableLockWaitWriteTime  MysqlTableLockWaitWriteTimeMetricConfig  `mapstructure:"mysql.table.lock_wait.write.time"`
+	MysqlTableOpen               MysqlTableOpenMetricConfig               `mapstructure:"mysql.table.open"`
 	MysqlTableRows               MysqlTableRowsMetricConfig               `mapstructure:"mysql.table.rows"`
 	MysqlTableSize               MysqlTableSizeMetricConfig               `mapstructure:"mysql.table.size"`
 	MysqlTableOpenCache          MysqlTableOpenCacheMetricConfig          `mapstructure:"mysql.table_open_cache"`
@@ -2205,6 +2198,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlDoubleWritesMetricAttributeKey{MysqlDoubleWritesMetricAttributeKeyDoubleWrites},
+		},
+		MysqlFileOpen: MysqlFileOpenMetricConfig{
+			Enabled: false,
 		},
 		MysqlHandlers: MysqlHandlersMetricConfig{
 			Enabled:             true,
@@ -2287,11 +2283,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		MysqlReplicaTimeBehindSource: MysqlReplicaTimeBehindSourceMetricConfig{
 			Enabled: false,
 		},
-		MysqlResourcesOpen: MysqlResourcesOpenMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []MysqlResourcesOpenMetricAttributeKey{MysqlResourcesOpenMetricAttributeKeyOpenResources},
-		},
 		MysqlRowLocks: MysqlRowLocksMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
@@ -2351,6 +2342,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlTableLockWaitWriteTimeMetricAttributeKey{MysqlTableLockWaitWriteTimeMetricAttributeKeySchema, MysqlTableLockWaitWriteTimeMetricAttributeKeyTableName, MysqlTableLockWaitWriteTimeMetricAttributeKeyWriteLockType},
+		},
+		MysqlTableOpen: MysqlTableOpenMetricConfig{
+			Enabled: false,
 		},
 		MysqlTableRows: MysqlTableRowsMetricConfig{
 			Enabled:             false,

@@ -217,12 +217,6 @@ attributes:
   network.peer.port:
     description: TCP port used by the peer client.
     type: int
-  open_resources:
-    name_override: kind
-    description: The kind of the resource.
-    type: string
-    enum: [file, table]
-    requirement_level: recommended
   opened_resources:
     name_override: kind
     description: The kind of the resource.
@@ -466,6 +460,15 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [double_writes]
+  mysql.file.open:
+    enabled: false
+    description: The number of currently open files.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
   mysql.handlers:
     enabled: true
     description: The number of requests to various MySQL handlers.
@@ -669,17 +672,6 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: []
-  mysql.resources.open:
-    enabled: false
-    description: The number of currently open resources.
-    stability: development
-    unit: "1"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: false
-      aggregation_temporality: cumulative
-    attributes: [open_resources]
   mysql.row_locks:
     enabled: true
     description: The number of InnoDB row locks.
@@ -803,6 +795,15 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [schema, table_name, write_lock_type]
+  mysql.table.open:
+    enabled: false
+    description: The number of currently open tables.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
   mysql.table.rows:
     enabled: false
     description: The number of rows for a given table.
