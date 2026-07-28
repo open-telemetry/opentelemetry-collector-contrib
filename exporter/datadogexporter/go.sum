@@ -1,7 +1,5 @@
 cloud.google.com/go/compute/metadata v0.9.0 h1:pDUj4QMoPejqq20dK0Pg2N4yG9zIkYGdBtwLoEkH9Zs=
 cloud.google.com/go/compute/metadata v0.9.0/go.mod h1:E0bWwX5wTnLPedCKqk3pJmVgCBSM6qQI1yTBdEb3C10=
-github.com/DataDog/agent-payload/v5 v5.0.205 h1:7+ZNser6vX1ptlZWO1UnYQ1trKoYmYFMvt1/ZIw3iD0=
-github.com/DataDog/agent-payload/v5 v5.0.205/go.mod h1:GyA1vuCeRywrNNCbYeR0cOYKE8QkOVNAFDqsH8VNF5M=
 github.com/DataDog/agent-payload/v5 v5.0.206 h1:gCisuEL1pW6ZEW6/pjJo7Ek/8TwO4JV6TsUmPnnTFdg=
 github.com/DataDog/agent-payload/v5 v5.0.206/go.mod h1:GyA1vuCeRywrNNCbYeR0cOYKE8QkOVNAFDqsH8VNF5M=
 github.com/DataDog/datadog-agent/comp/api/api/def v0.80.2 h1:ywo2ze8+Nj3wd+ehkuScFFasSSNHcKxPGJ8qqfeUQJg=

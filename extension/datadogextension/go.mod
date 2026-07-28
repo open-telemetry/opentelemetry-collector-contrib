@@ -89,7 +89,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/http v0.81.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/json v0.81.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.81.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log/setup v0.81.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/option v0.81.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.81.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.81.2 // indirect
@@ -164,8 +163,6 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
-	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -300,7 +297,6 @@ require (
 	google.golang.org/protobuf v1.36.12-0.20260116114154-8c4c4ae446ca // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.35.4 // indirect
 	k8s.io/apimachinery v0.35.6 // indirect
