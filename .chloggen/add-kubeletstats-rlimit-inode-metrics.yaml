@@ -1,0 +1,11 @@
+change_type: enhancement
+component: receiver/kubeletstatsreceiver
+note: "Add optional system process limit/count metrics and k8s node filesystem inode count/free metrics."
+issues: [48926]
+subtext: |
+  Adds the following optional metrics to kubeletstatsreceiver:
+  - k8s.node.filesystem.inode.count
+  - k8s.node.filesystem.inode.free
+  - system.process.limit
+  - system.process.count
+change_logs: [user]

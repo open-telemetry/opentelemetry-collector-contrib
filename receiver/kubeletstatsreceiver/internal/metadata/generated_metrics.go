@@ -72,6 +72,28 @@ var MapAttributeFsType = map[string]AttributeFsType{
 	"logs":   AttributeFsTypeLogs,
 }
 
+// AttributeProcessState specifies the value process.state attribute.
+type AttributeProcessState int
+
+const (
+	_ AttributeProcessState = iota
+	AttributeProcessStateRunning
+)
+
+// String returns the string representation of the AttributeProcessState.
+func (av AttributeProcessState) String() string {
+	switch av {
+	case AttributeProcessStateRunning:
+		return "running"
+	}
+	return ""
+}
+
+// MapAttributeProcessState is a helper map of string to AttributeProcessState attribute value.
+var MapAttributeProcessState = map[string]AttributeProcessState{
+	"running": AttributeProcessStateRunning,
+}
+
 var MetricsInfo = metricsInfo{
 	ContainerCPUTime: metricInfo{
 		Name: "container.cpu.time",
@@ -142,6 +164,12 @@ var MetricsInfo = metricsInfo{
 	},
 	K8sNodeFilesystemCapacity: metricInfo{
 		Name: "k8s.node.filesystem.capacity",
+	},
+	K8sNodeFilesystemInodeCount: metricInfo{
+		Name: "k8s.node.filesystem.inode.count",
+	},
+	K8sNodeFilesystemInodeFree: metricInfo{
+		Name: "k8s.node.filesystem.inode.free",
 	},
 	K8sNodeFilesystemUsage: metricInfo{
 		Name: "k8s.node.filesystem.usage",
@@ -267,6 +295,13 @@ var MetricsInfo = metricsInfo{
 	K8sVolumeInodesUsed: metricInfo{
 		Name: "k8s.volume.inodes.used",
 	},
+	SystemProcessCount: metricInfo{
+		Name:       "system.process.count",
+		Attributes: []string{"process.state"},
+	},
+	SystemProcessLimit: metricInfo{
+		Name: "system.process.limit",
+	},
 }
 
 type metricsInfo struct {
@@ -293,6 +328,8 @@ type metricsInfo struct {
 	K8sNodeCPUUsage                        metricInfo
 	K8sNodeFilesystemAvailable             metricInfo
 	K8sNodeFilesystemCapacity              metricInfo
+	K8sNodeFilesystemInodeCount            metricInfo
+	K8sNodeFilesystemInodeFree             metricInfo
 	K8sNodeFilesystemUsage                 metricInfo
 	K8sNodeMemoryAvailable                 metricInfo
 	K8sNodeMemoryMajorPageFaults           metricInfo
@@ -333,6 +370,8 @@ type metricsInfo struct {
 	K8sVolumeInodes                        metricInfo
 	K8sVolumeInodesFree                    metricInfo
 	K8sVolumeInodesUsed                    metricInfo
+	SystemProcessCount                     metricInfo
+	SystemProcessLimit                     metricInfo
 }
 
 type metricInfo struct {
@@ -1529,6 +1568,110 @@ func (m *metricK8sNodeFilesystemCapacity) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNodeFilesystemCapacity(cfg K8sNodeFilesystemCapacityMetricConfig) metricK8sNodeFilesystemCapacity {
 	m := metricK8sNodeFilesystemCapacity{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeFilesystemInodeCount struct {
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   K8sNodeFilesystemInodeCountMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.filesystem.inode.count metric with initial data.
+func (m *metricK8sNodeFilesystemInodeCount) init() {
+	m.data.SetName("k8s.node.filesystem.inode.count")
+	m.data.SetDescription("Total number of inodes in the node's root filesystem.")
+	m.data.SetUnit("{inode}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sNodeFilesystemInodeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeFilesystemInodeCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeFilesystemInodeCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeFilesystemInodeCount(cfg K8sNodeFilesystemInodeCountMetricConfig) metricK8sNodeFilesystemInodeCount {
+	m := metricK8sNodeFilesystemInodeCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeFilesystemInodeFree struct {
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   K8sNodeFilesystemInodeFreeMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.filesystem.inode.free metric with initial data.
+func (m *metricK8sNodeFilesystemInodeFree) init() {
+	m.data.SetName("k8s.node.filesystem.inode.free")
+	m.data.SetDescription("Number of free inodes in the node's root filesystem.")
+	m.data.SetUnit("{inode}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sNodeFilesystemInodeFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeFilesystemInodeFree) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeFilesystemInodeFree) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeFilesystemInodeFree(cfg K8sNodeFilesystemInodeFreeMetricConfig) metricK8sNodeFilesystemInodeFree {
+	m := metricK8sNodeFilesystemInodeFree{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3723,6 +3866,149 @@ func newMetricK8sVolumeInodesUsed(cfg K8sVolumeInodesUsedMetricConfig) metricK8s
 	return m
 }
 
+type metricSystemProcessCount struct {
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        SystemProcessCountMetricConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
+}
+
+// init fills system.process.count metric with initial data.
+func (m *metricSystemProcessCount) init() {
+	m.data.SetName("system.process.count")
+	m.data.SetDescription("Total number of processes in each state.")
+	m.data.SetUnit("{process}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSystemProcessCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, processStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SystemProcessCountMetricAttributeKeyProcessState) {
+		dp.Attributes().PutStr("process.state", processStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemProcessCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemProcessCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemProcessCount(cfg SystemProcessCountMetricConfig) metricSystemProcessCount {
+	m := metricSystemProcessCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemProcessLimit struct {
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   SystemProcessLimitMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
+}
+
+// init fills system.process.limit metric with initial data.
+func (m *metricSystemProcessLimit) init() {
+	m.data.SetName("system.process.limit")
+	m.data.SetDescription("Total number of processes/threads allowed by the operating system.")
+	m.data.SetUnit("{thread}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemProcessLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemProcessLimit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemProcessLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemProcessLimit(cfg SystemProcessLimitMetricConfig) metricSystemProcessLimit {
+	m := metricSystemProcessLimit{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -3756,6 +4042,8 @@ type MetricsBuilder struct {
 	metricK8sNodeCPUUsage                        metricK8sNodeCPUUsage
 	metricK8sNodeFilesystemAvailable             metricK8sNodeFilesystemAvailable
 	metricK8sNodeFilesystemCapacity              metricK8sNodeFilesystemCapacity
+	metricK8sNodeFilesystemInodeCount            metricK8sNodeFilesystemInodeCount
+	metricK8sNodeFilesystemInodeFree             metricK8sNodeFilesystemInodeFree
 	metricK8sNodeFilesystemUsage                 metricK8sNodeFilesystemUsage
 	metricK8sNodeMemoryAvailable                 metricK8sNodeMemoryAvailable
 	metricK8sNodeMemoryMajorPageFaults           metricK8sNodeMemoryMajorPageFaults
@@ -3796,6 +4084,8 @@ type MetricsBuilder struct {
 	metricK8sVolumeInodes                        metricK8sVolumeInodes
 	metricK8sVolumeInodesFree                    metricK8sVolumeInodesFree
 	metricK8sVolumeInodesUsed                    metricK8sVolumeInodesUsed
+	metricSystemProcessCount                     metricSystemProcessCount
+	metricSystemProcessLimit                     metricSystemProcessLimit
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -3862,6 +4152,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sNodeCPUUsage:                        newMetricK8sNodeCPUUsage(mbc.Metrics.K8sNodeCPUUsage),
 		metricK8sNodeFilesystemAvailable:             newMetricK8sNodeFilesystemAvailable(mbc.Metrics.K8sNodeFilesystemAvailable),
 		metricK8sNodeFilesystemCapacity:              newMetricK8sNodeFilesystemCapacity(mbc.Metrics.K8sNodeFilesystemCapacity),
+		metricK8sNodeFilesystemInodeCount:            newMetricK8sNodeFilesystemInodeCount(mbc.Metrics.K8sNodeFilesystemInodeCount),
+		metricK8sNodeFilesystemInodeFree:             newMetricK8sNodeFilesystemInodeFree(mbc.Metrics.K8sNodeFilesystemInodeFree),
 		metricK8sNodeFilesystemUsage:                 newMetricK8sNodeFilesystemUsage(mbc.Metrics.K8sNodeFilesystemUsage),
 		metricK8sNodeMemoryAvailable:                 newMetricK8sNodeMemoryAvailable(mbc.Metrics.K8sNodeMemoryAvailable),
 		metricK8sNodeMemoryMajorPageFaults:           newMetricK8sNodeMemoryMajorPageFaults(mbc.Metrics.K8sNodeMemoryMajorPageFaults),
@@ -3902,6 +4194,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sVolumeInodes:                        newMetricK8sVolumeInodes(mbc.Metrics.K8sVolumeInodes),
 		metricK8sVolumeInodesFree:                    newMetricK8sVolumeInodesFree(mbc.Metrics.K8sVolumeInodesFree),
 		metricK8sVolumeInodesUsed:                    newMetricK8sVolumeInodesUsed(mbc.Metrics.K8sVolumeInodesUsed),
+		metricSystemProcessCount:                     newMetricSystemProcessCount(mbc.Metrics.SystemProcessCount),
+		metricSystemProcessLimit:                     newMetricSystemProcessLimit(mbc.Metrics.SystemProcessLimit),
 		resourceAttributeIncludeFilter:               make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:               make(map[string]filter.Filter),
 	}
@@ -4093,6 +4387,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sNodeCPUUsage.emit(ils.Metrics())
 	mb.metricK8sNodeFilesystemAvailable.emit(ils.Metrics())
 	mb.metricK8sNodeFilesystemCapacity.emit(ils.Metrics())
+	mb.metricK8sNodeFilesystemInodeCount.emit(ils.Metrics())
+	mb.metricK8sNodeFilesystemInodeFree.emit(ils.Metrics())
 	mb.metricK8sNodeFilesystemUsage.emit(ils.Metrics())
 	mb.metricK8sNodeMemoryAvailable.emit(ils.Metrics())
 	mb.metricK8sNodeMemoryMajorPageFaults.emit(ils.Metrics())
@@ -4133,6 +4429,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sVolumeInodes.emit(ils.Metrics())
 	mb.metricK8sVolumeInodesFree.emit(ils.Metrics())
 	mb.metricK8sVolumeInodesUsed.emit(ils.Metrics())
+	mb.metricSystemProcessCount.emit(ils.Metrics())
+	mb.metricSystemProcessLimit.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -4277,6 +4575,16 @@ func (mb *MetricsBuilder) RecordK8sNodeFilesystemAvailableDataPoint(ts pcommon.T
 // RecordK8sNodeFilesystemCapacityDataPoint adds a data point to k8s.node.filesystem.capacity metric.
 func (mb *MetricsBuilder) RecordK8sNodeFilesystemCapacityDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sNodeFilesystemCapacity.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sNodeFilesystemInodeCountDataPoint adds a data point to k8s.node.filesystem.inode.count metric.
+func (mb *MetricsBuilder) RecordK8sNodeFilesystemInodeCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sNodeFilesystemInodeCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sNodeFilesystemInodeFreeDataPoint adds a data point to k8s.node.filesystem.inode.free metric.
+func (mb *MetricsBuilder) RecordK8sNodeFilesystemInodeFreeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sNodeFilesystemInodeFree.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sNodeFilesystemUsageDataPoint adds a data point to k8s.node.filesystem.usage metric.
@@ -4477,6 +4785,16 @@ func (mb *MetricsBuilder) RecordK8sVolumeInodesFreeDataPoint(ts pcommon.Timestam
 // RecordK8sVolumeInodesUsedDataPoint adds a data point to k8s.volume.inodes.used metric.
 func (mb *MetricsBuilder) RecordK8sVolumeInodesUsedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sVolumeInodesUsed.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemProcessCountDataPoint adds a data point to system.process.count metric.
+func (mb *MetricsBuilder) RecordSystemProcessCountDataPoint(ts pcommon.Timestamp, val int64, processStateAttributeValue AttributeProcessState) {
+	mb.metricSystemProcessCount.recordDataPoint(mb.startTime, ts, val, processStateAttributeValue.String())
+}
+
+// RecordSystemProcessLimitDataPoint adds a data point to system.process.limit metric.
+func (mb *MetricsBuilder) RecordSystemProcessLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemProcessLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

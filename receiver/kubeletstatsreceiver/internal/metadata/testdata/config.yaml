@@ -48,6 +48,10 @@ all_set:
       enabled: true
     k8s.node.filesystem.capacity:
       enabled: true
+    k8s.node.filesystem.inode.count:
+      enabled: true
+    k8s.node.filesystem.inode.free:
+      enabled: true
     k8s.node.filesystem.usage:
       enabled: true
     k8s.node.memory.available:
@@ -131,6 +135,11 @@ all_set:
     k8s.volume.inodes.free:
       enabled: true
     k8s.volume.inodes.used:
+      enabled: true
+    system.process.count:
+      enabled: true
+      attributes: ["process.state"]
+    system.process.limit:
       enabled: true
   resource_attributes:
     aws.volume.id:
@@ -214,6 +223,10 @@ reaggregate_set:
       enabled: true
     k8s.node.filesystem.capacity:
       enabled: true
+    k8s.node.filesystem.inode.count:
+      enabled: true
+    k8s.node.filesystem.inode.free:
+      enabled: true
     k8s.node.filesystem.usage:
       enabled: true
     k8s.node.memory.available:
@@ -297,6 +310,11 @@ reaggregate_set:
     k8s.volume.inodes.free:
       enabled: true
     k8s.volume.inodes.used:
+      enabled: true
+    system.process.count:
+      enabled: true
+      attributes: []
+    system.process.limit:
       enabled: true
   resource_attributes:
     aws.volume.id:
@@ -380,6 +398,10 @@ none_set:
       enabled: false
     k8s.node.filesystem.capacity:
       enabled: false
+    k8s.node.filesystem.inode.count:
+      enabled: false
+    k8s.node.filesystem.inode.free:
+      enabled: false
     k8s.node.filesystem.usage:
       enabled: false
     k8s.node.memory.available:
@@ -463,6 +485,11 @@ none_set:
     k8s.volume.inodes.free:
       enabled: false
     k8s.volume.inodes.used:
+      enabled: false
+    system.process.count:
+      enabled: false
+      attributes: ["process.state"]
+    system.process.limit:
       enabled: false
   resource_attributes:
     aws.volume.id:
