@@ -1337,7 +1337,7 @@ top query
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| host.name | The hostname of the machine running the collector. | Any Str | true | - | - |
+| host.name | The hostname of the machine running the collector. This identifies the Collector host, not the monitored SQL Server. | Any Str | true | - | - |
 | server.address | The address of the SQL Server host. | Any Str | true | - | - |
 | server.port | The port of the SQL Server host. | Any Int | true | - | - |
 | service.instance.id | A unique identifier of the SQL Server instance in the format host:port. In Windows Performance Counter mode the host is derived from computer_name (falling back to the collector host when monitoring locally), with a default port of 1433. | Any Str | true | - | - |

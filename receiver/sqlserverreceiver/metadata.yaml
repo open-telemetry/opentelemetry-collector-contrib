@@ -21,7 +21,7 @@ status:
 
 resource_attributes:
   host.name:
-    description: The hostname of the machine running the collector.
+    description: The hostname of the machine running the collector. This identifies the Collector host, not the monitored SQL Server.
     enabled: true
     type: string
   server.address:
