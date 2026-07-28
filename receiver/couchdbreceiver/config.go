@@ -30,7 +30,7 @@ var (
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	confighttp.ClientConfig        `mapstructure:",squash"`
+	ClientConfig                   confighttp.ClientConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	Username                       string              `mapstructure:"username"`
 	Password                       configopaque.String `mapstructure:"password"`
@@ -46,7 +46,7 @@ func (cfg *Config) Validate() error {
 		err = multierr.Append(err, errMissingPassword)
 	}
 
-	_, parseErr := url.Parse(cfg.Endpoint)
+	_, parseErr := url.Parse(cfg.ClientConfig.Endpoint)
 	if parseErr != nil {
 		err = multierr.Append(err, fmt.Errorf(errInvalidEndpoint.Error(), parseErr))
 	}
