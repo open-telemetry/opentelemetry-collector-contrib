@@ -235,7 +235,6 @@ func TestScraperWithNodeFilesystemInodeMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricsOrder()))
 }
 
-
 func TestScraperWithInterfacesMetrics(t *testing.T) {
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
