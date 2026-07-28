@@ -58,7 +58,7 @@ func assertHecSuccessResponseWithAckID(t *testing.T, resp *http.Response, body a
 func Test_splunkhecreceiver_NewReceiver(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	emptyEndpointConfig := createDefaultConfig().(*Config)
-	emptyEndpointConfig.NetAddr.Endpoint = ""
+	emptyEndpointConfig.ServerConfig.NetAddr.Endpoint = ""
 	type args struct {
 		config       Config
 		logsConsumer consumer.Logs
@@ -119,7 +119,7 @@ func Test_splunkhecreceiver_NewReceiver(t *testing.T) {
 
 func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
@@ -587,7 +587,7 @@ func Test_consumer_err(t *testing.T) {
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 5)
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 	assert.NoError(t, err)
 	rcv.logsConsumer = consumertest.NewErr(errors.New("bad consumer"))
@@ -615,7 +615,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	splunkMsg := buildSplunkHecMetricsMsg("metric", currentTime, 13, 2)
 	assert.True(t, splunkMsg.IsMetric())
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint\
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint\
 	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 	assert.NoError(t, err)
 	rcv.metricsConsumer = consumertest.NewErr(errors.New("bad consumer"))
@@ -641,8 +641,8 @@ func Test_consumer_err_metrics(t *testing.T) {
 func Test_splunkhecReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = addr
-	cfg.TLS = configoptional.Some(configtls.ServerConfig{
+	cfg.ServerConfig.NetAddr.Endpoint = addr
+	cfg.ServerConfig.TLS = configoptional.Some(configtls.ServerConfig{
 		Config: configtls.Config{
 			CertFile: "./testdata/server.crt",
 			KeyFile:  "./testdata/server.key",
@@ -792,7 +792,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config := createDefaultConfig().(*Config)
-			config.NetAddr.Endpoint = "localhost:0"
+			config.ServerConfig.NetAddr.Endpoint = "localhost:0"
 			config.AccessTokenPassthrough = tt.passthrough
 			accessTokensChan := make(chan string)
 
@@ -809,7 +809,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			exporterConfig.SourceType = "defaultsourcetype"
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
-			exporterConfig.Endpoint = endServer.URL
+			exporterConfig.ClientConfig.Endpoint = endServer.URL
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
 			var splunkhecMsg *translator.Event
@@ -900,7 +900,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.NetAddr.Endpoint = "localhost:0"
+			cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
 
 			receivedSplunkLogs := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -917,7 +917,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.SourceType = "defaultsourcetype"
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
-			exporterConfig.Endpoint = endServer.URL
+			exporterConfig.ClientConfig.Endpoint = endServer.URL
 			exporter, err := factory.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
 			assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
 			assert.NoError(t, err)
@@ -1015,7 +1015,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.NetAddr.Endpoint = "localhost:0"
+			cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
 
 			receivedSplunkMetrics := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -1032,7 +1032,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.SourceType = "defaultsourcetype"
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
-			exporterConfig.Endpoint = endServer.URL
+			exporterConfig.ClientConfig.Endpoint = endServer.URL
 
 			exporter, err := factory.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
 			assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
@@ -1144,7 +1144,7 @@ func (badReqBody) Close() error {
 func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 	t.Parallel()
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.RawPath = "/foo"
 
 	currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -1375,9 +1375,9 @@ func Test_splunkhecReceiver_Start(t *testing.T) {
 
 func Test_splunkhecReceiver_ServerTimeoutsFromConfig(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0"
-	config.WriteTimeout = 60 * time.Second
-	config.ReadHeaderTimeout = 5 * time.Second
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	config.ServerConfig.WriteTimeout = 60 * time.Second
+	config.ServerConfig.ReadHeaderTimeout = 5 * time.Second
 
 	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 	require.NoError(t, err)
@@ -1393,7 +1393,7 @@ func Test_splunkhecReceiver_ServerTimeoutsFromConfig(t *testing.T) {
 func Test_splunkhecReceiver_handleAck(t *testing.T) {
 	t.Parallel()
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.Path = "/ack"
 	id := component.MustNewID("ack_extension")
 	config.Extension = &id
@@ -1624,7 +1624,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 	t.Parallel()
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.RawPath = "/foo"
 	id := component.MustNewID("ack_extension")
 	config.Extension = &id
@@ -1790,7 +1790,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 
 func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 	id := component.MustNewID("ack_extension")
 	config.Extension = &id
 	currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -2071,7 +2071,7 @@ func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
 func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 	t.Parallel()
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.RawPath = "/foo"
 	config.HecToOtelAttrs = translator.HecToOtelAttrs{
 		Source:     "com.source.foo",
@@ -2188,7 +2188,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 
 func BenchmarkHandleReq(b *testing.B) {
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0"
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	sink := new(consumertest.LogsSink)
 	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 	assert.NoError(b, err)
@@ -2223,7 +2223,7 @@ func BenchmarkHandleReq(b *testing.B) {
 func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 	t.Parallel()
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	tests := []struct {
 		name           string

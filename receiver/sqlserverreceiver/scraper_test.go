@@ -174,6 +174,9 @@ func TestSuccessfulScrape(t *testing.T) {
 	tests := []struct {
 		removeServerResourceAttributeFeatureGate bool
 		name                                     string
+		// propertiesFixtureFile overrides the fixture returned for the server properties
+		// query. Empty means the default on-prem fixture (propertyQueryData.txt).
+		propertiesFixtureFile string
 	}{
 		{
 			name:                                     "TestSuccessfulScrape with removing server resource attribute feature gate on",
@@ -182,6 +185,15 @@ func TestSuccessfulScrape(t *testing.T) {
 		{
 			name:                                     "TestSuccessfulScrape with removing server resource attribute feature gate off",
 			removeServerResourceAttributeFeatureGate: false,
+		},
+		{
+			// Azure SQL Managed Instance (EngineEdition 8) returns a reduced property column
+			// set: the host/registry columns (service_name, instance_type, ForceEncryption,
+			// Port, PortType, hardware_type) are omitted, none of which the receiver consumes.
+			// The emitted metrics must therefore match the full on-prem golden file, guarding
+			// against a future change that reads a now-absent column without a nil guard.
+			name:                  "TestSuccessfulScrape with Azure SQL Managed Instance property columns",
+			propertiesFixtureFile: "propertyQueryDataManagedInstance.txt",
 		},
 	}
 
@@ -213,10 +225,11 @@ func TestSuccessfulScrape(t *testing.T) {
 				defer assert.NoError(t, scraper.Shutdown(t.Context()))
 
 				scraper.client = mockClient{
-					instanceName:        scraper.config.InstanceName,
-					SQL:                 scraper.sqlQuery,
-					maxQuerySampleCount: 1000,
-					lookbackTime:        20,
+					instanceName:          scraper.config.InstanceName,
+					SQL:                   scraper.sqlQuery,
+					maxQuerySampleCount:   1000,
+					lookbackTime:          20,
+					propertiesFixtureFile: test.propertiesFixtureFile,
 				}
 
 				actualMetrics, err := scraper.ScrapeMetrics(t.Context())
@@ -385,6 +398,10 @@ type mockClient struct {
 	lookbackTime        uint
 	topQueryCount       uint
 	maxRowsPerQuery     uint64
+	// propertiesFixtureFile, when set, overrides the fixture returned for the
+	// server properties query. Used to exercise the reduced Azure SQL Managed
+	// Instance column shape.
+	propertiesFixtureFile string
 }
 
 type mockInvalidClient struct {
@@ -479,7 +496,11 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 	case getSQLServerPerformanceCounterQuery(mc.instanceName):
 		queryResults, err = readFile("perfCounterQueryData.txt")
 	case getSQLServerPropertiesQuery(mc.instanceName):
-		queryResults, err = readFile("propertyQueryData.txt")
+		fixture := "propertyQueryData.txt"
+		if mc.propertiesFixtureFile != "" {
+			fixture = mc.propertiesFixtureFile
+		}
+		queryResults, err = readFile(fixture)
 	case getSQLServerWaitStatsQuery(mc.instanceName):
 		queryResults, err = readFile("waitStatsQueryData.txt")
 	case getSQLServerWorkerThreadsQuery(mc.instanceName):
