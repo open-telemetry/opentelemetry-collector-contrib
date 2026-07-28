@@ -443,6 +443,24 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 			},
 		},
 		{
+			name:                "float NHCB without explicit bounds that is stale",
+			metricName:          "histogram",
+			intervalStartTimeMs: 12,
+			labels:              labels.FromMap(map[string]string{"a": "A"}),
+			floatHistogram: &histogram.FloatHistogram{
+				Schema: histogram.CustomBucketsSchema,
+				Sum:    math.Float64frombits(value.StaleNaN),
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetTimestamp(pcommon.Timestamp(12 * time.Millisecond))
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+				point.BucketCounts().FromRaw([]uint64{0})
+				point.Attributes().PutStr("a", "A")
+				return point
+			},
+		},
+		{
 			name:                "integer NHCB with negative boundaries",
 			metricName:          "histogram",
 			intervalStartTimeMs: 30,

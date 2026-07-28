@@ -1472,51 +1472,69 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 }
 
 func TestBucketlessHistogramNHCBConversion(t *testing.T) {
-	targets := []*testData{
+	tests := []struct {
+		name                   string
+		alwaysScrapeClassic    bool
+		expectedHistogramCount int
+	}{
 		{
-			name: "bucketless-histogram",
-			pages: []mockPrometheusResponse{
+			name:                   "classic histogram not retained",
+			alwaysScrapeClassic:    false,
+			expectedHistogramCount: 1,
+		},
+		{
+			name:                   "classic histogram retained",
+			alwaysScrapeClassic:    true,
+			expectedHistogramCount: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			targets := []*testData{
 				{
-					code: 200,
-					data: `
+					name: "bucketless-histogram",
+					pages: []mockPrometheusResponse{
+						{
+							code: 200,
+							data: `
 # HELP demo_seconds A histogram without explicit buckets.
 # TYPE demo_seconds histogram
 demo_seconds_sum 123.5
 demo_seconds_count 42
 `,
-				},
-			},
-			validateFunc: func(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
-				verifyNumValidScrapeResults(t, td, resourceMetrics)
-				require.NotEmpty(t, resourceMetrics)
-
-				doCompare(t, "scrape1", td.attributes, resourceMetrics[0], []metricExpectation{
-					{
-						"demo_seconds",
-						pmetric.MetricTypeHistogram,
-						"",
-						[]dataPointExpectation{
-							{
-								histogramPointComparator: []histogramPointComparator{
-									compareHistogram(42, 123.5, nil, []uint64{42}),
-								},
-							},
 						},
-						nil,
 					},
-				})
-			},
-		},
-	}
+					validateFunc: func(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
+						verifyNumValidScrapeResults(t, td, resourceMetrics)
+						require.NotEmpty(t, resourceMetrics)
+						require.Equal(t, expectedScrapeMetricCount+tt.expectedHistogramCount, metricsCount(resourceMetrics[0]))
 
-	testComponent(t, targets, nil, func(cfg *PromConfig) {
-		enabled := true
-		disabled := false
-		for _, scrapeConfig := range cfg.ScrapeConfigs {
-			scrapeConfig.ConvertClassicHistogramsToNHCB = &enabled
-			scrapeConfig.AlwaysScrapeClassicHistograms = &disabled
-		}
-	})
+						histogramCount := 0
+						for _, metric := range getMetrics(resourceMetrics[0]) {
+							if metric.Name() != "demo_seconds" {
+								continue
+							}
+							require.Equal(t, pmetric.MetricTypeHistogram, metric.Type())
+							require.Equal(t, 1, metric.Histogram().DataPoints().Len())
+							compareHistogram(42, 123.5, nil, []uint64{42})(t, metric.Histogram().DataPoints().At(0))
+							histogramCount++
+						}
+						require.Equal(t, tt.expectedHistogramCount, histogramCount)
+					},
+				},
+			}
+
+			testComponent(t, targets, nil, func(cfg *PromConfig) {
+				enabled := true
+				alwaysScrapeClassic := tt.alwaysScrapeClassic
+				for _, scrapeConfig := range cfg.ScrapeConfigs {
+					scrapeConfig.ConvertClassicHistogramsToNHCB = &enabled
+					scrapeConfig.AlwaysScrapeClassicHistograms = &alwaysScrapeClassic
+				}
+			})
+		})
+	}
 }
 
 // metric type is defined as 'untyped' in the first metric
