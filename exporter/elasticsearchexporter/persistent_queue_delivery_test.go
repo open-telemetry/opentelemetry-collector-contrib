@@ -32,8 +32,12 @@ func (h *pqTestHost) GetExtensions() map[component.ID]component.Component {
 	return h.ext
 }
 
-// pqStorageExtension is a minimal in-memory storage.Extension, enough to
-// exercise the persistent-queue code paths without touching disk.
+// pqStorageExtension is a minimal in-memory storage.Extension. Configuring
+// sending_queue::storage selects exporterhelper's persistent-queue
+// implementation, which marshals every request to bytes on Offer and
+// unmarshals on consume regardless of what backs the storage client — so this
+// exercises the exporter's serialization round-trip without touching disk,
+// the same technique exporterhelper's own persistent-queue tests use.
 type pqStorageExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
