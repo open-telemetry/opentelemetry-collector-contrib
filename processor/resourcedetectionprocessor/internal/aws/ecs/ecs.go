@@ -104,7 +104,9 @@ func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 		if err != nil && d.failOnMissingMetadata {
 			return pcommon.NewResource(), "", fmt.Errorf("ecs container metadata unavailable: %w", err)
 		}
-		return d.rb.Emit(), "", err
+		// Task metadata was retrieved successfully, so return it without the container
+		// log attributes rather than reporting a failure the caller cannot act on.
+		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
 	addValidLogData(tmdeResp.Containers, selfMetaData, account, d.rb)

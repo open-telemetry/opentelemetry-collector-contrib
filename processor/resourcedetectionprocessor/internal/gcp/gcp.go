@@ -72,7 +72,10 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.rb.SetFromCallable(d.rb.SetHostName, d.detector.BareMetalSolutionInstanceID),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.BareMetalSolutionCloudRegion),
 		)
-		return d.rb.Emit(), conventions.SchemaURL, errs
+		if errs != nil && d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errs
+		}
+		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
 	if !metadata.OnGCE() {
@@ -152,8 +155,12 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		)
 		res := d.rb.Emit()
 
+		if errs != nil && d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errs
+		}
+
 		if len(d.labelKeyRegexes) == 0 {
-			return res, conventions.SchemaURL, errs
+			return res, conventions.SchemaURL, nil
 		}
 
 		projectID, perr := d.detector.ProjectID()
@@ -161,20 +168,20 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		name, nerr := d.detector.GCEInstanceName()
 		if perr != nil || zerr != nil || nerr != nil {
 			d.logger.Warn("failed reading GCE metadata for labels", zap.NamedError("project_id", perr), zap.NamedError("zone", zerr), zap.NamedError("instance_name", nerr))
-			return res, conventions.SchemaURL, errs
+			return res, conventions.SchemaURL, nil
 		}
 
 		instClient, cerr := d.gceClientBuilder.buildClient(ctx)
 		if cerr != nil {
 			d.logger.Warn("failed to build GCE instances client", zap.Error(cerr))
-			return res, conventions.SchemaURL, errs
+			return res, conventions.SchemaURL, nil
 		}
 		defer instClient.Close()
 
 		labels, ferr := fetchGCELabels(ctx, instClient, projectID, zone, name, d.labelKeyRegexes)
 		if ferr != nil {
 			d.logger.Warn("failed fetching GCE labels", zap.Error(ferr))
-			return res, conventions.SchemaURL, errs
+			return res, conventions.SchemaURL, nil
 		}
 
 		if len(labels) > 0 {
@@ -184,15 +191,15 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			}
 		}
 
-		return res, conventions.SchemaURL, errs
+		return res, conventions.SchemaURL, nil
 	default:
 		// We don't support this platform yet, so just return with what we have
 	}
 
-	if d.failOnMissingMetadata && errs != nil {
+	if errs != nil && d.failOnMissingMetadata {
 		return pcommon.NewResource(), "", errs
 	}
-	return d.rb.Emit(), conventions.SchemaURL, errs
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }
 
 type instancesAPI interface {

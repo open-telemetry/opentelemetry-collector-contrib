@@ -127,7 +127,11 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string, error) {
 	imdsMeta, err := d.imdsProvider.Get(ctx)
 	if err != nil {
-		return d.rb.Emit(), conventions.SchemaURL, err
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", err
+		}
+		d.logger.Debug("EKS IMDS metadata unavailable", zap.Error(err))
+		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
 	d.rb.SetHostID(imdsMeta.InstanceID)
@@ -139,7 +143,11 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 
 	hostname, err := d.imdsProvider.Hostname(ctx)
 	if err != nil {
-		return d.rb.Emit(), conventions.SchemaURL, err
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", err
+		}
+		d.logger.Debug("EKS IMDS hostname unavailable", zap.Error(err))
+		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 	d.rb.SetHostName(hostname)
 
@@ -147,7 +155,11 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 		d.apiProvider.SetRegionInstanceID(imdsMeta.Region, imdsMeta.InstanceID)
 		var apiMeta apiprovider.InstanceMetadata
 		if apiMeta, err = d.apiProvider.GetInstanceMetadata(ctx); err != nil {
-			return d.rb.Emit(), conventions.SchemaURL, err
+			if d.failOnMissingMetadata {
+				return pcommon.NewResource(), "", err
+			}
+			d.logger.Debug("EKS instance metadata unavailable", zap.Error(err))
+			return d.rb.Emit(), conventions.SchemaURL, nil
 		}
 		d.rb.SetK8sClusterName(apiMeta.ClusterName)
 	}
@@ -157,7 +169,11 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 func (d *detector) detectFromAPI(ctx context.Context) (pcommon.Resource, string, error) {
 	k8sMeta, err := d.apiProvider.GetK8sInstanceMetadata(ctx)
 	if err != nil {
-		return d.rb.Emit(), conventions.SchemaURL, err
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", err
+		}
+		d.logger.Debug("EKS k8s instance metadata unavailable", zap.Error(err))
+		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
 	d.rb.SetHostID(k8sMeta.InstanceID)
@@ -166,7 +182,11 @@ func (d *detector) detectFromAPI(ctx context.Context) (pcommon.Resource, string,
 
 	apiMeta, err := d.apiProvider.GetInstanceMetadata(ctx)
 	if err != nil {
-		return d.rb.Emit(), conventions.SchemaURL, err
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", err
+		}
+		d.logger.Debug("EKS instance metadata unavailable", zap.Error(err))
+		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
 	d.rb.SetCloudAccountID(apiMeta.AccountID)

@@ -4,10 +4,12 @@
 package ecs
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
 
@@ -19,6 +21,7 @@ import (
 type mockMetaDataProvider struct {
 	isV4           bool
 	taskArnVersion int `default:"1"`
+	containerErr   error
 }
 
 var _ ecsutil.MetadataProvider = (*mockMetaDataProvider)(nil)
@@ -55,6 +58,9 @@ func (md *mockMetaDataProvider) FetchTaskMetadata() (*ecsutil.TaskMetadata, erro
 }
 
 func (md *mockMetaDataProvider) FetchContainerMetadata() (*ecsutil.ContainerMetadata, error) {
+	if md.containerErr != nil {
+		return nil, md.containerErr
+	}
 	c := createTestContainer(md.isV4)
 	return &c, nil
 }
@@ -72,6 +78,38 @@ func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
 	res, _, err := d.Detect(t.Context())
 
 	assert.NoError(t, err)
+	assert.Equal(t, 0, res.Attributes().Len())
+}
+
+// Task metadata succeeded but container metadata did not. With fail_on_missing_metadata
+// off (the default) the task attributes must still be returned, with the schema URL
+// intact and no error — previously this returned a populated resource alongside an
+// error, which fails collector startup despite the detection having largely worked.
+func Test_ecsContainerMetadataFailure(t *testing.T) {
+	d := Detector{
+		provider: &mockMetaDataProvider{isV4: true, taskArnVersion: 1, containerErr: errors.New("fail")},
+		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+	}
+
+	res, schemaURL, err := d.Detect(t.Context())
+
+	require.NoError(t, err)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+	assert.Equal(t, "arn:aws:ecs:us-west-2:123456789123:task/123", res.Attributes().AsRaw()["aws.ecs.task.arn"])
+}
+
+func Test_ecsContainerMetadataFailureFailOnMissingMetadata(t *testing.T) {
+	d := Detector{
+		provider:              &mockMetaDataProvider{isV4: true, taskArnVersion: 1, containerErr: errors.New("fail")},
+		rb:                    metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+		failOnMissingMetadata: true,
+	}
+
+	res, schemaURL, err := d.Detect(t.Context())
+
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "ecs container metadata unavailable")
+	assert.Empty(t, schemaURL)
 	assert.Equal(t, 0, res.Attributes().Len())
 }
 
