@@ -547,15 +547,22 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 
 func TestMetricsExporterDisableFallbackHostname(t *testing.T) {
 	tests := []struct {
-		name             string
-		resourceHostname string
+		name                 string
+		resourceAttributeKey string
+		resourceHostname     string
 	}{
 		{
 			name: "without resource hostname",
 		},
 		{
-			name:             "with resource hostname",
-			resourceHostname: "sdk-hostname",
+			name:                 "with Datadog resource hostname",
+			resourceAttributeKey: attributes.AttributeDatadogHostname,
+			resourceHostname:     "sdk-hostname",
+		},
+		{
+			name:                 "with OpenTelemetry resource hostname",
+			resourceAttributeKey: "host.name",
+			resourceHostname:     "sdk-hostname",
 		},
 	}
 
@@ -593,10 +600,9 @@ func TestMetricsExporterDisableFallbackHostname(t *testing.T) {
 
 			md := createTestMetrics(nil)
 			resourceAttributes := md.ResourceMetrics().At(0).Resource().Attributes()
-			if tt.resourceHostname == "" {
-				resourceAttributes.Remove(attributes.AttributeDatadogHostname)
-			} else {
-				resourceAttributes.PutStr(attributes.AttributeDatadogHostname, tt.resourceHostname)
+			resourceAttributes.Remove(attributes.AttributeDatadogHostname)
+			if tt.resourceHostname != "" {
+				resourceAttributes.PutStr(tt.resourceAttributeKey, tt.resourceHostname)
 			}
 			require.NoError(t, exp.PushMetricsData(t.Context(), md))
 

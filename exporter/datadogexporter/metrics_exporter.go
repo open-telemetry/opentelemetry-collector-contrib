@@ -55,12 +55,6 @@ type metricsExporter struct {
 	gatewayUsage *attributes.GatewayUsage
 }
 
-type noFallbackSourceProvider struct{}
-
-func (noFallbackSourceProvider) Source(context.Context) (source.Source, error) {
-	return source.Source{}, nil
-}
-
 func newMetricsExporter(
 	ctx context.Context,
 	params exporter.Settings,
@@ -73,14 +67,11 @@ func newMetricsExporter(
 	statsOut chan []byte,
 	gatewayUsage *attributes.GatewayUsage,
 ) (*metricsExporter, error) {
-	fallbackSourceProvider := sourceProvider
-	if cfg.Metrics.ExporterConfig.DisableFallbackHostname {
-		fallbackSourceProvider = noFallbackSourceProvider{}
-	}
-
 	options := cfg.Metrics.ToTranslatorOpts()
+	if !cfg.Metrics.ExporterConfig.DisableFallbackHostname {
+		options = append(options, otlpmetrics.WithFallbackSourceProvider(sourceProvider))
+	}
 	options = append(options,
-		otlpmetrics.WithFallbackSourceProvider(fallbackSourceProvider),
 		otlpmetrics.WithStatsOut(statsOut))
 
 	switch {

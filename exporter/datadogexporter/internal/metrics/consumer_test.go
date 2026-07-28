@@ -11,16 +11,12 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
-	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
-	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 )
 
 type testProvider string
@@ -155,53 +151,37 @@ func TestTagsMetrics(t *testing.T) {
 	)
 }
 
-func TestDisableFallbackHostnameOnlyRemovesEmptyHosts(t *testing.T) {
+func TestDisableFallbackHostnameDoesNotSetEmptyHostResources(t *testing.T) {
+	ms := pmetric.NewMetrics()
+	rms := ms.ResourceMetrics()
+
+	rm := rms.AppendEmpty()
+	rm.Resource().Attributes().PutStr(attributes.AttributeDatadogHostname, "resource-hostname")
+	addTestMetric(t, rm)
+
+	rm = rms.AppendEmpty()
+	addTestMetric(t, rm)
+
+	logger, _ := zap.NewProduction()
+	tr := newTranslator(t, logger, metrics.WithFallbackSourceProvider(testProvider("")))
 	consumer := NewConsumer(nil, true)
-	consumer.ms = []datadogV2.MetricSeries{
-		{
-			Metric: "test.metric",
-			Resources: []datadogV2.MetricResource{
-				{
-					Name: datadog.PtrString("resource-hostname"),
-					Type: datadog.PtrString("host"),
-				},
-			},
-		},
-		{
-			Metric: "hostless.metric",
-			Resources: []datadogV2.MetricResource{
-				{
-					Name: datadog.PtrString(""),
-					Type: datadog.PtrString("host"),
-				},
-			},
-		},
-	}
-	consumer.sl = sketches.SketchSeriesList{
-		{
-			Name: "test.sketch",
-			Host: "resource-hostname",
-		},
-		{
-			Name: "hostless.sketch",
-		},
-	}
-	consumer.ConsumeHost("resource-hostname")
+	metadata, err := tr.MapMetrics(t.Context(), ms, consumer, nil)
+	require.NoError(t, err)
 
-	series, sketchSeries := consumer.All(0, component.BuildInfo{}, nil, metrics.Metadata{})
+	series, _ := consumer.All(0, component.BuildInfo{}, nil, metadata)
 
-	require.Len(t, series, 3)
-	require.Len(t, series[0].Resources, 1)
-	assert.Equal(t, "resource-hostname", series[0].Resources[0].GetName())
-	assert.Empty(t, series[1].Resources)
-	for _, runningMetric := range series[2:] {
-		require.Len(t, runningMetric.Resources, 1)
-		assert.Equal(t, "resource-hostname", runningMetric.Resources[0].GetName())
+	var withResourceHostname, withoutHostResource int
+	for _, metricSeries := range series {
+		if len(metricSeries.Resources) == 0 {
+			withoutHostResource++
+			continue
+		}
+		require.Len(t, metricSeries.Resources, 1)
+		assert.Equal(t, "resource-hostname", metricSeries.Resources[0].GetName())
+		withResourceHostname++
 	}
-	require.Len(t, sketchSeries, 2)
-	assert.Equal(t, "resource-hostname", sketchSeries[0].Host)
-	assert.Empty(t, sketchSeries[1].Host)
-	assert.Contains(t, consumer.seenHosts, "resource-hostname")
+	assert.Equal(t, 2, withResourceHostname)
+	assert.Equal(t, 2, withoutHostResource)
 }
 
 func addTestMetricWithUnit(_ *testing.T, rm pmetric.ResourceMetrics, name, unit string) {

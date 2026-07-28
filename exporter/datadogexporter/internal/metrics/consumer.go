@@ -11,7 +11,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
 	"github.com/DataDog/datadog-agent/pkg/util/quantile"
-	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -65,9 +64,9 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 	buildTags := TagsFromBuildInfo(buildInfo)
 	for host := range c.seenHosts {
 		// Report the host as running
-		runningMetric := DefaultMetrics("metrics", host, timestamp, buildTags)
+		runningMetric := c.defaultMetrics("metrics", host, timestamp, buildTags)
 		if c.gatewayUsage != nil {
-			series = append(series, GatewayUsageGauge(timestamp, host, buildTags, c.gatewayUsage))
+			series = append(series, c.gatewayUsageGauge(timestamp, host, buildTags))
 		}
 		series = append(series, runningMetric...)
 	}
@@ -75,9 +74,9 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 	for tag := range c.seenTags {
 		var tagSeries []datadogV2.MetricSeries
 		if strings.HasPrefix(tag, string(source.AWSECSFargateKind)+":") {
-			tagSeries = FargateMetrics(timestamp, buildTags)
+			tagSeries = c.fargateMetrics(timestamp, buildTags)
 		} else {
-			tagSeries = DefaultMetrics("metrics", "", timestamp, buildTags)
+			tagSeries = c.defaultMetrics("metrics", "", timestamp, buildTags)
 		}
 		for i := range tagSeries {
 			tagSeries[i].Tags = append(tagSeries[i].Tags, tag)
@@ -87,10 +86,38 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 
 	for _, lang := range metadata.Languages {
 		tags := append(buildTags, "language:"+lang) //nolint:gocritic
-		runningMetric := DefaultMetrics("runtime_metrics", "", timestamp, tags)
+		runningMetric := c.defaultMetrics("runtime_metrics", "", timestamp, tags)
 		series = append(series, runningMetric...)
 	}
 
+	return series
+}
+
+func (c *Consumer) shouldSetHostResource(hostname string) bool {
+	return hostname != "" || !c.disableFallbackHostname
+}
+
+func (c *Consumer) defaultMetrics(exporterType, hostname string, timestamp uint64, tags []string) []datadogV2.MetricSeries {
+	series := newDefaultMetrics(exporterType, timestamp, tags)
+	if c.shouldSetHostResource(hostname) {
+		setHostResources(series, hostname)
+	}
+	return series
+}
+
+func (c *Consumer) fargateMetrics(timestamp uint64, tags []string) []datadogV2.MetricSeries {
+	series := newFargateMetrics(timestamp, tags)
+	if c.shouldSetHostResource("") {
+		setHostResources(series, "")
+	}
+	return series
+}
+
+func (c *Consumer) gatewayUsageGauge(timestamp uint64, hostname string, tags []string) datadogV2.MetricSeries {
+	series := newGatewayUsageGauge(timestamp, tags, c.gatewayUsage)
+	if c.shouldSetHostResource(hostname) {
+		setHostResource(&series, hostname)
+	}
 	return series
 }
 
@@ -104,21 +131,6 @@ func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []s
 		}
 		for i := range c.sl {
 			c.sl[i].Tags = append(c.sl[i].Tags, tags...)
-		}
-	}
-	if c.disableFallbackHostname {
-		for i := range series {
-			resources := series[i].Resources[:0]
-			for _, resource := range series[i].Resources {
-				if resource.GetType() == "host" && resource.GetName() == "" {
-					continue
-				}
-				resources = append(resources, resource)
-			}
-			if len(resources) == 0 {
-				resources = nil
-			}
-			series[i].Resources = resources
 		}
 	}
 	return series, c.sl
@@ -135,12 +147,9 @@ func (c *Consumer) ConsumeTimeSeries(
 ) {
 	dt := c.toDataType(typ)
 	met := NewMetric(dims.Name(), dt, timestamp, interval, value, dims.Tags())
-	met.SetResources([]datadogV2.MetricResource{
-		{
-			Name: datadog.PtrString(dims.Host()),
-			Type: datadog.PtrString("host"),
-		},
-	})
+	if c.shouldSetHostResource(dims.Host()) {
+		setHostResource(&met, dims.Host())
+	}
 	if unit := dims.Unit(); unit != "" {
 		met.SetUnit(unit)
 	}
