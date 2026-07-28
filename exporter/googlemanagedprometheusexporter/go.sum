@@ -472,8 +472,8 @@ go.opentelemetry.io/collector/exporter/xexporter v0.157.1-0.20260723141305-52e6b
 go.opentelemetry.io/collector/exporter/xexporter v0.157.1-0.20260723141305-52e6bf4aaaba/go.mod h1:/Fy0KezweWrZbSOAix3RYvTJzTQ9GrFXfXQGMRDzegk=
 go.opentelemetry.io/collector/extension v1.63.1-0.20260723141305-52e6bf4aaaba h1:8Wmi/FUX6WzWgdy87IiQ/8p4IMQR+b53kGPL7ka4wiI=
 go.opentelemetry.io/collector/extension v1.63.1-0.20260723141305-52e6bf4aaaba/go.mod h1:K4UQiO/T+B3ex5D5UL0H0Jd7xB3NL12qUHisGiCitbU=
-go.opentelemetry.io/collector/extension/extensionauth v1.63.0 h1:I2nUDa+r0AVO7cCDvqlKX0JI21LzdYq2SLp1hLxQ0Q8=
-go.opentelemetry.io/collector/extension/extensionauth v1.63.0/go.mod h1:bJV7oxY/JWRDXrZDbjuv9DjU0NNNs6r+YQcYkWVzf7o=
+go.opentelemetry.io/collector/extension/extensionauth v1.63.1-0.20260723141305-52e6bf4aaaba h1:YfW4EW5bOSfVxTUHTdVGPjLyD7wPv/Nd5WFfubHTtcA=
+go.opentelemetry.io/collector/extension/extensionauth v1.63.1-0.20260723141305-52e6bf4aaaba/go.mod h1:LqLfW1MzqFYt/3bszEZ9+h+cuElUrgd7hBlLTbLs1s0=
 go.opentelemetry.io/collector/extension/extensioncapabilities v0.157.1-0.20260723141305-52e6bf4aaaba h1:4RLnhvScb81bLKtmmDMwQ3tYpeMy1zpKLb70I251sh0=
 go.opentelemetry.io/collector/extension/extensioncapabilities v0.157.1-0.20260723141305-52e6bf4aaaba/go.mod h1:dBSyIfFGcyEPmj0xP2fEQByzm2g6iJiZ3JpfSaexcrE=
 go.opentelemetry.io/collector/extension/extensionmiddleware v0.157.0 h1:uC8E0dzheaRCi1Y8WwmtPmElBfS2FfaCkjOQh4sq92Y=
