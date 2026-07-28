@@ -11,6 +11,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
 	"github.com/DataDog/datadog-agent/pkg/util/quantile"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -27,21 +28,21 @@ var (
 // Consumer implements metrics.Consumer. It records consumed metrics, sketches and
 // APM stats payloads. It provides them to the caller using the All method.
 type Consumer struct {
-	ms                      []datadogV2.MetricSeries
-	sl                      sketches.SketchSeriesList
-	seenHosts               map[string]struct{}
-	seenTags                map[string]struct{}
-	gatewayUsage            *attributes.GatewayUsage
-	disableFallbackHostname bool
+	ms           []datadogV2.MetricSeries
+	sl           sketches.SketchSeriesList
+	seenHosts    map[string]struct{}
+	seenTags     map[string]struct{}
+	gatewayUsage *attributes.GatewayUsage
+	noFallback   bool
 }
 
 // NewConsumer creates a new Datadog consumer. It implements metrics.Consumer.
 func NewConsumer(gatewayUsage *attributes.GatewayUsage, disableFallbackHostname bool) *Consumer {
 	return &Consumer{
-		seenHosts:               make(map[string]struct{}),
-		seenTags:                make(map[string]struct{}),
-		gatewayUsage:            gatewayUsage,
-		disableFallbackHostname: disableFallbackHostname,
+		seenHosts:    make(map[string]struct{}),
+		seenTags:     make(map[string]struct{}),
+		gatewayUsage: gatewayUsage,
+		noFallback:   disableFallbackHostname,
 	}
 }
 
@@ -64,9 +65,9 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 	buildTags := TagsFromBuildInfo(buildInfo)
 	for host := range c.seenHosts {
 		// Report the host as running
-		runningMetric := c.defaultMetrics("metrics", host, timestamp, buildTags)
+		runningMetric := DefaultMetrics("metrics", host, timestamp, buildTags)
 		if c.gatewayUsage != nil {
-			series = append(series, c.gatewayUsageGauge(timestamp, host, buildTags))
+			series = append(series, GatewayUsageGauge(timestamp, host, buildTags, c.gatewayUsage))
 		}
 		series = append(series, runningMetric...)
 	}
@@ -74,9 +75,9 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 	for tag := range c.seenTags {
 		var tagSeries []datadogV2.MetricSeries
 		if strings.HasPrefix(tag, string(source.AWSECSFargateKind)+":") {
-			tagSeries = c.fargateMetrics(timestamp, buildTags)
+			tagSeries = FargateMetrics(timestamp, buildTags)
 		} else {
-			tagSeries = c.defaultMetrics("metrics", "", timestamp, buildTags)
+			tagSeries = DefaultMetrics("metrics", "", timestamp, buildTags)
 		}
 		for i := range tagSeries {
 			tagSeries[i].Tags = append(tagSeries[i].Tags, tag)
@@ -86,38 +87,10 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 
 	for _, lang := range metadata.Languages {
 		tags := append(buildTags, "language:"+lang) //nolint:gocritic
-		runningMetric := c.defaultMetrics("runtime_metrics", "", timestamp, tags)
+		runningMetric := DefaultMetrics("runtime_metrics", "", timestamp, tags)
 		series = append(series, runningMetric...)
 	}
 
-	return series
-}
-
-func (c *Consumer) shouldSetHostResource(hostname string) bool {
-	return hostname != "" || !c.disableFallbackHostname
-}
-
-func (c *Consumer) defaultMetrics(exporterType, hostname string, timestamp uint64, tags []string) []datadogV2.MetricSeries {
-	series := newDefaultMetrics(exporterType, timestamp, tags)
-	if c.shouldSetHostResource(hostname) {
-		setHostResources(series, hostname)
-	}
-	return series
-}
-
-func (c *Consumer) fargateMetrics(timestamp uint64, tags []string) []datadogV2.MetricSeries {
-	series := newFargateMetrics(timestamp, tags)
-	if c.shouldSetHostResource("") {
-		setHostResources(series, "")
-	}
-	return series
-}
-
-func (c *Consumer) gatewayUsageGauge(timestamp uint64, hostname string, tags []string) datadogV2.MetricSeries {
-	series := newGatewayUsageGauge(timestamp, tags, c.gatewayUsage)
-	if c.shouldSetHostResource(hostname) {
-		setHostResource(&series, hostname)
-	}
 	return series
 }
 
@@ -148,8 +121,13 @@ func (c *Consumer) ConsumeTimeSeries(
 ) {
 	dt := c.toDataType(typ)
 	met := NewMetric(dims.Name(), dt, timestamp, interval, value, dims.Tags())
-	if c.shouldSetHostResource(dims.Host()) {
-		setHostResource(&met, dims.Host())
+	if dims.Host() != "" || !c.noFallback {
+		met.SetResources([]datadogV2.MetricResource{
+			{
+				Name: datadog.PtrString(dims.Host()),
+				Type: datadog.PtrString("host"),
+			},
+		})
 	}
 	if unit := dims.Unit(); unit != "" {
 		met.SetUnit(unit)

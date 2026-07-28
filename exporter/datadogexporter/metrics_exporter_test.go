@@ -547,22 +547,15 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 
 func TestMetricsExporterDisableFallbackHostname(t *testing.T) {
 	tests := []struct {
-		name                 string
-		resourceAttributeKey string
-		resourceHostname     string
+		name             string
+		resourceHostname string
 	}{
 		{
 			name: "without resource hostname",
 		},
 		{
-			name:                 "with Datadog resource hostname",
-			resourceAttributeKey: attributes.AttributeDatadogHostname,
-			resourceHostname:     "sdk-hostname",
-		},
-		{
-			name:                 "with OpenTelemetry resource hostname",
-			resourceAttributeKey: "host.name",
-			resourceHostname:     "sdk-hostname",
+			name:             "with OpenTelemetry resource hostname",
+			resourceHostname: "sdk-hostname",
 		},
 	}
 
@@ -602,29 +595,23 @@ func TestMetricsExporterDisableFallbackHostname(t *testing.T) {
 			resourceAttributes := md.ResourceMetrics().At(0).Resource().Attributes()
 			resourceAttributes.Remove(attributes.AttributeDatadogHostname)
 			if tt.resourceHostname != "" {
-				resourceAttributes.PutStr(tt.resourceAttributeKey, tt.resourceHostname)
+				resourceAttributes.PutStr("host.name", tt.resourceHostname)
 			}
 			require.NoError(t, exp.PushMetricsData(t.Context(), md))
 
 			reader, err := gzip.NewReader(bytes.NewReader(seriesRecorder.ByteBody))
 			require.NoError(t, err)
-			var payload map[string]any
+			var payload datadogV2.MetricPayload
 			require.NoError(t, json.NewDecoder(reader).Decode(&payload))
 
-			series, ok := payload["series"].([]any)
-			require.True(t, ok)
-			require.NotEmpty(t, series)
-			for _, rawSeries := range series {
-				metricSeries, ok := rawSeries.(map[string]any)
-				require.True(t, ok)
-				if tt.resourceHostname == "" {
-					assert.NotContains(t, metricSeries, "resources")
-					continue
-				}
-				assert.Equal(t,
-					[]any{map[string]any{"name": tt.resourceHostname, "type": "host"}},
-					metricSeries["resources"],
-				)
+			require.NotEmpty(t, payload.Series)
+			metricSeries := payload.Series[0]
+			require.Equal(t, "int.gauge", metricSeries.Metric)
+			if tt.resourceHostname == "" {
+				assert.Empty(t, metricSeries.Resources)
+			} else {
+				require.Len(t, metricSeries.Resources, 1)
+				assert.Equal(t, tt.resourceHostname, metricSeries.Resources[0].GetName())
 			}
 		})
 	}

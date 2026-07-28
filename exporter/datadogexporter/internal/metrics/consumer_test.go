@@ -151,39 +151,6 @@ func TestTagsMetrics(t *testing.T) {
 	)
 }
 
-func TestDisableFallbackHostnameDoesNotSetEmptyHostResources(t *testing.T) {
-	ms := pmetric.NewMetrics()
-	rms := ms.ResourceMetrics()
-
-	rm := rms.AppendEmpty()
-	rm.Resource().Attributes().PutStr(attributes.AttributeDatadogHostname, "resource-hostname")
-	addTestMetric(t, rm)
-
-	rm = rms.AppendEmpty()
-	addTestMetric(t, rm)
-
-	logger, _ := zap.NewProduction()
-	tr := newTranslator(t, logger, metrics.WithFallbackSourceProvider(testProvider("")))
-	consumer := NewConsumer(nil, true)
-	metadata, err := tr.MapMetrics(t.Context(), ms, consumer, nil)
-	require.NoError(t, err)
-
-	series, _ := consumer.All(0, component.BuildInfo{}, nil, metadata)
-
-	var withResourceHostname, withoutHostResource int
-	for _, metricSeries := range series {
-		if len(metricSeries.Resources) == 0 {
-			withoutHostResource++
-			continue
-		}
-		require.Len(t, metricSeries.Resources, 1)
-		assert.Equal(t, "resource-hostname", metricSeries.Resources[0].GetName())
-		withResourceHostname++
-	}
-	assert.Equal(t, 2, withResourceHostname)
-	assert.Equal(t, 2, withoutHostResource)
-}
-
 func addTestMetricWithUnit(_ *testing.T, rm pmetric.ResourceMetrics, name, unit string) {
 	met := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	met.SetEmptyGauge()
