@@ -63,7 +63,7 @@ var (
 		attrs.PutStr("cloud.account.id", "myCloudAccount")
 		attrs.PutStr("azure.vm.name", "myVMName")
 		attrs.PutStr("azure.vm.size", "42")
-		attrs.PutStr("azure.resourcegroup.name", "myResourcegroupName")
+		attrs.PutStr("azure.resource_group.name", "myResourcegroupName")
 		return res
 	}()
 	azureScalesetResource = func() pcommon.Resource {
@@ -78,7 +78,7 @@ var (
 		attrs.PutStr("azure.vm.name", "myVMScalesetName_1")
 		attrs.PutStr("azure.vm.size", "42")
 		attrs.PutStr("azure.vm.scaleset.name", "myVMScalesetName")
-		attrs.PutStr("azure.resourcegroup.name", "myResourcegroupName")
+		attrs.PutStr("azure.resource_group.name", "myResourcegroupName")
 		return res
 	}()
 	azureMissingCloudAcct = func() pcommon.Resource {
@@ -89,7 +89,7 @@ var (
 		attrs.PutStr("cloud.region", "myCloudRegion")
 		attrs.PutStr("host.id", "myHostID")
 		attrs.PutStr("azure.vm.size", "42")
-		attrs.PutStr("azure.resourcegroup.name", "myResourcegroupName")
+		attrs.PutStr("azure.resource_group.name", "myResourcegroupName")
 		return res
 	}()
 	azureMissingResourceGroup = func() pcommon.Resource {
@@ -111,7 +111,7 @@ var (
 		attrs.PutStr("cloud.region", "myCloudRegion")
 		attrs.PutStr("host.id", "myHostID")
 		attrs.PutStr("cloud.account.id", "myCloudAccount")
-		attrs.PutStr("azure.resourcegroup.name", "myResourcegroupName")
+		attrs.PutStr("azure.resource_group.name", "myResourcegroupName")
 		attrs.PutStr("azure.vm.size", "42")
 		return res
 	}()

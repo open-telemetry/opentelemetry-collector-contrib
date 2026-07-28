@@ -104,7 +104,7 @@ func ResourceToHostID(res pcommon.Resource) (HostID, bool) {
 
 func azureID(attrs pcommon.Map, cloudAccount string) string {
 	var resourceGroupName string
-	if attr, ok := attrs.Get("azure.resourcegroup.name"); ok {
+	if attr, ok := attrs.Get("azure.resource_group.name"); ok {
 		resourceGroupName = attr.Str()
 	}
 	if resourceGroupName == "" {
