@@ -545,7 +545,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	}
 }
 
-func TestMetricsExporterDisableHostnameOnlyDisablesFallback(t *testing.T) {
+func TestMetricsExporterDisableFallbackHostname(t *testing.T) {
 	tests := []struct {
 		name             string
 		resourceHostname string
@@ -566,7 +566,7 @@ func TestMetricsExporterDisableHostnameOnlyDisablesFallback(t *testing.T) {
 			defer server.Close()
 
 			cfg := newTestConfig(t, server.URL, nil, datadogconfig.HistogramModeCounters)
-			cfg.Metrics.ExporterConfig.DisableHostname = true
+			cfg.Metrics.ExporterConfig.DisableFallbackHostname = true
 
 			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)

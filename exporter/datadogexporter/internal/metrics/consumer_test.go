@@ -155,7 +155,7 @@ func TestTagsMetrics(t *testing.T) {
 	)
 }
 
-func TestDisableHostnameOnlyRemovesEmptyHosts(t *testing.T) {
+func TestDisableFallbackHostnameOnlyRemovesEmptyHosts(t *testing.T) {
 	consumer := NewConsumer(nil, true)
 	consumer.ms = []datadogV2.MetricSeries{
 		{

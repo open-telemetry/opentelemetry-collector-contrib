@@ -28,21 +28,21 @@ var (
 // Consumer implements metrics.Consumer. It records consumed metrics, sketches and
 // APM stats payloads. It provides them to the caller using the All method.
 type Consumer struct {
-	ms              []datadogV2.MetricSeries
-	sl              sketches.SketchSeriesList
-	seenHosts       map[string]struct{}
-	seenTags        map[string]struct{}
-	gatewayUsage    *attributes.GatewayUsage
-	disableHostname bool
+	ms                      []datadogV2.MetricSeries
+	sl                      sketches.SketchSeriesList
+	seenHosts               map[string]struct{}
+	seenTags                map[string]struct{}
+	gatewayUsage            *attributes.GatewayUsage
+	disableFallbackHostname bool
 }
 
 // NewConsumer creates a new Datadog consumer. It implements metrics.Consumer.
-func NewConsumer(gatewayUsage *attributes.GatewayUsage, disableHostname bool) *Consumer {
+func NewConsumer(gatewayUsage *attributes.GatewayUsage, disableFallbackHostname bool) *Consumer {
 	return &Consumer{
-		seenHosts:       make(map[string]struct{}),
-		seenTags:        make(map[string]struct{}),
-		gatewayUsage:    gatewayUsage,
-		disableHostname: disableHostname,
+		seenHosts:               make(map[string]struct{}),
+		seenTags:                make(map[string]struct{}),
+		gatewayUsage:            gatewayUsage,
+		disableFallbackHostname: disableFallbackHostname,
 	}
 }
 
@@ -106,7 +106,7 @@ func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []s
 			c.sl[i].Tags = append(c.sl[i].Tags, tags...)
 		}
 	}
-	if c.disableHostname {
+	if c.disableFallbackHostname {
 		for i := range series {
 			resources := series[i].Resources[:0]
 			for _, resource := range series[i].Resources {

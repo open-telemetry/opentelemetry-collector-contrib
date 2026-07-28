@@ -74,7 +74,7 @@ func newMetricsExporter(
 	gatewayUsage *attributes.GatewayUsage,
 ) (*metricsExporter, error) {
 	fallbackSourceProvider := sourceProvider
-	if cfg.Metrics.ExporterConfig.DisableHostname {
+	if cfg.Metrics.ExporterConfig.DisableFallbackHostname {
 		fallbackSourceProvider = noFallbackSourceProvider{}
 	}
 
@@ -209,7 +209,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			consumeResource(exp.metadataReporter, res, exp.params.Logger)
 		}
 	}
-	consumer := metrics.NewConsumer(exp.gatewayUsage, exp.cfg.Metrics.ExporterConfig.DisableHostname)
+	consumer := metrics.NewConsumer(exp.gatewayUsage, exp.cfg.Metrics.ExporterConfig.DisableFallbackHostname)
 	metadata, err := exp.tr.MapMetrics(ctx, md, consumer, exp.gatewayUsage)
 	if err != nil {
 		return fmt.Errorf("failed to map metrics: %w", err)
