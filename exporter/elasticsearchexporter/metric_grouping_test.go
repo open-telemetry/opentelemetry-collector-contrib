@@ -40,14 +40,14 @@ func newGroupingMetricsExporter(t *testing.T) (*bulkRecorder, func(...pmetric.Me
 		batch.MaxSize = 2e8
 	})
 
-	exp, err := NewFactory().CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := NewFactory().CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.WithoutCancel(t.Context()))) })
 
 	return rec, func(payloads ...pmetric.Metrics) {
 		for _, m := range payloads {
-			require.NoError(t, exp.ConsumeMetrics(context.Background(), m))
+			require.NoError(t, exp.ConsumeMetrics(t.Context(), m))
 		}
 	}
 }

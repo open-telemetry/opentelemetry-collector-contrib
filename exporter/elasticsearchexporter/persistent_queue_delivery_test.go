@@ -121,7 +121,7 @@ func newPQDeliveryTest(t *testing.T) (*Config, component.Host, *bulkRecorder) {
 func pqLogs(n int) plog.Logs {
 	logs := plog.NewLogs()
 	sl := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
-	for i := 0; i < n; i++ {
+	for range n {
 		lr := sl.LogRecords().AppendEmpty()
 		lr.Body().SetStr("persistent queue delivery")
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1719000000, 0)))
@@ -132,7 +132,7 @@ func pqLogs(n int) plog.Logs {
 func pqTraces(n int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	ss := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
-	for i := 0; i < n; i++ {
+	for range n {
 		span := ss.Spans().AppendEmpty()
 		span.SetName("span")
 		span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(1719000000, 0)))
@@ -195,42 +195,42 @@ func TestPersistentQueueDelivery(t *testing.T) {
 
 	t.Run("logs", func(t *testing.T) {
 		cfg, host, rec := newPQDeliveryTest(t)
-		exp, err := f.CreateLogs(context.Background(), set, cfg)
+		exp, err := f.CreateLogs(t.Context(), set, cfg)
 		require.NoError(t, err)
-		require.NoError(t, exp.Start(context.Background(), host))
-		t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
-		require.NoError(t, exp.ConsumeLogs(context.Background(), pqLogs(3)))
+		require.NoError(t, exp.Start(t.Context(), host))
+		t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.WithoutCancel(t.Context()))) })
+		require.NoError(t, exp.ConsumeLogs(t.Context(), pqLogs(3)))
 		rec.WaitItems(3)
 	})
 
 	t.Run("metrics", func(t *testing.T) {
 		cfg, host, rec := newPQDeliveryTest(t)
-		exp, err := f.CreateMetrics(context.Background(), set, cfg)
+		exp, err := f.CreateMetrics(t.Context(), set, cfg)
 		require.NoError(t, err)
-		require.NoError(t, exp.Start(context.Background(), host))
-		t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
-		require.NoError(t, exp.ConsumeMetrics(context.Background(),
+		require.NoError(t, exp.Start(t.Context(), host))
+		t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.WithoutCancel(t.Context()))) })
+		require.NoError(t, exp.ConsumeMetrics(t.Context(),
 			groupingGauges("", time.Unix(1719000000, 0).UTC(), []string{"m.a", "m.b"}, []float64{1, 2})))
 		rec.WaitItems(1)
 	})
 
 	t.Run("traces", func(t *testing.T) {
 		cfg, host, rec := newPQDeliveryTest(t)
-		exp, err := f.CreateTraces(context.Background(), set, cfg)
+		exp, err := f.CreateTraces(t.Context(), set, cfg)
 		require.NoError(t, err)
-		require.NoError(t, exp.Start(context.Background(), host))
-		t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
-		require.NoError(t, exp.ConsumeTraces(context.Background(), pqTraces(2)))
+		require.NoError(t, exp.Start(t.Context(), host))
+		t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.WithoutCancel(t.Context()))) })
+		require.NoError(t, exp.ConsumeTraces(t.Context(), pqTraces(2)))
 		rec.WaitItems(2)
 	})
 
 	t.Run("profiles", func(t *testing.T) {
 		cfg, host, rec := newPQDeliveryTest(t)
-		exp, err := f.(xexporter.Factory).CreateProfiles(context.Background(), set, cfg)
+		exp, err := f.(xexporter.Factory).CreateProfiles(t.Context(), set, cfg)
 		require.NoError(t, err)
-		require.NoError(t, exp.Start(context.Background(), host))
-		t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
-		require.NoError(t, exp.ConsumeProfiles(context.Background(), pqProfiles()))
+		require.NoError(t, exp.Start(t.Context(), host))
+		t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.WithoutCancel(t.Context()))) })
+		require.NoError(t, exp.ConsumeProfiles(t.Context(), pqProfiles()))
 		rec.WaitItems(1)
 	})
 }
