@@ -809,7 +809,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			exporterConfig.SourceType = "defaultsourcetype"
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
-			exporterConfig.Endpoint = endServer.URL
+			exporterConfig.ClientConfig.Endpoint = endServer.URL
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
 			var splunkhecMsg *translator.Event
@@ -917,7 +917,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.SourceType = "defaultsourcetype"
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
-			exporterConfig.Endpoint = endServer.URL
+			exporterConfig.ClientConfig.Endpoint = endServer.URL
 			exporter, err := factory.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
 			assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
 			assert.NoError(t, err)
@@ -1032,7 +1032,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.SourceType = "defaultsourcetype"
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
-			exporterConfig.Endpoint = endServer.URL
+			exporterConfig.ClientConfig.Endpoint = endServer.URL
 
 			exporter, err := factory.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
 			assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))

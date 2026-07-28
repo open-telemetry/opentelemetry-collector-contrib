@@ -15,18 +15,22 @@ import (
 	"net"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/jpillora/backoff"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp/internal/metadata"
 )
 
 var errResolveAuthenticator = errors.New("failed to resolve authenticator")
@@ -52,6 +56,11 @@ type Input struct {
 	auth       *helper.AuthConfig
 	host       component.Host
 	authServer extensionauth.Server
+
+	maxConnections        int
+	connectionIdleTimeout time.Duration
+	activeConnNum         atomic.Int64
+	tb                    *metadata.TelemetryBuilder
 }
 
 // SetHost stores the component host so the operator can resolve extensions,
@@ -102,7 +111,7 @@ func (i *Input) configureListener() error {
 	return nil
 }
 
-// goListenn will listen for tcp connections.
+// goListen will listen for tcp connections.
 func (i *Input) goListen(ctx context.Context) {
 	i.wg.Go(func() {
 		for {
@@ -123,6 +132,36 @@ func (i *Input) goListen(ctx context.Context) {
 			if !ok {
 				continue
 			}
+
+			// when there is a max connection set, it will check if connection exceeds max number
+			if i.maxConnections > 0 {
+				// Check if max connections limit has been reached
+				// close connection, warn log and move on if maxed out
+				if currConn := int(i.activeConnNum.Load()); currConn >= i.maxConnections {
+					i.Logger().Warn("Max connections reached, waiting before accepting new connections",
+						zap.Int("max_connections", i.maxConnections),
+						zap.Int("current_connections", currConn),
+					)
+					i.recordRefusedConnection()
+					if cerr := conn.Close(); cerr != nil {
+						i.Logger().Debug("Failed to close connection", zap.Error(cerr))
+					}
+					continue
+				}
+			}
+
+			if i.connectionIdleTimeout > 0 {
+				if derr := conn.SetDeadline(time.Now().Add(i.connectionIdleTimeout)); derr != nil {
+					i.Logger().Error("Failed to set connection deadline", zap.Error(derr))
+					if cerr := conn.Close(); cerr != nil {
+						i.Logger().Error("Failed to close connection", zap.Error(cerr))
+					}
+					continue
+				}
+			}
+
+			i.activeConnNum.Add(1)
+			i.recordActiveConnectionDelta(1)
 
 			i.Logger().Debug("Received connection", zap.String("address", conn.RemoteAddr().String()))
 			subctx, cancel := context.WithCancel(connCtx)
@@ -165,6 +204,10 @@ func (i *Input) authenticate(ctx context.Context, conn net.Conn) (context.Contex
 // goHandleClose will wait for the context to finish before closing a connection.
 func (i *Input) goHandleClose(ctx context.Context, conn net.Conn) {
 	i.wg.Go(func() {
+		defer func() {
+			i.activeConnNum.Add(-1)
+			i.recordActiveConnectionDelta(-1)
+		}()
 		<-ctx.Done()
 		i.Logger().Debug("Closing connection", zap.String("address", conn.RemoteAddr().String()))
 		if err := conn.Close(); err != nil {
@@ -199,6 +242,13 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 		scanner.Split(i.splitFunc)
 
 		for scanner.Scan() {
+			if i.connectionIdleTimeout > 0 {
+				if err := conn.SetDeadline(time.Now().Add(i.connectionIdleTimeout)); err != nil {
+					// error setting deadline is due to os.ErrDeadlineExceeded, connection is closing at this point
+					i.Logger().Debug("Failed to set connection deadline", zap.Error(err))
+					break
+				}
+			}
 			i.handleMessage(ctx, conn, dec, scanner.Bytes())
 		}
 
@@ -274,4 +324,24 @@ func (i *Input) Stop() error {
 		i.resolver.Stop()
 	}
 	return nil
+}
+
+func (i *Input) recordActiveConnectionDelta(delta int64) {
+	if i.tb != nil {
+		i.tb.TCPInputActiveConnections.Add(
+			context.Background(),
+			delta,
+			metric.WithAttributes(attribute.String("port", i.address)),
+		)
+	}
+}
+
+func (i *Input) recordRefusedConnection() {
+	if i.tb != nil {
+		i.tb.TCPInputRefusedConnections.Add(
+			context.Background(),
+			1,
+			metric.WithAttributes(attribute.String("port", i.address)),
+		)
+	}
 }

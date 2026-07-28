@@ -105,6 +105,7 @@ func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
 		TopicMatch:           ".*",
 	}
 	cfg.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
 	cfg.Metrics.KafkaTopicLogRetentionPeriod.Enabled = true
 	cfg.Metrics.KafkaTopicLogRetentionSize.Enabled = true
 	cfg.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
@@ -123,6 +124,11 @@ func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
 	val, ok := rm.Resource().Attributes().Get("kafka.cluster.alias")
 	require.True(t, ok)
 	require.Equal(t, "franz-topics", val.Str())
+
+	// cluster id (opt-in, enabled above) is discovered from cluster metadata ("kfake" by default)
+	idVal, ok := rm.Resource().Attributes().Get("kafka.cluster.id")
+	require.True(t, ok)
+	require.Equal(t, "kfake", idVal.Str())
 
 	// kfake topic config defaults
 	const (
@@ -173,6 +179,33 @@ func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
 	} {
 		require.True(t, seen[name], "metric %s not emitted", name)
 	}
+}
+
+func TestTopicScraperFranz_EmptyClusterID(t *testing.T) {
+	// An empty cluster_id in metadata must not yield an empty-string attribute, even when enabled.
+	_, clientCfg := kafkatest.NewCluster(t,
+		kfake.SeedTopics(1, "topic-a"),
+		kfake.ClusterID(""),
+	)
+	cfg := Config{
+		ClientConfig:         clientCfg,
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		TopicMatch:           ".*",
+	}
+	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
+
+	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
+
+	md, err := s.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+
+	rm := md.ResourceMetrics().At(0)
+	_, ok := rm.Resource().Attributes().Get("kafka.cluster.id")
+	require.False(t, ok, "kafka.cluster.id must be omitted when the broker reports an empty cluster id")
 }
 
 func TestTopicScraperFranz_TopicFilterExcludes(t *testing.T) {

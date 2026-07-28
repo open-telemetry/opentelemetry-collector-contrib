@@ -518,6 +518,97 @@ Number of rows updated by queries in the database.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
+### postgresql.vector.insert.duration
+
+The cumulative execution time of statements that insert vectors into pgvector tables.
+
+Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+extension in the scanned database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+
+### postgresql.vector.insert.rows
+
+The number of vectors inserted into pgvector tables.
+
+Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+extension in the scanned database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {vectors} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+
+### postgresql.vector.search.calls
+
+The number of vector similarity search operations executed, grouped by the distance function used.
+
+Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+additionally require pgvector 0.7.0 or later.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {search} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| postgresql.distance.function.name | The vector distance (similarity) function used by the query, one of the pgvector distance functions. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+
+### postgresql.vector.search.duration
+
+The cumulative execution time of vector similarity searches, grouped by the distance function used.
+
+Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+additionally require pgvector 0.7.0 or later.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| postgresql.distance.function.name | The vector distance (similarity) function used by the query, one of the pgvector distance functions. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+
+### postgresql.vector.search.rows_returned
+
+The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.
+
+Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+additionally require pgvector 0.7.0 or later.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {rows} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| postgresql.distance.function.name | The vector distance (similarity) function used by the query, one of the pgvector distance functions. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+
 ### postgresql.wal.delay
 
 Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
