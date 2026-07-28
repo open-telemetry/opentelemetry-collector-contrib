@@ -570,6 +570,19 @@ func TestCreateDefaultConfigMarshalRoundTrip(t *testing.T) {
 	assert.True(t, roundTripMap.IsSet("traces::peer_tags_aggregation"))
 }
 
+func TestDisableHostnameConfig(t *testing.T) {
+	cfg := CreateDefaultConfig().(*Config)
+	assert.False(t, cfg.Metrics.ExporterConfig.DisableHostname)
+
+	cm := confmap.NewFromStringMap(map[string]any{
+		"metrics": map[string]any{
+			"disable_hostname": true,
+		},
+	})
+	require.NoError(t, cm.Unmarshal(cfg))
+	assert.True(t, cfg.Metrics.ExporterConfig.DisableHostname)
+}
+
 var ddtype = component.MustNewType("datadog")
 
 func TestLoadConfig(t *testing.T) {

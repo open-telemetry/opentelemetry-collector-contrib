@@ -11,12 +11,16 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 )
 
 type testProvider string
@@ -72,7 +76,7 @@ func TestRunningMetrics(t *testing.T) {
 	tr := newTranslator(t, logger)
 
 	ctx := t.Context()
-	consumer := NewConsumer(nil)
+	consumer := NewConsumer(nil, false)
 	metadata, err := tr.MapMetrics(ctx, ms, consumer, nil)
 	assert.NoError(t, err)
 
@@ -119,7 +123,7 @@ func TestTagsMetrics(t *testing.T) {
 	tr := newTranslator(t, logger)
 
 	ctx := t.Context()
-	consumer := NewConsumer(nil)
+	consumer := NewConsumer(nil, false)
 	metadata, err := tr.MapMetrics(ctx, ms, consumer, nil)
 	assert.NoError(t, err)
 
@@ -151,6 +155,36 @@ func TestTagsMetrics(t *testing.T) {
 	)
 }
 
+func TestDisableHostname(t *testing.T) {
+	consumer := NewConsumer(nil, true)
+	consumer.ms = []datadogV2.MetricSeries{
+		{
+			Metric: "test.metric",
+			Resources: []datadogV2.MetricResource{
+				{
+					Name: datadog.PtrString("resource-hostname"),
+					Type: datadog.PtrString("host"),
+				},
+			},
+		},
+	}
+	consumer.sl = sketches.SketchSeriesList{
+		{
+			Name: "test.sketch",
+			Host: "resource-hostname",
+		},
+	}
+	consumer.ConsumeHost("resource-hostname")
+
+	series, sketchSeries := consumer.All(0, component.BuildInfo{}, nil, metrics.Metadata{})
+
+	require.Len(t, series, 1)
+	assert.Empty(t, series[0].Resources)
+	require.Len(t, sketchSeries, 1)
+	assert.Empty(t, sketchSeries[0].Host)
+	assert.Empty(t, consumer.seenHosts)
+}
+
 func addTestMetricWithUnit(_ *testing.T, rm pmetric.ResourceMetrics, name, unit string) {
 	met := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	met.SetEmptyGauge()
@@ -170,7 +204,7 @@ func TestConsumeTimeSeriesUnits(t *testing.T) {
 
 	// With units enabled
 	tr := newTranslator(t, zap.NewNop(), metrics.WithUnits())
-	consumer := NewConsumer(nil)
+	consumer := NewConsumer(nil, false)
 	_, err := tr.MapMetrics(t.Context(), ms, consumer, nil)
 	require.NoError(t, err)
 
@@ -182,7 +216,7 @@ func TestConsumeTimeSeriesUnits(t *testing.T) {
 
 	// With units disabled
 	tr = newTranslator(t, zap.NewNop())
-	consumer = NewConsumer(nil)
+	consumer = NewConsumer(nil, false)
 	_, err = tr.MapMetrics(t.Context(), ms, consumer, nil)
 	require.NoError(t, err)
 	require.Len(t, consumer.ms, 4)

@@ -106,7 +106,7 @@ func TestExponentialHistogramSketchPoolSafety(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	consumer := NewConsumer(nil)
+	consumer := NewConsumer(nil, false)
 	_, err = tr.MapMetrics(ctx, md, consumer, nil)
 	require.NoError(t, err)
 

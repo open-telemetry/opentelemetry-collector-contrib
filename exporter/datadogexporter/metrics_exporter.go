@@ -198,7 +198,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			consumeResource(exp.metadataReporter, res, exp.params.Logger)
 		}
 	}
-	consumer := metrics.NewConsumer(exp.gatewayUsage)
+	consumer := metrics.NewConsumer(exp.gatewayUsage, exp.cfg.Metrics.ExporterConfig.DisableHostname)
 	metadata, err := exp.tr.MapMetrics(ctx, md, consumer, exp.gatewayUsage)
 	if err != nil {
 		return fmt.Errorf("failed to map metrics: %w", err)

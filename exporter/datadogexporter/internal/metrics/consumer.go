@@ -33,14 +33,18 @@ type Consumer struct {
 	seenHosts    map[string]struct{}
 	seenTags     map[string]struct{}
 	gatewayUsage *attributes.GatewayUsage
+	// disableHostname prevents hostname resources from being attached to series
+	// and hostnames from being set on sketches.
+	disableHostname bool
 }
 
 // NewConsumer creates a new Datadog consumer. It implements metrics.Consumer.
-func NewConsumer(gatewayUsage *attributes.GatewayUsage) *Consumer {
+func NewConsumer(gatewayUsage *attributes.GatewayUsage, disableHostname bool) *Consumer {
 	return &Consumer{
-		seenHosts:    make(map[string]struct{}),
-		seenTags:     make(map[string]struct{}),
-		gatewayUsage: gatewayUsage,
+		seenHosts:       make(map[string]struct{}),
+		seenTags:        make(map[string]struct{}),
+		gatewayUsage:    gatewayUsage,
+		disableHostname: disableHostname,
 	}
 }
 
@@ -96,14 +100,21 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string, metadata metrics.Metadata) ([]datadogV2.MetricSeries, sketches.SketchSeriesList) {
 	series := c.ms
 	series = append(series, c.runningMetrics(timestamp, buildInfo, metadata)...)
-	if len(tags) == 0 {
-		return series, c.sl
+	if len(tags) > 0 {
+		for i := range series {
+			series[i].Tags = append(series[i].Tags, tags...)
+		}
+		for i := range c.sl {
+			c.sl[i].Tags = append(c.sl[i].Tags, tags...)
+		}
 	}
-	for i := range series {
-		series[i].Tags = append(series[i].Tags, tags...)
-	}
-	for i := range c.sl {
-		c.sl[i].Tags = append(c.sl[i].Tags, tags...)
+	if c.disableHostname {
+		for i := range series {
+			series[i].Resources = nil
+		}
+		for i := range c.sl {
+			c.sl[i].Host = ""
+		}
 	}
 	return series, c.sl
 }
@@ -153,6 +164,9 @@ func (c *Consumer) ConsumeSketch(
 
 // ConsumeHost implements the metrics.HostConsumer interface.
 func (c *Consumer) ConsumeHost(host string) {
+	if c.disableHostname {
+		return
+	}
 	c.seenHosts[host] = struct{}{}
 }
 
