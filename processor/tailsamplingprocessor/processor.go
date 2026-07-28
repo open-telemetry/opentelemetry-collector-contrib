@@ -1041,15 +1041,13 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 				// Release all accumulated spans (prior pending batches + current batch)
 				// without writing the current batch to storage first.
 				merged := ptrace.NewTraces()
-				if allSpans, err := tsp.tailStorage.Take(id); err != nil {
+				allSpans, err := tsp.tailStorage.Take(id)
+				if err != nil {
 					tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
-					// Do not forward the current batch alone: older spilled
-					// batches may have been lost. Drop processor state instead.
 					tsp.dropTrace(id, time.Now())
 					return
-				} else {
-					appendAllTraces(merged, allSpans)
 				}
+				appendAllTraces(merged, allSpans)
 				appendAllTraces(merged, spanIngestTraceData.ReceivedBatches)
 				actualData.ReceivedBatches = merged
 

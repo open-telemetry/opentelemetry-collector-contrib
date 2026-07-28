@@ -1854,13 +1854,14 @@ func TestTailStorageTakeErrorDropsTraceState(t *testing.T) {
 			p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), sink, cfg)
 			require.NoError(t, err)
 			require.NoError(t, p.Start(t.Context(), host))
-			defer func() { require.NoError(t, p.Shutdown(t.Context())) }()
 
 			require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
 			if tc.waitTick {
 				controller.waitForTick()
 				controller.waitForTick()
 			}
+
+			require.NoError(t, p.Shutdown(t.Context()))
 
 			tsp := p.(*tailSamplingSpanProcessor)
 			assert.Empty(t, sink.AllTraces(), "trace must not be forwarded when tail storage Take fails")
