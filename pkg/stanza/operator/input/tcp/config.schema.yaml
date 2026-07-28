@@ -8,10 +8,15 @@ $defs:
       auth:
         x-pointer: true
         $ref: /pkg/stanza/operator/helper.auth_config
+      connection_idle_timeout:
+        type: string
+        format: duration
       encoding:
         type: string
       listen_address:
         type: string
+      max_connections:
+        type: integer
       max_log_size:
         $ref: /pkg/stanza/operator/helper.byte_size
       multiline:
