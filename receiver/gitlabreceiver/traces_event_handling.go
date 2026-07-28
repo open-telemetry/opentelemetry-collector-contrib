@@ -27,7 +27,13 @@ var (
 )
 
 const (
+	// Rails/GitLab ActiveSupport::TimeWithZone#to_s when Time.zone is UTC.
 	gitlabEventTimeFormat = "2006-01-02 15:04:05 UTC"
+	// Rails/GitLab ActiveSupport::TimeWithZone#to_s for non-UTC zones
+	// (e.g. America/Los_Angeles → "2026-07-28 15:09:25 -0700").
+	gitlabEventTimeFormatNumericOffset = "2006-01-02 15:04:05 -0700"
+	// Same with a colon in the offset ("-07:00").
+	gitlabEventTimeFormatColonOffset = "2006-01-02 15:04:05 -07:00"
 )
 
 // GitlabEvent abstracts span setup for different GitLab event types (pipeline, stage, job)
@@ -316,28 +322,37 @@ func setSpanTimeStamps(span ptrace.Span, startTime, endTime string) error {
 	return nil
 }
 
-// parseGitlabTime parses the time string from the gitlab event, it differs between the test pipeline event and the actual webhook event,
-// because the test pipeline event has a different time format than the actual webhook event.
-// Test pipeline event time format: 2025-04-01T18:31:49.624Z
-// Actual webhook event time format: 2025-04-01 18:31:49 UTC
+// parseGitlabTime parses timestamp strings emitted by GitLab pipeline webhooks.
+//
+// GitLab serializes ActiveSupport::TimeWithZone values via #to_s, which depends
+// on the instance gitlab_rails['time_zone']:
+//   - UTC zone:        "2025-04-01 18:31:49 UTC"
+//   - non-UTC zone:    "2026-07-28 15:09:25 -0700"  (or "-07:00")
+// GitLab's "Test" webhook button and some API payloads instead use RFC3339:
+//   - "2025-04-01T18:31:49.624Z"
 func parseGitlabTime(t string) (time.Time, error) {
 	if t == "" || t == "null" {
 		return time.Time{}, errors.New("time is empty")
 	}
 
-	// Time format of actual webhook events
-	pt, err := time.Parse(gitlabEventTimeFormat, t)
-	if err == nil {
-		return pt, nil
+	var firstErr error
+	for _, layout := range []string{
+		gitlabEventTimeFormat,
+		gitlabEventTimeFormatNumericOffset,
+		gitlabEventTimeFormatColonOffset,
+		time.RFC3339,
+		time.RFC3339Nano,
+	} {
+		pt, err := time.Parse(layout, t)
+		if err == nil {
+			return pt, nil
+		}
+		if firstErr == nil {
+			firstErr = err
+		}
 	}
 
-	// Time format of test webhook events
-	pt, err = time.Parse(time.RFC3339, t)
-	if err == nil {
-		return pt, nil
-	}
-
-	return time.Time{}, err
+	return time.Time{}, firstErr
 }
 
 // map GitLab status to OTel span status and set optional message

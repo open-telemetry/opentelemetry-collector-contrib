@@ -6,6 +6,7 @@ package gitlabreceiver
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
@@ -357,25 +358,37 @@ func TestNewJobSpanID(t *testing.T) {
 }
 
 func TestParseGitlabTime(t *testing.T) {
+	wantUTCNoon := time.Date(2022, 1, 1, 12, 0, 0, 0, time.UTC)
 	tests := []struct {
 		name        string
 		timeStr     string
+		want        time.Time
 		expectError bool
 	}{
 		{
-			name:        "valid UTC time",
-			timeStr:     "2022-01-01 12:00:00 UTC",
-			expectError: false,
+			name:    "valid UTC time",
+			timeStr: "2022-01-01 12:00:00 UTC",
+			want:    wantUTCNoon,
 		},
 		{
-			name:        "valid RFC3339 time",
-			timeStr:     "2022-01-01T12:00:00Z",
-			expectError: false,
+			name:    "valid numeric offset time (Rails non-UTC Time.zone)",
+			timeStr: "2022-01-01 04:00:00 -0800",
+			want:    wantUTCNoon,
 		},
 		{
-			name:        "valid RFC3339 time with milliseconds",
-			timeStr:     "2022-01-01T12:00:00.123Z",
-			expectError: false,
+			name:    "valid colon offset time",
+			timeStr: "2022-01-01 04:00:00 -08:00",
+			want:    wantUTCNoon,
+		},
+		{
+			name:    "valid RFC3339 time",
+			timeStr: "2022-01-01T12:00:00Z",
+			want:    wantUTCNoon,
+		},
+		{
+			name:    "valid RFC3339 time with milliseconds",
+			timeStr: "2022-01-01T12:00:00.123Z",
+			want:    wantUTCNoon.Add(123 * time.Millisecond),
 		},
 		{
 			name:        "empty time string",
@@ -396,14 +409,14 @@ func TestParseGitlabTime(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			time, err := parseGitlabTime(tt.timeStr)
+			got, err := parseGitlabTime(tt.timeStr)
 			if tt.expectError {
 				require.Error(t, err, "expected error for time string: %s", tt.timeStr)
-				require.True(t, time.IsZero(), "expected zero time value")
-			} else {
-				require.NoError(t, err, "did not expect error for time string: %s", tt.timeStr)
-				require.False(t, time.IsZero(), "expected non-zero time value")
+				require.True(t, got.IsZero(), "expected zero time value")
+				return
 			}
+			require.NoError(t, err, "did not expect error for time string: %s", tt.timeStr)
+			require.True(t, got.Equal(tt.want), "got %s want %s", got.UTC(), tt.want.UTC())
 		})
 	}
 }
