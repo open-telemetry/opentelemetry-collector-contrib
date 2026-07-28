@@ -266,8 +266,8 @@ exporters:
       # instrumentation_scope_metadata_as_tags: true
 
       ## @param disable_hostname - boolean - optional - default: false
-      ## Prevents the exporter from attaching any hostname to metrics, including
-      ## fallback hostnames and hostnames derived from resource attributes.
+      ## Prevents the exporter from assigning a fallback hostname to metrics that
+      ## do not already have hostname-identifying resource attributes.
       #
       # disable_hostname: false
 

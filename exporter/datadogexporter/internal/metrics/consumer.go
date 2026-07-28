@@ -28,13 +28,11 @@ var (
 // Consumer implements metrics.Consumer. It records consumed metrics, sketches and
 // APM stats payloads. It provides them to the caller using the All method.
 type Consumer struct {
-	ms           []datadogV2.MetricSeries
-	sl           sketches.SketchSeriesList
-	seenHosts    map[string]struct{}
-	seenTags     map[string]struct{}
-	gatewayUsage *attributes.GatewayUsage
-	// disableHostname prevents hostname resources from being attached to series
-	// and hostnames from being set on sketches.
+	ms              []datadogV2.MetricSeries
+	sl              sketches.SketchSeriesList
+	seenHosts       map[string]struct{}
+	seenTags        map[string]struct{}
+	gatewayUsage    *attributes.GatewayUsage
 	disableHostname bool
 }
 
@@ -110,10 +108,17 @@ func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []s
 	}
 	if c.disableHostname {
 		for i := range series {
-			series[i].Resources = nil
-		}
-		for i := range c.sl {
-			c.sl[i].Host = ""
+			resources := series[i].Resources[:0]
+			for _, resource := range series[i].Resources {
+				if resource.GetType() == "host" && resource.GetName() == "" {
+					continue
+				}
+				resources = append(resources, resource)
+			}
+			if len(resources) == 0 {
+				resources = nil
+			}
+			series[i].Resources = resources
 		}
 	}
 	return series, c.sl
@@ -164,9 +169,6 @@ func (c *Consumer) ConsumeSketch(
 
 // ConsumeHost implements the metrics.HostConsumer interface.
 func (c *Consumer) ConsumeHost(host string) {
-	if c.disableHostname {
-		return
-	}
 	c.seenHosts[host] = struct{}{}
 }
 

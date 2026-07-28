@@ -225,8 +225,8 @@ type MetricsExporterConfig struct {
 	// instrumentation scope that created a metric to the metric tags
 	InstrumentationScopeMetadataAsTags bool `mapstructure:"instrumentation_scope_metadata_as_tags"`
 
-	// DisableHostname, if set to true, prevents the exporter from attaching a hostname to metrics.
-	// This applies to both fallback hostnames and hostnames derived from resource attributes.
+	// DisableHostname, if set to true, prevents the exporter from assigning a fallback hostname
+	// to metrics that do not already have hostname-identifying resource attributes.
 	DisableHostname bool `mapstructure:"disable_hostname"`
 	// prevent unkeyed literal initialization
 	_ struct{}

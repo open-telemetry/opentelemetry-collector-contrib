@@ -155,7 +155,7 @@ func TestTagsMetrics(t *testing.T) {
 	)
 }
 
-func TestDisableHostname(t *testing.T) {
+func TestDisableHostnameOnlyRemovesEmptyHosts(t *testing.T) {
 	consumer := NewConsumer(nil, true)
 	consumer.ms = []datadogV2.MetricSeries{
 		{
@@ -167,22 +167,41 @@ func TestDisableHostname(t *testing.T) {
 				},
 			},
 		},
+		{
+			Metric: "hostless.metric",
+			Resources: []datadogV2.MetricResource{
+				{
+					Name: datadog.PtrString(""),
+					Type: datadog.PtrString("host"),
+				},
+			},
+		},
 	}
 	consumer.sl = sketches.SketchSeriesList{
 		{
 			Name: "test.sketch",
 			Host: "resource-hostname",
 		},
+		{
+			Name: "hostless.sketch",
+		},
 	}
 	consumer.ConsumeHost("resource-hostname")
 
 	series, sketchSeries := consumer.All(0, component.BuildInfo{}, nil, metrics.Metadata{})
 
-	require.Len(t, series, 1)
-	assert.Empty(t, series[0].Resources)
-	require.Len(t, sketchSeries, 1)
-	assert.Empty(t, sketchSeries[0].Host)
-	assert.Empty(t, consumer.seenHosts)
+	require.Len(t, series, 3)
+	require.Len(t, series[0].Resources, 1)
+	assert.Equal(t, "resource-hostname", series[0].Resources[0].GetName())
+	assert.Empty(t, series[1].Resources)
+	for _, runningMetric := range series[2:] {
+		require.Len(t, runningMetric.Resources, 1)
+		assert.Equal(t, "resource-hostname", runningMetric.Resources[0].GetName())
+	}
+	require.Len(t, sketchSeries, 2)
+	assert.Equal(t, "resource-hostname", sketchSeries[0].Host)
+	assert.Empty(t, sketchSeries[1].Host)
+	assert.Contains(t, consumer.seenHosts, "resource-hostname")
 }
 
 func addTestMetricWithUnit(_ *testing.T, rm pmetric.ResourceMetrics, name, unit string) {

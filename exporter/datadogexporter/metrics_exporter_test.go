@@ -545,6 +545,85 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	}
 }
 
+func TestMetricsExporterDisableHostnameOnlyDisablesFallback(t *testing.T) {
+	tests := []struct {
+		name             string
+		resourceHostname string
+	}{
+		{
+			name: "without resource hostname",
+		},
+		{
+			name:             "with resource hostname",
+			resourceHostname: "sdk-hostname",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV2Endpoint}
+			server := testutil.DatadogServerMock(seriesRecorder.HandlerFunc)
+			defer server.Close()
+
+			cfg := newTestConfig(t, server.URL, nil, datadogconfig.HistogramModeCounters)
+			cfg.Metrics.ExporterConfig.DisableHostname = true
+
+			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			var once sync.Once
+			exp, err := newMetricsExporter(
+				t.Context(),
+				exportertest.NewNopSettings(metadata.Type),
+				cfg,
+				traceconfig.New(),
+				&once,
+				attributesTranslator,
+				&testutil.MockSourceProvider{
+					Src: source.Source{
+						Kind:       source.HostnameKind,
+						Identifier: "fallback-hostname",
+					},
+				},
+				nil,
+				nil,
+				attributes.NewGatewayUsage(),
+			)
+			require.NoError(t, err)
+			exp.getPushTime = func() uint64 { return 0 }
+
+			md := createTestMetrics(nil)
+			resourceAttributes := md.ResourceMetrics().At(0).Resource().Attributes()
+			if tt.resourceHostname == "" {
+				resourceAttributes.Remove(attributes.AttributeDatadogHostname)
+			} else {
+				resourceAttributes.PutStr(attributes.AttributeDatadogHostname, tt.resourceHostname)
+			}
+			require.NoError(t, exp.PushMetricsData(t.Context(), md))
+
+			reader, err := gzip.NewReader(bytes.NewReader(seriesRecorder.ByteBody))
+			require.NoError(t, err)
+			var payload map[string]any
+			require.NoError(t, json.NewDecoder(reader).Decode(&payload))
+
+			series, ok := payload["series"].([]any)
+			require.True(t, ok)
+			require.NotEmpty(t, series)
+			for _, rawSeries := range series {
+				metricSeries, ok := rawSeries.(map[string]any)
+				require.True(t, ok)
+				if tt.resourceHostname == "" {
+					assert.NotContains(t, metricSeries, "resources")
+					continue
+				}
+				assert.Equal(t,
+					[]any{map[string]any{"name": tt.resourceHostname, "type": "host"}},
+					metricSeries["resources"],
+				)
+			}
+		})
+	}
+}
+
 // Test_metricsExporter_HistogramZeroLowerBoundDoesNotLeakToZeroBin is a
 // regression test for the percentile-collapse bug fixed in datadog-agent#50777
 // (OTAGENT-1067). An explicit-bucket histogram whose first non-empty bucket is
