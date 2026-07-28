@@ -341,11 +341,14 @@ attributes:
     description: The total time (in seconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta).
     type: double
   oracledb.wait.count:
-    description: Total number of waits for the wait event across all sessions.
+    description: Number of times the session has waited on the wait event.
     type: int
   oracledb.wait.duration:
     description: Total time waited in seconds for the wait event.
     type: double
+  oracledb.wait.timeouts:
+    description: Number of the session's waits on the wait event that timed out.
+    type: int
   oracledb.wait_class:
     description: The category of wait events a query or session is currently experiencing in Oracle Database.
     type: string
@@ -423,6 +426,7 @@ events:
       - oracledb.event
       - oracledb.wait_class
       - oracledb.wait.count
+      - oracledb.wait.timeouts
       - oracledb.wait.duration
       - db.namespace
   db.server.top_query:

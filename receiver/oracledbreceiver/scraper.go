@@ -1878,6 +1878,7 @@ func (s *oracleScraper) collectSessionWaitEvents(ctx context.Context, logs plog.
 	const event = "EVENT"
 	const waitClass = "WAIT_CLASS"
 	const totalWaits = "TOTAL_WAITS"
+	const totalTimeouts = "TOTAL_TIMEOUTS"
 	const totalTimeWaitedSecs = "TOTAL_TIME_WAITED_SECS"
 
 	var scrapeErrors []error
@@ -1898,13 +1899,19 @@ func (s *oracleScraper) collectSessionWaitEvents(ctx context.Context, logs plog.
 			continue
 		}
 
+		totalTimeoutsVal, err := strconv.ParseInt(row[totalTimeouts], 10, 64)
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for oracledb.wait.timeouts, value was %s: %w", row[totalTimeouts], err))
+			continue
+		}
+
 		totalTimeWaitedSecsVal, err := strconv.ParseFloat(row[totalTimeWaitedSecs], 64)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse float64 for oracledb.wait.duration, value was %s: %w", row[totalTimeWaitedSecs], err))
 			continue
 		}
 
-		s.lb.RecordDbServerSessionWaitSampleEvent(ctx, timestamp, row[sid], row[serial], row[event], row[waitClass], totalWaitsVal, totalTimeWaitedSecsVal, row[dbNamespaceAttr])
+		s.lb.RecordDbServerSessionWaitSampleEvent(ctx, timestamp, row[sid], row[serial], row[event], row[waitClass], totalWaitsVal, totalTimeoutsVal, totalTimeWaitedSecsVal, row[dbNamespaceAttr])
 	}
 
 	s.lb.Emit(metadata.WithLogsResource(rb.Emit())).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
