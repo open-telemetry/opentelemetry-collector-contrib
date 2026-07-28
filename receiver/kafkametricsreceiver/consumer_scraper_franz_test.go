@@ -254,7 +254,7 @@ func TestConsumerScraperFranz_EmptyClusterID(t *testing.T) {
 	}
 	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
 
-	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
