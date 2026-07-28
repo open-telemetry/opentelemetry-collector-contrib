@@ -28,6 +28,8 @@ Spans are grouped by:
 
 Parent spans are eligible for aggregation when all of their children are aggregated, they share the same name, kind, and status code, and they are not root spans.
 
+The processor can also apply **selective pruning** with OTTL conditions so only traces that match your criteria are pruned.
+
 Optionally, the processor can detect **duration outliers** using statistical methods (IQR or MAD) and either annotate summary spans with outlier correlations or **preserve outlier subtrees** for debugging while still aggregating normal spans. Detection runs at every aggregation level, so a slow interior span (for example one slow `handler` among many) is caught and its whole subtree is kept intact.
 
 This processor is useful for reducing trace data volume while preserving meaningful information about repeated operations.
@@ -46,6 +48,13 @@ This processor is useful for reducing trace data volume while preserving meaning
 ```yaml
 processors:
   span_pruning:
+    # OTTL conditions to select which traces to prune
+    # When empty, all traces are pruned (default behavior)
+    # When set, only traces where at least one span matches any condition are pruned
+    # Example: only prune traces from specific services
+    # conditions:
+    #   - 'resource.attributes["service.name"] == "loki-query-engine"'
+
     # Attributes to use for grouping similar leaf spans (supports glob patterns)
     # Spans with the same name AND same values for matching attributes will be grouped
     # Examples:
@@ -170,6 +179,7 @@ processors:
 
 | Field | Type | Default | Description |
 |-----|--|---------|-------|
+| `conditions` | []string | [] | OTTL conditions for selective pruning; empty = prune all traces |
 | `group_by_attributes` | []string | [] | Attribute patterns for grouping (supports glob patterns like `db.*`) |
 | `min_spans_to_aggregate` | int | 5 | Minimum group size before aggregation occurs |
 | `max_parent_depth` | int | 1 | Max depth of parent aggregation (0=none, -1=unlimited) |
@@ -588,6 +598,68 @@ root
 | worker (OK) | Unchanged | Child not aggregated |
 | SELECT (OK) under worker | Unchanged | Different parent name than other SELECTs |
 
+## OTTL Condition Filtering
+
+The `conditions` field allows selective trace pruning using OTTL (OpenTelemetry Transformation Language) expressions. Only traces where **at least one span matches any condition** will be pruned.
+
+### Behavior
+
+| Conditions | Result |
+|------------|--------|
+| Empty/not configured | All traces are pruned (default behavior) |
+| Configured | Only matching traces are pruned; others pass through unchanged |
+
+### Syntax
+
+Conditions use OTTL span context syntax. Each condition is a boolean expression evaluated against each span in a trace. If any span matches any condition, the entire trace is eligible for pruning.
+
+### Common Examples
+
+**Filter by service name:**
+```yaml
+conditions:
+  - 'resource.attributes["service.name"] == "loki-query-engine"'
+```
+
+**Filter by span attributes:**
+```yaml
+conditions:
+  - 'attributes["db.system"] == "postgresql"'
+```
+
+**Filter by HTTP route:**
+```yaml
+conditions:
+  - 'attributes["http.route"] == "/api/v1/query"'
+```
+
+**Multiple conditions (OR logic):**
+```yaml
+conditions:
+  - 'resource.attributes["service.name"] == "loki-query-engine"'
+  - 'attributes["db.system"] == "postgresql"'
+```
+A trace is pruned if **any** span matches **any** condition.
+
+**Filter by span name:**
+```yaml
+conditions:
+  - 'name == "SELECT"'
+```
+
+**Filter by status:**
+```yaml
+conditions:
+  - 'status.code == 2'  # Error status
+```
+
+### Use Cases
+
+- **Targeted pruning**: Only prune traces from specific services known to generate repetitive spans
+- **Environment filtering**: Prune only production traces while preserving development traces
+- **Operation-specific**: Prune only database-heavy traces while keeping HTTP traces intact
+- **Debugging**: Temporarily disable pruning for specific services to investigate issues
+
 ## Limitations
 
 - Requires complete traces for accurate leaf detection
@@ -622,6 +694,7 @@ The processor emits the following metrics to help monitor its operation:
 | `otelcol_processor_spanpruning_spans_pruned` | Total number of spans removed by aggregation |
 | `otelcol_processor_spanpruning_aggregations_created` | Total number of aggregation summary spans created |
 | `otelcol_processor_spanpruning_traces_processed` | Total number of traces processed |
+| `otelcol_processor_spanpruning_traces_skipped` | Total traces skipped due to conditions not matching |
 | `otelcol_processor_spanpruning_outliers_detected` | Total spans identified as outliers by analysis (when `enable_outlier_analysis: true`) |
 | `otelcol_processor_spanpruning_outliers_preserved` | Total outlier spans kept (when `preserve_outliers: true`) |
 | `otelcol_processor_spanpruning_outliers_correlations_detected` | Total aggregation groups where outliers had correlated attributes |
@@ -640,18 +713,16 @@ When `enable_bytes_metrics` is enabled, the processor serializes trace data with
 - Matched subset bytes after pruning (`bytes_processed_output`)
 - Full batch bytes after pruning (`bytes_emitted`)
 
-**Current behavior (no `conditions` support yet):** the matched subset is the full
-batch, so `bytes_processed_input == bytes_received` and
-`bytes_processed_output == bytes_emitted`.
+When no `conditions` are configured, the matched subset is the full batch, so
+`bytes_processed_input == bytes_received` and `bytes_processed_output == bytes_emitted`.
+When `conditions` are configured, the matched subset may be smaller than the full
+batch, and the matched-subset metrics reflect only traces that matched.
 
-**Forward-looking note:** once `conditions` support is added, the matched subset may
-be smaller than the full batch.
-
-| Comparison | Valid now? | Future with `conditions` |
-|------------|------------|--------------------------|
-| `bytes_processed_input` vs `bytes_processed_output` | Yes | Yes |
-| `bytes_received` vs `bytes_emitted` | Yes | Yes |
-| `bytes_emitted` vs `bytes_processed_input` | Same scope today (full batch), but values are equal only if pruning does not change serialized size | Not a like-for-like comparison (full batch vs matched subset) |
+| Comparison | Notes |
+|------------|-------|
+| `bytes_processed_input` vs `bytes_processed_output` | Like-for-like: matched subset before vs after pruning |
+| `bytes_received` vs `bytes_emitted` | Like-for-like: full batch before vs after pruning |
+| `bytes_emitted` vs `bytes_processed_input` | Only comparable when no `conditions` are set (both cover the full batch); with `conditions` this compares the full batch against the matched subset |
 
 After aggregation, `bytes_processed_output` can exceed `bytes_processed_input` when
 summary spans are larger than the leaf spans they replace, so matched-byte savings
@@ -667,6 +738,7 @@ can be negative even when pruning is functioning correctly.
 These metrics can be used to:
 - Monitor the effectiveness of span pruning (compare `spans_received` vs `spans_pruned`)
 - Track the compression ratio achieved by aggregation
-- Track byte changes (`bytes_received`/`bytes_emitted`, and currently equivalent `bytes_processed_input`/`bytes_processed_output`)
+- Track condition selectivity with `traces_skipped`
+- Track byte changes (`bytes_received`/`bytes_emitted` for the full batch, `bytes_processed_input`/`bytes_processed_output` for the matched subset)
 - Identify processing bottlenecks via `processing_duration`
 - Understand aggregation patterns via `aggregation_group_size`

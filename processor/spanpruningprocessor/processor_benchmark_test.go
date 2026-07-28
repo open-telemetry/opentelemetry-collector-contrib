@@ -152,7 +152,7 @@ func newBenchmarkProcessor(b *testing.B, maxParentDepth int) *spanPruningProcess
 		b.Fatal(err)
 	}
 
-	proc, err := newSpanPruningProcessor(set, cfg, telemetryBuilder)
+	proc, err := newSpanPruningProcessor(set, cfg, telemetryBuilder, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -191,7 +191,7 @@ func benchmarkProcessTrace(b *testing.B, numSpans, minSpans int) {
 		b.Fatal(err)
 	}
 
-	proc, err := newSpanPruningProcessor(set, cfg, telemetryBuilder)
+	proc, err := newSpanPruningProcessor(set, cfg, telemetryBuilder, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -221,7 +221,7 @@ func benchmarkProcessTraceSparse(b *testing.B, numSpans, minSpans int) {
 		b.Fatal(err)
 	}
 
-	proc, err := newSpanPruningProcessor(set, cfg, telemetryBuilder)
+	proc, err := newSpanPruningProcessor(set, cfg, telemetryBuilder, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -251,7 +251,7 @@ func benchmarkDeepTrace(b *testing.B, depth, branchingFactor, leafsPerBranch, ma
 		b.Fatal(err)
 	}
 
-	proc, err := newSpanPruningProcessor(set, cfg, telemetryBuilder)
+	proc, err := newSpanPruningProcessor(set, cfg, telemetryBuilder, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
