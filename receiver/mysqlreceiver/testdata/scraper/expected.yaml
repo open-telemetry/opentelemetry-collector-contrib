@@ -1709,7 +1709,7 @@ resourceMetrics:
                         stringValue: index
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: "By"
+            unit: By
           - description: The number of hits, misses or overflows for open tables cache lookups.
             name: mysql.table_open_cache
             sum:
