@@ -33,7 +33,7 @@ resource_attributes:
     enabled: false
     type: int
   service.instance.id:
-    description: A unique identifier of the SQL Server instance in the format host:port. In direct connection mode the host and port come from the connection config. In Windows Performance Counter mode the host comes from computer_name (or os.Hostname() when monitoring locally) and the port defaults to 1433.
+    description: A unique identifier of the SQL Server instance in the format host:port. In Windows Performance Counter mode the host is derived from computer_name (falling back to the collector host when monitoring locally), with a default port of 1433.
     enabled: true
     type: string
   service.name:
