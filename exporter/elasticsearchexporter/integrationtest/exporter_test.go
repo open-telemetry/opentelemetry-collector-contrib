@@ -40,6 +40,12 @@ func TestExporter(t *testing.T) {
 			// scenarios hitting
 			// https://github.com/open-telemetry/opentelemetry-collector/issues/15677.
 			allowMissingDocs bool
+
+			// logsOnly limits a scenario to the logs event type. The queueing
+			// behavior it exercises is signal-agnostic, and CI runs this
+			// package's tests three times (-count=3) within one timeout, so
+			// repeating such scenarios per signal would blow the budget.
+			logsOnly bool
 		}{
 			{name: "basic"},
 			{name: "es_intermittent_http_error", mockESErr: errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
@@ -52,20 +58,23 @@ func TestExporter(t *testing.T) {
 			{name: "batcher_disabled_es_intermittent_http_error", enableBatching: false, mockESErr: errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
 			{name: "batcher_disabled_es_intermittent_doc_error", enableBatching: false, mockESErr: errElasticsearch{httpStatus: http.StatusOK, httpDocStatus: http.StatusTooManyRequests}},
 
-			{name: "persistent_queue", persistentQueue: true},
-			{name: "persistent_queue_es_intermittent_http_error", persistentQueue: true, mockESErr: errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
-			{name: "persistent_queue_collector_restart", persistentQueue: true, restartCollector: true},
+			{name: "persistent_queue", persistentQueue: true, logsOnly: true},
+			{name: "persistent_queue_es_intermittent_http_error", persistentQueue: true, mockESErr: errElasticsearch{httpStatus: http.StatusServiceUnavailable}, logsOnly: true},
+			{name: "persistent_queue_collector_restart", persistentQueue: true, restartCollector: true, logsOnly: true},
 			// Restarting DURING an active ES outage loses the documents that
 			// are queued or in flight at shutdown, because the shutdown-time
 			// queue drain completes them with an error and removes them from
 			// the persistent queue instead of keeping them for redelivery; see
 			// https://github.com/open-telemetry/opentelemetry-collector/issues/15677.
-			{name: "persistent_queue_collector_restart_with_es_intermittent_failure", persistentQueue: true, restartCollector: true, allowMissingDocs: true, mockESErr: errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
-			{name: "collector_restarts", restartCollector: true},
+			{name: "persistent_queue_collector_restart_with_es_intermittent_failure", persistentQueue: true, restartCollector: true, allowMissingDocs: true, mockESErr: errElasticsearch{httpStatus: http.StatusServiceUnavailable}, logsOnly: true},
+			{name: "collector_restarts", restartCollector: true, logsOnly: true},
 			// The in-memory equivalent (collector_restart_with_es_intermittent_failure)
 			// stays disabled: an in-memory queue inherently loses its contents
 			// across a restart, so there is no delivery bound to assert.
 		} {
+			if tc.logsOnly && eventType != "logs" {
+				continue
+			}
 			t.Run(fmt.Sprintf("%s/%s", eventType, tc.name), func(t *testing.T) {
 				runner(t, eventType, tc.restartCollector, tc.persistentQueue, tc.allowMissingDocs, tc.mockESErr, withBatching(tc.enableBatching))
 			})
