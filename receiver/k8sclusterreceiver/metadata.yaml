@@ -17,8 +17,6 @@ status:
 
 sem_conv_version: 1.18.0
 
-reaggregation_enabled: true
-
 entities:
   - type: k8s.namespace
     brief: A Kubernetes namespace

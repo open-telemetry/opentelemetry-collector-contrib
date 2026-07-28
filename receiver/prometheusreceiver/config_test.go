@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.True(t, r1.TrimMetricSuffixes)
 
 	ta := r1.TargetAllocator.Get()
-	assert.Equal(t, "http://my-targetallocator-service", ta.Endpoint)
+	assert.Equal(t, "http://my-targetallocator-service", ta.ClientConfig.Endpoint)
 	assert.Equal(t, 30*time.Second, ta.Interval)
 	assert.Equal(t, "collector-1", ta.CollectorID)
 	assert.Equal(t, promModel.Duration(60*time.Second), ta.HTTPSDConfig.RefreshInterval)
@@ -79,10 +79,10 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	r0 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
 	ta0 := r0.TargetAllocator.Get()
-	assert.Equal(t, "http://localhost:8080", ta0.Endpoint)
-	assert.Equal(t, 5*time.Second, ta0.Timeout)
-	assert.Equal(t, "client.crt", ta0.TLS.CertFile)
-	assert.Equal(t, "client.key", ta0.TLS.KeyFile)
+	assert.Equal(t, "http://localhost:8080", ta0.ClientConfig.Endpoint)
+	assert.Equal(t, 5*time.Second, ta0.ClientConfig.Timeout)
+	assert.Equal(t, "client.crt", ta0.ClientConfig.TLS.CertFile)
+	assert.Equal(t, "client.key", ta0.ClientConfig.TLS.KeyFile)
 	assert.Equal(t, 30*time.Second, ta0.Interval)
 	assert.Equal(t, "collector-1", ta0.CollectorID)
 	assert.NotNil(t, r0.PrometheusConfig)
@@ -96,7 +96,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	r1 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
 	ta1 := r0.TargetAllocator.Get()
-	assert.Equal(t, "http://localhost:8080", ta1.Endpoint)
+	assert.Equal(t, "http://localhost:8080", ta1.ClientConfig.Endpoint)
 	assert.Equal(t, 30*time.Second, ta1.Interval)
 	assert.Equal(t, "collector-1", ta1.CollectorID)
 
@@ -429,18 +429,8 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 
 	r0 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
-	assert.True(t, r0.APIServer.Enabled)
-	assert.NotNil(t, r0.APIServer.ServerConfig)
+	require.True(t, r0.APIServer.Enabled)
 	assert.Equal(t, "localhost:9090", r0.APIServer.ServerConfig.NetAddr.Endpoint)
-
-	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIDisabled").String())
-	require.NoError(t, err)
-	cfg = factory.CreateDefaultConfig()
-	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
-
-	r1 := cfg.(*Config)
-	assert.False(t, r1.APIServer.Enabled)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withoutAPI").String())
 	require.NoError(t, err)
@@ -448,15 +438,43 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, xconfmap.Validate(cfg))
 
+	r1 := cfg.(*Config)
+	assert.NotNil(t, r1.PrometheusConfig)
+	assert.False(t, r1.APIServer.Enabled)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIUsingDefaults").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
+
 	r2 := cfg.(*Config)
-	assert.NotNil(t, r2.PrometheusConfig)
 	assert.False(t, r2.APIServer.Enabled)
+	assert.Equal(t, "127.0.0.1:9090", r2.APIServer.ServerConfig.NetAddr.Endpoint)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withInvalidAPIConfig").String())
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
+	require.Error(t, sub.Unmarshal(cfg))
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIEnabledExplicitly").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.Error(t, xconfmap.Validate(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
+
+	r4 := cfg.(*Config)
+	require.True(t, r4.APIServer.Enabled, "api_server with enabled: true should be enabled")
+	assert.Equal(t, "localhost:9090", r4.APIServer.ServerConfig.NetAddr.Endpoint)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIDisabledExplicitly").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
+
+	r5 := cfg.(*Config)
+	assert.False(t, r5.APIServer.Enabled, "api_server with enabled: false should not be enabled")
 }
 
 func TestReloadPromConfigSecretHandling(t *testing.T) {

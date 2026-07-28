@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/xray"
 	"github.com/aws/smithy-go"
 	"go.opentelemetry.io/collector/component"
@@ -30,15 +31,20 @@ const (
 // newTracesExporter creates an exporter.Traces that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
 func newTracesExporter(ctx context.Context, cfg *Config, set exporter.Settings, registry telemetry.Registry) (exporter.Traces, error) {
+	awsConfig, err := awsutil.GetAWSConfig(ctx, set.Logger, &cfg.AWSSessionSettings)
+	if err != nil {
+		return nil, err
+	}
+
+	client := awsxray.NewXRayClient(set.Logger, awsConfig, set.BuildInfo)
+	return newTracesExporterWithClient(ctx, cfg, set, registry, awsConfig, client)
+}
+
+func newTracesExporterWithClient(ctx context.Context, cfg *Config, set exporter.Settings, registry telemetry.Registry, awsConfig aws.Config, xrayClient awsxray.XRayClient) (exporter.Traces, error) {
 	typeLog := zap.String("type", set.ID.Type().String())
 	nameLog := zap.String("name", set.ID.String())
 	logger := set.Logger
 
-	awsConfig, err := awsutil.GetAWSConfig(ctx, logger, &cfg.AWSSessionSettings)
-	if err != nil {
-		return nil, err
-	}
-	xrayClient := awsxray.NewXRayClient(logger, awsConfig, set.BuildInfo)
 	sender := telemetry.NewNopSender()
 	if cfg.TelemetryConfig.Enabled {
 		opts := telemetry.ToOptions(ctx, cfg.TelemetryConfig, awsConfig, &cfg.AWSSessionSettings)

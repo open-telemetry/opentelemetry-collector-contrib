@@ -67,7 +67,7 @@ properties:
     items:
       $ref: ./internal/translation/dpfilters.property_filter
   include_metrics:
-    description: IncludeMetrics defines dpfilter.MetricFilters to override exclusion any of metric. This option can be used to included metrics that are otherwise dropped by default. See ./translation/default_metrics.go for a list of metrics that are dropped by default.
+    description: IncludeMetrics defines dpfilter.MetricFilters to override exclusion any of metric. This option can be used to included metrics that are otherwise dropped by default. See ./internal/translation/default_metrics.yaml for a list of metrics that are dropped by default.
     type: array
     items:
       $ref: ./internal/translation/dpfilters.metric_filter
