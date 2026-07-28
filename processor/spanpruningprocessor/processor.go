@@ -17,11 +17,14 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
 )
 
-// spanInfo pairs a span with its ResourceSpans/ScopeSpans containers for
-// in-place edits and hierarchy reconstruction.
+// spanInfo pairs a span with its owning ResourceSpans and ScopeSpans
+// containers for in-place edits, hierarchy reconstruction, and context-aware
+// evaluation.
 type spanInfo struct {
 	span          ptrace.Span
 	resourceSpans ptrace.ResourceSpans
@@ -41,10 +44,11 @@ type spanPruningProcessor struct {
 	attributePatterns           []attributePattern
 	telemetryBuilder            *metadata.TelemetryBuilder
 	enableAttributeLossAnalysis bool
+	conditions                  *ottl.ConditionSequence[*ottlspan.TransformContext]
 	enableBytesMetrics          bool
 }
 
-func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuilder *metadata.TelemetryBuilder) (*spanPruningProcessor, error) {
+func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuilder *metadata.TelemetryBuilder, conditions *ottl.ConditionSequence[*ottlspan.TransformContext]) (*spanPruningProcessor, error) {
 	// Compile glob patterns for group_by_attributes
 	patterns := make([]attributePattern, 0, len(cfg.GroupByAttributes))
 	for _, pattern := range cfg.GroupByAttributes {
@@ -63,6 +67,7 @@ func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuild
 		attributePatterns:           patterns,
 		telemetryBuilder:            telemetryBuilder,
 		enableAttributeLossAnalysis: cfg.EnableAttributeLossAnalysis,
+		conditions:                  conditions,
 		enableBytesMetrics:          cfg.EnableBytesMetrics,
 	}, nil
 }
@@ -118,13 +123,7 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 
 	// Group spans by TraceID
 	traceSpans := p.groupSpansByTraceID(td)
-
-	// Stand-in for future OTTL condition filtering: until conditions are supported
-	// in contrib, every trace is treated as matched.
-	matchedTraces := make(map[pcommon.TraceID]struct{}, len(traceSpans))
-	for traceID := range traceSpans {
-		matchedTraces[traceID] = struct{}{}
-	}
+	matchedTraces, tracesSkipped := p.filterTracesByConditions(ctx, traceSpans)
 
 	var bytesProcessedInput int64
 	if p.enableBytesMetrics {
@@ -146,6 +145,9 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 		p.telemetryBuilder.ProcessorSpanpruningProcessingDuration.Record(ctx,
 			time.Since(start).Seconds())
 	}
+	if tracesSkipped > 0 {
+		p.telemetryBuilder.ProcessorSpanpruningTracesSkipped.Add(ctx, tracesSkipped)
+	}
 
 	// Measure bytes emitted after pruning to capture the reduction in trace size.
 	if p.enableBytesMetrics {
@@ -166,6 +168,22 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 	}
 
 	return td, nil
+}
+
+// filterTracesByConditions evaluates conditions against every trace in traceSpans and
+// returns the set of matching TraceIDs alongside a count of skipped traces.
+// When no conditions are configured, every trace matches.
+func (p *spanPruningProcessor) filterTracesByConditions(ctx context.Context, traceSpans map[pcommon.TraceID][]spanInfo) (map[pcommon.TraceID]struct{}, int64) {
+	matched := make(map[pcommon.TraceID]struct{})
+	var skipped int64
+	for traceID, spans := range traceSpans {
+		if !p.traceMatchesConditions(ctx, spans) {
+			skipped++
+			continue
+		}
+		matched[traceID] = struct{}{}
+	}
+	return matched, skipped
 }
 
 // getBytes returns the serialized size of the subset of traces identified
@@ -226,6 +244,33 @@ func (*spanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pcommon.T
 	}
 
 	return traceSpans
+}
+
+// traceMatchesConditions evaluates whether any span in the trace matches the configured
+// OTTL conditions. Returns true when no conditions are configured (prune all traces).
+// When conditions are set, returns true if at least one span matches any condition.
+func (p *spanPruningProcessor) traceMatchesConditions(ctx context.Context, spans []spanInfo) bool {
+	if p.conditions == nil {
+		return true
+	}
+
+	for _, si := range spans {
+		tCtx := ottlspan.NewTransformContextPtr(si.resourceSpans, si.scopeSpans, si.span)
+		matches, err := p.conditions.Eval(ctx, tCtx)
+		tCtx.Close()
+		if err != nil {
+			p.logger.Error("OTTL condition evaluation error",
+				zap.Error(err),
+				zap.String("span.name", si.span.Name()),
+				zap.String("trace.id", si.span.TraceID().String()))
+			continue
+		}
+		if matches {
+			return true
+		}
+	}
+
+	return false
 }
 
 // processTrace applies the pruning algorithm to a single trace:
