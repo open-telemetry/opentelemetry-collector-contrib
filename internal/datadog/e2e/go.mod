@@ -102,17 +102,17 @@ require (
 	github.com/DataDog/datadog-agent/pkg/orchestrator/util v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.82.0-devel.0.20260708222215-178761812776 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/serializer v0.82.0-devel.0.20260708210941-b0d9b5a19458 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagger/types v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagset v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/template v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.82.0-devel.0.20260708222215-178761812776 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/log v0.82.0-devel.0.20260708222215-178761812776 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/otel v0.82.0-devel.0.20260708222215-178761812776 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/stats v0.82.0-devel.0.20260708222215-178761812776 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.82.0-devel.0.20260708222215-178761812776 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.80.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/log v0.80.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/otel v0.80.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/stats v0.80.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/backoff v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/buf v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.80.2 // indirect
@@ -140,7 +140,7 @@ require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.62.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.9.0 // indirect
 	github.com/DataDog/go-acl v1.0.1 // indirect
-	github.com/DataDog/go-sqllexer v0.2.3 // indirect
+	github.com/DataDog/go-sqllexer v0.2.2 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect
@@ -154,7 +154,7 @@ require (
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect
 	github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b // indirect
 	github.com/antchfx/xmlquery v1.5.1 // indirect
-	github.com/antchfx/xpath v1.3.7 // indirect
+	github.com/antchfx/xpath v1.3.8 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/aws/aws-sdk-go v1.55.8 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.42.1 // indirect
@@ -250,6 +250,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
+	github.com/golang/mock v1.7.0-rc.1 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/gnostic-models v0.7.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
@@ -288,7 +289,7 @@ require (
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
-	github.com/klauspost/compress v1.19.0 // indirect
+	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
@@ -298,7 +299,7 @@ require (
 	github.com/leodido/go-syslog/v4 v4.6.0 // indirect
 	github.com/leodido/ragel-machinery v0.0.0-20190525184631-5f46317e436b // indirect
 	github.com/lightstep/go-expohisto v1.0.0 // indirect
-	github.com/linode/go-metadata v0.2.4 // indirect
+	github.com/linode/go-metadata v0.3.0 // indirect
 	github.com/linode/linodego v1.69.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
 	github.com/magefile/mage v1.15.0 // indirect
@@ -361,10 +362,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/alertmanager v0.33.0 // indirect
-	github.com/prometheus/client_golang v1.23.3-0.20251103151724-a5ae20370e5e // indirect
+	github.com/prometheus/client_golang v1.24.1 // indirect
 	github.com/prometheus/client_golang/exp v0.0.0-20260602051030-3537b20ac86b // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.70.0 // indirect
+	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/common/assets v0.2.0 // indirect
 	github.com/prometheus/exporter-toolkit v0.17.1 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
@@ -490,7 +491,6 @@ require (
 	go.uber.org/dig v1.19.0 // indirect
 	go.uber.org/fx v1.24.0 // indirect
 	go.uber.org/goleak v1.3.0 // indirect
-	go.uber.org/mock v0.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.uber.org/zap/exp v0.3.0 // indirect
