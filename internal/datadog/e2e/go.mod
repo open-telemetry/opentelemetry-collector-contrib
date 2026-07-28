@@ -299,7 +299,7 @@ require (
 	github.com/leodido/go-syslog/v4 v4.6.0 // indirect
 	github.com/leodido/ragel-machinery v0.0.0-20190525184631-5f46317e436b // indirect
 	github.com/lightstep/go-expohisto v1.0.0 // indirect
-	github.com/linode/go-metadata v0.2.4 // indirect
+	github.com/linode/go-metadata v0.3.0 // indirect
 	github.com/linode/linodego v1.69.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
 	github.com/magefile/mage v1.15.0 // indirect
