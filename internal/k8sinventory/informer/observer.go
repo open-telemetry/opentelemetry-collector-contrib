@@ -148,7 +148,8 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}
 			namespaces = append(namespaces, nf.namespace)
 		}
 		if err := o.cp.Load(ctx, namespaces, o.base.Gvr.Resource); err != nil {
-			o.logger.Warn("failed to load checkpoints from storage", zap.Error(err))
+			o.logger.Warn("failed to load checkpoints from storage",
+				zap.String("gvr", o.base.Gvr.String()), zap.Error(err))
 		}
 	}
 
@@ -168,12 +169,16 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}
 			if listRV := inf.LastSyncResourceVersion(); listRV != "" {
 				if err := o.cp.SetCheckpoint(ctx, nf.namespace, o.base.Gvr.Resource, listRV); err != nil {
 					o.logger.Warn("failed to persist post-sync checkpoint",
-						zap.String("namespace", nf.namespace), zap.Error(err))
+						zap.String("namespace", nf.namespace),
+						zap.String("gvr", o.base.Gvr.String()),
+						zap.Error(err))
 					continue
 				}
 				if err := o.cp.Flush(ctx); err != nil {
 					o.logger.Warn("failed to flush post-sync checkpoint",
-						zap.String("namespace", nf.namespace), zap.Error(err))
+						zap.String("namespace", nf.namespace),
+						zap.String("gvr", o.base.Gvr.String()),
+						zap.Error(err))
 				}
 			}
 		}
@@ -271,13 +276,19 @@ func (o *Observer) handleWatchEvent(eventType apiWatch.EventType, obj any, names
 	}
 	u, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		o.logger.Error("unexpected object type in watch event", zap.String("type", string(eventType)))
+		o.logger.Error("unexpected object type in watch event",
+			zap.String("event_type", string(eventType)),
+			zap.String("go_type", fmt.Sprintf("%T", obj)),
+			zap.String("gvr", o.base.Gvr.String()))
 		return
 	}
 	if o.cp != nil {
 		if rv := u.GetResourceVersion(); rv != "" {
 			if err := o.cp.SetCheckpoint(context.Background(), namespace, o.base.Gvr.Resource, rv); err != nil {
-				o.logger.Warn("failed to buffer resourceVersion checkpoint", zap.Error(err))
+				o.logger.Warn("failed to buffer resourceVersion checkpoint",
+					zap.String("namespace", namespace),
+					zap.String("gvr", o.base.Gvr.String()),
+					zap.Error(err))
 			}
 		}
 	}
