@@ -582,16 +582,18 @@ func TestDuplicateMaskFirstMatchWins(t *testing.T) {
 	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, p.Shutdown(context.Background())) }) //nolint:usetesting
 
-	// Body has two IPs. Same prefix on every line so drain routes them all
-	// to the same leaf and abstracts consistently.
+	// Body has three IPs. Same prefix on every line so drain routes them all
+	// to the same leaf and abstracts consistently. Three occurrences per
+	// record (two collisions) prove the counter is per record per mask name,
+	// not per collision.
 	for _, line := range []string{
-		"traffic from 10.0.0.1 to 10.0.0.2",
-		"traffic from 192.168.1.1 to 192.168.1.2",
+		"traffic from 10.0.0.1 to 10.0.0.2 via 10.0.0.3",
+		"traffic from 192.168.1.1 to 192.168.1.2 via 192.168.1.3",
 	} {
 		_, err = p.processLogs(t.Context(), makeLogRecord(line))
 		require.NoError(t, err)
 	}
-	out, err := p.processLogs(t.Context(), makeLogRecord("traffic from 8.8.8.8 to 9.9.9.9"))
+	out, err := p.processLogs(t.Context(), makeLogRecord("traffic from 8.8.8.8 to 9.9.9.9 via 7.7.7.7"))
 	require.NoError(t, err)
 
 	tmpl := templateAttr(t, out)
@@ -600,8 +602,9 @@ func TestDuplicateMaskFirstMatchWins(t *testing.T) {
 	// Only the first-position value survives.
 	assert.Equal(t, "8.8.8.8", namedParam(t, out, "log.record.template.parameter", "ip"))
 
-	// Every record has two <ip> tokens after masking, so the duplicate
-	// counter increments once per record. Expected count: 3, tagged mask="ip".
+	// Each record has three <ip> tokens after masking (two collisions), but
+	// the duplicate counter increments once per record per mask name.
+	// Expected count: 3 (one per record), tagged mask="ip".
 	metadatatest.AssertEqualProcessorDrainMasksDuplicates(t, tel,
 		[]metricdata.DataPoint[int64]{{
 			Attributes: attribute.NewSet(attribute.String("mask", "ip")),

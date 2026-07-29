@@ -267,8 +267,8 @@ func (p *drainProcessor) extractParams(ctx context.Context, lr plog.LogRecord, r
 	}
 
 	attrs := lr.Attributes()
-	var wildcards []string        // deferred allocation; only touched when EmitWildcards
-	var seenMasks map[string]bool // first-match tracker; nil until needed
+	var wildcards []string       // deferred allocation; only touched when EmitWildcards
+	var seenMasks map[string]int // occurrences per mask name this record; nil until needed
 
 	for i, t := range tmplTokens {
 		if t == "<*>" {
@@ -282,18 +282,19 @@ func (p *drainProcessor) extractParams(ctx context.Context, lr plog.LogRecord, r
 			continue
 		}
 		if seenMasks == nil {
-			seenMasks = make(map[string]bool, len(p.masks))
+			seenMasks = make(map[string]int, len(p.masks))
 		}
-		if seenMasks[name] {
-			// First-match wins: earlier position already claimed this
-			// attribute key. Record the collision once per record per
-			// mask name.
+		seenMasks[name]++
+		switch seenMasks[name] {
+		case 1:
+			attrs.PutStr(p.config.ParameterKeyPrefix+"."+name, bodyTokens[i])
+		case 2:
+			// First-match wins: an earlier position already claimed this
+			// attribute key. Record the collision once per record per mask
+			// name, regardless of how many further positions collide.
 			p.telemetry.ProcessorDrainMasksDuplicates.Add(ctx, 1,
 				metric.WithAttributes(attribute.String("mask", name)))
-			continue
 		}
-		seenMasks[name] = true
-		attrs.PutStr(p.config.ParameterKeyPrefix+"."+name, bodyTokens[i])
 	}
 
 	if p.config.EmitWildcards && len(wildcards) > 0 {
