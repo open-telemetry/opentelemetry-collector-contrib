@@ -421,6 +421,10 @@ component_management:
     name: extension_remotetap
     paths:
     - extension/remotetapextension/**
+  - component_id: extension_sdnotify
+    name: extension_sdnotify
+    paths:
+    - extension/sdnotifyextension/**
   - component_id: extension_sigv4auth
     name: extension_sigv4auth
     paths:
