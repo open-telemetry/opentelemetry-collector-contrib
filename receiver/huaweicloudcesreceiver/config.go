@@ -29,7 +29,7 @@ var (
 // Config represent a configuration for the CloudWatch logs exporter.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	confighttp.ClientConfig        `mapstructure:",squash"`
+	ClientConfig                   confighttp.ClientConfig `mapstructure:",squash"`
 	// Nodes defines the nodes to scrape.
 	// See https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes for which selectors may be used here.
 	// If Nodes is empty, no nodes will be scraped.

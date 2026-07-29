@@ -5,17 +5,15 @@ package expvarreceiver
 
 import (
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -86,36 +84,18 @@ func TestLoadConfig(t *testing.T) {
 			}
 			assert.NoError(t, confmap.Validate(cfg))
 			if diff := cmp.Diff(tt.expected, cfg,
-				cmpopts.IgnoreUnexported(
-					metadata.ProcessRuntimeMemstatsBuckHashSysMetricConfig{},
-					metadata.ProcessRuntimeMemstatsFreesMetricConfig{},
-					metadata.ProcessRuntimeMemstatsGcCPUFractionMetricConfig{},
-					metadata.ProcessRuntimeMemstatsGcSysMetricConfig{},
-					metadata.ProcessRuntimeMemstatsHeapAllocMetricConfig{},
-					metadata.ProcessRuntimeMemstatsHeapIdleMetricConfig{},
-					metadata.ProcessRuntimeMemstatsHeapInuseMetricConfig{},
-					metadata.ProcessRuntimeMemstatsHeapObjectsMetricConfig{},
-					metadata.ProcessRuntimeMemstatsHeapReleasedMetricConfig{},
-					metadata.ProcessRuntimeMemstatsHeapSysMetricConfig{},
-					metadata.ProcessRuntimeMemstatsLastPauseMetricConfig{},
-					metadata.ProcessRuntimeMemstatsLookupsMetricConfig{},
-					metadata.ProcessRuntimeMemstatsMallocsMetricConfig{},
-					metadata.ProcessRuntimeMemstatsMcacheInuseMetricConfig{},
-					metadata.ProcessRuntimeMemstatsMcacheSysMetricConfig{},
-					metadata.ProcessRuntimeMemstatsMspanInuseMetricConfig{},
-					metadata.ProcessRuntimeMemstatsMspanSysMetricConfig{},
-					metadata.ProcessRuntimeMemstatsNextGcMetricConfig{},
-					metadata.ProcessRuntimeMemstatsNumForcedGcMetricConfig{},
-					metadata.ProcessRuntimeMemstatsNumGcMetricConfig{},
-					metadata.ProcessRuntimeMemstatsOtherSysMetricConfig{},
-					metadata.ProcessRuntimeMemstatsPauseTotalMetricConfig{},
-					metadata.ProcessRuntimeMemstatsStackInuseMetricConfig{},
-					metadata.ProcessRuntimeMemstatsStackSysMetricConfig{},
-					metadata.ProcessRuntimeMemstatsSysMetricConfig{},
-					metadata.ProcessRuntimeMemstatsTotalAllocMetricConfig{},
+				// mdatagen gives metric and resource attribute configs an unexported enabledSetByUser,
+				// set from parser.IsSet("enabled"), so it is only true on the unmarshaled side:
+				// https://github.com/open-telemetry/opentelemetry-collector/blob/e4e58cda0aa6d5d4d275ff12072ae418410e6ae7/cmd/mdatagen/internal/templates/config.go.tmpl#L42-L44
+				cmp.FilterPath(
+					func(fp cmp.Path) bool {
+						return fp.Last().String() == ".enabledSetByUser"
+					},
+					cmp.Ignore(),
 				),
-				cmpopts.IgnoreUnexported(configoptional.Optional[configauth.Config]{}),
-				cmpopts.IgnoreUnexported(configoptional.Optional[confighttp.CookiesConfig]{}),
+				// Allow go-cmp to read unexported fields instead of panicking on them, so new
+				// upstream fields can't break this (https://pkg.go.dev/github.com/google/go-cmp/cmp#Exporter).
+				cmp.Exporter(func(reflect.Type) bool { return true }),
 			); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}

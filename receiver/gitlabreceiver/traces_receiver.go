@@ -67,12 +67,12 @@ type gitlabTracesReceiver struct {
 }
 
 func newTracesReceiver(settings receiver.Settings, cfg *Config, traceConsumer consumer.Traces) (*gitlabTracesReceiver, error) {
-	if cfg.WebHook.NetAddr.Endpoint == "" {
+	if cfg.WebHook.ServerConfig.NetAddr.Endpoint == "" {
 		return nil, errMissingEndpoint
 	}
 
 	transport := "http"
-	if cfg.WebHook.TLS.HasValue() {
+	if cfg.WebHook.ServerConfig.TLS.HasValue() {
 		transport = "https"
 	}
 
@@ -103,7 +103,7 @@ func newTracesReceiver(settings receiver.Settings, cfg *Config, traceConsumer co
 }
 
 func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host) error {
-	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.NetAddr.Endpoint, gtr.cfg.WebHook.Path)
+	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.ServerConfig.NetAddr.Endpoint, gtr.cfg.WebHook.Path)
 	gtr.logger.Info("Starting GitLab WebHook receiving server", zap.String("endpoint", endpoint))
 
 	// noop if not nil. if start has not been called before these values should be nil.
@@ -112,7 +112,7 @@ func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host)
 	}
 
 	// create listener from config
-	ln, err := gtr.cfg.WebHook.ToListener(ctx)
+	ln, err := gtr.cfg.WebHook.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -127,14 +127,14 @@ func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host)
 	router.HandleFunc(gtr.cfg.WebHook.Path, gtr.handleWebhook)
 
 	// webhook server standup and configuration
-	gtr.server, err = gtr.cfg.WebHook.ToServer(ctx, host.GetExtensions(), gtr.settings.TelemetrySettings, router)
+	gtr.server, err = gtr.cfg.WebHook.ServerConfig.ToServer(ctx, host.GetExtensions(), gtr.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}
 	gtr.logger.Info(
 		"Health check now listening at",
 		zap.String("health_path",
-			fmt.Sprintf("%s%s", gtr.cfg.WebHook.NetAddr.Endpoint, gtr.cfg.WebHook.HealthPath),
+			fmt.Sprintf("%s%s", gtr.cfg.WebHook.ServerConfig.NetAddr.Endpoint, gtr.cfg.WebHook.HealthPath),
 		),
 	)
 

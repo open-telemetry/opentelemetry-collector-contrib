@@ -94,6 +94,14 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName))
 	}
 
+	if isCPUMemoryQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerCPUMemoryQuery(cfg.InstanceName))
+	}
+
+	if isDiskIOQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerDiskIOQuery(cfg.InstanceName))
+	}
+
 	return queries
 }
 
@@ -374,4 +382,23 @@ func isIndexPhysicalStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverIndexPageUtilization.Enabled ||
 		metrics.SqlserverIndexRecordCount.Enabled ||
 		metrics.SqlserverIndexSize.Enabled
+}
+
+func isCPUMemoryQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverCPUUtilization.Enabled ||
+		metrics.SqlserverHostMemoryLimit.Enabled ||
+		metrics.SqlserverHostMemoryUsage.Enabled
+}
+
+func isDiskIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverDiskOperations.Enabled ||
+		metrics.SqlserverDiskIo.Enabled
 }

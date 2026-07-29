@@ -6,11 +6,11 @@ package saphanareceiver
 import (
 	"errors"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -91,59 +91,24 @@ func TestLoadConfig(t *testing.T) {
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
 	expected.Metrics.SaphanaCPUUsed.Enabled = false
-	expected.Endpoint = "example.com:30015"
+	expected.TCPAddrConfig.Endpoint = "example.com:30015"
 	expected.Username = "otel"
 	expected.Password = "password"
 	expected.CollectionInterval = 2 * time.Minute
 
-	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(
-		metadata.SaphanaAlertCountMetricConfig{},
-		metadata.SaphanaBackupLatestMetricConfig{},
-		metadata.SaphanaColumnMemoryUsedMetricConfig{},
-		metadata.SaphanaComponentMemoryUsedMetricConfig{},
-		metadata.SaphanaConnectionCountMetricConfig{},
-		metadata.SaphanaCPUUsedMetricConfig{},
-		metadata.SaphanaDiskSizeCurrentMetricConfig{},
-		metadata.SaphanaHostMemoryCurrentMetricConfig{},
-		metadata.SaphanaHostSwapCurrentMetricConfig{},
-		metadata.SaphanaInstanceCodeSizeMetricConfig{},
-		metadata.SaphanaInstanceMemoryCurrentMetricConfig{},
-		metadata.SaphanaInstanceMemorySharedAllocatedMetricConfig{},
-		metadata.SaphanaInstanceMemoryUsedPeakMetricConfig{},
-		metadata.SaphanaLicenseExpirationTimeMetricConfig{},
-		metadata.SaphanaLicenseLimitMetricConfig{},
-		metadata.SaphanaLicensePeakMetricConfig{},
-		metadata.SaphanaNetworkRequestAverageTimeMetricConfig{},
-		metadata.SaphanaNetworkRequestCountMetricConfig{},
-		metadata.SaphanaNetworkRequestFinishedCountMetricConfig{},
-		metadata.SaphanaReplicationAverageTimeMetricConfig{},
-		metadata.SaphanaReplicationBacklogSizeMetricConfig{},
-		metadata.SaphanaReplicationBacklogTimeMetricConfig{},
-		metadata.SaphanaRowStoreMemoryUsedMetricConfig{},
-		metadata.SaphanaSchemaMemoryUsedCurrentMetricConfig{},
-		metadata.SaphanaSchemaMemoryUsedMaxMetricConfig{},
-		metadata.SaphanaSchemaOperationCountMetricConfig{},
-		metadata.SaphanaSchemaRecordCompressedCountMetricConfig{},
-		metadata.SaphanaSchemaRecordCountMetricConfig{},
-		metadata.SaphanaServiceCodeSizeMetricConfig{},
-		metadata.SaphanaServiceCountMetricConfig{},
-		metadata.SaphanaServiceMemoryCompactorsAllocatedMetricConfig{},
-		metadata.SaphanaServiceMemoryCompactorsFreeableMetricConfig{},
-		metadata.SaphanaServiceMemoryEffectiveLimitMetricConfig{},
-		metadata.SaphanaServiceMemoryHeapCurrentMetricConfig{},
-		metadata.SaphanaServiceMemoryLimitMetricConfig{},
-		metadata.SaphanaServiceMemorySharedCurrentMetricConfig{},
-		metadata.SaphanaServiceMemoryUsedMetricConfig{},
-		metadata.SaphanaServiceStackSizeMetricConfig{},
-		metadata.SaphanaServiceThreadCountMetricConfig{},
-		metadata.SaphanaTransactionBlockedMetricConfig{},
-		metadata.SaphanaTransactionCountMetricConfig{},
-		metadata.SaphanaUptimeMetricConfig{},
-		metadata.SaphanaVolumeOperationCountMetricConfig{},
-		metadata.SaphanaVolumeOperationSizeMetricConfig{},
-		metadata.SaphanaVolumeOperationTimeMetricConfig{},
-		metadata.ResourceAttributeConfig{},
-	)); diff != "" {
+	if diff := cmp.Diff(expected, cfg,
+		// mdatagen gives metric and resource attribute configs an unexported enabledSetByUser,
+		// set from parser.IsSet("enabled"), so it is only true on the unmarshaled side:
+		// https://github.com/open-telemetry/opentelemetry-collector/blob/e4e58cda0aa6d5d4d275ff12072ae418410e6ae7/cmd/mdatagen/internal/templates/config.go.tmpl#L42-L44
+		cmp.FilterPath(
+			func(fp cmp.Path) bool {
+				return fp.Last().String() == ".enabledSetByUser"
+			},
+			cmp.Ignore(),
+		),
+		// Allow go-cmp to read unexported fields instead of panicking on them, so new
+		// upstream fields can't break this (https://pkg.go.dev/github.com/google/go-cmp/cmp#Exporter).
+		cmp.Exporter(func(reflect.Type) bool { return true })); diff != "" {
 		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 	}
 }

@@ -27,7 +27,7 @@ func TestScraper(t *testing.T) {
 	defer nginxMock.Close()
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = nginxMock.URL + "/status"
+	cfg.ClientConfig.Endpoint = nginxMock.URL + "/status"
 	require.NoError(t, confmap.Validate(cfg))
 
 	scraper := newNginxScraper(receivertest.NewNopSettings(metadata.Type), cfg)

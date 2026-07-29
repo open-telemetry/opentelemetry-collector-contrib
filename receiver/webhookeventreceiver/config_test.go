@@ -346,7 +346,7 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			err := test.conf.Validate()
 			require.NoError(t, err)
-			require.Equal(t, test.expected, test.conf.MaxRequestBodySize)
+			require.Equal(t, test.expected, test.conf.ServerConfig.MaxRequestBodySize)
 		})
 	}
 }
