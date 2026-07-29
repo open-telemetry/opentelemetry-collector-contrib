@@ -1281,3 +1281,75 @@ func TestConnectorConsume_BatchConsumer(t *testing.T) {
 	}
 	assert.True(t, foundEdges, "Expected to find traces_service_graph_request_total metric")
 }
+
+func TestConnectorConsume_BatchConsumerDifferentTraceSameSpanID(t *testing.T) {
+	cfg := &Config{
+		Store: StoreConfig{MaxItems: 10, TTL: time.Minute},
+	}
+	p, err := newConnector(componenttest.NewNopTelemetrySettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	sharedSpanID := pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+
+	traceID1 := pcommon.TraceID([16]byte{1})
+	traceID2 := pcommon.TraceID([16]byte{2})
+
+	tracesProd := ptrace.NewTraces()
+	rs := tracesProd.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", "producer-service")
+
+	span1 := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span1.SetTraceID(traceID1)
+	span1.SetSpanID(sharedSpanID)
+	span1.SetKind(ptrace.SpanKindProducer)
+	span1.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	span1.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+
+	span2 := rs.ScopeSpans().At(0).Spans().AppendEmpty()
+	span2.SetTraceID(traceID2)
+	span2.SetSpanID(sharedSpanID)
+	span2.SetKind(ptrace.SpanKindProducer)
+	span2.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	span2.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), tracesProd))
+
+	tracesCons := ptrace.NewTraces()
+	rsCons := tracesCons.ResourceSpans().AppendEmpty()
+	rsCons.Resource().Attributes().PutStr("service.name", "consumer-service")
+	consSpan := rsCons.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	consSpan.SetTraceID(pcommon.TraceID([16]byte{9}))
+	consSpan.SetSpanID(pcommon.SpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}))
+	consSpan.SetKind(ptrace.SpanKindConsumer)
+	consSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	consSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+
+	link1 := consSpan.Links().AppendEmpty()
+	link1.SetTraceID(traceID1)
+	link1.SetSpanID(sharedSpanID)
+
+	link2 := consSpan.Links().AppendEmpty()
+	link2.SetTraceID(traceID2)
+	link2.SetSpanID(sharedSpanID)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), tracesCons))
+
+	md, err := p.buildMetrics()
+	require.NoError(t, err)
+
+	foundEdges := false
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		for j := 0; j < md.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
+			for k := 0; k < md.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
+				metric := md.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(k)
+				if metric.Name() == "traces_service_graph_request_total" {
+					assert.Equal(t, int64(2), metric.Sum().DataPoints().At(0).IntValue(), "Should generate 2 distinct edges even when SpanIDs match across different traces")
+					foundEdges = true
+				}
+			}
+		}
+	}
+	assert.True(t, foundEdges, "Expected to find traces_service_graph_request_total metric")
+}
