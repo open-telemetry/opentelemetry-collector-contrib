@@ -28,7 +28,7 @@ func TestValidConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Username = "otel"
 	cfg.Password = "otel"
-	cfg.Endpoint = "localhost:3306"
+	cfg.AddrConfig.Endpoint = "localhost:3306"
 	require.NoError(t, xconfmap.Validate(cfg))
 }
 

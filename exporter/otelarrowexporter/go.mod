@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.157.0
-	github.com/open-telemetry/otel-arrow/go v0.49.0
+	github.com/open-telemetry/otel-arrow/go v0.50.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/component v1.63.1-0.20260723141305-52e6bf4aaaba
@@ -64,7 +64,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kamstrup/intmap v0.5.2 // indirect
-	github.com/klauspost/compress v1.19.0 // indirect
+	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
@@ -101,7 +101,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.54.0 // indirect
-	golang.org/x/exp v0.0.0-20260611194520-c48552f49976 // indirect
+	golang.org/x/exp v0.0.0-20260709172345-9ea1abe57597 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

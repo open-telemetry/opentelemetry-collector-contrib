@@ -57,7 +57,7 @@ func TestValidate(t *testing.T) {
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
 				cfg.Password = "otel"
-				cfg.Endpoint = "open-telemetry"
+				cfg.AddrConfig.Endpoint = "open-telemetry"
 			},
 			expected: []error{
 				errors.New(ErrHostPort),
@@ -68,7 +68,7 @@ func TestValidate(t *testing.T) {
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
 				cfg.Password = "otel"
-				cfg.Transport = "udp"
+				cfg.AddrConfig.Transport = "udp"
 			},
 			expected: []error{
 				errors.New(ErrTransportsSupported),
@@ -79,9 +79,9 @@ func TestValidate(t *testing.T) {
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
 				cfg.Password = "otel"
-				cfg.ServerName = "notlocalhost"
-				cfg.MinVersion = "1.0"
-				cfg.MaxVersion = "1.0"
+				cfg.ClientConfig.ServerName = "notlocalhost"
+				cfg.ClientConfig.MinVersion = "1.0"
+				cfg.ClientConfig.MaxVersion = "1.0"
 			},
 			expected: []error{
 				fmt.Errorf(ErrNotSupported, "ServerName"),
@@ -126,7 +126,7 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, sub.Unmarshal(cfg))
 
 		expected := factory.CreateDefaultConfig().(*Config)
-		expected.Endpoint = "localhost:5432"
+		expected.AddrConfig.Endpoint = "localhost:5432"
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.TopNQuery = 1234
@@ -142,8 +142,8 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, sub.Unmarshal(cfg))
 
 		expected := factory.CreateDefaultConfig().(*Config)
-		expected.Endpoint = "localhost:5432"
-		expected.Transport = confignet.TransportTypeTCP
+		expected.AddrConfig.Endpoint = "localhost:5432"
+		expected.AddrConfig.Transport = confignet.TransportTypeTCP
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.ConnectionPool = ConnectionPool{
@@ -162,8 +162,8 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, sub.Unmarshal(cfg))
 
 		expected := factory.CreateDefaultConfig().(*Config)
-		expected.Endpoint = "localhost:5432"
-		expected.Transport = confignet.TransportTypeTCP
+		expected.AddrConfig.Endpoint = "localhost:5432"
+		expected.AddrConfig.Transport = confignet.TransportTypeTCP
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}
