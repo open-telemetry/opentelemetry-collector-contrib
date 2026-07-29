@@ -1,8 +1,8 @@
 change_type: enhancement
 
-component: exporter/prometheusremotewrite
+component: exporter/prometheus_remote_write
 
-note: Add a nested `http` config block for HTTP client settings. The nested block is always available and takes precedence over flat HTTP client settings.
+note: Add a nested `http` config block for HTTP client settings. The nested block takes precedence over flat HTTP client settings.
 issues: [46209]
 
 change_logs: [user]
