@@ -407,7 +407,7 @@ Number of queries canceled due to conflicts with recovery on this database. Conf
 
 ### postgresql.query.execution.time
 
-The total time spent executing SQL statements in the database.
+The total execution time of SQL statements currently tracked by pg_stat_statements for the database.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |

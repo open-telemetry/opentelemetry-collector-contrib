@@ -2273,7 +2273,7 @@ type metricPostgresqlQueryExecutionTime struct {
 // init fills postgresql.query.execution.time metric with initial data.
 func (m *metricPostgresqlQueryExecutionTime) init() {
 	m.data.SetName("postgresql.query.execution.time")
-	m.data.SetDescription("The total time spent executing SQL statements in the database.")
+	m.data.SetDescription("The total execution time of SQL statements currently tracked by pg_stat_statements for the database.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)

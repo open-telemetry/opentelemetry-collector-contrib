@@ -532,7 +532,7 @@ metrics:
     attributes: [postgresql.conflict.type, db.namespace]
   postgresql.query.execution.time:
     enabled: false
-    description: The total time spent executing SQL statements in the database.
+    description: The total execution time of SQL statements currently tracked by pg_stat_statements for the database.
     stability: development
     unit: s
     sum:

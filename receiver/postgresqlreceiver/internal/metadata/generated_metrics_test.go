@@ -1251,7 +1251,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.query.execution.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The total time spent executing SQL statements in the database.", mi.Description())
+						assert.Equal(t, "The total execution time of SQL statements currently tracked by pg_stat_statements for the database.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1268,7 +1268,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.query.execution.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The total time spent executing SQL statements in the database.", mi.Description())
+						assert.Equal(t, "The total execution time of SQL statements currently tracked by pg_stat_statements for the database.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
