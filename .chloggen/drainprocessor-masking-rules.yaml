@@ -1,13 +1,13 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
 component: processor/drain
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add masking rules for named parameter extraction.
+note: Add masking rules for named parameter extraction. Removes the `extract_parameters` and `params_attribute` config fields released in v0.157.0.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48914]
@@ -33,9 +33,14 @@ subtext: |
   losing values are dropped. The `otelcol_processor_drain_masks_duplicates` counter is incremented
   once per record per duplicated mask name, tagged with a `mask` attribute for observability.
 
-  Supersedes the positional-only `extract_parameters` / `params_attribute` fields added in the
-  same release window (see the entry for #48914). Those fields are removed. Pre-release users
-  should drop the flag and configure `masking_rules` instead.
+  Breaking: the positional-only `extract_parameters` and `params_attribute` fields released in
+  v0.157.0 are removed. Collectors with either field set will fail to start after upgrading.
+  To migrate, replace `extract_parameters: true` with `emit_wildcards: true`, and rename
+  `params_attribute` to `wildcards_attribute`. The behaviour is identical; only the field names
+  change. Note the default output attribute also renames from `log.record.template.params` to
+  `log.record.template.wildcards`, so downstream consumers of the old attribute key should either
+  update their references or set `wildcards_attribute: log.record.template.params` to keep the
+  old key.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
