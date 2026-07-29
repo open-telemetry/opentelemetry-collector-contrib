@@ -5,17 +5,15 @@ package elasticsearchreceiver
 
 import (
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -124,7 +122,7 @@ func TestValidateEndpoint(t *testing.T) {
 			t.Parallel()
 
 			cfg := NewFactory().CreateDefaultConfig().(*Config)
-			cfg.Endpoint = testCase.rawURL
+			cfg.ClientConfig.Endpoint = testCase.rawURL
 
 			err := xconfmap.Validate(cfg)
 
@@ -192,15 +190,18 @@ func TestLoadConfig(t *testing.T) {
 			if diff := cmp.Diff(
 				tt.expected,
 				cfg,
+				// mdatagen gives metric and resource attribute configs an unexported enabledSetByUser,
+				// set from parser.IsSet("enabled"), so it is only true on the unmarshaled side:
+				// https://github.com/open-telemetry/opentelemetry-collector/blob/e4e58cda0aa6d5d4d275ff12072ae418410e6ae7/cmd/mdatagen/internal/templates/config.go.tmpl#L42-L44
 				cmp.FilterPath(
 					func(fp cmp.Path) bool {
 						return fp.Last().String() == ".enabledSetByUser"
 					},
 					cmp.Ignore(),
 				),
-				cmpopts.IgnoreUnexported(configoptional.Optional[configauth.Config]{}),
-				cmpopts.IgnoreUnexported(configoptional.Optional[confighttp.CookiesConfig]{}),
-				cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
+				// Allow go-cmp to read unexported fields instead of panicking on them, so new
+				// upstream fields can't break this (https://pkg.go.dev/github.com/google/go-cmp/cmp#Exporter).
+				cmp.Exporter(func(reflect.Type) bool { return true })); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})

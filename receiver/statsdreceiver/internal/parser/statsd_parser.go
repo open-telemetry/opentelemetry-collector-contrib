@@ -228,7 +228,7 @@ func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotoni
 		case protocol.TimingTypeName, protocol.TimingAltTypeName:
 			p.timerEvents.method = eachMap.ObserverType
 			if eachMap.Histogram.ExplicitBuckets != nil {
-				p.histogramEvents.explicitBucketConfigs = explicitBucketInitializeRegex(eachMap.Histogram)
+				p.timerEvents.explicitBucketConfigs = explicitBucketInitializeRegex(eachMap.Histogram)
 			}
 			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 			p.timerEvents.summaryPercentiles = eachMap.Summary.Percentiles

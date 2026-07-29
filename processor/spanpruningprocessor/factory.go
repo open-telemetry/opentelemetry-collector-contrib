@@ -12,7 +12,11 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/xprocessor"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
 )
 
@@ -76,7 +80,22 @@ func createTracesProcessor(
 		return nil, err
 	}
 
-	p, err := newSpanPruningProcessor(set, pCfg, telemetryBuilder)
+	// Compile OTTL conditions if configured.
+	var conditions *ottl.ConditionSequence[*ottlspan.TransformContext]
+	if len(pCfg.Conditions) > 0 {
+		conditions, err = filterottl.NewBoolExprForSpan(
+			pCfg.Conditions,
+			filterottl.StandardSpanFuncs(),
+			ottl.PropagateError,
+			set.TelemetrySettings,
+		)
+		if err != nil {
+			return nil, err
+		}
+		set.Logger.Info("OTTL conditions configured", zap.Int("count", len(pCfg.Conditions)))
+	}
+
+	p, err := newSpanPruningProcessor(set, pCfg, telemetryBuilder, conditions)
 	if err != nil {
 		return nil, err
 	}
