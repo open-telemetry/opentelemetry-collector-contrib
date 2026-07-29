@@ -6,6 +6,7 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"go.opentelemetry.io/collector/component"
@@ -35,10 +36,11 @@ type Config struct {
 	// ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"
 	ExternalLabels map[string]string `mapstructure:"external_labels"`
 
-	ClientConfig confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	// Deprecated [v0.158.0]: configure client http settings under `http` block
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
 
 	// HTTP defines the HTTP client configuration in a nested block.
-	// This field takes precedence over the squashed ClientConfig.
+	// This field takes precedence over the squashed ClientConfig when set.
 	HTTP confighttp.ClientConfig `mapstructure:"http"`
 
 	// maximum size in bytes of time series batch sent to remote storage
@@ -125,17 +127,61 @@ type RemoteWriteQueue struct {
 
 var _ component.Config = (*Config)(nil)
 
+var topLevelHTTPClientKeys = []string{
+	"endpoint",
+	"proxy_url",
+	"tls",
+	"headers",
+	"auth",
+	"compression",
+	"compression_params",
+	"read_buffer_size",
+	"write_buffer_size",
+	"max_idle_conns",
+	"max_idle_conns_per_host",
+	"max_conns_per_host",
+	"idle_conn_timeout",
+	"disable_keep_alives",
+	"http2_read_idle_timeout",
+	"http2_ping_timeout",
+	"cookies",
+	"middlewares",
+	"force_attempt_http2",
+}
+
+func hasTopLevelHTTPClientSettings(conf *confmap.Conf) bool {
+	return slices.ContainsFunc(topLevelHTTPClientKeys, func(key string) bool {
+		return conf.IsSet(key)
+	})
+}
+
 // Unmarshal unmarshals the configuration and handles HTTP config precedence.
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	if err := conf.Unmarshal(cfg); err != nil {
 		return err
 	}
 
-	// Handle HTTP config precedence: if HTTP is set, use it for ClientConfig
-	if metadata.ExporterPrometheusremotewritexporterUseHTTPConfigFieldFeatureGate.IsEnabled() {
-		cfg.ClientConfig = cfg.HTTP
+	// Nested http always takes precedence when present (no feature gate required).
+	if conf.IsSet("http") {
+		httpConf, err := conf.Sub("http")
+		if err != nil {
+			return err
+		}
+		if len(httpConf.ToStringMap()) == 0 {
+			return errors.New("'http' config block must not be empty")
+		}
+
+		if err = httpConf.Unmarshal(&cfg.ClientConfig); err != nil {
+			return fmt.Errorf("error unmarshalling http config: %w", err)
+		}
 	}
 
+	// When the remove-top-level gate is enabled, reject deprecated flat HTTP client keys.
+	if metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate.IsEnabled() &&
+		hasTopLevelHTTPClientSettings(conf) {
+		return fmt.Errorf("top-level HTTP client settings are not allowed when feature gate %s is enabled; move them under the 'http' block",
+			metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate.ID())
+	}
 	return nil
 }
 

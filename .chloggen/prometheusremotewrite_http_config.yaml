@@ -1,9 +1,8 @@
 change_type: enhancement
 
-component: exporter/prometheus_remote_write
+component: exporter/prometheusremotewrite
 
-note: Add support for `http` config block behind a feature gate for nested HTTP client configuration. When both `http` block and inline http settings exists, the `http` block is given precedence
-
-issues: [46284]
+note: Add a nested `http` config block for HTTP client settings. The nested block is always available and takes precedence over flat HTTP client settings.
+issues: [46209]
 
 change_logs: [user]

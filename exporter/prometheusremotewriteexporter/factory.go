@@ -86,12 +86,6 @@ func createDefaultConfig() component.Config {
 	retrySettings := configretry.NewDefaultBackOffConfig()
 	retrySettings.InitialInterval = 50 * time.Millisecond
 	clientConfig := confighttp.NewDefaultClientConfig()
-
-	var httpClientConfig confighttp.ClientConfig
-	if metadata.ExporterPrometheusremotewritexporterUseHTTPConfigFieldFeatureGate.IsEnabled() {
-		httpClientConfig = confighttp.NewDefaultClientConfig()
-	}
-
 	clientConfig.Endpoint = "http://some.url:9411/api/prom/push"
 	// We almost read 0 bytes, so no need to tune ReadBufferSize.
 	clientConfig.ReadBufferSize = 0
@@ -124,6 +118,5 @@ func createDefaultConfig() component.Config {
 		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
-		HTTP: httpClientConfig,
 	}
 }

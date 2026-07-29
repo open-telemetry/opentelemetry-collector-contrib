@@ -22,18 +22,18 @@ var ExporterPrometheusremotewritexporterRetryOn429FeatureGate = featuregate.Glob
 	featuregate.WithRegisterFromVersion("v0.101.0"),
 )
 
-var ExporterPrometheusremotewritexporterUseHTTPConfigFieldFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusremotewritexporter.UseHTTPConfigField",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter uses the 'http' config field. When disabled, the exporter uses the flat config fields (backward compatible)."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/35888"),
-	featuregate.WithRegisterFromVersion("v0.157.0"),
-)
-
 var ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.prometheusremotewritexporter.enableSendingRW2",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will support sending rw2. Extra configuration is still required besides enabling this feature gate."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/35888"),
 	featuregate.WithRegisterFromVersion("v0.125.0"),
+)
+
+var ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewritexporter.removeTopLevelHTTPSettings",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, it rejects top-level HTTP client settings (e.g. endpoint, tls, proxy_url); configure them under the http block instead."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46209"),
+	featuregate.WithRegisterFromVersion("v0.158.0"),
 )
