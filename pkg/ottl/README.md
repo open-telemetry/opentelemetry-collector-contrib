@@ -17,6 +17,7 @@ The OpenTelemetry Transformation Language (OTTL) is a small, domain-specific pro
 This package implements everything necessary to use OTTL in a Collector component or in another user-facing system.
 
 - [Getting Started](#getting-started)
+- [Understanding OTTL contexts](#understanding-ottl-contexts)
 - [Where to use OTTL](#where-to-use-ottl)
 - [Troubleshooting](#troubleshooting)
 - [Resources](#resources)
@@ -41,30 +42,44 @@ Within a statement you utilize OTTL Paths to access telemetry. The example uses 
 the span's attributes. For each Open Telemetry Signal, OTTL has a Path to every field (plus some extras to help make
 interacting with the data easier).
 
-To see a list of available Paths for each Open Telemetry Signal, checkout the links below.
-
-| Telemetry               | OTTL Context                                                                                                                               |
-|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| `Resource`              | [Resource](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlresource/README.md)           |
-| `Instrumentation Scope` | [Instrumentation Scope](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlscope/README.md) |
-| `Span`                  | [Span](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan/README.md)                   |
-| `Span Event`            | [SpanEvent](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent/README.md)         |
-| `Metric`                | [Metric](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetric/README.md)               |
-| `Datapoint`             | [DataPoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint/README.md)         |
-| `Log`                   | [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog/README.md)                     |
-| `Profile`               | [Profile](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlprofile/README.md)             |
-
-OTTL does not support cross-signal interactions at this time. That means you cannot write a statement like
-
-```
-set(span.attributes["log body"], log.body)
-```
+The Paths available to a statement depend on its OTTL context. See [Understanding OTTL contexts](#understanding-ottl-contexts)
+for the context hierarchy and links to the Paths supported by each context.
 
 See [OTTL Functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions) for a list of functions available for use in OTTL statements of most components.
 
 To see more examples of OTTL statements, checkout the [Transform Processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md#examples)
 
 There is a lot more OTTL can do, like nested functions, arithmetic, indexing, and enums. To explore it further check out [OTTL's grammar doc](./LANGUAGE.md).
+
+## Understanding OTTL contexts
+
+An OTTL context identifies the telemetry item currently being evaluated. It determines which Paths, functions, and enums
+are available to a statement, including which parent telemetry items can be accessed.
+
+Contexts follow the telemetry data hierarchies below, ordered from parent to child:
+
+- Traces: [resource](./contexts/ottlresource/README.md) → [instrumentation scope](./contexts/ottlscope/README.md) → [span](./contexts/ottlspan/README.md) → [span event](./contexts/ottlspanevent/README.md)
+- Metrics: [resource](./contexts/ottlresource/README.md) → [instrumentation scope](./contexts/ottlscope/README.md) → [metric](./contexts/ottlmetric/README.md) → [data point](./contexts/ottldatapoint/README.md) → [exemplar](./contexts/ottlexemplar/README.md)
+- Logs: [resource](./contexts/ottlresource/README.md) → [instrumentation scope](./contexts/ottlscope/README.md) → [log](./contexts/ottllog/README.md)
+- Profiles: [resource](./contexts/ottlresource/README.md) → [instrumentation scope](./contexts/ottlscope/README.md) → [profile](./contexts/ottlprofile/README.md) → [profile sample](./contexts/ottlprofilesample/README.md)
+
+The read-only [OTelCol context](./contexts/ottlotelcol/README.md) is not part of a signal hierarchy. It exposes
+Collector request data through `otelcol.*` Paths when that data is available to the component processing the request.
+
+A statement can access the current context and its parents, but not child contexts. For example, a span event context
+can access its span, instrumentation scope, and resource, while a span context cannot access an individual span event
+through span event Paths. OTTL also does not support accessing a different signal, such as using log Paths from a trace
+context.
+
+The Collector component using OTTL controls which contexts it supports, how statements are grouped into parsing units,
+and how frequently each group is evaluated. For example, a group using the metric context is evaluated once per metric,
+while a group using the data point context is evaluated once per data point. Components may support only a subset of the
+contexts listed above, so check the component's documentation.
+
+When a statement group does not specify `context`, the transform processor
+[infers the context](../../processor/transformprocessor/README.md#context-inference) from the Paths, functions, and enums
+used throughout that group. They must all be valid in one context. If statements are individually valid but require
+incompatible contexts, separate them into compatible groups.
 
 ## Where to use OTTL
 
