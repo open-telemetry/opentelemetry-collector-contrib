@@ -22,6 +22,102 @@ const (
 	AggregationStrategyMax = "max"
 )
 
+// AttributeApacheConnectionState specifies the value apache.connection.state attribute.
+type AttributeApacheConnectionState int
+
+const (
+	_ AttributeApacheConnectionState = iota
+	AttributeApacheConnectionStateWriting
+	AttributeApacheConnectionStateKeepalive
+	AttributeApacheConnectionStateClosing
+)
+
+// String returns the string representation of the AttributeApacheConnectionState.
+func (av AttributeApacheConnectionState) String() string {
+	switch av {
+	case AttributeApacheConnectionStateWriting:
+		return "writing"
+	case AttributeApacheConnectionStateKeepalive:
+		return "keepalive"
+	case AttributeApacheConnectionStateClosing:
+		return "closing"
+	}
+	return ""
+}
+
+// MapAttributeApacheConnectionState is a helper map of string to AttributeApacheConnectionState attribute value.
+var MapAttributeApacheConnectionState = map[string]AttributeApacheConnectionState{
+	"writing":   AttributeApacheConnectionStateWriting,
+	"keepalive": AttributeApacheConnectionStateKeepalive,
+	"closing":   AttributeApacheConnectionStateClosing,
+}
+
+// AttributeApacheWorkerState specifies the value apache.worker.state attribute.
+type AttributeApacheWorkerState int
+
+const (
+	_ AttributeApacheWorkerState = iota
+	AttributeApacheWorkerStateOpen
+	AttributeApacheWorkerStateWaiting
+	AttributeApacheWorkerStateStarting
+	AttributeApacheWorkerStateReading
+	AttributeApacheWorkerStateSending
+	AttributeApacheWorkerStateKeepalive
+	AttributeApacheWorkerStateDnslookup
+	AttributeApacheWorkerStateClosing
+	AttributeApacheWorkerStateLogging
+	AttributeApacheWorkerStateFinishing
+	AttributeApacheWorkerStateIdleCleanup
+	AttributeApacheWorkerStateUnknown
+)
+
+// String returns the string representation of the AttributeApacheWorkerState.
+func (av AttributeApacheWorkerState) String() string {
+	switch av {
+	case AttributeApacheWorkerStateOpen:
+		return "open"
+	case AttributeApacheWorkerStateWaiting:
+		return "waiting"
+	case AttributeApacheWorkerStateStarting:
+		return "starting"
+	case AttributeApacheWorkerStateReading:
+		return "reading"
+	case AttributeApacheWorkerStateSending:
+		return "sending"
+	case AttributeApacheWorkerStateKeepalive:
+		return "keepalive"
+	case AttributeApacheWorkerStateDnslookup:
+		return "dnslookup"
+	case AttributeApacheWorkerStateClosing:
+		return "closing"
+	case AttributeApacheWorkerStateLogging:
+		return "logging"
+	case AttributeApacheWorkerStateFinishing:
+		return "finishing"
+	case AttributeApacheWorkerStateIdleCleanup:
+		return "idle_cleanup"
+	case AttributeApacheWorkerStateUnknown:
+		return "unknown"
+	}
+	return ""
+}
+
+// MapAttributeApacheWorkerState is a helper map of string to AttributeApacheWorkerState attribute value.
+var MapAttributeApacheWorkerState = map[string]AttributeApacheWorkerState{
+	"open":         AttributeApacheWorkerStateOpen,
+	"waiting":      AttributeApacheWorkerStateWaiting,
+	"starting":     AttributeApacheWorkerStateStarting,
+	"reading":      AttributeApacheWorkerStateReading,
+	"sending":      AttributeApacheWorkerStateSending,
+	"keepalive":    AttributeApacheWorkerStateKeepalive,
+	"dnslookup":    AttributeApacheWorkerStateDnslookup,
+	"closing":      AttributeApacheWorkerStateClosing,
+	"logging":      AttributeApacheWorkerStateLogging,
+	"finishing":    AttributeApacheWorkerStateFinishing,
+	"idle_cleanup": AttributeApacheWorkerStateIdleCleanup,
+	"unknown":      AttributeApacheWorkerStateUnknown,
+}
+
 // AttributeConnectionState specifies the value connection_state attribute.
 type AttributeConnectionState int
 
@@ -197,6 +293,13 @@ var MapAttributeWorkersState = map[string]AttributeWorkersState{
 }
 
 var MetricsInfo = metricsInfo{
+	ApacheConnectionActive: metricInfo{
+		Name: "apache.connection.active",
+	},
+	ApacheConnectionStatus: metricInfo{
+		Name:       "apache.connection.status",
+		Attributes: []string{"apache.connection.state"},
+	},
 	ApacheConnectionsAsync: metricInfo{
 		Name:       "apache.connections.async",
 		Attributes: []string{"connection_state"},
@@ -220,6 +323,9 @@ var MetricsInfo = metricsInfo{
 	ApacheLoad5: metricInfo{
 		Name: "apache.load.5",
 	},
+	ApacheRequestCount: metricInfo{
+		Name: "apache.request.count",
+	},
 	ApacheRequestTime: metricInfo{
 		Name: "apache.request.time",
 	},
@@ -236,6 +342,16 @@ var MetricsInfo = metricsInfo{
 	ApacheUptime: metricInfo{
 		Name: "apache.uptime",
 	},
+	ApacheWorkerActive: metricInfo{
+		Name: "apache.worker.active",
+	},
+	ApacheWorkerIdle: metricInfo{
+		Name: "apache.worker.idle",
+	},
+	ApacheWorkerStatus: metricInfo{
+		Name:       "apache.worker.status",
+		Attributes: []string{"apache.worker.state"},
+	},
 	ApacheWorkers: metricInfo{
 		Name:       "apache.workers",
 		Attributes: []string{"workers_state"},
@@ -243,6 +359,8 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
+	ApacheConnectionActive   metricInfo
+	ApacheConnectionStatus   metricInfo
 	ApacheConnectionsAsync   metricInfo
 	ApacheCPULoad            metricInfo
 	ApacheCPUTime            metricInfo
@@ -250,17 +368,164 @@ type metricsInfo struct {
 	ApacheLoad1              metricInfo
 	ApacheLoad15             metricInfo
 	ApacheLoad5              metricInfo
+	ApacheRequestCount       metricInfo
 	ApacheRequestTime        metricInfo
 	ApacheRequests           metricInfo
 	ApacheScoreboard         metricInfo
 	ApacheTraffic            metricInfo
 	ApacheUptime             metricInfo
+	ApacheWorkerActive       metricInfo
+	ApacheWorkerIdle         metricInfo
+	ApacheWorkerStatus       metricInfo
 	ApacheWorkers            metricInfo
 }
 
 type metricInfo struct {
 	Name       string
 	Attributes []string
+}
+
+type metricApacheConnectionActive struct {
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   ApacheConnectionActiveMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
+}
+
+// init fills apache.connection.active metric with initial data.
+func (m *metricApacheConnectionActive) init() {
+	m.data.SetName("apache.connection.active")
+	m.data.SetDescription("The number of active connections currently attached to the HTTP server.")
+	m.data.SetUnit("{connection}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricApacheConnectionActive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheConnectionActive) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheConnectionActive) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheConnectionActive(cfg ApacheConnectionActiveMetricConfig) metricApacheConnectionActive {
+	m := metricApacheConnectionActive{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricApacheConnectionStatus struct {
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        ApacheConnectionStatusMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
+}
+
+// init fills apache.connection.status metric with initial data.
+func (m *metricApacheConnectionStatus) init() {
+	m.data.SetName("apache.connection.status")
+	m.data.SetDescription("The number of connections in different asynchronous states reported by Apache's server-status.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricApacheConnectionStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, apacheConnectionStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ApacheConnectionStatusMetricAttributeKeyApacheConnectionState) {
+		dp.Attributes().PutStr("apache.connection.state", apacheConnectionStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheConnectionStatus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheConnectionStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheConnectionStatus(cfg ApacheConnectionStatusMetricConfig) metricApacheConnectionStatus {
+	m := metricApacheConnectionStatus{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricApacheConnectionsAsync struct {
@@ -698,6 +963,58 @@ func newMetricApacheLoad5(cfg ApacheLoad5MetricConfig) metricApacheLoad5 {
 	return m
 }
 
+type metricApacheRequestCount struct {
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   ApacheRequestCountMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
+}
+
+// init fills apache.request.count metric with initial data.
+func (m *metricApacheRequestCount) init() {
+	m.data.SetName("apache.request.count")
+	m.data.SetDescription("The number of requests serviced by the HTTP server.")
+	m.data.SetUnit("{request}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricApacheRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheRequestCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheRequestCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheRequestCount(cfg ApacheRequestCountMetricConfig) metricApacheRequestCount {
+	m := metricApacheRequestCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricApacheRequestTime struct {
 	data     pmetric.Metric                // data buffer for generated metric.
 	config   ApacheRequestTimeMetricConfig // metric config provided by user.
@@ -997,6 +1314,201 @@ func newMetricApacheUptime(cfg ApacheUptimeMetricConfig) metricApacheUptime {
 	return m
 }
 
+type metricApacheWorkerActive struct {
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   ApacheWorkerActiveMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
+}
+
+// init fills apache.worker.active metric with initial data.
+func (m *metricApacheWorkerActive) init() {
+	m.data.SetName("apache.worker.active")
+	m.data.SetDescription("The number of busy workers currently attached to the HTTP server.")
+	m.data.SetUnit("{worker}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricApacheWorkerActive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheWorkerActive) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheWorkerActive) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheWorkerActive(cfg ApacheWorkerActiveMetricConfig) metricApacheWorkerActive {
+	m := metricApacheWorkerActive{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricApacheWorkerIdle struct {
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   ApacheWorkerIdleMetricConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
+}
+
+// init fills apache.worker.idle metric with initial data.
+func (m *metricApacheWorkerIdle) init() {
+	m.data.SetName("apache.worker.idle")
+	m.data.SetDescription("The number of idle workers currently attached to the HTTP server.")
+	m.data.SetUnit("{worker}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricApacheWorkerIdle) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheWorkerIdle) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheWorkerIdle) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheWorkerIdle(cfg ApacheWorkerIdleMetricConfig) metricApacheWorkerIdle {
+	m := metricApacheWorkerIdle{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricApacheWorkerStatus struct {
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        ApacheWorkerStatusMetricConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
+}
+
+// init fills apache.worker.status metric with initial data.
+func (m *metricApacheWorkerStatus) init() {
+	m.data.SetName("apache.worker.status")
+	m.data.SetDescription("The number of workers in each state.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricApacheWorkerStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, apacheWorkerStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ApacheWorkerStatusMetricAttributeKeyApacheWorkerState) {
+		dp.Attributes().PutStr("apache.worker.state", apacheWorkerStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheWorkerStatus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheWorkerStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheWorkerStatus(cfg ApacheWorkerStatusMetricConfig) metricApacheWorkerStatus {
+	m := metricApacheWorkerStatus{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricApacheWorkers struct {
 	data          pmetric.Metric            // data buffer for generated metric.
 	config        ApacheWorkersMetricConfig // metric config provided by user.
@@ -1098,6 +1610,8 @@ type MetricsBuilder struct {
 	buildInfo                      component.BuildInfo  // contains version information.
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
+	metricApacheConnectionActive   metricApacheConnectionActive
+	metricApacheConnectionStatus   metricApacheConnectionStatus
 	metricApacheConnectionsAsync   metricApacheConnectionsAsync
 	metricApacheCPULoad            metricApacheCPULoad
 	metricApacheCPUTime            metricApacheCPUTime
@@ -1105,11 +1619,15 @@ type MetricsBuilder struct {
 	metricApacheLoad1              metricApacheLoad1
 	metricApacheLoad15             metricApacheLoad15
 	metricApacheLoad5              metricApacheLoad5
+	metricApacheRequestCount       metricApacheRequestCount
 	metricApacheRequestTime        metricApacheRequestTime
 	metricApacheRequests           metricApacheRequests
 	metricApacheScoreboard         metricApacheScoreboard
 	metricApacheTraffic            metricApacheTraffic
 	metricApacheUptime             metricApacheUptime
+	metricApacheWorkerActive       metricApacheWorkerActive
+	metricApacheWorkerIdle         metricApacheWorkerIdle
+	metricApacheWorkerStatus       metricApacheWorkerStatus
 	metricApacheWorkers            metricApacheWorkers
 }
 
@@ -1136,6 +1654,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
 		buildInfo:                      settings.BuildInfo,
+		metricApacheConnectionActive:   newMetricApacheConnectionActive(mbc.Metrics.ApacheConnectionActive),
+		metricApacheConnectionStatus:   newMetricApacheConnectionStatus(mbc.Metrics.ApacheConnectionStatus),
 		metricApacheConnectionsAsync:   newMetricApacheConnectionsAsync(mbc.Metrics.ApacheConnectionsAsync),
 		metricApacheCPULoad:            newMetricApacheCPULoad(mbc.Metrics.ApacheCPULoad),
 		metricApacheCPUTime:            newMetricApacheCPUTime(mbc.Metrics.ApacheCPUTime),
@@ -1143,11 +1663,15 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricApacheLoad1:              newMetricApacheLoad1(mbc.Metrics.ApacheLoad1),
 		metricApacheLoad15:             newMetricApacheLoad15(mbc.Metrics.ApacheLoad15),
 		metricApacheLoad5:              newMetricApacheLoad5(mbc.Metrics.ApacheLoad5),
+		metricApacheRequestCount:       newMetricApacheRequestCount(mbc.Metrics.ApacheRequestCount),
 		metricApacheRequestTime:        newMetricApacheRequestTime(mbc.Metrics.ApacheRequestTime),
 		metricApacheRequests:           newMetricApacheRequests(mbc.Metrics.ApacheRequests),
 		metricApacheScoreboard:         newMetricApacheScoreboard(mbc.Metrics.ApacheScoreboard),
 		metricApacheTraffic:            newMetricApacheTraffic(mbc.Metrics.ApacheTraffic),
 		metricApacheUptime:             newMetricApacheUptime(mbc.Metrics.ApacheUptime),
+		metricApacheWorkerActive:       newMetricApacheWorkerActive(mbc.Metrics.ApacheWorkerActive),
+		metricApacheWorkerIdle:         newMetricApacheWorkerIdle(mbc.Metrics.ApacheWorkerIdle),
+		metricApacheWorkerStatus:       newMetricApacheWorkerStatus(mbc.Metrics.ApacheWorkerStatus),
 		metricApacheWorkers:            newMetricApacheWorkers(mbc.Metrics.ApacheWorkers),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
@@ -1233,6 +1757,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricApacheConnectionActive.emit(ils.Metrics())
+	mb.metricApacheConnectionStatus.emit(ils.Metrics())
 	mb.metricApacheConnectionsAsync.emit(ils.Metrics())
 	mb.metricApacheCPULoad.emit(ils.Metrics())
 	mb.metricApacheCPUTime.emit(ils.Metrics())
@@ -1240,11 +1766,15 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricApacheLoad1.emit(ils.Metrics())
 	mb.metricApacheLoad15.emit(ils.Metrics())
 	mb.metricApacheLoad5.emit(ils.Metrics())
+	mb.metricApacheRequestCount.emit(ils.Metrics())
 	mb.metricApacheRequestTime.emit(ils.Metrics())
 	mb.metricApacheRequests.emit(ils.Metrics())
 	mb.metricApacheScoreboard.emit(ils.Metrics())
 	mb.metricApacheTraffic.emit(ils.Metrics())
 	mb.metricApacheUptime.emit(ils.Metrics())
+	mb.metricApacheWorkerActive.emit(ils.Metrics())
+	mb.metricApacheWorkerIdle.emit(ils.Metrics())
+	mb.metricApacheWorkerStatus.emit(ils.Metrics())
 	mb.metricApacheWorkers.emit(ils.Metrics())
 
 	for _, op := range options {
@@ -1275,6 +1805,26 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordApacheConnectionActiveDataPoint adds a data point to apache.connection.active metric.
+func (mb *MetricsBuilder) RecordApacheConnectionActiveDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for ApacheConnectionActive, value was %s: %w", inputVal, err)
+	}
+	mb.metricApacheConnectionActive.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordApacheConnectionStatusDataPoint adds a data point to apache.connection.status metric.
+func (mb *MetricsBuilder) RecordApacheConnectionStatusDataPoint(ts pcommon.Timestamp, inputVal string, apacheConnectionStateAttributeValue AttributeApacheConnectionState) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for ApacheConnectionStatus, value was %s: %w", inputVal, err)
+	}
+	mb.metricApacheConnectionStatus.recordDataPoint(mb.startTime, ts, val, apacheConnectionStateAttributeValue.String())
+	return nil
 }
 
 // RecordApacheConnectionsAsyncDataPoint adds a data point to apache.connections.async metric.
@@ -1347,6 +1897,16 @@ func (mb *MetricsBuilder) RecordApacheLoad5DataPoint(ts pcommon.Timestamp, input
 	return nil
 }
 
+// RecordApacheRequestCountDataPoint adds a data point to apache.request.count metric.
+func (mb *MetricsBuilder) RecordApacheRequestCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for ApacheRequestCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricApacheRequestCount.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordApacheRequestTimeDataPoint adds a data point to apache.request.time metric.
 func (mb *MetricsBuilder) RecordApacheRequestTimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -1385,6 +1945,31 @@ func (mb *MetricsBuilder) RecordApacheUptimeDataPoint(ts pcommon.Timestamp, inpu
 	}
 	mb.metricApacheUptime.recordDataPoint(mb.startTime, ts, val)
 	return nil
+}
+
+// RecordApacheWorkerActiveDataPoint adds a data point to apache.worker.active metric.
+func (mb *MetricsBuilder) RecordApacheWorkerActiveDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for ApacheWorkerActive, value was %s: %w", inputVal, err)
+	}
+	mb.metricApacheWorkerActive.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordApacheWorkerIdleDataPoint adds a data point to apache.worker.idle metric.
+func (mb *MetricsBuilder) RecordApacheWorkerIdleDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for ApacheWorkerIdle, value was %s: %w", inputVal, err)
+	}
+	mb.metricApacheWorkerIdle.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordApacheWorkerStatusDataPoint adds a data point to apache.worker.status metric.
+func (mb *MetricsBuilder) RecordApacheWorkerStatusDataPoint(ts pcommon.Timestamp, val int64, apacheWorkerStateAttributeValue AttributeApacheWorkerState) {
+	mb.metricApacheWorkerStatus.recordDataPoint(mb.startTime, ts, val, apacheWorkerStateAttributeValue.String())
 }
 
 // RecordApacheWorkersDataPoint adds a data point to apache.workers metric.

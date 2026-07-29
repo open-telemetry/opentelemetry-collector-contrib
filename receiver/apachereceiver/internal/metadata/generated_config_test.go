@@ -26,6 +26,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					ApacheConnectionActive: ApacheConnectionActiveMetricConfig{
+						Enabled: true,
+					},
+					ApacheConnectionStatus: ApacheConnectionStatusMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ApacheConnectionStatusMetricAttributeKey{ApacheConnectionStatusMetricAttributeKeyApacheConnectionState},
+					},
 					ApacheConnectionsAsync: ApacheConnectionsAsyncMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
@@ -51,6 +59,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheLoad5: ApacheLoad5MetricConfig{
 						Enabled: true,
 					},
+					ApacheRequestCount: ApacheRequestCountMetricConfig{
+						Enabled: true,
+					},
 					ApacheRequestTime: ApacheRequestTimeMetricConfig{
 						Enabled: true,
 					},
@@ -67,6 +78,17 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					ApacheUptime: ApacheUptimeMetricConfig{
 						Enabled: true,
+					},
+					ApacheWorkerActive: ApacheWorkerActiveMetricConfig{
+						Enabled: true,
+					},
+					ApacheWorkerIdle: ApacheWorkerIdleMetricConfig{
+						Enabled: true,
+					},
+					ApacheWorkerStatus: ApacheWorkerStatusMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ApacheWorkerStatusMetricAttributeKey{ApacheWorkerStatusMetricAttributeKeyApacheWorkerState},
 					},
 					ApacheWorkers: ApacheWorkersMetricConfig{
 						Enabled:             true,
@@ -84,6 +106,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					ApacheConnectionActive: ApacheConnectionActiveMetricConfig{
+						Enabled: false,
+					},
+					ApacheConnectionStatus: ApacheConnectionStatusMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ApacheConnectionStatusMetricAttributeKey{ApacheConnectionStatusMetricAttributeKeyApacheConnectionState},
+					},
 					ApacheConnectionsAsync: ApacheConnectionsAsyncMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
@@ -109,6 +139,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheLoad5: ApacheLoad5MetricConfig{
 						Enabled: false,
 					},
+					ApacheRequestCount: ApacheRequestCountMetricConfig{
+						Enabled: false,
+					},
 					ApacheRequestTime: ApacheRequestTimeMetricConfig{
 						Enabled: false,
 					},
@@ -126,6 +159,17 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheUptime: ApacheUptimeMetricConfig{
 						Enabled: false,
 					},
+					ApacheWorkerActive: ApacheWorkerActiveMetricConfig{
+						Enabled: false,
+					},
+					ApacheWorkerIdle: ApacheWorkerIdleMetricConfig{
+						Enabled: false,
+					},
+					ApacheWorkerStatus: ApacheWorkerStatusMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ApacheWorkerStatusMetricAttributeKey{ApacheWorkerStatusMetricAttributeKeyApacheWorkerState},
+					},
 					ApacheWorkers: ApacheWorkersMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
@@ -142,11 +186,24 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ApacheConnectionsAsyncMetricConfig{}, ApacheCPULoadMetricConfig{}, ApacheCPUTimeMetricConfig{}, ApacheCurrentConnectionsMetricConfig{}, ApacheLoad1MetricConfig{}, ApacheLoad15MetricConfig{}, ApacheLoad5MetricConfig{}, ApacheRequestTimeMetricConfig{}, ApacheRequestsMetricConfig{}, ApacheScoreboardMetricConfig{}, ApacheTrafficMetricConfig{}, ApacheUptimeMetricConfig{}, ApacheWorkersMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ApacheConnectionActiveMetricConfig{}, ApacheConnectionStatusMetricConfig{}, ApacheConnectionsAsyncMetricConfig{}, ApacheCPULoadMetricConfig{}, ApacheCPUTimeMetricConfig{}, ApacheCurrentConnectionsMetricConfig{}, ApacheLoad1MetricConfig{}, ApacheLoad15MetricConfig{}, ApacheLoad5MetricConfig{}, ApacheRequestCountMetricConfig{}, ApacheRequestTimeMetricConfig{}, ApacheRequestsMetricConfig{}, ApacheScoreboardMetricConfig{}, ApacheTrafficMetricConfig{}, ApacheUptimeMetricConfig{}, ApacheWorkerActiveMetricConfig{}, ApacheWorkerIdleMetricConfig{}, ApacheWorkerStatusMetricConfig{}, ApacheWorkersMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
+
+func TestApacheConnectionStatusMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ApacheConnectionStatus
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ApacheConnectionStatusMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric apache.connection.status doesn't have an attribute invalid, valid attributes: [apache.connection.state]")
+
+	cfg = DefaultMetricsConfig().ApacheConnectionStatus
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func TestApacheConnectionsAsyncMetricsConfig_Validate(t *testing.T) {
 	cfg := DefaultMetricsConfig().ApacheConnectionsAsync
 	require.NoError(t, cfg.Validate())
@@ -179,6 +236,18 @@ func TestApacheScoreboardMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric apache.scoreboard doesn't have an attribute invalid, valid attributes: [state]")
 
 	cfg = DefaultMetricsConfig().ApacheScoreboard
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestApacheWorkerStatusMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ApacheWorkerStatus
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ApacheWorkerStatusMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric apache.worker.status doesn't have an attribute invalid, valid attributes: [apache.worker.state]")
+
+	cfg = DefaultMetricsConfig().ApacheWorkerStatus
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
