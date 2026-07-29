@@ -26,7 +26,6 @@ require (
 require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/confmap/xconfmap v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/consumer/consumertest v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/consumer/xconsumer v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/pdata/pprofile v0.157.1-0.20260723141305-52e6bf4aaaba
