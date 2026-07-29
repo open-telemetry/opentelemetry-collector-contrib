@@ -64,15 +64,7 @@ type Observer struct {
 
 // NewPull creates a pull-mode observer.
 func NewPull(reg *FactoryRegistry, config PullConfig, logger *zap.Logger, handler func(*unstructured.UnstructuredList)) (*Observer, error) {
-	return pull(reg, factoriesForConfig(reg, config.Config), config, logger, handler)
-}
-
-// NewWatch creates a watch-mode observer.
-func NewWatch(reg *FactoryRegistry, config WatchConfig, logger *zap.Logger, handler func(*apiWatch.Event)) (*Observer, error) {
-	return watch(reg, factoriesForConfig(reg, config.Config), config, logger, handler)
-}
-
-func pull(reg *FactoryRegistry, factories []namespacedFactory, config PullConfig, logger *zap.Logger, handler func(*unstructured.UnstructuredList)) (*Observer, error) {
+	factories := factoriesForConfig(reg, config.Config)
 	if len(factories) == 0 {
 		return nil, errors.New("at least one factory is required")
 	}
@@ -91,7 +83,9 @@ func pull(reg *FactoryRegistry, factories []namespacedFactory, config PullConfig
 	return o, nil
 }
 
-func watch(reg *FactoryRegistry, factories []namespacedFactory, config WatchConfig, logger *zap.Logger, handler func(*apiWatch.Event)) (*Observer, error) {
+// NewWatch creates a watch-mode observer.
+func NewWatch(reg *FactoryRegistry, config WatchConfig, logger *zap.Logger, handler func(*apiWatch.Event)) (*Observer, error) {
+	factories := factoriesForConfig(reg, config.Config)
 	if len(factories) == 0 {
 		return nil, errors.New("at least one factory is required")
 	}
