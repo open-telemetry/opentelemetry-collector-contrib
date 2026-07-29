@@ -187,6 +187,7 @@ extension/opampcustommessages
 extension/opampextension
 extension/pprofextension
 extension/remotetapextension
+extension/sdnotifyextension
 extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
