@@ -12,7 +12,7 @@ import (
 
 func TestValidConfig(t *testing.T) {
 	config := DefaultConfig()
-	config.Endpoint = "https://localhost"
+	config.ClientConfig.Endpoint = "https://localhost"
 	require.NoError(t, config.validate())
 }
 

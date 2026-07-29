@@ -113,7 +113,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "NoEndpoint",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Endpoint = ""
+				cfg.ClientConfig.Endpoint = ""
 				return cfg
 			}(),
 			wantErr: "endpoint must be non-empty",

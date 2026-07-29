@@ -29,8 +29,8 @@ import (
 
 func TestComponentStatus(t *testing.T) {
 	cfg := NewDefaultConfig().(*Config)
-	cfg.HTTPConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	cfg.GRPCConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.HTTPConfig.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.GRPCConfig.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.UseV2 = true
 	ext := NewHealthCheckExtension(*cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 
@@ -123,7 +123,7 @@ func TestNotifyConfig(t *testing.T) {
 
 	cfg := NewDefaultConfig().(*Config)
 	cfg.UseV2 = true
-	cfg.HTTPConfig.NetAddr.Endpoint = endpoint
+	cfg.HTTPConfig.ServerConfig.NetAddr.Endpoint = endpoint
 	cfg.HTTPConfig.Config.Enabled = true
 	cfg.HTTPConfig.Config.Path = "/config"
 
@@ -169,8 +169,8 @@ func TestNotifyConfig(t *testing.T) {
 // test for https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47591.
 func TestComponentStatusChangedAfterShutdownDoesNotDeadlock(t *testing.T) {
 	cfg := NewDefaultConfig().(*Config)
-	cfg.HTTPConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	cfg.GRPCConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.HTTPConfig.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.GRPCConfig.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.UseV2 = true
 	ext := NewHealthCheckExtension(*cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 
@@ -223,7 +223,7 @@ func TestShutdown(t *testing.T) {
 
 		cfg := NewDefaultConfig().(*Config)
 		cfg.UseV2 = true
-		cfg.HTTPConfig.NetAddr.Endpoint = endpoint
+		cfg.HTTPConfig.ServerConfig.NetAddr.Endpoint = endpoint
 
 		ext := NewHealthCheckExtension(*cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 

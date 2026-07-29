@@ -1,6 +1,0 @@
-change_type: deprecation
-component: processor/span_pruning
-note: Rename `spanpruning` processor to `span_pruning` and add deprecated alias `spanpruning`
-issues: [47590]
-subtext:
-change_logs: []

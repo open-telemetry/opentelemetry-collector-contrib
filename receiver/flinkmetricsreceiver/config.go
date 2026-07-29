@@ -18,13 +18,13 @@ const defaultEndpoint = "http://localhost:8081"
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	confighttp.ClientConfig        `mapstructure:",squash"`
+	ClientConfig                   confighttp.ClientConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 }
 
 // Validate validates the configuration by checking for missing or invalid fields
 func (cfg *Config) Validate() error {
-	if _, err := url.Parse(cfg.Endpoint); err != nil {
+	if _, err := url.Parse(cfg.ClientConfig.Endpoint); err != nil {
 		return fmt.Errorf("\"endpoint\" must be in the form of <scheme>://<hostname>:<port>: %w", err)
 	}
 
