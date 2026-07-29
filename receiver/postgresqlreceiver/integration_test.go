@@ -150,11 +150,11 @@ func integrationTest(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.ControllerConfig.CollectionInterval = time.Second
-				rCfg.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, postgresqlPort))
+				rCfg.AddrConfig.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, postgresqlPort))
 				rCfg.Databases = databases
 				rCfg.Username = "otelu"
 				rCfg.Password = "otelp"
-				rCfg.Insecure = true
+				rCfg.ClientConfig.Insecure = true
 				rCfg.Metrics.PostgresqlWalDelay.Enabled = true
 				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
 				rCfg.Metrics.PostgresqlTempIo.Enabled = true

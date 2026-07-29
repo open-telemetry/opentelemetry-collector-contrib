@@ -132,6 +132,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.cursor.open.rate:
+        description: "OracledbCursorOpenRateMetricConfig provides config for the oracledb.cursor.open.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.data_dictionary.hit_ratio:
         description: "OracledbDataDictionaryHitRatioMetricConfig provides config for the oracledb.data_dictionary.hit_ratio metric."
         type: object
@@ -197,6 +204,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.enqueue.deadlocks.rate:
+        description: "OracledbEnqueueDeadlocksRateMetricConfig provides config for the oracledb.enqueue.deadlocks.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.enqueue.operations:
         description: "OracledbEnqueueOperationsMetricConfig provides config for the oracledb.enqueue.operations metric."
         type: object
@@ -220,6 +234,13 @@ $defs:
                 - "oracledb.enqueue.type"
             default:
               - "oracledb.enqueue.type"
+      oracledb.enqueue.timeouts.rate:
+        description: "OracledbEnqueueTimeoutsRateMetricConfig provides config for the oracledb.enqueue.timeouts.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.enqueue_deadlocks:
         description: "OracledbEnqueueDeadlocksMetricConfig provides config for the oracledb.enqueue_deadlocks metric."
         type: object
@@ -269,6 +290,13 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.executions.rate:
+        description: "OracledbExecutionsRateMetricConfig provides config for the oracledb.executions.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.gc.current_block.time:
         description: "OracledbGcCurrentBlockTimeMetricConfig provides config for the oracledb.gc.current_block.time metric."
         type: object
@@ -283,6 +311,13 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.hard_parses.rate:
+        description: "OracledbHardParsesRateMetricConfig provides config for the oracledb.hard_parses.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.host.cpu.usage.rate:
         description: "OracledbHostCPUUsageRateMetricConfig provides config for the oracledb.host.cpu.usage.rate metric."
         type: object
@@ -378,6 +413,13 @@ $defs:
             default: false
       oracledb.logons:
         description: "OracledbLogonsMetricConfig provides config for the oracledb.logons metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.logons.rate:
+        description: "OracledbLogonsRateMetricConfig provides config for the oracledb.logons.rate metric."
         type: object
         properties:
           enabled:
@@ -906,6 +948,13 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.transactions.rate:
+        description: "OracledbTransactionsRateMetricConfig provides config for the oracledb.transactions.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.transactions.usage:
         description: "OracledbTransactionsUsageMetricConfig provides config for the oracledb.transactions.usage metric."
         type: object

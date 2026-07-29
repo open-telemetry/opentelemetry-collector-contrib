@@ -42,7 +42,7 @@ import (
 func TestUnsuccessfulScrape(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "fake:11111"
+	cfg.AddrConfig.Endpoint = "fake:11111"
 
 	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
@@ -1877,7 +1877,7 @@ func TestResolveServiceInstanceSeed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.Endpoint = tt.endpoint
+			cfg.AddrConfig.Endpoint = tt.endpoint
 			assert.Equal(t, tt.expected, resolveServiceInstanceSeed(cfg, zap.NewNop()))
 		})
 	}
@@ -1888,8 +1888,8 @@ func TestResolveUnixServiceInstanceSeed(t *testing.T) {
 	require.NoError(t, err)
 	unixSeed := func(endpoint string) string {
 		cfg := createDefaultConfig().(*Config)
-		cfg.Endpoint = endpoint
-		cfg.Transport = confignet.TransportTypeUnix
+		cfg.AddrConfig.Endpoint = endpoint
+		cfg.AddrConfig.Transport = confignet.TransportTypeUnix
 		return resolveServiceInstanceSeed(cfg, zap.NewNop())
 	}
 
@@ -1901,7 +1901,7 @@ func TestResolveUnixServiceInstanceSeed(t *testing.T) {
 	assert.Equal(t, strings.Join([]string{"unix", hostname, "var/run/postgresql"}, "\x00"), unixSeed("var/run/postgresql"))
 
 	tcpConfig := createDefaultConfig().(*Config)
-	tcpConfig.Endpoint = "var/run/postgresql:5432"
+	tcpConfig.AddrConfig.Endpoint = "var/run/postgresql:5432"
 	assert.NotEqual(t, seed, resolveServiceInstanceSeed(tcpConfig, zap.NewNop()))
 }
 
@@ -1911,7 +1911,7 @@ func TestNewPostgreSQLScraperSemconvServiceInstanceID(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "[::1]:5432"
+	cfg.AddrConfig.Endpoint = "[::1]:5432"
 	scraper, err := newPostgreSQLScraper(
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
@@ -1932,8 +1932,8 @@ func TestNewPostgreSQLScraperSemconvUnixServiceInstanceID(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "var/run/postgresql:5432"
-	cfg.Transport = confignet.TransportTypeUnix
+	cfg.AddrConfig.Endpoint = "var/run/postgresql:5432"
+	cfg.AddrConfig.Transport = confignet.TransportTypeUnix
 	scraper, err := newPostgreSQLScraper(
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
@@ -1950,7 +1950,7 @@ func TestNewPostgreSQLScraperSemconvUnixServiceInstanceID(t *testing.T) {
 
 func TestSetupSemconvResourceBuilder(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "127.0.0.1:5432"
+	cfg.AddrConfig.Endpoint = "127.0.0.1:5432"
 	serviceInstanceID := uuid.NewSHA1(otelNamespaceUUID, []byte("collector-host:5432")).String()
 	scraper := &postgreSQLScraper{
 		logger:            zap.NewNop(),
@@ -2035,8 +2035,8 @@ func TestServerEndpointAttributes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.Endpoint = tt.endpoint
-			cfg.Transport = tt.transport
+			cfg.AddrConfig.Endpoint = tt.endpoint
+			cfg.AddrConfig.Transport = tt.transport
 			address, port, err := serverEndpointAttributes(cfg)
 			if tt.wantErr {
 				require.Error(t, err)

@@ -116,7 +116,7 @@ func newPostgreSQLScraper(
 	if useOTelSemconv {
 		serviceInstanceID = uuid.NewSHA1(otelNamespaceUUID, []byte(resolveServiceInstanceSeed(config, settings.Logger))).String()
 	} else {
-		serviceInstanceID = getInstanceID(config.Endpoint, settings.Logger)
+		serviceInstanceID = getInstanceID(config.AddrConfig.Endpoint, settings.Logger)
 	}
 	mbConfig := metricsBuilderConfigForFeatureGate(config.MetricsBuilderConfig, useOTelSemconv)
 	return &postgreSQLScraper{
@@ -1030,7 +1030,7 @@ func (p *postgreSQLScraper) setupSemconvResourceBuilder(rb *metadata.ResourceBui
 }
 
 func serverEndpointAttributes(config *Config) (string, int64, error) {
-	host, portString, err := net.SplitHostPort(config.Endpoint)
+	host, portString, err := net.SplitHostPort(config.AddrConfig.Endpoint)
 	if err != nil {
 		return "", 0, err
 	}
@@ -1038,7 +1038,7 @@ func serverEndpointAttributes(config *Config) (string, int64, error) {
 	if err != nil {
 		return "", 0, err
 	}
-	if config.Transport == confignet.TransportTypeUnix {
+	if config.AddrConfig.Transport == confignet.TransportTypeUnix {
 		host = path.Join("/", host, ".s.PGSQL."+portString)
 	}
 	return host, port, nil
@@ -1075,8 +1075,8 @@ func (p *postgreSQLScraper) setupLogsResourceBuilder(rb *metadata.ResourceBuilde
 // resolveServiceInstanceSeed returns the database endpoint used as the UUID v5 seed in semconv mode.
 // Local TCP and Unix endpoints include the machine hostname so databases on different machines produce distinct IDs.
 func resolveServiceInstanceSeed(config *Config, logger *zap.Logger) string {
-	endpoint := config.Endpoint
-	if config.Transport == confignet.TransportTypeUnix {
+	endpoint := config.AddrConfig.Endpoint
+	if config.AddrConfig.Transport == confignet.TransportTypeUnix {
 		address, _, err := serverEndpointAttributes(config)
 		if err != nil {
 			logger.Warn("Failed to parse Unix endpoint for service.instance.id; using raw endpoint in UUID seed",

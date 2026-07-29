@@ -381,6 +381,14 @@ Number of currently open cursors in the Oracle instance.
 | ---- | ----------- | ---------- | --------- |
 | {cursor} | Gauge | Int | Development |
 
+### oracledb.cursor.open.rate
+
+Rate of cursors opened.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cursor}/s | Gauge | Double | Development |
+
 ### oracledb.data_dictionary.hit_ratio
 
 Data dictionary cache hit ratio from v$rowcache.
@@ -443,6 +451,14 @@ Number of DML statements that were executed in parallel
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {statements} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.enqueue.deadlocks.rate
+
+Rate of enqueue deadlocks.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {deadlock}/s | Gauge | Double | Development |
+
 ### oracledb.enqueue.operations
 
 Total count of enqueue (lock) operations.
@@ -456,6 +472,14 @@ Total count of enqueue (lock) operations.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.enqueue.type | Type of enqueue (lock) operation reported by Oracle. | Str: ``conversions``, ``releases``, ``requests``, ``timeouts``, ``waits`` | Recommended | - |
+
+### oracledb.enqueue.timeouts.rate
+
+Rate of enqueue timeouts.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {timeout}/s | Gauge | Double | Development |
 
 ### oracledb.execution.utilization
 
@@ -471,6 +495,14 @@ Fraction of executions that did not require a parse, as computed by Oracle V$SYS
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.parse.type | Type of parse operation (e.g., soft). | Str: ``soft`` | Recommended | - |
 
+### oracledb.executions.rate
+
+Rate of SQL statement executions.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {execution}/s | Gauge | Double | Development |
+
 ### oracledb.gc.current_block.time
 
 Cumulative time spent transferring current blocks between instances over RAC cache fusion.
@@ -484,6 +516,14 @@ Cumulative time spent transferring current blocks between instances over RAC cac
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | network.io.direction | Direction of the network transfer. | Str: ``receive``, ``transmit`` | Recommended | - |
+
+### oracledb.hard_parses.rate
+
+Rate of hard parses.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {parse}/s | Gauge | Double | Development |
 
 ### oracledb.host.cpu.usage.rate
 
@@ -600,6 +640,14 @@ Number of logon operations
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {operation} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.logons.rate
+
+Rate of logon operations.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {logon}/s | Gauge | Double | Development |
 
 ### oracledb.os.swaps
 
@@ -1172,6 +1220,20 @@ Total number of transactions rolled back.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {rollback} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.transactions.rate
+
+Rate of user transactions.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {transaction}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.transaction.type | The type of user transaction. | Str: ``commit``, ``rollback`` | Recommended | - |
 
 ## Default Events
 
