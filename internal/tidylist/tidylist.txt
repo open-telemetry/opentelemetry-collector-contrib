@@ -54,7 +54,6 @@ internal/metadataproviders
 internal/datadog
 pkg/datadog
 receiver/datadogreceiver
-receiver/dnscheckreceiver
 receiver/jaegerreceiver
 receiver/signalfxreceiver
 pkg/translator/pprof
@@ -267,6 +266,7 @@ receiver/cloudflarereceiver
 receiver/cloudfoundryreceiver
 receiver/collectdreceiver
 receiver/couchdbreceiver
+receiver/dnscheckreceiver
 receiver/elasticsearchreceiver
 receiver/envoyalsreceiver
 receiver/expvarreceiver
