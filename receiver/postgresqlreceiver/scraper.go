@@ -542,7 +542,7 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 	// pg_stat_database_conflicts is queried separately and only when the metric is
 	// enabled, since the counters are only populated on standby servers and would
 	// otherwise add an unnecessary query on every scrape.
-	if p.config.Metrics.PostgresqlQueryConflicts.Enabled {
+	if p.config.MetricsBuilderConfig.Metrics.PostgresqlQueryConflicts.Enabled {
 		wg.Add(1)
 		go p.retrieveDatabaseConflicts(ctx, wg, listClient, databases, r, errs)
 	}
@@ -740,9 +740,9 @@ func (p *postgreSQLScraper) recordVectorSearchStats(
 ) bool {
 	// All metrics are opt-in and derived from the same pg_stat_statements query, so skip
 	// the collection entirely unless at least one of them is enabled.
-	if !p.config.Metrics.PostgresqlVectorSearchCalls.Enabled &&
-		!p.config.Metrics.PostgresqlVectorSearchDuration.Enabled &&
-		!p.config.Metrics.PostgresqlVectorSearchRowsReturned.Enabled {
+	if !p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchCalls.Enabled &&
+		!p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchDuration.Enabled &&
+		!p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchRowsReturned.Enabled {
 		return false
 	}
 
@@ -782,8 +782,8 @@ func (p *postgreSQLScraper) recordVectorInsertStats(
 ) bool {
 	// Both metrics are opt-in and derived from the same pg_stat_statements query, so skip
 	// the collection entirely unless at least one of them is enabled.
-	if !p.config.Metrics.PostgresqlVectorInsertRows.Enabled &&
-		!p.config.Metrics.PostgresqlVectorInsertDuration.Enabled {
+	if !p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorInsertRows.Enabled &&
+		!p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorInsertDuration.Enabled {
 		return false
 	}
 

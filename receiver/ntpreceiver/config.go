@@ -17,9 +17,9 @@ import (
 // Config is the configuration for the NSX receiver
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Version                        int    `mapstructure:"version"`
-	Endpoint                       string `mapstructure:"endpoint"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Version                        int                           `mapstructure:"version"`
+	Endpoint                       string                        `mapstructure:"endpoint"`
 }
 
 func (c *Config) Validate() error {

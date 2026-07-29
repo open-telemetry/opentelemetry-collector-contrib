@@ -32,8 +32,8 @@ type Server struct {
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Servers                        []Server `mapstructure:"servers"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Servers                        []Server                      `mapstructure:"servers"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

@@ -33,9 +33,9 @@ const (
 // Config that is exposed to this github receiver through the OTEL config.yaml
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Scrapers                       map[string]internal.Config `mapstructure:"scrapers"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	WebHook                        WebHook `mapstructure:"webhook"`
+	Scrapers                       map[string]internal.Config    `mapstructure:"scrapers"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	WebHook                        WebHook                       `mapstructure:"webhook"`
 }
 
 type WebHook struct {

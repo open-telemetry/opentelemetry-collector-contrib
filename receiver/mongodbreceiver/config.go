@@ -25,10 +25,10 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	ClientConfig                   configtls.ClientConfig `mapstructure:"tls,omitempty"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	metadata.LogsBuilderConfig    `mapstructure:",squash"`
-	QuerySampleCollection         QuerySampleCollection `mapstructure:"query_sample_collection"`
-	TopQueryCollection            TopQueryCollection    `mapstructure:"top_query_collection,omitempty"`
+	MetricsBuilderConfig  metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	LogsBuilderConfig     metadata.LogsBuilderConfig    `mapstructure:",squash"`
+	QuerySampleCollection QuerySampleCollection         `mapstructure:"query_sample_collection"`
+	TopQueryCollection    TopQueryCollection            `mapstructure:"top_query_collection,omitempty"`
 	// Deprecated - Transport option will be removed in v0.102.0
 	Hosts                   []confignet.TCPAddrConfig `mapstructure:"hosts"`
 	Scheme                  string                    `mapstructure:"scheme"`
@@ -93,7 +93,7 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 
-	if c.Events.DbServerTopQuery.Enabled {
+	if c.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		if c.TopQueryCollection.TopQueryCount <= 0 {
 			err = multierr.Append(err, errors.New("top_query_collection.top_query_count must be greater than 0"))
 		}

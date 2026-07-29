@@ -14,9 +14,9 @@ import (
 // Config defines configuration for windowsservice receiver.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	IncludeServices                []string `mapstructure:"include_services"` // user provided list of services to monitor with receiver
-	ExcludeServices                []string `mapstructure:"exclude_services"` // user provided list of services to be excluded
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	IncludeServices                []string                      `mapstructure:"include_services"` // user provided list of services to monitor with receiver
+	ExcludeServices                []string                      `mapstructure:"exclude_services"` // user provided list of services to be excluded
 }
 
 // Validate checks the receiver configuration is valid

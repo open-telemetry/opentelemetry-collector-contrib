@@ -106,7 +106,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.Password = "${env:VCENTER_PASSWORD}"
 	expected.MaxQueryMetrics = 128
 	expected.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
-	expected.Metrics.VcenterHostCPUUtilization.Enabled = false
+	expected.MetricsBuilderConfig.Metrics.VcenterHostCPUUtilization.Enabled = false
 	expected.CollectionInterval = 5 * time.Minute
 
 	if diff := cmp.Diff(expected, cfg,
@@ -127,5 +127,5 @@ func TestLoadConfig(t *testing.T) {
 		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 	}
 
-	require.False(t, cfg.(*Config).Metrics.VcenterHostCPUUtilization.Enabled)
+	require.False(t, cfg.(*Config).MetricsBuilderConfig.Metrics.VcenterHostCPUUtilization.Enabled)
 }

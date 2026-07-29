@@ -15,7 +15,7 @@ import (
 type Config struct {
 	ClientConfig                   confighttp.ClientConfig `mapstructure:",squash"`
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (c Config) Validate() error {

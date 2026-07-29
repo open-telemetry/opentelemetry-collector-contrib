@@ -20,12 +20,12 @@ import (
 // Config is the configuration of the receiver
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	ClientConfig                   configtls.ClientConfig `mapstructure:"tls,omitempty"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Endpoint                       string              `mapstructure:"endpoint"`
-	Username                       string              `mapstructure:"username"`
-	Password                       configopaque.String `mapstructure:"password"`
-	MaxQueryMetrics                int                 `mapstructure:"max_query_metrics"`
+	ClientConfig                   configtls.ClientConfig        `mapstructure:"tls,omitempty"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Endpoint                       string                        `mapstructure:"endpoint"`
+	Username                       string                        `mapstructure:"username"`
+	Password                       configopaque.String           `mapstructure:"password"`
+	MaxQueryMetrics                int                           `mapstructure:"max_query_metrics"`
 }
 
 // Validate checks to see if the supplied config will work for the receiver

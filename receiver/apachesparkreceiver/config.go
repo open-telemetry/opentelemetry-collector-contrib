@@ -24,9 +24,9 @@ var errInvalidEndpoint = errors.New("'endpoint' must be in the form of <scheme>:
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	ClientConfig                   confighttp.ClientConfig `mapstructure:",squash"`
-	ApplicationNames               []string                `mapstructure:"application_names"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	ClientConfig                   confighttp.ClientConfig       `mapstructure:",squash"`
+	ApplicationNames               []string                      `mapstructure:"application_names"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

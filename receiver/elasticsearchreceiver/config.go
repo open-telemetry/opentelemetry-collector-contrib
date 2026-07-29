@@ -29,7 +29,7 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	ClientConfig                   confighttp.ClientConfig `mapstructure:",squash"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// Nodes defines the nodes to scrape.
 	// See https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes for which selectors may be used here.
 	// If Nodes is empty, no nodes will be scraped.
