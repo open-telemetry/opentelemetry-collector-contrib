@@ -28,9 +28,9 @@ const defaultEndpoint = "http://localhost:15672"
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	confighttp.ClientConfig        `mapstructure:",squash"`
-	Username                       string              `mapstructure:"username"`
-	Password                       configopaque.String `mapstructure:"password"`
+	ClientConfig                   confighttp.ClientConfig `mapstructure:",squash"`
+	Username                       string                  `mapstructure:"username"`
+	Password                       configopaque.String     `mapstructure:"password"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 }
 
@@ -45,7 +45,7 @@ func (cfg *Config) Validate() error {
 		err = append(err, errMissingPassword)
 	}
 
-	_, parseErr := url.Parse(cfg.Endpoint)
+	_, parseErr := url.Parse(cfg.ClientConfig.Endpoint)
 	if parseErr != nil {
 		wrappedErr := fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr)
 		err = append(err, wrappedErr)
