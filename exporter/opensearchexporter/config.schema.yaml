@@ -50,6 +50,8 @@ properties:
   pipeline:
     description: Pipeline is the optional ID of an ingest pipeline to apply when indexing documents. https://opensearch.org/docs/latest/ingest-pipelines/
     type: string
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
@@ -61,6 +63,5 @@ properties:
   traces_index_time_format:
     type: string
 allOf:
-  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
   - $ref: mappings_settings
