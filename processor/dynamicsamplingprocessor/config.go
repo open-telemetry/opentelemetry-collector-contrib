@@ -302,39 +302,6 @@ func validateOTTLConditions(ruleName string, conditions []string) error {
 	return nil
 }
 
-func (r *RuleConfig) validateMatch() error {
-	switch r.Match {
-	case "", MatchAnySpan, MatchSameSpan:
-	default:
-		return fmt.Errorf("rule %q: match must be %q or %q", r.Name, MatchAnySpan, MatchSameSpan)
-	}
-	if len(r.Conditions) == 0 && r.Match != "" {
-		return fmt.Errorf("rule %q: match cannot be set on a catch-all rule (no conditions)", r.Name)
-	}
-	if err := validateOTTLConditions(r.Name, r.Conditions); err != nil {
-		return err
-	}
-	return nil
-}
-
-// validateOTTLConditions parses each condition against a nop-telemetry OTTL
-// span parser to surface syntax errors during config validation, before the
-// processor is instantiated. The parsed forms are discarded; the real parse
-// happens once in newProcessor with the component's real telemetry settings.
-func validateOTTLConditions(ruleName string, conditions []string) error {
-	if len(conditions) == 0 {
-		return nil
-	}
-	settings := component.TelemetrySettings{Logger: zap.NewNop()}
-	for i, cond := range conditions {
-		_, err := filterottl.NewBoolExprForSpan([]string{cond}, filterottl.StandardSpanFuncs(), ottl.PropagateError, settings)
-		if err != nil {
-			return fmt.Errorf("rule %q: conditions[%d]: %w", ruleName, i, err)
-		}
-	}
-	return nil
-}
-
 func (s *SamplerConfig) validate(ruleName string) error {
 	switch s.Type {
 	case AlwaysSample:
