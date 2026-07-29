@@ -80,12 +80,9 @@ func (nr *netflowReceiver) Start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	// This runs until the receiver is stoppped, consuming from an error channel
-	nr.wg.Add(1)
-	go func() {
-		defer nr.wg.Done()
+	nr.wg.Go(func() {
 		nr.handleErrors(ctx)
-	}()
+	})
 
 	return nil
 }
