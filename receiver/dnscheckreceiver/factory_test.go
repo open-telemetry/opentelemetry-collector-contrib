@@ -39,9 +39,8 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 	// Populate config to make it valid.
 	config := cfg.(*Config)
-	config.DNSServers = []string{"8.8.8.8"}
+	config.DNSServers = []DNSServerConfig{{Endpoint: "8.8.8.8", Timeout: 5 * time.Second}}
 	config.Hostnames = []HostnameConfig{{Name: "example.com", RecordType: "A"}}
-	config.Timeout = 5 * time.Second
 
 	set := receivertest.NewNopSettings(metadata.Type)
 	consumer := consumertest.NewNop()

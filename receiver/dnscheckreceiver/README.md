@@ -18,11 +18,18 @@ The DNS Check Receiver can be used for synthetic checks against DNS servers.
 
 The following configuration settings are available:
 
-- `dns_servers` (required): The list of DNS servers to query, as `host` or `host:port` (default port `53`).
+- `dns_servers` (required): The list of DNS servers to query.
 - `hostnames` (required): The list of hostnames and record types to resolve.
-- `timeout` (optional, default = `5s`): Per-query dial timeout.
 - `collection_interval` (optional, default = `60s`): This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `initial_delay` (optional, default = `1s`): Defines how long this receiver waits before starting.
+
+### DNS Server Configuration
+
+Each entry in `dns_servers` has the following properties:
+
+- `endpoint` (required): The DNS server address, as `host` or `host:port` (default port `53`).
+- `network` (optional, default = `udp`): The transport protocol used to query the server. One of `udp`, `tcp`, or `tcp-tls`.
+- `timeout` (optional, default = `5s`): Per-query dial timeout for this server.
 
 ### Hostname Configuration
 
@@ -90,14 +97,18 @@ receivers:
     collection_interval: 60s
     initial_delay: 1s
     dns_servers:
-      - "8.8.8.8"
-      - "1.1.1.1:53"
+      - endpoint: "8.8.8.8"
+      - endpoint: "1.1.1.1:53"
+        network: udp
+        timeout: 5s
+      - endpoint: "9.9.9.9:853"
+        network: tcp-tls
+        timeout: 10s
     hostnames:
       - name: "example.com"
         record_type: A
       - name: "example.com"
         record_type: AAAA
-    timeout: 5s
 processors:
   batch:
 exporters:

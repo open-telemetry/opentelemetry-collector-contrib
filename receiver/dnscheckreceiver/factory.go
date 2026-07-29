@@ -27,7 +27,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
-		DNSServers:           []string{},
+		DNSServers:           []DNSServerConfig{},
 		Hostnames:            []HostnameConfig{},
 	}
 }
