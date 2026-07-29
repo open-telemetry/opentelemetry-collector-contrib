@@ -13,7 +13,7 @@ import (
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	confignet.AddrConfig           `mapstructure:",squash"`
+	AddrConfig                     confignet.AddrConfig `mapstructure:",squash"`
 
 	// TLS controls the TLS settings used to connect to memcached. TLS is
 	// disabled by default (Insecure: true), preserving plaintext connections.
