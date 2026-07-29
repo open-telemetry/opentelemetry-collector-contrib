@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sync"
 
 	"github.com/netsampler/goflow2/v2/decoders/netflow"
 	protoproducer "github.com/netsampler/goflow2/v2/producer/proto"
@@ -33,6 +34,8 @@ type netflowReceiver struct {
 	logger      *zap.Logger
 	udpReceiver *utils.UDPReceiver
 	logConsumer consumer.Logs
+	cancel      context.CancelFunc
+	wg          sync.WaitGroup
 }
 
 func newNetflowLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Logs) (receiver.Logs, error) {
@@ -61,25 +64,36 @@ func newNetflowLogsReceiver(params receiver.Settings, cfg Config, consumer consu
 	return nr, nil
 }
 
-func (nr *netflowReceiver) Start(_ context.Context, _ component.Host) error {
+func (nr *netflowReceiver) Start(ctx context.Context, _ component.Host) error {
 	// The function that will decode packets
 	decodeFunc, err := nr.buildDecodeFunc()
 	if err != nil {
 		return err
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
+	nr.cancel = cancel
+
 	nr.logger.Info("Starting UDP listener", zap.String("scheme", nr.config.Scheme), zap.Int("port", nr.config.Port))
 	if err := nr.udpReceiver.Start(nr.config.Hostname, nr.config.Port, decodeFunc); err != nil {
+		cancel()
 		return err
 	}
 
 	// This runs until the receiver is stoppped, consuming from an error channel
-	go nr.handleErrors()
+	nr.wg.Add(1)
+	go func() {
+		defer nr.wg.Done()
+		nr.handleErrors(ctx)
+	}()
 
 	return nil
 }
 
 func (nr *netflowReceiver) Shutdown(context.Context) error {
+	if nr.cancel != nil {
+		nr.cancel()
+	}
 	if nr.udpReceiver == nil {
 		return nil
 	}
@@ -87,6 +101,7 @@ func (nr *netflowReceiver) Shutdown(context.Context) error {
 	if err != nil {
 		nr.logger.Warn("Error stopping UDP receiver", zap.Error(err))
 	}
+	nr.wg.Wait()
 	return nil
 }
 
@@ -128,24 +143,29 @@ func (nr *netflowReceiver) buildDecodeFunc() (utils.DecoderFunc, error) {
 
 // handleErrors handles errors from the listener
 // We don't want the receiver to stop if there is an error processing a packet
-func (nr *netflowReceiver) handleErrors() {
-	for err := range nr.udpReceiver.Errors() {
-		switch {
-		case errors.Is(err, net.ErrClosed):
-			nr.logger.Info("UDP receiver closed, exiting error handler")
+func (nr *netflowReceiver) handleErrors(ctx context.Context) {
+	for {
+		select {
+		case err := <-nr.udpReceiver.Errors():
+			switch {
+			case errors.Is(err, net.ErrClosed):
+				nr.logger.Info("UDP receiver closed, exiting error handler")
+				return
+
+			case !errors.Is(err, netflow.ErrorTemplateNotFound):
+				nr.logger.Error("received a generic error while processing a flow message via GoFlow2 for the netflow receiver", zap.Error(err))
+				continue
+
+			case errors.Is(err, netflow.ErrorTemplateNotFound):
+				nr.logger.Warn("we could not find a template for a flow message, this error is expected from time to time until the device sends a template", zap.Error(err))
+				continue
+
+			default:
+				nr.logger.Error("unexpected error processing the message", zap.Error(err))
+				continue
+			}
+		case <-ctx.Done():
 			return
-
-		case !errors.Is(err, netflow.ErrorTemplateNotFound):
-			nr.logger.Error("received a generic error while processing a flow message via GoFlow2 for the netflow receiver", zap.Error(err))
-			continue
-
-		case errors.Is(err, netflow.ErrorTemplateNotFound):
-			nr.logger.Warn("we could not find a template for a flow message, this error is expected from time to time until the device sends a template", zap.Error(err))
-			continue
-
-		default:
-			nr.logger.Error("unexpected error processing the message", zap.Error(err))
-			continue
 		}
 	}
 }
