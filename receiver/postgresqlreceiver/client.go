@@ -65,6 +65,8 @@ type client interface {
 	getMaxConnections(ctx context.Context) (int64, error)
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
 	getFunctionStats(ctx context.Context, database string) (map[functionIdentifer]functionStat, error)
+	getVectorSearchStats(ctx context.Context) ([]vectorSearchStat, error)
+	getVectorInsertStats(ctx context.Context) ([]vectorInsertStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 	getVersion(ctx context.Context) (string, error)
 	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error)
@@ -677,6 +679,92 @@ SELECT s.schemaname,
 		}
 	}
 	return stats, multierr.Combine(errs...)
+}
+
+// vectorSearchStat holds the aggregated pgvector search statistics for a single distance function.
+type vectorSearchStat struct {
+	// distanceFunction is the pgvector distance function classification (e.g. cosine, l2, hamming).
+	distanceFunction string
+	// calls is the cumulative number of executions of statements using this distance function.
+	calls int64
+	// totalExecTime is the cumulative execution time in seconds.
+	totalExecTime float64
+	// rowsReturned is the cumulative number of rows returned by statements using this distance function.
+	rowsReturned int64
+}
+
+//go:embed templates/vectorSearchStatsTemplate.tmpl
+var vectorSearchStatsQuery string
+
+func (c *postgreSQLClient) getVectorSearchStats(ctx context.Context) ([]vectorSearchStat, error) {
+	rows, err := c.client.QueryContext(ctx, vectorSearchStatsQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []vectorSearchStat
+	var errs error
+	for rows.Next() {
+		var distanceFunction string
+		var calls int64
+		var totalExecTimeMs float64
+		var rowsReturned int64
+		if err := rows.Scan(&distanceFunction, &calls, &totalExecTimeMs, &rowsReturned); err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		stats = append(stats, vectorSearchStat{
+			distanceFunction: distanceFunction,
+			calls:            calls,
+			// pg_stat_statements reports total_exec_time in milliseconds; convert to seconds.
+			totalExecTime: totalExecTimeMs / 1000.0,
+			rowsReturned:  rowsReturned,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+	return stats, errs
+}
+
+// vectorInsertStat holds the aggregated pgvector insert statistics.
+type vectorInsertStat struct {
+	// rows is the cumulative number of vectors inserted into pgvector tables.
+	rows int64
+	// totalExecTime is the cumulative execution time in seconds.
+	totalExecTime float64
+}
+
+//go:embed templates/vectorInsertStatsTemplate.tmpl
+var vectorInsertStatsQuery string
+
+func (c *postgreSQLClient) getVectorInsertStats(ctx context.Context) ([]vectorInsertStat, error) {
+	rows, err := c.client.QueryContext(ctx, vectorInsertStatsQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []vectorInsertStat
+	var errs error
+	for rows.Next() {
+		var insertedRows int64
+		var totalExecTimeMs float64
+		if err := rows.Scan(&insertedRows, &totalExecTimeMs); err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		stats = append(stats, vectorInsertStat{
+			rows: insertedRows,
+			// pg_stat_statements reports total_exec_time in milliseconds; convert to seconds.
+			totalExecTime: totalExecTimeMs / 1000.0,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+	return stats, errs
 }
 
 type bgStat struct {

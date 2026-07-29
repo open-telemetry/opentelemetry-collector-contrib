@@ -611,7 +611,7 @@ jobs:
           docker run otel/opentelemetry-collector-contrib-dev:"$GITHUB_SHA" --version
           docker run otel/opentelemetry-collector-contrib-dev:latest --version
       - name: Login to Docker Hub
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4
+        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}

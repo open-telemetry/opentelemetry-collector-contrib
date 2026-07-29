@@ -19,7 +19,7 @@ import (
 
 func defaultClient(t *testing.T, endpoint string) client {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = endpoint
+	cfg.ClientConfig.Endpoint = endpoint
 
 	couchdbClient, err := newCouchDBClient(
 		t.Context(),
