@@ -220,25 +220,26 @@ func (o *Observer) waitForCacheSync(ctx context.Context) error {
 	errCh := make(chan error, len(o.infs))
 	for nf := range o.infs {
 		go func() {
+			var errs []error
 			for gvr, synced := range nf.factory.WaitForCacheSync(syncCtx.Done()) {
 				if !synced {
 					if ctx.Err() != nil {
-						errCh <- fmt.Errorf("informer cache sync aborted for %s: %w", gvr, ctx.Err())
+						errs = append(errs, fmt.Errorf("informer cache sync aborted for %s: %w", gvr, ctx.Err()))
 					} else {
-						errCh <- fmt.Errorf("timed out waiting for informer cache to sync for %s", gvr)
+						errs = append(errs, fmt.Errorf("timed out waiting for informer cache to sync for %s", gvr))
 					}
-					return
 				}
 			}
-			errCh <- nil
+			errCh <- errors.Join(errs...)
 		}()
 	}
+	var errs []error
 	for range o.infs {
 		if err := <-errCh; err != nil {
-			return err
+			errs = append(errs, err)
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 // runHandlerRemover unsubscribes this observer's ResourceEventHandlers on any
