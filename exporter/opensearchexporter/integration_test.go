@@ -126,7 +126,7 @@ func TestOpenSearchTraceExporter(t *testing.T) {
 		}))
 
 		cfg := withDefaultConfig(func(config *Config) {
-			config.Endpoint = ts.URL
+			config.ClientConfig.Endpoint = ts.URL
 			config.TimeoutSettings.Timeout = 0
 		})
 
@@ -256,7 +256,7 @@ func TestOpenSearchLogExporter(t *testing.T) {
 		}))
 
 		cfg := withDefaultConfig(func(config *Config) {
-			config.Endpoint = ts.URL
+			config.ClientConfig.Endpoint = ts.URL
 			config.TimeoutSettings.Timeout = 0
 		})
 
@@ -314,7 +314,7 @@ func TestOpenSearchTraceExporterOTelV1(t *testing.T) {
 	defer ts.Close()
 
 	cfg := withDefaultConfig(func(config *Config) {
-		config.Endpoint = ts.URL
+		config.ClientConfig.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
 		config.Mode = "otel-v1"
 	})
@@ -378,7 +378,7 @@ func TestOpenSearchLogExporterOTelV1(t *testing.T) {
 	defer ts.Close()
 
 	cfg := withDefaultConfig(func(config *Config) {
-		config.Endpoint = ts.URL
+		config.ClientConfig.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
 		config.Mode = "otel-v1"
 	})
@@ -440,7 +440,7 @@ func TestOpenSearchOTelV1_CustomIndex(t *testing.T) {
 	defer ts.Close()
 
 	cfg := withDefaultConfig(func(config *Config) {
-		config.Endpoint = ts.URL
+		config.ClientConfig.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
 		config.Mode = "otel-v1"
 		config.TracesIndex = "my-custom-traces"
@@ -479,7 +479,7 @@ func TestOpenSearchOTelV1_ManageIndexTemplate(t *testing.T) {
 	defer ts.Close()
 
 	cfg := withDefaultConfig(func(config *Config) {
-		config.Endpoint = ts.URL
+		config.ClientConfig.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
 		config.Mode = "otel-v1"
 		config.ManageIndexTemplate = true
@@ -511,7 +511,7 @@ func TestOpenSearchOTelV1_ManageIndexTemplate_Disabled(t *testing.T) {
 	defer ts.Close()
 
 	cfg := withDefaultConfig(func(config *Config) {
-		config.Endpoint = ts.URL
+		config.ClientConfig.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
 		config.Mode = "otel-v1"
 		config.ManageIndexTemplate = false
@@ -544,7 +544,7 @@ func TestOpenSearchOTelV1_ManageIndexTemplate_AlreadyExists(t *testing.T) {
 	defer ts.Close()
 
 	cfg := withDefaultConfig(func(config *Config) {
-		config.Endpoint = ts.URL
+		config.ClientConfig.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
 		config.Mode = "otel-v1"
 		config.ManageIndexTemplate = true

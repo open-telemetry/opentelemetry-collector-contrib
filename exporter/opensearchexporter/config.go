@@ -29,11 +29,11 @@ const (
 
 // Config defines configuration for OpenSearch exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:"http"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
-	MappingsSettings          `mapstructure:"mapping"`
-	QueueConfig               configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	ClientConfig     confighttp.ClientConfig      `mapstructure:"http"`
+	BackOffConfig    configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+	TimeoutSettings  exporterhelper.TimeoutConfig `mapstructure:",squash"`
+	MappingsSettings `mapstructure:"mapping"`
+	QueueConfig      configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// The Observability indices would follow the recommended for immutable data stream ingestion pattern using
 	// the data_stream concepts. See https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
@@ -172,7 +172,7 @@ var mappingModes = func() map[string]MappingMode {
 // Validate validates the opensearch server configuration.
 func (cfg *Config) Validate() error {
 	var multiErr []error
-	if cfg.Endpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" {
 		multiErr = append(multiErr, errConfigNoEndpoint)
 	}
 
