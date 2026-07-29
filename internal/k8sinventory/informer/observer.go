@@ -64,7 +64,10 @@ type Observer struct {
 
 // NewPull creates a pull-mode observer.
 func NewPull(reg *FactoryRegistry, config PullConfig, logger *zap.Logger, handler func(*unstructured.UnstructuredList)) (*Observer, error) {
-	factories := factoriesForConfig(reg, config.Config)
+	factories, err := factoriesForConfig(reg, config.Config)
+	if err != nil {
+		return nil, err
+	}
 	if len(factories) == 0 {
 		return nil, errors.New("at least one factory is required")
 	}
@@ -85,7 +88,10 @@ func NewPull(reg *FactoryRegistry, config PullConfig, logger *zap.Logger, handle
 
 // NewWatch creates a watch-mode observer.
 func NewWatch(reg *FactoryRegistry, config WatchConfig, logger *zap.Logger, handler func(*apiWatch.Event)) (*Observer, error) {
-	factories := factoriesForConfig(reg, config.Config)
+	factories, err := factoriesForConfig(reg, config.Config)
+	if err != nil {
+		return nil, err
+	}
 	if len(factories) == 0 {
 		return nil, errors.New("at least one factory is required")
 	}
@@ -115,19 +121,20 @@ func NewWatch(reg *FactoryRegistry, config WatchConfig, logger *zap.Logger, hand
 }
 
 // factoriesForConfig resolves one factory per configured namespace from the registry.
-func factoriesForConfig(reg *FactoryRegistry, config k8sinventory.Config) []namespacedFactory {
+func factoriesForConfig(reg *FactoryRegistry, config k8sinventory.Config) ([]namespacedFactory, error) {
 	namespaces := config.Namespaces
 	if len(namespaces) == 0 {
 		namespaces = []string{""}
 	}
 	factories := make([]namespacedFactory, 0, len(namespaces))
 	for _, ns := range namespaces {
-		factories = append(factories, namespacedFactory{
-			namespace: ns,
-			factory:   reg.Get(ns, config.LabelSelector, config.FieldSelector),
-		})
+		f, err := reg.Get(ns, config.LabelSelector, config.FieldSelector)
+		if err != nil {
+			return nil, err
+		}
+		factories = append(factories, namespacedFactory{namespace: ns, factory: f})
 	}
-	return factories
+	return factories, nil
 }
 
 // Start starts the observer's factories, waits for cache sync, then launches workers.

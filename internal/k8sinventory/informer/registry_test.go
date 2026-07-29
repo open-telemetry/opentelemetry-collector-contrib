@@ -16,7 +16,8 @@ func TestRegistryShutdownIdempotent(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)
 	reg := NewFactoryRegistry(client, 0)
-	reg.Get("default", "", "")
+	_, err := reg.Get("default", "", "")
+	require.NoError(t, err)
 
 	require.NotPanics(t, reg.Shutdown)
 	require.NotPanics(t, reg.Shutdown)
@@ -54,7 +55,9 @@ func TestRegistryConcurrentGetSameKeyReturnsSameFactory(t *testing.T) {
 	results := make([]any, n)
 	for i := range n {
 		wg.Go(func() {
-			results[i] = reg.Get("default", "app=foo", "")
+			f, err := reg.Get("default", "app=foo", "")
+			assert.NoError(t, err)
+			results[i] = f
 		})
 	}
 	wg.Wait()
@@ -76,7 +79,9 @@ func TestRegistryConcurrentGetDifferentKeysProducesDistinctFactories(t *testing.
 	for i := range n {
 		wg.Go(func() {
 			// Distinct label selector per goroutine forces a distinct factoryKey.
-			results[i] = reg.Get("default", "app="+string(rune('a'+i)), "")
+			f, err := reg.Get("default", "app="+string(rune('a'+i)), "")
+			assert.NoError(t, err)
+			results[i] = f
 		})
 	}
 	wg.Wait()
@@ -88,31 +93,34 @@ func TestRegistryConcurrentGetDifferentKeysProducesDistinctFactories(t *testing.
 	assert.Len(t, seen, n, "distinct scopes must each produce a distinct factory")
 }
 
-func TestRegistryGetAfterShutdownPanics(t *testing.T) {
+func TestRegistryGetAfterShutdownReturnsError(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)
 	reg := NewFactoryRegistry(client, 0)
 	reg.Shutdown()
 
-	assert.Panics(t, func() {
-		reg.Get("default", "", "")
-	})
+	f, err := reg.Get("default", "", "")
+	assert.Nil(t, f)
+	assert.Error(t, err)
 }
 
-// Pins the registry's sharing contract: same scope => same factory, different scope => different factory.
 func TestRegistrySharesFactoryAcrossObservers(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)
 	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
-	f1 := reg.Get("default", "app=foo", "")
-	f2 := reg.Get("default", "app=foo", "")
+	f1, err := reg.Get("default", "app=foo", "")
+	require.NoError(t, err)
+	f2, err := reg.Get("default", "app=foo", "")
+	require.NoError(t, err)
 	assert.Same(t, f1, f2, "same scope must return the same factory instance")
 
-	f3 := reg.Get("default", "app=bar", "")
+	f3, err := reg.Get("default", "app=bar", "")
+	require.NoError(t, err)
 	assert.NotSame(t, f1, f3, "different label selector must produce a different factory")
 
-	f4 := reg.Get("other", "app=foo", "")
+	f4, err := reg.Get("other", "app=foo", "")
+	require.NoError(t, err)
 	assert.NotSame(t, f1, f4, "different namespace must produce a different factory")
 }

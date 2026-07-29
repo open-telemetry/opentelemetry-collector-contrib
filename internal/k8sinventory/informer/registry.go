@@ -4,6 +4,7 @@
 package informer // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/informer"
 
 import (
+	"errors"
 	"sync"
 	"time"
 
@@ -41,12 +42,16 @@ func NewFactoryRegistry(client dynamic.Interface, resyncPeriod time.Duration) *F
 }
 
 // Get returns the factory for the given scope, creating it on first use.
-func (r *FactoryRegistry) Get(namespace, labelSelector, fieldSelector string) dynamicinformer.DynamicSharedInformerFactory {
+// Returns an error if called after Shutdown.
+func (r *FactoryRegistry) Get(namespace, labelSelector, fieldSelector string) (dynamicinformer.DynamicSharedInformerFactory, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if r.cache == nil {
+		return nil, errors.New("registry has been shut down")
+	}
 	key := factoryKey{namespace: namespace, labelSelector: labelSelector, fieldSelector: fieldSelector}
 	if f, ok := r.cache[key]; ok {
-		return f
+		return f, nil
 	}
 	tweak := func(opts *metav1.ListOptions) {
 		if key.labelSelector != "" {
@@ -58,7 +63,7 @@ func (r *FactoryRegistry) Get(namespace, labelSelector, fieldSelector string) dy
 	}
 	f := dynamicinformer.NewFilteredDynamicSharedInformerFactory(r.client, r.resyncPeriod, key.namespace, tweak)
 	r.cache[key] = f
-	return f
+	return f, nil
 }
 
 // StopCh returns the channel that signals factory shutdown. Observers pass it to factory.Start.
