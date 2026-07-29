@@ -131,7 +131,12 @@ func factoriesForConfig(reg *FactoryRegistry, config k8sinventory.Config) ([]nam
 		namespaces = []string{""}
 	}
 	factories := make([]namespacedFactory, 0, len(namespaces))
+	seen := make(map[string]struct{}, len(namespaces))
 	for _, ns := range namespaces {
+		if _, ok := seen[ns]; ok {
+			continue
+		}
+		seen[ns] = struct{}{}
 		f, err := reg.Get(ns, config.LabelSelector, config.FieldSelector)
 		if err != nil {
 			return nil, err
@@ -163,6 +168,7 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}
 	}
 
 	if err := o.waitForCacheSync(ctx); err != nil {
+		o.removeHandlers()
 		return nil, err
 	}
 
@@ -251,6 +257,10 @@ func (o *Observer) runHandlerRemover(ctx context.Context, stopCh <-chan struct{}
 	case <-ctx.Done():
 	case <-o.stopCh:
 	}
+	o.removeHandlers()
+}
+
+func (o *Observer) removeHandlers() {
 	for nf, handle := range o.handlerRegs {
 		if err := o.infs[nf].RemoveEventHandler(handle); err != nil {
 			o.logger.Warn("failed to remove event handler",

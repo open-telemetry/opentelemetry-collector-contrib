@@ -23,6 +23,21 @@ func TestRegistryShutdownIdempotent(t *testing.T) {
 	require.NotPanics(t, reg.Shutdown)
 }
 
+func TestRegistryShutdownConcurrent(t *testing.T) {
+	t.Parallel()
+	client, _ := newFakeClient(t)
+	reg := NewFactoryRegistry(client, 0)
+
+	const n = 16
+	var wg sync.WaitGroup
+	for range n {
+		wg.Go(func() {
+			assert.NotPanics(t, reg.Shutdown)
+		})
+	}
+	wg.Wait()
+}
+
 func TestRegistryStopChClosesOnShutdown(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)

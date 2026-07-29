@@ -7,6 +7,7 @@ import (
 	"context"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -646,6 +647,76 @@ func TestCheckpointRestartSkipsSeenObjects(t *testing.T) {
 	require.Len(t, events, 1)
 	assert.Equal(t, apiWatch.Added, events[0].Type)
 	assert.Equal(t, "pod2", events[0].Object.(*unstructured.Unstructured).GetName())
+}
+
+// Duplicate namespaces in Config.Namespaces must not cause duplicate event delivery.
+func TestWatchModeDeduplicatesNamespaces(t *testing.T) {
+	t.Parallel()
+	client, addObj := newFakeClient(t)
+	reg := NewFactoryRegistry(client, 0)
+	t.Cleanup(reg.Shutdown)
+
+	var mu sync.Mutex
+	var events []apiWatch.Event
+
+	obs, err := NewWatch(reg, WatchConfig{
+		Config: k8sinventory.Config{
+			Gvr:        podsGVR,
+			Namespaces: []string{"default", "default"},
+		},
+		CacheSyncTimeout:    5 * time.Second,
+		IncludeInitialState: false,
+	}, zap.NewNop(), func(ev *apiWatch.Event) {
+		mu.Lock()
+		events = append(events, *ev)
+		mu.Unlock()
+	})
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	stopCh, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+	t.Cleanup(func() { close(stopCh); wg.Wait() })
+
+	addObj(makePod("pod1"))
+
+	assert.Never(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(events) > 1
+	}, 300*time.Millisecond, 20*time.Millisecond, "duplicate namespaces must not produce duplicate events")
+
+	mu.Lock()
+	assert.Len(t, events, 1)
+	mu.Unlock()
+}
+
+// If Start fails during cache sync, registered handlers must be removed so
+// the shared informer doesn't keep firing into a stopped observer.
+func TestWatchModeStartFailureUnregistersHandlers(t *testing.T) {
+	t.Parallel()
+	client, addObj := newFakeClient(t)
+	reg := NewFactoryRegistry(client, 0)
+	t.Cleanup(reg.Shutdown)
+
+	var calls atomic.Int32
+	obs, err := NewWatch(reg, WatchConfig{
+		Config:           k8sinventory.Config{Gvr: podsGVR},
+		CacheSyncTimeout: 1 * time.Nanosecond, // force sync failure
+	}, zap.NewNop(), func(*apiWatch.Event) {
+		calls.Add(1)
+	})
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	_, err = obs.Start(t.Context(), &wg)
+	require.Error(t, err, "Start must fail with an unrealistic cache sync timeout")
+
+	addObj(makePod("late-pod"))
+
+	assert.Never(t, func() bool {
+		return calls.Load() > 0
+	}, 300*time.Millisecond, 20*time.Millisecond, "handlers must be removed after Start failure")
 }
 
 func makePodWithRV(name, rv string) *unstructured.Unstructured {

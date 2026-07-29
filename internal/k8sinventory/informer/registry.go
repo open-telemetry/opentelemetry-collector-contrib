@@ -26,6 +26,7 @@ type FactoryRegistry struct {
 	client       dynamic.Interface
 	resyncPeriod time.Duration
 	stopCh       chan struct{}
+	stopOnce     sync.Once
 
 	mu    sync.Mutex
 	cache map[factoryKey]dynamicinformer.DynamicSharedInformerFactory
@@ -81,11 +82,7 @@ func (r *FactoryRegistry) Shutdown() {
 	r.cache = nil
 	r.mu.Unlock()
 
-	select {
-	case <-r.stopCh:
-	default:
-		close(r.stopCh)
-	}
+	r.stopOnce.Do(func() { close(r.stopCh) })
 
 	for _, f := range factories {
 		f.Shutdown()
