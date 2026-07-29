@@ -54,7 +54,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		CloudResourceID: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		HostID: ResourceAttributeConfig{
 			Enabled: true,

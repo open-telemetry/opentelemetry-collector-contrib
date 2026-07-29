@@ -70,13 +70,13 @@ func TestDetect(t *testing.T) {
 			"cloud.provider":          "oracle_cloud",
 			"cloud.platform":          "oracle_cloud_oke",
 			"cloud.region":            "us-ashburn-1",
-			"cloud.resource_id":       "ocid1.instance.oc1..aaaaaaa",
 			"cloud.availability_zone": "AD-1",
 			"host.id":                 "ocid1.instance.oc1..aaaaaaa",
 			"host.name":               "my-instance",
 			"host.type":               "VM.Standard.E4.Flex",
 			"k8s.cluster.name":        "my-oke-cluster",
 			"oracle_cloud.realm":      "oc1",
+			// cloud.resource_id omitted as it is disabled by default
 		}
 		assert.Equal(t, expected, res.Attributes().AsRaw())
 	})
@@ -149,13 +149,13 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 			"cloud.provider":          "oracle_cloud",
 			"cloud.platform":          "oracle_cloud_oke",
 			"cloud.region":            "us-ashburn-1",
-			"cloud.resource_id":       "ocid1.instance.oc1..aaaaaaa",
 			"cloud.availability_zone": "AD-1",
 			"host.id":                 "ocid1.instance.oc1..aaaaaaa",
 			"host.name":               "my-instance",
 			"host.type":               "VM.Standard.E4.Flex",
 			"oracle_cloud.realm":      "oc1",
 			// K8S attributes omitted as they are disabled
+			// cloud.resource_id omitted as it is disabled by default
 		}
 		assert.Equal(t, expected, res.Attributes().AsRaw())
 	})

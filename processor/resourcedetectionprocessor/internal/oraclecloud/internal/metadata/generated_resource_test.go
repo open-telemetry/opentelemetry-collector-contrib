@@ -29,7 +29,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 10, res.Attributes().Len())
+				assert.Equal(t, 9, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 10, res.Attributes().Len())
 			case "none_set":
@@ -38,7 +38,6 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
 			val, ok := res.Attributes().Get("cloud.availability_zone")
 			assert.True(t, ok)
 			if ok {
@@ -60,7 +59,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, "cloud.region-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("cloud.resource_id")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "cloud.resource_id-val", val.Str())
 			}
