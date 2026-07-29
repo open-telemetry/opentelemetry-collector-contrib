@@ -465,6 +465,50 @@ func TestWatchModeDeletedEvent(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond, "expected Deleted event")
 }
 
+// Closing Start's stopCh must stop watch event delivery, not just the pull ticker.
+func TestWatchModeStopChStopsEventDelivery(t *testing.T) {
+	t.Parallel()
+	client, addObj := newFakeClient(t)
+	reg := NewFactoryRegistry(client, 0)
+	t.Cleanup(reg.Shutdown)
+
+	var mu sync.Mutex
+	var events []apiWatch.Event
+
+	obs, err := NewWatch(reg, WatchConfig{
+		Config:              k8sinventory.Config{Gvr: podsGVR},
+		CacheSyncTimeout:    5 * time.Second,
+		IncludeInitialState: false,
+	}, zap.NewNop(), func(ev *apiWatch.Event) {
+		mu.Lock()
+		events = append(events, *ev)
+		mu.Unlock()
+	})
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	stopCh, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+
+	addObj(makePod("pod-before-stop"))
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(events) == 1
+	}, 5*time.Second, 10*time.Millisecond, "expected event for pod-before-stop")
+
+	close(stopCh)
+	wg.Wait()
+
+	// Handlers are removed after stopCh close; new objects must not produce events.
+	addObj(makePod("pod-after-stop"))
+	assert.Never(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(events) > 1
+	}, 300*time.Millisecond, 20*time.Millisecond, "events delivered after stopCh close")
+}
+
 func TestHandleWatchEventTombstone(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)

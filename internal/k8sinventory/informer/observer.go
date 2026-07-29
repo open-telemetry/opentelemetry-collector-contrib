@@ -48,6 +48,7 @@ type namespacedFactory struct {
 // Observer uses SharedInformerFactories to watch or pull Kubernetes objects.
 type Observer struct {
 	infs             map[namespacedFactory]cache.SharedIndexInformer
+	handlerRegs      map[namespacedFactory]cache.ResourceEventHandlerRegistration
 	base             k8sinventory.Config
 	cacheSyncTimeout time.Duration
 	// Shared stop channel from the registry; closing it stops every observer at once.
@@ -100,6 +101,7 @@ func NewWatch(reg *FactoryRegistry, config WatchConfig, logger *zap.Logger, hand
 	}
 	o := &Observer{
 		infs:             make(map[namespacedFactory]cache.SharedIndexInformer, len(factories)),
+		handlerRegs:      make(map[namespacedFactory]cache.ResourceEventHandlerRegistration, len(factories)),
 		base:             config.Config,
 		cacheSyncTimeout: config.CacheSyncTimeout,
 		stopCh:           reg.StopCh(),
@@ -113,9 +115,11 @@ func NewWatch(reg *FactoryRegistry, config WatchConfig, logger *zap.Logger, hand
 	for _, nf := range factories {
 		inf := nf.factory.ForResource(config.Gvr).Informer()
 		o.infs[nf] = inf
-		if _, err := inf.AddEventHandler(o.buildEventHandler(!config.IncludeInitialState, nf.namespace)); err != nil {
+		handle, err := inf.AddEventHandler(o.buildEventHandler(!config.IncludeInitialState, nf.namespace))
+		if err != nil {
 			return nil, fmt.Errorf("failed to add event handler for %s: %w", config.Gvr.String(), err)
 		}
+		o.handlerRegs[nf] = handle
 	}
 	return o, nil
 }
@@ -187,6 +191,12 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}
 
 	stopCh := make(chan struct{})
 
+	// Informers keep running under the registry stopCh; unsubscribe our handlers when the observer stops.
+	if len(o.handlerRegs) > 0 {
+		wg.Add(1)
+		go o.runHandlerRemover(ctx, stopCh, wg)
+	}
+
 	if o.cp != nil {
 		wg.Add(1)
 		go o.runCheckpointFlusher(ctx, stopCh, wg)
@@ -229,6 +239,25 @@ func (o *Observer) waitForCacheSync(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// runHandlerRemover unsubscribes this observer's ResourceEventHandlers on any
+// stop signal. An in-flight callback may complete after removal.
+func (o *Observer) runHandlerRemover(ctx context.Context, stopCh <-chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
+	select {
+	case <-stopCh:
+	case <-ctx.Done():
+	case <-o.stopCh:
+	}
+	for nf, handle := range o.handlerRegs {
+		if err := o.infs[nf].RemoveEventHandler(handle); err != nil {
+			o.logger.Warn("failed to remove event handler",
+				zap.String("namespace", nf.namespace),
+				zap.String("gvr", o.base.Gvr.String()),
+				zap.Error(err))
+		}
+	}
 }
 
 func (o *Observer) buildEventHandler(skipInitialList bool, namespace string) cache.ResourceEventHandler {
