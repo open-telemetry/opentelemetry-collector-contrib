@@ -129,11 +129,11 @@ func (c *RecordPartitionerConfig) Unmarshal(conf *confmap.Conf) error {
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueBatchConfig          configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	configkafka.ClientConfig  `mapstructure:",squash"`
-	Producer                  configkafka.ProducerConfig `mapstructure:"producer"`
+	TimeoutSettings          exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueBatchConfig         configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig            configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	configkafka.ClientConfig `mapstructure:",squash"`
+	Producer                 configkafka.ProducerConfig `mapstructure:"producer"`
 
 	// Logs holds configuration about how logs should be sent to Kafka.
 	Logs SignalConfig `mapstructure:"logs"`

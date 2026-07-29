@@ -333,6 +333,16 @@ Number of CPUs.
 | ---- | ----------- | ---------- | --------- |
 | {CPUs} | Gauge | Int | Development |
 
+### sqlserver.cpu.utilization
+
+System-wide CPU utilization on the host that SQL Server is running on, expressed as a fraction between 0 and 1.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
 ### sqlserver.cursor.count
 
 Number of cursors by state.
@@ -506,6 +516,40 @@ Total number of deadlocks.
 | ---- | ----------- | ---------- | --------- |
 | {deadlocks}/s | Gauge | Double | Development |
 
+### sqlserver.disk.io
+
+Cumulative bytes transferred to or from files backing SQL Server databases, per I/O direction. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | The direction of disk I/O operations. | Str: ``read``, ``write`` | Recommended | - |
+| sqlserver.file.path.prefix | The path prefix identifying the storage location of SQL Server database files. | Any Str | Recommended | - |
+
+### sqlserver.disk.operations
+
+Cumulative I/O operation count on files backing SQL Server databases, per I/O direction. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | The direction of disk I/O operations. | Str: ``read``, ``write`` | Recommended | - |
+| sqlserver.file.path.prefix | The path prefix identifying the storage location of SQL Server database files. | Any Str | Recommended | - |
+
 ### sqlserver.error.rate
 
 Number of errors raised per second.
@@ -545,6 +589,32 @@ Rate of ghosted records skipped during scans.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {record}/s | Gauge | Double | Development |
+
+### sqlserver.host.memory.limit
+
+Total physical memory available to SQL Server on the host.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### sqlserver.host.memory.usage
+
+Physical memory usage available to SQL Server on the host, broken down by state.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| system.memory.state | The state of the physical memory on the host. | Str: ``used``, ``free`` | Recommended | - |
 
 ### sqlserver.index.fragmentation
 
