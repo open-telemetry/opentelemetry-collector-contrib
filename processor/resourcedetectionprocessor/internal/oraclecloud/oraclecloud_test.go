@@ -160,3 +160,93 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 		assert.Equal(t, expected, res.Attributes().AsRaw())
 	})
 }
+
+// Demonstrates that host.id and cloud.resource_id can be toggled independently:
+// users can opt into cloud.resource_id while opting out of host.id to get only the
+// semconv-native representation of the instance identifier.
+func TestDetectCloudResourceIDEnabledHostIDDisabled(t *testing.T) {
+	withOracleCloudProbe(t, true, func() {
+		md := &mockMetadata{
+			out: &oraclecloud.ComputeMetadata{
+				HostID:             "ocid1.instance.oc1..aaaaaaa",
+				HostDisplayName:    "my-instance",
+				HostType:           "VM.Standard.E4.Flex",
+				RegionID:           "us-ashburn-1",
+				AvailabilityDomain: "AD-1",
+				Metadata: oraclecloud.InstanceMetadata{
+					OKEClusterDisplayName: "my-oke-cluster",
+					Realm:                 "oc1",
+				},
+			},
+		}
+		cfg := CreateDefaultConfig()
+		cfg.ResourceAttributes.CloudResourceID.Enabled = true
+		cfg.ResourceAttributes.HostID.Enabled = false
+
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+		require.NoError(t, err)
+		det.(*Detector).provider = md
+
+		res, schemaURL, err := det.Detect(t.Context())
+		require.NoError(t, err)
+		assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+
+		expected := map[string]any{
+			"cloud.provider":          "oracle_cloud",
+			"cloud.platform":          "oracle_cloud_oke",
+			"cloud.region":            "us-ashburn-1",
+			"cloud.resource_id":       "ocid1.instance.oc1..aaaaaaa",
+			"cloud.availability_zone": "AD-1",
+			"host.name":               "my-instance",
+			"host.type":               "VM.Standard.E4.Flex",
+			"k8s.cluster.name":        "my-oke-cluster",
+			"oracle_cloud.realm":      "oc1",
+			// host.id omitted as it is disabled
+		}
+		assert.Equal(t, expected, res.Attributes().AsRaw())
+	})
+}
+
+// Verifies that host.id and cloud.resource_id can both be enabled at once, each carrying
+// the same OCID value under its own attribute key.
+func TestDetectCloudResourceIDAndHostIDBothEnabled(t *testing.T) {
+	withOracleCloudProbe(t, true, func() {
+		md := &mockMetadata{
+			out: &oraclecloud.ComputeMetadata{
+				HostID:             "ocid1.instance.oc1..aaaaaaa",
+				HostDisplayName:    "my-instance",
+				HostType:           "VM.Standard.E4.Flex",
+				RegionID:           "us-ashburn-1",
+				AvailabilityDomain: "AD-1",
+				Metadata: oraclecloud.InstanceMetadata{
+					OKEClusterDisplayName: "my-oke-cluster",
+					Realm:                 "oc1",
+				},
+			},
+		}
+		cfg := CreateDefaultConfig()
+		cfg.ResourceAttributes.CloudResourceID.Enabled = true
+
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+		require.NoError(t, err)
+		det.(*Detector).provider = md
+
+		res, schemaURL, err := det.Detect(t.Context())
+		require.NoError(t, err)
+		assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+
+		expected := map[string]any{
+			"cloud.provider":          "oracle_cloud",
+			"cloud.platform":          "oracle_cloud_oke",
+			"cloud.region":            "us-ashburn-1",
+			"cloud.resource_id":       "ocid1.instance.oc1..aaaaaaa",
+			"cloud.availability_zone": "AD-1",
+			"host.id":                 "ocid1.instance.oc1..aaaaaaa",
+			"host.name":               "my-instance",
+			"host.type":               "VM.Standard.E4.Flex",
+			"k8s.cluster.name":        "my-oke-cluster",
+			"oracle_cloud.realm":      "oc1",
+		}
+		assert.Equal(t, expected, res.Attributes().AsRaw())
+	})
+}
