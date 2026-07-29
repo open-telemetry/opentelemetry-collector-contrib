@@ -35,9 +35,9 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 		require.NoError(t, sub.Unmarshal(cfg))
 		require.NoError(t, xconfmap.Validate(cfg))
 
-		assert.Equal(t, "http://localhost:8080", cfg.Endpoint)
-		assert.Equal(t, 5*time.Second, cfg.Timeout)
-		assert.Equal(t, "client.crt", cfg.TLS.CertFile)
+		assert.Equal(t, "http://localhost:8080", cfg.ClientConfig.Endpoint)
+		assert.Equal(t, 5*time.Second, cfg.ClientConfig.Timeout)
+		assert.Equal(t, "client.crt", cfg.ClientConfig.TLS.CertFile)
 		assert.Equal(t, 30*time.Second, cfg.Interval)
 		assert.Equal(t, "collector-1", cfg.CollectorID)
 	})
@@ -136,7 +136,7 @@ func TestConfigValidate_InvalidEndpoint(t *testing.T) {
 				CollectorID: tt.collectorID,
 				Interval:    30 * time.Second,
 			}
-			cfg.Endpoint = tt.endpoint
+			cfg.ClientConfig.Endpoint = tt.endpoint
 			err := xconfmap.Validate(cfg)
 			if tt.expectError {
 				assert.Error(t, err)
@@ -181,7 +181,7 @@ func TestConfigValidate_InvalidInterval(t *testing.T) {
 				Interval:    tt.interval,
 				CollectorID: "collector-1",
 			}
-			cfg.Endpoint = "http://localhost:8080"
+			cfg.ClientConfig.Endpoint = "http://localhost:8080"
 			err := xconfmap.Validate(cfg)
 			if tt.expectError {
 				assert.Error(t, err)
@@ -288,7 +288,7 @@ func TestCheckTLSConfig(t *testing.T) {
 					TLSConfig: tlsConfig,
 				},
 			}
-			cfg.Endpoint = "http://localhost:8080"
+			cfg.ClientConfig.Endpoint = "http://localhost:8080"
 			err := xconfmap.Validate(cfg)
 			if tt.expectError {
 				assert.Error(t, err)
@@ -476,7 +476,7 @@ func TestConfigureSDHTTPClientConfigFromTA_Errors(t *testing.T) {
 			name: "invalid base64 in CAPem",
 			setupConfig: func() *Config {
 				cfg := &Config{}
-				cfg.TLS.CAPem = configopaque.String("not-valid-base64!@#$%")
+				cfg.ClientConfig.TLS.CAPem = configopaque.String("not-valid-base64!@#$%")
 				return cfg
 			},
 			errorContains: "failed to decode CA",
@@ -485,7 +485,7 @@ func TestConfigureSDHTTPClientConfigFromTA_Errors(t *testing.T) {
 			name: "invalid base64 in CertPem",
 			setupConfig: func() *Config {
 				cfg := &Config{}
-				cfg.TLS.CertPem = configopaque.String("not-valid-base64!@#$%")
+				cfg.ClientConfig.TLS.CertPem = configopaque.String("not-valid-base64!@#$%")
 				return cfg
 			},
 			errorContains: "failed to decode Cert",
@@ -494,7 +494,7 @@ func TestConfigureSDHTTPClientConfigFromTA_Errors(t *testing.T) {
 			name: "invalid base64 in KeyPem",
 			setupConfig: func() *Config {
 				cfg := &Config{}
-				cfg.TLS.KeyPem = configopaque.String("not-valid-base64!@#$%")
+				cfg.ClientConfig.TLS.KeyPem = configopaque.String("not-valid-base64!@#$%")
 				return cfg
 			},
 			errorContains: "failed to decode Key",
@@ -503,7 +503,7 @@ func TestConfigureSDHTTPClientConfigFromTA_Errors(t *testing.T) {
 			name: "invalid TLS MinVersion",
 			setupConfig: func() *Config {
 				cfg := &Config{}
-				cfg.TLS.MinVersion = "99.9"
+				cfg.ClientConfig.TLS.MinVersion = "99.9"
 				return cfg
 			},
 			errorContains: "unsupported TLS version",
@@ -512,7 +512,7 @@ func TestConfigureSDHTTPClientConfigFromTA_Errors(t *testing.T) {
 			name: "invalid TLS MaxVersion",
 			setupConfig: func() *Config {
 				cfg := &Config{}
-				cfg.TLS.MaxVersion = "invalid-version"
+				cfg.ClientConfig.TLS.MaxVersion = "invalid-version"
 				return cfg
 			},
 			errorContains: "unsupported TLS version",
@@ -521,7 +521,7 @@ func TestConfigureSDHTTPClientConfigFromTA_Errors(t *testing.T) {
 			name: "invalid ProxyURL",
 			setupConfig: func() *Config {
 				cfg := &Config{}
-				cfg.ProxyURL = "://invalid-url-scheme"
+				cfg.ClientConfig.ProxyURL = "://invalid-url-scheme"
 				return cfg
 			},
 			errorContains: "missing protocol scheme",
@@ -530,7 +530,7 @@ func TestConfigureSDHTTPClientConfigFromTA_Errors(t *testing.T) {
 			name: "valid config - no errors",
 			setupConfig: func() *Config {
 				cfg := &Config{}
-				cfg.TLS = configtls.ClientConfig{
+				cfg.ClientConfig.TLS = configtls.ClientConfig{
 					InsecureSkipVerify: true,
 					ServerName:         "test.example.com",
 				}

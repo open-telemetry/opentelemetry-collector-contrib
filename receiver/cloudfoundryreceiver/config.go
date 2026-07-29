@@ -14,8 +14,8 @@ import (
 )
 
 type RLPGatewayConfig struct {
-	confighttp.ClientConfig `mapstructure:",squash"`
-	ShardID                 string `mapstructure:"shard_id"`
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
+	ShardID      string                  `mapstructure:"shard_id"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -58,7 +58,7 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	err := validateURLOption("rlp_gateway.endpoint", c.RLPGateway.Endpoint)
+	err := validateURLOption("rlp_gateway.endpoint", c.RLPGateway.ClientConfig.Endpoint)
 	if err != nil {
 		return err
 	}
