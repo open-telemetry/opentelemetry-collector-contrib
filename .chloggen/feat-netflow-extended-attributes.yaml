@@ -1,6 +1,6 @@
 change_type: enhancement
 
-component: receiver/netflowreceiver
+component: receiver/netflow
 
 note: Add interface, IP header, L2, ICMP, routing, and IPFIX observation attributes to parsed flow log records
 
