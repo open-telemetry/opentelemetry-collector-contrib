@@ -154,7 +154,7 @@ func integrationTest(
 				rCfg.Databases = databases
 				rCfg.Username = "otelu"
 				rCfg.Password = "otelp"
-				rCfg.Insecure = true
+				rCfg.ClientConfig.Insecure = true
 				rCfg.Metrics.PostgresqlWalDelay.Enabled = true
 				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
 				rCfg.Metrics.PostgresqlTempIo.Enabled = true
