@@ -30,7 +30,7 @@ type DeviceConfig struct {
 
 // Config defines configuration for Cisco OS receiver.
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	// Devices is the list of Cisco devices to monitor.
 	Devices []DeviceConfig `mapstructure:"devices"`

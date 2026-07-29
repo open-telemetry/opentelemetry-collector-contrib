@@ -362,7 +362,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 	expected.Username = "otel"
 	expected.Password = "${env:MONGO_PASSWORD}"
-	expected.CollectionInterval = time.Minute
+	expected.ControllerConfig.CollectionInterval = time.Minute
 	expected.AuthMechanism = "SCRAM-SHA-256"
 	expected.AuthSource = "admin"
 	expected.AuthMechanismProperties = map[string]string{
@@ -393,7 +393,7 @@ func TestLoadConfigSRV(t *testing.T) {
 	expected.Scheme = "mongodb+srv"
 	expected.Username = "otel"
 	expected.Password = "${env:MONGO_PASSWORD}"
-	expected.CollectionInterval = time.Minute
+	expected.ControllerConfig.CollectionInterval = time.Minute
 
 	require.Equal(t, expected, cfg)
 }
