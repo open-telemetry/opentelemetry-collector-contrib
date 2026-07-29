@@ -23,7 +23,7 @@ import (
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
+	ClientConfig                   configtls.ClientConfig `mapstructure:"tls,omitempty"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	metadata.LogsBuilderConfig    `mapstructure:",squash"`
@@ -89,7 +89,7 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, errors.New("query_sample_collection.max_rows_per_query must be greater than 0"))
 	}
 
-	if _, tlsErr := c.LoadTLSConfig(context.Background()); tlsErr != nil {
+	if _, tlsErr := c.ClientConfig.LoadTLSConfig(context.Background()); tlsErr != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 
@@ -150,7 +150,7 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 		clientOptions.SetConnectTimeout(c.Timeout)
 	}
 
-	tlsConfig, err := c.LoadTLSConfig(context.Background())
+	tlsConfig, err := c.ClientConfig.LoadTLSConfig(context.Background())
 	if err == nil && tlsConfig != nil {
 		clientOptions.SetTLSConfig(tlsConfig)
 	}
