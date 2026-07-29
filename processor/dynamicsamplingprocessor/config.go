@@ -124,91 +124,57 @@ type RuleConfig struct {
 	_ struct{}
 }
 
-// SamplerConfig selects a sampler type and its configuration.
+// SamplerConfig is a flat sampler configuration. `Type` selects the sampler
+// implementation; the remaining fields apply only to the sampler types that
+// use them (see the field docs). SamplerConfig.validate rejects fields set
+// for a sampler type that does not use them.
 type SamplerConfig struct {
 	// Type is the kind of sampler to instantiate.
 	Type SamplerType `mapstructure:"type"`
-	// Deterministic holds settings for the deterministic sampler.
-	Deterministic DeterministicConfig `mapstructure:"deterministic"`
-	// EMADynamic holds settings for the EMA dynamic sampler.
-	EMADynamic EMADynamicConfig `mapstructure:"ema_dynamic"`
-	// EMAThroughput holds settings for the EMA throughput sampler.
-	EMAThroughput EMAThroughputConfig `mapstructure:"ema_throughput"`
-	// WindowedThroughput holds settings for the windowed throughput sampler.
-	WindowedThroughput WindowedThroughputConfig `mapstructure:"windowed_throughput"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
 
-// DeterministicConfig configures the deterministic sampler.
-type DeterministicConfig struct {
 	// SamplingPercentage is the target percentage of traces to keep (0-100).
+	// Used by: deterministic.
 	SamplingPercentage float64 `mapstructure:"sampling_percentage"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
 
-// EMAThroughputConfig configures the EMA throughput sampler, which targets a
-// fixed events-per-second rate while preserving per-key proportions via EMA.
-// See dynsampler-go's EMAThroughput for the underlying algorithm.
-type EMAThroughputConfig struct {
-	// GoalThroughputPerSec is the target sustained throughput in events/sec.
-	GoalThroughputPerSec int `mapstructure:"goal_throughput_per_sec"`
-	// KeyFields is the list of attribute names used to build the sampling key.
-	KeyFields []string `mapstructure:"key_fields"`
-	// InitialSamplingRate is the rate used until the first adjustment interval
-	// completes. 0 lets the sampler choose its default.
-	InitialSamplingRate int `mapstructure:"initial_sampling_rate"`
-	// AdjustmentInterval is how often the EMA recalculates rates from recent
-	// observations.
-	AdjustmentInterval time.Duration `mapstructure:"adjustment_interval"`
-	// Weight is the EMA weighting factor in (0, 1). Higher values weight recent
-	// observations more heavily.
-	Weight float64 `mapstructure:"weight"`
-	// MaxKeys caps the number of distinct keys tracked. 0 means unlimited.
-	MaxKeys int `mapstructure:"max_keys"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// WindowedThroughputConfig configures the windowed throughput sampler, which
-// adjusts rates faster than EMA by decoupling the update frequency from the
-// lookback window. See dynsampler-go's WindowedThroughput for the underlying
-// algorithm.
-type WindowedThroughputConfig struct {
-	// GoalThroughputPerSec is the target sustained throughput in events/sec.
-	GoalThroughputPerSec float64 `mapstructure:"goal_throughput_per_sec"`
-	// KeyFields is the list of attribute names used to build the sampling key.
-	KeyFields []string `mapstructure:"key_fields"`
-	// UpdateFrequency is how often the sampler recalculates rates.
-	UpdateFrequency time.Duration `mapstructure:"update_frequency"`
-	// LookbackFrequency is the historical window the sampler uses to compute
-	// rates. Must be a multiple of UpdateFrequency.
-	LookbackFrequency time.Duration `mapstructure:"lookback_frequency"`
-	// MaxKeys caps the number of distinct keys tracked. 0 means unlimited.
-	MaxKeys int `mapstructure:"max_keys"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// EMADynamicConfig configures the EMA dynamic sampler. See dynsampler-go's
-// EMASampleRate for the underlying algorithm.
-type EMADynamicConfig struct {
 	// GoalSamplingPercentage is the target average percentage of traces to keep
-	// across all keys (0-100).
+	// across all sampling keys (0-100).
+	// Used by: ema_dynamic.
 	GoalSamplingPercentage float64 `mapstructure:"goal_sampling_percentage"`
-	// KeyFields is the list of attribute names used to build the sampling key.
-	// Values are sourced from resource attributes and span attributes across the
-	// accumulated trace.
-	KeyFields []string `mapstructure:"key_fields"`
+
+	// GoalThroughputPerSec is the target sustained throughput in events/sec.
+	// Used by: ema_throughput, windowed_throughput.
+	GoalThroughputPerSec int `mapstructure:"goal_throughput_per_sec"`
+
+	// KeyAttributes is the list of attribute names used to build the sampling
+	// key. Values are sourced from resource attributes and span attributes
+	// across the accumulated trace.
+	// Used by: ema_dynamic, ema_throughput, windowed_throughput.
+	KeyAttributes []string `mapstructure:"key_attributes"`
+
+	// MaxKeys caps the number of distinct sampling keys the sampler tracks.
+	// 0 means unlimited.
+	// Used by: ema_dynamic, ema_throughput, windowed_throughput.
+	MaxKeys int `mapstructure:"max_keys"`
+
 	// AdjustmentInterval is how often the EMA recalculates rates from recent
 	// observations.
+	// Used by: ema_dynamic, ema_throughput.
 	AdjustmentInterval time.Duration `mapstructure:"adjustment_interval"`
-	// Weight is the EMA weighting factor in (0, 1). Higher values weight recent
+
+	// Weight is the EMA weighting factor in [0, 1). Higher values weight recent
 	// observations more heavily.
+	// Used by: ema_dynamic, ema_throughput.
 	Weight float64 `mapstructure:"weight"`
-	// MaxKeys caps the number of distinct keys tracked. 0 means unlimited.
-	MaxKeys int `mapstructure:"max_keys"`
+
+	// UpdateFrequency is how often the windowed sampler recalculates rates.
+	// Used by: windowed_throughput.
+	UpdateFrequency time.Duration `mapstructure:"update_frequency"`
+
+	// LookbackFrequency is the historical window the windowed sampler uses to
+	// compute rates. Must be a multiple of UpdateFrequency.
+	// Used by: windowed_throughput.
+	LookbackFrequency time.Duration `mapstructure:"lookback_frequency"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -302,66 +268,124 @@ func validateOTTLConditions(ruleName string, conditions []string) error {
 	return nil
 }
 
+// validate checks the sampler config for its declared type. It also rejects
+// fields set that do not apply to the chosen type, so config typos surface at
+// validation rather than being silently ignored.
 func (s *SamplerConfig) validate(ruleName string) error {
 	switch s.Type {
-	case AlwaysSample:
-		return nil
-	case Deterministic:
-		if s.Deterministic.SamplingPercentage <= 0 || s.Deterministic.SamplingPercentage > 100 {
-			return fmt.Errorf("rule %q: deterministic.sampling_percentage must be in (0, 100]", ruleName)
-		}
-		return nil
-	case EMADynamic:
-		c := s.EMADynamic
-		if c.GoalSamplingPercentage <= 0 || c.GoalSamplingPercentage > 100 {
-			return fmt.Errorf("rule %q: ema_dynamic.goal_sampling_percentage must be in (0, 100]", ruleName)
-		}
-		if len(c.KeyFields) == 0 {
-			return fmt.Errorf("rule %q: ema_dynamic.key_fields must contain at least one entry", ruleName)
-		}
-		if c.Weight < 0 || c.Weight >= 1 {
-			return fmt.Errorf("rule %q: ema_dynamic.weight must be in [0, 1)", ruleName)
-		}
-		if c.MaxKeys < 0 {
-			return fmt.Errorf("rule %q: ema_dynamic.max_keys must be non-negative", ruleName)
-		}
-		return nil
-	case EMAThroughput:
-		c := s.EMAThroughput
-		if c.GoalThroughputPerSec <= 0 {
-			return fmt.Errorf("rule %q: ema_throughput.goal_throughput_per_sec must be greater than zero", ruleName)
-		}
-		if len(c.KeyFields) == 0 {
-			return fmt.Errorf("rule %q: ema_throughput.key_fields must contain at least one entry", ruleName)
-		}
-		if c.Weight < 0 || c.Weight >= 1 {
-			return fmt.Errorf("rule %q: ema_throughput.weight must be in [0, 1)", ruleName)
-		}
-		if c.MaxKeys < 0 {
-			return fmt.Errorf("rule %q: ema_throughput.max_keys must be non-negative", ruleName)
-		}
-		return nil
-	case WindowedThroughput:
-		c := s.WindowedThroughput
-		if c.GoalThroughputPerSec <= 0 {
-			return fmt.Errorf("rule %q: windowed_throughput.goal_throughput_per_sec must be greater than zero", ruleName)
-		}
-		if len(c.KeyFields) == 0 {
-			return fmt.Errorf("rule %q: windowed_throughput.key_fields must contain at least one entry", ruleName)
-		}
-		if c.UpdateFrequency < 0 {
-			return fmt.Errorf("rule %q: windowed_throughput.update_frequency must be non-negative", ruleName)
-		}
-		if c.LookbackFrequency < 0 {
-			return fmt.Errorf("rule %q: windowed_throughput.lookback_frequency must be non-negative", ruleName)
-		}
-		if c.MaxKeys < 0 {
-			return fmt.Errorf("rule %q: windowed_throughput.max_keys must be non-negative", ruleName)
-		}
-		return nil
 	case "":
 		return fmt.Errorf("rule %q: sampler.type is required", ruleName)
+	case AlwaysSample:
+		return s.rejectUnusedFields(ruleName, "always_sample", nil)
+	case Deterministic:
+		if s.SamplingPercentage <= 0 || s.SamplingPercentage > 100 {
+			return fmt.Errorf("rule %q: sampling_percentage must be in (0, 100]", ruleName)
+		}
+		return s.rejectUnusedFields(ruleName, "deterministic", map[string]bool{"sampling_percentage": true})
+	case EMADynamic:
+		if s.GoalSamplingPercentage <= 0 || s.GoalSamplingPercentage > 100 {
+			return fmt.Errorf("rule %q: goal_sampling_percentage must be in (0, 100]", ruleName)
+		}
+		if len(s.KeyAttributes) == 0 {
+			return fmt.Errorf("rule %q: key_attributes must contain at least one entry", ruleName)
+		}
+		if s.Weight < 0 || s.Weight >= 1 {
+			return fmt.Errorf("rule %q: weight must be in [0, 1)", ruleName)
+		}
+		if s.MaxKeys < 0 {
+			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
+		}
+		return s.rejectUnusedFields(ruleName, "ema_dynamic", map[string]bool{
+			"goal_sampling_percentage": true,
+			"key_attributes":           true,
+			"max_keys":                 true,
+			"adjustment_interval":      true,
+			"weight":                   true,
+		})
+	case EMAThroughput:
+		if s.GoalThroughputPerSec <= 0 {
+			return fmt.Errorf("rule %q: goal_throughput_per_sec must be greater than zero", ruleName)
+		}
+		if len(s.KeyAttributes) == 0 {
+			return fmt.Errorf("rule %q: key_attributes must contain at least one entry", ruleName)
+		}
+		if s.Weight < 0 || s.Weight >= 1 {
+			return fmt.Errorf("rule %q: weight must be in [0, 1)", ruleName)
+		}
+		if s.MaxKeys < 0 {
+			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
+		}
+		return s.rejectUnusedFields(ruleName, "ema_throughput", map[string]bool{
+			"goal_throughput_per_sec": true,
+			"key_attributes":          true,
+			"max_keys":                true,
+			"adjustment_interval":     true,
+			"weight":                  true,
+		})
+	case WindowedThroughput:
+		if s.GoalThroughputPerSec <= 0 {
+			return fmt.Errorf("rule %q: goal_throughput_per_sec must be greater than zero", ruleName)
+		}
+		if len(s.KeyAttributes) == 0 {
+			return fmt.Errorf("rule %q: key_attributes must contain at least one entry", ruleName)
+		}
+		if s.UpdateFrequency < 0 {
+			return fmt.Errorf("rule %q: update_frequency must be non-negative", ruleName)
+		}
+		if s.LookbackFrequency < 0 {
+			return fmt.Errorf("rule %q: lookback_frequency must be non-negative", ruleName)
+		}
+		if s.MaxKeys < 0 {
+			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
+		}
+		return s.rejectUnusedFields(ruleName, "windowed_throughput", map[string]bool{
+			"goal_throughput_per_sec": true,
+			"key_attributes":          true,
+			"max_keys":                true,
+			"update_frequency":        true,
+			"lookback_frequency":      true,
+		})
 	default:
 		return fmt.Errorf("rule %q: unknown sampler.type %q", ruleName, s.Type)
 	}
+}
+
+// rejectUnusedFields returns an error if any field is set that does not apply
+// to the sampler type. The `allowed` set names the fields the type does use;
+// every other non-zero field is reported.
+func (s *SamplerConfig) rejectUnusedFields(ruleName, typeName string, allowed map[string]bool) error {
+	set := func(name string, isSet bool) error {
+		if isSet && !allowed[name] {
+			return fmt.Errorf("rule %q: %s does not use %s", ruleName, typeName, name)
+		}
+		return nil
+	}
+	if err := set("sampling_percentage", s.SamplingPercentage != 0); err != nil {
+		return err
+	}
+	if err := set("goal_sampling_percentage", s.GoalSamplingPercentage != 0); err != nil {
+		return err
+	}
+	if err := set("goal_throughput_per_sec", s.GoalThroughputPerSec != 0); err != nil {
+		return err
+	}
+	if err := set("key_attributes", len(s.KeyAttributes) > 0); err != nil {
+		return err
+	}
+	if err := set("max_keys", s.MaxKeys != 0); err != nil {
+		return err
+	}
+	if err := set("adjustment_interval", s.AdjustmentInterval != 0); err != nil {
+		return err
+	}
+	if err := set("weight", s.Weight != 0); err != nil {
+		return err
+	}
+	if err := set("update_frequency", s.UpdateFrequency != 0); err != nil {
+		return err
+	}
+	if err := set("lookback_frequency", s.LookbackFrequency != 0); err != nil {
+		return err
+	}
+	return nil
 }
