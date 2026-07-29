@@ -175,42 +175,39 @@ func buildRules(cfg *Config, settings component.TelemetrySettings, evalErrs metr
 }
 
 func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []string, error) {
-	switch rc.Sampler.Type {
+	sc := rc.Sampler
+	switch sc.Type {
 	case AlwaysSample:
 		return sampler.NewAlwaysSample(), nil, nil
 	case Deterministic:
-		s, err := sampler.NewDeterministic(rc.Sampler.Deterministic.SamplingPercentage)
+		s, err := sampler.NewDeterministic(sc.SamplingPercentage)
 		return s, nil, err
 	case EMADynamic:
-		c := rc.Sampler.EMADynamic
 		s, err := sampler.NewEMADynamic(sampler.EMADynamicConfig{
-			GoalSamplingPercentage: c.GoalSamplingPercentage,
-			AdjustmentInterval:     c.AdjustmentInterval,
-			Weight:                 c.Weight,
-			MaxKeys:                c.MaxKeys,
+			GoalSamplingPercentage: sc.GoalSamplingPercentage,
+			AdjustmentInterval:     sc.AdjustmentInterval,
+			Weight:                 sc.Weight,
+			MaxKeys:                sc.MaxKeys,
 		})
-		return s, append([]string(nil), c.KeyFields...), err
+		return s, append([]string(nil), sc.KeyAttributes...), err
 	case EMAThroughput:
-		c := rc.Sampler.EMAThroughput
 		s, err := sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
-			GoalThroughputPerSec: c.GoalThroughputPerSec,
-			InitialSamplingRate:  c.InitialSamplingRate,
-			AdjustmentInterval:   c.AdjustmentInterval,
-			Weight:               c.Weight,
-			MaxKeys:              c.MaxKeys,
+			GoalThroughputPerSec: sc.GoalThroughputPerSec,
+			AdjustmentInterval:   sc.AdjustmentInterval,
+			Weight:               sc.Weight,
+			MaxKeys:              sc.MaxKeys,
 		})
-		return s, append([]string(nil), c.KeyFields...), err
+		return s, append([]string(nil), sc.KeyAttributes...), err
 	case WindowedThroughput:
-		c := rc.Sampler.WindowedThroughput
 		s, err := sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
-			GoalThroughputPerSec: c.GoalThroughputPerSec,
-			UpdateFrequency:      c.UpdateFrequency,
-			LookbackFrequency:    c.LookbackFrequency,
-			MaxKeys:              c.MaxKeys,
+			GoalThroughputPerSec: float64(sc.GoalThroughputPerSec),
+			UpdateFrequency:      sc.UpdateFrequency,
+			LookbackFrequency:    sc.LookbackFrequency,
+			MaxKeys:              sc.MaxKeys,
 		})
-		return s, append([]string(nil), c.KeyFields...), err
+		return s, append([]string(nil), sc.KeyAttributes...), err
 	default:
-		return nil, nil, fmt.Errorf("unknown sampler type %q", rc.Sampler.Type)
+		return nil, nil, fmt.Errorf("unknown sampler type %q", sc.Type)
 	}
 }
 

@@ -98,6 +98,7 @@ body:
       - extension/cgroupruntime
       - extension/datadog
       - extension/dbauth
+      - extension/dbauth/awsiamdbauth
       - extension/encoding
       - extension/encoding/avrologencoding
       - extension/encoding/awscloudwatchmetricstreamsencoding
