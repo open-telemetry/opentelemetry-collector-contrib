@@ -1,0 +1,18 @@
+change_type: enhancement
+
+component: receiver/netflowreceiver
+
+note: Add interface, IP header, L2, ICMP, routing, and IPFIX observation attributes to parsed flow log records
+
+issues: [49946]
+
+subtext: |
+  Added the following attributes decoded by goflow2 but previously not included in log records:
+  flow.in_if, flow.out_if, flow.ip_tos, flow.ip_ttl, flow.ip_flags, flow.fragment_id,
+  flow.fragment_offset, flow.ipv6_flow_label, flow.icmp_type, flow.icmp_code,
+  flow.src_mac, flow.dst_mac, flow.src_vlan, flow.dst_vlan, flow.vlan_id,
+  flow.next_hop, flow.next_hop_as, flow.src_as, flow.dst_as, flow.bgp_next_hop,
+  flow.src_net, flow.dst_net, flow.forwarding_status, flow.observation_domain_id,
+  flow.observation_point_id.
+
+change_logs: [user]
