@@ -139,6 +139,8 @@ func (m *Manager) Start(ctx context.Context, host component.Host, scrapeManager 
 		o.LocalStorage,   // nil
 		o.TSDBDir,        // nil
 		o.EnableAdminAPI, // nil
+		o.EnableSearch,   // false
+		o.MaxSearchLimit, // 0
 		logger,
 		factoryRr,
 		o.RemoteReadSampleLimit,      // nil
