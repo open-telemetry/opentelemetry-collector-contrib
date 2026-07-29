@@ -107,25 +107,73 @@ GRANT SELECT ON V_$SGAINFO TO <username>;
 
 ### Events collection
 
-These grants are required for the `db.server.query_sample`, `db.server.top_query`,
-and `db.server.session.wait_sample` events.
+The following grants are required for event collection. All three event types
+(`db.server.query_sample`, `db.server.top_query`, `db.server.session.wait_sample`)
+are disabled by default and must be explicitly enabled in configuration.
+
+#### All events (shared requirements)
+
+These grants are used by all event types for session context and PDB namespace resolution:
 
 ```sql
-GRANT SELECT ON V_$SQL TO <username>;
-GRANT SELECT ON V_$SQL_PLAN_STATISTICS_ALL TO <username>;
+GRANT SELECT ON V_$SESSION TO <username>;
+GRANT SELECT ON V_$CONTAINERS TO <username>;     -- PDB/container name (DB_NAMESPACE attribute)
+```
+
+#### `db.server.query_sample`
+
+Captures currently executing queries and blocking/locking session information:
+
+```sql
+GRANT SELECT ON V_$SQL TO <username>;            -- SQL text and plan hash
+GRANT SELECT ON V_$LOCK TO <username>;           -- Lock type and mode for blocked sessions
+GRANT SELECT ON DBA_OBJECTS TO <username>;       -- Blocked object owner and name
+GRANT SELECT ON DBA_PROCEDURES TO <username>;    -- Stored procedure metadata (PL/SQL entry point)
+```
+
+#### `db.server.top_query`
+
+Captures the most expensive queries by elapsed time with execution plan details:
+
+```sql
+GRANT SELECT ON V_$SQL TO <username>;                    -- Query metrics and text
+GRANT SELECT ON V_$SQL_PLAN_STATISTICS_ALL TO <username>; -- Execution plan details
+GRANT SELECT ON DBA_PROCEDURES TO <username>;            -- Stored procedure metadata
+```
+
+> [!NOTE]
+> In the SQL query plan details, the `LAST_*`, `OUTPUT_ROWS`, and `STARTS` columns are
+> populated only when Oracle is configured to collect execution plan statistics (for example,
+> `STATISTICS_LEVEL=ALL` or the `GATHER_PLAN_STATISTICS` hint). Otherwise, these fields will
+> be NULL or empty. Configuring this Oracle instrumentation may introduce additional runtime
+> overhead. Enable it only if you need these runtime execution statistics for query
+> performance analysis.
+
+```sql
+ALTER SYSTEM SET statistics_level = ALL;
+```
+
+#### `db.server.session.wait_sample`
+
+Captures per-session wait event statistics from `V$SESSION_EVENT`:
+
+```sql
+GRANT SELECT ON V_$SESSION_EVENT TO <username>;  -- Wait event names, counts, and durations
+```
+
+#### Combined grant statement
+
+For convenience, the complete set of grants required to enable all events:
+
+```sql
 GRANT SELECT ON V_$SESSION TO <username>;
 GRANT SELECT ON V_$SESSION_EVENT TO <username>;
+GRANT SELECT ON V_$SQL TO <username>;
+GRANT SELECT ON V_$SQL_PLAN_STATISTICS_ALL TO <username>;
 GRANT SELECT ON V_$LOCK TO <username>;
 GRANT SELECT ON V_$CONTAINERS TO <username>;
 GRANT SELECT ON DBA_OBJECTS TO <username>;
 GRANT SELECT ON DBA_PROCEDURES TO <username>;
-```
-
-> [!NOTE]
-> In the SQL query plan details, the LAST_*, OUTPUT_ROWS, and STARTS columns are populated only when Oracle is configured to collect execution plan statistics (for example, STATISTICS_LEVEL=ALL or the GATHER_PLAN_STATISTICS hint). Otherwise, these fields will be NULL or empty. Configuring this Oracle instrumentation may introduce additional runtime overhead. Enable it only if you need these runtime execution statistics for query performance analysis.
-
-```sql
-ALTER SYSTEM SET statistics_level = ALL;
 ```
 
 ## Enabling metrics.
