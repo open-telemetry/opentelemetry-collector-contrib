@@ -41,7 +41,7 @@ func newMetricsReceiver(
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	if config.Endpoint == "" {
+	if config.AddrConfig.Endpoint == "" {
 		return nil, errEmptyEndpoint
 	}
 
@@ -75,14 +75,14 @@ func newMetricsReceiver(
 }
 
 func buildTransportServer(config Config) (transport.Server, error) {
-	switch strings.ToLower(string(config.Transport)) {
+	switch strings.ToLower(string(config.AddrConfig.Transport)) {
 	case "", "tcp":
-		return transport.NewTCPServer(config.Endpoint, config.TCPIdleTimeout)
+		return transport.NewTCPServer(config.AddrConfig.Endpoint, config.TCPIdleTimeout)
 	case "udp":
-		return transport.NewUDPServer(config.Endpoint)
+		return transport.NewUDPServer(config.AddrConfig.Endpoint)
 	}
 
-	return nil, fmt.Errorf("unsupported transport %q", string(config.Transport))
+	return nil, fmt.Errorf("unsupported transport %q", string(config.AddrConfig.Transport))
 }
 
 // Start tells the receiver to start its processing.

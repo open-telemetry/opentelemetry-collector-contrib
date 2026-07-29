@@ -16,7 +16,7 @@ import (
 
 // Config contains Logz.io specific configuration such as Account TracesToken, Region, etc.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`                                 // confighttp client settings https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp#ClientConfig
+	ClientConfig              confighttp.ClientConfig                                  `mapstructure:",squash"`       // confighttp client settings https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp#ClientConfig
 	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"` // exporter helper queue settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#QueueSettings
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`                        // exporter helper retry settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#RetrySettings
 	Token                     configopaque.String                                      `mapstructure:"account_token"`    // Your Logz.io Account Token, can be found at https://app.logz.io/#/dashboard/settings/general
@@ -52,6 +52,6 @@ func (c *Config) checkAndWarnDeprecatedOptions(logger hclog.Logger) {
 	if c.CustomEndpoint != "" {
 		logger.Warn("You are using the deprecated `custom_endpoint` option that will be removed in the next release; please use `endpoint` configuration instead: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp")
 		logger.Warn("Mapping `custom_endpoint` -> `Endpoint`")
-		c.Endpoint = c.CustomEndpoint
+		c.ClientConfig.Endpoint = c.CustomEndpoint
 	}
 }
