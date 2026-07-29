@@ -25,6 +25,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "all_set",
 			want: ResourceAttributesConfig{
 				AzureResourceGroupName: ResourceAttributeConfig{Enabled: true},
+				AzureResourcegroupName: ResourceAttributeConfig{Enabled: true},
 				AzureVMName:            ResourceAttributeConfig{Enabled: true},
 				AzureVMScalesetName:    ResourceAttributeConfig{Enabled: true},
 				AzureVMSize:            ResourceAttributeConfig{Enabled: true},
@@ -41,6 +42,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "none_set",
 			want: ResourceAttributesConfig{
 				AzureResourceGroupName: ResourceAttributeConfig{Enabled: false},
+				AzureResourcegroupName: ResourceAttributeConfig{Enabled: false},
 				AzureVMName:            ResourceAttributeConfig{Enabled: false},
 				AzureVMScalesetName:    ResourceAttributeConfig{Enabled: false},
 				AzureVMSize:            ResourceAttributeConfig{Enabled: false},

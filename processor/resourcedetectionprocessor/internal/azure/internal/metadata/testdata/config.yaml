@@ -3,6 +3,8 @@ all_set:
   resource_attributes:
     azure.resource_group.name:
       enabled: true
+    azure.resourcegroup.name:
+      enabled: true
     azure.vm.name:
       enabled: true
     azure.vm.scaleset.name:
@@ -26,6 +28,8 @@ all_set:
 none_set:
   resource_attributes:
     azure.resource_group.name:
+      enabled: false
+    azure.resourcegroup.name:
       enabled: false
     azure.vm.name:
       enabled: false

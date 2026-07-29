@@ -6,7 +6,8 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| azure.resource_group.name | The azure.resource_group.name | Any Str | true | - | - |
+| azure.resource_group.name | The azure.resource_group.name. Only emitted when the processor.resourcedetection.azure.RenameResourceGroupAttribute feature gate is enabled. | Any Str | true | - | - |
+| azure.resourcegroup.name | The azure.resourcegroup.name. Deprecated, use azure.resource_group.name instead by enabling the processor.resourcedetection.azure.RenameResourceGroupAttribute feature gate. | Any Str | true | - | - |
 | azure.vm.name | The azure.vm.name | Any Str | true | - | - |
 | azure.vm.scaleset.name | The azure.vm.scaleset.name | Any Str | true | - | - |
 | azure.vm.size | The azure.vm.size | Any Str | true | - | - |
@@ -17,3 +18,13 @@
 | cloud.region | The cloud.region | Any Str | true | - | - |
 | host.id | The host.id | Any Str | true | - | - |
 | host.name | The hostname | Any Str | true | - | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `processor.resourcedetection.azure.RenameResourceGroupAttribute` | alpha | When enabled, the azure detector emits the azure.resource_group.name resource attribute instead of azure.resourcegroup.name, aligning with semantic convention naming. | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49079) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

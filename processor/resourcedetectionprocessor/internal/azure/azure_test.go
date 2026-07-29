@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 
@@ -64,17 +65,17 @@ func TestDetectAzureAvailable(t *testing.T) {
 	mp.AssertExpectations(t)
 
 	expected := map[string]any{
-		"cloud.provider":            "azure",
-		"cloud.platform":            "azure.vm",
-		"host.name":                 "computerName",
-		"cloud.region":              "location",
-		"host.id":                   "vmID",
-		"cloud.account.id":          "subscriptionID",
-		"azure.vm.name":             "name",
-		"azure.vm.size":             "vmSize",
-		"azure.resource_group.name": "resourceGroup",
-		"azure.vm.scaleset.name":    "myScaleset",
-		"azure.tag.tag1key":         "value1",
+		"cloud.provider":           "azure",
+		"cloud.platform":           "azure.vm",
+		"host.name":                "computerName",
+		"cloud.region":             "location",
+		"host.id":                  "vmID",
+		"cloud.account.id":         "subscriptionID",
+		"azure.vm.name":            "name",
+		"azure.vm.size":            "vmSize",
+		"azure.resourcegroup.name": "resourceGroup",
+		"azure.vm.scaleset.name":   "myScaleset",
+		"azure.tag.tag1key":        "value1",
 	}
 
 	notExpected := map[string]any{
@@ -83,6 +84,64 @@ func TestDetectAzureAvailable(t *testing.T) {
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
 	assert.NotEqual(t, notExpected, res.Attributes().AsRaw())
+}
+
+func TestDetectResourceGroupNameFeatureGate(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		gateEnabled bool
+		wantKey     string
+		notWantKey  string
+	}{
+		{
+			name:        "gate disabled emits the legacy attribute",
+			gateEnabled: false,
+			wantKey:     "azure.resourcegroup.name",
+			notWantKey:  "azure.resource_group.name",
+		},
+		{
+			name:        "gate enabled emits the semconv aligned attribute",
+			gateEnabled: true,
+			wantKey:     "azure.resource_group.name",
+			notWantKey:  "azure.resourcegroup.name",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(
+				metadata.ProcessorResourcedetectionAzureRenameResourceGroupAttributeFeatureGate.ID(), tt.gateEnabled))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					metadata.ProcessorResourcedetectionAzureRenameResourceGroupAttributeFeatureGate.ID(), false))
+			})
+
+			mp := &azure.MockProvider{}
+			mp.On("Metadata").Return(&azure.ComputeMetadata{
+				Location:          "location",
+				Name:              "name",
+				VMID:              "vmID",
+				VMSize:            "vmSize",
+				SubscriptionID:    "subscriptionID",
+				ResourceGroupName: "resourceGroup",
+				OSProfile: azure.OSProfile{
+					ComputerName: "computerName",
+				},
+			}, nil)
+
+			detector := &Detector{
+				provider: mp,
+				rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+			}
+			res, _, err := detector.Detect(t.Context())
+			require.NoError(t, err)
+
+			got, ok := res.Attributes().Get(tt.wantKey)
+			require.True(t, ok, "expected %q to be present", tt.wantKey)
+			assert.Equal(t, "resourceGroup", got.Str())
+
+			_, ok = res.Attributes().Get(tt.notWantKey)
+			assert.False(t, ok, "expected %q to be absent", tt.notWantKey)
+		})
+	}
 }
 
 func TestDetectEmptyComputerNameFallsBackToVMName(t *testing.T) {

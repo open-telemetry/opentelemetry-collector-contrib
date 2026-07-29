@@ -28,6 +28,13 @@ func (rb *ResourceBuilder) SetAzureResourceGroupName(val string) {
 	}
 }
 
+// SetAzureResourcegroupName sets provided value as "azure.resourcegroup.name" attribute.
+func (rb *ResourceBuilder) SetAzureResourcegroupName(val string) {
+	if rb.config.AzureResourcegroupName.Enabled {
+		rb.res.Attributes().PutStr("azure.resourcegroup.name", val)
+	}
+}
+
 // SetAzureVMName sets provided value as "azure.vm.name" attribute.
 func (rb *ResourceBuilder) SetAzureVMName(val string) {
 	if rb.config.AzureVMName.Enabled {

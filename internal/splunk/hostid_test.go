@@ -66,6 +66,20 @@ var (
 		attrs.PutStr("azure.resource_group.name", "myResourcegroupName")
 		return res
 	}()
+	azureLegacyResourceGroupResource = func() pcommon.Resource {
+		res := pcommon.NewResource()
+		attrs := res.Attributes()
+		attrs.PutStr("cloud.provider", "azure")
+		attrs.PutStr("cloud.platform", "azure_vm")
+		attrs.PutStr("host.name", "myHostName")
+		attrs.PutStr("cloud.region", "myCloudRegion")
+		attrs.PutStr("host.id", "myHostID")
+		attrs.PutStr("cloud.account.id", "myCloudAccount")
+		attrs.PutStr("azure.vm.name", "myVMName")
+		attrs.PutStr("azure.vm.size", "42")
+		attrs.PutStr("azure.resourcegroup.name", "myResourcegroupName")
+		return res
+	}()
 	azureScalesetResource = func() pcommon.Resource {
 		res := pcommon.NewResource()
 		attrs := res.Attributes()
@@ -177,6 +191,15 @@ func TestResourceToHostID(t *testing.T) {
 		{
 			name: "azure",
 			args: args{azureResource},
+			want: HostID{
+				Key: "azure_resource_id",
+				ID:  "mycloudaccount/myresourcegroupname/microsoft.compute/virtualmachines/myvmname",
+			},
+			ok: true,
+		},
+		{
+			name: "azure legacy resourcegroup attribute",
+			args: args{azureLegacyResourceGroupResource},
 			want: HostID{
 				Key: "azure_resource_id",
 				ID:  "mycloudaccount/myresourcegroupname/microsoft.compute/virtualmachines/myvmname",

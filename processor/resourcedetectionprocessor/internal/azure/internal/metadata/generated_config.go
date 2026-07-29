@@ -28,6 +28,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 // ResourceAttributesConfig provides config for azuredetector resource attributes.
 type ResourceAttributesConfig struct {
 	AzureResourceGroupName ResourceAttributeConfig `mapstructure:"azure.resource_group.name"`
+	AzureResourcegroupName ResourceAttributeConfig `mapstructure:"azure.resourcegroup.name"`
 	AzureVMName            ResourceAttributeConfig `mapstructure:"azure.vm.name"`
 	AzureVMScalesetName    ResourceAttributeConfig `mapstructure:"azure.vm.scaleset.name"`
 	AzureVMSize            ResourceAttributeConfig `mapstructure:"azure.vm.size"`
@@ -43,6 +44,9 @@ type ResourceAttributesConfig struct {
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		AzureResourceGroupName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		AzureResourcegroupName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		AzureVMName: ResourceAttributeConfig{

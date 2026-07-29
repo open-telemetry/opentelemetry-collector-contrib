@@ -1,7 +1,7 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: azure.resource_group.name
+        - key: azure.resourcegroup.name
           value:
             stringValue: test-resource-group
         - key: azure.tag.environment
