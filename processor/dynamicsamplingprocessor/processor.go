@@ -80,7 +80,7 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*d
 		return nil, err
 	}
 
-	rules, err := buildRules(cfg)
+	rules, err := buildRules(cfg, set.TelemetrySettings, tb.ProcessorDynamicSamplingOttlEvalErrors)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func warnUnreachableRules(logger *zap.Logger, rules []RuleConfig) {
 	}
 }
 
-func buildRules(cfg *Config) ([]*rule, error) {
+func buildRules(cfg *Config, settings component.TelemetrySettings, evalErrs metric.Int64Counter) ([]*rule, error) {
 	rules := make([]*rule, 0, len(cfg.Rules))
 	for i := range cfg.Rules {
 		rc := &cfg.Rules[i]
@@ -128,7 +128,7 @@ func buildRules(cfg *Config) ([]*rule, error) {
 		if err != nil {
 			return nil, fmt.Errorf("rule %q: %w", rc.Name, err)
 		}
-		r, err := compileRule(rc, s, keyFields)
+		r, err := compileRule(rc, s, keyFields, settings, evalErrs)
 		if err != nil {
 			return nil, err
 		}
@@ -436,7 +436,7 @@ func (p *dynamicSamplingProcessor) decide(id pcommon.TraceID) {
 	delete(p.timers, id)
 	p.mu.Unlock()
 
-	matchedRule, rate := p.evaluate(pt)
+	matchedRule, rate := p.evaluate(ctx, pt)
 	if matchedRule == nil {
 		// No matching rule and no catch-all: drop the trace.
 		p.telemetry.ProcessorDynamicSamplingTracesDropped.Add(ctx, 1,
@@ -477,9 +477,9 @@ func (p *dynamicSamplingProcessor) decide(id pcommon.TraceID) {
 }
 
 // evaluate returns the first matching rule and the sample rate it produced.
-func (p *dynamicSamplingProcessor) evaluate(pt *pendingTrace) (*rule, int) {
+func (p *dynamicSamplingProcessor) evaluate(ctx context.Context, pt *pendingTrace) (*rule, int) {
 	for _, r := range p.rules {
-		if !r.matches(pt.spans) {
+		if !r.matches(ctx, pt.spans) {
 			continue
 		}
 		var key string

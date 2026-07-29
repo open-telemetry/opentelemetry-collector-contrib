@@ -7,6 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 // SamplerType identifies the kind of sampler attached to a rule.
@@ -66,14 +72,32 @@ type DecisionCacheConfig struct {
 	_ struct{}
 }
 
-// RuleConfig defines a single rule entry: zero or more conditions that, when
-// all match, select the configured sampler.
+// MatchMode controls how a rule's conditions are combined against the spans of
+// an accumulated trace.
+type MatchMode string
+
+const (
+	// MatchAnySpan (default) requires each condition to be satisfied by some
+	// span in the trace, though not necessarily the same span. Preserves the
+	// "trace has these characteristics" reading.
+	MatchAnySpan MatchMode = "any_span"
+	// MatchSameSpan requires that some single span in the trace satisfies all
+	// the rule's conditions simultaneously.
+	MatchSameSpan MatchMode = "same_span"
+)
+
+// RuleConfig defines a single rule entry: zero or more OTTL boolean conditions
+// that, when all match under the configured MatchMode, select the sampler.
 type RuleConfig struct {
 	// Name identifies the rule in metrics and span attributes.
 	Name string `mapstructure:"name"`
-	// Conditions is a list of simple match expressions evaluated against trace
-	// data. A rule with no conditions is a catch-all (always matches).
+	// Conditions is a list of OTTL boolean expressions evaluated against the
+	// spans of the accumulated trace. A rule with no conditions is a catch-all
+	// (always matches).
 	Conditions []string `mapstructure:"conditions"`
+	// Match controls how conditions are combined. Defaults to MatchAnySpan.
+	// Must be unset when Conditions is empty.
+	Match MatchMode `mapstructure:"match"`
 	// Sampler is the sampler invoked when this rule matches.
 	Sampler SamplerConfig `mapstructure:"sampler"`
 	// prevent unkeyed literal initialization
@@ -165,8 +189,44 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("rules[%d]: duplicate rule name %q", i, r.Name)
 		}
 		names[r.Name] = struct{}{}
+		if err := r.validateMatch(); err != nil {
+			return err
+		}
 		if err := r.Sampler.validate(r.Name); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func (r *RuleConfig) validateMatch() error {
+	switch r.Match {
+	case "", MatchAnySpan, MatchSameSpan:
+	default:
+		return fmt.Errorf("rule %q: match must be %q or %q", r.Name, MatchAnySpan, MatchSameSpan)
+	}
+	if len(r.Conditions) == 0 && r.Match != "" {
+		return fmt.Errorf("rule %q: match cannot be set on a catch-all rule (no conditions)", r.Name)
+	}
+	if err := validateOTTLConditions(r.Name, r.Conditions); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validateOTTLConditions parses each condition against a nop-telemetry OTTL
+// span parser to surface syntax errors during config validation, before the
+// processor is instantiated. The parsed forms are discarded; the real parse
+// happens once in newProcessor with the component's real telemetry settings.
+func validateOTTLConditions(ruleName string, conditions []string) error {
+	if len(conditions) == 0 {
+		return nil
+	}
+	settings := component.TelemetrySettings{Logger: zap.NewNop()}
+	for i, cond := range conditions {
+		_, err := filterottl.NewBoolExprForSpan([]string{cond}, filterottl.StandardSpanFuncs(), ottl.PropagateError, settings)
+		if err != nil {
+			return fmt.Errorf("rule %q: conditions[%d]: %w", ruleName, i, err)
 		}
 	}
 	return nil
