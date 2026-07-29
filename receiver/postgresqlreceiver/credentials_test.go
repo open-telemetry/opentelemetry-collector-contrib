@@ -109,7 +109,7 @@ func TestConnectionString_QuotesConninfoValues(t *testing.T) {
 
 func TestConfigValidate_PasswordAndDBAuthMutuallyExclusive(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:5432"
+	cfg.AddrConfig.Endpoint = "localhost:5432"
 	cfg.Username = "u"
 	cfg.Password = "static"
 	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_dbauth"))
@@ -121,7 +121,7 @@ func TestConfigValidate_PasswordAndDBAuthMutuallyExclusive(t *testing.T) {
 
 func TestConfigValidate_DBAuthWithoutPasswordIsValid(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:5432"
+	cfg.AddrConfig.Endpoint = "localhost:5432"
 	cfg.Username = "u"
 	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_dbauth"))
 
@@ -152,7 +152,7 @@ func TestResolveCredentialProvider_ResolvesFromHostExtension(t *testing.T) {
 	// The configured provider ID matches a declared extension in the host map, and
 	// that extension implements dbauth.Provider, so it resolves.
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "db.example.com:5432"
+	cfg.AddrConfig.Endpoint = "db.example.com:5432"
 	cfg.Username = "monitor"
 	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_dbauth"))
 
@@ -164,7 +164,7 @@ func TestResolveCredentialProvider_ResolvesFromHostExtension(t *testing.T) {
 func TestResolveCredentialProvider_NoMatchingExtension(t *testing.T) {
 	// The configured provider ID names an extension that is not declared in the host map.
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "db.example.com:5432"
+	cfg.AddrConfig.Endpoint = "db.example.com:5432"
 	cfg.Username = "monitor"
 	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_dbauth"))
 
@@ -174,7 +174,7 @@ func TestResolveCredentialProvider_NoMatchingExtension(t *testing.T) {
 
 func TestResolveCredentialProvider_NoAuthReturnsNil(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:5432"
+	cfg.AddrConfig.Endpoint = "localhost:5432"
 	cfg.Username = "u"
 	cfg.Password = "pw"
 
@@ -189,7 +189,7 @@ func TestNewPoolClientFactory_AcceptsDBAuth(t *testing.T) {
 	// longer goes stale. The pool accepts an injected provider and still caches one
 	// *sql.DB per database.
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:5432"
+	cfg.AddrConfig.Endpoint = "localhost:5432"
 	cfg.Username = "u"
 	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_dbauth"))
 

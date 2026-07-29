@@ -69,17 +69,17 @@ and enabled in `service.extensions`:
 
 ```yaml
 extensions:
-  aws_iam_dbauth:
+  aws_iam_db_auth:
     region: us-east-2
 
 receivers:
   postgresql:
     endpoint: my-database.example.com:5432
     username: monitor
-    db_auth: aws_iam_dbauth
+    db_auth: aws_iam_db_auth
 
 service:
-  extensions: [aws_iam_dbauth]
+  extensions: [aws_iam_db_auth]
   pipelines:
     metrics:
       receivers: [postgresql]

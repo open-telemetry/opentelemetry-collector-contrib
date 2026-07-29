@@ -62,11 +62,11 @@ type Config struct {
 	metadata.LogsBuilderConfig     `mapstructure:",squash"`
 	QuerySampleCollection          `mapstructure:"query_sample_collection,omitempty"`
 	TopQueryCollection             `mapstructure:"top_query_collection,omitempty"`
-  // DBAuth optionally sources the connection credential from a db_auth provider
+	// DBAuth optionally sources the connection credential from a db_auth provider
 	// extension (e.g. AWS IAM) instead of a static password. When set, the provider
 	// supplies the password at connection-open time. Mutually exclusive with the
 	// top-level password field.
-	DBAuth                         configdbauth.ID        `mapstructure:"db_auth,omitempty"`
+	DBAuth configdbauth.ID `mapstructure:"db_auth,omitempty"`
 }
 
 type ConnectionPool struct {
