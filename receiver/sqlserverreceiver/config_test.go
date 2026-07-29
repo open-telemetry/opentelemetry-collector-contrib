@@ -218,9 +218,9 @@ func TestLoadConfig(t *testing.T) {
 		}
 		expected.ComputerName = "CustomServer"
 		expected.InstanceName = "CustomInstance"
-		expected.LookbackTime = 60 * time.Second
-		expected.TopQueryCount = 200
-		expected.MaxQuerySampleCount = 1000
+		expected.TopQueryCollection.LookbackTime = 60 * time.Second
+		expected.TopQueryCollection.TopQueryCount = 200
+		expected.TopQueryCollection.MaxQuerySampleCount = 1000
 		expected.TopQueryCollection.CollectionInterval = 80 * time.Second
 
 		expected.QuerySample = QuerySample{
@@ -250,7 +250,7 @@ func TestLoadConfig(t *testing.T) {
 		config.TopQueryCollection.CollectionInterval = 10 * time.Second
 		assert.Equal(t, 2*config.TopQueryCollection.CollectionInterval, config.EffectiveLookbackTime(), "By default the 'EffectiveLookbackTime' value should be 2 x 'TopQueryCollection.CollectionInterval'")
 
-		config.LookbackTime = 60 * time.Second
+		config.TopQueryCollection.LookbackTime = 60 * time.Second
 		assert.Equal(t, 60*time.Second, config.EffectiveLookbackTime(), "'EffectiveLookbackTime' should return the user provided 'LookbackTime' if any.")
 	})
 }

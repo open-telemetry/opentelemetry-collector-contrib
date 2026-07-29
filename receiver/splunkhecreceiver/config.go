@@ -24,7 +24,7 @@ type Config struct {
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
-	Ack `mapstructure:"ack"`
+	Ack Ack `mapstructure:"ack"`
 
 	// RawPath for raw data collection, default is '/services/collector/raw'
 	RawPath string `mapstructure:"raw_path"`

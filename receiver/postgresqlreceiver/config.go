@@ -45,18 +45,18 @@ type QuerySampleCollection struct {
 }
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Username                       string                 `mapstructure:"username"`
-	Password                       configopaque.String    `mapstructure:"password"`
-	Databases                      []string               `mapstructure:"databases"`
-	ExcludeDatabases               []string               `mapstructure:"exclude_databases"`
-	AddrConfig                     confignet.AddrConfig   `mapstructure:",squash"`       // provides Endpoint and Transport
-	ClientConfig                   configtls.ClientConfig `mapstructure:"tls,omitempty"` // provides SSL details
-	ConnectionPool                 `mapstructure:"connection_pool,omitempty"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	metadata.LogsBuilderConfig     `mapstructure:",squash"`
-	QuerySampleCollection          `mapstructure:"query_sample_collection,omitempty"`
-	TopQueryCollection             `mapstructure:"top_query_collection,omitempty"`
+	ControllerConfig              scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Username                      string                         `mapstructure:"username"`
+	Password                      configopaque.String            `mapstructure:"password"`
+	Databases                     []string                       `mapstructure:"databases"`
+	ExcludeDatabases              []string                       `mapstructure:"exclude_databases"`
+	AddrConfig                    confignet.AddrConfig           `mapstructure:",squash"`       // provides Endpoint and Transport
+	ClientConfig                  configtls.ClientConfig         `mapstructure:"tls,omitempty"` // provides SSL details
+	ConnectionPool                ConnectionPool                 `mapstructure:"connection_pool,omitempty"`
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	metadata.LogsBuilderConfig    `mapstructure:",squash"`
+	QuerySampleCollection         QuerySampleCollection `mapstructure:"query_sample_collection,omitempty"`
+	TopQueryCollection            TopQueryCollection    `mapstructure:"top_query_collection,omitempty"`
 }
 
 type ConnectionPool struct {

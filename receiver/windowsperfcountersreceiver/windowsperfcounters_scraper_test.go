@@ -560,7 +560,7 @@ func TestScrape(t *testing.T) {
 					assert.Equal(t, len(counterValues), dps.Len())
 					for dpIdx, val := range counterValues {
 						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleValue())
-						expectedAttributeLen := len(counterCfg.Attributes)
+						expectedAttributeLen := len(counterCfg.MetricRep.Attributes)
 						if val.InstanceName != "" {
 							expectedAttributeLen++
 						}
@@ -570,7 +570,7 @@ func TestScrape(t *testing.T) {
 								assert.Equal(t, val.InstanceName, v.Str())
 								continue
 							}
-							assert.Equal(t, counterCfg.Attributes[k], v.Str())
+							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.Str())
 						}
 					}
 					curMetricsNum++

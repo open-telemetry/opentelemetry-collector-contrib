@@ -123,7 +123,7 @@ func TestInvalidConfigValidation(t *testing.T) {
 	require.Error(t, configuration.Validate())
 
 	configuration = loadSuccessfulConfig(t)
-	configuration.UAA.Endpoint = "https://[invalid"
+	configuration.UAA.LimitedClientConfig.Endpoint = "https://[invalid"
 	require.Error(t, configuration.Validate())
 }
 

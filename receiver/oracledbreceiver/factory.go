@@ -118,7 +118,7 @@ func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clie
 		}
 
 		// cacheSize is kept at 2 times MaxQuerySampleCount to keep queries of adjacent collections available for delta calculation.
-		cacheSize := sqlCfg.MaxQuerySampleCount * 2
+		cacheSize := sqlCfg.TopQueryCollection.MaxQuerySampleCount * 2
 		metricCache, err := lru.New[string, map[string]int64](int(cacheSize))
 		if err != nil {
 			settings.Logger.Error("Failed to create LRU cache, skipping the current scraper", zap.Error(err))
