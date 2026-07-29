@@ -67,19 +67,17 @@ processors:
           - 'resource.attributes["service.name"] == "payment"'
         sampler:
           type: ema_dynamic
-          ema_dynamic:
-            goal_sampling_percentage: 5
-            key_fields: ["http.method", "http.route"]
-            adjustment_interval: 15s
-            weight: 0.5
+          goal_sampling_percentage: 5
+          key_attributes: ["http.method", "http.route"]
+          adjustment_interval: 15s
+          weight: 0.5
 
       # Catch-all: no conditions, always matches.
       - name: default
         sampler:
           type: ema_dynamic
-          ema_dynamic:
-            goal_sampling_percentage: 20
-            key_fields: ["service.name", "http.status_code"]
+          goal_sampling_percentage: 20
+          key_attributes: ["service.name", "http.status_code"]
 ```
 
 ### Rules
@@ -103,9 +101,8 @@ rules:
   - name: default              # catch-all
     sampler:
       type: ema_dynamic
-      ema_dynamic:
-        goal_sampling_percentage: 10
-        key_fields: ["service.name"]
+      goal_sampling_percentage: 10
+      key_attributes: ["service.name"]
 ```
 
 With the order above, error traces are always kept and every other trace is decided by `ema_dynamic`. Flipping the order so `default` comes first would mean `default` swallows every trace (including errors) and `keep-errors` is never reached, which is what the startup warning flags.
@@ -213,8 +210,7 @@ The adaptive samplers (`ema_dynamic`, `ema_throughput`, `windowed_throughput`) a
 ```yaml
 sampler:
   type: deterministic
-  deterministic:
-    sampling_percentage: 10   # keep 10% of traces
+  sampling_percentage: 10   # keep 10% of traces
 ```
 
 #### `ema_dynamic`
@@ -224,12 +220,11 @@ Adapts the sample rate per traffic key over time, keeping a target average sampl
 ```yaml
 sampler:
   type: ema_dynamic
-  ema_dynamic:
-    goal_sampling_percentage: 10            # target % across all keys
-    key_fields: ["service.name", "http.status_code"]
-    adjustment_interval: 15s                # how often the EMA recalculates
-    weight: 0.5                             # EMA weighting factor in [0, 1)
-    max_keys: 500                           # 0 = unlimited
+  goal_sampling_percentage: 10            # target % across all keys
+  key_attributes: ["service.name", "http.status_code"]
+  adjustment_interval: 15s                # how often the EMA recalculates
+  weight: 0.5                             # EMA weighting factor in [0, 1)
+  max_keys: 500                           # 0 = unlimited
 ```
 
 #### `ema_throughput`
@@ -239,13 +234,11 @@ Adjusts rates per key to hit a target sustained throughput in events per second.
 ```yaml
 sampler:
   type: ema_throughput
-  ema_throughput:
-    goal_throughput_per_sec: 100            # target events/sec across all keys
-    key_fields: ["service.name", "http.status_code"]
-    initial_sampling_rate: 10               # optional: rate used before first adjustment
-    adjustment_interval: 15s
-    weight: 0.5
-    max_keys: 500
+  goal_throughput_per_sec: 100            # target events/sec across all keys
+  key_attributes: ["service.name", "http.status_code"]
+  adjustment_interval: 15s
+  weight: 0.5
+  max_keys: 500
 ```
 
 #### `windowed_throughput`
@@ -255,17 +248,16 @@ Sliding-window throughput sampler that decouples how often rates are recalculate
 ```yaml
 sampler:
   type: windowed_throughput
-  windowed_throughput:
-    goal_throughput_per_sec: 100
-    key_fields: ["service.name", "http.status_code"]
-    update_frequency: 1s                    # how often rates recalculate
-    lookback_frequency: 30s                 # historical window used in the calculation
-    max_keys: 500
+  goal_throughput_per_sec: 100
+  key_attributes: ["service.name", "http.status_code"]
+  update_frequency: 1s                    # how often rates recalculate
+  lookback_frequency: 30s                 # historical window used in the calculation
+  max_keys: 500
 ```
 
 ### Sampling keys
 
-For samplers that accept `key_fields`, the sampling key for a trace is built by collecting distinct values of each `key_field` (across resource and span attributes), sorting them, and joining with the `•` separator. Missing fields are replaced with `<missing>`.
+For samplers that accept `key_attributes`, the sampling key for a trace is built by collecting distinct values of each named attribute (across resource and span attributes), sorting them, and joining with the `•` separator. Missing attributes are replaced with `<missing>`.
 
 ## Decision cache
 
