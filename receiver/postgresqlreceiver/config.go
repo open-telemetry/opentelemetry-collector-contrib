@@ -46,12 +46,12 @@ type QuerySampleCollection struct {
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Username                       string                   `mapstructure:"username"`
-	Password                       configopaque.String      `mapstructure:"password"`
-	Databases                      []string                 `mapstructure:"databases"`
-	ExcludeDatabases               []string                 `mapstructure:"exclude_databases"`
-	confignet.AddrConfig           `mapstructure:",squash"` // provides Endpoint and Transport
-	ClientConfig                   configtls.ClientConfig   `mapstructure:"tls,omitempty"` // provides SSL details
+	Username                       string                 `mapstructure:"username"`
+	Password                       configopaque.String    `mapstructure:"password"`
+	Databases                      []string               `mapstructure:"databases"`
+	ExcludeDatabases               []string               `mapstructure:"exclude_databases"`
+	AddrConfig                     confignet.AddrConfig   `mapstructure:",squash"`       // provides Endpoint and Transport
+	ClientConfig                   configtls.ClientConfig `mapstructure:"tls,omitempty"` // provides SSL details
 	ConnectionPool                 `mapstructure:"connection_pool,omitempty"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	metadata.LogsBuilderConfig     `mapstructure:",squash"`
@@ -86,9 +86,9 @@ func (cfg *Config) Validate() error {
 		err = multierr.Append(err, fmt.Errorf(ErrNotSupported, "MinVersion"))
 	}
 
-	switch cfg.Transport {
+	switch cfg.AddrConfig.Transport {
 	case confignet.TransportTypeTCP, confignet.TransportTypeUnix:
-		_, _, endpointErr := net.SplitHostPort(cfg.Endpoint)
+		_, _, endpointErr := net.SplitHostPort(cfg.AddrConfig.Endpoint)
 		if endpointErr != nil {
 			err = multierr.Append(err, errors.New(ErrHostPort))
 		}
