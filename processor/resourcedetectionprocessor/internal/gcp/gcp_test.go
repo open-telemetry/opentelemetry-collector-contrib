@@ -75,6 +75,7 @@ func TestDetect(t *testing.T) {
 				"cloud.platform":          "gcp_kubernetes_engine",
 				"k8s.cluster.name":        "my-cluster",
 				"cloud.availability_zone": "us-central1-c",
+				"cloud.region":            "us-central1",
 				"host.id":                 "1472385723456792345",
 				"host.name":               "my-gke-node-1234",
 			},

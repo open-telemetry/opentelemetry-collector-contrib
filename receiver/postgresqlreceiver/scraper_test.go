@@ -41,7 +41,7 @@ import (
 func TestUnsuccessfulScrape(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "fake:11111"
+	cfg.AddrConfig.Endpoint = "fake:11111"
 
 	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
@@ -215,6 +215,94 @@ func TestScraper(t *testing.T) {
 
 	runTest(true, "expected_schemaattr.yaml")
 	runTest(false, "expected.yaml")
+}
+
+func TestScraperVectorMetrics(t *testing.T) {
+	factory := new(mockClientFactory)
+	factory.initMocks([]string{"otel"})
+
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, false)()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{"otel"}
+	// Opt in to all pgvector metrics; everything else stays at defaults.
+	require.False(t, cfg.Metrics.PostgresqlVectorSearchCalls.Enabled)
+	cfg.Metrics.PostgresqlVectorSearchCalls.Enabled = true
+	require.False(t, cfg.Metrics.PostgresqlVectorSearchDuration.Enabled)
+	cfg.Metrics.PostgresqlVectorSearchDuration.Enabled = true
+	require.False(t, cfg.Metrics.PostgresqlVectorSearchRowsReturned.Enabled)
+	cfg.Metrics.PostgresqlVectorSearchRowsReturned.Enabled = true
+	require.False(t, cfg.Metrics.PostgresqlVectorInsertRows.Enabled)
+	cfg.Metrics.PostgresqlVectorInsertRows.Enabled = true
+	require.False(t, cfg.Metrics.PostgresqlVectorInsertDuration.Enabled)
+	cfg.Metrics.PostgresqlVectorInsertDuration.Enabled = true
+
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	actualMetrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected_vector.yaml")
+	// Uncomment line below to re-generate expected metrics.
+	// golden.WriteMetrics(t, expectedFile, actualMetrics)
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+}
+
+func TestGetVectorSearchStats(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	c := &postgreSQLClient{client: db}
+
+	rows := sqlmock.NewRows([]string{"distance_function", "calls", "total_exec_time", "rows_returned"}).
+		AddRow("cosine", int64(50), 8.429, int64(500)).
+		AddRow("l2", int64(50), 10.408, int64(510))
+	mock.ExpectQuery(vectorSearchStatsQuery).WillReturnRows(rows)
+
+	stats, err := c.getVectorSearchStats(t.Context())
+	require.NoError(t, err)
+	require.Len(t, stats, 2)
+
+	assert.Equal(t, "cosine", stats[0].distanceFunction)
+	assert.Equal(t, int64(50), stats[0].calls)
+	// total_exec_time is reported in milliseconds by pg_stat_statements and converted to seconds.
+	assert.InDelta(t, 0.008429, stats[0].totalExecTime, 1e-9)
+	assert.Equal(t, int64(500), stats[0].rowsReturned)
+
+	assert.Equal(t, "l2", stats[1].distanceFunction)
+	assert.Equal(t, int64(50), stats[1].calls)
+	assert.InDelta(t, 0.010408, stats[1].totalExecTime, 1e-9)
+	assert.Equal(t, int64(510), stats[1].rowsReturned)
+
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetVectorInsertStats(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	c := &postgreSQLClient{client: db}
+
+	rows := sqlmock.NewRows([]string{"rows", "total_exec_time"}).
+		AddRow(int64(1234), 56.789)
+	mock.ExpectQuery(vectorInsertStatsQuery).WillReturnRows(rows)
+
+	stats, err := c.getVectorInsertStats(t.Context())
+	require.NoError(t, err)
+	require.Len(t, stats, 1)
+
+	assert.Equal(t, int64(1234), stats[0].rows)
+	// total_exec_time is reported in milliseconds by pg_stat_statements and converted to seconds.
+	assert.InDelta(t, 0.056789, stats[0].totalExecTime, 1e-9)
+
+	require.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestScraperNoDatabaseSingle(t *testing.T) {
@@ -1407,6 +1495,16 @@ func (m *mockClient) getFunctionStats(ctx context.Context, database string) (map
 	return args.Get(0).(map[functionIdentifer]functionStat), args.Error(1)
 }
 
+func (m *mockClient) getVectorSearchStats(ctx context.Context) ([]vectorSearchStat, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]vectorSearchStat), args.Error(1)
+}
+
+func (m *mockClient) getVectorInsertStats(ctx context.Context) ([]vectorInsertStat, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]vectorInsertStat), args.Error(1)
+}
+
 func (m *mockClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
 	args := m.Called(ctx)
 	return args.Get(0).(*bgStat), args.Error(1)
@@ -1669,6 +1767,30 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 			},
 		}
 		m.On("getFunctionStats", mock.Anything, database).Return(functionStats, nil)
+
+		vectorSearchStats := []vectorSearchStat{
+			{
+				distanceFunction: "cosine",
+				calls:            int64(index + 60),
+				totalExecTime:    float64(index) + 0.5,
+				rowsReturned:     int64(index + 600),
+			},
+			{
+				distanceFunction: "l2",
+				calls:            int64(index + 61),
+				totalExecTime:    float64(index) + 1.5,
+				rowsReturned:     int64(index + 610),
+			},
+		}
+		m.On("getVectorSearchStats", mock.Anything).Return(vectorSearchStats, nil)
+
+		vectorInsertStats := []vectorInsertStat{
+			{
+				rows:          int64(index + 70),
+				totalExecTime: float64(index) + 2.5,
+			},
+		}
+		m.On("getVectorInsertStats", mock.Anything).Return(vectorInsertStats, nil)
 	}
 }
 
@@ -1749,7 +1871,7 @@ func TestResolveServiceInstanceSeed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.Endpoint = tt.endpoint
+			cfg.AddrConfig.Endpoint = tt.endpoint
 			assert.Equal(t, tt.expected, resolveServiceInstanceSeed(cfg, zap.NewNop()))
 		})
 	}
@@ -1760,8 +1882,8 @@ func TestResolveUnixServiceInstanceSeed(t *testing.T) {
 	require.NoError(t, err)
 	unixSeed := func(endpoint string) string {
 		cfg := createDefaultConfig().(*Config)
-		cfg.Endpoint = endpoint
-		cfg.Transport = confignet.TransportTypeUnix
+		cfg.AddrConfig.Endpoint = endpoint
+		cfg.AddrConfig.Transport = confignet.TransportTypeUnix
 		return resolveServiceInstanceSeed(cfg, zap.NewNop())
 	}
 
@@ -1773,7 +1895,7 @@ func TestResolveUnixServiceInstanceSeed(t *testing.T) {
 	assert.Equal(t, strings.Join([]string{"unix", hostname, "var/run/postgresql"}, "\x00"), unixSeed("var/run/postgresql"))
 
 	tcpConfig := createDefaultConfig().(*Config)
-	tcpConfig.Endpoint = "var/run/postgresql:5432"
+	tcpConfig.AddrConfig.Endpoint = "var/run/postgresql:5432"
 	assert.NotEqual(t, seed, resolveServiceInstanceSeed(tcpConfig, zap.NewNop()))
 }
 
@@ -1783,7 +1905,7 @@ func TestNewPostgreSQLScraperSemconvServiceInstanceID(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "[::1]:5432"
+	cfg.AddrConfig.Endpoint = "[::1]:5432"
 	scraper, err := newPostgreSQLScraper(
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
@@ -1804,8 +1926,8 @@ func TestNewPostgreSQLScraperSemconvUnixServiceInstanceID(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "var/run/postgresql:5432"
-	cfg.Transport = confignet.TransportTypeUnix
+	cfg.AddrConfig.Endpoint = "var/run/postgresql:5432"
+	cfg.AddrConfig.Transport = confignet.TransportTypeUnix
 	scraper, err := newPostgreSQLScraper(
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
@@ -1822,7 +1944,7 @@ func TestNewPostgreSQLScraperSemconvUnixServiceInstanceID(t *testing.T) {
 
 func TestSetupSemconvResourceBuilder(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "127.0.0.1:5432"
+	cfg.AddrConfig.Endpoint = "127.0.0.1:5432"
 	serviceInstanceID := uuid.NewSHA1(otelNamespaceUUID, []byte("collector-host:5432")).String()
 	scraper := &postgreSQLScraper{
 		logger:            zap.NewNop(),
@@ -1907,8 +2029,8 @@ func TestServerEndpointAttributes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.Endpoint = tt.endpoint
-			cfg.Transport = tt.transport
+			cfg.AddrConfig.Endpoint = tt.endpoint
+			cfg.AddrConfig.Transport = tt.transport
 			address, port, err := serverEndpointAttributes(cfg)
 			if tt.wantErr {
 				require.Error(t, err)

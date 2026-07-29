@@ -175,6 +175,7 @@ body:
       - pkg/stanza
       - pkg/stanza/fileconsumer
       - pkg/stanza/operator/input/journald
+      - pkg/stanza/operator/input/tcp
       - pkg/status
       - pkg/translator/azure
       - pkg/translator/azurelogs
@@ -267,6 +268,7 @@ body:
       - receiver/collectd
       - receiver/couchdb
       - receiver/datadog
+      - receiver/dnscheck
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/envoyals
