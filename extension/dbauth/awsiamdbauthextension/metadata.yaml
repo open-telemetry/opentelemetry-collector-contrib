@@ -1,4 +1,4 @@
-type: aws_iam_dbauth
+type: aws_iam_db_auth
 
 status:
   class: extension

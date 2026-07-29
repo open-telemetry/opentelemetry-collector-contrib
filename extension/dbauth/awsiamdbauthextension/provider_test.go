@@ -29,11 +29,10 @@ func staticCredentials() aws.CredentialsProvider {
 	})
 }
 
-func newTestExtension(c *Config, credentials aws.CredentialsProvider) *iamExtension {
+func newTestExtension(region string, credentials aws.CredentialsProvider) *iamExtension {
 	return &iamExtension{
-		cfg: c,
 		awsConfig: aws.Config{
-			Region:      c.Region,
+			Region:      region,
 			Credentials: credentials,
 		},
 	}
@@ -53,13 +52,13 @@ func newProviderExtension(t *testing.T, cfg *Config) dbauth.Provider {
 	ext, err := createExtension(t.Context(), extension.Settings{}, cfg)
 	require.NoError(t, err)
 	p, ok := ext.(dbauth.Provider)
-	require.True(t, ok, "the aws_iam_dbauth extension must implement dbauth.Provider")
+	require.True(t, ok, "the aws_iam_db_auth extension must implement dbauth.Provider")
 	return p
 }
 
 func TestFactory_TypeAndStability(t *testing.T) {
 	f := NewFactory()
-	assert.Equal(t, "aws_iam_dbauth", f.Type().String())
+	assert.Equal(t, "aws_iam_db_auth", f.Type().String())
 }
 
 func TestFactory_DefaultConfig(t *testing.T) {
@@ -81,7 +80,7 @@ func TestExtension_StartShutdownNoop(t *testing.T) {
 }
 
 func TestGetCredential(t *testing.T) {
-	e := newTestExtension(&Config{Region: "us-east-1"}, staticCredentials())
+	e := newTestExtension("us-east-1", staticCredentials())
 
 	earliestExpiry := time.Now().Add(rdsTokenLifetime)
 	cred, err := e.GetCredential(t.Context(), dbauth.Request{Endpoint: "db:5432", Username: "monitor"})
@@ -104,44 +103,12 @@ func TestGetCredential(t *testing.T) {
 
 func TestGetCredential_MintError(t *testing.T) {
 	sentinel := errors.New("mint failed")
-	e := newTestExtension(&Config{Region: "us-east-1"}, aws.CredentialsProviderFunc(
+	e := newTestExtension("us-east-1", aws.CredentialsProviderFunc(
 		func(context.Context) (aws.Credentials, error) {
 			return aws.Credentials{}, sentinel
 		},
 	))
 	_, err := e.GetCredential(t.Context(), dbauth.Request{Endpoint: "db:5432", Username: "monitor"})
 	require.ErrorIs(t, err, sentinel)
-	assert.ErrorContains(t, err, `aws_iam_dbauth: mint RDS token for "db:5432"`)
-}
-
-func TestGetCredential_EndpointAndDBUserFromConfig(t *testing.T) {
-	// When the receiver makes a request with no endpoint/username, the extension's
-	// own configured endpoint and db_user are used — the fallback source.
-	e := newTestExtension(
-		&Config{Region: "us-east-1", Endpoint: "cfg-db:5432", DBUser: "cfg_user"},
-		staticCredentials(),
-	)
-
-	cred, err := e.GetCredential(t.Context(), dbauth.Request{})
-	require.NoError(t, err)
-	u := parseToken(t, cred.Secret)
-	assert.Equal(t, "cfg-db:5432", u.Host)
-	assert.Equal(t, "cfg_user", u.Query().Get("DBUser"))
-}
-
-func TestGetCredential_RequestOutranksConfigEndpointAndDBUser(t *testing.T) {
-	// The receiver's per-connection request outranks the extension's own configured
-	// endpoint/db_user: a receiver that supplies its own values gets those, not the
-	// extension's provider-wide defaults.
-	e := newTestExtension(
-		&Config{Region: "us-east-1", Endpoint: "cfg-db:5432", DBUser: "cfg_user"},
-		staticCredentials(),
-	)
-
-	cred, err := e.GetCredential(t.Context(),
-		dbauth.Request{Endpoint: "req-db:5432", Username: "req_user"})
-	require.NoError(t, err)
-	u := parseToken(t, cred.Secret)
-	assert.Equal(t, "req-db:5432", u.Host)
-	assert.Equal(t, "req_user", u.Query().Get("DBUser"))
+	assert.ErrorContains(t, err, `aws_iam_db_auth: mint RDS token for "db:5432"`)
 }

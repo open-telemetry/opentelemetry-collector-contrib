@@ -24,12 +24,11 @@ import (
 // rdsTokenLifetime is the lifetime AWS gives an RDS IAM auth token.
 const rdsTokenLifetime = 15 * time.Minute
 
-// iamExtension is the aws_iam_dbauth provider. It is a Collector extension (so it lives
+// iamExtension is the aws_iam_db_auth provider. It is a Collector extension (so it lives
 // in the host extension map) that also implements dbauth.Provider. It mints
 // short-lived RDS IAM auth tokens on demand and supplies them as the connection
 // secret.
 type iamExtension struct {
-	cfg       *Config
 	awsConfig aws.Config
 }
 
@@ -45,24 +44,13 @@ func (*iamExtension) Shutdown(context.Context) error              { return nil }
 // and returns it as the Secret. Username is nil — the consumer uses its own
 // configured username.
 //
-// The endpoint and database user are taken from the per-connection dbauth.Request
-// when it supplies them; otherwise they fall back to the extension's own config.
-// The region has no request source and comes only from the extension config,
-// where it is required (validated at load).
+// The endpoint and database user are taken from the per-connection dbauth.Request.
+// The region comes from the extension config, where it is required.
 func (e *iamExtension) GetCredential(ctx context.Context, req dbauth.Request) (*dbauth.Credential, error) {
-	endpoint := e.cfg.Endpoint
-	if req.Endpoint != "" {
-		endpoint = req.Endpoint
-	}
-	dbUser := e.cfg.DBUser
-	if req.Username != "" {
-		dbUser = req.Username
-	}
-
 	issuedAt := time.Now()
-	token, err := auth.BuildAuthToken(ctx, endpoint, e.awsConfig.Region, dbUser, e.awsConfig.Credentials)
+	token, err := auth.BuildAuthToken(ctx, req.Endpoint, e.awsConfig.Region, req.Username, e.awsConfig.Credentials)
 	if err != nil {
-		return nil, fmt.Errorf("aws_iam_dbauth: mint RDS token for %q: %w", endpoint, err)
+		return nil, fmt.Errorf("aws_iam_db_auth: mint RDS token for %q: %w", req.Endpoint, err)
 	}
 	notAfter := issuedAt.Add(rdsTokenLifetime)
 	return &dbauth.Credential{

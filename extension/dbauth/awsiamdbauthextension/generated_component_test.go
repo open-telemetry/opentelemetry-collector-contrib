@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
-var typ = component.MustNewType("aws_iam_dbauth")
+var typ = component.MustNewType("aws_iam_db_auth")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())

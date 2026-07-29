@@ -29,61 +29,55 @@ The extension implements `dbauth.Provider`. It is declared once, listed in
 `service.extensions`, and carries the **provider-wide** config (the required AWS
 `region`). Receivers reference it by component ID and resolve it from the host
 extension map at their `Start()`, without importing this package. To vary the
-region across receivers, declare multiple named instances (`aws_iam_dbauth`,
-`aws_iam_dbauth/west`) and point each receiver at the one it needs; there is no inline
+region across receivers, declare multiple named instances (`aws_iam_db_auth`,
+`aws_iam_db_auth/west`) and point each receiver at the one it needs; there is no inline
 override in the `db_auth` block.
 
-The **per-connection** inputs — the database endpoint and user — are normally
-not set here: the receiver passes its own endpoint and username with each
-credential request. They may still be pinned on the extension when needed; see the
-field table below for the precedence. The AWS config and default credential chain
-(ECS task role, EC2 instance profile, IRSA) are initialized once when the
+The **per-connection** inputs — the database endpoint and user — are passed by
+the receiver with each credential request. The AWS config and default credential
+chain (ECS task role, EC2 instance profile, IRSA) are initialized once when the
 extension is created. A token is minted locally for each credential request.
 
 ## Configuration
 
 ```yaml
 extensions:
-  aws_iam_dbauth:                       # declared once, provider-wide config
+  aws_iam_db_auth:                      # declared once, provider-wide config
     region: us-east-1
-  aws_iam_dbauth/west:                  # a second instance for a different region
+  aws_iam_db_auth/west:                 # a second instance for a different region
     region: us-west-2
 
 receivers:
   postgresql/this:
     endpoint: this-db.123456789012.us-east-1.rds.amazonaws.com:5432
     username: monitor
-    db_auth: aws_iam_dbauth             # reference the extension by ID
+    db_auth: aws_iam_db_auth            # reference the extension by ID
   postgresql/another:
     endpoint: another-db.123456789012.us-west-2.rds.amazonaws.com:5432
     username: reader
-    db_auth: aws_iam_dbauth/west        # reference a differently-configured instance
+    db_auth: aws_iam_db_auth/west       # reference a differently-configured instance
 
 exporters:
   debug: {}
 
 service:
-  extensions: [aws_iam_dbauth, aws_iam_dbauth/west]
+  extensions: [aws_iam_db_auth, aws_iam_db_auth/west]
   pipelines:
     metrics:
       receivers: [postgresql/this, postgresql/another]
       exporters: [debug]
 ```
 
-Adding a database in the same region is one more receiver with `db_auth: aws_iam_dbauth`
-— the single `aws_iam_dbauth:` declaration covers all of them. A database in a different
-region references a separate declared instance (`aws_iam_dbauth/west` above).
+Adding a database in the same region is one more receiver with `db_auth: aws_iam_db_auth`
+— the single `aws_iam_db_auth:` declaration covers all of them. A database in a different
+region references a separate declared instance (`aws_iam_db_auth/west` above).
 
-| Field      | Required | Description |
-| ---------- | -------- | ----------- |
-| `region`   | yes      | AWS region of the database. Required on the extension; a token cannot be minted without it, so it is validated at config load. |
-| `endpoint` | no       | Database endpoint (`host:port`) the token is minted for. Normally supplied by the receiver from its own `endpoint`; set it here only as a fallback for requests that carry no endpoint. |
-| `db_user`  | no       | Database user the token authenticates. Normally supplied by the receiver from its own `username`; set it here only as a fallback for requests that carry no username. |
+| Field    | Required | Description |
+| -------- | -------- | ----------- |
+| `region` | yes      | AWS region of the database. Required on the extension; a token cannot be minted without it, so it is validated at config load. |
 
-The endpoint and database user are normally supplied by the consuming receiver
-(from its own `endpoint` and `username`), so they need not be configured here. Each
-is resolved from the receiver's own request (`endpoint`/`username`) when present,
-falling back to the extension's config otherwise. The minted token is mutually
+The endpoint and database user are supplied by the consuming receiver in each
+request, from its own `endpoint` and `username`. The minted token is mutually
 exclusive with a static `password` on the receiver.
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
