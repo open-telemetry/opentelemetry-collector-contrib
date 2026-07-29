@@ -72,7 +72,7 @@ func (*localFileStorage) Shutdown(context.Context) error {
 }
 
 // GetClient returns a storage client for an individual component
-func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, ent component.ID, name string) (storage.Client, error) {
+func (lfs *localFileStorage) GetClient(ctx context.Context, kind component.Kind, ent component.ID, name string) (storage.Client, error) {
 	var rawName string
 	if name == "" {
 		rawName = fmt.Sprintf("%s_%s_%s", kindString(kind), ent.Type(), ent.Name())
@@ -102,7 +102,7 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 
 	// Perform on_start compaction if configured
 	if lfs.cfg.Compaction.OnStart {
-		client, err = lfs.compactOnStart(client, absoluteName)
+		client, err = lfs.compactOnStart(ctx, client, absoluteName)
 		if err != nil {
 			lfs.logger.Error("compaction on start failed", zap.Error(err))
 			if client == nil {
@@ -114,7 +114,7 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 	return client, nil
 }
 
-func (lfs *localFileStorage) compactOnStart(client *fileStorageClient, absoluteName string) (recoveredClient *fileStorageClient, err error) {
+func (lfs *localFileStorage) compactOnStart(ctx context.Context, client *fileStorageClient, absoluteName string) (recoveredClient *fileStorageClient, err error) {
 	recoveredClient = client
 	defer func() {
 		if r := recover(); r != nil {
@@ -122,7 +122,7 @@ func (lfs *localFileStorage) compactOnStart(client *fileStorageClient, absoluteN
 				zap.String("file", absoluteName),
 				zap.Any("panic", r))
 
-			if closeErr := recoveredClient.Close(context.Background()); closeErr != nil {
+			if closeErr := recoveredClient.Close(ctx); closeErr != nil {
 				lfs.logger.Error("failed to close corrupted database after compaction panic", zap.Error(closeErr))
 			}
 
