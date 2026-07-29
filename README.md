@@ -161,5 +161,3 @@ when making the final approval decision.
 
 Marking the PR with the `ready to merge` label should only happen (by triagers/approvers/maintainers)
 once there is at least one approval from an approver, as per the description above. 
-
-

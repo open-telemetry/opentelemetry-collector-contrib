@@ -24,7 +24,7 @@ import (
 type localFileStorage struct {
 	cfg    *Config
 	logger *zap.Logger
-	// compactFunc allows tests to inject a custom compaction function to simulate panics
+	// compactFunc is the compaction entry point and can be replaced by tests.
 	compactFunc func(*fileStorageClient, string, time.Duration, int64) error
 }
 
@@ -102,46 +102,42 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 
 	// Perform on_start compaction if configured
 	if lfs.cfg.Compaction.OnStart {
-		// Wrap compaction with panic recovery. If compaction panics (e.g., due to database corruption),
-		// close the corrupted client and recreate through the existing backup-and-recreate flow.
-		var compactionErr error
-		client, compactionErr = func() (recoveredClient *fileStorageClient, err error) {
-			recoveredClient = client
-			defer func() {
-				if r := recover(); r != nil {
-					lfs.logger.Warn("panic during on_start compaction, database may be corrupted",
-						zap.String("file", absoluteName),
-						zap.Any("panic", r))
-
-					// Close the corrupted database to release resources
-					if closeErr := recoveredClient.Close(context.Background()); closeErr != nil {
-						lfs.logger.Error("failed to close corrupted database after compaction panic", zap.Error(closeErr))
-					}
-
-					// Reuse the existing backup-and-recreate helper if recreate is enabled
-					if lfs.cfg.Recreate {
-						recoveredClient, err = lfs.backupAndRecreateClient(absoluteName)
-					} else {
-						recoveredClient = nil
-						err = fmt.Errorf("compaction failed due to panic, database may be corrupted: %v", r)
-					}
-				}
-			}()
-
-			err = lfs.compactFunc(recoveredClient, lfs.cfg.Compaction.Directory, lfs.cfg.Timeout, lfs.cfg.Compaction.MaxTransactionSize)
-			return
-		}()
-
-		if compactionErr != nil {
-			lfs.logger.Error("compaction on start failed", zap.Error(compactionErr))
-			// If we failed to recreate after a panic, return the error
+		client, err = lfs.compactOnStart(client, absoluteName)
+		if err != nil {
+			lfs.logger.Error("compaction on start failed", zap.Error(err))
 			if client == nil {
-				return nil, compactionErr
+				return nil, err
 			}
 		}
 	}
 
 	return client, nil
+}
+
+func (lfs *localFileStorage) compactOnStart(client *fileStorageClient, absoluteName string) (recoveredClient *fileStorageClient, err error) {
+	recoveredClient = client
+	defer func() {
+		if r := recover(); r != nil {
+			lfs.logger.Warn("panic during on_start compaction, database may be corrupted",
+				zap.String("file", absoluteName),
+				zap.Any("panic", r))
+
+			if closeErr := recoveredClient.Close(context.Background()); closeErr != nil {
+				lfs.logger.Error("failed to close corrupted database after compaction panic", zap.Error(closeErr))
+			}
+
+			if lfs.cfg.Recreate {
+				recoveredClient, err = lfs.backupAndRecreateClient(absoluteName)
+				return
+			}
+
+			recoveredClient = nil
+			err = fmt.Errorf("compaction failed due to panic, database may be corrupted: %v", r)
+		}
+	}()
+
+	err = lfs.compactFunc(client, lfs.cfg.Compaction.Directory, lfs.cfg.Timeout, lfs.cfg.Compaction.MaxTransactionSize)
+	return
 }
 
 // createClientWithPanicRecovery attempts to create a client, and if recreate is enabled
