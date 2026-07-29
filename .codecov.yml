@@ -689,6 +689,10 @@ component_management:
     name: receiver_datadog
     paths:
     - receiver/datadogreceiver/**
+  - component_id: receiver_dnscheck
+    name: receiver_dnscheck
+    paths:
+    - receiver/dnscheckreceiver/**
   - component_id: receiver_dockerstats
     name: receiver_dockerstats
     paths:

@@ -262,6 +262,7 @@ components:
     - receiver/collectd
     - receiver/couchdb
     - receiver/datadog
+    - receiver/dns_check
     - receiver/docker_stats
     - receiver/elasticsearch
     - receiver/envoy_als

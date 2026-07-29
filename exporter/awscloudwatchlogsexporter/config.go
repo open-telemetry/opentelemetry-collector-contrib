@@ -18,7 +18,7 @@ import (
 
 // Config represent a configuration for the CloudWatch logs exporter.
 type Config struct {
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	BackOffConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// LogGroupName is the name of CloudWatch log group which defines group of log streams
 	// that share the same retention, monitoring, and access control settings.

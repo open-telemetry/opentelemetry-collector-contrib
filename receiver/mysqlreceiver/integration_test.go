@@ -110,7 +110,7 @@ func TestIntegration(t *testing.T) {
 					func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 						rCfg := cfg.(*Config)
 						rCfg.CollectionInterval = time.Second
-						rCfg.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, mysqlPort))
+						rCfg.AddrConfig.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, mysqlPort))
 						rCfg.Username = "otel"
 						rCfg.Password = "otel"
 						if tc.tlsEnabled {
