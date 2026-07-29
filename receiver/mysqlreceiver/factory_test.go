@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -29,7 +29,7 @@ func TestValidConfig(t *testing.T) {
 	cfg.Username = "otel"
 	cfg.Password = "otel"
 	cfg.AddrConfig.Endpoint = "localhost:3306"
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func TestCreateMetrics(t *testing.T) {

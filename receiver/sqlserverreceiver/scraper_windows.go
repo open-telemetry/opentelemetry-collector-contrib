@@ -22,10 +22,11 @@ import (
 
 // SQL Server Perf Counter (PC) Scraper. This is used to scrape metrics from Windows Perf Counters.
 type sqlServerPCScraper struct {
-	logger           *zap.Logger
-	config           *Config
-	watcherRecorders []watcherRecorder
-	mb               *metadata.MetricsBuilder
+	logger            *zap.Logger
+	config            *Config
+	watcherRecorders  []watcherRecorder
+	mb                *metadata.MetricsBuilder
+	serviceInstanceID string
 }
 
 // watcherRecorder is a struct containing perf counter watcher along with corresponding value recorder.
@@ -47,10 +48,16 @@ const (
 
 // newSQLServerPCScraper returns a new sqlServerPCScraper.
 func newSQLServerPCScraper(params receiver.Settings, cfg *Config) *sqlServerPCScraper {
+	serviceInstanceID, err := computeServiceInstanceID(cfg)
+	if err != nil {
+		params.Logger.Warn("Failed to compute service.instance.id", zap.Error(err))
+		serviceInstanceID = "unknown:1433"
+	}
 	return &sqlServerPCScraper{
-		logger: params.Logger,
-		config: cfg,
-		mb:     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		logger:            params.Logger,
+		config:            cfg,
+		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		serviceInstanceID: serviceInstanceID,
 	}
 }
 
@@ -151,6 +158,7 @@ func (s *sqlServerPCScraper) emitMetricGroup(recorders []curriedRecorder, databa
 	rb := s.mb.NewResourceBuilder()
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
+	rb.SetServiceInstanceID(s.serviceInstanceID)
 	if databaseName != "" {
 		rb.SetSqlserverDatabaseName(databaseName)
 	}
