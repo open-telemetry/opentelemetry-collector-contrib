@@ -24,7 +24,7 @@ func TestRedisRunnable(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:6379"
+	cfg.AddrConfig.Endpoint = "localhost:6379"
 	rs := &redisScraper{mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)}
 	runner, err := newRedisScraperWithClient(newFakeClient(), settings, cfg)
 	require.NoError(t, err)
