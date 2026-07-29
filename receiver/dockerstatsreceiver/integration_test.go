@@ -138,7 +138,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	container := createNginxContainer(ctx, t)
 
 	f, config := factory()
-	config.ExcludedImages = append(config.ExcludedImages, "*nginx*")
+	config.Config.ExcludedImages = append(config.Config.ExcludedImages, "*nginx*")
 
 	consumer := new(consumertest.MetricsSink)
 	recv, err := f.CreateMetrics(ctx, params, config, consumer)

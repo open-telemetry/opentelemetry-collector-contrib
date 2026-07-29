@@ -29,7 +29,7 @@ type sshcheckScraper struct {
 // start starts the scraper by creating a new SSH Client on the scraper
 func (s *sshcheckScraper) start(_ context.Context, host component.Host) error {
 	var err error
-	s.Client, err = s.ToClient(host, s.settings)
+	s.Client, err = s.SSHClientSettings.ToClient(host, s.settings)
 	return err
 }
 
@@ -37,7 +37,7 @@ func (s *sshcheckScraper) scrapeSSH(now pcommon.Timestamp) error {
 	var success int64
 
 	start := time.Now()
-	err := s.Dial(s.Endpoint)
+	err := s.Dial(s.SSHClientSettings.Endpoint)
 	if err == nil {
 		success = 1
 	}
@@ -119,7 +119,7 @@ func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err er
 	}
 
 	rb := s.mb.NewResourceBuilder()
-	rb.SetSSHEndpoint(s.Endpoint)
+	rb.SetSSHEndpoint(s.SSHClientSettings.Endpoint)
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
 

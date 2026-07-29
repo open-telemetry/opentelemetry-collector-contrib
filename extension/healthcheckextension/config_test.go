@@ -81,7 +81,7 @@ func TestLoadConfigLegacy(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "response-body"),
 			expected: func() component.Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.ResponseBody = &healthcheck.ResponseBodyConfig{
+				cfg.Config.ResponseBody = &healthcheck.ResponseBodyConfig{
 					Healthy:   "I'm OK",
 					Unhealthy: "I'm not well",
 				}
@@ -116,7 +116,7 @@ func TestLoadConfigV2WithoutGate(t *testing.T) {
 	sub, err := cm.Sub("health_check/v2-http-only")
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	assert.NotNil(t, cfg.(*Config).HTTPConfig)
+	assert.NotNil(t, cfg.(*Config).Config.HTTPConfig)
 
 	// Without the feature gate, v2 config should cause a validation error.
 	// This makes it immediately obvious to users that the configuration is invalid.

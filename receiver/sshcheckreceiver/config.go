@@ -27,7 +27,7 @@ var (
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	configssh.SSHClientSettings    `mapstructure:",squash"`
+	SSHClientSettings              configssh.SSHClientSettings `mapstructure:",squash"`
 
 	CheckSFTP            bool                          `mapstructure:"check_sftp"`
 	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
@@ -39,19 +39,19 @@ func (c Config) SFTPEnabled() bool {
 }
 
 func (c Config) Validate() (err error) {
-	if c.Endpoint == "" {
+	if c.SSHClientSettings.Endpoint == "" {
 		err = multierr.Append(err, errMissingEndpoint)
-	} else if strings.Contains(c.Endpoint, " ") {
+	} else if strings.Contains(c.SSHClientSettings.Endpoint, " ") {
 		err = multierr.Append(err, errInvalidEndpoint)
-	} else if _, _, splitErr := net.SplitHostPort(c.Endpoint); splitErr != nil {
+	} else if _, _, splitErr := net.SplitHostPort(c.SSHClientSettings.Endpoint); splitErr != nil {
 		err = multierr.Append(splitErr, errInvalidEndpoint)
 	}
 
-	if c.Username == "" {
+	if c.SSHClientSettings.Username == "" {
 		err = multierr.Append(err, errMissingUsername)
 	}
 
-	if c.Password == "" && c.KeyFile == "" {
+	if c.SSHClientSettings.Password == "" && c.SSHClientSettings.KeyFile == "" {
 		err = multierr.Append(err, errMissingPasswordAndKeyFile)
 	}
 

@@ -11,7 +11,7 @@ import (
 
 // Config defines configuration for the Google client auth extension.
 type Config struct {
-	googleclientauthextension.Config `mapstructure:",squash"`
+	Config googleclientauthextension.Config `mapstructure:",squash"`
 }
 
 func (cfg *Config) Validate() error {
