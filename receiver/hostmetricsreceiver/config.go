@@ -20,8 +20,8 @@ import (
 
 // Config defines configuration for HostMetrics receiver.
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Scrapers                       map[component.Type]component.Config `mapstructure:"-"`
+	ControllerConfig scraperhelper.ControllerConfig      `mapstructure:",squash"`
+	Scrapers         map[component.Type]component.Config `mapstructure:"-"`
 	// RootPath is the host's root directory (linux only).
 	RootPath string `mapstructure:"root_path"`
 
