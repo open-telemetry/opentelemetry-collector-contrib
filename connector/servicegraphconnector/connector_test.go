@@ -1314,8 +1314,6 @@ func TestConnectorConsume_BatchConsumerDifferentTraceSameSpanID(t *testing.T) {
 	span2.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	span2.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
 
-	require.NoError(t, p.ConsumeTraces(t.Context(), tracesProd))
-
 	tracesCons := ptrace.NewTraces()
 	rsCons := tracesCons.ResourceSpans().AppendEmpty()
 	rsCons.Resource().Attributes().PutStr("service.name", "consumer-service")
@@ -1335,6 +1333,7 @@ func TestConnectorConsume_BatchConsumerDifferentTraceSameSpanID(t *testing.T) {
 	link2.SetSpanID(sharedSpanID)
 
 	require.NoError(t, p.ConsumeTraces(t.Context(), tracesCons))
+	require.NoError(t, p.ConsumeTraces(t.Context(), tracesProd))
 
 	md, err := p.buildMetrics()
 	require.NoError(t, err)

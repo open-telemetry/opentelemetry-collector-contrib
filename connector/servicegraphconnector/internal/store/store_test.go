@@ -149,7 +149,7 @@ func TestStoreConcurrency(t *testing.T) {
 		key := NewKey(pcommon.TraceID([16]byte{byte(rand.IntN(32))}), pcommon.SpanID([8]byte{1, 2, 3}))
 
 		_, err := s.UpsertEdge(key, func(e *Edge) {
-			e.ClientService = hex.EncodeToString(key.tid[:])
+			e.ClientService = hex.EncodeToString(key.traceID[:])
 		})
 		assert.NoError(t, err)
 	})

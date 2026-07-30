@@ -17,17 +17,48 @@ var ErrTooManyItems = errors.New("too many items")
 
 type Callback func(e *Edge)
 
+type keyKind uint8
+
+const (
+	standardKey keyKind = iota
+	linkedConsumerKey
+)
+
 type Key struct {
-	tid pcommon.TraceID
-	sid pcommon.SpanID
+	kind keyKind
+
+	traceID pcommon.TraceID
+	spanID  pcommon.SpanID
+
+	linkedTraceID pcommon.TraceID
+	linkedSpanID  pcommon.SpanID
 }
 
-func (k *Key) SpanIDIsEmpty() bool {
-	return k.sid.IsEmpty()
+func (k Key) SpanIDIsEmpty() bool {
+	return k.spanID.IsEmpty()
 }
 
-func NewKey(tid pcommon.TraceID, sid pcommon.SpanID) Key {
-	return Key{tid: tid, sid: sid}
+func NewKey(traceID pcommon.TraceID, spanID pcommon.SpanID) Key {
+	return Key{
+		kind:    standardKey,
+		traceID: traceID,
+		spanID:  spanID,
+	}
+}
+
+func NewLinkedConsumerKey(
+	consumerTraceID pcommon.TraceID,
+	consumerSpanID pcommon.SpanID,
+	producerTraceID pcommon.TraceID,
+	producerSpanID pcommon.SpanID,
+) Key {
+	return Key{
+		kind:          linkedConsumerKey,
+		traceID:       consumerTraceID,
+		spanID:        consumerSpanID,
+		linkedTraceID: producerTraceID,
+		linkedSpanID:  producerSpanID,
+	}
 }
 
 type Store struct {

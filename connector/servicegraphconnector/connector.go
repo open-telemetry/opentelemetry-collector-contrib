@@ -342,11 +342,13 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 						producerSpanID := link.SpanID()
 						producerKey := store.NewKey(producerTraceID, producerSpanID)
 
-						// XOR the consumer span ID with the linked producer span ID to guarantee
-						// a unique key for every link in a batch-consume scenario.
-						uniqueSpanID := combineSpanIDs(span.SpanID(), producerTraceID, producerSpanID)
 						consumerTraceID := span.TraceID()
-						consumerKey := store.NewKey(consumerTraceID, uniqueSpanID)
+						consumerKey := store.NewLinkedConsumerKey(
+							span.TraceID(),
+							span.SpanID(),
+							producerTraceID,
+							producerSpanID,
+						)
 
 						isNew, err = p.store.UpsertEdge(consumerKey, func(e *store.Edge) {
 							e.TraceID = consumerTraceID
@@ -888,16 +890,4 @@ func mapDurationsToFloat(vs []time.Duration) []float64 {
 		vsm[i] = durationToFloat(v)
 	}
 	return vsm
-}
-
-// combineSpanIDs creates a unique, deterministic SpanID by XORing the consumer SpanID
-// with both the producer SpanID and the producer TraceID bytes to prevent key collisions
-// when multiple links involve the same SpanID across different traces.
-func combineSpanIDs(consumerSpanID pcommon.SpanID, producerTraceID pcommon.TraceID, producerSpanID pcommon.SpanID) pcommon.SpanID {
-	var combined pcommon.SpanID
-	for i := range 8 {
-		// Mix consumer span ID, producer span ID, and parts of the producer trace ID
-		combined[i] = consumerSpanID[i] ^ producerSpanID[i] ^ producerTraceID[i] ^ producerTraceID[i+8]
-	}
-	return combined
 }
