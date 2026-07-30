@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/k8s_objects
+note: "Keep the watcher in the Kubernetes objects receiver retry when retrieving fresh resource version after a 410 Gone response but fails transiently."
+issues: [49962]
+subtext:
+change_logs: [user]
