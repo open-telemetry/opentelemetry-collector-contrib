@@ -225,7 +225,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 			time.Sleep(2 * time.Second)
 		}
 
-		if time.Since(start) > s.conf.Timeout {
+		if time.Since(start) > s.conf.ControllerConfig.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -312,7 +312,7 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(_ context.Context, now pcommo
 			break
 		}
 
-		if time.Since(start) > s.conf.Timeout {
+		if time.Since(start) > s.conf.ControllerConfig.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -398,7 +398,7 @@ func (s *splunkScraper) scrapeIndexerAvgRate(_ context.Context, now pcommon.Time
 			break
 		}
 
-		if time.Since(start) > s.conf.Timeout {
+		if time.Since(start) > s.conf.ControllerConfig.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -487,7 +487,7 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(_ context.Context, now pcomm
 			break
 		}
 
-		if time.Since(start) > s.conf.Timeout {
+		if time.Since(start) > s.conf.ControllerConfig.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -606,7 +606,7 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(_ context.Context, now pco
 			break
 		}
 
-		if time.Since(start) > s.conf.Timeout {
+		if time.Since(start) > s.conf.ControllerConfig.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -696,7 +696,7 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(_ context.Context, now pco
 			break
 		}
 
-		if time.Since(start) > s.conf.Timeout {
+		if time.Since(start) > s.conf.ControllerConfig.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -812,7 +812,7 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(_ context.Context, 
 			break
 		}
 
-		if time.Since(start) > s.conf.Timeout {
+		if time.Since(start) > s.conf.ControllerConfig.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -898,7 +898,7 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(_ context.Context, no
 			break
 		}
 
-		if time.Since(start) > s.conf.Timeout {
+		if time.Since(start) > s.conf.ControllerConfig.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -984,7 +984,7 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(_ context.Context, now pco
 			break
 		}
 
-		if time.Since(start) > s.conf.Timeout {
+		if time.Since(start) > s.conf.ControllerConfig.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -1070,7 +1070,7 @@ func (s *splunkScraper) scrapeAvgIopsByHost(_ context.Context, now pcommon.Times
 			break
 		}
 
-		if time.Since(start) > s.conf.Timeout {
+		if time.Since(start) > s.conf.ControllerConfig.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -1156,7 +1156,7 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(_ context.Context, now pcom
 			break
 		}
 
-		if time.Since(start) > s.conf.Timeout {
+		if time.Since(start) > s.conf.ControllerConfig.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -2059,7 +2059,7 @@ func (s *splunkScraper) scrapeSearch(_ context.Context, now pcommon.Timestamp, i
 			time.Sleep(2 * time.Second)
 		}
 
-		if time.Since(start) > s.conf.Timeout {
+		if time.Since(start) > s.conf.ControllerConfig.Timeout {
 			s.recordSplunkSearchDurationDataPoint(now, float64(time.Since(start)), i)
 			s.recordSplunkSearchSuccessDataPoint(now, 0, i)
 			errs <- errMaxSearchWaitTimeExceeded
@@ -2081,7 +2081,7 @@ func (s *splunkScraper) scrapeSearch(_ context.Context, now pcommon.Timestamp, i
 	// get the 1 search we submitted
 	entry := metaEntries.Entries[0]
 
-	for entry.Content.DispatchState != StateDone || time.Since(start) < s.conf.Timeout {
+	for entry.Content.DispatchState != StateDone || time.Since(start) < s.conf.ControllerConfig.Timeout {
 		if s.conf.Metrics.SplunkSearchStatus.Enabled {
 			// record for all possible search states
 			var value int64
@@ -2176,7 +2176,7 @@ func (s *splunkScraper) setSearchJobTTLByID(sid string) error {
 
 	form := url.Values{
 		"action": []string{"setttl"},
-		"ttl":    []string{fmt.Sprintf("%d", s.conf.Timeout)},
+		"ttl":    []string{fmt.Sprintf("%d", s.conf.ControllerConfig.Timeout)},
 	}
 	req.Body = io.NopCloser(strings.NewReader(form.Encode()))
 	req.Method = http.MethodPost
@@ -2324,7 +2324,7 @@ func (s *splunkScraper) formatSPLForSearch(search SearchConfig) string {
 		latest := search.Latest
 
 		if earliest == "" {
-			earliest = "-" + formatDurationForSplunk(s.conf.CollectionInterval)
+			earliest = "-" + formatDurationForSplunk(s.conf.ControllerConfig.CollectionInterval)
 		}
 		if latest == "" {
 			latest = "now"
@@ -2368,7 +2368,7 @@ func (s *splunkScraper) injectTstatsTimeRange(spl string, search SearchConfig) s
 	earliest := search.Earliest
 	latest := search.Latest
 	if earliest == "" {
-		earliest = "-" + formatDurationForSplunk(s.conf.CollectionInterval)
+		earliest = "-" + formatDurationForSplunk(s.conf.ControllerConfig.CollectionInterval)
 	}
 	if latest == "" {
 		latest = "now"
@@ -2506,7 +2506,7 @@ func (s *splunkScraper) executeCustomSearch(search SearchConfig, eptType string)
 			break
 		}
 
-		if time.Since(start) > s.conf.Timeout {
+		if time.Since(start) > s.conf.ControllerConfig.Timeout {
 			return nil, errMaxSearchWaitTimeExceeded
 		}
 	}

@@ -22,10 +22,13 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ClientConfig     configtls.ClientConfig         `mapstructure:"tls,omitempty"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	metadata.LogsBuilderConfig    `mapstructure:",squash"`
+	QuerySampleCollection         QuerySampleCollection `mapstructure:"query_sample_collection"`
+	TopQueryCollection            TopQueryCollection    `mapstructure:"top_query_collection,omitempty"`
 	// Deprecated - Transport option will be removed in v0.102.0
 	Hosts                   []confignet.TCPAddrConfig `mapstructure:"hosts"`
 	Scheme                  string                    `mapstructure:"scheme"`
@@ -37,6 +40,23 @@ type Config struct {
 	ReplicaSet              string                    `mapstructure:"replica_set,omitempty"`
 	Timeout                 time.Duration             `mapstructure:"timeout"`
 	DirectConnection        bool                      `mapstructure:"direct_connection"`
+}
+
+type QuerySampleCollection struct {
+	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// TopQueryCollection holds configuration for the db.server.top_query log event collection.
+type TopQueryCollection struct {
+	CollectionInterval     time.Duration `mapstructure:"collection_interval"`
+	MaxQuerySampleCount    int64         `mapstructure:"max_query_sample_count"`
+	MaxExplainEachInterval int64         `mapstructure:"max_explain_each_interval"`
+	TopQueryCount          int64         `mapstructure:"top_query_count"`
+	QueryPlanCacheSize     int           `mapstructure:"query_plan_cache_size"`
+	QueryPlanCacheTTL      time.Duration `mapstructure:"query_plan_cache_ttl"`
 }
 
 func (c *Config) Validate() error {
@@ -65,8 +85,33 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, errors.New("password provided without user"))
 	}
 
-	if _, tlsErr := c.LoadTLSConfig(context.Background()); tlsErr != nil {
+	if c.QuerySampleCollection.MaxRowsPerQuery == 0 {
+		err = multierr.Append(err, errors.New("query_sample_collection.max_rows_per_query must be greater than 0"))
+	}
+
+	if _, tlsErr := c.ClientConfig.LoadTLSConfig(context.Background()); tlsErr != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
+	}
+
+	if c.Events.DbServerTopQuery.Enabled {
+		if c.TopQueryCollection.TopQueryCount <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.top_query_count must be greater than 0"))
+		}
+		if c.TopQueryCollection.MaxQuerySampleCount <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.max_query_sample_count must be greater than 0"))
+		}
+		if c.TopQueryCollection.MaxExplainEachInterval < 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.max_explain_each_interval must not be negative"))
+		}
+		if c.TopQueryCollection.QueryPlanCacheSize < 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.query_plan_cache_size must not be negative"))
+		}
+		if c.TopQueryCollection.CollectionInterval <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.collection_interval must be greater than 0"))
+		}
+		if c.TopQueryCollection.QueryPlanCacheTTL <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.query_plan_cache_ttl must be greater than 0"))
+		}
 	}
 
 	return err
@@ -105,7 +150,7 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 		clientOptions.SetConnectTimeout(c.Timeout)
 	}
 
-	tlsConfig, err := c.LoadTLSConfig(context.Background())
+	tlsConfig, err := c.ClientConfig.LoadTLSConfig(context.Background())
 	if err == nil && tlsConfig != nil {
 		clientOptions.SetTLSConfig(tlsConfig)
 	}

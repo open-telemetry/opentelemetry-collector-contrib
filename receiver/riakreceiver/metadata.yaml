@@ -1,6 +1,5 @@
 display_name: Riak Receiver
 type: riak
-reaggregation_enabled: true
 
 status:
   class: receiver

@@ -112,11 +112,54 @@ func TestHandleHTTPRequestField(t *testing.T) {
 			expectsErr: "failed to parse request url",
 		},
 		{
-			name: "invalid protocol",
+			// Short ALPN token — well-known HTTP variants are normalised to
+			// name="http" + numeric version so telemetry stays consistent with
+			// the HTTP/1.1 form (regression test for #45214).
+			name: "h2 protocol normalised to http/2",
 			request: &httpRequest{
-				Protocol: "invalid",
+				Protocol: "h2",
 			},
-			expectsErr: `expected exactly one "/"`,
+			expectsAttributes: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "2",
+			},
+		},
+		{
+			name: "h2c protocol normalised to http/2",
+			request: &httpRequest{
+				Protocol: "h2c",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "2",
+			},
+		},
+		{
+			name: "h3 protocol normalised to http/3",
+			request: &httpRequest{
+				Protocol: "h3",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "3",
+			},
+		},
+		{
+			// Non-HTTP short ALPN token falls through to the raw-name path.
+			name: "unknown short ALPN token preserved as name",
+			request: &httpRequest{
+				Protocol: "mqtt",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name": "mqtt",
+			},
+		},
+		{
+			name: "invalid protocol — too many slashes",
+			request: &httpRequest{
+				Protocol: "a/b/c",
+			},
+			expectsErr: `at most one "/"`,
 		},
 		{
 			name: "invalid protocol 2",

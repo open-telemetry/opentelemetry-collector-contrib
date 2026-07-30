@@ -1924,14 +1924,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
+                - asInt: "5"
                   attributes:
                     - key: state
                       value:
                         stringValue: committed
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "0"
+                - asInt: "3"
                   attributes:
                     - key: state
                       value:

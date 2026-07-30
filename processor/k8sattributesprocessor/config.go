@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.41.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -18,7 +18,7 @@ import (
 
 // Config defines configuration for k8s attributes processor.
 type Config struct {
-	k8sconfig.APIConfig `mapstructure:",squash"`
+	APIConfig k8sconfig.APIConfig `mapstructure:",squash"`
 
 	// Passthrough mode only annotates resources with the pod IP and
 	// does not try to extract any other metadata. It does not need

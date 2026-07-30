@@ -55,6 +55,49 @@ func TestAssertMetrics_IncludeValues(t *testing.T) {
 	require.Contains(t, err.Error(), "value mismatch")
 }
 
+func TestWriteAssertionFile_IncludeHistogramExplicitBounds(t *testing.T) {
+	m := buildHistogramMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, WriteAssertionFile(t, path, m, IncludeHistogramExplicitBounds()))
+
+	doc, err := readDocument(path)
+	require.NoError(t, err)
+	datapoints := doc.Resources[0].Scopes[0].Metrics[0].Datapoints
+	require.Equal(t, []datapointAssertion{{
+		ExplicitBounds: &[]float64{0.005, 0.01, 0.025},
+	}}, datapoints)
+
+	dp := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0)
+	dp.SetCount(999)
+	dp.SetSum(123.45)
+	dp.SetMin(0.001)
+	dp.SetMax(100)
+	dp.BucketCounts().FromRaw([]uint64{9, 8, 7, 6})
+	require.NoError(t, AssertMetrics(path, m))
+
+	dp.ExplicitBounds().FromRaw([]float64{0.005, 0.02, 0.025})
+	err = AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "explicit_bounds mismatch")
+}
+
+func TestWriteAssertionFile_IncludeEmptyHistogramExplicitBounds(t *testing.T) {
+	m := buildHistogramMetrics()
+	dp := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0)
+	dp.ExplicitBounds().FromRaw([]float64{})
+	dp.BucketCounts().FromRaw([]uint64{10})
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, WriteAssertionFile(t, path, m, IncludeHistogramExplicitBounds()))
+	require.NoError(t, AssertMetrics(path, m))
+
+	dp.ExplicitBounds().FromRaw([]float64{1})
+	dp.BucketCounts().FromRaw([]uint64{0, 10})
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "explicit_bounds mismatch")
+}
+
 func TestAssertMetrics_DetectsMissingMetric(t *testing.T) {
 	m := buildSampleMetrics()
 	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
@@ -334,6 +377,26 @@ func buildSampleMetrics() pmetric.Metrics {
 		dp.SetTimestamp(pcommon.Timestamp(1))
 	}
 
+	return m
+}
+
+func buildHistogramMetrics() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	rm := m.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("scope")
+
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("request.duration")
+	histogram := metric.SetEmptyHistogram()
+	histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	dp := histogram.DataPoints().AppendEmpty()
+	dp.SetCount(10)
+	dp.SetSum(0.5)
+	dp.SetMin(0.001)
+	dp.SetMax(0.2)
+	dp.ExplicitBounds().FromRaw([]float64{0.005, 0.01, 0.025})
+	dp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
 	return m
 }
 

@@ -61,9 +61,9 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	confighttp.ClientConfig   `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	ClientConfig  confighttp.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// AccessToken is the authentication token provided by SignalFx.
 	AccessToken configopaque.String `mapstructure:"access_token"`
@@ -126,7 +126,7 @@ type Config struct {
 
 	// IncludeMetrics defines dpfilter.MetricFilters to override exclusion any of metric.
 	// This option can be used to included metrics that are otherwise dropped by default.
-	// See ./translation/default_metrics.go for a list of metrics that are dropped by default.
+	// See ./internal/translation/default_metrics.yaml for a list of metrics that are dropped by default.
 	IncludeMetrics []dpfilters.MetricFilter `mapstructure:"include_metrics"`
 
 	// ExcludeProperties defines dpfilter.PropertyFilters to prevent inclusion of
@@ -232,7 +232,7 @@ func (cfg *Config) Validate() error {
 			` "ingest_url" and "api_url" should be explicitly set`)
 	}
 
-	if cfg.Timeout < 0 {
+	if cfg.ClientConfig.Timeout < 0 {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 

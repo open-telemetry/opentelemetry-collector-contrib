@@ -562,21 +562,31 @@ The number of used bytes in the pod volume.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| aws.volume.id | [DEPRECATED] The id of the AWS Volume | Any Str | false | - |
-| container.id | Container id used to identify container | Any Str | true | - |
-| fs.type | [DEPRECATED] The filesystem type of the Volume | Any Str | false | - |
-| gce.pd.name | [DEPRECATED] The name of the persistent disk in GCE | Any Str | false | - |
-| glusterfs.endpoints.name | [DEPRECATED] The endpoint name that details Glusterfs topology | Any Str | false | - |
-| glusterfs.path | [DEPRECATED] Glusterfs volume path | Any Str | false | - |
-| k8s.container.name | Container name used by container runtime | Any Str | true | - |
-| k8s.namespace.name | The name of the namespace that the pod is running in | Any Str | true | - |
-| k8s.node.name | The name of the Node | Any Str | true | - |
-| k8s.node.system_container.name | The name of the system container | Any Str | true | - |
-| k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | Any Str | true | - |
-| k8s.pod.name | The name of the Pod | Any Str | true | - |
-| k8s.pod.uid | The UID of the Pod | Any Str | true | - |
-| k8s.volume.name | The name of the Volume | Any Str | true | - |
-| k8s.volume.type | The type of the Volume | Any Str | true | - |
-| partition | [DEPRECATED] The partition in the Volume | Any Str | false | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| aws.volume.id | [DEPRECATED] The id of the AWS Volume | Any Str | false | - | - |
+| container.id | Container id used to identify container | Any Str | true | - | - |
+| fs.type | [DEPRECATED] The filesystem type of the Volume | Any Str | false | - | - |
+| gce.pd.name | [DEPRECATED] The name of the persistent disk in GCE | Any Str | false | - | - |
+| glusterfs.endpoints.name | [DEPRECATED] The endpoint name that details Glusterfs topology | Any Str | false | - | - |
+| glusterfs.path | [DEPRECATED] Glusterfs volume path | Any Str | false | - | - |
+| k8s.container.name | Container name used by container runtime | Any Str | true | - | - |
+| k8s.namespace.name | The name of the namespace that the pod is running in | Any Str | true | - | - |
+| k8s.node.name | The name of the Node | Any Str | true | - | - |
+| k8s.node.system_container.name | The name of the system container | Any Str | true | - | - |
+| k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | Any Str | true | - | - |
+| k8s.pod.name | The name of the Pod | Any Str | true | - | - |
+| k8s.pod.uid | The UID of the Pod | Any Str | true | - | - |
+| k8s.volume.name | The name of the Volume | Any Str | true | - | - |
+| k8s.volume.type | The type of the Volume | Any Str | true | - | - |
+| partition | [DEPRECATED] The partition in the Volume | Any Str | false | - | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.kubeletstats.cpuUsageScrapeBased` | alpha | When enabled, container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage (and the cpu utilization metrics derived from them) are calculated by the receiver as the rate of the corresponding *.cpu.time counter between consecutive scrapes, instead of being read directly from the kubelet's UsageNanoCores value. | v0.156.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49477) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

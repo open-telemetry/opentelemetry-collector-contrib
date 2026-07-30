@@ -4,7 +4,6 @@
 package config
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -28,8 +27,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/provider/envprovider"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
@@ -56,22 +53,7 @@ func Load(configFile string) (Supervisor, error) {
 		return Supervisor{}, errors.New("path to config file cannot be empty")
 	}
 
-	resolverSettings := confmap.ResolverSettings{
-		URIs: []string{configFile},
-		ProviderFactories: []confmap.ProviderFactory{
-			fileprovider.NewFactory(),
-			envprovider.NewFactory(),
-		},
-		ConverterFactories: []confmap.ConverterFactory{},
-		DefaultScheme:      "env",
-	}
-
-	resolver, err := confmap.NewResolver(resolverSettings)
-	if err != nil {
-		return Supervisor{}, err
-	}
-
-	conf, err := resolver.Resolve(context.Background())
+	conf, err := ResolveURI(configFile)
 	if err != nil {
 		return Supervisor{}, err
 	}
@@ -118,7 +100,6 @@ type Capabilities struct {
 	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 	ReportsHeartbeat               bool `mapstructure:"reports_heartbeat"`
 	AcceptsPackages                bool `mapstructure:"accepts_packages"`
-	ReportsPackageStatuses         bool `mapstructure:"reports_package_statuses"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -167,14 +148,13 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
 	}
 
-	// AcceptsPackages and ReportsPackageStatuses are not yet fully implemented.
-	// They are included here for completeness.
+	// AcceptsPackages is not yet fully implemented. It is included here for completeness.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272
+	// AcceptsPackages enables both the AcceptsPackages and ReportsPackageStatuses
+	// OpAMP capabilities; accepting packages without reporting their statuses is not useful.
 	if c.AcceptsPackages {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages
-	}
-	if c.ReportsPackageStatuses {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages |
+			protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
 	}
 
 	return supportedCapabilities
@@ -231,22 +211,26 @@ func (o OpAMPServer) Validate() error {
 }
 
 type Agent struct {
-	Executable              string            `mapstructure:"executable"`
-	InstanceID              string            `mapstructure:"instance_id"`
-	OrphanDetectionInterval time.Duration     `mapstructure:"orphan_detection_interval"`
-	Description             AgentDescription  `mapstructure:"description"`
-	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`
-	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
-	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
-	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
-	UseHUPConfigReload      bool              `mapstructure:"use_hup_config_reload"`
-	ValidateConfig          bool              `mapstructure:"validate_config"`
-	ConfigFiles             []string          `mapstructure:"config_files"`
-	Arguments               []string          `mapstructure:"args"`
-	Env                     map[string]string `mapstructure:"env"`
+	Executable                  string            `mapstructure:"executable"`
+	InstanceID                  string            `mapstructure:"instance_id"`
+	OrphanDetectionInterval     time.Duration     `mapstructure:"orphan_detection_interval"`
+	Description                 AgentDescription  `mapstructure:"description"`
+	ConfigApplyTimeout          time.Duration     `mapstructure:"config_apply_timeout"`
+	BootstrapTimeout            time.Duration     `mapstructure:"bootstrap_timeout"`
+	OpAMPServerPort             int               `mapstructure:"opamp_server_port"`
+	PassthroughLogs             bool              `mapstructure:"passthrough_logs"`
+	CollectorCrashLogSnippetKiB int               `mapstructure:"collector_crash_log_snippet_kib"`
+	AutomaticConfigRollback     bool              `mapstructure:"automatic_config_rollback"`
+	UseHUPConfigReload          bool              `mapstructure:"use_hup_config_reload"`
+	ValidateConfig              bool              `mapstructure:"validate_config"`
+	ConfigFiles                 []string          `mapstructure:"config_files"`
+	Arguments                   []string          `mapstructure:"args"`
+	Env                         map[string]string `mapstructure:"env"`
 	// StartupFallbackConfigs is an ordered list of fallback configuration files to use
 	// when the OpAMP server is unreachable. Configs are merged in order.
 	StartupFallbackConfigs []string `mapstructure:"startup_fallback_configs"`
+	// Package configures how collector executable updates are formatted and verified.
+	Package AgentPackage `mapstructure:"package"`
 }
 
 func (a Agent) Validate() error {
@@ -260,6 +244,14 @@ func (a Agent) Validate() error {
 
 	if a.OpAMPServerPort < 0 || a.OpAMPServerPort > 65535 {
 		return errors.New("agent::opamp_server_port must be a valid port number")
+	}
+
+	if a.CollectorCrashLogSnippetKiB < 0 {
+		return errors.New("agent::collector_crash_log_snippet_kib must be non-negative")
+	}
+
+	if a.CollectorCrashLogSnippetKiB > 1024 {
+		return errors.New("agent::collector_crash_log_snippet_kib must be less than or equal to 1024")
 	}
 
 	if a.InstanceID != "" {
@@ -328,6 +320,8 @@ func (a Agent) validateFallbackConfigsWithColBin() error {
 	for _, cfgPath := range a.StartupFallbackConfigs {
 		cfgValidateCommand = append(cfgValidateCommand, "--config", cfgPath)
 	}
+	cfgValidateCommand = append(cfgValidateCommand, a.Arguments...)
+
 	cmd := exec.Command(cfgValidateCommand[0], cfgValidateCommand[1:]...) // #nosec G204
 
 	cmd.Stdout = os.Stdout
@@ -359,8 +353,9 @@ var SpecialConfigFiles = []SpecialConfigFile{
 }
 
 type AgentDescription struct {
-	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
-	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
+	IdentifyingAttributes     map[string]string `mapstructure:"identifying_attributes"`
+	NonIdentifyingAttributes  map[string]string `mapstructure:"non_identifying_attributes"`
+	IncludeResourceAttributes bool              `mapstructure:"include_resource_attributes"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -378,13 +373,13 @@ type Telemetry struct {
 }
 
 type HealthCheck struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 func (h HealthCheck) Port() int64 {
-	_, port, err := net.SplitHostPort(h.NetAddr.Endpoint)
+	_, port, err := net.SplitHostPort(h.ServerConfig.NetAddr.Endpoint)
 	if err != nil {
 		return 0
 	}
@@ -407,6 +402,9 @@ type Logs struct {
 	Level            zapcore.Level `mapstructure:"level"`
 	ErrorOutputPaths []string      `mapstructure:"error_output_paths"`
 	OutputPaths      []string      `mapstructure:"output_paths"`
+	// Encoding sets the logger's encoding. Valid values are "json" and "console".
+	// Defaults to "json".
+	Encoding string `mapstructure:"encoding"`
 	// Processors allow configuration of log record processors to emit logs to
 	// any number of supported backends.
 	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
@@ -434,6 +432,15 @@ func DefaultSupervisor() Supervisor {
 		defaultStorageDir = filepath.Join(programDataDir, "Otelcol", "Supervisor")
 	}
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+	}
 	return Supervisor{
 		Capabilities: Capabilities{
 			AcceptsRemoteConfig:            false,
@@ -448,17 +455,20 @@ func DefaultSupervisor() Supervisor {
 			ReportsAvailableComponents:     false,
 			ReportsHeartbeat:               true,
 			AcceptsPackages:                false,
-			ReportsPackageStatuses:         false,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,
 		},
 		Agent: Agent{
-			OrphanDetectionInterval: 5 * time.Second,
-			ConfigApplyTimeout:      5 * time.Second,
-			BootstrapTimeout:        3 * time.Second,
-			PassthroughLogs:         false,
-			ValidateConfig:          false,
+			OrphanDetectionInterval:     5 * time.Second,
+			ConfigApplyTimeout:          5 * time.Second,
+			BootstrapTimeout:            3 * time.Second,
+			PassthroughLogs:             false,
+			CollectorCrashLogSnippetKiB: 0,
+			ValidateConfig:              false,
+			Package: AgentPackage{
+				Verifier: Verifier{Type: VerifierTypeNone},
+			},
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{
@@ -468,11 +478,7 @@ func DefaultSupervisor() Supervisor {
 			},
 		},
 		HealthCheck: HealthCheck{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-				},
-			},
+			ServerConfig: serverConfig,
 		},
 	}
 }

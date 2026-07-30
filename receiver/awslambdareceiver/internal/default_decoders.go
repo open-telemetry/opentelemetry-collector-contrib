@@ -18,16 +18,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal/metadata"
 )
 
-// NewDefaultS3LogsDecoder returns a defaultS3Unmarshaler wrapped as an encoding.LogsDecoderFactory.
-func NewDefaultS3LogsDecoder() encoding.LogsDecoderFactory {
-	return xstreamencoding.NewLogsUnmarshalerDecoderFactory(&defaultS3Unmarshaler{})
+// NewDefaultBlobDecoder returns a defaultBlobDecoder wrapped as an encoding.LogsDecoderFactory.
+func NewDefaultBlobDecoder() encoding.LogsDecoderFactory {
+	return xstreamencoding.NewLogsUnmarshalerDecoderFactory(&defaultBlobDecoder{})
 }
 
-// defaultS3Unmarshaler defines the default S3 logs decoder for AWS Lambda receiver.
-type defaultS3Unmarshaler struct{}
+// defaultBlobDecoder defines a blob decoder for AWS Lambda receiver.
+type defaultBlobDecoder struct{}
 
-// UnmarshalLogs defines the built-in behavior for S3 events when no encoding extension is provided.
-func (*defaultS3Unmarshaler) UnmarshalLogs(data []byte) (plog.Logs, error) {
+// UnmarshalLogs defines the built-in behavior for .
+func (*defaultBlobDecoder) UnmarshalLogs(data []byte) (plog.Logs, error) {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()

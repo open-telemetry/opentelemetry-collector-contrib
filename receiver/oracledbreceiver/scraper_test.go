@@ -4,10 +4,13 @@
 package oracledbreceiver
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -31,6 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sqlcomments"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
@@ -74,6 +78,66 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
 		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
+		// Session, JVM & OS resource v$sysstat rows
+		{"NAME": sessionNonIdleWaitCount, "VALUE": "98765"},
+		{"NAME": sessionNonIdleWaitTime, "VALUE": "4500"}, // cs -> 45 s
+		{"NAME": sessionStoredProcedureSpace, "VALUE": "262144"},
+		{"NAME": javaCallHeapUsedSize, "VALUE": "2097152"},
+		{"NAME": javaCallHeapTotalSize, "VALUE": "4194304"},
+		{"NAME": javaCallHeapLiveSize, "VALUE": "1048576"},
+		{"NAME": osSwaps, "VALUE": "17"},
+		// Transactions, Locks & Recovery v$sysstat rows
+		{"NAME": transactionRollbacks, "VALUE": "4521"},
+		{"NAME": transactionLockBackgroundTime, "VALUE": "350"},  // cs -> 3.5 s
+		{"NAME": transactionLockForegroundTime, "VALUE": "1200"}, // cs -> 12 s
+		{"NAME": recoveryBlocksRead, "VALUE": "8800"},
+		{"NAME": smonInstanceRecoveryPosts, "VALUE": "12"},
+		{"NAME": smonTxnRecoveryPosts, "VALUE": "7"},
+		{"NAME": gcCurrentBlockReceiveTime, "VALUE": "640"}, // cs -> 6.4 s
+		// Workload analysis v$sysstat rows
+		{"NAME": tableScansDirectReadStat, "VALUE": "100"},
+		{"NAME": tableScansLongTablesStat, "VALUE": "200"},
+		{"NAME": tableScansRowidRangesStat, "VALUE": "50"},
+		{"NAME": tableScanRowsGottenStat, "VALUE": "999999"},
+		{"NAME": indexFastFullScansDirectStat, "VALUE": "10"},
+		{"NAME": indexFastFullScansFullStat, "VALUE": "20"},
+		{"NAME": indexFastFullScansRowidStat, "VALUE": "5"},
+		{"NAME": enqueueConversionsStat, "VALUE": "11"},
+		{"NAME": enqueueReleasesStat, "VALUE": "22"},
+		{"NAME": enqueueRequestsStat, "VALUE": "33"},
+		{"NAME": enqueueTimeoutsStat, "VALUE": "44"},
+		{"NAME": enqueueWaitsStat, "VALUE": "55"},
+		{"NAME": lobReadsStat, "VALUE": "120"},
+		{"NAME": lobWritesStat, "VALUE": "240"},
+		{"NAME": parseTimeCPUStat, "VALUE": "1500"},
+		{"NAME": parseTimeElapsedStat, "VALUE": "3000"},
+		{"NAME": sortsDiskStat, "VALUE": "7"},
+		{"NAME": sortsMemoryStat, "VALUE": "777"},
+		{"NAME": sortsRowsStat, "VALUE": "888888"},
+		{"NAME": sessionCursorCacheHitsStat, "VALUE": "65535"},
+		{"NAME": sessionCursorCacheCountStat, "VALUE": "1024"},
+		{"NAME": openedCursorsCurrentStat, "VALUE": "128"},
+		{"NAME": userCallsStat, "VALUE": "987654"},
+		{"NAME": recursiveCallsStat, "VALUE": "123456"},
+		{"NAME": recursiveCPUUsageStat, "VALUE": "5000"},
+		{"NAME": dbTimeStat, "VALUE": "60000"},
+		// Buffer cache and DBWR v$sysstat rows
+		{"NAME": dbBlockChanges, "VALUE": "8800000"},
+		{"NAME": dbBlockGetsFromCache, "VALUE": "7700000"},
+		{"NAME": dbwrCheckpointBuffersWritten, "VALUE": "12000"},
+		{"NAME": dbwrCheckpoints, "VALUE": "320"},
+		{"NAME": freeBufferRequested, "VALUE": "6100"},
+		{"NAME": freeBufferInspected, "VALUE": "55000"},
+		{"NAME": dirtyBuffersInspected, "VALUE": "1200"},
+		// Redo log v$sysstat rows (redo time values are in centiseconds)
+		{"NAME": redoWriteTime, "VALUE": "1500"},
+		{"NAME": redoLogSpaceWaitTime, "VALUE": "250"},
+		{"NAME": redoSynchTime, "VALUE": "900"},
+		{"NAME": redoSize, "VALUE": "104857600"},
+		{"NAME": redoWrites, "VALUE": "45000"},
+		{"NAME": redoBlocksWritten, "VALUE": "210000"},
+		{"NAME": redoBufferAllocRetries, "VALUE": "12"},
+		{"NAME": redoLogSpaceRequests, "VALUE": "34"},
 	},
 	sessionCountSQL: {{"VALUE": "1"}},
 	systemResourceLimitsSQL: {
@@ -82,8 +146,28 @@ var queryResponses = map[string][]metricRow{
 	},
 	tablespaceUsageSQL:  {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
 	dataDictHitRatioSQL: {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
-	recycleBinSizeSQL:   {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
-	storageUsageSQL:     {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
+	osStatSQL: {
+		{"STAT_NAME": "NUM_CPUS", "VALUE": "8"},
+		{"STAT_NAME": "LOAD", "VALUE": "1.5"},
+		{"STAT_NAME": "PHYSICAL_MEMORY_BYTES", "VALUE": "17179869184"},
+	},
+	recycleBinSizeSQL: {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
+	sgaInfoSQL: {
+		{"NAME": "Fixed SGA Size", "BYTES": "9292416"},
+		{"NAME": "Redo Buffers", "BYTES": "14598144"},
+		{"NAME": "Buffer Cache Size", "BYTES": "1375731712"},
+		{"NAME": "Shared Pool Size", "BYTES": "536870912"},
+		{"NAME": "Large Pool Size", "BYTES": "33554432"},
+		{"NAME": "Java Pool Size", "BYTES": "0"},
+		{"NAME": "Streams Pool Size", "BYTES": "0"},
+		{"NAME": "Shared IO Pool Size", "BYTES": "134217728"},
+		{"NAME": "Data Transfer Cache Size", "BYTES": "0"},
+		{"NAME": "Granule Size", "BYTES": "16777216"},
+		{"NAME": "Maximum SGA Size", "BYTES": "2147483648"},
+		{"NAME": "Startup overhead in Shared Pool", "BYTES": "209715200"},
+		{"NAME": "Free SGA Memory Available", "BYTES": "41943040"},
+	},
+	storageUsageSQL: {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
 	sysmetricSQL: {
 		{"METRIC_NAME": "Buffer Cache Hit Ratio", "VALUE": "98.75"},
 		{"METRIC_NAME": "Host CPU Utilization (%)", "VALUE": "12.34"},
@@ -97,6 +181,32 @@ var queryResponses = map[string][]metricRow{
 		{"METRIC_NAME": "Redo Allocation Hit Ratio", "VALUE": "97.80"},
 		{"METRIC_NAME": "Parse Failure Count Per Sec", "VALUE": "0.25"},
 		{"METRIC_NAME": "Execute Without Parse Ratio", "VALUE": "75.30"},
+		{"METRIC_NAME": "Average Active Sessions", "VALUE": "2.50"},
+		{"METRIC_NAME": "Average Synchronous Single-Block Read Latency", "VALUE": "8.50"},
+		{"METRIC_NAME": "Response Time Per Txn", "VALUE": "12.34"},
+		{"METRIC_NAME": "Cursor Cache Hit Ratio", "VALUE": "96.40"},
+		{"METRIC_NAME": "PGA Cache Hit %", "VALUE": "92.10"},
+		{"METRIC_NAME": "CPU Usage Per Sec", "VALUE": "150.00"},
+		{"METRIC_NAME": "Host CPU Usage Per Sec", "VALUE": "320.00"},
+		{"METRIC_NAME": "DB Block Changes Per Sec", "VALUE": "256.0"},
+		{"METRIC_NAME": "I/O Megabytes per Second", "VALUE": "5.0"},
+		{"METRIC_NAME": "I/O Requests per Second", "VALUE": "59.0"},
+		{"METRIC_NAME": "Logical Reads Per Sec", "VALUE": "512.0"},
+		{"METRIC_NAME": "Physical Read Total Bytes Per Sec", "VALUE": "1048576.0"},
+		{"METRIC_NAME": "Physical Read Total IO Requests Per Sec", "VALUE": "42.0"},
+		{"METRIC_NAME": "Physical Reads Per Sec", "VALUE": "128.0"},
+		{"METRIC_NAME": "Physical Write Total Bytes Per Sec", "VALUE": "524288.0"},
+		{"METRIC_NAME": "Physical Write Total IO Requests Per Sec", "VALUE": "17.0"},
+		{"METRIC_NAME": "Physical Writes Per Sec", "VALUE": "64.0"},
+		{"METRIC_NAME": "Redo Generated Per Sec", "VALUE": "2048.0"},
+		{"METRIC_NAME": "Enqueue Deadlocks Per Sec", "VALUE": "0.05"},
+		{"METRIC_NAME": "Enqueue Timeouts Per Sec", "VALUE": "0.50"},
+		{"METRIC_NAME": "Executions Per Sec", "VALUE": "1500.50"},
+		{"METRIC_NAME": "Hard Parse Count Per Sec", "VALUE": "3.75"},
+		{"METRIC_NAME": "Logons Per Sec", "VALUE": "1.20"},
+		{"METRIC_NAME": "Open Cursors Per Sec", "VALUE": "42.10"},
+		{"METRIC_NAME": "User Commits Per Sec", "VALUE": "85.60"},
+		{"METRIC_NAME": "User Rollbacks Per Sec", "VALUE": "2.40"},
 	},
 }
 
@@ -119,6 +229,8 @@ var cacheValue = map[string]int64{
 	"USER_IO_WAIT_TIME":       200,
 	"PROCEDURE_EXECUTIONS":    200413,
 }
+
+const SQLPlanTable = "V$SQL_PLAN_STATISTICS_ALL"
 
 func TestScraper_Scrape(t *testing.T) {
 	tests := []struct {
@@ -330,13 +442,227 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 	}
 }
 
-func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
+func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.OracledbPhysicalIoTransferred.Enabled = true
-	cfg.Metrics.OracledbPhysicalIoRequests.Enabled = true
-	cfg.Metrics.OracledbPhysicalIoCacheWrites.Enabled = true
-	cfg.Metrics.OracledbSqlnetIoTransferred.Enabled = true
+	cfg.Metrics.OracledbJvmMemoryCommitted.Enabled = true
+	cfg.Metrics.OracledbJvmMemoryLive.Enabled = true
+	cfg.Metrics.OracledbJvmMemoryUsed.Enabled = true
+	cfg.Metrics.OracledbOsSwaps.Enabled = true
+	cfg.Metrics.OracledbSessionStoredProcedureMemory.Enabled = true
+	cfg.Metrics.OracledbSessionWaitTime.Enabled = true
+	cfg.Metrics.OracledbSessionWaits.Enabled = true
 
+	m := scrapeWithConfig(t, cfg)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		switch me.Name() {
+		case "oracledb.jvm.memory.committed":
+			seen++
+			assert.Equal(t, int64(4194304), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.jvm.memory.live":
+			seen++
+			assert.Equal(t, int64(1048576), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.jvm.memory.used":
+			seen++
+			assert.Equal(t, int64(2097152), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.os.swaps":
+			seen++
+			assert.Equal(t, int64(17), me.Sum().DataPoints().At(0).IntValue())
+		case "oracledb.session.stored_procedure.memory":
+			seen++
+			assert.Equal(t, int64(262144), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.session.wait.time":
+			seen++
+			dp := me.Sum().DataPoints().At(0)
+			state, _ := dp.Attributes().Get("oracledb.session.wait.state")
+			assert.Equal(t, "non_idle", state.Str())
+			assert.InDelta(t, 45.0, dp.DoubleValue(), 1e-9) // 4500 cs ÷ 100
+		case "oracledb.session.waits":
+			seen++
+			dp := me.Sum().DataPoints().At(0)
+			state, _ := dp.Attributes().Get("oracledb.session.wait.state")
+			assert.Equal(t, "non_idle", state.Str())
+			assert.Equal(t, int64(98765), dp.IntValue())
+		}
+	}
+	assert.Equal(t, 7, seen)
+}
+
+func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbGcCurrentBlockTime.Enabled = true
+	cfg.Metrics.OracledbLockTime.Enabled = true
+	cfg.Metrics.OracledbRecoveryBlocks.Enabled = true
+	cfg.Metrics.OracledbSmonPosts.Enabled = true
+	cfg.Metrics.OracledbTransactionRollbacks.Enabled = true
+
+	m := scrapeWithConfig(t, cfg)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Type() != pmetric.MetricTypeSum {
+			continue
+		}
+		dps := me.Sum().DataPoints()
+		switch me.Name() {
+		case "oracledb.gc.current_block.time":
+			seen++
+			gcDir, _ := dps.At(0).Attributes().Get("network.io.direction")
+			assert.Equal(t, "receive", gcDir.Str())
+			assert.InDelta(t, 6.4, dps.At(0).DoubleValue(), 1e-9)
+		case "oracledb.lock.time":
+			seen++
+			// one data point per oracledb.session.type; raw centiseconds are divided by 100
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				sessionType, _ := dp.Attributes().Get("oracledb.session.type")
+				switch sessionType.Str() {
+				case "background":
+					assert.InDelta(t, 3.5, dp.DoubleValue(), 1e-9)
+				case "foreground":
+					assert.InDelta(t, 12.0, dp.DoubleValue(), 1e-9)
+				default:
+					t.Errorf("unexpected oracledb.session.type %q", sessionType.Str())
+				}
+			}
+		case "oracledb.recovery.blocks":
+			seen++
+			assert.Equal(t, int64(8800), dps.At(0).IntValue())
+		case "oracledb.smon.posts":
+			seen++
+			// one data point per oracledb.smon.type
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				smonType, _ := dp.Attributes().Get("oracledb.smon.type")
+				switch smonType.Str() {
+				case "instance":
+					assert.Equal(t, int64(12), dp.IntValue())
+				case "transaction":
+					assert.Equal(t, int64(7), dp.IntValue())
+				default:
+					t.Errorf("unexpected oracledb.smon.type %q", smonType.Str())
+				}
+			}
+		case "oracledb.transaction.rollbacks":
+			seen++
+			assert.Equal(t, int64(4521), dps.At(0).IntValue())
+		}
+	}
+	assert.Equal(t, 5, seen)
+}
+
+func TestScraper_ScrapeOSStat(t *testing.T) {
+	const floatDelta = 0.01
+
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid os stat metrics",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{
+					Responses: [][]metricRow{
+						queryResponses[s],
+					},
+				}
+			},
+		},
+		{
+			name: "bad NUM_CPUS value",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == osStatSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{{"STAT_NAME": "NUM_CPUS", "VALUE": "bad"}},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+			errWanted: `failed to parse int64 for OracledbSystemCPUCount, value was bad`,
+		},
+		{
+			name: "bad LOAD value",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == osStatSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{{"STAT_NAME": "LOAD", "VALUE": "bad"}},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+			errWanted: `failed to parse float64 for OracledbSystemProcessCount, value was bad`,
+		},
+		{
+			name: "bad PHYSICAL_MEMORY_BYTES value",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == osStatSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{{"STAT_NAME": "PHYSICAL_MEMORY_BYTES", "VALUE": "bad"}},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+			errWanted: `failed to parse int64 for OracledbSystemMemoryLimit, value was bad`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
+			cfg.Metrics.OracledbSystemCPUCount.Enabled = true
+			cfg.Metrics.OracledbSystemMemoryLimit.Enabled = true
+			cfg.Metrics.OracledbSystemProcessCount.Enabled = true
+
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc:   test.dbclientFn,
+				id:                   component.ID{},
+				metricsBuilderConfig: cfg,
+			}
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(t.Context()))
+			}()
+			require.NoError(t, err)
+			m, err := scrpr.scrape(t.Context())
+			if test.errWanted != "" {
+				require.True(t, scrapererror.IsPartialScrapeError(err))
+				require.Contains(t, err.Error(), test.errWanted)
+			} else {
+				require.NoError(t, err)
+				metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+				for i := 0; i < metrics.Len(); i++ {
+					metric := metrics.At(i)
+					if metric.Type() != pmetric.MetricTypeGauge || metric.Gauge().DataPoints().Len() == 0 {
+						continue
+					}
+					dp := metric.Gauge().DataPoints().At(0)
+					switch metric.Name() {
+					case "oracledb.system.cpu.count":
+						assert.Equal(t, int64(8), dp.IntValue())
+					case "oracledb.system.memory.limit":
+						assert.Equal(t, int64(17179869184), dp.IntValue())
+					case "oracledb.system.process.count":
+						assert.InDelta(t, 1.5, dp.DoubleValue(), floatDelta)
+					}
+				}
+			}
+		})
+	}
+}
+
+// scrapeWithConfig starts a scraper over the shared fake responses and returns one scrape.
+func scrapeWithConfig(t *testing.T, cfg metadata.MetricsBuilderConfig) pmetric.Metrics {
+	t.Helper()
 	scrpr := oracleScraper{
 		logger: zap.NewNop(),
 		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
@@ -350,10 +676,20 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 		metricsBuilderConfig: cfg,
 	}
 	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
-	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
-
+	t.Cleanup(func() { assert.NoError(t, scrpr.shutdown(t.Context())) })
 	m, err := scrpr.scrape(t.Context())
 	require.NoError(t, err)
+	return m
+}
+
+func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbPhysicalIoCacheWrites.Enabled = true
+	cfg.Metrics.OracledbPhysicalIoRequests.Enabled = true
+	cfg.Metrics.OracledbPhysicalIoTransferred.Enabled = true
+	cfg.Metrics.OracledbSqlnetIoTransferred.Enabled = true
+
+	m := scrapeWithConfig(t, cfg)
 
 	// metricName -> attrSignature -> int value
 	got := map[string]map[string]int64{}
@@ -398,6 +734,257 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 	assert.Equal(t, int64(75000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=transmit"])
 }
 
+func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbCallCount.Enabled = true
+	cfg.Metrics.OracledbCallRecursiveCPUTime.Enabled = true
+	cfg.Metrics.OracledbCursorCacheHits.Enabled = true
+	cfg.Metrics.OracledbCursorCacheSize.Enabled = true
+	cfg.Metrics.OracledbCursorOpen.Enabled = true
+	cfg.Metrics.OracledbDbTime.Enabled = true
+	cfg.Metrics.OracledbEnqueueOperations.Enabled = true
+	cfg.Metrics.OracledbLobOperations.Enabled = true
+	cfg.Metrics.OracledbParseCPUTime.Enabled = true
+	cfg.Metrics.OracledbParseElapsedTime.Enabled = true
+	cfg.Metrics.OracledbScanCount.Enabled = true
+	cfg.Metrics.OracledbScanTableRows.Enabled = true
+	cfg.Metrics.OracledbSortOperations.Enabled = true
+	cfg.Metrics.OracledbSortRows.Enabled = true
+
+	actualMetrics := scrapeWithConfig(t, cfg)
+
+	expectedFile := filepath.Join("testdata", "expectedWorkloadAnalysisMetrics.yaml")
+	// Uncomment the line below to regenerate the expected golden file.
+	// require.NoError(t, golden.WriteMetrics(t, expectedFile, actualMetrics))
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp()))
+}
+
+// Disabling oracledb.enqueue.type collapses its five per-type rows into one summed data point (165).
+func TestScraper_WorkloadMetricReaggregatesWhenAttributeDisabled(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbEnqueueOperations.Enabled = true
+	cfg.Metrics.OracledbEnqueueOperations.EnabledAttributes = nil
+
+	m := scrapeWithConfig(t, cfg)
+
+	var found bool
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Name() != "oracledb.enqueue.operations" {
+			continue
+		}
+		found = true
+		dps := me.Sum().DataPoints()
+		require.Equal(t, 1, dps.Len(), "disabling the attribute should collapse all types into one data point")
+		dp := dps.At(0)
+		assert.Equal(t, 0, dp.Attributes().Len(), "no attribute should be emitted when oracledb.enqueue.type is disabled")
+		assert.Equal(t, int64(165), dp.IntValue(), "data points should reaggregate by sum (11+22+33+44+55)")
+	}
+	require.True(t, found, "oracledb.enqueue.operations not found in scrape output")
+}
+
+// Disabling oracledb.scan.mode (keeping oracledb.scan.type) reaggregates per type: table=350, index_fast_full=35.
+func TestScraper_ScanCountReaggregatesWhenOneAttributeDisabled(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbScanCount.Enabled = true
+	cfg.Metrics.OracledbScanCount.EnabledAttributes = []metadata.OracledbScanCountMetricAttributeKey{
+		metadata.OracledbScanCountMetricAttributeKeyOracledbScanType,
+	}
+
+	m := scrapeWithConfig(t, cfg)
+
+	want := map[string]int64{"table": 350, "index_fast_full": 35}
+	got := map[string]int64{}
+	var found bool
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Name() != "oracledb.scan.count" {
+			continue
+		}
+		found = true
+		dps := me.Sum().DataPoints()
+		for j := 0; j < dps.Len(); j++ {
+			dp := dps.At(j)
+			require.Equal(t, 1, dp.Attributes().Len(), "only oracledb.scan.type should remain")
+			scanType, ok := dp.Attributes().Get("oracledb.scan.type")
+			require.True(t, ok, "oracledb.scan.type should be present")
+			got[scanType.Str()] = dp.IntValue()
+		}
+	}
+	require.True(t, found, "oracledb.scan.count not found in scrape output")
+	assert.Equal(t, want, got, "scan modes should reaggregate by sum within each scan type")
+}
+
+func TestScraper_ScrapeBufferAndCheckpointMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbBufferCacheBlockChanges.Enabled = true
+	cfg.Metrics.OracledbBufferCacheBlockGets.Enabled = true
+	cfg.Metrics.OracledbBufferInspected.Enabled = true
+	cfg.Metrics.OracledbCheckpointBuffers.Enabled = true
+	cfg.Metrics.OracledbCheckpointCompleted.Enabled = true
+	cfg.Metrics.OracledbBufferRequests.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	// Loop the scraped metrics and switch on the metric name; assert each metric's value(s) and
+	// attribute(s) in place, using the mdatagen-generated name/attribute constants.
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Type() != pmetric.MetricTypeSum {
+			continue
+		}
+		dps := me.Sum().DataPoints()
+		switch me.Name() {
+		case metadata.MetricsInfo.OracledbBufferCacheBlockChanges.Name:
+			assert.Equal(t, int64(8800000), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbBufferCacheBlockGets.Name:
+			assert.Equal(t, int64(7700000), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbCheckpointBuffers.Name:
+			assert.Equal(t, int64(12000), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbCheckpointCompleted.Name:
+			assert.Equal(t, int64(320), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbBufferRequests.Name:
+			assert.Equal(t, int64(6100), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbBufferInspected.Name:
+			// one data point per buffer state.
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				state, _ := dp.Attributes().Get("oracledb.buffer.state")
+				switch state.Str() {
+				case metadata.AttributeOracledbBufferStateFree.String():
+					assert.Equal(t, int64(55000), dp.IntValue())
+				case metadata.AttributeOracledbBufferStateDirty.String():
+					assert.Equal(t, int64(1200), dp.IntValue())
+				default:
+					t.Errorf("unexpected oracledb.buffer.state: %q", state.Str())
+				}
+			}
+			seen++
+		}
+	}
+	assert.Equal(t, 6, seen, "expected all 6 buffer/checkpoint metrics to be emitted")
+}
+
+func TestScraper_ScrapeRedoMetrics(t *testing.T) {
+	const floatDelta = 0.0001
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbRedoTime.Enabled = true
+	cfg.Metrics.OracledbRedoSize.Enabled = true
+	cfg.Metrics.OracledbRedoOperations.Enabled = true
+	cfg.Metrics.OracledbRedoBlocks.Enabled = true
+	cfg.Metrics.OracledbRedoRequests.Enabled = true
+	cfg.Metrics.OracledbRedoRetries.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Type() != pmetric.MetricTypeSum {
+			continue
+		}
+		dps := me.Sum().DataPoints()
+		switch me.Name() {
+		case metadata.MetricsInfo.OracledbRedoTime.Name:
+			// centiseconds converted to seconds (value / 100), one data point per redo.type.
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				redoType, _ := dp.Attributes().Get("oracledb.redo.type")
+				switch redoType.Str() {
+				case metadata.AttributeOracledbRedoTypeWrite.String():
+					assert.InDelta(t, 15.0, dp.DoubleValue(), floatDelta)
+				case metadata.AttributeOracledbRedoTypeLogSpaceWait.String():
+					assert.InDelta(t, 2.5, dp.DoubleValue(), floatDelta)
+				case metadata.AttributeOracledbRedoTypeSync.String():
+					assert.InDelta(t, 9.0, dp.DoubleValue(), floatDelta)
+				default:
+					t.Errorf("unexpected oracledb.redo.type: %q", redoType.Str())
+				}
+			}
+			seen++
+		case metadata.MetricsInfo.OracledbRedoSize.Name:
+			assert.Equal(t, int64(104857600), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoOperations.Name:
+			dp := dps.At(0)
+			dir, _ := dp.Attributes().Get("disk.io.direction")
+			assert.Equal(t, metadata.AttributeDiskIoDirectionWrite.String(), dir.Str())
+			assert.Equal(t, int64(45000), dp.IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoBlocks.Name:
+			dp := dps.At(0)
+			dir, _ := dp.Attributes().Get("disk.io.direction")
+			assert.Equal(t, metadata.AttributeDiskIoDirectionWrite.String(), dir.Str())
+			assert.Equal(t, int64(210000), dp.IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoRequests.Name:
+			dp := dps.At(0)
+			reqType, _ := dp.Attributes().Get("oracledb.redo.request.type")
+			assert.Equal(t, metadata.AttributeOracledbRedoRequestTypeLogSpace.String(), reqType.Str())
+			assert.Equal(t, int64(34), dp.IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoRetries.Name:
+			dp := dps.At(0)
+			retryType, _ := dp.Attributes().Get("oracledb.redo.retry.type")
+			assert.Equal(t, metadata.AttributeOracledbRedoRetryTypeBufferAllocation.String(), retryType.Str())
+			assert.Equal(t, int64(12), dp.IntValue())
+			seen++
+		}
+	}
+	assert.Equal(t, 6, seen, "expected all 6 redo metrics to be emitted")
+}
+
 func TestScraper_ScrapeTopNLogs(t *testing.T) {
 	var metricRowData []metricRow
 	var logRowData []metricRow
@@ -409,7 +996,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 		{
 			name: "valid collection",
 			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-				if strings.Contains(s, "V$SQL_PLAN") {
+				if strings.Contains(s, SQLPlanTable) {
 					metricRowFile := readFile("oracleQueryPlanData.txt")
 					unmarshalErr := json.Unmarshal(metricRowFile, &logRowData)
 					if unmarshalErr == nil {
@@ -515,62 +1102,157 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 
 var samplesQueryResponses = map[string][]metricRow{
 	samplesQuery: {{
-		"ACTION": "00-0af7651916cd43dd8448eb211c80319c-a7ad6b7169203331-01", "MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y", "WAIT_CLASS": "ONE", "WAIT_TIME_SEC": "0.5", "PROCEDURE_NAME": "BLAH", "CHILD_ADDRESS": "SDF3SDF1234D",
-		"SQL_CHILD_NUMBER": "0", "SID": "675", "SERIAL#": "51295", "SQL_FULLTEXT": "test_query", "OSUSER": "test-user", "PROCESS": "1115", "PROCEDURE_TYPE": "PROCEDURE_TYPE-A", "PROCEDURE_ID": "12345",
-		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "1", "SERVICE_NAME": "", "DB_NAMESPACE": "",
+		"ACTION": "00-0af7651916cd43dd8448eb211c80319c-a7ad6b7169203331-01", "MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y", "WAIT_CLASS": "ONE", "WAIT_TIME_SEC": "0.5", "PROCEDURE_NAME": "BLAH",
+		"SQL_CHILD_NUMBER": "0", "LOOKUP_SQL_ID": "48bc50b6fuz4y", "LOOKUP_CHILD_NUMBER": "0", "SID": "675", "SERIAL#": "51295", "OSUSER": "test-user", "PROCESS": "1115", "PROCEDURE_TYPE": "PROCEDURE_TYPE-A", "PROCEDURE_ID": "12345",
+		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "DURATION_SEC": "1", "SERVICE_NAME": "", "DB_NAMESPACE": "",
 		"SQL_EXEC_START": "2026-01-01T12:00:00Z", "LOGON_TIME": "2026-01-01T12:00:00Z", "SESSION_DURATION_SEC": "0",
 		"BLOCKING_SESSION": "", "FINAL_BLOCKING_SESSION": "", "BLOCKING_SESSION_STATUS": "", "SECONDS_IN_WAIT": "0",
 		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "LOCK_MODE": "", "BLOCKED_OBJECT_OWNER": "", "BLOCKED_OBJECT_NAME": "",
 	}},
 	"invalidQuery": {{
 		"MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y",
-		"SQL_CHILD_NUMBER": "0", "S.SID": "675", "SERIAL#": "51295", "SQL_FULLTEXT": "test_query", "OSUSER": "test-user", "PROCESS": "1115",
-		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "",
+		"SQL_CHILD_NUMBER": "0", "LOOKUP_SQL_ID": "48bc50b6fuz4y", "LOOKUP_CHILD_NUMBER": "0", "S.SID": "675", "SERIAL#": "51295", "OSUSER": "test-user", "PROCESS": "1115",
+		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "DURATION_SEC": "",
 		"SQL_EXEC_START": "", "LOGON_TIME": "", "SESSION_DURATION_SEC": "0",
 		"BLOCKING_SESSION": "", "FINAL_BLOCKING_SESSION": "", "BLOCKING_SESSION_STATUS": "", "SECONDS_IN_WAIT": "0",
 		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "LOCK_MODE": "", "BLOCKED_OBJECT_OWNER": "", "BLOCKED_OBJECT_NAME": "",
 	}},
 	"blockedQuery": {{
 		// Blocked session waiting on SID 100
-		"ACTION": "", "MACHINE": "DB-CLIENT-HOST", "USERNAME": "APP_USER", "SCHEMANAME": "APP_USER", "SQL_ID": "9fkq2mxyzabc1", "WAIT_CLASS": "Application", "PROCEDURE_NAME": "", "CHILD_ADDRESS": "ABCD1234",
-		"SQL_CHILD_NUMBER": "0", "SID": "200", "SERIAL#": "12345", "SQL_FULLTEXT": "UPDATE orders SET status = 1 WHERE id = 42", "OSUSER": "oracle", "PROCESS": "9876", "PROCEDURE_TYPE": "", "PROCEDURE_ID": "",
-		"PORT": "54441", "PROGRAM": "JDBC Thin Client", "MODULE": "app", "STATUS": "ACTIVE", "STATE": "WAITING", "PLAN_HASH_VALUE": "1234567890", "DURATION_SEC": "15", "SERVICE_NAME": "ORCL", "DB_NAMESPACE": "ORCLPDB1",
+		"ACTION": "", "MACHINE": "DB-CLIENT-HOST", "USERNAME": "APP_USER", "SCHEMANAME": "APP_USER", "SQL_ID": "9fkq2mxyzabc1", "WAIT_CLASS": "Application", "PROCEDURE_NAME": "",
+		"SQL_CHILD_NUMBER": "0", "LOOKUP_SQL_ID": "9fkq2mxyzabc1", "LOOKUP_CHILD_NUMBER": "0", "SID": "200", "SERIAL#": "12345", "OSUSER": "oracle", "PROCESS": "9876", "PROCEDURE_TYPE": "", "PROCEDURE_ID": "",
+		"PORT": "54441", "PROGRAM": "JDBC Thin Client", "MODULE": "app", "STATUS": "ACTIVE", "STATE": "WAITING", "DURATION_SEC": "15", "SERVICE_NAME": "ORCL", "DB_NAMESPACE": "ORCLPDB1",
 		"SQL_EXEC_START": "2026-05-06T09:59:45Z", "LOGON_TIME": "2026-05-06T09:00:00Z", "SESSION_DURATION_SEC": "3600",
 		"BLOCKING_SESSION": "100", "FINAL_BLOCKING_SESSION": "100", "BLOCKING_SESSION_STATUS": "VALID", "SECONDS_IN_WAIT": "15",
 		"BLOCKING_START_TIME": "2026-05-06T10:00:00Z", "LOCK_TYPE": "TX", "LOCK_MODE": "EXCLUSIVE", "BLOCKED_OBJECT_OWNER": "APP_USER", "BLOCKED_OBJECT_NAME": "ORDERS",
 	}},
 	"idleBlockerQuery": {{
 		// Idle session (blocker) that is holding a lock — no longer ACTIVE but appearing in BLOCKING_SESSION subquery
-		"ACTION": "", "MACHINE": "DBA-WORKSTATION", "USERNAME": "DBA_USER", "SCHEMANAME": "DBA_USER", "SQL_ID": "7abc123def456", "WAIT_CLASS": "", "PROCEDURE_NAME": "", "CHILD_ADDRESS": "DEADBEEF",
-		"SQL_CHILD_NUMBER": "0", "SID": "100", "SERIAL#": "5678", "SQL_FULLTEXT": "UPDATE orders SET status = 2 WHERE id = 42", "OSUSER": "dba", "PROCESS": "1234", "PROCEDURE_TYPE": "", "PROCEDURE_ID": "",
-		"PORT": "54442", "PROGRAM": "SQL*Plus", "MODULE": "", "STATUS": "INACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "9876543210", "DURATION_SEC": "120", "SERVICE_NAME": "ORCL", "DB_NAMESPACE": "ORCLPDB1",
+		"ACTION": "", "MACHINE": "DBA-WORKSTATION", "USERNAME": "DBA_USER", "SCHEMANAME": "DBA_USER", "SQL_ID": "7abc123def456", "WAIT_CLASS": "", "PROCEDURE_NAME": "",
+		"SQL_CHILD_NUMBER": "0", "LOOKUP_SQL_ID": "7abc123def456", "LOOKUP_CHILD_NUMBER": "0", "SID": "100", "SERIAL#": "5678", "OSUSER": "dba", "PROCESS": "1234", "PROCEDURE_TYPE": "", "PROCEDURE_ID": "",
+		"PORT": "54442", "PROGRAM": "SQL*Plus", "MODULE": "", "STATUS": "INACTIVE", "STATE": "WAITED KNOWN TIME", "DURATION_SEC": "120", "SERVICE_NAME": "ORCL", "DB_NAMESPACE": "ORCLPDB1",
 		"SQL_EXEC_START": "", "LOGON_TIME": "", "SESSION_DURATION_SEC": "0",
 		"BLOCKING_SESSION": "", "FINAL_BLOCKING_SESSION": "", "BLOCKING_SESSION_STATUS": "", "SECONDS_IN_WAIT": "0",
 		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "LOCK_MODE": "", "BLOCKED_OBJECT_OWNER": "", "BLOCKED_OBJECT_NAME": "",
 	}},
 }
 
+var sampleStatsRows = []metricRow{
+	{"SQL_ID": "48bc50b6fuz4y", "CHILD_NUMBER": "0", "CHILD_ADDRESS": "SDF3SDF1234D", "PLAN_HASH_VALUE": "4199919568", "SQL_FULLTEXT": "test_query"},
+	{"SQL_ID": "9fkq2mxyzabc1", "CHILD_NUMBER": "0", "CHILD_ADDRESS": "ABCD1234", "PLAN_HASH_VALUE": "1234567890", "SQL_FULLTEXT": "UPDATE orders SET status = 1 WHERE id = 42"},
+	{"SQL_ID": "7abc123def456", "CHILD_NUMBER": "0", "CHILD_ADDRESS": "DEADBEEF", "PLAN_HASH_VALUE": "9876543210", "SQL_FULLTEXT": "UPDATE orders SET status = 2 WHERE id = 42"},
+}
+
+// copy so subtests don't share mutated fixture rows
+func cloneRows(rows []metricRow) []metricRow {
+	out := make([]metricRow, len(rows))
+	for i, r := range rows {
+		nr := make(metricRow, len(r))
+		maps.Copy(nr, r)
+		out[i] = nr
+	}
+	return out
+}
+
+func twoPassSampleClient(sessionRows []metricRow) func(*sql.DB, string, *zap.Logger) dbClient {
+	return func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+		if strings.Contains(s, "FROM V$SQL") && strings.Contains(s, "SQL_ID IN") {
+			return &fakeDbClient{Responses: [][]metricRow{cloneRows(sampleStatsRows)}}
+		}
+		return &fakeDbClient{Responses: [][]metricRow{cloneRows(sessionRows)}}
+	}
+}
+
+// capturingClient records each metricRows call so we can assert on the
+// generated SQL and bind args (fakeDbClient discards both).
+type capturingClient struct {
+	sql    string
+	calls  *[]capturedCall
+	respFn func(args []any) []metricRow
+}
+
+type capturedCall struct {
+	sql  string
+	args []any
+}
+
+func (c *capturingClient) metricRows(_ context.Context, args ...any) ([]metricRow, error) {
+	*c.calls = append(*c.calls, capturedCall{sql: c.sql, args: args})
+	return c.respFn(args), nil
+}
+
+func TestEnrichSamplesBatchesInLists(t *testing.T) {
+	const total = 2500 // -> 3 batches: 1000, 1000, 500
+	sessionRows := make([]metricRow, total)
+	statsBySQLID := make(map[string]metricRow, total)
+	for i := range total {
+		id := fmt.Sprintf("sqlid_%04d", i)
+		sessionRows[i] = metricRow{"LOOKUP_SQL_ID": id, "LOOKUP_CHILD_NUMBER": "0"}
+		statsBySQLID[id] = metricRow{
+			"SQL_ID": id, "CHILD_NUMBER": "0", "CHILD_ADDRESS": "ADDR_" + id,
+			"PLAN_HASH_VALUE": "1", "SQL_FULLTEXT": "text " + id,
+		}
+	}
+
+	var calls []capturedCall
+	scrpr := oracleScraper{
+		logger:         zap.NewNop(),
+		dbProviderFunc: func() (*sql.DB, error) { return nil, nil },
+		clientProviderFunc: func(_ *sql.DB, q string, _ *zap.Logger) dbClient {
+			return &capturingClient{sql: q, calls: &calls, respFn: func(args []any) []metricRow {
+				out := make([]metricRow, 0, len(args))
+				for _, a := range args {
+					if r, ok := statsBySQLID[a.(string)]; ok {
+						out = append(out, r)
+					}
+				}
+				return out
+			}}
+		},
+	}
+
+	require.NoError(t, scrpr.enrichSamplesWithSQLStats(t.Context(), sessionRows))
+
+	require.Len(t, calls, 3)
+	wantSizes := []int{1000, 1000, 500}
+	for i, call := range calls {
+		assert.Len(t, call.args, wantSizes[i])
+		assert.Equal(t, wantSizes[i], strings.Count(call.sql, ":"),
+			"placeholder count must equal arg count for batch %d", i)
+		assert.Contains(t, call.sql, ":1,", "batch %d must start at :1", i)
+		assert.Contains(t, call.sql, fmt.Sprintf(":%d)", wantSizes[i]),
+			"batch %d must end at :%d", i, wantSizes[i])
+	}
+	for _, row := range sessionRows {
+		assert.Equal(t, "text "+row["LOOKUP_SQL_ID"], row["SQL_FULLTEXT"])
+	}
+}
+
 var sessionEventQueryResponses = map[string][]metricRow{
 	sessionEventQuery: {
 		{
 			"SID": "100", "SERIAL#": "12345", "EVENT": "db file sequential read", "WAIT_CLASS": "User I/O",
-			"TOTAL_WAITS": "1500", "TOTAL_TIME_WAITED_SECS": "25.5",
+			"TOTAL_WAITS": "1500", "TOTAL_TIME_WAITED_SECS": "25.5", "DB_NAMESPACE": "ORCL",
 		},
 		{
 			"SID": "101", "SERIAL#": "12346", "EVENT": "log file sync", "WAIT_CLASS": "Commit",
-			"TOTAL_WAITS": "800", "TOTAL_TIME_WAITED_SECS": "12.3",
+			"TOTAL_WAITS": "800", "TOTAL_TIME_WAITED_SECS": "12.3", "DB_NAMESPACE": "ORCL",
+		},
+		{
+			"SID": "102", "SERIAL#": "12347", "EVENT": "buffer busy waits", "WAIT_CLASS": "Concurrency",
+			"TOTAL_WAITS": "50", "TOTAL_TIME_WAITED_SECS": "1.5",
 		},
 	},
 	"invalidSessionEventQuery": {
 		{
 			"SID": "100", "SERIAL#": "12345", "EVENT": "db file sequential read", "WAIT_CLASS": "User I/O",
-			"TOTAL_WAITS": "invalid", "TOTAL_TIME_WAITED_SECS": "25.5",
+			"TOTAL_WAITS": "invalid", "TOTAL_TIME_WAITED_SECS": "25.5", "DB_NAMESPACE": "ORCL",
 		},
 	},
 	"invalidTimeSessionEventQuery": {
 		{
 			"SID": "100", "SERIAL#": "12345", "EVENT": "db file sequential read", "WAIT_CLASS": "User I/O",
-			"TOTAL_WAITS": "1500", "TOTAL_TIME_WAITED_SECS": "invalid",
+			"TOTAL_WAITS": "1500", "TOTAL_TIME_WAITED_SECS": "invalid", "DB_NAMESPACE": "ORCL",
 		},
 	},
 }
@@ -584,42 +1266,24 @@ func TestSamplesQuery(t *testing.T) {
 		checkBlockingAttr bool
 	}{
 		{
-			name: "valid",
-			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
-				return &fakeDbClient{
-					Responses: [][]metricRow{
-						samplesQueryResponses[samplesQuery],
-					},
-				}
-			},
+			name:       "valid",
+			dbclientFn: twoPassSampleClient(samplesQueryResponses[samplesQuery]),
 			goldenFile: filepath.Join("testdata", "expectedSamplesFile.yaml"),
 		},
 		{
-			name: "bad samples data",
-			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
-				return &fakeDbClient{Responses: [][]metricRow{
-					samplesQueryResponses["invalidQuery"],
-				}}
-			},
-			errWanted: `failed to parse int64 for Duration, value was : strconv.ParseFloat: parsing "": invalid syntax`,
+			name:       "bad samples data",
+			dbclientFn: twoPassSampleClient(samplesQueryResponses["invalidQuery"]),
+			errWanted:  `failed to parse int64 for Duration, value was : strconv.ParseFloat: parsing "": invalid syntax`,
 		},
 		{
-			name: "blocked session emits blocking attributes",
-			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
-				return &fakeDbClient{Responses: [][]metricRow{
-					samplesQueryResponses["blockedQuery"],
-				}}
-			},
+			name:              "blocked session emits blocking attributes",
+			dbclientFn:        twoPassSampleClient(samplesQueryResponses["blockedQuery"]),
 			goldenFile:        filepath.Join("testdata", "expectedBlockedSessionFile.yaml"),
 			checkBlockingAttr: true,
 		},
 		{
-			name: "idle blocker session emits empty blocking attributes",
-			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
-				return &fakeDbClient{Responses: [][]metricRow{
-					samplesQueryResponses["idleBlockerQuery"],
-				}}
-			},
+			name:       "idle blocker session emits empty blocking attributes",
+			dbclientFn: twoPassSampleClient(samplesQueryResponses["idleBlockerQuery"]),
 			goldenFile: filepath.Join("testdata", "expectedIdleBlockerFile.yaml"),
 		},
 	}
@@ -685,6 +1349,47 @@ func TestSamplesQuery(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSamplesQueryCursorAgedOut(t *testing.T) {
+	logsCfg := metadata.DefaultLogsBuilderConfig()
+	logsCfg.ResourceAttributes.OracledbInstanceName.Enabled = true
+	logsCfg.ResourceAttributes.HostName.Enabled = true
+	logsCfg.Events.DbServerTopQuery.Enabled = false
+	logsCfg.Events.DbServerQuerySample.Enabled = true
+
+	scrpr := oracleScraper{
+		logger:         zap.NewNop(),
+		dbProviderFunc: func() (*sql.DB, error) { return nil, nil },
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			if strings.Contains(s, "FROM V$SQL") && strings.Contains(s, "SQL_ID IN") {
+				// Cursor aged out of the shared pool: no V$SQL row for the session's sql_id.
+				return &fakeDbClient{Responses: [][]metricRow{{}}}
+			}
+			return &fakeDbClient{Responses: [][]metricRow{cloneRows(samplesQueryResponses[samplesQuery])}}
+		},
+		id:                component.ID{},
+		lb:                metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
+		logsBuilderConfig: logsCfg,
+		obfuscator:        newObfuscator(),
+		instanceName:      "oraclehost:1521/ORCL",
+		serviceInstanceID: getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+	}
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	// No query_sample records should be emitted when the cursor is gone.
+	recordCount := 0
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		sls := logs.ResourceLogs().At(i).ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			recordCount += sls.At(j).LogRecords().Len()
+		}
+	}
+	assert.Zero(t, recordCount, "session whose cursor aged out of V$SQL must not emit a query_sample")
 }
 
 func TestScraperWithQueryComments(t *testing.T) {
@@ -878,6 +1583,28 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			cfg.Metrics.OracledbRedoAllocationUtilization.Enabled = true
 			cfg.Metrics.OracledbParseRate.Enabled = true
 			cfg.Metrics.OracledbExecutionUtilization.Enabled = true
+			cfg.Metrics.OracledbCPUUsageRate.Enabled = true
+			cfg.Metrics.OracledbCursorCacheUtilization.Enabled = true
+			cfg.Metrics.OracledbHostCPUUsageRate.Enabled = true
+			cfg.Metrics.OracledbIoSingleBlockReadLatency.Enabled = true
+			cfg.Metrics.OracledbPgaCacheUtilization.Enabled = true
+			cfg.Metrics.OracledbSessionAverage.Enabled = true
+			cfg.Metrics.OracledbTransactionResponseTime.Enabled = true
+			cfg.Metrics.OracledbBufferCacheBlockChangesRate.Enabled = true
+			cfg.Metrics.OracledbIoRequestsRate.Enabled = true
+			cfg.Metrics.OracledbIoThroughputRate.Enabled = true
+			cfg.Metrics.OracledbLogicalReadsRate.Enabled = true
+			cfg.Metrics.OracledbPhysicalIoRequestsRate.Enabled = true
+			cfg.Metrics.OracledbPhysicalIoTransferredRate.Enabled = true
+			cfg.Metrics.OracledbPhysicalOperationsRate.Enabled = true
+			cfg.Metrics.OracledbRedoSizeRate.Enabled = true
+			cfg.Metrics.OracledbCursorOpenRate.Enabled = true
+			cfg.Metrics.OracledbEnqueueDeadlocksRate.Enabled = true
+			cfg.Metrics.OracledbEnqueueTimeoutsRate.Enabled = true
+			cfg.Metrics.OracledbExecutionsRate.Enabled = true
+			cfg.Metrics.OracledbHardParsesRate.Enabled = true
+			cfg.Metrics.OracledbLogonsRate.Enabled = true
+			cfg.Metrics.OracledbTransactionsRate.Enabled = true
 
 			scrpr := oracleScraper{
 				logger: zap.NewNop(),
@@ -907,10 +1634,16 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 
 			metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			metricMap := make(map[string]float64)
+			intMetricMap := make(map[string]int64)
 			for i := 0; i < metrics.Len(); i++ {
 				metric := metrics.At(i)
 				if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
-					metricMap[metric.Name()] = metric.Gauge().DataPoints().At(0).DoubleValue()
+					dp := metric.Gauge().DataPoints().At(0)
+					if dp.ValueType() == pmetric.NumberDataPointValueTypeInt {
+						intMetricMap[metric.Name()] = dp.IntValue()
+					} else {
+						metricMap[metric.Name()] = dp.DoubleValue()
+					}
 				}
 			}
 
@@ -926,8 +1659,87 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			assert.InDelta(t, 97.80, metricMap["oracledb.redo_allocation.utilization"], floatDelta)
 			assert.InDelta(t, 0.25, metricMap["oracledb.parse.rate"], floatDelta)
 			assert.InDelta(t, 75.30, metricMap["oracledb.execution.utilization"], floatDelta)
+			assert.InDelta(t, 2.50, metricMap["oracledb.session.average"], floatDelta)
+			// 0.85 ms -> 0.00085 s
+			assert.InDelta(t, 0.0085, metricMap["oracledb.io.single_block.read.latency"], floatDelta)
+			// 12.34 cs -> 0.1234 s
+			assert.InDelta(t, 0.1234, metricMap["oracledb.transaction.response.time"], floatDelta)
+			assert.InDelta(t, 96.40, metricMap["oracledb.cursor.cache.utilization"], floatDelta)
+			assert.InDelta(t, 92.10, metricMap["oracledb.pga.cache.utilization"], floatDelta)
+			// 150 cs/s -> 1.5 CPU cores
+			assert.InDelta(t, 1.50, metricMap["oracledb.cpu.usage.rate"], floatDelta)
+			// 320 cs/s -> 3.2 CPU cores
+			assert.InDelta(t, 3.20, metricMap["oracledb.host.cpu.usage.rate"], floatDelta)
+			// V$SYSMETRIC I/O rates (no attribute).
+			assert.InDelta(t, 59.0, metricMap["oracledb.io.requests.rate"], floatDelta)
+			// 5 MB/s -> 5242880 By/s
+			assert.InDelta(t, 5242880.0, metricMap["oracledb.io.throughput.rate"], floatDelta)
+			assert.InDelta(t, 256.0, metricMap["oracledb.buffer_cache.block.changes.rate"], floatDelta)
+			assert.InDelta(t, 2048.0, metricMap["oracledb.redo.size.rate"], floatDelta)
+			assert.InDelta(t, 512.0, metricMap["oracledb.logical_reads.rate"], floatDelta)
+
+			// Consolidated read/write rates (disk.io.direction attribute).
+			dirMap := sysmetricDirectionValues(metrics)
+			assert.InDelta(t, 1048576.0, dirMap["oracledb.physical_io.transferred.rate"]["read"], floatDelta)
+			assert.InDelta(t, 524288.0, dirMap["oracledb.physical_io.transferred.rate"]["write"], floatDelta)
+			assert.InDelta(t, 42.0, dirMap["oracledb.physical_io.requests.rate"]["read"], floatDelta)
+			assert.InDelta(t, 17.0, dirMap["oracledb.physical_io.requests.rate"]["write"], floatDelta)
+			assert.InDelta(t, 128.0, dirMap["oracledb.physical_operations.rate"]["read"], floatDelta)
+			assert.InDelta(t, 64.0, dirMap["oracledb.physical_operations.rate"]["write"], floatDelta)
+
+			// V$SYSMETRIC workload rates.
+			assert.InDelta(t, 1500.50, metricMap["oracledb.executions.rate"], floatDelta)
+			assert.InDelta(t, 3.75, metricMap["oracledb.hard_parses.rate"], floatDelta)
+			assert.InDelta(t, 42.10, metricMap["oracledb.cursor.open.rate"], floatDelta)
+			assert.InDelta(t, 1.20, metricMap["oracledb.logons.rate"], floatDelta)
+			assert.InDelta(t, 0.50, metricMap["oracledb.enqueue.timeouts.rate"], floatDelta)
+			assert.InDelta(t, 0.05, metricMap["oracledb.enqueue.deadlocks.rate"], floatDelta)
+
+			// oracledb.transactions.rate carries commit and rollback data points.
+			txnRates := make(map[string]float64)
+			for i := 0; i < metrics.Len(); i++ {
+				metric := metrics.At(i)
+				if metric.Name() != "oracledb.transactions.rate" {
+					continue
+				}
+				dps := metric.Gauge().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dp := dps.At(j)
+					txnType, ok := dp.Attributes().Get("oracledb.transaction.type")
+					require.True(t, ok)
+					txnRates[txnType.Str()] = dp.DoubleValue()
+				}
+			}
+			assert.InDelta(t, 85.60, txnRates["commit"], floatDelta)
+			assert.InDelta(t, 2.40, txnRates["rollback"], floatDelta)
 		})
 	}
+}
+
+// sysmetricDirectionValues collects gauge data points keyed by metric name then by
+// the disk.io.direction attribute value, so consolidated read/write rates can be
+// asserted independently.
+func sysmetricDirectionValues(metrics pmetric.MetricSlice) map[string]map[string]float64 {
+	out := make(map[string]map[string]float64)
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		if metric.Type() != pmetric.MetricTypeGauge {
+			continue
+		}
+		dps := metric.Gauge().DataPoints()
+		for j := 0; j < dps.Len(); j++ {
+			dp := dps.At(j)
+			dir, ok := dp.Attributes().Get("disk.io.direction")
+			if !ok {
+				continue
+			}
+			if out[metric.Name()] == nil {
+				out[metric.Name()] = make(map[string]float64)
+			}
+			out[metric.Name()][dir.Str()] = dp.DoubleValue()
+		}
+	}
+	return out
 }
 
 func TestGetInstanceId(t *testing.T) {
@@ -1004,7 +1816,7 @@ func TestTopNLogsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
 			return nil, nil
 		},
 		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-			if strings.Contains(s, "V$SQL_PLAN") {
+			if strings.Contains(s, SQLPlanTable) {
 				metricRowFile := readFile("oracleQueryPlanData.txt")
 				_ = json.Unmarshal(metricRowFile, &logRowData)
 				return &fakeDbClient{Responses: [][]metricRow{logRowData}}
@@ -1095,7 +1907,7 @@ func TestTopNLogsProcedureNameEmpty(t *testing.T) {
 			return nil, nil
 		},
 		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-			if strings.Contains(s, "V$SQL_PLAN") {
+			if strings.Contains(s, SQLPlanTable) {
 				return &fakeDbClient{Responses: [][]metricRow{planData}}
 			}
 			return &fakeDbClient{Responses: [][]metricRow{metricsData}}
@@ -1145,7 +1957,7 @@ func TestScrapesTopNLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 		{
 			name: "valid collection",
 			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-				if strings.Contains(s, "V$SQL_PLAN") {
+				if strings.Contains(s, SQLPlanTable) {
 					metricRowFile := readFile("oracleQueryPlanData.txt")
 					unmarshalErr := json.Unmarshal(metricRowFile, &logRowData)
 					if unmarshalErr == nil {
@@ -1279,7 +2091,7 @@ func TestObfuscateCacheHitsHandlesTruncatedSQL(t *testing.T) {
 			return nil, nil
 		},
 		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-			if strings.Contains(s, "V$SQL_PLAN") {
+			if strings.Contains(s, SQLPlanTable) {
 				return &fakeDbClient{Responses: [][]metricRow{{}}}
 			}
 			return &fakeDbClient{Responses: [][]metricRow{metricsData}}
@@ -1328,6 +2140,92 @@ func TestCalculateLookbackSeconds(t *testing.T) {
 	lookbackTime := scrpr.calculateLookbackSeconds()
 
 	assert.LessOrEqual(t, expectedMinimumLookbackTime, lookbackTime, "`lookbackTime` should be minimum %d", expectedMinimumLookbackTime)
+}
+
+func TestScraper_ScrapeSGAInfo(t *testing.T) {
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+		},
+		{
+			name: "bad bytes value",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == sgaInfoSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{{"NAME": "Buffer Cache Size", "BYTES": "not_a_number"}},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+			errWanted: `failed to parse int64 for SGA row "Buffer Cache Size", value was "not_a_number"`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
+			cfg.Metrics.OracledbSgaUsage.Enabled = true
+			cfg.Metrics.OracledbSgaLimit.Enabled = true
+
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc:   test.dbclientFn,
+				id:                   component.ID{},
+				metricsBuilderConfig: cfg,
+			}
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(t.Context()))
+			}()
+			require.NoError(t, err)
+			m, err := scrpr.scrape(t.Context())
+			if test.errWanted != "" {
+				require.True(t, scrapererror.IsPartialScrapeError(err))
+				require.Contains(t, err.Error(), test.errWanted)
+				return
+			}
+			require.NoError(t, err)
+			metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+			wantUsage := map[string]int64{
+				"buffer_cache":        1375731712,
+				"data_transfer_cache": 0,
+				"fixed_sga":           9292416,
+				"java_pool":           0,
+				"large_pool":          33554432,
+				"redo_buffers":        14598144,
+				"shared_io_pool":      134217728,
+				"shared_pool":         536870912,
+				"streams_pool":        0,
+			}
+			gotUsage := map[string]int64{}
+			var sgaLimit int64
+			for i := 0; i < metrics.Len(); i++ {
+				metric := metrics.At(i)
+				switch metric.Name() {
+				case "oracledb.sga.usage":
+					for j := 0; j < metric.Gauge().DataPoints().Len(); j++ {
+						dp := metric.Gauge().DataPoints().At(j)
+						name, _ := dp.Attributes().Get("oracledb.sga.component.name")
+						gotUsage[name.Str()] = dp.IntValue()
+					}
+				case "oracledb.sga.limit":
+					sgaLimit = metric.Gauge().DataPoints().At(0).IntValue()
+				}
+			}
+			assert.Equal(t, wantUsage, gotUsage)
+			assert.Equal(t, int64(2147483648), sgaLimit)
+		})
+	}
 }
 
 func readFile(fname string) []byte {
