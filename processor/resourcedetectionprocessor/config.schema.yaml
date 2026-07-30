@@ -36,6 +36,9 @@ $defs:
       elasticbeanstalk:
         description: Elasticbeanstalk contains user-specified configurations for the elasticbeanstalk detector
         $ref: ./internal/aws/elasticbeanstalk.config
+      env:
+        description: EnvConfig contains user-specified configurations for the env detector
+        $ref: ./internal/env.config
       gcp:
         description: GcpConfig contains user-specified configurations for the gcp detector
         $ref: ./internal/gcp.config

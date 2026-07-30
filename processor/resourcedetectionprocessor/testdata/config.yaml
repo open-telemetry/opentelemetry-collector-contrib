@@ -66,8 +66,8 @@ resource_detection/env:
   override: false
   env:
     allow_list:
-      - service.name
-      - deployment.environment
+      - deployment.environment.name
+      - k8s.cluster.name
 
 resource_detection/refresh:
   detectors: [system]

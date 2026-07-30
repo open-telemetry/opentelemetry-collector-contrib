@@ -49,7 +49,7 @@ processors:
   resource_detection/env:
     detectors: [env]
     env:
-      allow_list: [service.name, service.namespace, deployment.environment]
+      allow_list: [deployment.environment.name, k8s.cluster.name]
 ```
 
 > [!NOTE]

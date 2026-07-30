@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 
 	envConfig := detectorCreateDefaultConfig()
 	envConfig.EnvConfig = env.Config{
-		Allowlist: []string{"service.name", "deployment.environment"},
+		Allowlist: []string{"deployment.environment.name", "k8s.cluster.name"},
 	}
 
 	systemConfig := detectorCreateDefaultConfig()
