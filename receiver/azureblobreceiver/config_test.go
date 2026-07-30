@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
@@ -65,7 +65,7 @@ func TestLoadConfig(t *testing.T) {
 func TestMissingConnectionString(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	err := xconfmap.Validate(cfg)
+	err := confmap.Validate(cfg)
 	assert.EqualError(t, err, `"ConnectionString" is not specified in config`)
 }
 
@@ -74,7 +74,7 @@ func TestMissingServicePrincipalCredentials(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Authentication = ServicePrincipalAuth
-	err = xconfmap.Validate(cfg)
+	err = confmap.Validate(cfg)
 	assert.EqualError(t, err, `"TenantID" is not specified in config; "ClientID" is not specified in config; "ClientSecret" is not specified in config; "StorageAccountURL" is not specified in config`)
 }
 
@@ -86,7 +86,7 @@ func TestInvalidEncoding(t *testing.T) {
 	// encoding extension ID are rejected during validation.
 	cfg.Logs.Encoding = "not a valid id"
 	cfg.Traces.Encoding = "also not valid"
-	err := xconfmap.Validate(cfg)
+	err := confmap.Validate(cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `logs.encoding "not a valid id" is not a supported built-in encoding`)
 	assert.Contains(t, err.Error(), `traces.encoding "also not valid" is not a supported built-in encoding`)
@@ -100,7 +100,7 @@ func TestEncodingExtensionIDAcceptedByValidation(t *testing.T) {
 	// checked when the receiver starts.
 	cfg.Logs.Encoding = "myencoding"
 	cfg.Traces.Encoding = "myencoding/traces"
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func TestBlankEncoding(t *testing.T) {
@@ -111,7 +111,7 @@ func TestBlankEncoding(t *testing.T) {
 	// empty component ID is rejected.
 	cfg.Logs.Encoding = ""
 	cfg.Traces.Encoding = ""
-	err := xconfmap.Validate(cfg)
+	err := confmap.Validate(cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `logs.encoding "" is not a supported built-in encoding`)
 	assert.Contains(t, err.Error(), `traces.encoding "" is not a supported built-in encoding`)

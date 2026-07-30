@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecs
 go 1.25.0
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.42.1
+	github.com/aws/aws-sdk-go-v2 v1.43.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.157.0
 	github.com/stretchr/testify v1.11.1
@@ -11,7 +11,6 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/config/confighttp v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/confmap v1.63.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/confmap/xconfmap v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/consumer v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/consumer/consumertest v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260723141305-52e6bf4aaaba

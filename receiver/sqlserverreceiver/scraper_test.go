@@ -38,6 +38,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	// in the case of using a config that may have previously disabled a metric.
 	cfg.Metrics.SqlserverAccessScanRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchRequestRate.Enabled = enabled
+	cfg.Metrics.SqlserverCPUUtilization.Enabled = enabled
 	cfg.Metrics.SqlserverBatchSQLCompilationRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = enabled
 	cfg.Metrics.SqlserverConnectionResetRate.Enabled = enabled
@@ -51,6 +52,8 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
 	cfg.Metrics.SqlserverDeadlockRate.Enabled = enabled
+	cfg.Metrics.SqlserverDiskOperations.Enabled = enabled
+	cfg.Metrics.SqlserverDiskIo.Enabled = enabled
 	cfg.Metrics.SqlserverErrorRate.Enabled = enabled
 	cfg.Metrics.SqlserverExtentOperationRate.Enabled = enabled
 	cfg.Metrics.SqlserverGhostRecordSkippedRate.Enabled = enabled
@@ -123,6 +126,8 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverTransactionRate.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
 	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
+	cfg.Metrics.SqlserverHostMemoryLimit.Enabled = enabled
+	cfg.Metrics.SqlserverHostMemoryUsage.Enabled = enabled
 	cfg.Metrics.SqlserverWorkerRequestCount.Enabled = enabled
 	cfg.Metrics.SqlserverWorkerThreadCount.Enabled = enabled
 	cfg.Metrics.SqlserverWorktableCacheHitRatio.Enabled = enabled
@@ -249,6 +254,10 @@ func TestSuccessfulScrape(t *testing.T) {
 					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics")
 				case getSQLServerWorkerThreadsQuery(scraper.config.InstanceName):
 					expectedFile = filepath.Join("testdata", "expectedWorkerThreads")
+				case getSQLServerCPUMemoryQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedCPUMemory")
+				case getSQLServerDiskIOQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedDiskIO")
 				}
 				expectedFile += fileSuffix
 
@@ -498,6 +507,10 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("workerThreadsQueryData.txt")
 	case getSQLServerIndexPhysicalStatsQuery(mc.instanceName):
 		queryResults, err = readFile("indexPhysicalQueryData.txt")
+	case getSQLServerCPUMemoryQuery(mc.instanceName):
+		queryResults, err = readFile("cpuMemoryQueryData.txt")
+	case getSQLServerDiskIOQuery(mc.instanceName):
+		queryResults, err = readFile("diskIOQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
@@ -1403,4 +1416,179 @@ func TestRecordDatabaseStatusMetricsUsesResourceBuilderForMetrics(t *testing.T) 
 	serverPort, exists := resourceAttributes.Get("server.port")
 	assert.True(t, exists)
 	assert.Equal(t, int64(1434), serverPort.Int())
+}
+
+func TestRecordCPUMemoryMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	assert.NoError(t, cfg.Validate())
+	cfg.Metrics.SqlserverCPUUtilization.Enabled = true
+	cfg.Metrics.SqlserverHostMemoryLimit.Enabled = true
+	cfg.Metrics.SqlserverHostMemoryUsage.Enabled = true
+
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotEmpty(t, scrapers)
+
+	var cpuMemScraper *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerCPUMemoryQuery(cfg.InstanceName) {
+			cpuMemScraper = s
+			break
+		}
+	}
+	assert.NotNil(t, cpuMemScraper, "cpu memory scraper should be present")
+
+	err := cpuMemScraper.Start(t.Context(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+	defer assert.NoError(t, cpuMemScraper.Shutdown(t.Context()))
+
+	cpuMemScraper.client = mockClient{
+		instanceName: cpuMemScraper.config.InstanceName,
+		SQL:          cpuMemScraper.sqlQuery,
+	}
+
+	actualMetrics, err := cpuMemScraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	// Verify 4 data points: 1 cpu utilization + 1 memory limit + 2 memory usage (used, free)
+	var totalDP int
+	var cpuVal, limitVal, usedVal, freeVal float64
+	var sawCPU, sawLimit, sawUsed, sawFree bool
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				switch m.Name() {
+				case metadata.MetricsInfo.SqlserverCPUUtilization.Name:
+					dps := m.Gauge().DataPoints()
+					totalDP += dps.Len()
+					for d := 0; d < dps.Len(); d++ {
+						cpuVal = dps.At(d).DoubleValue()
+						sawCPU = true
+					}
+				case metadata.MetricsInfo.SqlserverHostMemoryLimit.Name:
+					dps := m.Gauge().DataPoints()
+					totalDP += dps.Len()
+					for d := 0; d < dps.Len(); d++ {
+						limitVal = float64(dps.At(d).IntValue())
+						sawLimit = true
+					}
+				case metadata.MetricsInfo.SqlserverHostMemoryUsage.Name:
+					dps := m.Gauge().DataPoints()
+					totalDP += dps.Len()
+					for d := 0; d < dps.Len(); d++ {
+						state, _ := dps.At(d).Attributes().Get("system.memory.state")
+						switch state.Str() {
+						case "used":
+							usedVal = float64(dps.At(d).IntValue())
+							sawUsed = true
+						case "free":
+							freeVal = float64(dps.At(d).IntValue())
+							sawFree = true
+						}
+					}
+				}
+			}
+		}
+	}
+	assert.Equal(t, 4, totalDP)
+	assert.True(t, sawCPU, "cpu utilization data point should be emitted")
+	assert.True(t, sawLimit, "host memory limit data point should be emitted")
+	assert.True(t, sawUsed, "host memory usage used data point should be emitted")
+	assert.True(t, sawFree, "host memory usage free data point should be emitted")
+	assert.InDelta(t, 0.425, cpuVal, 0.0001)
+	assert.Equal(t, float64(17179869184), limitVal)
+	assert.Equal(t, float64(8589934592), usedVal)
+	assert.Equal(t, float64(8589934592), freeVal)
+}
+
+func TestRecordDiskIOMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	assert.NoError(t, cfg.Validate())
+	cfg.Metrics.SqlserverDiskOperations.Enabled = true
+	cfg.Metrics.SqlserverDiskIo.Enabled = true
+
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotEmpty(t, scrapers)
+
+	var diskScraper *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerDiskIOQuery(cfg.InstanceName) {
+			diskScraper = s
+			break
+		}
+	}
+	assert.NotNil(t, diskScraper, "disk io scraper should be present")
+
+	err := diskScraper.Start(t.Context(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+	defer assert.NoError(t, diskScraper.Shutdown(t.Context()))
+
+	diskScraper.client = mockClient{
+		instanceName: diskScraper.config.InstanceName,
+		SQL:          diskScraper.sqlQuery,
+	}
+
+	actualMetrics, err := diskScraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	// 3 drives x (2 directions for operations + 2 directions for bytes) = 12 data points
+	var totalDP int
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				switch m.Name() {
+				case metadata.MetricsInfo.SqlserverDiskOperations.Name:
+					totalDP += m.Sum().DataPoints().Len()
+				case metadata.MetricsInfo.SqlserverDiskIo.Name:
+					totalDP += m.Sum().DataPoints().Len()
+				}
+			}
+		}
+	}
+	assert.Equal(t, 12, totalDP)
+}
+
+func TestIsCPUMemoryQueryEnabled(t *testing.T) {
+	assert.False(t, isCPUMemoryQueryEnabled(nil))
+
+	metrics := &metadata.MetricsConfig{}
+	assert.False(t, isCPUMemoryQueryEnabled(metrics))
+
+	metrics.SqlserverCPUUtilization.Enabled = true
+	assert.True(t, isCPUMemoryQueryEnabled(metrics))
+
+	metrics.SqlserverCPUUtilization.Enabled = false
+	metrics.SqlserverHostMemoryLimit.Enabled = true
+	assert.True(t, isCPUMemoryQueryEnabled(metrics))
+
+	metrics.SqlserverHostMemoryLimit.Enabled = false
+	metrics.SqlserverHostMemoryUsage.Enabled = true
+	assert.True(t, isCPUMemoryQueryEnabled(metrics))
+}
+
+func TestIsDiskIOQueryEnabled(t *testing.T) {
+	assert.False(t, isDiskIOQueryEnabled(nil))
+
+	metrics := &metadata.MetricsConfig{}
+	assert.False(t, isDiskIOQueryEnabled(metrics))
+
+	metrics.SqlserverDiskOperations.Enabled = true
+	assert.True(t, isDiskIOQueryEnabled(metrics))
+
+	metrics.SqlserverDiskOperations.Enabled = false
+	metrics.SqlserverDiskIo.Enabled = true
+	assert.True(t, isDiskIOQueryEnabled(metrics))
 }

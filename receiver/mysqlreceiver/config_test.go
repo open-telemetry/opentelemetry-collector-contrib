@@ -27,7 +27,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Endpoint = "localhost:3306"
+	expected.AddrConfig.Endpoint = "localhost:3306"
 	expected.Username = "otel"
 	expected.Password = "${env:MYSQL_PASSWORD}"
 	expected.Database = "otel"
@@ -50,7 +50,7 @@ func TestLoadConfigDefaultTLS(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Endpoint = "localhost:3306"
+	expected.AddrConfig.Endpoint = "localhost:3306"
 	expected.Username = "otel"
 	expected.Password = "${env:MYSQL_PASSWORD}"
 	expected.Database = "otel"

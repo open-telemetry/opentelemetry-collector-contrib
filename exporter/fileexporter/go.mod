@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/DeRuina/timberjack v1.4.5
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/klauspost/compress v1.19.0
+	github.com/klauspost/compress v1.19.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.157.0
@@ -14,7 +14,6 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/config/configcompression v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/confmap v1.63.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/confmap/xconfmap v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/consumer v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/consumer/consumererror v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/exporter v1.63.1-0.20260723141305-52e6bf4aaaba

@@ -21,7 +21,6 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/config/configtls v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/confmap v1.63.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/confmap/xconfmap v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/consumer v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/exporter v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.157.1-0.20260723141305-52e6bf4aaaba
@@ -238,6 +237,7 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.157.1-0.20260723141305-52e6bf4aaaba // indirect
 	go.opentelemetry.io/collector/processor v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.157.1-0.20260723141305-52e6bf4aaaba // indirect
 	go.opentelemetry.io/collector/receiver v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.157.1-0.20260723141305-52e6bf4aaaba // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.157.1-0.20260723141305-52e6bf4aaaba // indirect

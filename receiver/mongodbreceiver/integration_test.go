@@ -72,7 +72,7 @@ func integrationTest(name string, script []string, cfgMod func(*Config)) func(*t
 						Endpoint: fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, mongoPort)),
 					},
 				}
-				rCfg.Insecure = true
+				rCfg.ClientConfig.Insecure = true
 			}),
 		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", expectedFile)),
 		scraperinttest.WithCompareOptions(
@@ -124,7 +124,7 @@ func topQueryIntegrationTest(t *testing.T, mongoVersion string) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Hosts = []confignet.TCPAddrConfig{{Endpoint: endpoint}}
-	cfg.Insecure = true
+	cfg.ClientConfig.Insecure = true
 	cfg.DirectConnection = true
 	lbc := metadata.DefaultLogsBuilderConfig()
 	lbc.Events.DbServerTopQuery.Enabled = true

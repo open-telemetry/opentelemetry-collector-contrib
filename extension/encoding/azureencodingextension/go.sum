@@ -47,8 +47,8 @@ github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee/go.mod h1:yWu
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/relvacode/iso8601 v1.7.0 h1:BXy+V60stMP6cpswc+a93Mq3e65PfXCgDFfhvNNGrdo=
-github.com/relvacode/iso8601 v1.7.0/go.mod h1:FlNp+jz+TXpyRqgmM7tnzHHzBnz776kmAH2h3sZCn0I=
+github.com/relvacode/iso8601 v1.8.0 h1:lDGJ4+nIXPzY1KOTk6DNfKZQWRGMmbvQKPNuZ7GxZPk=
+github.com/relvacode/iso8601 v1.8.0/go.mod h1:FlNp+jz+TXpyRqgmM7tnzHHzBnz776kmAH2h3sZCn0I=
 github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0tI/otEQ=
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
@@ -63,8 +63,6 @@ go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260723141305-
 go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260723141305-52e6bf4aaaba/go.mod h1:AUzvlwDat8AHaNRDm+dzQ59uaEXQO1qTWccjkRjqq00=
 go.opentelemetry.io/collector/confmap v1.63.1-0.20260723141305-52e6bf4aaaba h1:eJbAiR2GK23KtnnwPxMFk5pngmu1V4OG4kMVqOgW+yI=
 go.opentelemetry.io/collector/confmap v1.63.1-0.20260723141305-52e6bf4aaaba/go.mod h1:ksJNAmLTiMkBjMYwXFW1MRRfXYnRsHXA0fW+ZGwb/1U=
-go.opentelemetry.io/collector/confmap/xconfmap v0.157.1-0.20260723141305-52e6bf4aaaba h1:WEz6OFby9cHhdvZFtaqEbo1ypACq6kOM+1EcNPwzGW8=
-go.opentelemetry.io/collector/confmap/xconfmap v0.157.1-0.20260723141305-52e6bf4aaaba/go.mod h1:W1wZk6YJ3+IyvIZEmkXH/ejwkUtBV2zCThY6ewZYd6E=
 go.opentelemetry.io/collector/extension v1.63.1-0.20260723141305-52e6bf4aaaba h1:8Wmi/FUX6WzWgdy87IiQ/8p4IMQR+b53kGPL7ka4wiI=
 go.opentelemetry.io/collector/extension v1.63.1-0.20260723141305-52e6bf4aaaba/go.mod h1:K4UQiO/T+B3ex5D5UL0H0Jd7xB3NL12qUHisGiCitbU=
 go.opentelemetry.io/collector/extension/extensiontest v0.157.1-0.20260723141305-52e6bf4aaaba h1:Puz47Gm9tRFDyXgV13uMHKxH/uY9NizZ/DCfMMbaOEM=
