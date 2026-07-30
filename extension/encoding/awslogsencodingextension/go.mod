@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/aws/aws-lambda-go v1.54.0
 	github.com/goccy/go-json v0.10.6
-	github.com/klauspost/compress v1.19.0
+	github.com/klauspost/compress v1.19.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.157.0
@@ -15,7 +15,6 @@ require (
 	go.opentelemetry.io/collector/component v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/confmap v1.63.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/confmap/xconfmap v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/extension v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/extension/extensiontest v0.157.1-0.20260723141305-52e6bf4aaaba

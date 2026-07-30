@@ -66,7 +66,7 @@ func newMySQLScraper(
 	cache *lru.Cache[string, int64],
 	queryPlanCache *expirable.LRU[string, string],
 ) *mySQLScraper {
-	seed := resolveServiceInstanceSeed(config.Endpoint, settings.Logger)
+	seed := resolveServiceInstanceSeed(config.AddrConfig.Endpoint, settings.Logger)
 	serviceInstanceID := uuid.NewSHA1(otelUUIDv5Namespace, []byte(seed)).String()
 	return &mySQLScraper{
 		logger:                 settings.Logger,
@@ -212,7 +212,7 @@ func (m *mySQLScraper) emitLogs(errs *scrapererror.ScrapeErrors) (plog.Logs, err
 }
 
 func (m *mySQLScraper) setResourceAttributes(rb *metadata.ResourceBuilder) {
-	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	rb.SetMysqlInstanceEndpoint(m.config.AddrConfig.Endpoint)
 	rb.SetServiceInstanceID(m.serviceInstanceID)
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
