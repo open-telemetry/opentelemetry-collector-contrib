@@ -94,6 +94,10 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			loadSize:        c.LoadSize,
 			allowFailures:   c.AllowExportFailures,
 			rand:            rand.New(rand.NewPCG(uint64(time.Now().UnixNano()+int64(i)), 0)),
+			sampleTypeName:  c.SampleTypeName,
+			sampleTypeUnit:  c.SampleTypeUnit,
+			periodTypeName:  c.PeriodTypeName,
+			periodTypeUnit:  c.PeriodTypeUnit,
 		}
 
 		exp, err := expF()

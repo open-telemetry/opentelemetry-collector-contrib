@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -70,6 +71,115 @@ func TestGRPCExporterForwardsHeaders(t *testing.T) {
 	require.NotNil(t, md, "server should have received metadata")
 	assert.Equal(t, []string{"Bearer test-token"}, md.Get("authorization"))
 	assert.Equal(t, []string{"value"}, md.Get("x-custom"))
+}
+
+func TestGRPCExporterTimeout(t *testing.T) {
+	for name, tc := range map[string]struct {
+		timeout      time.Duration
+		handlerDelay time.Duration
+		expectError  bool
+	}{
+		"TimeoutElapsed": {
+			timeout:      50 * time.Millisecond,
+			handlerDelay: 500 * time.Millisecond,
+			expectError:  true,
+		},
+		"TimeoutNotElapsed": {
+			timeout:     500 * time.Millisecond,
+			expectError: false,
+		},
+		"NoTimeout": {
+			timeout:     0,
+			expectError: false,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := grpc.NewServer(grpc.UnaryInterceptor(func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+				if tc.handlerDelay > 0 {
+					select {
+					case <-ctx.Done():
+						return nil, ctx.Err()
+					case <-time.After(tc.handlerDelay):
+					}
+				}
+				return handler(ctx, req)
+			}))
+			pprofileotlp.RegisterGRPCServer(srv, &captureServer{})
+			lis, err := net.Listen("tcp", "127.0.0.1:0")
+			require.NoError(t, err)
+			go func() { _ = srv.Serve(lis) }()
+			defer srv.Stop()
+
+			cfg := &Config{
+				Config: config.Config{
+					CustomEndpoint: lis.Addr().String(),
+					Insecure:       true,
+					Timeout:        tc.timeout,
+				},
+			}
+
+			exp, err := newGRPCExporter(cfg)
+			require.NoError(t, err)
+			defer func() { _ = exp.Shutdown(t.Context()) }()
+
+			td := pprofile.NewProfiles()
+			td.ResourceProfiles().AppendEmpty()
+			err = exp.Export(t.Context(), td)
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestHTTPExporterTimeout(t *testing.T) {
+	for name, tc := range map[string]struct {
+		timeout      time.Duration
+		handlerDelay time.Duration
+		expectError  bool
+	}{
+		"TimeoutElapsed": {
+			timeout:      50 * time.Millisecond,
+			handlerDelay: 500 * time.Millisecond,
+			expectError:  true,
+		},
+		"TimeoutNotElapsed": {
+			timeout:     500 * time.Millisecond,
+			expectError: false,
+		},
+		"NoTimeout": {
+			timeout:     0,
+			expectError: false,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				if tc.handlerDelay > 0 {
+					time.Sleep(tc.handlerDelay)
+				}
+				w.WriteHeader(http.StatusAccepted)
+			}))
+			defer srv.Close()
+
+			cfg := newTestHTTPExporterConfig(t, srv.URL)
+			cfg.Timeout = tc.timeout
+
+			exp, err := newHTTPExporter(cfg)
+			require.NoError(t, err)
+			defer func() { _ = exp.Shutdown(t.Context()) }()
+
+			td := pprofile.NewProfiles()
+			td.ResourceProfiles().AppendEmpty()
+			err = exp.Export(t.Context(), td)
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestHTTPExporterUsesDefaultProfilesPath(t *testing.T) {

@@ -25,6 +25,10 @@ type Config struct {
 	ProfileDuration time.Duration
 	TraceID         string
 	SpanID          string
+	SampleTypeName  string
+	SampleTypeUnit  string
+	PeriodTypeName  string
+	PeriodTypeUnit  string
 }
 
 func NewConfig() *Config {
@@ -46,6 +50,11 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.DurationVar(&c.ProfileDuration, "profile-duration", c.ProfileDuration, "Duration represented by each profile (DurationNano)")
 	fs.StringVar(&c.TraceID, "trace-id", c.TraceID, "TraceID for profile-to-trace correlation")
 	fs.StringVar(&c.SpanID, "span-id", c.SpanID, "SpanID for profile-to-trace correlation")
+
+	fs.StringVar(&c.SampleTypeName, "sample-type-name", c.SampleTypeName, "Name of the profile's sample type (e.g. cpu, alloc_space)")
+	fs.StringVar(&c.SampleTypeUnit, "sample-type-unit", c.SampleTypeUnit, "Unit of the profile's sample type (e.g. nanoseconds, bytes)")
+	fs.StringVar(&c.PeriodTypeName, "period-type-name", c.PeriodTypeName, "Name of the profile's period type")
+	fs.StringVar(&c.PeriodTypeUnit, "period-type-unit", c.PeriodTypeUnit, "Unit of the profile's period type")
 }
 
 // SetDefaults sets the default values for the configuration.
@@ -60,6 +69,10 @@ func (c *Config) SetDefaults() {
 	c.ProfileDuration = 10 * time.Second
 	c.TraceID = ""
 	c.SpanID = ""
+	c.SampleTypeName = "cpu"
+	c.SampleTypeUnit = "nanoseconds"
+	c.PeriodTypeName = "cpu"
+	c.PeriodTypeUnit = "nanoseconds"
 }
 
 // Validate validates the test scenario parameters.

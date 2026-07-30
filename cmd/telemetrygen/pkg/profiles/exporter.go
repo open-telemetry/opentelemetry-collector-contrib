@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
@@ -24,8 +25,9 @@ type profileExporter interface {
 }
 
 type grpcProfileExporter struct {
-	client pprofileotlp.GRPCClient
-	conn   *grpc.ClientConn
+	client  pprofileotlp.GRPCClient
+	conn    *grpc.ClientConn
+	timeout time.Duration
 }
 
 func newGRPCExporter(cfg *Config) (*grpcProfileExporter, error) {
@@ -57,12 +59,19 @@ func newGRPCExporter(cfg *Config) (*grpcProfileExporter, error) {
 	}
 
 	return &grpcProfileExporter{
-		client: pprofileotlp.NewGRPCClient(conn),
-		conn:   conn,
+		client:  pprofileotlp.NewGRPCClient(conn),
+		conn:    conn,
+		timeout: cfg.Timeout,
 	}, nil
 }
 
 func (e *grpcProfileExporter) Export(ctx context.Context, td pprofile.Profiles) error {
+	if e.timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, e.timeout)
+		defer cancel()
+	}
+
 	req := pprofileotlp.NewExportRequestFromProfiles(td)
 	_, err := e.client.Export(ctx, req)
 	return err
@@ -97,7 +106,7 @@ func newHTTPExporter(cfg *Config) (*httpProfileExporter, error) {
 	}
 
 	return &httpProfileExporter{
-		client:   &http.Client{Transport: transport},
+		client:   &http.Client{Transport: transport, Timeout: cfg.Timeout},
 		endpoint: endpoint,
 		headers:  cfg.GetHeaders(),
 	}, nil

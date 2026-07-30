@@ -183,6 +183,10 @@ func TestProfileStructure(t *testing.T) {
 		StackDepth:      3,
 		UniqueFunctions: 10,
 		ProfileDuration: 30 * time.Second,
+		SampleTypeName:  "cpu",
+		SampleTypeUnit:  "nanoseconds",
+		PeriodTypeName:  "cpu",
+		PeriodTypeUnit:  "nanoseconds",
 	}
 
 	m := &mockProfileExporter{}
@@ -231,6 +235,46 @@ func TestProfileStructure(t *testing.T) {
 
 	// Time should be set (non-zero)
 	assert.NotZero(t, profile.Time())
+}
+
+func TestProfileStructureCustomSampleAndPeriodType(t *testing.T) {
+	cfg := &Config{
+		Config: config.Config{
+			WorkerCount: 1,
+		},
+		NumProfiles:     1,
+		SampleCount:     1,
+		StackDepth:      3,
+		UniqueFunctions: 10,
+		ProfileDuration: 30 * time.Second,
+		SampleTypeName:  "alloc_space",
+		SampleTypeUnit:  "bytes",
+		PeriodTypeName:  "wall",
+		PeriodTypeUnit:  "seconds",
+	}
+
+	m := &mockProfileExporter{}
+	exporterFactory := func() (profileExporter, error) {
+		return m, nil
+	}
+
+	logger := zaptest.NewLogger(t)
+	require.NoError(t, run(cfg, exporterFactory, logger))
+
+	require.Equal(t, 1, countProfileRecords(m.profiles))
+
+	p := m.profiles[0]
+	dict := p.Dictionary()
+	st := dict.StringTable()
+	profile := p.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+
+	sampleType := profile.SampleType()
+	assert.Equal(t, "alloc_space", st.At(int(sampleType.TypeStrindex())))
+	assert.Equal(t, "bytes", st.At(int(sampleType.UnitStrindex())))
+
+	periodType := profile.PeriodType()
+	assert.Equal(t, "wall", st.At(int(periodType.TypeStrindex())))
+	assert.Equal(t, "seconds", st.At(int(periodType.UnitStrindex())))
 }
 
 func TestStackDepth(t *testing.T) {

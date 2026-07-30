@@ -45,6 +45,10 @@ type worker struct {
 	loadSize        int                   // desired minimum size in MB of string data for each generated profile
 	allowFailures   bool                  // whether to continue on export failures
 	rand            *rand.Rand            // seeded PRNG for sample values
+	sampleTypeName  string                // name of the profile's sample type
+	sampleTypeUnit  string                // unit of the profile's sample type
+	periodTypeName  string                // name of the profile's period type
+	periodTypeUnit  string                // unit of the profile's period type
 }
 
 func (w *worker) simulateProfiles(res pcommon.Map, exporter profileExporter, telemetryAttributes []attribute.KeyValue) {
@@ -113,8 +117,10 @@ func (w *worker) generateProfile(td pprofile.Profiles, res pcommon.Map, telemetr
 	// safe to call for every profile sharing a dictionary (e.g. when batching).
 	seedDictionaryZeroValues(dict, st)
 
-	cpuIdx, _ := pprofile.SetString(st, "cpu")
-	nsIdx, _ := pprofile.SetString(st, "nanoseconds")
+	sampleTypeIdx, _ := pprofile.SetString(st, w.sampleTypeName)
+	sampleUnitIdx, _ := pprofile.SetString(st, w.sampleTypeUnit)
+	periodTypeIdx, _ := pprofile.SetString(st, w.periodTypeName)
+	periodUnitIdx, _ := pprofile.SetString(st, w.periodTypeUnit)
 	fileIdx, _ := pprofile.SetString(st, "synthetic.go")
 
 	funcIndices := make([]int32, w.uniqueFunctions)
@@ -202,11 +208,11 @@ func (w *worker) generateProfile(td pprofile.Profiles, res pcommon.Map, telemetr
 	profile.SetTime(pcommon.NewTimestampFromTime(time.Now()))
 	profile.SetDurationNano(uint64(w.profileDuration.Nanoseconds()))
 
-	profile.SampleType().SetTypeStrindex(cpuIdx)
-	profile.SampleType().SetUnitStrindex(nsIdx)
+	profile.SampleType().SetTypeStrindex(sampleTypeIdx)
+	profile.SampleType().SetUnitStrindex(sampleUnitIdx)
 
-	profile.PeriodType().SetTypeStrindex(cpuIdx)
-	profile.PeriodType().SetUnitStrindex(nsIdx)
+	profile.PeriodType().SetTypeStrindex(periodTypeIdx)
+	profile.PeriodType().SetUnitStrindex(periodUnitIdx)
 	profile.SetPeriod(10000000) // 10ms in nanoseconds
 
 	for _, attr := range telemetryAttributes {
