@@ -74,7 +74,7 @@ func TestSyslogWithTCPBackpressure(t *testing.T) {
 	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		release()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+		shutdownCtx, cancel := context.WithTimeout(t.Context(), time.Second)
 		defer cancel()
 		assert.NoError(t, rcvr.Shutdown(shutdownCtx))
 	})
