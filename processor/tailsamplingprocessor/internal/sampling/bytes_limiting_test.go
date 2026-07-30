@@ -4,6 +4,8 @@
 package sampling
 
 import (
+	"encoding/binary"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
@@ -185,6 +188,178 @@ func TestCalculateTraceSize(t *testing.T) {
 
 	// Should return a positive size using ProtoMarshaler.TracesSize()
 	assert.Positive(t, size)
+}
+
+// blTrace builds a single-span trace whose trace ID encodes the given
+// randomness in its low 8 bytes (the bytes TraceIDToRandomness reads) and a
+// unique tag in its first byte, so traces with equal randomness still have
+// distinct IDs. padding bytes of span attribute value grow the marshaled
+// size, which is what the bytes_limiting policy budgets in.
+func blTrace(tag byte, randomness uint64, padding int) *samplingpolicy.TraceData {
+	var id [16]byte
+	id[0] = tag
+	binary.BigEndian.PutUint64(id[8:], randomness)
+	traces := ptrace.NewTraces()
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID(pcommon.TraceID(id))
+	if padding > 0 {
+		span.Attributes().PutStr("pad", strings.Repeat("x", padding))
+	}
+	return &samplingpolicy.TraceData{SpanCount: 1, ReceivedBatches: traces}
+}
+
+// TestBytesLimiterBatchThreshold verifies that, with the tracestate gate on,
+// EvaluateBatch spends the byte budget on the highest-randomness traces first
+// and reports a threshold at the boundary such that every kept trace
+// satisfies threshold.ShouldSample(randomness) and every dropped trace does
+// not.
+func TestBytesLimiterBatchThreshold(t *testing.T) {
+	enableTracestateFeatureGate(t)
+
+	a := blTrace(1, 100, 0)
+	b := blTrace(2, 50, 0)
+	c := blTrace(3, 10, 0)
+
+	// All three traces marshal to the same size, so a budget of exactly two
+	// trace-sizes admits the two highest-randomness traces and drops the third.
+	size := calculateTraceSize(a)
+	bl := NewBytesLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), size*2, size*2).(*budgetLimiter)
+
+	bl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{a, b, c})
+
+	wantThreshold, err := sampling.UnsignedToThreshold(50)
+	require.NoError(t, err)
+
+	for _, tc := range []struct {
+		name       string
+		td         *samplingpolicy.TraceData
+		randomness uint64
+		want       samplingpolicy.Decision
+	}{
+		{"a", a, 100, samplingpolicy.Sampled},
+		{"b", b, 50, samplingpolicy.Sampled},
+		{"c", c, 10, samplingpolicy.NotSampled},
+	} {
+		decision, th, err := bl.EvaluateWithThreshold(t.Context(), tc.td.TraceID(), tc.td)
+		require.NoError(t, err)
+		assert.Equal(t, tc.want, decision, tc.name)
+		if tc.want == samplingpolicy.Sampled {
+			assert.Equal(t, wantThreshold, th, tc.name)
+			// Consistency: the reported threshold must sample the trace's
+			// own randomness.
+			assert.True(t, th.ShouldSample(mustRandomness(t, tc.randomness)), tc.name)
+		}
+	}
+}
+
+// TestBytesLimiterBatchWholeBatchFits verifies that when the entire batch
+// fits within the budget nothing is limited and the reported threshold is
+// AlwaysSample (adjusted count 1).
+func TestBytesLimiterBatchWholeBatchFits(t *testing.T) {
+	enableTracestateFeatureGate(t)
+
+	traces := []*samplingpolicy.TraceData{blTrace(1, 100, 0), blTrace(2, 50, 0)}
+	size := calculateTraceSize(traces[0])
+	bl := NewBytesLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), size*4, size*4).(*budgetLimiter)
+
+	bl.EvaluateBatch(t.Context(), traces)
+
+	for _, td := range traces {
+		decision, th, err := bl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+		require.NoError(t, err)
+		assert.Equal(t, samplingpolicy.Sampled, decision)
+		assert.Equal(t, sampling.AlwaysSampleThreshold, th)
+	}
+}
+
+// TestBytesLimiterBatchLargeTraceDropped verifies that a single trace whose
+// size exceeds the budget is dropped and no trace is kept.
+func TestBytesLimiterBatchLargeTraceDropped(t *testing.T) {
+	enableTracestateFeatureGate(t)
+
+	td := blTrace(1, 100, 0)
+	size := calculateTraceSize(td)
+	bl := NewBytesLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), size-1, size-1).(*budgetLimiter)
+
+	bl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{td})
+
+	decision, _, err := bl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+	require.NoError(t, err)
+	assert.Equal(t, samplingpolicy.NotSampled, decision)
+}
+
+// TestBytesLimiterBatchNonUniformSizes verifies the budget is spent in bytes
+// rather than trace counts: a large trace at the boundary ends the kept
+// prefix even though the same budget would have admitted two small traces.
+func TestBytesLimiterBatchNonUniformSizes(t *testing.T) {
+	enableTracestateFeatureGate(t)
+
+	a := blTrace(1, 100, 0)   // small
+	b := blTrace(2, 50, 1024) // large
+	c := blTrace(3, 10, 0)    // small
+
+	small := calculateTraceSize(a)
+	large := calculateTraceSize(b)
+	require.Greater(t, large, small)
+
+	// Budget admits the small trace but not the small+large pair. Two small
+	// traces would have fit, so a count-based budget would have kept b too.
+	budget := small + large - 1
+	require.GreaterOrEqual(t, budget, small*2)
+	bl := NewBytesLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), budget, budget).(*budgetLimiter)
+
+	bl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{a, b, c})
+
+	// Only a is kept, so the threshold is a's own randomness.
+	wantThreshold, err := sampling.UnsignedToThreshold(100)
+	require.NoError(t, err)
+
+	for _, tc := range []struct {
+		name string
+		td   *samplingpolicy.TraceData
+		want samplingpolicy.Decision
+	}{
+		{"a", a, samplingpolicy.Sampled},
+		{"b", b, samplingpolicy.NotSampled},
+		{"c", c, samplingpolicy.NotSampled},
+	} {
+		decision, th, err := bl.EvaluateWithThreshold(t.Context(), tc.td.TraceID(), tc.td)
+		require.NoError(t, err)
+		assert.Equal(t, tc.want, decision, tc.name)
+		if tc.want == samplingpolicy.Sampled {
+			assert.Equal(t, wantThreshold, th, tc.name)
+		}
+	}
+}
+
+// TestBytesLimiterBatchCrossTick verifies the byte budget carries across
+// batches: bytes kept in one batch are deducted from the token bucket so a
+// following batch sees a smaller budget.
+func TestBytesLimiterBatchCrossTick(t *testing.T) {
+	enableTracestateFeatureGate(t)
+
+	a := blTrace(1, 100, 0)
+	size := calculateTraceSize(a)
+	// Refill of 1 byte/s is negligible over the test, so the second batch
+	// sees the bucket the first batch drained.
+	bl := NewBytesLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 1, size*2).(*budgetLimiter)
+
+	first := []*samplingpolicy.TraceData{a, blTrace(2, 90, 0)}
+	bl.EvaluateBatch(t.Context(), first)
+	for _, td := range first {
+		decision, _, err := bl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+		require.NoError(t, err)
+		assert.Equal(t, samplingpolicy.Sampled, decision)
+	}
+
+	// Budget is spent, so nothing in the next batch is kept.
+	second := []*samplingpolicy.TraceData{blTrace(3, 80, 0), blTrace(4, 70, 0)}
+	bl.EvaluateBatch(t.Context(), second)
+	for _, td := range second {
+		decision, _, err := bl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+		require.NoError(t, err)
+		assert.Equal(t, samplingpolicy.NotSampled, decision)
+	}
 }
 
 // newTraceBytesFilter creates a trace for testing bytes limiting
