@@ -59,7 +59,7 @@ require (
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.157.1-0.20260730134435-9cbfc4b22b48 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.157.1-0.20260730134435-9cbfc4b22b48 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.54.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
@@ -70,7 +70,7 @@ require (
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
-	github.com/klauspost/compress v1.19.0 // indirect
+	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.157.0
