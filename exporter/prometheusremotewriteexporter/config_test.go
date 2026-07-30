@@ -258,7 +258,7 @@ func TestDisabledTargetInfo(t *testing.T) {
 func TestHTTPOverridesFlatConfig(t *testing.T) {
 	flatEndpoint := "http://flat.example.com"
 	httpEndpoint := "http://http.example.com"
-	flatTimeout := 5 * time.Second
+	flatTimeout := 15 * time.Second
 	httpTimeout := 10 * time.Second
 
 	// Match createDefaultConfig(): confighttp defaults + PRW-specific overrides.
@@ -269,13 +269,14 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 	defaults.Timeout = exporterhelper.NewDefaultTimeoutConfig().Timeout
 
 	testCases := []struct {
-		name               string
-		featureGateEnabled bool
-		conf               map[string]any
-		wantErr            string
-		wantEndpoint       string
-		wantTimeout        time.Duration
-		checkDefaults      bool
+		name                string
+		featureGateEnabled  bool
+		conf                map[string]any
+		wantErr             string
+		wantEndpoint        string
+		wantTimeout         time.Duration
+		wantExporterTimeout time.Duration
+		checkDefaults       bool
 	}{
 		{
 			name:               "gate disabled, http block set overrides flat",
@@ -285,12 +286,14 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 				"timeout":  flatTimeout.String(),
 				"http": map[string]any{
 					"endpoint": httpEndpoint,
-					"timeout":  httpTimeout.String(),
 				},
 			},
-			wantEndpoint:  httpEndpoint,
-			wantTimeout:   httpTimeout,
-			checkDefaults: true,
+			wantEndpoint: httpEndpoint,
+			// This also ensures that if http.timeout is not set, we fallback to correct defaults
+			wantTimeout: getDefaultHTTPClientConfig().Timeout,
+			// Top-level timeout still configures the exporter helper; http owns the client timeout.
+			wantExporterTimeout: flatTimeout,
+			checkDefaults:       true,
 		},
 		{
 			name:               "gate disabled, http block unset keeps flat",
@@ -350,6 +353,9 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.wantEndpoint, cfg.ClientConfig.Endpoint)
 			require.Equal(t, tc.wantTimeout, cfg.ClientConfig.Timeout)
+			if tc.wantExporterTimeout != 0 {
+				require.Equal(t, tc.wantExporterTimeout, cfg.TimeoutSettings.Timeout)
+			}
 			if tc.checkDefaults {
 				require.Equal(t, defaults.WriteBufferSize, cfg.ClientConfig.WriteBufferSize)
 				require.Equal(t, defaults.MaxIdleConns, cfg.ClientConfig.MaxIdleConns)

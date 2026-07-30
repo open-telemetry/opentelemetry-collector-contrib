@@ -186,6 +186,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 			return errors.New("'http' config block must not be empty")
 		}
 
+		cfg.ClientConfig = getDefaultHTTPClientConfig()
 		if err = httpConf.Unmarshal(&cfg.ClientConfig); err != nil {
 			return fmt.Errorf("error unmarshalling http config: %w", err)
 		}
@@ -197,6 +198,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		return fmt.Errorf("top-level HTTP client settings are not allowed when feature gate %s is enabled; move them under the 'http' block",
 			metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate.ID())
 	}
+
 	return nil
 }
 
