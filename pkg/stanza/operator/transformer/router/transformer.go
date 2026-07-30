@@ -76,8 +76,12 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 	// Process batches for each route
 	for routeIdx, batch := range routeEntries {
 		route := t.routes[routeIdx]
-		for _, output := range route.OutputOperators {
-			if err := output.ProcessBatch(ctx, batch); err != nil {
+		for i, output := range route.OutputOperators {
+			outputBatch := batch
+			if i < len(route.OutputOperators)-1 {
+				outputBatch = copyEntries(batch)
+			}
+			if err := output.ProcessBatch(ctx, outputBatch); err != nil {
 				t.Logger().Error("Failed to process batch", zap.Int("batch_size", len(batch)), zap.Error(err))
 			}
 		}
@@ -109,8 +113,12 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 				return err
 			}
 
-			for _, output := range route.OutputOperators {
-				if err = output.Process(ctx, entry); err != nil {
+			for i, output := range route.OutputOperators {
+				outputEntry := entry
+				if i < len(route.OutputOperators)-1 {
+					outputEntry = entry.Copy()
+				}
+				if err = output.Process(ctx, outputEntry); err != nil {
 					t.Logger().Error("Failed to process entry", zapAttributes(entry, err)...)
 				}
 			}
@@ -119,6 +127,14 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	}
 
 	return nil
+}
+
+func copyEntries(entries []*entry.Entry) []*entry.Entry {
+	copied := make([]*entry.Entry, len(entries))
+	for i, ent := range entries {
+		copied[i] = ent.Copy()
+	}
+	return copied
 }
 
 // CanOutput will always return true for a router operator

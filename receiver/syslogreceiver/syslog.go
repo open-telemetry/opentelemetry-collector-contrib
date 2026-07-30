@@ -61,6 +61,11 @@ func (ReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(&cfg.(*SysLogConfig).InputConfig)
 }
 
+// UseSynchronousLogEmitter enables downstream backpressure for TCP connections.
+func (ReceiverType) UseSynchronousLogEmitter(cfg component.Config) bool {
+	return cfg.(*SysLogConfig).InputConfig.TCP != nil
+}
+
 func (cfg *SysLogConfig) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.

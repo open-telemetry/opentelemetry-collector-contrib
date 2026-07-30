@@ -27,6 +27,10 @@ type LogReceiverType interface {
 	InputConfig(component.Config) operator.Config
 }
 
+type synchronousLogEmitterReceiverType interface {
+	UseSynchronousLogEmitter(component.Config) bool
+}
+
 // NewFactory creates a factory for a Stanza-based receiver
 func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel, opts ...xrcvr.FactoryOption) rcvr.Factory {
 	allOpts := []xrcvr.FactoryOption{
@@ -75,8 +79,13 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 			emitterOpts = append(emitterOpts, helper.WithFlushInterval(baseCfg.flushInterval))
 		}
 
+		useSynchronousLogEmitter := metadata.StanzaSynchronousLogEmitterFeatureGate.IsEnabled()
+		if receiverType, ok := logReceiverType.(synchronousLogEmitterReceiverType); ok {
+			useSynchronousLogEmitter = useSynchronousLogEmitter || receiverType.UseSynchronousLogEmitter(cfg)
+		}
+
 		var emitter helper.LogEmitter
-		if metadata.StanzaSynchronousLogEmitterFeatureGate.IsEnabled() {
+		if useSynchronousLogEmitter {
 			emitter = helper.NewSynchronousLogEmitter(params.TelemetrySettings, rcv.consumeEntries)
 		} else {
 			emitter = helper.NewBatchingLogEmitter(params.TelemetrySettings, rcv.consumeEntries, emitterOpts...)
