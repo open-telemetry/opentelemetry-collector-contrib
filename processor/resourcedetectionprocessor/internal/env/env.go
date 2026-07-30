@@ -35,13 +35,30 @@ const deprecatedEnvVar = "OTEL_RESOURCE"
 
 var _ internal.Detector = (*Detector)(nil)
 
-type Detector struct{}
-
-func NewDetector(processor.Settings, internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{}, nil
+type Config struct {
+	Allowlist []string `mapstructure:"allow_list"`
 }
 
-func (*Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func CreateDefaultConfig() Config {
+	return Config{}
+}
+
+type Detector struct {
+	allowlist map[string]struct{}
+}
+
+func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	d := &Detector{}
+	if cfg, ok := dcfg.(Config); ok && len(cfg.Allowlist) > 0 {
+		d.allowlist = make(map[string]struct{}, len(cfg.Allowlist))
+		for _, k := range cfg.Allowlist {
+			d.allowlist[k] = struct{}{}
+		}
+	}
+	return d, nil
+}
+
+func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	res := pcommon.NewResource()
 
 	labels := strings.TrimSpace(os.Getenv(envVar))
@@ -52,10 +69,16 @@ func (*Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL s
 		}
 	}
 
-	err = initializeAttributeMap(res.Attributes(), labels)
-	if err != nil {
+	if err = initializeAttributeMap(res.Attributes(), labels); err != nil {
 		res.Attributes().Clear()
 		return res, "", err
+	}
+
+	if d.allowlist != nil {
+		res.Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
+			_, ok := d.allowlist[k]
+			return !ok
+		})
 	}
 
 	return res, "", nil

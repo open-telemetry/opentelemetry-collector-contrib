@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner"
@@ -91,6 +92,9 @@ type DetectorConfig struct {
 	// DockerConfig contains user-specified configurations for the docker detector
 	DockerConfig docker.Config `mapstructure:"docker"`
 
+	// EnvConfig contains user-specified configurations for the env detector
+	EnvConfig env.Config `mapstructure:"env"`
+
 	// GcpConfig contains user-specified configurations for the gcp detector
 	GcpConfig gcp.Config `mapstructure:"gcp"`
 
@@ -156,6 +160,7 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		ConsulConfig:           consul.CreateDefaultConfig(),
 		DigitalOceanConfig:     digitalocean.CreateDefaultConfig(),
 		DockerConfig:           docker.CreateDefaultConfig(),
+		EnvConfig:              env.CreateDefaultConfig(),
 		GcpConfig:              gcp.CreateDefaultConfig(),
 		HerokuConfig:           heroku.CreateDefaultConfig(),
 		HetznerConfig:          hetzner.CreateDefaultConfig(),
@@ -200,6 +205,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.DigitalOceanConfig
 	case docker.TypeStr:
 		return d.DockerConfig
+	case env.TypeStr:
+		return d.EnvConfig
 	case gcp.TypeStr:
 		return d.GcpConfig
 	case heroku.TypeStr:
