@@ -7,10 +7,10 @@ require (
 	github.com/containerd/cgroups/v3 v3.1.3
 	github.com/rdforte/gomaxecs v1.1.2
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.63.1-0.20260723141305-52e6bf4aaaba
+	go.opentelemetry.io/collector/component v1.63.1-0.20260730134435-9cbfc4b22b48
 	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/confmap v1.63.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/extension v1.63.1-0.20260723141305-52e6bf4aaaba
+	go.opentelemetry.io/collector/confmap v1.63.1-0.20260730134435-9cbfc4b22b48
+	go.opentelemetry.io/collector/extension v1.63.1-0.20260730134435-9cbfc4b22b48
 	go.opentelemetry.io/collector/extension/extensiontest v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/extension/xextension v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.uber.org/automaxprocs v1.6.0
@@ -45,9 +45,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
+	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260730134435-9cbfc4b22b48 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.157.1-0.20260723141305-52e6bf4aaaba // indirect
-	go.opentelemetry.io/collector/pdata v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
+	go.opentelemetry.io/collector/pdata v1.63.1-0.20260730134435-9cbfc4b22b48 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
