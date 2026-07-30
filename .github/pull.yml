@@ -1,0 +1,12 @@
+# .github/pull.yml
+version: "1"
+rules:
+  - base: main
+    upstream: open-telemetry:main
+    mergeMethod: rebase
+    conflictReviewers:
+      - name: @apeirora/audit-logger
+  - base: upstream
+    upstream: open-telemetry:main
+    mergeMethod: hardreset
+    mergeUnstable: true
