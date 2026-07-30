@@ -9,11 +9,8 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/config/configauth v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/config/confighttp v0.157.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/config/configoptional v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/confmap v1.63.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/confmap/xconfmap v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/consumer v1.63.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/consumer/consumertest v0.157.1-0.20260723141305-52e6bf4aaaba
 	go.opentelemetry.io/collector/pdata v1.63.1-0.20260723141305-52e6bf4aaaba
@@ -55,10 +52,12 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
+	go.opentelemetry.io/collector/config/configauth v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
 	go.opentelemetry.io/collector/config/confignet v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
+	go.opentelemetry.io/collector/config/configoptional v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
 	go.opentelemetry.io/collector/config/configtls v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.157.1-0.20260723141305-52e6bf4aaaba // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.157.1-0.20260723141305-52e6bf4aaaba // indirect

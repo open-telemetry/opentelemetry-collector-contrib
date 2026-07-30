@@ -151,6 +151,7 @@ extension/awsproxy
 extension/azureauthextension
 extension/cgroupruntimeextension
 extension/datadogextension
+extension/dbauth/awsiamdbauthextension
 extension/encoding/avrologencodingextension
 pkg/xstreamencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension
@@ -266,6 +267,7 @@ receiver/cloudflarereceiver
 receiver/cloudfoundryreceiver
 receiver/collectdreceiver
 receiver/couchdbreceiver
+receiver/dnscheckreceiver
 receiver/elasticsearchreceiver
 receiver/envoyalsreceiver
 receiver/expvarreceiver
