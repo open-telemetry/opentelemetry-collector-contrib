@@ -41,6 +41,16 @@ processors:
     override: false
 ```
 
+Use `allow_list` to restrict which keys from `OTEL_RESOURCE_ATTRIBUTES` are
+emitted. When empty or unset, all keys are emitted.
+
+```yaml
+processors:
+  resource_detection/env:
+    detectors: [env]
+    env:
+      allow_list: [service.name, service.namespace, deployment.environment]
+```
 
 > [!NOTE]
 > The deprecated coponent type `resourcedetection` (without the underscore) can still be used as an alias and will log a deprecation warning.

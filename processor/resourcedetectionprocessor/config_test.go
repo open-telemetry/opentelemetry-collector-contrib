@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
@@ -46,6 +47,11 @@ func TestLoadConfig(t *testing.T) {
 		ResourceAttributes: ec2.CreateDefaultConfig().ResourceAttributes,
 		MaxAttempts:        3,
 		MaxBackoff:         20 * time.Second,
+	}
+
+	envConfig := detectorCreateDefaultConfig()
+	envConfig.EnvConfig = env.Config{
+		Allowlist: []string{"service.name", "deployment.environment"},
 	}
 
 	systemConfig := detectorCreateDefaultConfig()
@@ -101,6 +107,15 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Detectors:      []string{"env", "system"},
 				DetectorConfig: systemConfig,
+				ClientConfig:   cfg,
+				Override:       false,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "env"),
+			expected: &Config{
+				Detectors:      []string{"env"},
+				DetectorConfig: envConfig,
 				ClientConfig:   cfg,
 				Override:       false,
 			},
@@ -218,6 +233,18 @@ func TestGetConfigFromType(t *testing.T) {
 			detectorType:        lambda.TypeStr,
 			inputDetectorConfig: lambdaDetectorConfig,
 			expectedConfig:      lambdaDetectorConfig.LambdaConfig,
+		},
+		{
+			name:         "Get Env Config",
+			detectorType: env.TypeStr,
+			inputDetectorConfig: DetectorConfig{
+				EnvConfig: env.Config{
+					Allowlist: []string{"service.name"},
+				},
+			},
+			expectedConfig: env.Config{
+				Allowlist: []string{"service.name"},
+			},
 		},
 	}
 
