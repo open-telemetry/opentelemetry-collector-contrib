@@ -19,6 +19,7 @@ import (
 	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/model/value"
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -308,7 +309,7 @@ func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 			if pt.Flags().NoRecordedValue() {
 				bucket.Value = math.Float64frombits(value.StaleNaN)
 			}
-			boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
+			boundStr := labels.FormatOpenMetricsFloat(bound)
 			labels := createLabels(baseName+bucketStr, baseLabels, leStr, boundStr)
 			ts := c.addSample(bucket, labels)
 
