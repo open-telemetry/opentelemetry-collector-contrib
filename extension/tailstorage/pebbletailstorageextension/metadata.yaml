@@ -1,7 +1,11 @@
-display_name: Pebble Tail Storage Extension
 type: pebble_tail_storage
+display_name: Pebble Tail Storage Extension
 
 description: Stores pending trace data for tail sampling in a local Pebble database.
+
+tests:
+  config:
+    directory: test-storage
 
 status:
   class: extension
@@ -11,3 +15,34 @@ status:
   codeowners:
     active: [carsonip, jmacd, lahsivjar]
     emeritus: [axw]
+
+attributes:
+  operation:
+    description: The Pebble tail storage operation.
+    type: string
+    enum: [append, take, delete]
+  outcome:
+    description: The operation outcome.
+    type: string
+    enum: [success, failure]
+
+telemetry:
+  metrics:
+    extension_pebble_tail_storage_operations:
+      description: Count of Pebble tail storage operations by operation and outcome
+      stability: development
+      unit: "{operations}"
+      enabled: true
+      attributes: [operation, outcome]
+      sum:
+        value_type: int
+        monotonic: true
+
+    extension_pebble_tail_storage_read_errors:
+      description: Count of Pebble tail storage read-path iterator creation, value read, payload decode, and iterator terminal errors
+      stability: development
+      unit: "{errors}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
