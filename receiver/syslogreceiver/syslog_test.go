@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -48,6 +49,12 @@ func TestUseSynchronousLogEmitter(t *testing.T) {
 func TestSyslogWithTCPBackpressure(t *testing.T) {
 	consumeStarted := make(chan int, 2)
 	releaseConsumer := make(chan struct{})
+	var releaseOnce sync.Once
+	release := func() {
+		releaseOnce.Do(func() {
+			close(releaseConsumer)
+		})
+	}
 	nextConsumer, err := consumer.NewLogs(func(ctx context.Context, logs plog.Logs) error {
 		consumeStarted <- logs.LogRecordCount()
 		select {
@@ -60,10 +67,17 @@ func TestSyslogWithTCPBackpressure(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := testdataConfigYaml()
+	cfg.InputConfig.TCP.ConnectionIdleTimeout = 50 * time.Millisecond
 	factory := NewFactory()
 	rcvr, err := factory.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nextConsumer)
 	require.NoError(t, err)
 	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		release()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		assert.NoError(t, rcvr.Shutdown(shutdownCtx))
+	})
 
 	conn, err := net.Dial("tcp", "127.0.0.1:29018")
 	require.NoError(t, err)
@@ -72,22 +86,29 @@ func TestSyslogWithTCPBackpressure(t *testing.T) {
 	})
 
 	const message = "<86>1 2021-02-28T00:00:02.003Z 192.168.1.1 SecureAuth0 23108 ID52020 [SecureAuth@27389] test msg\n"
-	_, err = fmt.Fprint(conn, message, message)
+	_, err = fmt.Fprint(conn, message)
 	require.NoError(t, err)
 
-	require.Equal(t, 1, <-consumeStarted)
+	select {
+	case count := <-consumeStarted:
+		require.Equal(t, 1, count)
+	case <-time.After(time.Second):
+		require.FailNow(t, "timed out waiting for the first log")
+	}
+
+	_, err = fmt.Fprint(conn, message)
+	require.NoError(t, err)
 	require.Never(t, func() bool {
 		return len(consumeStarted) > 0
 	}, 200*time.Millisecond, 10*time.Millisecond)
 
-	close(releaseConsumer)
+	release()
 	select {
 	case count := <-consumeStarted:
 		require.Equal(t, 1, count)
 	case <-time.After(time.Second):
 		require.FailNow(t, "timed out waiting for the second log")
 	}
-	require.NoError(t, rcvr.Shutdown(t.Context()))
 }
 
 func testSyslog(t *testing.T, cfg *SysLogConfig) {
