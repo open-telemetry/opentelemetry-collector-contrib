@@ -322,6 +322,22 @@ add more clickhouse node to cluster can increase linearly.
 The otel-collector with `otlp receiver/clickhouse tcp exporter` (with `sending_queue` batching enabled) can process
 around 40k/s logs entry per CPU cores, add more collector node can increase linearly.
 
+### Reading a shared table by a resource attribute
+
+The default schemas order primarily by time and `ServiceName`, and store resource-level
+labels (for example a `tenant` or `namespace` attribute) in the `ResourceAttributes` map
+rather than in the sort key. A skip index on the map values lets a query that filters on a
+single attribute value prune granules, but because every value shares the same
+time-partitioned parts, a wide time-range read filtered to one value still scans granules
+that also contain other values' rows — the filter is applied after the granule is read.
+
+For a low-cardinality attribute this is negligible. If you query a shared table by a
+*high-cardinality* attribute (for example one tenant out of hundreds or thousands, each
+reading concurrently), that shared-parts scan can become the read bottleneck. In that case,
+set [`create_schema: false`](#schema-management) and manage the DDL yourself so the
+attribute participates in the primary key — for example by adding it early in `ORDER BY` or
+via a projection — accepting that this diverges from the default schema.
+
 ## Configuration options
 
 The following settings are required:

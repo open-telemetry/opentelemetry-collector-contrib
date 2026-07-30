@@ -6,6 +6,7 @@ package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
@@ -106,11 +107,22 @@ func TestLoadConfig(t *testing.T) {
 	expected.MaxQueryMetrics = 128
 	expected.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
 	expected.Metrics.VcenterHostCPUUtilization.Enabled = false
-	expected.CollectionInterval = 5 * time.Minute
+	expected.ControllerConfig.CollectionInterval = 5 * time.Minute
 
 	if diff := cmp.Diff(expected, cfg,
 		cmpopts.IgnoreFields(metadata.MetricsBuilderConfig{}, "Metrics"),
-		cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{}),
+		// mdatagen gives metric and resource attribute configs an unexported enabledSetByUser,
+		// set from parser.IsSet("enabled"), so it is only true on the unmarshaled side:
+		// https://github.com/open-telemetry/opentelemetry-collector/blob/e4e58cda0aa6d5d4d275ff12072ae418410e6ae7/cmd/mdatagen/internal/templates/config.go.tmpl#L42-L44
+		cmp.FilterPath(
+			func(fp cmp.Path) bool {
+				return fp.Last().String() == ".enabledSetByUser"
+			},
+			cmp.Ignore(),
+		),
+		// Allow go-cmp to read unexported fields instead of panicking on them, so new
+		// upstream fields can't break this (https://pkg.go.dev/github.com/google/go-cmp/cmp#Exporter).
+		cmp.Exporter(func(reflect.Type) bool { return true }),
 	); diff != "" {
 		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 	}

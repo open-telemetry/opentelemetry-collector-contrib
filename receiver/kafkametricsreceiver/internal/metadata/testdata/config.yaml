@@ -51,6 +51,8 @@ all_set:
   resource_attributes:
     kafka.cluster.alias:
       enabled: true
+    kafka.cluster.id:
+      enabled: true
 reaggregate_set:
   metrics:
     kafka.broker.log_retention_period:
@@ -102,6 +104,8 @@ reaggregate_set:
       attributes: []
   resource_attributes:
     kafka.cluster.alias:
+      enabled: true
+    kafka.cluster.id:
       enabled: true
 none_set:
   metrics:
@@ -155,9 +159,15 @@ none_set:
   resource_attributes:
     kafka.cluster.alias:
       enabled: false
+    kafka.cluster.id:
+      enabled: false
 filter_set_include:
   resource_attributes:
     kafka.cluster.alias:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    kafka.cluster.id:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -167,3 +177,7 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "kafka.cluster.alias-val"
+    kafka.cluster.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "kafka.cluster.id-val"

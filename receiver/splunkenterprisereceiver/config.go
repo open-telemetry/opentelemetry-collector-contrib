@@ -103,13 +103,13 @@ func (s SearchConfig) TargetType() string {
 }
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	IdxEndpoint                    confighttp.ClientConfig `mapstructure:"indexer"`
-	SHEndpoint                     confighttp.ClientConfig `mapstructure:"search_head"`
-	CMEndpoint                     confighttp.ClientConfig `mapstructure:"cluster_master"`
-	VersionInfo                    bool                    `mapstructure:"build_version_info"`
-	Searches                       []SearchConfig          `mapstructure:"searches"`
+	ControllerConfig              scraperhelper.ControllerConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	IdxEndpoint                   confighttp.ClientConfig `mapstructure:"indexer"`
+	SHEndpoint                    confighttp.ClientConfig `mapstructure:"search_head"`
+	CMEndpoint                    confighttp.ClientConfig `mapstructure:"cluster_master"`
+	VersionInfo                   bool                    `mapstructure:"build_version_info"`
+	Searches                      []SearchConfig          `mapstructure:"searches"`
 }
 
 func (cfg *Config) Validate() (errors error) {
