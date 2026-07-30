@@ -12,9 +12,9 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Include                        string `mapstructure:"include"`
+	ControllerConfig              scraperhelper.ControllerConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Include                       string `mapstructure:"include"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
