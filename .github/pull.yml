@@ -5,7 +5,7 @@ rules:
     upstream: open-telemetry:main
     mergeMethod: rebase
     conflictReviewers:
-      - name: @apeirora/audit-logger
+      - apeirora/audit-logger
   - base: upstream
     upstream: open-telemetry:main
     mergeMethod: hardreset
