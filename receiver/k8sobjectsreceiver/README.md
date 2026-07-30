@@ -43,6 +43,12 @@ The following is example configuration
         mode: watch
         group: events.k8s.io
         namespaces: [default]
+    custom_resources:
+      interval: 15m
+      initial_delay: 2m
+      include:
+        - group: argoproj.io
+          resources: [applications]
 ```
 
 Brief description of configuration properties:
@@ -72,6 +78,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 use this config to specify the group to select. By default, it will select the first group.
 For example, `events` resource is available in both `v1` and `events.k8s.io/v1` APIGroup. In
 this case, it will select `v1` by default.
+- `custom_resources`: Enables opt-in discovery and periodic pull collection of resources defined by CRDs. See [Automatic custom resource collection](#automatic-custom-resource-collection).
 - `kube_api_qps` (default = `5`): Maximum number of queries per second to the Kubernetes API. Increase this if you see `client-side throttling` warnings in the collector logs when watching or polling many resources simultaneously.
 - `kube_api_burst` (default = `10`): Maximum burst size for requests to the Kubernetes API. Increase this alongside `kube_api_qps` if you see `client-side throttling` warnings.
 - `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
@@ -107,6 +114,34 @@ The `k8sobjectsreceiver` supports collecting a wide range of standard Kubernetes
 - `namespaces`
 
 This receiver supports both `pull` and `watch` modes, allowing for flexible and real-time monitoring of these objects. Please note that custom resources are supported only if their CRDs are available in the cluster.
+
+### Automatic custom resource collection
+
+Custom resources can be listed individually in `objects`. Use `custom_resources` to discover and periodically collect selected CRD-backed resources without maintaining that list manually. `include` is required, `exclude` takes precedence, and `"*"` can be used for API groups or plural resource names.
+
+Collection is pull-only. The receiver watches CRD metadata for changes, lists selected resources sequentially with pagination, and does not overlap collection cycles. A resource type listed explicitly in `objects` is not collected again through `custom_resources`.
+
+`interval` is the delay between completed collection cycles; it uses the top-level `interval`, or `1h`, when unset. `initial_delay` delays the first cycle. Namespace, label, and field filters apply to every selected resource type, so a label selector should use a convention shared by those resources. Namespace filters do not affect cluster-scoped resources, and field selectors must be supported by the selected APIs.
+
+To collect every custom resource type, use an explicit wildcard:
+
+```yaml
+receivers:
+  k8s_objects:
+    auth_type: serviceAccount
+    custom_resources:
+      interval: 15m
+      include:
+        - group: "*"
+          resources: ["*"]
+      exclude_namespaces:
+        - strict: kube-system
+      exclude:
+        - group: example.com
+          resources: [largeobjects]
+```
+
+Custom resource bodies are emitted in full and may contain sensitive fields. Broad wildcard selection can also produce significant API traffic and log volume. Prefer an `include` list with exact groups and resources, together with matching RBAC rules, when broad collection is not required.
 
 ### Configuration
 
@@ -205,6 +240,29 @@ rules:
   - list
 EOF
 ```
+
+Automatic discovery requires permission to list and watch CRD metadata and to list each selected resource:
+
+```yaml
+- apiGroups: [apiextensions.k8s.io]
+  resources: [customresourcedefinitions]
+  verbs: [list, watch]
+- apiGroups: [argoproj.io]
+  resources: [applications]
+  verbs: [list]
+```
+
+Custom resource collection does not start if the service account cannot list or watch CRDs.
+
+Collecting every CRD-backed resource type requires wildcard list permission:
+
+```yaml
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: [list]
+```
+
+Kubernetes RBAC cannot express "all resources defined by CRDs", so this wildcard also grants access to built-in and aggregated API resources even though the receiver collects only CRD-backed resources. Review this access before using wildcard collection.
 
 ```bash
 <<EOF | kubectl apply -f -
