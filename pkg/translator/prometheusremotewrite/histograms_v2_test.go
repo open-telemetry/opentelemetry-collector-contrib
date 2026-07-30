@@ -433,6 +433,68 @@ func TestExplicitToNHCBHistogramV2(t *testing.T) {
 			wantBuckets: []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}},
 		},
 		{
+			// Count below the bucket sum is clamped up so the +Inf bucket stays non-negative.
+			name: "count below bucket sum",
+			hist: func() pmetric.HistogramDataPoint {
+				pt := newTestExplicitHistogram().Histogram().DataPoints().At(0)
+				pt.SetCount(5) // below finite cumulative (6)
+				return pt
+			},
+			wantValues:  []float64{1, 2, 3},
+			wantCount:   10,
+			wantSum:     42.5,
+			wantBuckets: []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}},
+		},
+		{
+			// Count above the bucket sum is preserved; the surplus lands in +Inf.
+			name: "count above bucket sum",
+			hist: func() pmetric.HistogramDataPoint {
+				pt := newTestExplicitHistogram().Histogram().DataPoints().At(0)
+				pt.SetCount(20) // above bucket sum (10)
+				return pt
+			},
+			wantValues:  []float64{1, 2, 3},
+			wantCount:   20,
+			wantSum:     42.5,
+			wantBuckets: []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 20}},
+		},
+		{
+			name: "no sum",
+			hist: func() pmetric.HistogramDataPoint {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_hist")
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				pt := metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetTimestamp(testHistTimestamp)
+				pt.ExplicitBounds().FromRaw([]float64{1, 2, 3})
+				pt.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+				pt.SetCount(10)
+				return pt
+			},
+			wantValues:  []float64{1, 2, 3},
+			wantCount:   10,
+			wantSum:     0,
+			wantBuckets: []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}},
+		},
+		{
+			name: "no explicit bounds (single +Inf bucket)",
+			hist: func() pmetric.HistogramDataPoint {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_hist")
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				pt := metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetTimestamp(testHistTimestamp)
+				pt.BucketCounts().FromRaw([]uint64{5})
+				pt.SetCount(5)
+				pt.SetSum(12.5)
+				return pt
+			},
+			wantValues:  nil,
+			wantCount:   5,
+			wantSum:     12.5,
+			wantBuckets: []nhcbBucket{{math.Inf(1), 5}},
+		},
+		{
 			name: "stale marker",
 			hist: func() pmetric.HistogramDataPoint {
 				pt := newTestExplicitHistogram().Histogram().DataPoints().At(0)
@@ -455,7 +517,11 @@ func TestExplicitToNHCBHistogramV2(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, tt.wantValues, h.CustomValues, "explicit bounds carried as custom values")
+			if len(tt.wantValues) == 0 {
+				assert.Empty(t, h.CustomValues, "single +Inf bucket carries no finite bounds")
+			} else {
+				assert.Equal(t, tt.wantValues, h.CustomValues, "explicit bounds carried as custom values")
+			}
 			assert.Equal(t, tt.wantCount, h.GetCountInt(), "count")
 			assert.InDelta(t, tt.wantSum, h.Sum, 1e-9, "sum")
 			assert.Equal(t, tt.wantBuckets, nhcbCumulativeBucketsV2(h), "cumulative buckets round-trip")
