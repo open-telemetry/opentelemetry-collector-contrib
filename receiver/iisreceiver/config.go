@@ -11,6 +11,6 @@ import (
 
 // Config defines configuration for simple prometheus receiver.
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	ControllerConfig              scraperhelper.ControllerConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
