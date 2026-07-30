@@ -73,7 +73,7 @@ func (s *sqlServerPCScraper) start(context.Context, component.Host) error {
 				perfCounterObj = "\\" + s.config.ComputerName + "\\MSSQL$" + s.config.InstanceName + ":" + pcr.object
 			}
 
-			w, err := winperfcounters.NewWatcher(perfCounterObj, pcr.instance, perfCounterName)
+			w, err := winperfcounters.NewWatcher(perfCounterObj, pcr.instance, perfCounterName, winperfcounters.WithLogger(s.logger))
 			if err != nil {
 				s.logger.Warn(err.Error())
 				continue

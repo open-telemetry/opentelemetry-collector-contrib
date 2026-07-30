@@ -26,7 +26,7 @@ Average round-trip time in milliseconds.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | Development |
+| ms | Gauge | Double | Development |
 
 ### ping.rtt.max
 
@@ -34,7 +34,7 @@ Maximum round-trip time in milliseconds.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | Development |
+| ms | Gauge | Double | Development |
 
 ### ping.rtt.min
 
@@ -42,7 +42,7 @@ Minimum round-trip time in milliseconds.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | Development |
+| ms | Gauge | Double | Development |
 
 ### ping.rtt.stddev
 
@@ -50,7 +50,7 @@ Standard deviation of round-trip time in milliseconds.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | Development |
+| ms | Gauge | Double | Development |
 
 ## Resource Attributes
 
