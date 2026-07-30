@@ -41,7 +41,7 @@ import (
 func TestUnsuccessfulScrape(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "fake:11111"
+	cfg.AddrConfig.Endpoint = "fake:11111"
 
 	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
@@ -215,6 +215,36 @@ func TestScraper(t *testing.T) {
 
 	runTest(true, "expected_schemaattr.yaml")
 	runTest(false, "expected.yaml")
+}
+
+func TestScraperWithExecutionTime(t *testing.T) {
+	factory := new(mockClientFactory)
+	factory.initMocks([]string{"otel"})
+
+	runTest := func(separateSchemaAttr bool, file string) {
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.Databases = []string{"otel"}
+		cfg.Metrics.PostgresqlQueryExecutionTime.Enabled = true
+
+		scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+		require.NoError(t, err)
+
+		actualMetrics, err := scraper.scrape(t.Context())
+		require.NoError(t, err)
+
+		expectedFile := filepath.Join("testdata", "scraper", "otel", file)
+		// golden.WriteMetrics(t, expectedFile, actualMetrics)
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
+
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+	}
+
+	runTest(true, "expected_execution_time_schemaattr.yaml")
+	runTest(false, "expected_execution_time.yaml")
 }
 
 func TestScraperVectorMetrics(t *testing.T) {
@@ -1460,6 +1490,11 @@ func (m *mockClient) getDatabaseConflicts(_ context.Context, databases []string)
 	return args.Get(0).(map[databaseName]databaseConflictStats), args.Error(1)
 }
 
+func (m *mockClient) getExecutionTimeStats(_ context.Context, databases []string) (map[databaseName]float64, error) {
+	args := m.Called(databases)
+	return args.Get(0).(map[databaseName]float64), args.Error(1)
+}
+
 func (m *mockClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
 	args := m.Called(ctx)
 	return args.Get(0).([]databaseLocks), args.Error(1)
@@ -1567,6 +1602,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		dbConflictStats := map[databaseName]databaseConflictStats{}
 		dbSize := map[databaseName]int64{}
 		backends := map[databaseName]int64{}
+		execDuration := map[databaseName]float64{}
 
 		for idx, db := range databases {
 			dbStats[databaseName(db)] = databaseStats{
@@ -1592,10 +1628,12 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 			}
 			dbSize[databaseName(db)] = int64(idx + 4)
 			backends[databaseName(db)] = int64(idx + 3)
+			execDuration[databaseName(db)] = float64(idx+1) + 0.5
 		}
 
 		m.On("getDatabaseStats", databases).Return(dbStats, nil)
 		m.On("getDatabaseConflicts", databases).Return(dbConflictStats, nil)
+		m.On("getExecutionTimeStats", databases).Return(execDuration, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
 		m.On("getBackends", databases).Return(backends, nil)
 		m.On("getBGWriterStats", mock.Anything).Return(&bgStat{
@@ -1871,7 +1909,7 @@ func TestResolveServiceInstanceSeed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.Endpoint = tt.endpoint
+			cfg.AddrConfig.Endpoint = tt.endpoint
 			assert.Equal(t, tt.expected, resolveServiceInstanceSeed(cfg, zap.NewNop()))
 		})
 	}
@@ -1882,8 +1920,8 @@ func TestResolveUnixServiceInstanceSeed(t *testing.T) {
 	require.NoError(t, err)
 	unixSeed := func(endpoint string) string {
 		cfg := createDefaultConfig().(*Config)
-		cfg.Endpoint = endpoint
-		cfg.Transport = confignet.TransportTypeUnix
+		cfg.AddrConfig.Endpoint = endpoint
+		cfg.AddrConfig.Transport = confignet.TransportTypeUnix
 		return resolveServiceInstanceSeed(cfg, zap.NewNop())
 	}
 
@@ -1895,7 +1933,7 @@ func TestResolveUnixServiceInstanceSeed(t *testing.T) {
 	assert.Equal(t, strings.Join([]string{"unix", hostname, "var/run/postgresql"}, "\x00"), unixSeed("var/run/postgresql"))
 
 	tcpConfig := createDefaultConfig().(*Config)
-	tcpConfig.Endpoint = "var/run/postgresql:5432"
+	tcpConfig.AddrConfig.Endpoint = "var/run/postgresql:5432"
 	assert.NotEqual(t, seed, resolveServiceInstanceSeed(tcpConfig, zap.NewNop()))
 }
 
@@ -1905,7 +1943,7 @@ func TestNewPostgreSQLScraperSemconvServiceInstanceID(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "[::1]:5432"
+	cfg.AddrConfig.Endpoint = "[::1]:5432"
 	scraper, err := newPostgreSQLScraper(
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
@@ -1926,8 +1964,8 @@ func TestNewPostgreSQLScraperSemconvUnixServiceInstanceID(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "var/run/postgresql:5432"
-	cfg.Transport = confignet.TransportTypeUnix
+	cfg.AddrConfig.Endpoint = "var/run/postgresql:5432"
+	cfg.AddrConfig.Transport = confignet.TransportTypeUnix
 	scraper, err := newPostgreSQLScraper(
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
@@ -1944,7 +1982,7 @@ func TestNewPostgreSQLScraperSemconvUnixServiceInstanceID(t *testing.T) {
 
 func TestSetupSemconvResourceBuilder(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "127.0.0.1:5432"
+	cfg.AddrConfig.Endpoint = "127.0.0.1:5432"
 	serviceInstanceID := uuid.NewSHA1(otelNamespaceUUID, []byte("collector-host:5432")).String()
 	scraper := &postgreSQLScraper{
 		logger:            zap.NewNop(),
@@ -2029,8 +2067,8 @@ func TestServerEndpointAttributes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.Endpoint = tt.endpoint
-			cfg.Transport = tt.transport
+			cfg.AddrConfig.Endpoint = tt.endpoint
+			cfg.AddrConfig.Transport = tt.transport
 			address, port, err := serverEndpointAttributes(cfg)
 			if tt.wantErr {
 				require.Error(t, err)

@@ -130,6 +130,10 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordWorkerThreadMetrics(ctx)
 	case getSQLServerIndexPhysicalStatsQuery(s.config.InstanceName):
 		err = s.recordIndexPhysicalMetrics(ctx)
+	case getSQLServerCPUMemoryQuery(s.config.InstanceName):
+		err = s.recordCPUMemoryMetrics(ctx)
+	case getSQLServerDiskIOQuery(s.config.InstanceName):
+		err = s.recordDiskIOMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -2176,4 +2180,112 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		}
 	}
 	return resources, errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordCPUMemoryMetrics(ctx context.Context) error {
+	const cpuUtilization = "cpu_utilization"
+	const memoryLimitBytes = "memory_limit_bytes"
+	const memoryUsedBytes = "memory_used_bytes"
+	const memoryFreeBytes = "memory_free_bytes"
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for i, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		val, err := retrieveFloat(row, cpuUtilization)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", cpuUtilization, i, err))
+		} else {
+			s.mb.RecordSqlserverCPUUtilizationDataPoint(now, val.(float64))
+		}
+
+		val, err = retrieveInt(row, memoryLimitBytes)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", memoryLimitBytes, i, err))
+		} else {
+			s.mb.RecordSqlserverHostMemoryLimitDataPoint(now, val.(int64))
+		}
+
+		val, err = retrieveInt(row, memoryUsedBytes)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", memoryUsedBytes, i, err))
+		} else {
+			s.mb.RecordSqlserverHostMemoryUsageDataPoint(now, val.(int64), metadata.AttributeSystemMemoryStateUsed)
+		}
+
+		val, err = retrieveInt(row, memoryFreeBytes)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", memoryFreeBytes, i, err))
+		} else {
+			s.mb.RecordSqlserverHostMemoryUsageDataPoint(now, val.(int64), metadata.AttributeSystemMemoryStateFree)
+		}
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordDiskIOMetrics(ctx context.Context) error {
+	const diskDrive = "disk_drive"
+	const readOps = "read_ops"
+	const writeOps = "write_ops"
+	const readBytes = "read_bytes"
+	const writeBytes = "write_bytes"
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for i, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+		drive := row[diskDrive]
+
+		rOps, err := retrieveInt(row, readOps)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", readOps, i, err))
+		} else {
+			s.mb.RecordSqlserverDiskOperationsDataPoint(now, rOps.(int64), metadata.AttributeDiskIoDirectionRead, drive)
+		}
+
+		wOps, err := retrieveInt(row, writeOps)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", writeOps, i, err))
+		} else {
+			s.mb.RecordSqlserverDiskOperationsDataPoint(now, wOps.(int64), metadata.AttributeDiskIoDirectionWrite, drive)
+		}
+
+		rBytes, err := retrieveInt(row, readBytes)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", readBytes, i, err))
+		} else {
+			s.mb.RecordSqlserverDiskIoDataPoint(now, rBytes.(int64), metadata.AttributeDiskIoDirectionRead, drive)
+		}
+
+		wBytes, err := retrieveInt(row, writeBytes)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", writeBytes, i, err))
+		} else {
+			s.mb.RecordSqlserverDiskIoDataPoint(now, wBytes.(int64), metadata.AttributeDiskIoDirectionWrite, drive)
+		}
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
 }
