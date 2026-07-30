@@ -9,6 +9,47 @@ status:
   codeowners:
     active: [wangzlei, srprash]
 
+feature_gates:
+  - id: receiver.awsxrayreceiver.DontEmitV0DatabaseConventions
+    stage: alpha
+    description: >-
+      When enabled, the receiver no longer emits deprecated database semconv
+      attributes (db.connection_string, db.name, db.system, db.statement, db.user).
+    from_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095
+    skip_strict_validation: true
+
+  - id: receiver.awsxrayreceiver.DontEmitV0HTTPConventions
+    stage: alpha
+    description: >-
+      When enabled, the receiver no longer emits deprecated HTTP semconv attributes
+      (http.method, http.client_ip, http.user_agent, http.url, http.status_code,
+      http.response_content_length).
+    from_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095
+    skip_strict_validation: true
+
+  - id: receiver.awsxrayreceiver.EmitV1DatabaseConventions
+    stage: alpha
+    description: >-
+      When enabled, the receiver emits new database semconv attributes
+      (db.namespace, db.system.name, db.query.text) alongside or instead of
+      deprecated equivalents.
+    from_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095
+    skip_strict_validation: true
+
+  - id: receiver.awsxrayreceiver.EmitV1HTTPConventions
+    stage: alpha
+    description: >-
+      When enabled, the receiver emits new HTTP semconv attributes
+      (http.request.method, client.address, user_agent.original, url.full,
+      http.response.status_code, http.response.body.size) alongside or instead
+      of deprecated equivalents.
+    from_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095
+    skip_strict_validation: true
+
 # TODO: Update the receiver to make the tests pass
 tests:
   skip_lifecycle: true

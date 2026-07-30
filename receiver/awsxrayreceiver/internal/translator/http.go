@@ -5,12 +5,11 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv118 "go.opentelemetry.io/otel/semconv/v1.18.0"
-	conventionsv120 "go.opentelemetry.io/otel/semconv/v1.20.0"
-	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
 )
 
 func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
@@ -21,36 +20,61 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 	attrs := span.Attributes()
 	if req := seg.HTTP.Request; req != nil {
 		// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-http
-		addString(req.Method, string(conventionsv125.HTTPMethodKey), attrs)
-
-		if req.ClientIP != nil {
-			// since the ClientIP is not nil, this means that this segment is generated
-			// by a server serving an incoming request
-			attrs.PutStr(string(conventionsv120.HTTPClientIPKey), *req.ClientIP)
+		if !metadata.ReceiverAwsxrayreceiverDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			addString(req.Method, "http.method", attrs)
+		}
+		if metadata.ReceiverAwsxrayreceiverEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			addString(req.Method, string(conventions.HTTPRequestMethodKey), attrs)
 		}
 
-		addString(req.UserAgent, string(conventionsv118.HTTPUserAgentKey), attrs)
-		addString(req.URL, string(conventionsv125.HTTPURLKey), attrs)
+		if req.ClientIP != nil {
+			if !metadata.ReceiverAwsxrayreceiverDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				attrs.PutStr("http.client_ip", *req.ClientIP)
+			}
+			if metadata.ReceiverAwsxrayreceiverEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				attrs.PutStr(string(conventions.ClientAddressKey), *req.ClientIP)
+			}
+		}
+
+		if !metadata.ReceiverAwsxrayreceiverDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			addString(req.UserAgent, "http.user_agent", attrs)
+			addString(req.URL, "http.url", attrs)
+		}
+		if metadata.ReceiverAwsxrayreceiverEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			addString(req.UserAgent, string(conventions.UserAgentOriginalKey), attrs)
+			addString(req.URL, string(conventions.URLFullKey), attrs)
+		}
 		addBool(req.XForwardedFor, awsxray.AWSXRayXForwardedForAttribute, attrs)
 	}
 
 	if resp := seg.HTTP.Response; resp != nil {
 		if resp.Status != nil {
 			otStatus := tracetranslator.StatusCodeFromHTTP(*resp.Status)
-			// in X-Ray exporter, the segment status is set:
-			// first via the span attribute, string(conventions.HTTPStatusCodeKey)
-			// then the span status. Since we are also setting the span attribute
-			// below, the span status code here will not be actually used
 			span.Status().SetCode(otStatus)
-			attrs.PutInt(string(conventionsv125.HTTPStatusCodeKey), *resp.Status)
+			if !metadata.ReceiverAwsxrayreceiverDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				attrs.PutInt("http.status_code", *resp.Status)
+			}
+			if metadata.ReceiverAwsxrayreceiverEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				attrs.PutInt(string(conventions.HTTPResponseStatusCodeKey), *resp.Status)
+			}
 		}
 
 		switch val := resp.ContentLength.(type) {
 		case string:
-			addString(&val, string(conventionsv125.HTTPResponseContentLengthKey), attrs)
+			if !metadata.ReceiverAwsxrayreceiverDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				addString(&val, "http.response_content_length", attrs)
+			}
+			if metadata.ReceiverAwsxrayreceiverEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				addString(&val, string(conventions.HTTPResponseBodySizeKey), attrs)
+			}
 		case float64:
 			lengthPointer := int64(val)
-			addInt64(&lengthPointer, string(conventionsv125.HTTPResponseContentLengthKey), attrs)
+			if !metadata.ReceiverAwsxrayreceiverDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				addInt64(&lengthPointer, "http.response_content_length", attrs)
+			}
+			if metadata.ReceiverAwsxrayreceiverEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				addInt64(&lengthPointer, string(conventions.HTTPResponseBodySizeKey), attrs)
+			}
 		}
 	}
 }

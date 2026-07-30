@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
-	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
 )
 
 func addSQLToSpan(sql *awsxray.SQLData, attrs pcommon.Map) error {
@@ -26,14 +26,25 @@ func addSQLToSpan(sql *awsxray.SQLData, attrs pcommon.Map) error {
 		if err != nil {
 			return err
 		}
-		attrs.PutStr(string(conventionsv125.DBConnectionStringKey), dbURL)
-		attrs.PutStr(string(conventionsv125.DBNameKey), dbName)
+		if !metadata.ReceiverAwsxrayreceiverDontEmitV0DatabaseConventionsFeatureGate.IsEnabled() {
+			attrs.PutStr("db.connection_string", dbURL)
+			attrs.PutStr("db.name", dbName)
+		}
+		if metadata.ReceiverAwsxrayreceiverEmitV1DatabaseConventionsFeatureGate.IsEnabled() {
+			attrs.PutStr(string(conventions.DBNamespaceKey), dbName)
+		}
 	}
 	// not handling sql.ConnectionString for now because the X-Ray exporter
 	// does not support it
-	addString(sql.DatabaseType, string(conventionsv128.DBSystemKey), attrs)
-	addString(sql.SanitizedQuery, string(conventionsv125.DBStatementKey), attrs)
-	addString(sql.User, string(conventionsv125.DBUserKey), attrs)
+	if !metadata.ReceiverAwsxrayreceiverDontEmitV0DatabaseConventionsFeatureGate.IsEnabled() {
+		addString(sql.DatabaseType, "db.system", attrs)
+		addString(sql.SanitizedQuery, "db.statement", attrs)
+		addString(sql.User, "db.user", attrs)
+	}
+	if metadata.ReceiverAwsxrayreceiverEmitV1DatabaseConventionsFeatureGate.IsEnabled() {
+		addString(sql.DatabaseType, string(conventions.DBSystemNameKey), attrs)
+		addString(sql.SanitizedQuery, string(conventions.DBQueryTextKey), attrs)
+	}
 	return nil
 }
 
