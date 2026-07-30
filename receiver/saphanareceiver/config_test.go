@@ -13,8 +13,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
@@ -66,7 +66,7 @@ func TestValidate(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			tC.defaultConfigModifier(cfg)
-			actual := xconfmap.Validate(cfg)
+			actual := confmap.Validate(cfg)
 
 			if tC.expected != nil {
 				require.ErrorContains(t, actual, tC.expected.Error())
@@ -94,7 +94,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.TCPAddrConfig.Endpoint = "example.com:30015"
 	expected.Username = "otel"
 	expected.Password = "password"
-	expected.CollectionInterval = 2 * time.Minute
+	expected.ControllerConfig.CollectionInterval = 2 * time.Minute
 
 	if diff := cmp.Diff(expected, cfg,
 		// mdatagen gives metric and resource attribute configs an unexported enabledSetByUser,
