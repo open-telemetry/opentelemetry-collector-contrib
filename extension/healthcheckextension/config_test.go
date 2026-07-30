@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/metadata"
@@ -27,6 +27,23 @@ import (
 func TestLoadConfigLegacy(t *testing.T) {
 	t.Parallel()
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:13",
+	}
+	serverConfig.TLS = configoptional.Some(configtls.ServerConfig{
+		Config: configtls.Config{
+			CAFile:   "/path/to/ca",
+			CertFile: "/path/to/cert",
+			KeyFile:  "/path/to/key",
+		},
+	})
 	tests := []struct {
 		id          component.ID
 		expected    component.Config
@@ -41,20 +58,8 @@ func TestLoadConfigLegacy(t *testing.T) {
 			expected: &Config{
 				Config: healthcheck.Config{
 					LegacyConfig: healthcheck.HTTPLegacyConfig{
-						ServerConfig: confighttp.ServerConfig{
-							NetAddr: confignet.AddrConfig{
-								Transport: "tcp",
-								Endpoint:  "localhost:13",
-							},
-							TLS: configoptional.Some(configtls.ServerConfig{
-								Config: configtls.Config{
-									CAFile:   "/path/to/ca",
-									CertFile: "/path/to/cert",
-									KeyFile:  "/path/to/key",
-								},
-							}),
-						},
-						Path: "/",
+						ServerConfig: serverConfig,
+						Path:         "/",
 						CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
 							Enabled:                  false,
 							Interval:                 "5m",
@@ -94,10 +99,10 @@ func TestLoadConfigLegacy(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			if tt.expectedErr != nil {
-				assert.ErrorIs(t, xconfmap.Validate(cfg), tt.expectedErr)
+				assert.ErrorIs(t, confmap.Validate(cfg), tt.expectedErr)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -115,7 +120,7 @@ func TestLoadConfigV2WithoutGate(t *testing.T) {
 
 	// Without the feature gate, v2 config should cause a validation error.
 	// This makes it immediately obvious to users that the configuration is invalid.
-	err = xconfmap.Validate(cfg)
+	err = confmap.Validate(cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "v2 healthcheck configuration")
 	assert.Contains(t, err.Error(), "feature gate is disabled")
@@ -136,17 +141,32 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	assert.NoError(t, xconfmap.Validate(cfg))
+	assert.NoError(t, confmap.Validate(cfg))
+	legacyServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	legacyServerConfig.WriteTimeout = 0
+	legacyServerConfig.ReadHeaderTimeout = 0
+	legacyServerConfig.IdleTimeout = 0
+	legacyServerConfig.KeepAlivesEnabled = false
+	legacyServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:13133",
+	}
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpServerConfig.WriteTimeout = 0
+	httpServerConfig.ReadHeaderTimeout = 0
+	httpServerConfig.IdleTimeout = 0
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:13133",
+	}
+	httpServerConfig.KeepAlivesEnabled = true
 	assert.Equal(t, &Config{
 		Config: healthcheck.Config{
 			LegacyConfig: healthcheck.HTTPLegacyConfig{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "localhost:13133",
-					},
-				},
-				Path: "/",
+				ServerConfig: legacyServerConfig,
+				Path:         "/",
 				CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
 					Enabled:                  false,
 					Interval:                 "5m",
@@ -154,13 +174,7 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 				},
 			},
 			HTTPConfig: &healthcheck.HTTPConfig{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "localhost:13133",
-					},
-					KeepAlivesEnabled: true,
-				},
+				ServerConfig: httpServerConfig,
 				Status: healthcheck.PathConfig{
 					Enabled: true,
 					Path:    "/status",

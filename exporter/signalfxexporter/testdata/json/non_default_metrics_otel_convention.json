@@ -1,33 +1,5 @@
 [
   {
-    "system.cpu.time": null,
-    "state": "interrupt"
-  },
-  {
-    "system.cpu.time": null,
-    "state": "nice"
-  },
-  {
-    "system.cpu.time": null,
-    "state": "softirq"
-  },
-  {
-    "system.cpu.time": null,
-    "state": "steal"
-  },
-  {
-    "system.cpu.time": null,
-    "state": "system"
-  },
-  {
-    "system.cpu.time": null,
-    "state": "user"
-  },
-  {
-    "system.cpu.time": null,
-    "state": "wait"
-  },
-  {
     "system.memory.usage": null,
     "state": "inactive"
   },
@@ -40,9 +12,6 @@
   },
   {
     "system.disk.merged": null
-  },
-  {
-    "system.disk.io": null
   },
   {
     "system.disk.time": null

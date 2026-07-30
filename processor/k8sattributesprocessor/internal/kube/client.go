@@ -17,7 +17,7 @@ import (
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.41.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1655,8 +1655,27 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
-	podToRemove := c.podFromAPI(pod)
-	identifiers := c.getIdentifiersFromAssoc(podToRemove)
+	// Look up the cached pod using its UID. Unlike dynamic status attributes (such as IP addresses)
+	// which may be cleared or missing in the final DELETE event payload, the Pod UID is immutable
+	// and guaranteed to be present. Using the cached pod ensures we generate and clean up all keys
+	// under which the pod was originally registered.
+	uidKey := PodIdentifier{
+		PodIdentifierAttributeFromResourceAttribute(string(conventions.K8SPodUIDKey), string(pod.UID)),
+	}
+	c.m.RLock()
+	cachedPod, ok := c.Pods[uidKey]
+	c.m.RUnlock()
+
+	var identifiers []PodIdentifier
+	if ok {
+		identifiers = c.getIdentifiersFromAssoc(cachedPod)
+	} else {
+		// Fallback: if the pod was never added to the cache (e.g. startup/informer sync edge cases),
+		// generate deletion keys from the incoming delete event payload directly.
+		podToRemove := c.podFromAPI(pod)
+		identifiers = c.getIdentifiersFromAssoc(podToRemove)
+	}
+
 	for i := range identifiers {
 		id := identifiers[i]
 		p, ok := c.GetPod(id)

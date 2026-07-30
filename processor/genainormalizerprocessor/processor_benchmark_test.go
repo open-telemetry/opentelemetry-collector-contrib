@@ -46,6 +46,43 @@ func BenchmarkProcessorBuiltIn(b *testing.B) {
 	}
 }
 
+func BenchmarkProcessorFlattenedMessages(b *testing.B) {
+	cases := []struct {
+		name   string
+		traces ptrace.Traces
+	}{
+		{"1_span_2_messages", openInferenceFlattenedTraces(1, 2)},
+		{"10_spans_4_messages", openInferenceFlattenedTraces(10, 4)},
+		{"100_spans_4_messages", openInferenceFlattenedTraces(100, 4)},
+		{"100_spans_20_messages", openInferenceFlattenedTraces(100, 20)},
+		{"1000_spans_4_messages", openInferenceFlattenedTraces(1000, 4)},
+	}
+
+	for _, c := range cases {
+		b.Run(c.name, func(b *testing.B) {
+			sources := []Source{{Name: SourceOpenInference, RemoveOriginals: true}}
+			runProcessorBenchmark(b, sources, c.traces)
+		})
+	}
+}
+
+func BenchmarkProcessorFlattenedMessagesWithToolCalls(b *testing.B) {
+	cases := []struct {
+		name   string
+		traces ptrace.Traces
+	}{
+		{"100_spans", openInferenceFlattenedToolCallTraces(100)},
+		{"1000_spans", openInferenceFlattenedToolCallTraces(1000)},
+	}
+
+	for _, c := range cases {
+		b.Run(c.name, func(b *testing.B) {
+			sources := []Source{{Name: SourceOpenInference, RemoveOriginals: true}}
+			runProcessorBenchmark(b, sources, c.traces)
+		})
+	}
+}
+
 // BenchmarkProcessorUserDefined sweeps the user-defined mapping-table
 // size against a fixed batch of 100 spans where every span attribute
 // matches a mapping rule.
@@ -140,6 +177,31 @@ func BenchmarkProcessorThroughput(b *testing.B) {
 	defer func() {
 		require.NoError(b, p.Shutdown(b.Context()))
 	}()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.SetParallelism(4)
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			clone := ptrace.NewTraces()
+			traces.CopyTo(clone)
+			if err := p.ConsumeTraces(b.Context(), clone); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+}
+
+func BenchmarkProcessorThroughputWithMessages(b *testing.B) {
+	sources := []Source{{Name: SourceOpenInference, RemoveOriginals: true}}
+	traces := openInferenceFlattenedTraces(100, 4)
+
+	factory := NewFactory()
+	cfg := &Config{Sources: sources}
+	p, err := factory.CreateTraces(b.Context(), processortest.NewNopSettings(metadata.Type), cfg, dropTracesSink{})
+	require.NoError(b, err)
+	require.NoError(b, p.Start(b.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(b, p.Shutdown(b.Context())) }()
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -304,6 +366,52 @@ func openInferenceTraces(numSpans int) ptrace.Traces {
 		attrs.PutStr("session.id", "sess-123")
 		attrs.PutStr("noise.attr.a", "x")
 		attrs.PutStr("noise.attr.b", "y")
+	}
+	return td
+}
+
+func openInferenceFlattenedTraces(numSpans, messagesPerSpan int) ptrace.Traces {
+	td := ptrace.NewTraces()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	for range numSpans {
+		span := ss.Spans().AppendEmpty()
+		attrs := span.Attributes()
+		attrs.PutStr("llm.model_name", "gpt-4")
+		attrs.PutStr("openinference.span.kind", "LLM")
+		for i := range messagesPerSpan {
+			prefix := fmt.Sprintf("llm.input_messages.%d.message.", i)
+			if i%2 == 0 {
+				attrs.PutStr(prefix+"role", "user")
+				attrs.PutStr(prefix+"content", fmt.Sprintf("message %d", i))
+			} else {
+				attrs.PutStr(prefix+"role", "assistant")
+				attrs.PutStr(prefix+"content", fmt.Sprintf("response %d", i))
+			}
+		}
+		attrs.PutStr("noise.attr.a", "x")
+	}
+	return td
+}
+
+func openInferenceFlattenedToolCallTraces(numSpans int) ptrace.Traces {
+	td := ptrace.NewTraces()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	for range numSpans {
+		span := ss.Spans().AppendEmpty()
+		attrs := span.Attributes()
+		attrs.PutStr("llm.model_name", "gpt-4")
+		attrs.PutStr("openinference.span.kind", "LLM")
+		attrs.PutStr("llm.input_messages.0.message.role", "user")
+		attrs.PutStr("llm.input_messages.0.message.content", "What is the weather?")
+		attrs.PutStr("llm.output_messages.0.message.role", "assistant")
+		attrs.PutStr("llm.output_messages.0.message.tool_calls.0.tool_call.id", "call_1")
+		attrs.PutStr("llm.output_messages.0.message.tool_calls.0.tool_call.function.name", "get_weather")
+		attrs.PutStr("llm.output_messages.0.message.tool_calls.0.tool_call.function.arguments", `{"city":"Berlin"}`)
+		attrs.PutStr("llm.output_messages.0.message.tool_calls.1.tool_call.id", "call_2")
+		attrs.PutStr("llm.output_messages.0.message.tool_calls.1.tool_call.function.name", "get_time")
+		attrs.PutStr("llm.output_messages.0.message.tool_calls.1.tool_call.function.arguments", `{"tz":"CET"}`)
+		attrs.PutStr("llm.input_messages.1.message.content", "sunny 22C")
+		attrs.PutStr("llm.input_messages.1.message.tool_call_id", "call_1")
 	}
 	return td
 }

@@ -43,12 +43,12 @@ func TestMetricAccumulator(t *testing.T) {
 		NodeMetricGroup: true,
 		PodMetricGroup:  true,
 	}
-	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, ifaces, mbs))
+	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, ifaces, mbs, NewCPUUsageCalculator()))
 	// Disable all groups
 	mbs.NodeMetricsBuilder.Reset()
 	mbs.PodMetricsBuilder.Reset()
 	mbs.OtherMetricsBuilder.Reset()
-	require.Empty(t, MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, map[MetricGroup]bool{}, mbs))
+	require.Empty(t, MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, map[MetricGroup]bool{}, mbs, NewCPUUsageCalculator()))
 }
 
 func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
@@ -162,7 +162,7 @@ func TestUptime(t *testing.T) {
 		ContainerMetricsBuilder: metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 	}
 
-	metrics := indexedFakeMetrics(MetricsData(zap.NewNop(), summary, Metadata{}, mgs, ifaces, mbs))
+	metrics := indexedFakeMetrics(MetricsData(zap.NewNop(), summary, Metadata{}, mgs, ifaces, mbs, NewCPUUsageCalculator()))
 
 	requireContains(t, metrics, "k8s.node.uptime")
 	requireContains(t, metrics, "k8s.pod.uptime")
@@ -232,5 +232,5 @@ func fakeMetrics() []pmetric.Metrics {
 		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 	}
-	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs, ifaces, mbs)
+	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs, ifaces, mbs, NewCPUUsageCalculator())
 }

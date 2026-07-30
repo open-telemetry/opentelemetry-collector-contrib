@@ -95,315 +95,252 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverBlockManagerDiskUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverBlockManagerMemoryUsageDataPoint(ts, 1, AttributeLocationOnHeap, AttributeStateUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverBlockManagerMemoryUsageDataPoint(ts, 3, AttributeLocationOffHeap, AttributeStateFree)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorCompilationCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorSourceCodeOperationsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverDagSchedulerJobActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverDagSchedulerJobCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverDagSchedulerStageCountDataPoint(ts, 1, AttributeSchedulerStatusWaiting)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverDagSchedulerStageCountDataPoint(ts, 3, AttributeSchedulerStatusRunning)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverDagSchedulerStageFailedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorGcOperationsDataPoint(ts, 1, AttributeGcTypeMajor)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorGcOperationsDataPoint(ts, 3, AttributeGcTypeMinor)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorGcTimeDataPoint(ts, 1, AttributeGcTypeMajor)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorGcTimeDataPoint(ts, 3, AttributeGcTypeMinor)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorMemoryExecutionDataPoint(ts, 1, AttributeLocationOnHeap)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorMemoryExecutionDataPoint(ts, 3, AttributeLocationOffHeap)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorMemoryJvmDataPoint(ts, 1, AttributeLocationOnHeap)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorMemoryJvmDataPoint(ts, 3, AttributeLocationOffHeap)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorMemoryPoolDataPoint(ts, 1, AttributePoolMemoryTypeDirect)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorMemoryPoolDataPoint(ts, 3, AttributePoolMemoryTypeMapped)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorMemoryStorageDataPoint(ts, 1, AttributeLocationOnHeap)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorMemoryStorageDataPoint(ts, 3, AttributeLocationOffHeap)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverJvmCPUTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverLiveListenerBusDroppedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverLiveListenerBusPostedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverLiveListenerBusProcessingTimeAverageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverLiveListenerBusQueueSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorDiskUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorGcTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorInputSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorMemoryUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorShuffleIoSizeDataPoint(ts, 1, AttributeDirectionIn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkExecutorShuffleIoSizeDataPoint(ts, 3, AttributeDirectionOut)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorStorageMemoryUsageDataPoint(ts, 1, AttributeLocationOnHeap, AttributeStateUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkExecutorStorageMemoryUsageDataPoint(ts, 3, AttributeLocationOffHeap, AttributeStateFree)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorTaskActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorTaskLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorTaskResultDataPoint(ts, 1, AttributeExecutorTaskResultCompleted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkExecutorTaskResultDataPoint(ts, 3, AttributeExecutorTaskResultFailed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkJobStageActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkJobStageResultDataPoint(ts, 1, AttributeJobResultCompleted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkJobStageResultDataPoint(ts, 3, AttributeJobResultFailed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkJobTaskActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkJobTaskResultDataPoint(ts, 1, AttributeJobResultCompleted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkJobTaskResultDataPoint(ts, 3, AttributeJobResultFailed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageDiskSpilledDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageExecutorCPUTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageExecutorRunTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageIoRecordsDataPoint(ts, 1, AttributeDirectionIn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageIoRecordsDataPoint(ts, 3, AttributeDirectionOut)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageIoSizeDataPoint(ts, 1, AttributeDirectionIn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageIoSizeDataPoint(ts, 3, AttributeDirectionOut)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageJvmGcTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageMemoryPeakDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageMemorySpilledDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleBlocksFetchedDataPoint(ts, 1, AttributeSourceLocal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageShuffleBlocksFetchedDataPoint(ts, 3, AttributeSourceRemote)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleFetchWaitTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleIoDiskDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleIoReadSizeDataPoint(ts, 1, AttributeSourceLocal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageShuffleIoReadSizeDataPoint(ts, 3, AttributeSourceRemote)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleIoRecordsDataPoint(ts, 1, AttributeDirectionIn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageShuffleIoRecordsDataPoint(ts, 3, AttributeDirectionOut)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleIoWriteSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleWriteTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageStatusDataPoint(ts, 1, true, true, false, true)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageStatusDataPoint(ts, 3, false, false, true, false)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageTaskActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageTaskResultDataPoint(ts, 1, AttributeStageTaskResultCompleted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageTaskResultDataPoint(ts, 3, AttributeStageTaskResultFailed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageTaskResultSizeDataPoint(ts, 1)
@@ -471,7 +408,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Disk space used by the BlockManager.", mi.Description())
-					assert.Equal(t, "mb", mi.Unit())
+					assert.Equal(t, "MBy", mi.Unit())
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -486,7 +423,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Memory usage for the driver's BlockManager.", mi.Description())
-						assert.Equal(t, "mb", mi.Unit())
+						assert.Equal(t, "MBy", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -506,7 +443,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Memory usage for the driver's BlockManager.", mi.Description())
-						assert.Equal(t, "mb", mi.Unit())
+						assert.Equal(t, "MBy", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -560,7 +497,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Average class size of the classes generated by the CodeGenerator.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -586,7 +523,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Average method size of the classes generated by the CodeGenerator.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -612,7 +549,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Average size of the source code generated by a CodeGenerator code generation operation.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -813,7 +750,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of execution memory currently used by the driver.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -830,7 +767,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of execution memory currently used by the driver.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -857,7 +794,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of memory used by the driver's JVM.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -874,7 +811,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of memory used by the driver's JVM.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -901,7 +838,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of pool memory currently used by the driver.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -918,7 +855,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of pool memory currently used by the driver.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -945,7 +882,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of storage memory currently used by the driver.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -962,7 +899,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of storage memory currently used by the driver.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1126,7 +1063,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Disk space used by this executor for RDD storage.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1154,7 +1091,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Amount of data input for this executor.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1168,7 +1105,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Storage memory used by this executor.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1183,7 +1120,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of data written and read during shuffle operations for this executor.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1200,7 +1137,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of data written and read during shuffle operations for this executor.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1227,7 +1164,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The executor's storage memory usage.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1247,7 +1184,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The executor's storage memory usage.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1477,7 +1414,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of disk space used for storing portions of overly large data chunks that couldn't fit in memory in this stage.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1564,7 +1501,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of data written and read at this stage.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1581,7 +1518,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of data written and read at this stage.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1621,7 +1558,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Peak memory used by internal data structures created during shuffles, aggregations and joins in this stage.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1635,7 +1572,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of memory moved to disk due to size constraints (spilled) in this stage.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1707,7 +1644,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Amount of data read to disk in shuffle operations (sometimes required for large blocks, as opposed to the default behavior of reading into memory).", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1722,7 +1659,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of data read in shuffle operations in this stage.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1739,7 +1676,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of data read in shuffle operations in this stage.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1809,7 +1746,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Amount of data written in shuffle operations in this stage.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1954,7 +1891,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of data transmitted back to the driver by all the tasks in this stage.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)

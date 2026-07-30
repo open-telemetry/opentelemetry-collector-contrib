@@ -119,7 +119,8 @@ var MetricsInfo = metricsInfo{
 		Name: "k8s.container.cpu_request_utilization",
 	},
 	K8sContainerEphemeralStorageUsage: metricInfo{
-		Name: "k8s.container.ephemeral_storage.usage",
+		Name:       "k8s.container.ephemeral_storage.usage",
+		Attributes: []string{"fs.type"},
 	},
 	K8sContainerMemoryNodeUtilization: metricInfo{
 		Name: "k8s.container.memory.node.utilization",
@@ -164,10 +165,12 @@ var MetricsInfo = metricsInfo{
 		Name: "k8s.node.memory.working_set",
 	},
 	K8sNodeNetworkErrors: metricInfo{
-		Name: "k8s.node.network.errors",
+		Name:       "k8s.node.network.errors",
+		Attributes: []string{"interface", "direction"},
 	},
 	K8sNodeNetworkIo: metricInfo{
-		Name: "k8s.node.network.io",
+		Name:       "k8s.node.network.io",
+		Attributes: []string{"interface", "direction"},
 	},
 	K8sNodeSystemContainerCPUTime: metricInfo{
 		Name: "k8s.node.system_container.cpu.time",
@@ -236,10 +239,12 @@ var MetricsInfo = metricsInfo{
 		Name: "k8s.pod.memory_request_utilization",
 	},
 	K8sPodNetworkErrors: metricInfo{
-		Name: "k8s.pod.network.errors",
+		Name:       "k8s.pod.network.errors",
+		Attributes: []string{"interface", "direction"},
 	},
 	K8sPodNetworkIo: metricInfo{
-		Name: "k8s.pod.network.io",
+		Name:       "k8s.pod.network.io",
+		Attributes: []string{"interface", "direction"},
 	},
 	K8sPodUptime: metricInfo{
 		Name: "k8s.pod.uptime",
@@ -331,7 +336,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricContainerCPUTime struct {
