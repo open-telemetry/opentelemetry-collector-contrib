@@ -94,7 +94,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 	defer mr.mutex.RUnlock()
 	for metricType, metricDesc := range mr.metricDescriptors {
 		// Set interval and delay times, using defaults if not provided
-		gInterval = mr.config.CollectionInterval
+		gInterval = mr.config.ControllerConfig.CollectionInterval
 		if gInterval <= 0 {
 			gInterval = defaultCollectionInterval
 		}
