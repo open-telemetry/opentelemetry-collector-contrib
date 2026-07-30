@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -21,13 +21,13 @@ func TestFactoryCreate(t *testing.T) {
 
 func TestDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	require.Error(t, xconfmap.Validate(cfg), "Validation succeeded on invalid cfg")
+	require.Error(t, confmap.Validate(cfg), "Validation succeeded on invalid cfg")
 
 	cfg.Account = "account"
 	cfg.Username = "uname"
 	cfg.Password = "pwd"
 	cfg.Warehouse = "warehouse"
-	require.NoError(t, xconfmap.Validate(cfg), "Failed to validate valid cfg")
+	require.NoError(t, confmap.Validate(cfg), "Failed to validate valid cfg")
 
 	require.Equal(t, defaultDB, cfg.Database)
 	require.Equal(t, defaultRole, cfg.Role)

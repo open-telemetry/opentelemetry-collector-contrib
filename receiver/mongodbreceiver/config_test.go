@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
@@ -117,7 +116,7 @@ func TestValidate(t *testing.T) {
 			QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: 0},
 			TopQueryCollection:    defaultTopQueryCollection(),
 		}
-		err := xconfmap.Validate(cfg)
+		err := confmap.Validate(cfg)
 		require.ErrorContains(t, err, "query_sample_collection.max_rows_per_query must be greater than 0")
 	})
 	for _, tc := range testCases {
@@ -140,7 +139,7 @@ func TestValidate(t *testing.T) {
 				QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: defaultMaxRowsPerQuery},
 				TopQueryCollection:    defaultTopQueryCollection(),
 			}
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			if tc.expected == nil {
 				require.NoError(t, err)
 			} else {
@@ -195,7 +194,7 @@ func TestBadTLSConfigs(t *testing.T) {
 				QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: defaultMaxRowsPerQuery},
 				TopQueryCollection:    defaultTopQueryCollection(),
 			}
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -506,7 +505,7 @@ func TestValidateTopQueryCollection(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := baseCfg()
 			tc.mutate(&cfg.TopQueryCollection)
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			if tc.errSubstr == "" {
 				require.NoError(t, err)
 			} else {
@@ -538,7 +537,7 @@ func TestValidateTopQueryCollection_PartialUserConfig(t *testing.T) {
 	require.Equal(t, defaultQueryPlanCacheTTL, cfg.TopQueryCollection.QueryPlanCacheTTL)
 	require.Equal(t, defaultTopQueryCollectionInterval, cfg.TopQueryCollection.CollectionInterval)
 
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 // decodeInto merges a raw config map into an already-populated Config the
