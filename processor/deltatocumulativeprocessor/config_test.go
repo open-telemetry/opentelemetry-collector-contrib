@@ -109,7 +109,7 @@ func TestLoadDeprecatedConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
