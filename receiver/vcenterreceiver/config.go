@@ -19,13 +19,13 @@ import (
 
 // Config is the configuration of the receiver
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Endpoint                       string              `mapstructure:"endpoint"`
-	Username                       string              `mapstructure:"username"`
-	Password                       configopaque.String `mapstructure:"password"`
-	MaxQueryMetrics                int                 `mapstructure:"max_query_metrics"`
+	ControllerConfig              scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ClientConfig                  configtls.ClientConfig         `mapstructure:"tls,omitempty"`
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Endpoint                      string              `mapstructure:"endpoint"`
+	Username                      string              `mapstructure:"username"`
+	Password                      configopaque.String `mapstructure:"password"`
+	MaxQueryMetrics               int                 `mapstructure:"max_query_metrics"`
 }
 
 // Validate checks to see if the supplied config will work for the receiver
@@ -53,7 +53,7 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, errors.New("password not provided and is required"))
 	}
 
-	if _, tlsErr := c.LoadTLSConfig(context.Background()); tlsErr != nil {
+	if _, tlsErr := c.ClientConfig.LoadTLSConfig(context.Background()); tlsErr != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 

@@ -95,7 +95,7 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 
 	if r.config.StreamStats {
 		for _, container := range containers {
-			stats, ok := r.client.LatestContainerStats(container.ID, r.config.CollectionInterval)
+			stats, ok := r.client.LatestContainerStats(container.ID, r.config.ControllerConfig.CollectionInterval)
 			if !ok {
 				// Stream is still starting up; skip until first frame arrives.
 				errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(

@@ -32,8 +32,8 @@ components:
     processor:
         - attributes
         - cumulative_to_delta
-        - deltatocumulative
-        - deltatorate
+        - delta_to_cumulative
+        - delta_to_rate
         - drain
         - filter
         - groupbyattrs

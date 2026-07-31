@@ -63,7 +63,7 @@ func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Tr
 	if err != nil {
 		return nil, err
 	}
-	exporter.config.Endpoint, err = generateEndpoint(config, "traces")
+	exporter.config.ClientConfig.Endpoint, err = generateEndpoint(config, "traces")
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs
 	if err != nil {
 		return nil, err
 	}
-	exporter.config.Endpoint, err = generateEndpoint(config, "logs")
+	exporter.config.ClientConfig.Endpoint, err = generateEndpoint(config, "logs")
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs
 }
 
 func (exporter *logzioExporter) start(ctx context.Context, host component.Host) error {
-	client, err := exporter.config.ToClient(ctx, host.GetExtensions(), exporter.settings)
+	client, err := exporter.config.ClientConfig.ToClient(ctx, host.GetExtensions(), exporter.settings)
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	return exporter.export(ctx, exporter.config.Endpoint, request)
+	return exporter.export(ctx, exporter.config.ClientConfig.Endpoint, request)
 }
 
 func mergeMapEntries(maps ...pcommon.Map) pcommon.Map {
@@ -160,7 +160,7 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces ptrace
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	return exporter.export(ctx, exporter.config.Endpoint, request)
+	return exporter.export(ctx, exporter.config.ClientConfig.Endpoint, request)
 }
 
 // export is similar to otlp_http export method with changes in log messages + Permanent error for `StatusUnauthorized` and `StatusForbidden`

@@ -66,6 +66,10 @@ func createDefaultConfig() component.Config {
 func setupQueries(cfg *Config) []string {
 	var queries []string
 
+	if isAvailabilityGroupQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerAvailabilityGroupQuery(cfg.InstanceName))
+	}
+
 	if isDatabaseIOQueryEnabled(&cfg.Metrics) {
 		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
 	}
@@ -88,6 +92,14 @@ func setupQueries(cfg *Config) []string {
 
 	if isIndexPhysicalStatsQueryEnabled(&cfg.Metrics) {
 		queries = append(queries, getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName))
+	}
+
+	if isCPUMemoryQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerCPUMemoryQuery(cfg.InstanceName))
+	}
+
+	if isDiskIOQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerDiskIOQuery(cfg.InstanceName))
 	}
 
 	return queries
@@ -252,6 +264,16 @@ func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.C
 	return opts, nil
 }
 
+func isAvailabilityGroupQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.Enabled ||
+		metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueSize.Enabled ||
+		metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueRate.Enabled
+}
+
 func isDatabaseIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
 	if metrics == nil {
 		return false
@@ -360,4 +382,23 @@ func isIndexPhysicalStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverIndexPageUtilization.Enabled ||
 		metrics.SqlserverIndexRecordCount.Enabled ||
 		metrics.SqlserverIndexSize.Enabled
+}
+
+func isCPUMemoryQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverCPUUtilization.Enabled ||
+		metrics.SqlserverHostMemoryLimit.Enabled ||
+		metrics.SqlserverHostMemoryUsage.Enabled
+}
+
+func isDiskIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverDiskOperations.Enabled ||
+		metrics.SqlserverDiskIo.Enabled
 }
