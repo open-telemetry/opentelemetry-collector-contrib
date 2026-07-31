@@ -163,8 +163,12 @@ func NewConfigComponent(options ...ConfigOption) coreconfig.Component {
 // WithAPIConfig configures API-related settings
 func WithAPIConfig(cfg *datadogconfig.Config) ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
-		pkgconfig.Set("api_key", string(cfg.API.Key), pkgconfigmodel.SourceFile)
-		pkgconfig.Set("site", cfg.API.Site, pkgconfigmodel.SourceFile)
+		// Use SourceAgentRuntime because nodetreemodel's BuildSchema rebuilds the SourceEnvVar layer
+		// from actual DD_* env vars, which would erase a manually-set SourceFile value (e.g. DD_API_KEY
+		// or DD_SITE set in the process environment would otherwise silently win over the already-resolved
+		// value coming from the collector's own configuration).
+		pkgconfig.Set("api_key", string(cfg.API.Key), pkgconfigmodel.SourceAgentRuntime)
+		pkgconfig.Set("site", cfg.API.Site, pkgconfigmodel.SourceAgentRuntime)
 	}
 }
 
