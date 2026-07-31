@@ -90,6 +90,37 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
+			desc: "exclude_databases excludes every listed database",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.Databases = []string{"otel", "rdsadmin"}
+				cfg.ExcludeDatabases = []string{"rdsadmin", "otel", "template0"}
+			},
+			expected: []error{
+				errors.New(ErrAllDatabasesExcluded),
+			},
+		},
+		{
+			desc: "exclude_databases excludes only some listed databases",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.Databases = []string{"otel", "rdsadmin"}
+				cfg.ExcludeDatabases = []string{"rdsadmin"}
+			},
+			expected: nil,
+		},
+		{
+			desc: "exclude_databases with database autodiscovery is not a config error",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.ExcludeDatabases = []string{"rdsadmin"}
+			},
+			expected: nil,
+		},
+		{
 			desc: "no error",
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
@@ -108,6 +139,8 @@ func TestValidate(t *testing.T) {
 				for _, err := range tC.expected {
 					require.ErrorContains(t, actual, err.Error())
 				}
+			} else {
+				require.NoError(t, actual)
 			}
 		})
 	}

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confignet"
@@ -20,11 +21,12 @@ import (
 
 // Errors for missing required config parameters.
 const (
-	ErrNoUsername          = "invalid config: missing username"
-	ErrNoPassword          = "invalid config: missing password" // #nosec G101 - not hardcoded credentials
-	ErrNotSupported        = "invalid config: field '%s' not supported"
-	ErrTransportsSupported = "invalid config: 'transport' must be 'tcp' or 'unix'"
-	ErrHostPort            = "invalid config: 'endpoint' must be in the form <host>:<port> no matter what 'transport' is configured"
+	ErrNoUsername           = "invalid config: missing username"
+	ErrNoPassword           = "invalid config: missing password" // #nosec G101 - not hardcoded credentials
+	ErrNotSupported         = "invalid config: field '%s' not supported"
+	ErrTransportsSupported  = "invalid config: 'transport' must be 'tcp' or 'unix'"
+	ErrHostPort             = "invalid config: 'endpoint' must be in the form <host>:<port> no matter what 'transport' is configured"
+	ErrAllDatabasesExcluded = "invalid config: 'exclude_databases' excludes every database listed in 'databases'"
 )
 
 type TopQueryCollection struct {
@@ -84,6 +86,15 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.ClientConfig.MinVersion != "" {
 		err = multierr.Append(err, fmt.Errorf(ErrNotSupported, "MinVersion"))
+	}
+
+	// Only the explicit case is detectable here. When 'databases' is empty the list is
+	// discovered from the server at scrape time, so the equivalent check lives in the scraper.
+	remaining := slices.DeleteFunc(slices.Clone(cfg.Databases), func(db string) bool {
+		return slices.Contains(cfg.ExcludeDatabases, db)
+	})
+	if len(cfg.Databases) > 0 && len(remaining) == 0 {
+		err = multierr.Append(err, errors.New(ErrAllDatabasesExcluded))
 	}
 
 	switch cfg.AddrConfig.Transport {

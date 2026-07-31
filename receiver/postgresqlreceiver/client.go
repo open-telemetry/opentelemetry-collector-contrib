@@ -18,6 +18,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/lib/pq"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/otel/propagation"
@@ -70,8 +71,8 @@ type client interface {
 	getVectorInsertStats(ctx context.Context) ([]vectorInsertStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 	getVersion(ctx context.Context) (string, error)
-	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error)
-	getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
+	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, float64, error)
+	getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, error)
 	explainQuery(query, queryID string, logger *zap.Logger) (string, error)
 }
 
@@ -1074,17 +1075,25 @@ func parseMajorVersion(ver string) (int, error) {
 	return strconv.Atoi(parts[0])
 }
 
+// quoteDatabaseList renders databases as a comma separated list of SQL string literals,
+// suitable for interpolating into an IN/NOT IN clause. Escaping is delegated to the driver
+// rather than hand rolled. Returns an empty string for an empty list, which callers use to
+// omit the clause entirely.
+func quoteDatabaseList(databases []string) string {
+	quoted := make([]string, len(databases))
+	for i, db := range databases {
+		quoted[i] = pq.QuoteLiteral(db)
+	}
+	return strings.Join(quoted, ",")
+}
+
 func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) string {
 	if len(databases) > 0 {
-		var queryDatabases []string
-		for _, db := range databases {
-			queryDatabases = append(queryDatabases, fmt.Sprintf("'%s'", db))
-		}
+		keyword := " WHERE"
 		if strings.Contains(baseQuery, "WHERE") {
-			baseQuery += fmt.Sprintf(" AND datname IN (%s)", strings.Join(queryDatabases, ","))
-		} else {
-			baseQuery += fmt.Sprintf(" WHERE datname IN (%s)", strings.Join(queryDatabases, ","))
+			keyword = " AND"
 		}
+		baseQuery += keyword + " datname IN (" + quoteDatabaseList(databases) + ")"
 	}
 	if groupBy {
 		baseQuery += " GROUP BY datname"
@@ -1108,13 +1117,14 @@ func functionKey(database, schema, function string) functionIdentifer {
 //go:embed templates/querySampleTemplate.tmpl
 var querySampleTemplate string
 
-func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error) {
+func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, float64, error) {
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
 	if tmplErr := tmpl.Execute(&buf, map[string]any{
 		"limit":                limit,
 		"newestQueryTimestamp": newestQueryTimestamp,
+		"excludedDatabases":    quoteDatabaseList(excludedDatabases),
 	}); tmplErr != nil {
 		logger.Error("failed to execute template", zap.Error(tmplErr))
 		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", tmplErr)
@@ -1270,7 +1280,7 @@ func convertToInt(column, value string, logger *zap.Logger) (any, error) {
 var topQueryTemplate string
 
 // getTopQuery implements client.
-func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error) {
+func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, error) {
 	tmpl := template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
 	buf := bytes.Buffer{}
 
@@ -1278,7 +1288,8 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger 
 	// For instance, if from the last sample query we got queries executed between 8:00 ~ 8:15,
 	// in this query, we should only gather query after 8:15
 	if err := tmpl.Execute(&buf, map[string]any{
-		"limit": limit,
+		"limit":             limit,
+		"excludedDatabases": quoteDatabaseList(excludedDatabases),
 	}); err != nil {
 		logger.Error("failed to execute template", zap.Error(err))
 		return []map[string]any{}, fmt.Errorf("failed executing template: %w", err)

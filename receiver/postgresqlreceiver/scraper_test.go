@@ -679,6 +679,37 @@ func TestScraperExcludeDatabase(t *testing.T) {
 	runTest(false, "exclude.yaml")
 }
 
+func TestScraperSkipsDatabaseMetricsWhenAllDatabasesExcluded(t *testing.T) {
+	// Config validation only catches this when 'databases' is set explicitly. Under
+	// autodiscovery the candidate list comes from the server, so the scraper has to handle
+	// every discovered database being excluded.
+	listClient := new(mockClient)
+	listClient.initMocks(defaultPostgreSQLDatabase, "public", []string{"otel"}, 0)
+
+	factory := new(mockClientFactory)
+	factory.On("getClient", defaultPostgreSQLDatabase).Return(listClient, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.ExcludeDatabases = []string{"otel"}
+
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	_, err = scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	// See retrieveDBMetrics: an empty list must not fall through to a cluster-wide query.
+	listClient.AssertNotCalled(t, "getDatabaseStats", mock.Anything)
+	listClient.AssertNotCalled(t, "getBackends", mock.Anything)
+	listClient.AssertNotCalled(t, "getDatabaseSize", mock.Anything)
+
+	// Server level collectors carry no database dimension and must still run.
+	listClient.AssertCalled(t, "getMaxConnections", mock.Anything)
+
+	// The excluded database must not be connected to either.
+	factory.AssertNotCalled(t, "getClient", "otel")
+}
+
 func TestMutualExclusionOfFeatureGates(t *testing.T) {
 	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, true)()
 	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, true)()
@@ -896,14 +927,16 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 
 	tests := []struct {
-		name   string
-		params map[string]any
+		name           string
+		params         map[string]any
+		expectedClause string
 	}{
 		{
 			name: "renders with standard parameters",
 			params: map[string]any{
 				"limit":                int64(50),
 				"newestQueryTimestamp": 999999.555,
+				"excludedDatabases":    "",
 			},
 		},
 		{
@@ -911,7 +944,19 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 			params: map[string]any{
 				"limit":                int64(10),
 				"newestQueryTimestamp": float64(0),
+				"excludedDatabases":    "",
 			},
+		},
+		{
+			name: "renders excluded databases filter",
+			params: map[string]any{
+				"limit":                int64(10),
+				"newestQueryTimestamp": float64(0),
+				"excludedDatabases":    quoteDatabaseList([]string{"rdsadmin", "template0"}),
+			},
+			// COALESCE keeps rows whose datname is NULL (background workers), which a bare
+			// NOT IN would discard.
+			expectedClause: "AND COALESCE(sa.datname, '') NOT IN ('rdsadmin','template0')",
 		},
 	}
 
@@ -933,6 +978,54 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 
 			assert.Contains(t, rendered, fmt.Sprintf("LIMIT %v;", tc.params["limit"]))
 			assert.Contains(t, rendered, fmt.Sprintf("TO_TIMESTAMP(%v)", tc.params["newestQueryTimestamp"]))
+
+			// Matched narrowly: the template also carries an unrelated "sa.pid NOT IN (...)"
+			// subquery for blocking sessions.
+			if tc.expectedClause == "" {
+				assert.NotContains(t, rendered, "sa.datname, '') NOT IN (", "no database filter should be emitted without excludes")
+			} else {
+				assert.Contains(t, rendered, tc.expectedClause)
+			}
+		})
+	}
+}
+
+func TestTopQueryTemplateRendering(t *testing.T) {
+	tmpl := template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
+
+	tests := []struct {
+		name           string
+		excludes       []string
+		expectedClause string
+	}{
+		{
+			name:     "no excludes emits no filter",
+			excludes: nil,
+		},
+		{
+			name:           "excludes are filtered server side",
+			excludes:       []string{"rdsadmin", "azure_maintenance"},
+			expectedClause: "AND datname NOT IN ('rdsadmin','azure_maintenance')",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			buf := bytes.Buffer{}
+			err := tmpl.Execute(&buf, map[string]any{
+				"limit":             int64(10),
+				"excludedDatabases": quoteDatabaseList(tc.excludes),
+			})
+			require.NoError(t, err)
+
+			rendered := buf.String()
+			assert.Contains(t, rendered, "LIMIT 10;")
+
+			if tc.expectedClause == "" {
+				assert.NotContains(t, rendered, "datname NOT IN (", "no database filter should be emitted without excludes")
+			} else {
+				assert.Contains(t, rendered, tc.expectedClause)
+			}
 		})
 	}
 }
@@ -1158,6 +1251,54 @@ func TestScrapeQuerySampleMultiBlocker(t *testing.T) {
 	assert.Equal(t, "relation", attrs["postgresql.blocking.lock.type"])
 	assert.Equal(t, "orders", attrs["postgresql.blocking.lock.relation"])
 	assert.Equal(t, "2025-02-12T16:37:49Z", attrs["postgresql.blocking.transaction.start_time"])
+}
+
+func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.ExcludeDatabases = []string{"rdsadmin"}
+	cfg.Events.DbServerTopQuery.Enabled = true
+
+	// Regexp matcher (rather than QueryMatcherEqual) so the assertion is on the filter
+	// clause itself, and does not just re-render the template it is meant to verify.
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+	scraper, err := newPostgreSQLScraper(settings, cfg, mockSimpleClientFactory{db: db}, newCache(30), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	columns := []string{
+		callsColumnName, "datname", sharedBlksDirtiedColumnName, sharedBlksHitColumnName,
+		sharedBlksReadColumnName, sharedBlksWrittenColumnName, tempBlksReadColumnName,
+		tempBlksWrittenColumnName, "query", queryidColumnName, "rolname", rowsColumnName,
+		totalExecTimeColumnName, totalPlanTimeColumnName,
+	}
+
+	// The excluded database is filtered server side. Returning a row for it anyway
+	// exercises the EXPLAIN guard, which must skip the row rather than connect to it --
+	// RDS rejects connections to rdsadmin at pg_hba, so an EXPLAIN can never succeed.
+	// No EXPLAIN expectation is registered: issuing one would leave the plan empty and
+	// the row must not be emitted regardless.
+	mock.ExpectQuery(`AND datname NOT IN \('rdsadmin'\)`).
+		WillReturnRows(sqlmock.NewRows(columns).AddRow(
+			"123", "rdsadmin", "1111", "1112", "1113", "1114", "1115", "1116",
+			"select s.* from rds_get_stat_dxl_counters() as s", "114514",
+			"rdsadmin", "30", "11000", "12000",
+		))
+
+	actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
+	require.NoError(t, err)
+
+	// The query reached the server carrying the filter.
+	require.NoError(t, mock.ExpectationsWereMet())
+	// And no top query event was emitted for the excluded database.
+	assert.Equal(t, 0, actualLogs.LogRecordCount())
 }
 
 //go:embed testdata/scraper/top-query/expectedSql.sql
@@ -1451,7 +1592,7 @@ func (*mockClient) explainQuery(string, string, *zap.Logger) (string, error) {
 }
 
 // getTopQuery implements client.
-func (*mockClient) getTopQuery(context.Context, int64, *zap.Logger) ([]map[string]any, error) {
+func (*mockClient) getTopQuery(context.Context, int64, []string, *zap.Logger) ([]map[string]any, error) {
 	panic("unimplemented")
 }
 
@@ -1469,7 +1610,7 @@ func (m mockSimpleClientFactory) getClient(string) (client, error) {
 }
 
 // getQuerySamples implements client.
-func (*mockClient) getQuerySamples(context.Context, int64, float64, *zap.Logger) ([]map[string]any, float64, error) {
+func (*mockClient) getQuerySamples(context.Context, int64, float64, []string, *zap.Logger) ([]map[string]any, float64, error) {
 	panic("this should not be invoked")
 }
 

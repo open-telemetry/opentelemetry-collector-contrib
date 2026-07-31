@@ -61,6 +61,9 @@ type postgreSQLScraper struct {
 	newestQueryTimestamp   float64
 	serviceInstanceID      string
 	lastExecutionTimestamp time.Time
+	// warnNoDatabases keeps the "everything is excluded" warning to a single line rather
+	// than repeating it on every scrape, since the condition is configuration shaped.
+	warnNoDatabases sync.Once
 }
 
 type errsMux struct {
@@ -139,6 +142,13 @@ var semconvModeMetricAttributeNames = [...]string{
 	string(metadata.PostgresqlIndexScansMetricAttributeKeyPostgresqlIndexName),
 }
 
+// isExcluded reports whether the database is listed in exclude_databases. The receiver
+// neither collects from nor connects to such a database.
+func (p *postgreSQLScraper) isExcluded(database string) bool {
+	_, excluded := p.excludes[database]
+	return excluded
+}
+
 func metricsBuilderConfigForFeatureGate(config metadata.MetricsBuilderConfig, useOTelSemconv bool) metadata.MetricsBuilderConfig {
 	if useOTelSemconv {
 		return config
@@ -213,7 +223,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	}
 	var filteredDatabases []string
 	for _, db := range databases {
-		if _, ok := p.excludes[db]; !ok {
+		if !p.isExcluded(db) {
 			filteredDatabases = append(filteredDatabases, db)
 		}
 	}
@@ -228,6 +238,11 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		dbStats:          make(map[databaseName]databaseStats),
 		dbConflictStats:  make(map[databaseName]databaseConflictStats),
 		executionTimeMap: make(map[databaseName]float64),
+	}
+	if len(databases) == 0 {
+		p.warnNoDatabases.Do(func() {
+			p.logger.Warn("no databases remain after applying exclude_databases; skipping per-database metrics")
+		})
 	}
 	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
@@ -338,7 +353,7 @@ func attrFloat64(atts map[string]any, key string) float64 {
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimestamp, logger)
+	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimestamp, p.config.ExcludeDatabases, logger)
 	p.newestQueryTimestamp = newestQueryTimestamp
 	if err != nil {
 		mux.addPartial(err)
@@ -392,7 +407,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 
 	defer defaultDbClient.Close()
 
-	rows, err := defaultDbClient.getTopQuery(ctx, limit, logger)
+	rows, err := defaultDbClient.getTopQuery(ctx, limit, p.config.ExcludeDatabases, logger)
 	if err != nil {
 		logger.Error("failed to get top query", zap.Error(err))
 		mux.addPartial(err)
@@ -474,11 +489,16 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		item := heap.Pop(&pq).(*priorityqueue.QueueItem[map[string]any, float64])
 		query := item.Value[string(semconv.DBQueryTextKey)].(string)
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
+		database := item.Value[string(semconv.DBNamespaceKey)].(string)
+		// Belt and braces on top of the template's server side filter: EXPLAIN opens a
+		// connection, and managed providers reject connections to their internal databases.
+		if p.isExcluded(database) {
+			continue
+		}
 		// Use raw query (with $1, $2 placeholders) for EXPLAIN, not the obfuscated one (with ?)
 		rawQuery, _ := item.Value[dbAttributePrefix+"raw_query"].(string)
 		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
 		if !ok && explained < maxExplainEachInterval {
-			database := item.Value[string(semconv.DBNamespaceKey)].(string)
 			dbClient, err := clientFactory.getClient(database)
 			if err == nil {
 				plan, err = dbClient.explainQuery(rawQuery, queryID, logger)
@@ -500,7 +520,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			context.Background(),
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
-			item.Value[string(semconv.DBNamespaceKey)].(string),
+			database,
 			query,
 			item.Value[dbAttributePrefix+callsColumnName].(int64),
 			item.Value[dbAttributePrefix+rowsColumnName].(int64),
@@ -534,6 +554,12 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 	r *dbRetrieval,
 	errs *errsMux,
 ) {
+	// An empty list means everything was excluded, not "all databases":
+	// filterQueryByDatabases would drop its WHERE clause and scan the whole cluster.
+	if len(databases) == 0 {
+		return
+	}
+
 	wg := &sync.WaitGroup{}
 
 	wg.Add(3)
