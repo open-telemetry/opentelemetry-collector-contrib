@@ -12,11 +12,11 @@ import (
 )
 
 type Config struct {
-	confignet.TCPAddrConfig       `mapstructure:",squash"`
+	TCPAddrConfig                 confignet.TCPAddrConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (cfg *Config) Validate() error {
-	_, _, err := net.SplitHostPort(cfg.Endpoint)
+	_, _, err := net.SplitHostPort(cfg.TCPAddrConfig.Endpoint)
 	return err
 }

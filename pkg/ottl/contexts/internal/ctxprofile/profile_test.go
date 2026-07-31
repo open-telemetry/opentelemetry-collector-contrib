@@ -22,10 +22,11 @@ import (
 func TestPathGetSetter(t *testing.T) {
 	// create tests
 	tests := []struct {
-		path     string
-		val      any
-		keys     []ottl.Key[*profileContext]
-		setFails bool
+		path       string
+		val        any
+		keys       []ottl.Key[*profileContext]
+		setFails   bool
+		nilNoError bool // true if the setter accepts nil without returning an error
 	}{
 		{
 			path: "sample_type",
@@ -40,8 +41,9 @@ func TestPathGetSetter(t *testing.T) {
 			val:  "cycles",
 		},
 		{
-			path: "sample",
-			val:  createSampleSlice(),
+			path:       "sample",
+			val:        createSampleSlice(),
+			nilNoError: true,
 		},
 		{
 			path: "time_unix_nano",
@@ -97,8 +99,9 @@ func TestPathGetSetter(t *testing.T) {
 			setFails: true,
 		},
 		{
-			path: "attribute_indices",
-			val:  []int64{567},
+			path:       "attribute_indices",
+			val:        []int64{567},
+			nilNoError: true,
 		},
 		{
 			path: "dropped_attributes_count",
@@ -119,6 +122,7 @@ func TestPathGetSetter(t *testing.T) {
 				m.PutStr("akey", "val")
 				return m
 			}(),
+			nilNoError: true,
 		},
 		{
 			path: "attributes",
@@ -127,7 +131,8 @@ func TestPathGetSetter(t *testing.T) {
 					S: ottltest.Strp("akey"),
 				},
 			},
-			val: "val",
+			val:        "val",
+			nilNoError: true,
 		},
 		{
 			path: "attributes",
@@ -139,7 +144,8 @@ func TestPathGetSetter(t *testing.T) {
 					S: ottltest.Strp("bkey"),
 				},
 			},
-			val: "val",
+			val:        "val",
+			nilNoError: true,
 		},
 		{
 			path: "attributes",
@@ -155,7 +161,8 @@ func TestPathGetSetter(t *testing.T) {
 					},
 				},
 			},
-			val: "val",
+			val:        "val",
+			nilNoError: true,
 		},
 	}
 
@@ -187,6 +194,17 @@ func TestPathGetSetter(t *testing.T) {
 			// Verify that setting an invalid type returns an error
 			err = accessor.Set(t.Context(), ctx, struct{}{})
 			require.Error(t, err)
+
+			// Verify nil handling: setters for scalar and struct paths return an error, while
+			// setters for pcommon.Value, map, and slice paths accept nil and clear to empty.
+			// Use a fresh context so the nil write does not disturb the assertion below.
+			nilCtx := newProfileContext(pprofile.NewProfile(), pprofile.NewProfilesDictionary())
+			err = accessor.Set(t.Context(), nilCtx, nil)
+			if tt.nilNoError {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
 
 			got, err := accessor.Get(t.Context(), ctx)
 			require.NoError(t, err)
