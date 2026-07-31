@@ -54,7 +54,7 @@ type Config struct {
 	NodeName string `mapstructure:"node"`
 
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 
 	// NetworkCollectAllInterfaces allows to enable collecting metrics from all network interfaces instead of default one
 	// Can be set separately for Pod and Node network metrics
@@ -137,13 +137,13 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 func (cfg *Config) Validate() error {
 	if cfg.NodeName == "" {
 		switch {
-		case cfg.Metrics.K8sContainerCPUNodeUtilization.Enabled:
+		case cfg.MetricsBuilderConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled:
 			return errors.New("for k8s.container.cpu.node.utilization node setting is required. Check the readme on how to set the required setting")
-		case cfg.Metrics.K8sPodCPUNodeUtilization.Enabled:
+		case cfg.MetricsBuilderConfig.Metrics.K8sPodCPUNodeUtilization.Enabled:
 			return errors.New("for k8s.pod.cpu.node.utilization node setting is required. Check the readme on how to set the required setting")
-		case cfg.Metrics.K8sContainerMemoryNodeUtilization.Enabled:
+		case cfg.MetricsBuilderConfig.Metrics.K8sContainerMemoryNodeUtilization.Enabled:
 			return errors.New("for k8s.container.memory.node.utilization node setting is required. Check the readme on how to set the required setting")
-		case cfg.Metrics.K8sPodMemoryNodeUtilization.Enabled:
+		case cfg.MetricsBuilderConfig.Metrics.K8sPodMemoryNodeUtilization.Enabled:
 			return errors.New("for k8s.pod.memory.node.utilization node setting is required. Check the readme on how to set the required setting")
 		}
 	}

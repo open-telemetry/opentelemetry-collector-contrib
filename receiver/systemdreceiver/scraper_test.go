@@ -152,7 +152,7 @@ func TestScraperScrape(t *testing.T) {
 			desc: "Basic scrape",
 			config: func() *Config {
 				cfg := createDefaultDisabledConfig()
-				cfg.Metrics.SystemdUnitState.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SystemdUnitState.Enabled = true
 				return cfg
 			},
 			units: []unitTuple{
@@ -177,7 +177,7 @@ func TestScraperScrape(t *testing.T) {
 			desc: "With cgroups",
 			config: func() *Config {
 				cfg := createDefaultDisabledConfig()
-				cfg.Metrics.SystemdServiceCPUTime.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SystemdServiceCPUTime.Enabled = true
 				return cfg
 			},
 			units: []unitTuple{
@@ -202,7 +202,7 @@ func TestScraperScrape(t *testing.T) {
 			desc: "Service restarts",
 			config: func() *Config {
 				cfg := createDefaultDisabledConfig()
-				cfg.Metrics.SystemdServiceRestarts.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SystemdServiceRestarts.Enabled = true
 				return cfg
 			},
 			units:       []unitTuple{nginxService},
@@ -241,7 +241,7 @@ func TestScraperScrape(t *testing.T) {
 // Create a config where all metrics are disabled
 func createDefaultDisabledConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Metrics.SystemdUnitState.Enabled = false
-	cfg.Metrics.SystemdServiceCPUTime.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.SystemdUnitState.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.SystemdServiceCPUTime.Enabled = false
 	return cfg
 }
