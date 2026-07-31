@@ -178,9 +178,11 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 
 	if !conf.IsSet("http") && !metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate.IsEnabled() {
 		cfg.HTTP = cfg.ClientConfig
-		// we explicity set an empty struct for TestLoadConfig to work.
+		// we explicity set an empty struct for TestLoadConfig to work. ClientConfig is not referenced outside tests
 		cfg.ClientConfig = confighttp.ClientConfig{}
-	} else {
+	}
+
+	if metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate.IsEnabled() {
 		// When the remove-top-level gate is enabled, reject deprecated flat HTTP client keys.
 		if hasTopLevelHTTPClientSettings(conf) {
 			return fmt.Errorf("top-level HTTP client settings are not allowed when feature gate %s is enabled; move them under the 'http' block",
