@@ -530,6 +530,16 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [postgresql.conflict.type, db.namespace]
+  postgresql.query.execution.time:
+    enabled: false
+    description: The total execution time of SQL statements currently tracked by pg_stat_statements for the database.
+    stability: development
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.replication.data_delay:
     attributes: [replication_client]
     description: The amount of data delayed in replication.

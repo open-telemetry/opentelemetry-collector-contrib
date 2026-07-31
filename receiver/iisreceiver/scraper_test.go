@@ -164,8 +164,8 @@ func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 		consumertest.NewNop(),
 	)
 
-	expectedError := "Failed to scrape counter \"counter\": A counter with a negative denominator value was detected.\r\n"
-	mockWatcher, err := newMockWatcherFactory(errors.New(expectedError))("", "", "")
+	expectedError := "A counter with a negative denominator value was detected.\r\n"
+	mockWatcher, err := newMockWatcherFactory(mockIgnorableError{errors.New(expectedError)})("", "", "")
 	require.NoError(t, err)
 	scraper.queueMaxAgeWatchers = []instanceWatcher{
 		{
@@ -214,20 +214,24 @@ func disableEnabledFieldsRecursively(v reflect.Value) {
 	}
 }
 
+type mockIgnorableError struct{ error }
+
+func (mockIgnorableError) IsIgnorable() bool { return true }
+
 type mockPerfCounter struct {
 	watchErr error
 	value    float64
 }
 
 func newMockWatcherFactory(watchErr error) func(string, string,
-	string) (winperfcounters.PerfCounterWatcher, error) {
-	return func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
+	string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
+	return func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
 		return &mockPerfCounter{watchErr: watchErr, value: 1}, nil
 	}
 }
 
-func newMockWatcherFactorFromPath(watchErr error, value float64) func(string) (winperfcounters.PerfCounterWatcher, error) {
-	return func(_ string) (winperfcounters.PerfCounterWatcher, error) {
+func newMockWatcherFactorFromPath(watchErr error, value float64) func(string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
+	return func(string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
 		return &mockPerfCounter{watchErr: watchErr, value: value}, nil
 	}
 }
