@@ -115,7 +115,7 @@ func newPostgreSQLScraper(
 	if useOTelSemconv {
 		serviceInstanceID = uuid.NewSHA1(otelNamespaceUUID, []byte(resolveServiceInstanceSeed(config, settings.Logger))).String()
 	} else {
-		serviceInstanceID = getInstanceID(config.Endpoint, settings.Logger)
+		serviceInstanceID = getInstanceID(config.AddrConfig.Endpoint, settings.Logger)
 	}
 	mbConfig := metricsBuilderConfigForFeatureGate(config.MetricsBuilderConfig, useOTelSemconv)
 	return &postgreSQLScraper{
@@ -186,10 +186,11 @@ func legacyMetricAttributes[T ~string](attributes []T) []T {
 
 type dbRetrieval struct {
 	sync.RWMutex
-	activityMap     map[databaseName]int64
-	dbSizeMap       map[databaseName]int64
-	dbStats         map[databaseName]databaseStats
-	dbConflictStats map[databaseName]databaseConflictStats
+	activityMap      map[databaseName]int64
+	dbSizeMap        map[databaseName]int64
+	dbStats          map[databaseName]databaseStats
+	dbConflictStats  map[databaseName]databaseConflictStats
+	executionTimeMap map[databaseName]float64
 }
 
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
@@ -222,10 +223,11 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	var errs errsMux
 	r := &dbRetrieval{
-		activityMap:     make(map[databaseName]int64),
-		dbSizeMap:       make(map[databaseName]int64),
-		dbStats:         make(map[databaseName]databaseStats),
-		dbConflictStats: make(map[databaseName]databaseConflictStats),
+		activityMap:      make(map[databaseName]int64),
+		dbSizeMap:        make(map[databaseName]int64),
+		dbStats:          make(map[databaseName]databaseStats),
+		dbConflictStats:  make(map[databaseName]databaseConflictStats),
+		executionTimeMap: make(map[databaseName]float64),
 	}
 	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
@@ -547,6 +549,14 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 		go p.retrieveDatabaseConflicts(ctx, wg, listClient, databases, r, errs)
 	}
 
+	// pg_stat_statements is queried separately and only when the metric is enabled, since it
+	// requires the pg_stat_statements extension and would otherwise add an unnecessary query
+	// (that errors when the extension is absent) on every scrape.
+	if p.config.Metrics.PostgresqlQueryExecutionTime.Enabled {
+		wg.Add(1)
+		go p.retrieveExecutionTime(ctx, wg, listClient, databases, r, errs)
+	}
+
 	wg.Wait()
 }
 
@@ -572,6 +582,9 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlTupDeletedDataPoint(now, stats.tupDeleted, db)
 		p.mb.RecordPostgresqlBlksHitDataPoint(now, stats.blksHit, db)
 		p.mb.RecordPostgresqlBlksReadDataPoint(now, stats.blksRead, db)
+	}
+	if executionTime, ok := r.executionTimeMap[dbName]; ok {
+		p.mb.RecordPostgresqlQueryExecutionTimeDataPoint(now, executionTime, db)
 	}
 	if conflicts, ok := r.dbConflictStats[dbName]; ok {
 		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflTablespace, metadata.AttributePostgresqlConflictTypeTablespace, db)
@@ -963,6 +976,26 @@ func (p *postgreSQLScraper) retrieveDatabaseConflicts(
 	r.Unlock()
 }
 
+func (p *postgreSQLScraper) retrieveExecutionTime(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	client client,
+	databases []string,
+	r *dbRetrieval,
+	errs *errsMux,
+) {
+	defer wg.Done()
+	executionTime, err := client.getExecutionTimeStats(ctx, databases)
+	if err != nil {
+		p.logger.Error("Errors encountered while fetching execution time", zap.Error(err))
+		errs.addPartial(err)
+		return
+	}
+	r.Lock()
+	r.executionTimeMap = executionTime
+	r.Unlock()
+}
+
 func (p *postgreSQLScraper) retrieveDatabaseSize(
 	ctx context.Context,
 	wg *sync.WaitGroup,
@@ -1015,7 +1048,7 @@ func (p *postgreSQLScraper) setupSemconvResourceBuilder(rb *metadata.ResourceBui
 }
 
 func serverEndpointAttributes(config *Config) (string, int64, error) {
-	host, portString, err := net.SplitHostPort(config.Endpoint)
+	host, portString, err := net.SplitHostPort(config.AddrConfig.Endpoint)
 	if err != nil {
 		return "", 0, err
 	}
@@ -1023,7 +1056,7 @@ func serverEndpointAttributes(config *Config) (string, int64, error) {
 	if err != nil {
 		return "", 0, err
 	}
-	if config.Transport == confignet.TransportTypeUnix {
+	if config.AddrConfig.Transport == confignet.TransportTypeUnix {
 		host = path.Join("/", host, ".s.PGSQL."+portString)
 	}
 	return host, port, nil
@@ -1060,8 +1093,8 @@ func (p *postgreSQLScraper) setupLogsResourceBuilder(rb *metadata.ResourceBuilde
 // resolveServiceInstanceSeed returns the database endpoint used as the UUID v5 seed in semconv mode.
 // Local TCP and Unix endpoints include the machine hostname so databases on different machines produce distinct IDs.
 func resolveServiceInstanceSeed(config *Config, logger *zap.Logger) string {
-	endpoint := config.Endpoint
-	if config.Transport == confignet.TransportTypeUnix {
+	endpoint := config.AddrConfig.Endpoint
+	if config.AddrConfig.Transport == confignet.TransportTypeUnix {
 		address, _, err := serverEndpointAttributes(config)
 		if err != nil {
 			logger.Warn("Failed to parse Unix endpoint for service.instance.id; using raw endpoint in UUID seed",

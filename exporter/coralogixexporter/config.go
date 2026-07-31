@@ -71,9 +71,9 @@ func (c *TransportConfig) GetAcceptEncoding() string {
 
 // Config defines configuration for Coralogix exporter.
 type Config struct {
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
 
 	// Protocol to use for communication. Options: "grpc" (default), "http"
 	Protocol string `mapstructure:"protocol"`

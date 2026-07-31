@@ -22,10 +22,10 @@ import (
 var _ component.Config = (*Config)(nil)
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 
-	kube.ClientConfig       `mapstructure:",squash"`
-	confignet.TCPAddrConfig `mapstructure:",squash"`
+	kube.ClientConfig `mapstructure:",squash"`
+	TCPAddrConfig     confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// ExtraMetadataLabels contains list of extra metadata that should be taken from /pods endpoint
 	// and put as extra labels on metrics resource.
@@ -93,7 +93,7 @@ func (cfg *Config) getReceiverOptions() (*scraperOptions, error) {
 	}
 
 	return &scraperOptions{
-		collectionInterval:    cfg.CollectionInterval,
+		collectionInterval:    cfg.ControllerConfig.CollectionInterval,
 		extraMetadataLabels:   cfg.ExtraMetadataLabels,
 		metricGroupsToCollect: mgs,
 		allNetworkInterfaces:  ifaces,
