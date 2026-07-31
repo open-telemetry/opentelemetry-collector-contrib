@@ -39,7 +39,6 @@ func TestEndpointEnv(t *testing.T) {
 				"endpoint": "192.68.73.2",
 				"id":       "pod_id",
 				"name":     "pod_name",
-				"os":       runtime.GOOS,
 				"labels": map[string]string{
 					"label_key": "label_val",
 				},
@@ -81,7 +80,6 @@ func TestEndpointEnv(t *testing.T) {
 				"endpoint": "192.68.73.2",
 				"id":       "port_id",
 				"name":     "port_name",
-				"os":       runtime.GOOS,
 				"port":     uint16(2379),
 				"pod": EndpointEnv{
 					"name": "pod_name",
@@ -125,7 +123,6 @@ func TestEndpointEnv(t *testing.T) {
 				"endpoint": "service.namespace",
 				"id":       "service_id",
 				"name":     "service_name",
-				"os":       runtime.GOOS,
 				"labels": map[string]string{
 					"label_key": "label_val",
 				},
@@ -191,7 +188,6 @@ func TestEndpointEnv(t *testing.T) {
 				"name":           "otel-collector",
 				"image":          "otel-collector-image",
 				"tag":            "1.0.0",
-				"os":             runtime.GOOS,
 				"port":           uint16(2379),
 				"alternate_port": uint16(2380),
 				"command":        "./cmd --config config.yaml",
@@ -229,7 +225,6 @@ func TestEndpointEnv(t *testing.T) {
 			want: EndpointEnv{
 				"type":                  "k8s.node",
 				"id":                    "k8s_node_endpoint_id",
-				"os":                    runtime.GOOS,
 				"name":                  "a-k8s-node",
 				"uid":                   "a-k8s-node-uid",
 				"hostname":              "a-k8s-node-hostname",
@@ -281,7 +276,6 @@ func TestEndpointEnv(t *testing.T) {
 				"type":     "port",
 				"endpoint": "192.68.73.2:4321",
 				"id":       "port_id",
-				"os":       runtime.GOOS,
 				"name":     "port_name",
 				"port":     uint16(2379),
 				"pod": EndpointEnv{
@@ -311,7 +305,6 @@ func TestEndpointEnv(t *testing.T) {
 			},
 			want: EndpointEnv{
 				"id":       "topic1",
-				"os":       runtime.GOOS,
 				"type":     "kafka.topics",
 				"host":     "topic1",
 				"endpoint": "topic1",

@@ -76,7 +76,6 @@ func (e *Endpoint) Env() (EndpointEnv, error) {
 	env["endpoint"] = e.Target
 	env["type"] = string(e.Details.Type())
 	env["id"] = string(e.ID)
-	env["os"] = runtime.GOOS
 
 	// Exposing the target as a split "host" and "port" enables the receiver creator
 	// to be able to discover receivers that require these options to be configured
@@ -287,6 +286,7 @@ func (h *HostPort) Env() EndpointEnv {
 		"is_ipv6":      h.IsIPv6,
 		"port":         h.Port,
 		"transport":    h.Transport,
+		"os":           runtime.GOOS,
 	}
 }
 
