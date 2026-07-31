@@ -5,6 +5,7 @@ package openshift // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -23,7 +24,7 @@ const (
 )
 
 // NewDetector returns a detector which can detect resource attributes on OpenShift 4.
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	userCfg := dcfg.(Config)
 
 	if err := userCfg.MergeWithDefaults(); err != nil {
@@ -36,23 +37,27 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	}
 
 	return &detector{
-		logger:   set.Logger,
-		provider: ocp.NewProvider(userCfg.Address, userCfg.Token, tlsCfg),
-		rb:       metadata.NewResourceBuilder(userCfg.ResourceAttributes),
+		logger:                set.Logger,
+		provider:              ocp.NewProvider(userCfg.Address, userCfg.Token, tlsCfg),
+		rb:                    metadata.NewResourceBuilder(userCfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 type detector struct {
-	logger   *zap.Logger
-	provider ocp.Provider
-	rb       *metadata.ResourceBuilder
+	logger                *zap.Logger
+	provider              ocp.Provider
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	infra, err := d.provider.Infrastructure(ctx)
 	if err != nil {
 		d.logger.Error("OpenShift detector metadata retrieval failed", zap.Error(err))
-		// return an empty Resource and no error
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("openshift metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 

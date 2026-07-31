@@ -4,14 +4,14 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cloud.availability_zone | The [availability domain](https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm) in which this Oracle Cloud instance is running (e.g., "PHX-AD-1"). | Any Str | true |
-| cloud.platform | Value is `oracle_cloud_infrastructure` for resources detected on Oracle Cloud Infrastructure (OCI). | Any Str | true |
-| cloud.provider | Always set to `oraclecloud` to identify resources provided by Oracle Cloud Infrastructure | Any Str | true |
-| cloud.region | The Oracle Cloud region identifier for this instance (e.g., "us-phoenix-1"). | Any Str | true |
-| host.id | The OCID (Oracle Cloud Identifier) of the host instance (unique per compute instance). | Any Str | true |
-| host.name | The system hostname as reported by the OCI metadata service. | Any Str | true |
-| host.type | The compute shape (instance type) of the host, such as "VM.Standard.E4.Flex". | Any Str | true |
-| k8s.cluster.name | The Kubernetes cluster name if running in an Oracle Container Engine for Kubernetes (OKE) cluster; unset otherwise. | Any Str | true |
-| oracle_cloud.realm | The Oracle Cloud realm | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| cloud.availability_zone | The [availability domain](https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm) in which this Oracle Cloud instance is running (e.g., "PHX-AD-1"). | Any Str | true | [cloud.availability_zone](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-availability-zone) | - |
+| cloud.platform | Identifies the Oracle Cloud platform for the resource, such as Oracle Cloud Infrastructure Compute or Oracle Container Engine for Kubernetes. | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
+| cloud.provider | Identifies Oracle Cloud Infrastructure as the cloud provider. | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
+| cloud.region | The Oracle Cloud region identifier for this instance (e.g., "us-phoenix-1"). | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-region) | - |
+| host.id | The OCID (Oracle Cloud Identifier) of the host instance (unique per compute instance). | Any Str | true | [host.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-id) | - |
+| host.name | The system hostname as reported by the OCI metadata service. | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-name) | - |
+| host.type | The compute shape (instance type) of the host, such as "VM.Standard.E4.Flex". | Any Str | true | [host.type](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-type) | - |
+| k8s.cluster.name | The Kubernetes cluster name if running in an Oracle Container Engine for Kubernetes (OKE) cluster; unset otherwise. | Any Str | true | [k8s.cluster.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/k8s.md#k8s-cluster-name) | - |
+| oracle_cloud.realm | The OCI realm identifier for the isolated partition where the tenancy and resources reside, such as "oc1" or "oc2". | Any Str | true | [oracle_cloud.realm](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/oracle-cloud.md#oracle-cloud-realm) | - |

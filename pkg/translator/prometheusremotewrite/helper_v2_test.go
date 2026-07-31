@@ -12,6 +12,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
+	"github.com/prometheus/prometheus/model/histogram"
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -285,9 +287,12 @@ func TestPrometheusConverterV2_AddSummaryDataPoints(t *testing.T) {
 func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	tests := []struct {
-		name   string
-		metric func() pmetric.Metric
-		want   func() map[uint64]*writev2.TimeSeries
+		name     string
+		metric   func() pmetric.Metric
+		settings Settings
+		want     func() map[uint64]*writev2.TimeSeries
+		wantErr  bool
+		check    func(t *testing.T, converter *prometheusConverterV2)
 	}{
 		{
 			name: "histogram with start time",
@@ -378,11 +383,87 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:     "NHCB only",
+			metric:   newTestExplicitHistogram,
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true},
+			check: func(t *testing.T, converter *prometheusConverterV2) {
+				require.Len(t, converter.unique, 1, "NHCB-only emits a single native series")
+				for _, series := range converter.unique {
+					require.Len(t, series.Histograms, 1)
+					assert.Empty(t, series.Samples, "no classic samples in NHCB-only mode")
+					assert.Equal(t, histogram.CustomBucketsSchema, series.Histograms[0].Schema)
+				}
+				require.NotNil(t, v2SeriesByName(t, converter, "test_hist"), "native series uses the base metric name")
+			},
+		},
+		{
+			name:     "NHCB with classic kept",
+			metric:   newTestExplicitHistogram,
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true, KeepClassicHistograms: true},
+			check: func(t *testing.T, converter *prometheusConverterV2) {
+				var nativeSeries, classicSamples int
+				for _, series := range converter.unique {
+					nativeSeries += len(series.Histograms)
+					classicSamples += len(series.Samples)
+				}
+				assert.Equal(t, 1, nativeSeries, "one NHCB datapoint emitted alongside classic")
+				assert.Positive(t, classicSamples, "classic _bucket/_sum/_count still emitted")
+				require.NotNil(t, v2SeriesByName(t, converter, "test_hist"), "native series present under base name")
+				require.NotNil(t, v2SeriesByName(t, converter, "test_hist_bucket"), "classic _bucket series present")
+				require.NotNil(t, v2SeriesByName(t, converter, "test_hist_count"), "classic _count series present")
+			},
+		},
+		{
+			name: "NHCB carries exemplars",
+			metric: func() pmetric.Metric {
+				metric := newTestExplicitHistogram()
+				ex := metric.Histogram().DataPoints().At(0).Exemplars().AppendEmpty()
+				ex.SetTimestamp(testHistTimestamp)
+				ex.SetDoubleValue(7)
+				return metric
+			},
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true},
+			check: func(t *testing.T, converter *prometheusConverterV2) {
+				nativeTS := v2SeriesByName(t, converter, "test_hist")
+				require.NotNil(t, nativeTS)
+				require.Len(t, nativeTS.Exemplars, 1, "exemplar carried onto the NHCB series")
+				assert.Equal(t, 7.0, nativeTS.Exemplars[0].Value)
+			},
+		},
+		{
+			name:     "classic mode does not emit the bare metric name",
+			metric:   newTestExplicitHistogram,
+			settings: Settings{},
+			check: func(t *testing.T, converter *prometheusConverterV2) {
+				for _, series := range converter.unique {
+					assert.Empty(t, series.Histograms, "no native histograms when conversion is off")
+				}
+				assert.Nil(t, v2SeriesByName(t, converter, "test_hist"),
+					"classic mode emits only _bucket/_sum/_count, never the bare name")
+			},
+		},
+		{
+			name: "NHCB conversion error keeps classic",
+			metric: func() pmetric.Metric {
+				metric := newTestExplicitHistogram()
+				metric.Histogram().DataPoints().At(0).ExplicitBounds().FromRaw([]float64{1, math.NaN(), 3})
+				return metric
+			},
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true, KeepClassicHistograms: true},
+			wantErr:  true,
+			check: func(t *testing.T, converter *prometheusConverterV2) {
+				if nativeTS := v2SeriesByName(t, converter, "test_hist"); nativeTS != nil {
+					assert.Empty(t, nativeTS.Histograms, "no native histogram appended on conversion error")
+				}
+				require.NotNil(t, v2SeriesByName(t, converter, "test_hist_count"), "classic series still emitted on NHCB error")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
-			converter := newPrometheusConverterV2(Settings{})
+			converter := newPrometheusConverterV2(tt.settings)
 			unitNamer := otlptranslator.UnitNamer{}
 			m := metadata{
 				Type: otelMetricTypeToPromMetricTypeV2(metric),
@@ -393,13 +474,22 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
 				pcommon.NewInstrumentationScope(),
-				Settings{},
+				tt.settings,
 				metric.Name(),
 				m,
 			)
-			require.NoError(t, err)
-			assert.Equal(t, tt.want(), converter.unique)
-			assert.Empty(t, converter.conflicts)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			if tt.want != nil {
+				assert.Equal(t, tt.want(), converter.unique)
+				assert.Empty(t, converter.conflicts)
+			}
+			if tt.check != nil {
+				tt.check(t, converter)
+			}
 		})
 	}
 }
@@ -445,6 +535,21 @@ func TestPrometheusConverterV2_AddHistogramDataPointsNormalizedLeLabels(t *testi
 	// e.g. a bound of 10 must be rendered as "10.0".
 	assert.ElementsMatch(t, []string{"0.5", "10.0", "250.0", "+Inf"}, leValues)
 	assert.Empty(t, converter.conflicts)
+// v2SeriesByName resolves each RW2 time series' labels through the symbol table and
+// returns the one whose __name__ equals name, or nil.
+func v2SeriesByName(t *testing.T, c *prometheusConverterV2, name string) *writev2.TimeSeries {
+	t.Helper()
+	symbols := c.symbolTable.Symbols()
+	all := c.timeSeries()
+	var b labels.ScratchBuilder
+	for i := range all {
+		lbls, err := all[i].ToLabels(&b, symbols)
+		require.NoError(t, err)
+		if lbls.Get(model.MetricNameLabel) == name {
+			return &all[i]
+		}
+	}
+	return nil
 }
 
 func TestPrometheusConverterV2_AddSampleWithLabels(t *testing.T) {
