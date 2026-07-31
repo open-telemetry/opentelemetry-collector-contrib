@@ -45,7 +45,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/collector/extension v1.63.1-0.20260730171426-4aa1b2d9586b // indirect
 	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260730171426-4aa1b2d9586b // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.157.1-0.20260730134435-9cbfc4b22b48 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.157.1-0.20260730171426-4aa1b2d9586b // indirect
 	go.opentelemetry.io/collector/pdata v1.63.1-0.20260730171426-4aa1b2d9586b // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
