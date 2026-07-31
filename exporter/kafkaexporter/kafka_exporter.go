@@ -474,12 +474,9 @@ type resource interface {
 	Resource() pcommon.Resource
 }
 
-// hashResourceAttributes derives a deterministic partition key from the values of the
-// given attribute keys, in the order provided. The attribute names themselves are folded
-// into the hash so that a missing attribute is distinguishable from one that is present
-// with an empty value, and so that different key sets never collide. Attributes that are
-// absent from the resource simply contribute no value, keeping the key stable across
-// producers that only partially populate the configured attributes.
+// hashResourceAttributes hashes the values of the given attribute keys, in the order
+// provided. Attribute names are folded into the hash so that a missing attribute is
+// distinguishable from one present with an empty value.
 func hashResourceAttributes(attrs pcommon.Map, keys []string) []byte {
 	opts := make([]pdatautil.HashOption, 0, len(keys)*2)
 	for _, k := range keys {

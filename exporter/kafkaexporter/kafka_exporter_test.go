@@ -277,11 +277,9 @@ func TestTracesPusher_partitioning(t *testing.T) {
 		err := exp.exportData(t.Context(), input)
 		require.NoError(t, err)
 
-		// 3 resources -> 3 messages (split per resource).
 		records := fetchKgoRecords(t, fakeCluster.ListenAddrs(), config.Traces.Topic, 3)
 		require.Len(t, records, 3, "expected 3 messages (one per resource)")
 
-		// Map each service to the key(s) observed for it.
 		keysByService := make(map[string][]string)
 		var allTraces []ptrace.Traces
 		for _, record := range records {
@@ -296,8 +294,6 @@ func TestTracesPusher_partitioning(t *testing.T) {
 			keysByService[svc.Str()] = append(keysByService[svc.Str()], string(record.Key))
 		}
 
-		// svc-a spans (on two different hosts) must all share the same key, because only
-		// service.name is used for the hash. svc-b must get a different key.
 		require.Len(t, keysByService["svc-a"], 2)
 		assert.Equal(t, keysByService["svc-a"][0], keysByService["svc-a"][1],
 			"same service on different hosts must map to the same key")

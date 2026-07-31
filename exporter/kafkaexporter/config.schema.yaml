@@ -70,7 +70,7 @@ properties:
     description: 'PartitionTracesByID sets the message key of outgoing trace messages to the trace ID. NOTE: this does not have any effect for Jaeger encodings. Jaeger encodings always use use the trace ID for the message key.'
     type: boolean
   partition_traces_by_resource_attributes:
-    description: PartitionTracesByResourceAttributes controls the partitioning of trace messages by a selected set of resource attributes. When one or more attribute keys are configured, the exporter splits incoming traces per resource and sets the Kafka message key to a hash of those attributes' values (in the order listed), so that all spans sharing the same values are routed to the same partition. This is intended for scaled-out, stateful consumers such as the spanmetrics connector, where every span of a given service must land on the same consumer replica. Unlike hashing the entire resource, selecting specific keys (e.g. ["service.name"]) keeps a service's spans together even when other resource attributes (host, pod, ...) differ between producers. Mutually exclusive with partition_traces_by_id and traces::message_key_from_metadata_key.
+    description: PartitionTracesByResourceAttributes controls the partitioning of trace messages by resource. If any attribute keys are configured, then the message key will be set to a hash of those attributes' values, in the order given. Keys are listed individually rather than hashing the whole resource, so that attributes varying per producer (host.name, k8s.pod.name) do not spread one service across partitions. Mutually exclusive with partition_traces_by_id and traces::message_key_from_metadata_key.
     type: array
     items:
       type: string

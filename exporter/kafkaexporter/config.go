@@ -30,11 +30,8 @@ var errLogsPartitionExclusive = errors.New(
 	"partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled",
 )
 
-var errTracesPartitionExclusive = errors.New(
-	"partition_traces_by_id and partition_traces_by_resource_attributes cannot both be enabled",
-)
-
 var (
+	errTracesPartitionExclusive         = errors.New("partition_traces_by_id and partition_traces_by_resource_attributes cannot both be enabled")
 	errTracesMessageKeyExclusive        = errors.New("traces::message_key_from_metadata_key cannot be combined with partition_traces_by_id or partition_traces_by_resource_attributes")
 	errMetricsMessageKeyExclusive       = errors.New("metrics::message_key_from_metadata_key cannot be combined with partition_metrics_by_resource_attributes")
 	errLogsMessageKeyExclusive          = errors.New("logs::message_key_from_metadata_key cannot be combined with partition_logs_by_resource_attributes or partition_logs_by_trace_id")
@@ -166,18 +163,12 @@ type Config struct {
 	// use the trace ID for the message key.
 	PartitionTracesByID bool `mapstructure:"partition_traces_by_id"`
 
-	// PartitionTracesByResourceAttributes controls the partitioning of trace messages by a
-	// selected set of resource attributes. When one or more attribute keys are configured, the
-	// exporter splits incoming traces per resource and sets the Kafka message key to a hash of
-	// those attributes' values (in the order listed), so that all spans sharing the same values
-	// are routed to the same partition.
-	//
-	// This is intended for scaled-out, stateful consumers such as the spanmetrics connector,
-	// where every span of a given service must land on the same consumer replica. Unlike hashing
-	// the entire resource, selecting specific keys (e.g. ["service.name"]) keeps a service's spans
-	// together even when other resource attributes (host, pod, ...) differ between producers.
-	//
-	// Mutually exclusive with partition_traces_by_id and traces::message_key_from_metadata_key.
+	// PartitionTracesByResourceAttributes controls the partitioning of trace messages by
+	// resource. If any attribute keys are configured, then the message key will be set to a
+	// hash of those attributes' values, in the order given. Keys are listed individually
+	// rather than hashing the whole resource, so that attributes varying per producer
+	// (host.name, k8s.pod.name) do not spread one service across partitions. Mutually
+	// exclusive with partition_traces_by_id and traces::message_key_from_metadata_key.
 	PartitionTracesByResourceAttributes []string `mapstructure:"partition_traces_by_resource_attributes"`
 
 	// PartitionMetricsByResourceAttributes controls the partitioning of metrics messages by
