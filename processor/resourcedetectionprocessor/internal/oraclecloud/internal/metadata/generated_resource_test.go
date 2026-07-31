@@ -37,51 +37,50 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("cloud.availability_zone")
+			cloudAvailabilityZoneAttrVal, ok := res.Attributes().Get("cloud.availability_zone")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.availability_zone-val", val.Str())
+				assert.Equal(t, "cloud.availability_zone-val", cloudAvailabilityZoneAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.platform")
+			cloudPlatformAttrVal, ok := res.Attributes().Get("cloud.platform")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.platform-val", val.Str())
+				assert.Equal(t, "cloud.platform-val", cloudPlatformAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.provider")
+			cloudProviderAttrVal, ok := res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.provider-val", val.Str())
+				assert.Equal(t, "cloud.provider-val", cloudProviderAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.region")
+			cloudRegionAttrVal, ok := res.Attributes().Get("cloud.region")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.region-val", val.Str())
+				assert.Equal(t, "cloud.region-val", cloudRegionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.id")
+			hostIDAttrVal, ok := res.Attributes().Get("host.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "host.id-val", val.Str())
+				assert.Equal(t, "host.id-val", hostIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.name")
+			hostNameAttrVal, ok := res.Attributes().Get("host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "host.name-val", val.Str())
+				assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.type")
+			hostTypeAttrVal, ok := res.Attributes().Get("host.type")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "host.type-val", val.Str())
+				assert.Equal(t, "host.type-val", hostTypeAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.cluster.name")
+			k8sClusterNameAttrVal, ok := res.Attributes().Get("k8s.cluster.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.cluster.name-val", val.Str())
+				assert.Equal(t, "k8s.cluster.name-val", k8sClusterNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("oracle_cloud.realm")
+			oracleCloudRealmAttrVal, ok := res.Attributes().Get("oracle_cloud.realm")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "oracle_cloud.realm-val", val.Str())
+				assert.Equal(t, "oracle_cloud.realm-val", oracleCloudRealmAttrVal.Str())
 			}
 		})
 	}

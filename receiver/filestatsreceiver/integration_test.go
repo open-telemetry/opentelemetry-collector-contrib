@@ -32,7 +32,7 @@ func Test_Integration(t *testing.T) {
 				rCfg := cfg.(*Config)
 				rCfg.ControllerConfig.CollectionInterval = time.Second
 				rCfg.Include = filepath.Join(tempDir, "foo*")
-				rCfg.ResourceAttributes.FilePath.Enabled = true
+				rCfg.MetricsBuilderConfig.ResourceAttributes.FilePath.Enabled = true
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
