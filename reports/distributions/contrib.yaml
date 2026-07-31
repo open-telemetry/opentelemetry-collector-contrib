@@ -95,6 +95,7 @@ components:
         - pebble_tail_storage
         - pprof
         - redis_storage
+        - sd_notify
         - sigv4auth
         - skywalking_encoding
         - text_encoding
