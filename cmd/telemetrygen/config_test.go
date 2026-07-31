@@ -22,4 +22,8 @@ func TestConfig_HTTPPath(t *testing.T) {
 	t.Run("TracesConfigValidDefaultUrlPath", func(t *testing.T) {
 		assert.Equal(t, "/v1/traces", tracesCfg.HTTPPath)
 	})
+
+	t.Run("ProfilesConfigValidDefaultUrlPath", func(t *testing.T) {
+		assert.Equal(t, "/v1development/profiles", profilesCfg.HTTPPath)
+	})
 }

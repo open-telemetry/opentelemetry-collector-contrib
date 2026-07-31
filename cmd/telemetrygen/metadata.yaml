@@ -4,6 +4,6 @@ status:
   disable_codecov_badge: true
   class: cmd
   stability:
-    alpha: [metrics, traces, logs]
+    alpha: [metrics, traces, logs, profiles]
   codeowners:
     active: [mx-psi, codeboten, Erog38, bogdan-st]
