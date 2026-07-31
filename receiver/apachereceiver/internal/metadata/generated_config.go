@@ -490,7 +490,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ApacheRequestRate: ApacheRequestRateMetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		ApacheRequestTime: ApacheRequestTimeMetricConfig{
 			Enabled: true,
@@ -507,7 +507,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ApacheTrafficRate: ApacheTrafficRateMetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		ApacheUptime: ApacheUptimeMetricConfig{
 			Enabled: true,

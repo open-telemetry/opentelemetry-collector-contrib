@@ -106,7 +106,7 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheLoad5DataPoint(ts, "1")
-			defaultMetricsCount++
+
 			allMetricsCount++
 			mb.RecordApacheRequestRateDataPoint(ts, "1")
 			defaultMetricsCount++
@@ -124,7 +124,7 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheTrafficDataPoint(ts, 1)
-			defaultMetricsCount++
+
 			allMetricsCount++
 			mb.RecordApacheTrafficRateDataPoint(ts, "1")
 			defaultMetricsCount++

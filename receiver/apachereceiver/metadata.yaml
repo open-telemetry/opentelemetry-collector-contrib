@@ -144,7 +144,7 @@ metrics:
       input_type: string
     attributes: []
   apache.request.rate:
-    enabled: true
+    enabled: false
     stability: development
     description: Average number of requests served per second since the server was started, as reported by mod_status.
     unit: "{request}/s"
@@ -199,7 +199,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   apache.traffic.rate:
-    enabled: true
+    enabled: false
     stability: development
     description: Average number of bytes transmitted per second since the server was started, as reported by mod_status.
     unit: "By/s"

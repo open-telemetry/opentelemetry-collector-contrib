@@ -81,14 +81,6 @@ The average server load during the last 5 minutes.
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
-### apache.request.rate
-
-Average number of requests served per second since the server was started, as reported by mod_status.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {request}/s | Gauge | Double | Development |
-
 ### apache.request.time
 
 Total time spent on handling requests.
@@ -129,14 +121,6 @@ Total HTTP server traffic.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
 
-### apache.traffic.rate
-
-Average number of bytes transmitted per second since the server was started, as reported by mod_status.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By/s | Gauge | Double | Development |
-
 ### apache.uptime
 
 The amount of time that the server has been running in seconds.
@@ -166,6 +150,32 @@ The number of workers currently attached to the HTTP server.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | state | The state of workers. | Str: ``busy``, ``idle`` | Recommended | - |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### apache.request.rate
+
+Average number of requests served per second since the server was started, as reported by mod_status.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {request}/s | Gauge | Double | Development |
+
+### apache.traffic.rate
+
+Average number of bytes transmitted per second since the server was started, as reported by mod_status.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
 
 ## Resource Attributes
 
