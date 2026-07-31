@@ -91,8 +91,8 @@ func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err er
 	// if the context carries a shorter deadline then timeout that quickly
 	deadline, ok := ctx.Deadline()
 	if ok {
-		to = timeout(deadline, s.Client.Timeout)
-		s.Client.Timeout = to
+		to = timeout(deadline, s.Timeout)
+		s.Timeout = to
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
