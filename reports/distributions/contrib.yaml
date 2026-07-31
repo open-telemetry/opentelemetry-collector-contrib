@@ -104,8 +104,8 @@ components:
         - attributes
         - cardinality_guardian
         - cumulative_to_delta
-        - deltatocumulative
-        - deltatorate
+        - delta_to_cumulative
+        - delta_to_rate
         - drain
         - filter
         - gen_ai_normalizer
@@ -126,7 +126,7 @@ components:
         - resource_detection
         - schema
         - span
-        - spanpruning
+        - span_pruning
         - sumologic
         - tail_sampling
         - transform

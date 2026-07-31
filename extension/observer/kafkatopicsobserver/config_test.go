@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/kafkatopicsobserver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -59,9 +58,9 @@ func TestLoadConfig(t *testing.T) {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			cfg := loadConfig(t, tt.id)
 			if tt.expectedError != "" {
-				assert.EqualError(t, xconfmap.Validate(cfg), tt.expectedError)
+				assert.EqualError(t, confmap.Validate(cfg), tt.expectedError)
 			} else {
-				assert.NoError(t, xconfmap.Validate(cfg))
+				assert.NoError(t, confmap.Validate(cfg))
 			}
 			assert.Equal(t, tt.expected, cfg)
 		})
@@ -73,20 +72,20 @@ func TestValidateConfig(t *testing.T) {
 		ClientConfig:       configkafka.NewDefaultClientConfig(),
 		TopicsSyncInterval: 1 * time.Second,
 	}
-	assert.Equal(t, "topic_regex must be specified", xconfmap.Validate(cfg).Error())
+	assert.Equal(t, "topic_regex must be specified", confmap.Validate(cfg).Error())
 
 	cfg = &Config{
 		ClientConfig: configkafka.NewDefaultClientConfig(),
 		TopicRegex:   "^topic[0-9]$",
 	}
-	assert.Equal(t, "topics_sync_interval must be greater than 0", xconfmap.Validate(cfg).Error())
+	assert.Equal(t, "topics_sync_interval must be greater than 0", confmap.Validate(cfg).Error())
 
 	cfg = &Config{
 		ClientConfig:       configkafka.NewDefaultClientConfig(),
 		TopicRegex:         "^topic[0-9]$",
 		TopicsSyncInterval: 1 * time.Second,
 	}
-	assert.NoError(t, xconfmap.Validate(cfg))
+	assert.NoError(t, confmap.Validate(cfg))
 }
 
 func loadConf(tb testing.TB, path string, id component.ID) *confmap.Conf {

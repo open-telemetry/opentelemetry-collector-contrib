@@ -39,7 +39,7 @@ type Detector struct {
 	allowlist map[string]struct{}
 }
 
-func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig, _ bool) (internal.Detector, error) {
 	d := &Detector{}
 	if cfg, ok := dcfg.(Config); ok && cfg.Allowlist != nil {
 		d.allowlist = make(map[string]struct{}, len(cfg.Allowlist))
@@ -50,7 +50,7 @@ func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.D
 	return d, nil
 }
 
-func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	res := pcommon.NewResource()
 
 	labels := strings.TrimSpace(os.Getenv(envVar))

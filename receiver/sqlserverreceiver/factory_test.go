@@ -98,7 +98,7 @@ func TestFactory(t *testing.T) {
 				cfg.Server = "0.0.0.0"
 				cfg.Port = 1433
 				require.NoError(t, cfg.Validate())
-				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
 
 				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
@@ -186,7 +186,7 @@ func TestFactory(t *testing.T) {
 				cfg.Server = "0.0.0.0"
 				cfg.Port = 1433
 				require.NoError(t, cfg.Validate())
-				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
 
 				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
@@ -200,7 +200,7 @@ func TestFactory(t *testing.T) {
 				require.Empty(t, sqlScrapers)
 
 				cfg.InstanceName = "instanceName"
-				cfg.Events.DbServerTopQuery.Enabled = true
+				cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 				scrapers, err = setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
@@ -262,7 +262,7 @@ func TestSetupQueries(t *testing.T) {
 
 	metricsMetadata, ok := metadata["metrics"].(map[string]any)
 	require.True(t, ok)
-	require.Len(t, metricsMetadata, 82, "Every time metrics are added or removed, the function `setupQueries` must "+
+	require.Len(t, metricsMetadata, 100, "Every time metrics are added or removed, the function `setupQueries` must "+
 		"be modified to properly account for the change. Please update `setupQueries` and then, "+
 		"and only then, update the expected metric count here.")
 }

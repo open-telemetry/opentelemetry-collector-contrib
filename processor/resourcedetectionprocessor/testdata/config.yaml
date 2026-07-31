@@ -82,6 +82,12 @@ resource_detection/invalid:
   system:
     hostname_sources: [invalid_source]
 
+resource_detection/fail_on_missing_metadata:
+  detectors: [gcp, azure, ec2]
+  fail_on_missing_metadata: true
+  timeout: 5s
+  override: false
+
 resource_detection/resourceattributes:
   detectors: [system, ec2]
   timeout: 2s

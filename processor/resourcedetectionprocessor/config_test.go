@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
@@ -75,6 +75,15 @@ func TestLoadConfig(t *testing.T) {
 		expected     component.Config
 		errorMessage string
 	}{
+		{
+			id: component.NewID(metadata.Type),
+			expected: &Config{
+				Detectors:      []string{"env"},
+				Override:       true,
+				DetectorConfig: detectorCreateDefaultConfig(),
+				ClientConfig:   defaultClientConfig(),
+			},
+		},
 		{
 			id: component.NewIDWithName(metadata.Type, "openshift"),
 			expected: &Config{
@@ -139,6 +148,42 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "aks"),
+			expected: &Config{
+				Detectors:      []string{"env", "aks"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: detectorCreateDefaultConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "ecs"),
+			expected: &Config{
+				Detectors:      []string{"env", "ecs"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: detectorCreateDefaultConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "docker"),
+			expected: &Config{
+				Detectors:      []string{"env", "docker"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: detectorCreateDefaultConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "azure"),
+			expected: &Config{
+				Detectors:      []string{"env", "azure"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: detectorCreateDefaultConfig(),
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "resourceattributes"),
 			expected: &Config{
 				Detectors:      []string{"system", "ec2"},
@@ -155,6 +200,20 @@ func TestLoadConfig(t *testing.T) {
 				Override:        false,
 				DetectorConfig:  detectorCreateDefaultConfig(),
 				RefreshInterval: 5 * time.Second,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "fail_on_missing_metadata"),
+			expected: &Config{
+				Detectors: []string{"gcp", "azure", "ec2"},
+				ClientConfig: func() confighttp.ClientConfig {
+					c := confighttp.NewDefaultClientConfig()
+					c.Timeout = 5 * time.Second
+					return c
+				}(),
+				Override:              false,
+				FailOnMissingMetadata: true,
+				DetectorConfig:        detectorCreateDefaultConfig(),
 			},
 		},
 		{
@@ -175,10 +234,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMessage)
+				assert.ErrorContains(t, confmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.EqualExportedValues(t, *tt.expected.(*Config), *cfg.(*Config))
 		})
 	}
