@@ -18,9 +18,7 @@ type sdnotify struct {
 	logger *zap.Logger
 	host   component.Host
 
-	ctx    context.Context
-	cancel context.CancelFunc
-	sigCh  chan os.Signal
+	sigCh chan os.Signal
 }
 
 // Extension is the union of capability interfaces sdnotify implements.
@@ -39,19 +37,19 @@ func newSDNotify(cfg *Config, logger *zap.Logger) *sdnotify {
 	}
 }
 
-func (s *sdnotify) Start(startCtx context.Context, host component.Host) error {
+func (s *sdnotify) Start(_ context.Context, host component.Host) error {
 	s.host = host
 	return nil
 }
 
-func (s *sdnotify) Shutdown(_ context.Context) error {
+func (*sdnotify) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (s *sdnotify) Ready() error {
+func (*sdnotify) Ready() error {
 	return nil
 }
 
-func (s *sdnotify) NotReady() error {
+func (*sdnotify) NotReady() error {
 	return nil
 }

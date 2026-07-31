@@ -13,6 +13,6 @@ var _ confmap.Validator = (*Config)(nil)
 type Config struct{}
 
 // Validate is called by the collector before Start.
-func (c *Config) Validate() error {
+func (Config) Validate() error {
 	return nil
 }
