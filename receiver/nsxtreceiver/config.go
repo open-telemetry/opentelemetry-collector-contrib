@@ -18,11 +18,11 @@ import (
 
 // Config is the configuration for the NSX receiver
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	ClientConfig                   confighttp.ClientConfig       `mapstructure:",squash"`
-	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	Username                       string                        `mapstructure:"username"`
-	Password                       configopaque.String           `mapstructure:"password"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ClientConfig         confighttp.ClientConfig        `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	Username             string                         `mapstructure:"username"`
+	Password             configopaque.String            `mapstructure:"password"`
 }
 
 // Validate returns if the NSX configuration is valid

@@ -107,7 +107,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.MaxQueryMetrics = 128
 	expected.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
 	expected.MetricsBuilderConfig.Metrics.VcenterHostCPUUtilization.Enabled = false
-	expected.CollectionInterval = 5 * time.Minute
+	expected.ControllerConfig.CollectionInterval = 5 * time.Minute
 
 	if diff := cmp.Diff(expected, cfg,
 		cmpopts.IgnoreFields(metadata.MetricsBuilderConfig{}, "Metrics"),

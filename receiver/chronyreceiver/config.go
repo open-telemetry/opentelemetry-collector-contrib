@@ -17,8 +17,8 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	// Endpoint is the published address or unix socket
 	// that allows clients to connect to:
 	// The allowed format is:
@@ -61,7 +61,7 @@ func newDefaultConfig() component.Config {
 }
 
 func (c *Config) Validate() error {
-	if c.Timeout < 1 {
+	if c.ControllerConfig.Timeout < 1 {
 		return fmt.Errorf("must have a positive timeout: %w", errInvalidValue)
 	}
 	network, _, err := chrony.SplitNetworkEndpoint(c.Endpoint)

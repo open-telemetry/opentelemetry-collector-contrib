@@ -117,7 +117,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.Username = "admin"
 	expected.Password = "${env:NSXT_PASSWORD}"
 	expected.ClientConfig.TLS.Insecure = true
-	expected.CollectionInterval = time.Minute
+	expected.ControllerConfig.CollectionInterval = time.Minute
 
 	require.Equal(t, expected, cfg)
 }

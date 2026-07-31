@@ -18,8 +18,8 @@ var (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 
 	Scope string   `mapstructure:"scope"`
 	Units []string `mapstructure:"units"`
