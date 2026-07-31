@@ -5,6 +5,7 @@ package oraclecloud // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -25,19 +26,21 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is an Oracle Cloud metadata detector
 type Detector struct {
-	provider oraclecloud.Provider
-	logger   *zap.Logger
-	rb       *metadata.ResourceBuilder
+	provider              oraclecloud.Provider
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new Oracle Cloud metadata detector
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	return &Detector{
-		provider: oraclecloud.NewProvider(),
-		logger:   p.Logger,
-		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		provider:              oraclecloud.NewProvider(),
+		logger:                p.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
@@ -52,8 +55,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	// 2. After positive probe, attempt to fetch metadata
 	compute, err := d.provider.Metadata(ctx)
 	if err != nil {
-		d.logger.Error("Oracle Cloud detected but failed to retrieve metadata!", zap.Error(err))
-		return pcommon.NewResource(), "", err // signal error
+		d.logger.Debug("Oracle Cloud detected but failed to retrieve metadata!", zap.Error(err))
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("failed to get Oracle Cloud metadata: %w", err)
+		}
+		return pcommon.NewResource(), "", nil
 	}
 
 	d.rb.SetCloudProvider(conventions.CloudProviderOracleCloud.Value.AsString())

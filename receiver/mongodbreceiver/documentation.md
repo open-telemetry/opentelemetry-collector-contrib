@@ -600,7 +600,6 @@ query sample
 Emits one event per slow query execution. The top N slowest executions per scrape window are emitted.
 Note: when database profiling is disabled, the receiver falls back to MongoDB's diagnostic log (`getLog`), a fixed-size ring buffer (~1024 entries) that may rotate slow-query entries out before the next scrape on busy servers; enable the profiler for reliable capture.
 
-
 #### Attributes
 
 | Name | Description | Values | Semantic Convention |
@@ -632,3 +631,5 @@ Note: when database profiling is disabled, the receiver falls back to MongoDB's 
 | server.address | The address of the MongoDB host. | Any Str | true | - | - |
 | server.port | The port of the MongoDB host. | Any Int | false | - | - |
 | service.instance.id | A unique identifier of the MongoDB resource as a UUID v5, derived from server address and port. | Any Str | true | - | - |
+| service.name | Logical name of the service. When enabled, defaults to unknown_service:mongodb. | Any Str | false | - | - |
+| service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |
