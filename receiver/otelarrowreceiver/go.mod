@@ -76,7 +76,6 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector v0.157.1-0.20260730171426-4aa1b2d9586b // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.63.1-0.20260730171426-4aa1b2d9586b // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.63.1-0.20260730171426-4aa1b2d9586b // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.63.1-0.20260730171426-4aa1b2d9586b // indirect
