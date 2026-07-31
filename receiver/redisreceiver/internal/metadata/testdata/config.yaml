@@ -98,6 +98,14 @@ all_set:
       enabled: true
     redis.net.output:
       enabled: true
+    redis.pubsub.channel.status:
+      enabled: true
+      attributes: ["redis.pubsub.channel.state"]
+    redis.pubsub.connection.count:
+      enabled: true
+    redis.pubsub.pattern.status:
+      enabled: true
+      attributes: ["redis.pubsub.pattern.state"]
     redis.rdb.changes_since_last_save:
       enabled: true
     redis.replication.backlog_first_byte_offset:
@@ -233,6 +241,14 @@ reaggregate_set:
       enabled: true
     redis.net.output:
       enabled: true
+    redis.pubsub.channel.status:
+      enabled: true
+      attributes: []
+    redis.pubsub.connection.count:
+      enabled: true
+    redis.pubsub.pattern.status:
+      enabled: true
+      attributes: []
     redis.rdb.changes_since_last_save:
       enabled: true
     redis.replication.backlog_first_byte_offset:
@@ -368,6 +384,14 @@ none_set:
       enabled: false
     redis.net.output:
       enabled: false
+    redis.pubsub.channel.status:
+      enabled: false
+      attributes: ["redis.pubsub.channel.state"]
+    redis.pubsub.connection.count:
+      enabled: false
+    redis.pubsub.pattern.status:
+      enabled: false
+      attributes: ["redis.pubsub.pattern.state"]
     redis.rdb.changes_since_last_save:
       enabled: false
     redis.replication.backlog_first_byte_offset:

@@ -28,7 +28,7 @@ type perfCounterMetricWatcher struct {
 	recreate  bool
 }
 
-type newWatcherFunc func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
+type newWatcherFunc func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
 
 // windowsPerfCountersScraper is the type that scrapes various host metrics.
 type windowsPerfCountersScraper struct {
@@ -60,7 +60,7 @@ func (s *windowsPerfCountersScraper) initWatchers() ([]perfCounterMetricWatcher,
 	for _, objCfg := range s.cfg.PerfCounters {
 		for _, instance := range instancesFromConfig(objCfg) {
 			for _, counterCfg := range objCfg.Counters {
-				pcw, err := s.newWatcher(objCfg.Object, instance, counterCfg.Name)
+				pcw, err := s.newWatcher(objCfg.Object, instance, counterCfg.Name, winperfcounters.WithLogger(s.settings.Logger))
 				if err != nil {
 					errs = multierr.Append(errs, err)
 					continue
@@ -132,8 +132,10 @@ func (s *windowsPerfCountersScraper) scrape(context.Context) (pmetric.Metrics, e
 	for _, watcher := range s.watchers {
 		counterVals, err := watcher.ScrapeData()
 		if err != nil {
-			errs = multierr.Append(errs, err)
-			scrapeFailures++
+			if !winperfcounters.IsIgnorableError(err) {
+				errs = multierr.Append(errs, err)
+				scrapeFailures++
+			}
 			continue
 		}
 

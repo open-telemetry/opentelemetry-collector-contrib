@@ -50,7 +50,7 @@ func TestNewDetector(t *testing.T) {
 		},
 	})
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
@@ -73,7 +73,7 @@ func TestVultrDetector_Detect_OK(t *testing.T) {
 
 	cfg := CreateDefaultConfig()
 	cfg.ResourceAttributes.CloudPlatform.Enabled = true
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
@@ -94,7 +94,7 @@ func TestVultrDetector_Detect_OK(t *testing.T) {
 func TestVultrDetector_NotOnVultr(t *testing.T) {
 	withFakeProvider(t, &fakeProvider{err: errors.New("no metadata")})
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
@@ -109,7 +109,9 @@ func TestVultrDetector_FailOnMissingMetadata(t *testing.T) {
 	cfg := CreateDefaultConfig()
 	cfg.FailOnMissingMetadata = true
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	// Inject top-level false: the deprecated per-detector flag alone must still
+	// trigger fail-on-missing for this detector (backward compatibility).
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())

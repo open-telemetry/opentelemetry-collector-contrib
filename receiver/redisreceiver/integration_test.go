@@ -37,6 +37,8 @@ func TestIntegrationV6(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.AddrConfig.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, redisPort))
+				rCfg.MetricsBuilderConfig.Metrics.RedisPubsubChannelStatus.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.RedisPubsubPatternStatus.Enabled = true
 			}),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
@@ -124,6 +126,8 @@ func TestIntegrationV8Sentinel(t *testing.T) {
 				rCfg := cfg.(*Config)
 				rCfg.AddrConfig.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, sentinelPort))
 				rCfg.MetricsBuilderConfig.Metrics.RedisMode.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.RedisPubsubChannelStatus.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.RedisPubsubPatternStatus.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelMasters.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelRunningScripts.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelScriptsQueueLength.Enabled = true

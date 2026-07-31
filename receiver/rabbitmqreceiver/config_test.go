@@ -111,7 +111,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.ClientConfig.Endpoint = "http://localhost:15672"
 	expected.Username = "otelu"
 	expected.Password = "${env:RABBITMQ_PASSWORD}"
-	expected.CollectionInterval = 10 * time.Second
+	expected.ControllerConfig.CollectionInterval = 10 * time.Second
 
 	require.Equal(t, expected, cfg)
 }
