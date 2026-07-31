@@ -27,6 +27,10 @@ type Settings struct {
 	AddMetricSuffixes   bool
 	TranslationStrategy string
 	SendMetadata        bool
+	// ConvertExplicitHistogramsToNHCB converts explicit-bucket histograms to NHCB (schema -53) instead of classic series.
+	ConvertExplicitHistogramsToNHCB bool
+	// KeepClassicHistograms also emits the classic series alongside NHCB; no effect unless ConvertExplicitHistogramsToNHCB is set.
+	KeepClassicHistograms bool
 }
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.

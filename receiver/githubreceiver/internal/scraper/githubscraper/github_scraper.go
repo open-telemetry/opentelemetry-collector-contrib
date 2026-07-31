@@ -62,7 +62,7 @@ func newGitHubScraper(
 		settings: settings.TelemetrySettings,
 		logger:   settings.Logger,
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
-		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		rb:       metadata.NewResourceBuilder(cfg.MetricsBuilderConfig.ResourceAttributes),
 		now:      time.Now,
 	}
 }

@@ -128,7 +128,7 @@ func createLogsReceiver(
 
 	opts := make([]scraperhelper.ControllerOption, 0)
 
-	if cfg.Events.DbServerQuerySample.Enabled {
+	if cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled {
 		// query sample collection does not need cache, but we do not want to make it
 		// nil, so create one size 1 cache as a placeholder.
 		ns, err := newPostgreSQLScraper(params, cfg, clientFactory, newCache(1), newTTLCache[string](1, time.Second))
@@ -149,7 +149,7 @@ func createLogsReceiver(
 		opts = append(opts, opt)
 	}
 
-	if cfg.Events.DbServerTopQuery.Enabled {
+	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		// we have 10 updated only attributes. so we set the cache size accordingly.
 		ns, err := newPostgreSQLScraper(params, cfg, clientFactory, newCache(int(cfg.TopNQuery*10*2)), newTTLCache[string](cfg.QueryPlanCacheSize, cfg.QueryPlanCacheTTL))
 		if err != nil {

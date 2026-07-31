@@ -80,6 +80,7 @@ extension/bearertokenauthextension extension/bearertokenauth
 extension/cgroupruntimeextension extension/cgroupruntime
 extension/datadogextension extension/datadog
 extension/dbauth extension/dbauth
+extension/dbauth/awsiamdbauthextension extension/dbauth/awsiamdbauth
 extension/encoding extension/encoding
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension extension/encoding/awscloudwatchmetricstreams
@@ -256,6 +257,7 @@ receiver/cloudfoundryreceiver receiver/cloudfoundry
 receiver/collectdreceiver receiver/collectd
 receiver/couchdbreceiver receiver/couchdb
 receiver/datadogreceiver receiver/datadog
+receiver/dnscheckreceiver receiver/dnscheck
 receiver/dockerstatsreceiver receiver/dockerstats
 receiver/elasticsearchreceiver receiver/elasticsearch
 receiver/envoyalsreceiver receiver/envoyals
