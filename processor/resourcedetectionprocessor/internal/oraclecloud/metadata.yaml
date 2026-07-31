@@ -34,6 +34,8 @@ resource_attributes:
     type: string
     enabled: true
   cloud.resource_id:
+    semantic_convention:
+      ref: cloud.md#cloud-resource-id
     description: The OCID (Oracle Cloud Identifier) of the host instance (unique per compute instance).
     type: string
     enabled: false
