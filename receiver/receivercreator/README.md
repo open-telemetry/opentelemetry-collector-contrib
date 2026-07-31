@@ -187,15 +187,16 @@ targeting it will have different variables available.
 
 ### Pod
 
-| Variable    | Description                       | Data Type                     |
-|-------------|-----------------------------------|-------------------------------|
-| type        | `"pod"`                           | String                        |
-| id          | ID of source endpoint             | String                        |
-| name        | name of the pod                   | String                        |
-| namespace   | namespace of the pod              | String                        |
-| uid         | unique id of the pod              | String                        |
-| labels      | map of labels set on the pod      | Map with String key and value |
-| annotations | map of annotations set on the pod | Map with String key and value |
+| Variable    | Description                           | Data Type                     |
+|-------------|---------------------------------------|-------------------------------|
+| type        | `"pod"`                               | String                        |
+| id          | ID of source endpoint                 | String                        |
+| os          | The OS (as defined by [runtime.GOOS]) | String                        |
+| name        | name of the pod                       | String                        |
+| namespace   | namespace of the pod                  | String                        |
+| uid         | unique id of the pod                  | String                        |
+| labels      | map of labels set on the pod          | Map with String key and value |
+| annotations | map of annotations set on the pod     | Map with String key and value |
 
 ### Port
 
@@ -204,6 +205,7 @@ targeting it will have different variables available.
 | type            | `"port"`                                | String                        |
 | id              | ID of source endpoint                   | String                        |
 | name            | container port name                     | String                        |
+| os              | The OS (as defined by [runtime.GOOS])   | String                        |
 | port            | port number                             | Integer                       |
 | protocol        | The transport protocol ("TCP" or "UDP") | String                        |
 | pod.name        | name of the owning pod                  | String                        |
@@ -218,6 +220,7 @@ targeting it will have different variables available.
 |-----------------|--------------------------------------|-------------------------------|
 | type            | `"pod.container"`                    | String                        |
 | id              | ID of source endpoint                | String                        |
+| os              | The OS (as defined by [runtime.GOOS])| String                        |
 | container_name  | container name                       | String                        |
 | container_id    | container id                         | String                        |
 | container_image | container image                      | String                        |
@@ -234,6 +237,7 @@ targeting it will have different variables available.
 | type          | `"hostport"`                                     | String                        |
 | id            | ID of source endpoint                            | String                        |
 | process_name  | Name of the process                              | String                        |
+| os            | The OS (as defined by [runtime.GOOS])            | String                        |
 | command       | Command line with the used to invoke the process | String                        |
 | is_ipv6       | true if endpoint is IPv6, otherwise false        | Boolean                       |
 | port          | Port number                                      | Integer                       |
@@ -247,6 +251,7 @@ targeting it will have different variables available.
 | id             | ID of source endpoint                                             | String                        |
 | name           | Primary name of the container                                     | String                        |
 | image          | Name of the container image                                       | String                        |
+| os             | The OS (as defined by [runtime.GOOS])                             | String                        |
 | port           | Exposed port of the container                                     | Integer                       |
 | alternate_port | Exposed port accessed through redirection, such as a mapped port  | Integer                       |
 | command        | The command used to invoke the process of the container           | String                        |
@@ -261,6 +266,7 @@ targeting it will have different variables available.
 |----------------|---------------------------------------------------------------------------------------|-------------------------------|
 | type           | `"k8s.service"`                                                                       | String                        |
 | id             | ID of source endpoint                                                                 | String                        |
+| os             | The OS (as defined by [runtime.GOOS]                                                  | String                        |
 | name           | The name of the Kubernetes service                                                    | String                        |
 | namespace      | The namespace of the service                                                          | String                        |
 | uid            | The unique ID for the service                                                         | String                        |
@@ -282,6 +288,7 @@ targeting it will have different variables available.
 | annotations    | The map of annotations set on the ingress                                             | Map with String key and value |
 | scheme         | Scheme represents whether the ingress path is accessible via HTTPS or HTTP.           | String                        |
 | host           | Host is the FQDN that map to backends                                                 | String                        |
+| os             | The OS (as defined by [runtime.GOOS]                                                  | String                        |
 | path           | Path that map requests to backends                                                    | String                        |
 
 ### Kubernetes Node
@@ -291,6 +298,7 @@ targeting it will have different variables available.
 | type                  | `"k8s.node"`                                                         | String                        |
 | id                    | ID of source endpoint                                                | String                        |
 | name                  | The name of the Kubernetes node                                      | String                        |
+| os                    | The OS (as defined by [runtime.GOOS]                                 | String                        |
 | uid                   | The unique ID for the node                                           | String                        |
 | hostname              | The node's hostname as reported by its Status object                 | String                        |
 | external_ip           | The node's external IP address as reported by its Status object      | String                        |
@@ -302,10 +310,11 @@ targeting it will have different variables available.
 | kubelet_endpoint_port | The node Status object's DaemonEndpoints.KubeletEndpoint.Port value  | Integer                       |
 
 ### Kafka Topics
-| Variable              | Description                                                          | Data Type                     |
-|-----------------------|----------------------------------------------------------------------|-------------------------------|
-| type                  | `"kafka.topics"`                                                     | String                        |
-| id                    | ID of source endpoint                                                | String                        |
+| Variable              | Description                                                            | Data Type                     |
+|-----------------------|------------------------------------------------------------------------|-------------------------------|
+| type                  | `"kafka.topics"`                                                       | String                        |
+| id                    | ID of source endpoint                                                  | String                        |
+| os                    | The OS (as defined by [runtime.GOOS])                                  | String                        |
 
 ## Examples
 
@@ -412,6 +421,16 @@ receivers:
           - endpoint: '`scheme`://`endpoint`:`port``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
             method: GET
           collection_interval: 10s
+ receiver_creator/5:
+   watch_observers: [host_observer]
+   receivers:
+     windows_service:
+       # Enable this receiver if the OS is Windows.
+       rule: type == "hostport" && os == "windows"
+       config:
+         include_services:
+           - MSSQLSERVER
+         collection_interval: 10s
   receiver_creator/logs:
     watch_observers: [ k8s_observer ]
     receivers:
@@ -465,7 +484,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [receiver_creator/1, receiver_creator/2, receiver_creator/3, receiver_creator/4]
+      receivers: [receiver_creator/1, receiver_creator/2, receiver_creator/3, receiver_creator/4, receiver_creator/5]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
     logs:
@@ -777,3 +796,5 @@ spec:
               containerPort: 6379
               protocol: TCP
 ```
+
+[runtime.GOOS]: https://pkg.go.dev/runtime#pkg-constants
