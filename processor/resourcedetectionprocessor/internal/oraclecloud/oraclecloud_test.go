@@ -202,7 +202,7 @@ func TestDetectCloudResourceIDEnabledHostIDDisabled(t *testing.T) {
 		cfg.ResourceAttributes.CloudResourceID.Enabled = true
 		cfg.ResourceAttributes.HostID.Enabled = false
 
-		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg, false)
 		require.NoError(t, err)
 		det.(*Detector).provider = md
 
@@ -246,7 +246,7 @@ func TestDetectCloudResourceIDAndHostIDBothEnabled(t *testing.T) {
 		cfg := CreateDefaultConfig()
 		cfg.ResourceAttributes.CloudResourceID.Enabled = true
 
-		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg, false)
 		require.NoError(t, err)
 		det.(*Detector).provider = md
 
