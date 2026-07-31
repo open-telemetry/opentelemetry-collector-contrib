@@ -26,8 +26,8 @@ var (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	configssh.SSHClientSettings    `mapstructure:",squash"`
+	ControllerConfig            scraperhelper.ControllerConfig `mapstructure:",squash"`
+	configssh.SSHClientSettings `mapstructure:",squash"`
 
 	CheckSFTP            bool                          `mapstructure:"check_sftp"`
 	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
