@@ -120,6 +120,7 @@ components:
     - extension/pprof
     - extension/redis_storage
     - extension/remotetap
+    - extension/sd_notify
     - extension/sigv4auth
     - extension/skywalking_encoding
     - extension/solarwindsapmsettings
