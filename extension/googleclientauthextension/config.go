@@ -12,6 +12,8 @@ import (
 // Config defines configuration for the Google client auth extension.
 type Config struct {
 	Config googleclientauthextension.Config `mapstructure:",squash"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (cfg *Config) Validate() error {

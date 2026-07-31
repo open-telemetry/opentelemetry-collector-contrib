@@ -13,6 +13,8 @@ import (
 // Config wraps the shared healthcheck.Config to add extension-specific validation.
 type Config struct {
 	Config healthcheck.Config `mapstructure:",squash"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate checks if the extension configuration is valid, including feature gate checks.

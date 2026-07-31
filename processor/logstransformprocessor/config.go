@@ -14,6 +14,8 @@ import (
 // Config defines configuration for Resource processor.
 type Config struct {
 	BaseConfig adapter.BaseConfig `mapstructure:",squash"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ component.Config = (*Config)(nil)
