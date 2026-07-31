@@ -109,10 +109,10 @@ func addMetrics(result pingResult, mb *metadata.MetricsBuilder, logger *zap.Logg
 	}
 
 	// Record all metrics - they will be filtered by MetricsBuilderConfig
-	mb.RecordPingRttMinDataPoint(now, result.stats.minRtt.Milliseconds())
-	mb.RecordPingRttMaxDataPoint(now, result.stats.maxRtt.Milliseconds())
-	mb.RecordPingRttAvgDataPoint(now, result.stats.avgRtt.Milliseconds())
-	mb.RecordPingRttStddevDataPoint(now, result.stats.stdDevRtt.Milliseconds())
+	mb.RecordPingRttMinDataPoint(now, result.stats.minRtt.Seconds()*1000)
+	mb.RecordPingRttMaxDataPoint(now, result.stats.maxRtt.Seconds()*1000)
+	mb.RecordPingRttAvgDataPoint(now, result.stats.avgRtt.Seconds()*1000)
+	mb.RecordPingRttStddevDataPoint(now, result.stats.stdDevRtt.Seconds()*1000)
 	mb.RecordPingLossRatioDataPoint(now, result.stats.lossRatio)
 
 	// Record resource attributes

@@ -788,8 +788,8 @@ func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *ur
 
 func buildHTTPClient(ctx context.Context, config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
 	// we handle compression explicitly.
-	config.Compression = ""
-	return config.ToClient(ctx, host.GetExtensions(), telemetrySettings)
+	config.ClientConfig.Compression = ""
+	return config.ClientConfig.ToClient(ctx, host.GetExtensions(), telemetrySettings)
 }
 
 func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]string {
@@ -803,7 +803,7 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 		"User-Agent":           config.SplunkAppName + "/" + appVersion,
 		"Authorization":        splunk.BuildHECAuthHeader(string(config.Token)),
 		"__splunk_app_name":    config.SplunkAppName,
-		"__splunk_app_version": config.SplunkAppVersion,
+		"__splunk_app_version": appVersion,
 	}
 }
 

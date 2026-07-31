@@ -18,7 +18,7 @@ Bytes in. Corresponds to HAProxy's `bin` metric.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| by | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### haproxy.bytes.output
 
@@ -26,7 +26,7 @@ Bytes out. Corresponds to HAProxy's `bout` metric.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| by | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### haproxy.connections.errors
 
@@ -194,7 +194,7 @@ Number of bytes that bypassed the HTTP compressor (CPU/BW limit). Corresponds to
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| by | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### haproxy.compression.count
 
@@ -210,7 +210,7 @@ Number of HTTP response bytes fed to the compressor. Corresponds to HAProxy's `c
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| by | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### haproxy.compression.output
 
@@ -218,7 +218,7 @@ Number of HTTP response bytes emitted by the compressor. Corresponds to HAProxy'
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| by | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### haproxy.connections.average_time
 
