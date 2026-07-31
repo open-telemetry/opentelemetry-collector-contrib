@@ -42,7 +42,7 @@ processors:
 ```
 
 Use `allow_list` to restrict which keys from `OTEL_RESOURCE_ATTRIBUTES` are
-emitted. When empty or unset, all keys are emitted.
+emitted. If unset, all keys are emitted; otherwise only the listed keys.
 
 ```yaml
 processors:

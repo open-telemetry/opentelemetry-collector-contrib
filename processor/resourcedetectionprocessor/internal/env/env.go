@@ -35,21 +35,13 @@ const deprecatedEnvVar = "OTEL_RESOURCE"
 
 var _ internal.Detector = (*Detector)(nil)
 
-type Config struct {
-	Allowlist []string `mapstructure:"allow_list"`
-}
-
-func CreateDefaultConfig() Config {
-	return Config{}
-}
-
 type Detector struct {
 	allowlist map[string]struct{}
 }
 
 func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	d := &Detector{}
-	if cfg, ok := dcfg.(Config); ok && len(cfg.Allowlist) > 0 {
+	if cfg, ok := dcfg.(Config); ok && cfg.Allowlist != nil {
 		d.allowlist = make(map[string]struct{}, len(cfg.Allowlist))
 		for _, k := range cfg.Allowlist {
 			d.allowlist[k] = struct{}{}

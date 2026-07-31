@@ -61,7 +61,7 @@ func TestDetectAllowlist(t *testing.T) {
 	assert.Equal(t, map[string]any{"keep": "1", "also_keep": "3"}, res.Attributes().AsRaw())
 }
 
-func TestDetectAllowlistEmptyAllowsAll(t *testing.T) {
+func TestDetectAllowlistUnsetAllowsAll(t *testing.T) {
 	t.Setenv(envVar, "a=1,b=2")
 
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), Config{})
@@ -69,6 +69,16 @@ func TestDetectAllowlistEmptyAllowsAll(t *testing.T) {
 	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"a": "1", "b": "2"}, res.Attributes().AsRaw())
+}
+
+func TestDetectAllowlistExplicitEmptyFiltersAll(t *testing.T) {
+	t.Setenv(envVar, "a=1,b=2")
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), Config{Allowlist: []string{}})
+	require.NoError(t, err)
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Empty(t, res.Attributes().AsRaw())
 }
 
 func TestDetectError(t *testing.T) {
