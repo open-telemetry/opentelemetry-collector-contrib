@@ -58,6 +58,11 @@ func (m *mezmoExporter) pushLogData(_ context.Context, ld plog.Logs) error {
 }
 
 func (m *mezmoExporter) start(ctx context.Context, host component.Host) (err error) {
+	m.log.Warn("The mezmo exporter is deprecated and will be removed in a future release. " +
+		"Use the OTLP/HTTP exporter to send logs directly to Mezmo instead. See " +
+		"https://docs.mezmo.com/telemetry-pipelines/otel-collector and " +
+		"https://docs.mezmo.com/telemetry-pipelines/open-telemetry-source for migration guidance.")
+
 	m.client, err = m.config.ClientConfig.ToClient(ctx, host.GetExtensions(), m.settings)
 	return err
 }
