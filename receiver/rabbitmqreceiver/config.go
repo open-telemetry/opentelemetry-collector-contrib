@@ -27,11 +27,11 @@ const defaultEndpoint = "http://localhost:15672"
 
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	ClientConfig                   confighttp.ClientConfig `mapstructure:",squash"`
-	Username                       string                  `mapstructure:"username"`
-	Password                       configopaque.String     `mapstructure:"password"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	ControllerConfig              scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ClientConfig                  confighttp.ClientConfig        `mapstructure:",squash"`
+	Username                      string                         `mapstructure:"username"`
+	Password                      configopaque.String            `mapstructure:"password"`
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 // Validate validates the configuration by checking for missing or invalid fields

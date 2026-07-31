@@ -19,9 +19,9 @@ var (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Targets                        []PingTarget `mapstructure:"targets"`
+	ControllerConfig              scraperhelper.ControllerConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Targets                       []PingTarget `mapstructure:"targets"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

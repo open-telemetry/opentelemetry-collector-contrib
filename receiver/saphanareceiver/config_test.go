@@ -94,7 +94,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.TCPAddrConfig.Endpoint = "example.com:30015"
 	expected.Username = "otel"
 	expected.Password = "password"
-	expected.CollectionInterval = 2 * time.Minute
+	expected.ControllerConfig.CollectionInterval = 2 * time.Minute
 
 	if diff := cmp.Diff(expected, cfg,
 		// mdatagen gives metric and resource attribute configs an unexported enabledSetByUser,
