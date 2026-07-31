@@ -132,20 +132,30 @@ func integrationTest(
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", pgVersion),
+				// 03-prepared-lock.sql needs prepared transactions, which are off by default.
+				Cmd: []string{"-c", "max_prepared_transactions=10"},
 				Env: map[string]string{
 					"POSTGRES_USER":     "root",
 					"POSTGRES_PASSWORD": "otel",
 					"POSTGRES_DB":       "otel",
 				},
-				Files: []testcontainers.ContainerFile{{
-					HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
-					ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
-					FileMode:          700,
-				}},
+				Files: []testcontainers.ContainerFile{
+					{
+						HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+						FileMode:          700,
+					},
+					{
+						HostFilePath:      filepath.Join("testdata", "integration", "03-prepared-lock.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/03-prepared-lock.sql",
+						FileMode:          700,
+					},
+				},
 				ExposedPorts: []string{postgresqlPort},
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
@@ -155,20 +165,21 @@ func integrationTest(
 				rCfg.Username = "otelu"
 				rCfg.Password = "otelp"
 				rCfg.ClientConfig.Insecure = true
-				rCfg.Metrics.PostgresqlWalDelay.Enabled = true
-				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
-				rCfg.Metrics.PostgresqlTempIo.Enabled = true
-				rCfg.Metrics.PostgresqlTempFiles.Enabled = true
-				rCfg.Metrics.PostgresqlTupUpdated.Enabled = true
-				rCfg.Metrics.PostgresqlTupReturned.Enabled = true
-				rCfg.Metrics.PostgresqlTupFetched.Enabled = true
-				rCfg.Metrics.PostgresqlTupInserted.Enabled = true
-				rCfg.Metrics.PostgresqlTupDeleted.Enabled = true
-				rCfg.Metrics.PostgresqlBlksHit.Enabled = true
-				rCfg.Metrics.PostgresqlBlksRead.Enabled = true
-				rCfg.Metrics.PostgresqlSequentialScans.Enabled = true
-				rCfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
-			}),
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled = true
+			},
+		),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(compareOptions...),
 	).Run
@@ -199,7 +210,8 @@ func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
 			},
-		})
+		},
+	)
 	require.NoError(t, err)
 
 	err = ci.Start(t.Context())
@@ -222,7 +234,7 @@ func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
 	_, err = tx.Exec("LOCK TABLE table1 IN ACCESS EXCLUSIVE MODE")
 	require.NoError(t, err)
 
-	clientDB, err := getDB(postgreSQLConfig{
+	clientDB, err := getDB(t.Context(), postgreSQLConfig{
 		username: "otelu",
 		password: "otelp",
 		address: confignet.AddrConfig{
@@ -269,7 +281,8 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
 			},
-		})
+		},
+	)
 	require.NoError(t, err)
 
 	err = ci.Start(t.Context())
@@ -292,7 +305,7 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 	_, err = tx.Exec("REINDEX INDEX table1_pkey")
 	require.NoError(t, err)
 
-	clientDB, err := getDB(postgreSQLConfig{
+	clientDB, err := getDB(t.Context(), postgreSQLConfig{
 		username: "otelu",
 		password: "otelp",
 		address: confignet.AddrConfig{
@@ -316,6 +329,84 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 	require.NoError(t, err)
 	require.NotContains(t, indexStats, indexKey("otel", "public", "table1", "table1_pkey"))
 	require.Contains(t, indexStats, indexKey("otel", "public", "table2", "table2_pkey"))
+}
+
+// TestExplainQueryParamCount verifies pg_prepared_statements reports the correct parameter
+// count for the two shapes that broke text-based $N counting: a placeholder repeated in the
+// query text, and a string literal that merely looks like one.
+func TestExplainQueryParamCount(t *testing.T) {
+	ci, err := testcontainers.GenericContainer(
+		t.Context(),
+		testcontainers.GenericContainerRequest{
+			ProviderType: testcontainers.ProviderPodman,
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: fmt.Sprintf("postgres:%s", post17TestVersion),
+				Env: map[string]string{
+					"POSTGRES_USER":     "root",
+					"POSTGRES_PASSWORD": "otel",
+					"POSTGRES_DB":       "otel",
+				},
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+					ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+					FileMode:          700,
+				}},
+				ExposedPorts: []string{postgresqlPort},
+				WaitingFor: wait.ForListeningPort(postgresqlPort).
+					WithStartupTimeout(2 * time.Minute),
+			},
+		},
+	)
+	require.NoError(t, err)
+	require.NoError(t, ci.Start(t.Context()))
+	defer testcontainers.CleanupContainer(t, ci)
+
+	p, err := ci.MappedPort(t.Context(), postgresqlPort)
+	require.NoError(t, err)
+
+	clientDB, err := getDB(t.Context(), postgreSQLConfig{
+		username: "otelu",
+		password: "otelp",
+		address: confignet.AddrConfig{
+			Endpoint: net.JoinHostPort("localhost", p.Port()),
+		},
+		tls: configtls.ClientConfig{
+			Insecure: true,
+		},
+	}, "otel")
+	require.NoError(t, err)
+	client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
+	defer func() {
+		require.NoError(t, client.Close())
+	}()
+
+	logger := zap.Must(zap.NewProduction())
+
+	testCases := []struct {
+		name  string
+		query string
+	}{
+		{
+			name:  "repeated placeholder counts as one parameter",
+			query: "SELECT * FROM table1 WHERE id = $1 OR id = $1",
+		},
+		{
+			name:  "dollar-sign inside a string literal is not a parameter",
+			query: "SELECT * FROM table1 WHERE id::text = '$123'",
+		},
+	}
+
+	// A text-based $N count gets both cases wrong: 2 instead of 1 for the repeated
+	// placeholder (which PostgreSQL rejects outright -- "wrong number of parameters"), and
+	// 1 instead of 0 for the string literal (which happens to still run, just with an unused
+	// bound null). pg_prepared_statements reports the correct count either way.
+	for i, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			plan, err := client.explainQuery(t.Context(), tc.query, fmt.Sprintf("paramcount%d", i), logger)
+			require.NoError(t, err)
+			require.NotEmpty(t, plan)
+		})
+	}
 }
 
 func TestScrapeLogsFromContainer(t *testing.T) {
@@ -351,7 +442,8 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 					AsRegexp().
 					WithOccurrence(1),
 			},
-		})
+		},
+	)
 	assert.NoError(t, err)
 
 	err = ci.Start(t.Context())

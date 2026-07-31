@@ -37,6 +37,9 @@ properties:
   add_metric_suffixes:
     description: 'AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export Deprecated: Use TranslationStrategy instead. It will be removed in v0.153.0.'
     type: boolean
+  convert_explicit_histograms_to_nhcb:
+    description: ConvertExplicitHistogramsToNHCB converts explicit-bucket histograms to NHCB (schema -53) instead of classic series.
+    type: boolean
   disable_scope_info:
     description: DisableScopeInfo allows disabling the export of the scope info labels
     type: boolean
@@ -45,11 +48,17 @@ properties:
     type: object
     additionalProperties:
       type: string
+  http:
+    description: HTTP defines the HTTP client configuration in a nested block. This field takes precedence over the squashed ClientConfig when set.
+    $ref: go.opentelemetry.io/collector/config/confighttp.client_config
   include_metadata_keys:
     description: IncludeMetadataKeys is a list of client metadata keys whose values are forwarded as HTTP request headers on every remote write call.
     type: array
     items:
       type: string
+  keep_classic_histograms:
+    description: KeepClassicHistograms also emits the classic series alongside NHCB; no effect unless convert_explicit_histograms_to_nhcb is set.
+    type: boolean
   max_batch_request_parallelism:
     description: maximum amount of parallel requests to do when handling large batch request
     x-pointer: true

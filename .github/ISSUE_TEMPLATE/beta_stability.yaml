@@ -96,6 +96,7 @@ body:
       - extension/cgroupruntime
       - extension/datadog
       - extension/dbauth
+      - extension/dbauth/awsiamdbauth
       - extension/encoding
       - extension/encoding/avrologencoding
       - extension/encoding/awscloudwatchmetricstreamsencoding
@@ -123,7 +124,6 @@ body:
       - extension/observer/ecsobserver
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
-      - extension/observer/kafkatopicsobserver
       - extension/oidcauth
       - extension/opamp
       - extension/opampcustommessages
@@ -272,6 +272,7 @@ body:
       - receiver/collectd
       - receiver/couchdb
       - receiver/datadog
+      - receiver/dnscheck
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/envoyals
