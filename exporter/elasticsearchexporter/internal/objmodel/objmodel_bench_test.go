@@ -42,7 +42,7 @@ func newBenchDocument(attrCount int) Document {
 	attrs.PutStr("data_stream.type", "metrics")
 	attrs.PutStr("data_stream.dataset", "generic")
 	attrs.PutStr("data_stream.namespace", "default")
-	for i := 0; i < attrCount; i++ {
+	for i := range attrCount {
 		attrs.PutStr(fmt.Sprintf("label.%02d", i), fmt.Sprintf("v-%d", i))
 	}
 	doc := DocumentFromAttributes(attrs)

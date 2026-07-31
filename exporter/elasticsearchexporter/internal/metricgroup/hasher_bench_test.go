@@ -71,7 +71,7 @@ func BenchmarkECSHashKeyOnly(b *testing.B) {
 
 func newBenchDataPoint(resourceAttrs, dataPointAttrs int) (pcommon.Resource, datapoints.DataPoint) {
 	resource := pcommon.NewResource()
-	for i := 0; i < resourceAttrs; i++ {
+	for i := range resourceAttrs {
 		resource.Attributes().PutStr(fmt.Sprintf("resource.attr.%02d", i), fmt.Sprintf("value-%d", i))
 	}
 	// Overlap a few keys so ECS merge overwrite path is exercised.
