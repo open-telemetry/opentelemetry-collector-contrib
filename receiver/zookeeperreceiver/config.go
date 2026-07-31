@@ -10,6 +10,6 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Config                         zookeeperscraper.Config `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Config           zookeeperscraper.Config        `mapstructure:",squash"`
 }

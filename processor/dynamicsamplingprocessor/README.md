@@ -67,19 +67,17 @@ processors:
           - 'resource.attributes["service.name"] == "payment"'
         sampler:
           type: ema_dynamic
-          ema_dynamic:
-            goal_sampling_percentage: 5
-            key_fields: ["http.method", "http.route"]
-            adjustment_interval: 15s
-            weight: 0.5
+          goal_sampling_percentage: 5
+          key_attributes: ["http.method", "http.route"]
+          adjustment_interval: 15s
+          weight: 0.5
 
       # Catch-all: no conditions, always matches.
       - name: default
         sampler:
           type: ema_dynamic
-          ema_dynamic:
-            goal_sampling_percentage: 20
-            key_fields: ["service.name", "http.status_code"]
+          goal_sampling_percentage: 20
+          key_attributes: ["service.name", "http.status_code"]
 ```
 
 ### Rules
@@ -89,34 +87,111 @@ Rules are evaluated in order; the first whose conditions all match selects the s
 > [!WARNING]
 > A rule with no conditions (a catch-all) placed before another rule consumes every trace and renders the later rules unreachable. The processor logs a warning at startup when it detects this configuration so it shows up in collector logs.
 
+Conditions are [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) boolean expressions evaluated in the [`ottlspan`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan) context, which gives access to the span, its resource, and its instrumentation scope. Path expressions must be qualified with the context they refer to: `span.attributes["k"]`, `resource.attributes["k"]`, `span.status.code`, and so on. See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md#boolean-expressions) for the full grammar (including `and`, `or`, and parentheses), and the [ottlspan paths reference](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md) for the list of accessible fields.
+
 The intended pattern is specific-conditions rules first, catch-all last:
 
 ```yaml
 rules:
   - name: keep-errors
-    conditions: ["status.code == 2"]
+    conditions:
+      - span.status.code == STATUS_CODE_ERROR
     sampler:
       type: always_sample
   - name: default              # catch-all
     sampler:
       type: ema_dynamic
-      ema_dynamic:
-        goal_sampling_percentage: 10
-        key_fields: ["service.name"]
+      goal_sampling_percentage: 10
+      key_attributes: ["service.name"]
 ```
 
 With the order above, error traces are always kept and every other trace is decided by `ema_dynamic`. Flipping the order so `default` comes first would mean `default` swallows every trace (including errors) and `keep-errors` is never reached, which is what the startup warning flags.
 
-Each condition is a simple expression. In this initial release the supported forms are:
+#### How multiple conditions combine
 
-| Expression                                    | Meaning                                                                |
-|-----------------------------------------------|------------------------------------------------------------------------|
-| `field == value`                              | Any span (or its resource) has `field` set to `value`.                 |
-| `field != value`                              | No span has `field` set to `value`.                                    |
-| `status.code == N`                            | Any span has status code `N` (0 = Unset, 1 = Ok, 2 = Error).            |
-| `status.code != N`                            | No span has status code `N`.                                            |
+Each rule can carry multiple OTTL conditions. The `match` field controls how they are combined against the spans of the accumulated trace:
 
-OTTL-based conditions are planned for a follow-up release.
+- `match: any_span` (default): each condition must be satisfied by *some* span in the trace, but not necessarily the same span across conditions. Reads as "the trace has these characteristics."
+- `match: same_span`: some single span in the trace must satisfy *all* conditions at once. Reads as "there is a span with these characteristics."
+
+`match` is not permitted on catch-all rules (rules with no conditions).
+
+Example: keep a trace only when a single span is both an error and from the payment service:
+
+```yaml
+- name: payment-errors
+  match: same_span
+  conditions:
+    - span.status.code == STATUS_CODE_ERROR
+    - resource.attributes["service.name"] == "payment"
+  sampler:
+    type: always_sample
+```
+
+Example (default `any_span`): keep any trace that touched the payment service *and* saw an error somewhere:
+
+```yaml
+- name: payment-involved-errors
+  conditions:
+    - span.status.code == STATUS_CODE_ERROR
+    - resource.attributes["service.name"] == "payment"
+  sampler:
+    type: always_sample
+```
+
+If an OTTL condition raises an evaluation error at runtime (for example, a path does not exist on a specific span) the condition is treated as false for that span and the `otelcol_processor_dynamic_sampling_ottl_eval_errors` counter is incremented, labelled by the rule name. Other spans and conditions continue to evaluate normally.
+
+#### Condition examples
+
+Keep every trace where an HTTP server span returned 5xx, using OTTL's inline `and`:
+
+```yaml
+- name: http-5xx
+  match: same_span
+  conditions:
+    - span.kind == SPAN_KIND_SERVER and span.attributes["http.response.status_code"] >= 500
+  sampler:
+    type: always_sample
+```
+
+Keep every trace that includes a root span from a specific service, using OTTL's `IsRootSpan()` helper:
+
+```yaml
+- name: root-checkout
+  match: same_span
+  conditions:
+    - IsRootSpan() and resource.attributes["service.name"] == "checkout"
+  sampler:
+    type: always_sample
+```
+
+Keep traces from either the checkout or the billing service, at a modest adaptive rate:
+
+```yaml
+- name: high-value-services
+  conditions:
+    - resource.attributes["service.name"] == "checkout" or resource.attributes["service.name"] == "billing"
+  sampler:
+    type: ema_dynamic
+    ema_dynamic:
+      goal_sampling_percentage: 25
+      key_fields: ["service.name", "http.route"]
+```
+
+Match on span name prefix using OTTL's `IsMatch` regex helper:
+
+```yaml
+- name: api-calls
+  match: same_span
+  conditions:
+    - IsMatch(span.name, "^GET /api/")
+  sampler:
+    type: deterministic
+    deterministic:
+      sampling_percentage: 5
+```
+
+For the full set of comparison operators, string functions, and converter helpers available in conditions, see [OTTL Functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md).
 
 ### Samplers
 
@@ -135,8 +210,7 @@ The adaptive samplers (`ema_dynamic`, `ema_throughput`, `windowed_throughput`) a
 ```yaml
 sampler:
   type: deterministic
-  deterministic:
-    sampling_percentage: 10   # keep 10% of traces
+  sampling_percentage: 10   # keep 10% of traces
 ```
 
 #### `ema_dynamic`
@@ -146,12 +220,11 @@ Adapts the sample rate per traffic key over time, keeping a target average sampl
 ```yaml
 sampler:
   type: ema_dynamic
-  ema_dynamic:
-    goal_sampling_percentage: 10            # target % across all keys
-    key_fields: ["service.name", "http.status_code"]
-    adjustment_interval: 15s                # how often the EMA recalculates
-    weight: 0.5                             # EMA weighting factor in [0, 1)
-    max_keys: 500                           # 0 = unlimited
+  goal_sampling_percentage: 10            # target % across all keys
+  key_attributes: ["service.name", "http.status_code"]
+  adjustment_interval: 15s                # how often the EMA recalculates
+  weight: 0.5                             # EMA weighting factor in [0, 1)
+  max_keys: 500                           # 0 = unlimited
 ```
 
 #### `ema_throughput`
@@ -161,13 +234,11 @@ Adjusts rates per key to hit a target sustained throughput in events per second.
 ```yaml
 sampler:
   type: ema_throughput
-  ema_throughput:
-    goal_throughput_per_sec: 100            # target events/sec across all keys
-    key_fields: ["service.name", "http.status_code"]
-    initial_sampling_rate: 10               # optional: rate used before first adjustment
-    adjustment_interval: 15s
-    weight: 0.5
-    max_keys: 500
+  goal_throughput_per_sec: 100            # target events/sec across all keys
+  key_attributes: ["service.name", "http.status_code"]
+  adjustment_interval: 15s
+  weight: 0.5
+  max_keys: 500
 ```
 
 #### `windowed_throughput`
@@ -177,17 +248,16 @@ Sliding-window throughput sampler that decouples how often rates are recalculate
 ```yaml
 sampler:
   type: windowed_throughput
-  windowed_throughput:
-    goal_throughput_per_sec: 100
-    key_fields: ["service.name", "http.status_code"]
-    update_frequency: 1s                    # how often rates recalculate
-    lookback_frequency: 30s                 # historical window used in the calculation
-    max_keys: 500
+  goal_throughput_per_sec: 100
+  key_attributes: ["service.name", "http.status_code"]
+  update_frequency: 1s                    # how often rates recalculate
+  lookback_frequency: 30s                 # historical window used in the calculation
+  max_keys: 500
 ```
 
 ### Sampling keys
 
-For samplers that accept `key_fields`, the sampling key for a trace is built by collecting distinct values of each `key_field` (across resource and span attributes), sorting them, and joining with the `•` separator. Missing fields are replaced with `<missing>`.
+For samplers that accept `key_attributes`, the sampling key for a trace is built by collecting distinct values of each named attribute (across resource and span attributes), sorting them, and joining with the `•` separator. Missing attributes are replaced with `<missing>`.
 
 ## Decision cache
 
@@ -306,6 +376,7 @@ Future work on shared trace context across collector instances (tracked under "C
 | `otelcol_processor_dynamic_sampling_decision_triggers` | Counter  | `trigger` | Number of trace decisions made, labelled by which event triggered them (`root_span`, `trace_timeout`). |
 | `otelcol_processor_dynamic_sampling_traces_evicted` | Counter  |          | Traces evicted from the buffer before a decision could be made.             |
 | `otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable` | Counter |     | Spans whose incoming W3C tracestate could not be parsed while applying the sampling threshold. |
+| `otelcol_processor_dynamic_sampling_ottl_eval_errors` | Counter | `rule`  | OTTL condition evaluation errors, labelled by the rule the condition belongs to. |
 
 ## Output attributes
 

@@ -17,7 +17,7 @@ var _ component.Config = (*Config)(nil)
 type Config struct {
 	Config docker.Config `mapstructure:",squash"`
 
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	// A mapping of container label names to MetricDescriptor label keys.
 	// The corresponding container label value will become the DataPoint label value
