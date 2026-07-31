@@ -165,7 +165,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			doc := test.build()
 			doc.Dedup(nil)
-			assert.Equal(t, test.want, doc)
+			assert.Equal(t, test.want.fields, doc.fields)
 		})
 	}
 }

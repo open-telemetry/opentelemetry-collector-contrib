@@ -36,7 +36,7 @@ import (
 	"io"
 	"maps"
 	"math"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -51,6 +51,11 @@ import (
 type Document struct {
 	fields           []field
 	dynamicTemplates map[string]string
+	// sorted is true when fields are known to be in key order. Dedup requires a
+	// sorted field list; tracking this avoids re-sorting when Serialize/Dedup
+	// runs again on a document that was already deduped (or never mutated after
+	// sort).
+	sorted bool
 }
 
 type field struct {
@@ -118,7 +123,7 @@ func DocumentFromAttributesWithPath(path string, am pcommon.Map) Document {
 func (doc *Document) Clone() *Document {
 	fields := make([]field, len(doc.fields))
 	copy(fields, doc.fields)
-	return &Document{fields: fields, dynamicTemplates: maps.Clone(doc.dynamicTemplates)}
+	return &Document{fields: fields, dynamicTemplates: maps.Clone(doc.dynamicTemplates), sorted: doc.sorted}
 }
 
 func (doc *Document) AddDynamicTemplate(path, template string) {
@@ -140,6 +145,8 @@ func (doc *Document) AddTimestamp(key string, ts pcommon.Timestamp) {
 // Add adds a converted value to the document.
 func (doc *Document) Add(key string, v Value) {
 	doc.fields = append(doc.fields, field{key: key, value: v})
+	// Append order is not key order, so any prior sort is stale.
+	doc.sorted = false
 }
 
 // AddString adds a string to the document.
@@ -179,6 +186,8 @@ func (doc *Document) AddUInt(key string, value uint64) {
 // the document.
 func (doc *Document) AddAttributes(key string, attributes pcommon.Map) {
 	doc.fields = appendAttributeFields(doc.fields, key, attributes)
+	// Flattened appends are not key-ordered.
+	doc.sorted = false
 }
 
 // AddAttribute converts and adds a AttributeValue to the document. If the attribute represents a map,
@@ -220,14 +229,19 @@ func (doc *Document) AddLinks(key string, links ptrace.SpanLinkSlice) {
 }
 
 func (doc *Document) sort() {
-	sort.SliceStable(doc.fields, func(i, j int) bool {
-		return doc.fields[i].key < doc.fields[j].key
-	})
+	if !doc.sorted {
+		slices.SortStableFunc(doc.fields, fieldKeyCompare)
+		doc.sorted = true
+	}
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
 		fld.value.sort()
 	}
+}
+
+func fieldKeyCompare(a, b field) int {
+	return strings.Compare(a.key, b.key)
 }
 
 // Dedup removes fields from the document, that have duplicate keys.
@@ -277,6 +291,8 @@ func (doc *Document) Dedup(protectedSet map[string]struct{}) {
 		}
 	}
 	if renamed {
+		// Renaming path.x -> path.x.value can change key order relative to path.x.*.
+		doc.sorted = false
 		doc.sort()
 	}
 
@@ -301,6 +317,9 @@ func newJSONVisitor(w io.Writer) *json.Visitor {
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
+	// Default visitor escapes <>& for HTML embedding. ES bulk bodies are plain
+	// JSON, so HTML escaping is unnecessary work on every string field.
+	v.SetEscapeHTML(false)
 	return v
 }
 
@@ -552,8 +571,9 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
 	case KindString:
 		return w.OnString(v.str)
 	case KindTimestamp:
-		str := v.ts.UTC().Format(tsLayout)
-		return w.OnString(str)
+		var buf [len(tsLayout)]byte
+		b := v.ts.UTC().AppendFormat(buf[:0], tsLayout)
+		return w.OnStringRef(b)
 	case KindObject:
 		if len(v.doc.fields) == 0 {
 			return w.OnNil()
