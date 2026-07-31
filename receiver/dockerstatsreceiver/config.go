@@ -35,7 +35,7 @@ type Config struct {
 	EnvVarsToMetricLabels map[string]string `mapstructure:"env_vars_to_metric_labels"`
 
 	// MetricsBuilderConfig config. Enable or disable stats by name.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (config Config) Validate() error {
