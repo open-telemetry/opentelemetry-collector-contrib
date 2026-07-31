@@ -26,6 +26,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
@@ -191,6 +192,22 @@ type postgreSQLConfig struct {
 	database string
 	address  confignet.AddrConfig
 	tls      configtls.ClientConfig
+	// credentialProvider, when non-nil, supplies the password (and optionally the
+	// username) at connection-string-build time instead of the static password.
+	// Non-pool path: resolved once per *sql.DB build (one build per scrape), so
+	// each scrape picks up a freshly-minted credential. Pool path: resolved per
+	// physical connection by credentialConnector, so a long-lived pool re-mints on
+	// every new connection it opens. Either way, no collector restart is needed.
+	credentialProvider dbauth.Provider
+}
+
+var conninfoValueEscaper = strings.NewReplacer(`\`, `\\`, `'`, `\'`)
+
+// quoteConninfoValue encodes a value for lib/pq's keyword/value connection
+// string format. Quoting every value prevents credential or configuration data
+// containing whitespace, quotes, or backslashes from becoming new options.
+func quoteConninfoValue(value string) string {
+	return `'` + conninfoValueEscaper.Replace(value) + `'`
 }
 
 func sslConnectionString(tls configtls.ClientConfig) string {
@@ -207,21 +224,25 @@ func sslConnectionString(tls configtls.ClientConfig) string {
 	}
 
 	if tls.CAFile != "" {
-		conn += fmt.Sprintf(" sslrootcert='%s'", tls.CAFile)
+		conn += " sslrootcert=" + quoteConninfoValue(tls.CAFile)
 	}
 
 	if tls.KeyFile != "" {
-		conn += fmt.Sprintf(" sslkey='%s'", tls.KeyFile)
+		conn += " sslkey=" + quoteConninfoValue(tls.KeyFile)
 	}
 
 	if tls.CertFile != "" {
-		conn += fmt.Sprintf(" sslcert='%s'", tls.CertFile)
+		conn += " sslcert=" + quoteConninfoValue(tls.CertFile)
 	}
 
 	return conn
 }
 
-func (c postgreSQLConfig) ConnectionString() (string, error) {
+// ConnectionString builds the lib/pq DSN, resolving the credential provider (if
+// any) with the supplied context. The pool path resolves per physical connection
+// via credentialConnector, so the connection context flows through to credential
+// minting.
+func (c postgreSQLConfig) ConnectionString(ctx context.Context) (string, error) {
 	// postgres will assume the supplied user as the database name if none is provided,
 	// so we must specify a database name even when we are just collecting the list of databases.
 	database := defaultPostgreSQLDatabase
@@ -239,7 +260,38 @@ func (c postgreSQLConfig) ConnectionString() (string, error) {
 		host = "/" + host
 	}
 
-	return fmt.Sprintf("port=%s host=%s user=%s password=%s dbname=%s %s", port, host, c.username, c.password, database, sslConnectionString(c.tls)), nil
+	username, password := c.username, c.password
+	if c.credentialProvider != nil {
+		// Resolve the credential at build time so each new connection uses a
+		// currently-valid secret (e.g. a freshly-minted AWS IAM token).
+		cred, credErr := c.credentialProvider.GetCredential(ctx, dbauth.Request{
+			Endpoint: c.address.Endpoint,
+			Username: c.username,
+		})
+		if credErr != nil {
+			return "", fmt.Errorf("resolve credential: %w", credErr)
+		}
+		if cred == nil {
+			// A provider must return either a credential or an error. Guard against a
+			// contract-violating provider so a bad extension fails this scrape closed
+			// rather than panicking the whole collector on the nil dereference below.
+			return "", errors.New("resolve credential: provider returned a nil credential")
+		}
+		password = cred.Secret
+		if cred.Username != nil {
+			username = *cred.Username
+		}
+	}
+
+	return fmt.Sprintf(
+		"port=%s host=%s user=%s password=%s dbname=%s %s",
+		quoteConninfoValue(port),
+		quoteConninfoValue(host),
+		quoteConninfoValue(username),
+		quoteConninfoValue(password),
+		quoteConninfoValue(database),
+		sslConnectionString(c.tls),
+	), nil
 }
 
 func (c *postgreSQLClient) Close() error {

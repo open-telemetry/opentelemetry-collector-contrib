@@ -426,7 +426,7 @@ func TestRecordBaseMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	metricsConfig := metadata.DefaultMetricsConfig()
 	metricsConfig.ContainerUptime.Enabled = true
-	cfg.Metrics = metricsConfig
+	cfg.MetricsBuilderConfig.Metrics = metricsConfig
 	r := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg)
 	now := time.Now()
 	started := now.Add(-2 * time.Second).Format(time.RFC3339)
@@ -507,12 +507,12 @@ func (cb *testConfigBuilder) withAPIVersion(v string) *testConfigBuilder {
 }
 
 func (cb *testConfigBuilder) withMetrics(ms metadata.MetricsConfig) *testConfigBuilder {
-	cb.config.Metrics = ms
+	cb.config.MetricsBuilderConfig.Metrics = ms
 	return cb
 }
 
 func (cb *testConfigBuilder) withResourceAttributes(ras metadata.ResourceAttributesConfig) *testConfigBuilder {
-	cb.config.ResourceAttributes = ras
+	cb.config.MetricsBuilderConfig.ResourceAttributes = ras
 	return cb
 }
 
