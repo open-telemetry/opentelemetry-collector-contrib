@@ -9,6 +9,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
+	promLabels "github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -153,7 +154,7 @@ func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.Histog
 		for i := 0; i < pt.ExplicitBounds().Len() && i < pt.BucketCounts().Len(); i++ {
 			bound := pt.ExplicitBounds().At(i)
 			cumulativeCount += pt.BucketCounts().At(i)
-			boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
+			boundStr := promLabels.FormatOpenMetricsFloat(bound)
 			c.addSampleWithLabels(float64(cumulativeCount), timestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, boundStr, metadata)
 		}
 		// add le=+Inf bucket

@@ -404,6 +404,49 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 	}
 }
 
+func TestPrometheusConverterV2_AddHistogramDataPointsNormalizedLeLabels(t *testing.T) {
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	metric := pmetric.NewMetric()
+	metric.SetName("test_hist")
+	metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+	pt := metric.Histogram().DataPoints().AppendEmpty()
+	pt.SetTimestamp(ts)
+	pt.ExplicitBounds().FromRaw([]float64{0.5, 10, 250})
+	pt.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+
+	converter := newPrometheusConverterV2(Settings{})
+	unitNamer := otlptranslator.UnitNamer{}
+	m := metadata{
+		Type: otelMetricTypeToPromMetricTypeV2(metric),
+		Help: metric.Description(),
+		Unit: unitNamer.Build(metric.Unit()),
+	}
+	err := converter.addHistogramDataPoints(
+		metric.Histogram().DataPoints(),
+		pcommon.NewResource(),
+		pcommon.NewInstrumentationScope(),
+		Settings{},
+		metric.Name(),
+		m,
+	)
+	require.NoError(t, err)
+
+	symbols := converter.symbolTable.Symbols()
+	var leValues []string
+	for _, series := range converter.unique {
+		for i := 0; i+1 < len(series.LabelsRefs); i += 2 {
+			if symbols[series.LabelsRefs[i]] == model.BucketLabel {
+				leValues = append(leValues, symbols[series.LabelsRefs[i+1]])
+			}
+		}
+	}
+	// Bucket bounds must be normalized to always contain a decimal point,
+	// e.g. a bound of 10 must be rendered as "10.0".
+	assert.ElementsMatch(t, []string{"0.5", "10.0", "250.0", "+Inf"}, leValues)
+	assert.Empty(t, converter.conflicts)
+}
+
 func TestPrometheusConverterV2_AddSampleWithLabels(t *testing.T) {
 	tests := []struct {
 		name            string
