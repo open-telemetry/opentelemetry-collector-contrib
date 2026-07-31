@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.Username = "otel"
 	expected.Password = "${env:MYSQL_PASSWORD}"
 	expected.Database = "otel"
-	expected.CollectionInterval = 10 * time.Second
+	expected.ControllerConfig.CollectionInterval = 10 * time.Second
 	// This defaults to true when tls is omitted from the configmap.
 	expected.TLS.Insecure = true
 
@@ -54,7 +54,7 @@ func TestLoadConfigDefaultTLS(t *testing.T) {
 	expected.Username = "otel"
 	expected.Password = "${env:MYSQL_PASSWORD}"
 	expected.Database = "otel"
-	expected.CollectionInterval = 10 * time.Second
+	expected.ControllerConfig.CollectionInterval = 10 * time.Second
 	// This defaults to false when tls is defined in the configmap.
 	expected.TLS.Insecure = false
 	expected.TLS.ServerName = "localhost"
