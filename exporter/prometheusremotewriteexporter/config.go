@@ -176,27 +176,16 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
-	// Nested http always takes precedence when present (no feature gate required).
-	if conf.IsSet("http") {
-		httpConf, err := conf.Sub("http")
-		if err != nil {
-			return err
+	if !conf.IsSet("http") && !metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate.IsEnabled() {
+		cfg.HTTP = cfg.ClientConfig
+		// we explicity set an empty struct for TestLoadConfig to work.
+		cfg.ClientConfig = confighttp.ClientConfig{}
+	} else {
+		// When the remove-top-level gate is enabled, reject deprecated flat HTTP client keys.
+		if hasTopLevelHTTPClientSettings(conf) {
+			return fmt.Errorf("top-level HTTP client settings are not allowed when feature gate %s is enabled; move them under the 'http' block",
+				metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate.ID())
 		}
-		if len(httpConf.ToStringMap()) == 0 {
-			return errors.New("'http' config block must not be empty")
-		}
-
-		cfg.ClientConfig = getDefaultHTTPClientConfig()
-		if err = httpConf.Unmarshal(&cfg.ClientConfig); err != nil {
-			return fmt.Errorf("error unmarshalling http config: %w", err)
-		}
-	}
-
-	// When the remove-top-level gate is enabled, reject deprecated flat HTTP client keys.
-	if metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate.IsEnabled() &&
-		hasTopLevelHTTPClientSettings(conf) {
-		return fmt.Errorf("top-level HTTP client settings are not allowed when feature gate %s is enabled; move them under the 'http' block",
-			metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate.ID())
 	}
 
 	return nil
@@ -228,7 +217,7 @@ func (cfg *Config) Validate() error {
 		cfg.MaxBatchSizeBytes = 3000000
 	}
 
-	if len(cfg.ClientConfig.Compression) > 0 && cfg.ClientConfig.Compression != "snappy" {
+	if len(cfg.HTTP.Compression) > 0 && cfg.HTTP.Compression != "snappy" {
 		return errors.New("compression type must be snappy")
 	}
 

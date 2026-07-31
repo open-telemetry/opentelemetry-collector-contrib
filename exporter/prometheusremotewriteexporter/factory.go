@@ -102,7 +102,8 @@ func createDefaultConfig() component.Config {
 		// TODO: Set TranslationStrategy to UnderscoreEscapingWithSuffixes once AddMetricSuffixes is removed.
 		SendMetadata:        false,
 		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
-		ClientConfig:        getDefaultHTTPClientConfig(),
+		// TOOD: Remove ClientConfig in favor of HTTP settings once we remove the feature gate.
+		ClientConfig: getDefaultHTTPClientConfig(),
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{
 			Enabled:      true,
@@ -112,6 +113,7 @@ func createDefaultConfig() component.Config {
 		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
+		HTTP: getDefaultHTTPClientConfig(),
 	}
 }
 

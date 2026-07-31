@@ -57,8 +57,12 @@ func TestLoadConfig(t *testing.T) {
 		enableSendingRW2 bool
 	}{
 		{
-			id:       component.NewIDWithName(metadata.Type, ""),
-			expected: createDefaultConfig(),
+			id: component.NewIDWithName(metadata.Type, ""),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ClientConfig = confighttp.ClientConfig{}
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
@@ -82,7 +86,8 @@ func TestLoadConfig(t *testing.T) {
 				AddMetricSuffixes:           false,
 				Namespace:                   "test-space",
 				ExternalLabels:              map[string]string{"key1": "value1", "key2": "value2"},
-				ClientConfig:                clientConfigWithHeaders,
+				ClientConfig:                confighttp.ClientConfig{},
+				HTTP:                        clientConfigWithHeaders,
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 				TargetInfo: TargetInfo{
 					Enabled: true,
@@ -112,7 +117,8 @@ func TestLoadConfig(t *testing.T) {
 				ExternalLabels:      map[string]string{},
 				AddMetricSuffixes:   true,
 				TranslationStrategy: "NoTranslation",
-				ClientConfig: func() confighttp.ClientConfig {
+				ClientConfig:        confighttp.ClientConfig{},
+				HTTP: func() confighttp.ClientConfig {
 					cc := confighttp.NewDefaultClientConfig()
 					cc.Endpoint = "localhost:8888"
 					cc.WriteBufferSize = 512 * 1024
@@ -189,7 +195,8 @@ func TestLoadConfig(t *testing.T) {
 				IncludeMetadataKeys: []string{"target-id", "x-org-id"},
 				ExternalLabels:      map[string]string{},
 				AddMetricSuffixes:   true,
-				ClientConfig: func() confighttp.ClientConfig {
+				ClientConfig:        confighttp.ClientConfig{},
+				HTTP: func() confighttp.ClientConfig {
 					cc := confighttp.NewDefaultClientConfig()
 					cc.Endpoint = "localhost:8888"
 					cc.WriteBufferSize = 512 * 1024
@@ -330,14 +337,6 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 			},
 			wantErr: "top-level HTTP client settings are not allowed",
 		},
-		{
-			name:               "empty http block rejected",
-			featureGateEnabled: false,
-			conf: map[string]any{
-				"http": map[string]any{},
-			},
-			wantErr: "'http' config block must not be empty",
-		},
 	}
 
 	for _, tc := range testCases {
@@ -345,20 +344,20 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate, tc.featureGateEnabled)()
 
 			cfg := createDefaultConfig().(*Config)
-			err := cfg.Unmarshal(confmap.NewFromStringMap(tc.conf))
+			err := confmap.NewFromStringMap(tc.conf).Unmarshal(cfg)
 			if tc.wantErr != "" {
 				require.ErrorContains(t, err, tc.wantErr)
 				return
 			}
 			require.NoError(t, err)
-			require.Equal(t, tc.wantEndpoint, cfg.ClientConfig.Endpoint)
-			require.Equal(t, tc.wantTimeout, cfg.ClientConfig.Timeout)
+			require.Equal(t, tc.wantEndpoint, cfg.HTTP.Endpoint)
+			require.Equal(t, tc.wantTimeout, cfg.HTTP.Timeout)
 			if tc.wantExporterTimeout != 0 {
 				require.Equal(t, tc.wantExporterTimeout, cfg.TimeoutSettings.Timeout)
 			}
 			if tc.checkDefaults {
-				require.Equal(t, defaults.WriteBufferSize, cfg.ClientConfig.WriteBufferSize)
-				require.Equal(t, defaults.MaxIdleConns, cfg.ClientConfig.MaxIdleConns)
+				require.Equal(t, defaults.WriteBufferSize, cfg.HTTP.WriteBufferSize)
+				require.Equal(t, defaults.MaxIdleConns, cfg.HTTP.MaxIdleConns)
 			}
 		})
 	}
