@@ -1537,6 +1537,41 @@ demo_seconds_count 42
 	}
 }
 
+func TestSumOnlyHistogramNHCBConversion(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "sum-only-histogram",
+			pages: []mockPrometheusResponse{
+				{
+					code: 200,
+					data: `
+# HELP demo_seconds A histogram without a count.
+# TYPE demo_seconds histogram
+demo_seconds_sum 123.5
+`,
+				},
+			},
+			validateFunc: func(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
+				verifyNumValidScrapeResults(t, td, resourceMetrics)
+				require.NotEmpty(t, resourceMetrics)
+				require.Equal(t, expectedScrapeMetricCount, metricsCount(resourceMetrics[0]))
+				for _, metric := range getMetrics(resourceMetrics[0]) {
+					require.NotEqual(t, "demo_seconds", metric.Name())
+				}
+			},
+		},
+	}
+
+	testComponent(t, targets, nil, func(cfg *PromConfig) {
+		enabled := true
+		alwaysScrapeClassic := false
+		for _, scrapeConfig := range cfg.ScrapeConfigs {
+			scrapeConfig.ConvertClassicHistogramsToNHCB = &enabled
+			scrapeConfig.AlwaysScrapeClassicHistograms = &alwaysScrapeClassic
+		}
+	})
+}
+
 // metric type is defined as 'untyped' in the first metric
 // and, type hint is missing in the 2nd metric
 var untypedMetrics = `

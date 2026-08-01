@@ -104,11 +104,17 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 		return
 	}
 
+	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
+	// NHCB conversion loses whether _count was absent. Reject the inconsistent
+	// form that identifies a sum-only classic histogram.
+	if mg.isNHCB && !pointIsStale && mg.count == 0 && mg.sum != 0 {
+		return
+	}
+
 	mg.sortPoints()
 
 	var bounds []float64
 	var bucketCounts []uint64
-	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
 
 	if mg.isNHCB {
 		switch {
