@@ -17,7 +17,7 @@ var _ component.Config = (*Config)(nil)
 type Config struct {
 	docker.Config `mapstructure:",squash"`
 
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	// A mapping of container label names to MetricDescriptor label keys.
 	// The corresponding container label value will become the DataPoint label value
@@ -35,7 +35,7 @@ type Config struct {
 	EnvVarsToMetricLabels map[string]string `mapstructure:"env_vars_to_metric_labels"`
 
 	// MetricsBuilderConfig config. Enable or disable stats by name.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (config Config) Validate() error {

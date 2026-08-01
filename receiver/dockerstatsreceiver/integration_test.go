@@ -29,7 +29,7 @@ import (
 func factory() (rcvr.Factory, *Config) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
-	config.CollectionInterval = 1 * time.Second
+	config.ControllerConfig.CollectionInterval = 1 * time.Second
 	return f, config
 }
 
