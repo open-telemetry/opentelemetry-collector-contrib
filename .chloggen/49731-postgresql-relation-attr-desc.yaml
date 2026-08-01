@@ -1,9 +1,0 @@
-change_type: bug_fix
-
-component: receiver/postgresql
-
-note: Correct the `relation` attribute description to reflect that its value is the relation name (from `pg_class.relname`), not an OID.
-
-issues: [49731]
-
-change_logs: [user]
