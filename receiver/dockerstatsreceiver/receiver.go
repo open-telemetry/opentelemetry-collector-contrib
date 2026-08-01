@@ -41,6 +41,7 @@ type metricsReceiver struct {
 	client   *docker.Client
 	mb       *metadata.MetricsBuilder
 	cancel   context.CancelFunc
+	statusMX sync.Mutex
 }
 
 func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver {
@@ -93,6 +94,9 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 	var errs error
 	now := pcommon.NewTimestampFromTime(time.Now())
 
+	// holds the value for number of containers in each state
+	containerStatus := make(map[string]int64)
+
 	if r.config.StreamStats {
 		for _, container := range containers {
 			stats, ok := r.client.LatestContainerStats(container.ID, r.config.ControllerConfig.CollectionInterval)
@@ -102,10 +106,12 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 					fmt.Errorf("no stats available yet for container %s", container.ID), 0))
 				continue
 			}
-			if err := r.recordContainerStats(now, stats, &container); err != nil {
+			if err := r.recordContainerStats(now, stats, &container, containerStatus); err != nil {
 				errs = multierr.Append(errs, err)
 			}
 		}
+		// We emit container status without the default resource attributes.
+		r.recordContainerStatus(now, containerStatus)
 		return r.mb.Emit(), errs
 	}
 
@@ -140,15 +146,22 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}
-		if err := r.recordContainerStats(now, res.stats, res.container); err != nil {
+		if err := r.recordContainerStats(now, res.stats, res.container, containerStatus); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
 
+	// We emit container status without the default resource attributes.
+	r.recordContainerStatus(now, containerStatus)
 	return r.mb.Emit(), errs
 }
 
-func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerStats *ctypes.StatsResponse, container *docker.Container) error {
+func (r *metricsReceiver) recordContainerStats(
+	now pcommon.Timestamp,
+	containerStats *ctypes.StatsResponse,
+	container *docker.Container,
+	containerStatus map[string]int64,
+) error {
 	var errs error
 	r.recordCPUMetrics(now, containerStats)
 	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
@@ -185,8 +198,20 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 		}
 	}
 
+	r.statusMX.Lock()
+	// increment counter of container status
+	containerStatus[string(container.State.Status)]++
+	r.statusMX.Unlock()
+
 	r.mb.EmitForResource(metadata.WithResource(resource))
 	return errs
+}
+
+// recordContainerStatus records number of containers in each state
+func (r *metricsReceiver) recordContainerStatus(now pcommon.Timestamp, containerStatus map[string]int64) {
+	for status, count := range containerStatus {
+		r.mb.RecordContainerStatusDataPoint(now, count, metadata.MapAttributeContainerState[status])
+	}
 }
 
 func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *ctypes.MemoryStats) {
