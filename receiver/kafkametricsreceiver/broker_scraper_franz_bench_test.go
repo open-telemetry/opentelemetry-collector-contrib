@@ -50,9 +50,9 @@ func Benchmark_BrokerScraperFranz_Scrape(b *testing.B) {
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ClusterAlias:         "bench-cluster",
 			}
-			cfg.ResourceAttributes.KafkaClusterAlias.Enabled = true
+			cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
 			// Enable the config-derived metric so DescribeBrokerConfigs runs.
-			cfg.Metrics.KafkaBrokerLogRetentionPeriod.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.KafkaBrokerLogRetentionPeriod.Enabled = true
 
 			s, err := createBrokerScraperFranz(b.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 			require.NoError(b, err)

@@ -55,12 +55,12 @@ func Benchmark_TopicScraperFranz_Scrape(b *testing.B) {
 				ClusterAlias:         "bench-cluster",
 				TopicMatch:           ".*",
 			}
-			cfg.ResourceAttributes.KafkaClusterAlias.Enabled = true
+			cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
 			// Enable the config-derived metrics so DescribeTopicConfigs runs.
-			cfg.Metrics.KafkaTopicLogRetentionPeriod.Enabled = true
-			cfg.Metrics.KafkaTopicLogRetentionSize.Enabled = true
-			cfg.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
-			cfg.Metrics.KafkaTopicReplicationFactor.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.KafkaTopicLogRetentionPeriod.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.KafkaTopicLogRetentionSize.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.KafkaTopicReplicationFactor.Enabled = true
 
 			s, err := createTopicsScraperFranz(b.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 			require.NoError(b, err)

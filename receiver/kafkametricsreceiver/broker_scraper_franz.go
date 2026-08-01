@@ -74,7 +74,7 @@ func (s *brokerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error
 	s.mb.RecordKafkaBrokersDataPoint(now, int64(len(brokerIDs)))
 
 	// If log retention metric is disabled, we are done.
-	if !s.config.Metrics.KafkaBrokerLogRetentionPeriod.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.KafkaBrokerLogRetentionPeriod.Enabled {
 		return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrs.Combine()
 	}
 

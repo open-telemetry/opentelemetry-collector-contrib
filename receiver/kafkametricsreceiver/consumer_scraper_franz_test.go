@@ -142,8 +142,8 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 		TopicMatch:           ".*",
 		GroupMatch:           ".*",
 	}
-	cfg.ResourceAttributes.KafkaClusterAlias.Enabled = true
-	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterID.Enabled = true
 
 	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
@@ -252,7 +252,7 @@ func TestConsumerScraperFranz_EmptyClusterID(t *testing.T) {
 		TopicMatch:           ".*",
 		GroupMatch:           ".*",
 	}
-	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterID.Enabled = true
 
 	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
@@ -303,7 +303,7 @@ func TestConsumerScraperFranz_ScrapeNoEmittedDataPointsForUncommitted(t *testing
 		TopicMatch:           ".*",
 		GroupMatch:           ".*",
 	}
-	cfg.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
 
 	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)

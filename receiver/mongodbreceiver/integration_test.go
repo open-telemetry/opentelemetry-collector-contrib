@@ -65,7 +65,7 @@ func integrationTest(name string, script []string, cfgMod func(*Config)) func(*t
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				cfgMod(rCfg)
-				rCfg.CollectionInterval = 2 * time.Second
+				rCfg.ControllerConfig.CollectionInterval = 2 * time.Second
 				rCfg.MetricsBuilderConfig.Metrics.MongodbLockAcquireTime.Enabled = false
 				rCfg.Hosts = []confignet.TCPAddrConfig{
 					{

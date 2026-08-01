@@ -150,7 +150,7 @@ func Benchmark_ConsumerScraperFranz_Scrape(b *testing.B) {
 				TopicMatch:           ".*",
 				GroupMatch:           ".*",
 			}
-			cfg.ResourceAttributes.KafkaClusterAlias.Enabled = true
+			cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
 
 			s, err := createConsumerScraperFranz(b.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 			require.NoError(b, err)
