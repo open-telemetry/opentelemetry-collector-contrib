@@ -187,11 +187,11 @@ func TestErrorsInStart(t *testing.T) {
 	recv := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, recv)
 
-	cfg.Endpoint = "..not/a/valid/endpoint"
+	cfg.Config.Endpoint = "..not/a/valid/endpoint"
 	err := recv.start(t.Context(), componenttest.NewNopHost())
 	assert.ErrorContains(t, err, "unable to parse docker host")
 
-	cfg.Endpoint = unreachable
+	cfg.Config.Endpoint = unreachable
 	err = recv.start(t.Context(), componenttest.NewNopHost())
 	assert.ErrorContains(t, err, "context deadline exceeded")
 }
@@ -497,12 +497,12 @@ func newTestConfigBuilder() *testConfigBuilder {
 }
 
 func (cb *testConfigBuilder) withEndpoint(endpoint string) *testConfigBuilder {
-	cb.config.Endpoint = endpoint
+	cb.config.Config.Endpoint = endpoint
 	return cb
 }
 
 func (cb *testConfigBuilder) withAPIVersion(v string) *testConfigBuilder {
-	cb.config.DockerAPIVersion = v
+	cb.config.Config.DockerAPIVersion = v
 	return cb
 }
 
@@ -517,7 +517,7 @@ func (cb *testConfigBuilder) withResourceAttributes(ras metadata.ResourceAttribu
 }
 
 func (cb *testConfigBuilder) withStreamStats(enabled bool) *testConfigBuilder {
-	cb.config.StreamStats = enabled
+	cb.config.Config.StreamStats = enabled
 	return cb
 }
 
