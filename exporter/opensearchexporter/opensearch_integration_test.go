@@ -82,8 +82,7 @@ func TestIntegration_OtelV1Mapping_Traces(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
-	cfg.Endpoint = endpoint
-	cfg.TLS.Insecure = true
+	cfg.ClientConfig.Endpoint = endpoint
 	cfg.Mode = "otel-v1"
 	cfg.TracesIndex = "otel-v1-apm-span"
 	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
@@ -183,8 +182,7 @@ func TestIntegration_OtelV1Mapping_Logs(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
-	cfg.Endpoint = endpoint
-	cfg.TLS.Insecure = true
+	cfg.ClientConfig.Endpoint = endpoint
 	cfg.Mode = "otel-v1"
 	cfg.LogsIndex = "otel-v1-logs"
 	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
