@@ -178,7 +178,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 
 	if !conf.IsSet("http") && !metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate.IsEnabled() {
 		cfg.HTTP = cfg.ClientConfig
-		// we explicity set an empty struct for TestLoadConfig to work. ClientConfig is not referenced outside tests
+		// we explicitly set an empty struct for TestLoadConfig to work. ClientConfig is not referenced outside tests
 		cfg.ClientConfig = confighttp.ClientConfig{}
 	}
 
