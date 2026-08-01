@@ -77,10 +77,10 @@ func Benchmark_Receiver_AllScrapers(b *testing.B) {
 	cfg.TopicMatch = ".*"
 	cfg.GroupMatch = ".*"
 	cfg.Scrapers = []string{"brokers", "topics", "consumers"}
-	cfg.Metrics.KafkaBrokerLogRetentionPeriod.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.KafkaBrokerLogRetentionPeriod.Enabled = true
 	// Long interval + no initial delay: measure one scrape cycle per iteration.
-	cfg.CollectionInterval = time.Hour
-	cfg.InitialDelay = 0
+	cfg.ControllerConfig.CollectionInterval = time.Hour
+	cfg.ControllerConfig.InitialDelay = 0
 
 	sink := new(consumertest.MetricsSink)
 	runCycle := func() {
