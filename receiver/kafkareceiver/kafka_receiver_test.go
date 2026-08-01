@@ -751,8 +751,8 @@ func TestComponentStatus(t *testing.T) {
 		lis, err := net.Listen("tcp", "localhost:0")
 		require.NoError(t, err)
 		t.Cleanup(func() { assert.NoError(t, lis.Close()) })
-		brokers := receiverConfig.Brokers
-		receiverConfig.Brokers = []string{lis.Addr().String()}
+		brokers := receiverConfig.ClientConfig.Brokers
+		receiverConfig.ClientConfig.Brokers = []string{lis.Addr().String()}
 
 		f := NewFactory()
 		r, err := f.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), receiverConfig, &consumertest.TracesSink{})
@@ -872,8 +872,8 @@ func mustNewFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig = clientConfig
-	cfg.InitialOffset = "earliest"
-	cfg.MaxFetchWait = 10 * time.Millisecond
+	cfg.ConsumerConfig.InitialOffset = "earliest"
+	cfg.ConsumerConfig.MaxFetchWait = 10 * time.Millisecond
 	cfg.Telemetry.Metrics.KafkaReceiverRecordsDelay.Enabled = true
 	return kafkaClient, cfg
 }
