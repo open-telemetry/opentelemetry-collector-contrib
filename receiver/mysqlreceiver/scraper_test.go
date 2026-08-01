@@ -108,7 +108,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, plogtest.CompareLogs(expectedQuerySample, actualQuerySamples,
 			plogtest.IgnoreTimestamp(),
 			plogtest.IgnoreResourceAttributeValue("service.instance.id")))
-		assertLogsHaveInstanceEndpoint(t, actualQuerySamples, cfg.Endpoint)
+		assertLogsHaveInstanceEndpoint(t, actualQuerySamples, cfg.AddrConfig.Endpoint)
 
 		// Scrape top queries
 		scraper.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "count_star", 1)
@@ -124,7 +124,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, plogtest.CompareLogs(expectedTopQueries, actualTopQueries,
 			plogtest.IgnoreTimestamp(),
 			plogtest.IgnoreResourceAttributeValue("service.instance.id")))
-		assertLogsHaveInstanceEndpoint(t, actualTopQueries, cfg.Endpoint)
+		assertLogsHaveInstanceEndpoint(t, actualTopQueries, cfg.AddrConfig.Endpoint)
 	})
 
 	t.Run("scrape has partial failure", func(t *testing.T) {

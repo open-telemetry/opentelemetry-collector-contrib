@@ -47,7 +47,7 @@ func TestWarnUnreachableRules(t *testing.T) {
 			name: "catch_all_first_warns",
 			rules: []RuleConfig{
 				{Name: "default"},
-				{Name: "keep-errors", Conditions: []string{"status.code == 2"}},
+				{Name: "keep-errors", Conditions: []string{"span.status.code == STATUS_CODE_ERROR"}},
 			},
 			wantWarn:  true,
 			wantField: "default",
@@ -55,7 +55,7 @@ func TestWarnUnreachableRules(t *testing.T) {
 		{
 			name: "catch_all_last_no_warn",
 			rules: []RuleConfig{
-				{Name: "keep-errors", Conditions: []string{"status.code == 2"}},
+				{Name: "keep-errors", Conditions: []string{"span.status.code == STATUS_CODE_ERROR"}},
 				{Name: "default"},
 			},
 		},
@@ -68,7 +68,7 @@ func TestWarnUnreachableRules(t *testing.T) {
 		{
 			name: "all_conditional_no_warn",
 			rules: []RuleConfig{
-				{Name: "errors", Conditions: []string{"status.code == 2"}},
+				{Name: "errors", Conditions: []string{"span.status.code == STATUS_CODE_ERROR"}},
 				{Name: "payment", Conditions: []string{"service.name == payment"}},
 			},
 		},
@@ -168,14 +168,14 @@ func TestProcessor_FirstMatchRouting(t *testing.T) {
 		Rules: []RuleConfig{
 			{
 				Name:       "keep-errors",
-				Conditions: []string{"status.code == 2"},
+				Conditions: []string{"span.status.code == STATUS_CODE_ERROR"},
 				Sampler:    SamplerConfig{Type: AlwaysSample},
 			},
 			{
 				Name: "drop-rest",
 				Sampler: SamplerConfig{
-					Type:          Deterministic,
-					Deterministic: DeterministicConfig{SamplingPercentage: 100},
+					Type:               Deterministic,
+					SamplingPercentage: 100,
 				},
 			},
 		},
@@ -252,8 +252,8 @@ func TestProcessor_DeterministicDropsAtRate(t *testing.T) {
 			{
 				Name: "fixed",
 				Sampler: SamplerConfig{
-					Type:          Deterministic,
-					Deterministic: DeterministicConfig{SamplingPercentage: 10}, // 1-in-10
+					Type:               Deterministic,
+					SamplingPercentage: 10, // 1-in-10
 				},
 			},
 		},
@@ -414,7 +414,7 @@ func TestProcessor_LateSpansForDroppedTraceDropped(t *testing.T) {
 			// and end up dropped as unmatched.
 			{
 				Name:       "never",
-				Conditions: []string{"status.code == 99"},
+				Conditions: []string{"span.status.code == 999"},
 				Sampler:    SamplerConfig{Type: AlwaysSample},
 			},
 		},
@@ -482,8 +482,8 @@ func TestProcessor_HonoursIncomingThreshold(t *testing.T) {
 			{
 				Name: "fixed",
 				Sampler: SamplerConfig{
-					Type:          Deterministic,
-					Deterministic: DeterministicConfig{SamplingPercentage: 10}, // rate 10 = keep 10% of population
+					Type:               Deterministic,
+					SamplingPercentage: 10, // rate 10 = keep 10% of population
 				},
 			},
 		},
@@ -527,8 +527,8 @@ func TestProcessor_UpstreamStricterThanRate_UpstreamWins(t *testing.T) {
 			{
 				Name: "loose",
 				Sampler: SamplerConfig{
-					Type:          Deterministic,
-					Deterministic: DeterministicConfig{SamplingPercentage: 50}, // rate 2 = 50% of population
+					Type:               Deterministic,
+					SamplingPercentage: 50, // rate 2 = 50% of population
 				},
 			},
 		},
