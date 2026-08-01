@@ -79,6 +79,7 @@ components:
     - extension/ack
     - extension/asapclient
     - extension/avro_log_encoding
+    - extension/aws_iam_db_auth
     - extension/aws_logs_encoding
     - extension/awscloudwatchmetricstreams_encoding
     - extension/awsproxy
@@ -192,8 +193,8 @@ components:
     - processor/cardinality_guardian
     - processor/coralogix
     - processor/cumulative_to_delta
+    - processor/delta_to_cumulative
     - processor/delta_to_rate
-    - processor/deltatocumulative
     - processor/digitaloceandetector
     - processor/drain
     - processor/dynamic_sampling
