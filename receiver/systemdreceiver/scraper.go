@@ -123,7 +123,7 @@ func (s *systemdScraper) scrapeServiceCgroup(now pcommon.Timestamp, unit *unitTu
 
 // Are any of our cgroup requiring metrics available
 func (s *systemdScraper) hasCgroupMetrics() bool {
-	return s.cfg.Metrics.SystemdServiceCPUTime.Enabled
+	return s.cfg.MetricsBuilderConfig.Metrics.SystemdServiceCPUTime.Enabled
 }
 
 func (s *systemdScraper) scrapeRestartCount(now pcommon.Timestamp, unit *unitTuple) error {
@@ -169,7 +169,7 @@ func (s *systemdScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			}
 
-			if s.cfg.Metrics.SystemdServiceRestarts.Enabled {
+			if s.cfg.MetricsBuilderConfig.Metrics.SystemdServiceRestarts.Enabled {
 				err := s.scrapeRestartCount(now, unit)
 				if err != nil {
 					errs.AddPartial(1, err)
