@@ -140,6 +140,8 @@ func TestDetectResourceGroupNameFeatureGate(t *testing.T) {
 
 			_, ok = res.Attributes().Get(tt.notWantKey)
 			assert.False(t, ok, "expected %q to be absent", tt.notWantKey)
+
+			mp.AssertExpectations(t)
 		})
 	}
 }
