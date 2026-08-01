@@ -101,8 +101,10 @@ For more information about the approver role, see the [community repository](htt
 - [Constança Manteigas](https://github.com/constanca-m), Elastic
 - [Dónal O'Sullivan](https://github.com/osullivandonal), Elastic
 - [Douglas Camata](https://github.com/douglascamata), Coralogix
+- [Dylan Strohschein](https://github.com/dyl10s), Dynatrace
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
+- [Khushi Jain](https://github.com/khushijain21), Elastic
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Paulo Dias](https://github.com/paulojmdias), Five9

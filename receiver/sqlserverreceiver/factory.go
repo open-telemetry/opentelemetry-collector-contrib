@@ -66,28 +66,40 @@ func createDefaultConfig() component.Config {
 func setupQueries(cfg *Config) []string {
 	var queries []string
 
-	if isDatabaseIOQueryEnabled(&cfg.Metrics) {
+	if isAvailabilityGroupQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+		queries = append(queries, getSQLServerAvailabilityGroupQuery(cfg.InstanceName))
+	}
+
+	if isDatabaseIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
 	}
 
-	if isPerfCounterQueryEnabled(&cfg.Metrics) {
+	if isPerfCounterQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
 	}
 
-	if cfg.Metrics.SqlserverDatabaseCount.Enabled || cfg.Metrics.SqlserverCPUCount.Enabled || cfg.Metrics.SqlserverComputerUptime.Enabled {
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled || cfg.MetricsBuilderConfig.Metrics.SqlserverCPUCount.Enabled || cfg.MetricsBuilderConfig.Metrics.SqlserverComputerUptime.Enabled {
 		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
 	}
 
-	if isWaitStatsQueryEnabled(&cfg.Metrics) {
+	if isWaitStatsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
 	}
 
-	if isWorkerThreadsQueryEnabled(&cfg.Metrics) {
+	if isWorkerThreadsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerWorkerThreadsQuery(cfg.InstanceName))
 	}
 
-	if isIndexPhysicalStatsQueryEnabled(&cfg.Metrics) {
+	if isIndexPhysicalStatsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName))
+	}
+
+	if isCPUMemoryQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+		queries = append(queries, getSQLServerCPUMemoryQuery(cfg.InstanceName))
+	}
+
+	if isDiskIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+		queries = append(queries, getSQLServerDiskIOQuery(cfg.InstanceName))
 	}
 
 	return queries
@@ -96,11 +108,11 @@ func setupQueries(cfg *Config) []string {
 func setupLogQueries(cfg *Config) []string {
 	var queries []string
 
-	if cfg.Events.DbServerQuerySample.Enabled {
+	if cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled {
 		queries = append(queries, getSQLServerQuerySamplesQuery())
 	}
 
-	if cfg.Events.DbServerTopQuery.Enabled {
+	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		queries = append(queries, getSQLServerQueryTextAndPlanQuery())
 	}
 
@@ -252,6 +264,16 @@ func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.C
 	return opts, nil
 }
 
+func isAvailabilityGroupQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.Enabled ||
+		metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueSize.Enabled ||
+		metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueRate.Enabled
+}
+
 func isDatabaseIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
 	if metrics == nil {
 		return false
@@ -360,4 +382,23 @@ func isIndexPhysicalStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverIndexPageUtilization.Enabled ||
 		metrics.SqlserverIndexRecordCount.Enabled ||
 		metrics.SqlserverIndexSize.Enabled
+}
+
+func isCPUMemoryQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverCPUUtilization.Enabled ||
+		metrics.SqlserverHostMemoryLimit.Enabled ||
+		metrics.SqlserverHostMemoryUsage.Enabled
+}
+
+func isDiskIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverDiskOperations.Enabled ||
+		metrics.SqlserverDiskIo.Enabled
 }
