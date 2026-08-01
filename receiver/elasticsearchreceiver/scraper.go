@@ -671,7 +671,13 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 		now, stats.Primaries.DocumentStats.ActiveCount, metadata.AttributeDocumentStateActive, metadata.AttributeIndexAggregationTypePrimaryShards,
 	)
 	r.mb.RecordElasticsearchIndexDocumentsDataPoint(
+		now, stats.Primaries.DocumentStats.DeletedCount, metadata.AttributeDocumentStateDeleted, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexDocumentsDataPoint(
 		now, stats.Total.DocumentStats.ActiveCount, metadata.AttributeDocumentStateActive, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexDocumentsDataPoint(
+		now, stats.Total.DocumentStats.DeletedCount, metadata.AttributeDocumentStateDeleted, metadata.AttributeIndexAggregationTypeTotal,
 	)
 
 	rb := r.mb.NewResourceBuilder()
