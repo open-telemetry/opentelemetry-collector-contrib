@@ -2257,7 +2257,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			EffectiveConfig: &protobufs.EffectiveConfig{
 				ConfigMap: &protobufs.AgentConfigMap{
 					ConfigMap: map[string]*protobufs.AgentConfigFile{
-						"":          {Body: []byte("instance config")},
+						"":           {Body: []byte("instance config")},
 						"other.yaml": {Body: []byte("other config")},
 					},
 				},
@@ -2303,9 +2303,9 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			EffectiveConfig: &protobufs.EffectiveConfig{
 				ConfigMap: &protobufs.AgentConfigMap{
 					ConfigMap: map[string]*protobufs.AgentConfigFile{
-						"":          {Body: []byte("instance config")},
+						"":           {Body: []byte("instance config")},
 						"other.yaml": {Body: []byte("other config")},
-						"extra.yaml":  {Body: []byte("extra config")},
+						"extra.yaml": {Body: []byte("extra config")},
 					},
 				},
 			},
@@ -2320,7 +2320,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		// message the supervisor forwards upstream.
 		require.NotNil(t, msg)
 		require.NotNil(t, msg.ConfigMap)
-		assert.Equal(t, 3, len(msg.ConfigMap.ConfigMap),
+		assert.Len(t, msg.ConfigMap.ConfigMap, 3,
 			"all named config files must be preserved in the round-trip")
 		assert.Equal(t, []byte("instance config"), msg.ConfigMap.ConfigMap[""].Body)
 		assert.Equal(t, []byte("other config"), msg.ConfigMap.ConfigMap["other.yaml"].Body)
@@ -2956,7 +2956,7 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 		s.effectiveConfig.Store(&protobufs.EffectiveConfig{
 			ConfigMap: &protobufs.AgentConfigMap{
 				ConfigMap: map[string]*protobufs.AgentConfigFile{
-					"":          {Body: []byte("instance config")},
+					"":           {Body: []byte("instance config")},
 					"other.yaml": {Body: []byte("other config")},
 				},
 			},
