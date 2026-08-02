@@ -164,19 +164,19 @@ func integrationTest(
 				rCfg.Username = "otelu"
 				rCfg.Password = "otelp"
 				rCfg.ClientConfig.Insecure = true
-				rCfg.Metrics.PostgresqlWalDelay.Enabled = true
-				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
-				rCfg.Metrics.PostgresqlTempIo.Enabled = true
-				rCfg.Metrics.PostgresqlTempFiles.Enabled = true
-				rCfg.Metrics.PostgresqlTupUpdated.Enabled = true
-				rCfg.Metrics.PostgresqlTupReturned.Enabled = true
-				rCfg.Metrics.PostgresqlTupFetched.Enabled = true
-				rCfg.Metrics.PostgresqlTupInserted.Enabled = true
-				rCfg.Metrics.PostgresqlTupDeleted.Enabled = true
-				rCfg.Metrics.PostgresqlBlksHit.Enabled = true
-				rCfg.Metrics.PostgresqlBlksRead.Enabled = true
-				rCfg.Metrics.PostgresqlSequentialScans.Enabled = true
-				rCfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled = true
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(compareOptions...),
@@ -231,7 +231,7 @@ func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
 	_, err = tx.Exec("LOCK TABLE table1 IN ACCESS EXCLUSIVE MODE")
 	require.NoError(t, err)
 
-	clientDB, err := getDB(postgreSQLConfig{
+	clientDB, err := getDB(t.Context(), postgreSQLConfig{
 		username: "otelu",
 		password: "otelp",
 		address: confignet.AddrConfig{
@@ -301,7 +301,7 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 	_, err = tx.Exec("REINDEX INDEX table1_pkey")
 	require.NoError(t, err)
 
-	clientDB, err := getDB(postgreSQLConfig{
+	clientDB, err := getDB(t.Context(), postgreSQLConfig{
 		username: "otelu",
 		password: "otelp",
 		address: confignet.AddrConfig{

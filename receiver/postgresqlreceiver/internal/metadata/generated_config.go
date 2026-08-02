@@ -871,6 +871,54 @@ func (ms *PostgresqlQueryConflictsMetricConfig) Validate() error {
 	return nil
 }
 
+// PostgresqlQueryExecutionTimeMetricAttributeKey specifies the key of an attribute for the postgresql.query.execution.time metric.
+type PostgresqlQueryExecutionTimeMetricAttributeKey string
+
+const (
+	PostgresqlQueryExecutionTimeMetricAttributeKeyDbNamespace PostgresqlQueryExecutionTimeMetricAttributeKey = "db.namespace"
+)
+
+// PostgresqlQueryExecutionTimeMetricConfig provides config for the postgresql.query.execution.time metric.
+type PostgresqlQueryExecutionTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlQueryExecutionTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlQueryExecutionTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlQueryExecutionTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlQueryExecutionTimeMetricAttributeKeyDbNamespace:
+		default:
+			return fmt.Errorf("metric postgresql.query.execution.time doesn't have an attribute %v, valid attributes: [db.namespace]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // PostgresqlReplicationDataDelayMetricAttributeKey specifies the key of an attribute for the postgresql.replication.data_delay metric.
 type PostgresqlReplicationDataDelayMetricAttributeKey string
 
@@ -1931,6 +1979,7 @@ type MetricsConfig struct {
 	PostgresqlIndexSize                PostgresqlIndexSizeMetricConfig                `mapstructure:"postgresql.index.size"`
 	PostgresqlOperations               PostgresqlOperationsMetricConfig               `mapstructure:"postgresql.operations"`
 	PostgresqlQueryConflicts           PostgresqlQueryConflictsMetricConfig           `mapstructure:"postgresql.query.conflicts"`
+	PostgresqlQueryExecutionTime       PostgresqlQueryExecutionTimeMetricConfig       `mapstructure:"postgresql.query.execution.time"`
 	PostgresqlReplicationDataDelay     PostgresqlReplicationDataDelayMetricConfig     `mapstructure:"postgresql.replication.data_delay"`
 	PostgresqlRollbacks                PostgresqlRollbacksMetricConfig                `mapstructure:"postgresql.rollbacks"`
 	PostgresqlRows                     PostgresqlRowsMetricConfig                     `mapstructure:"postgresql.rows"`
@@ -2048,6 +2097,11 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []PostgresqlQueryConflictsMetricAttributeKey{PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType, PostgresqlQueryConflictsMetricAttributeKeyDbNamespace},
+		},
+		PostgresqlQueryExecutionTime: PostgresqlQueryExecutionTimeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlQueryExecutionTimeMetricAttributeKey{PostgresqlQueryExecutionTimeMetricAttributeKeyDbNamespace},
 		},
 		PostgresqlReplicationDataDelay: PostgresqlReplicationDataDelayMetricConfig{
 			Enabled:             true,

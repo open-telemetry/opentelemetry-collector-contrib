@@ -793,7 +793,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := createDefaultConfig().(*Config)
 			config.ServerConfig.NetAddr.Endpoint = "localhost:0"
-			config.AccessTokenPassthrough = tt.passthrough
+			config.AccessTokenPassthroughConfig.AccessTokenPassthrough = tt.passthrough
 			accessTokensChan := make(chan string)
 
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
