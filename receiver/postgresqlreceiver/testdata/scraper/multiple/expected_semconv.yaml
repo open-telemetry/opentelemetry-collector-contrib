@@ -871,21 +871,11 @@ resourceMetrics:
           - description: The number of database locks.
             gauge:
               dataPoints:
-                - asInt: "5601"
-                  attributes:
-                    - key: lock_type
-                      value:
-                        stringValue: relation
-                    - key: mode
-                      value:
-                        stringValue: AccessShareLock
-                    - key: relation
-                      value:
-                        stringValue: pg_class
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
                 - asInt: "2"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: ""
                     - key: lock_type
                       value:
                         stringValue: relation
@@ -897,8 +887,91 @@ resourceMetrics:
                         stringValue: pg_database
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+                - asInt: "5601"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: open
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_class
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "3601"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: open
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_locks
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "5600"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_class
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "3600"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_locks
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "5602"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: telemetry
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_class
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "3602"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: telemetry
                     - key: lock_type
                       value:
                         stringValue: relation

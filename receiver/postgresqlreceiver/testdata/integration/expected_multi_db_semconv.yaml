@@ -17,7 +17,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1323"
+                - asInt: "330"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -114,14 +114,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "4729"
+                - asInt: "2361"
                   attributes:
                     - key: db.namespace
                       value:
                         stringValue: otel
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "6777"
+                - asInt: "4384"
                   attributes:
                     - key: db.namespace
                       value:
@@ -135,14 +135,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "453"
+                - asInt: "190"
                   attributes:
                     - key: db.namespace
                       value:
                         stringValue: otel
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "539"
+                - asInt: "276"
                   attributes:
                     - key: db.namespace
                       value:
@@ -579,14 +579,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "12"
+                - asInt: "8"
                   attributes:
                     - key: db.namespace
                       value:
                         stringValue: otel
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "16"
+                - asInt: "12"
                   attributes:
                     - key: db.namespace
                       value:
@@ -617,6 +617,9 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
                     - key: lock_type
                       value:
                         stringValue: relation
@@ -630,6 +633,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
                     - key: lock_type
                       value:
                         stringValue: relation
@@ -643,6 +649,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
                     - key: lock_type
                       value:
                         stringValue: relation
@@ -656,6 +665,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
                     - key: lock_type
                       value:
                         stringValue: relation
@@ -669,6 +681,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
                     - key: lock_type
                       value:
                         stringValue: relation
@@ -682,6 +697,89 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_class
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_class_oid_index
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_class_relname_nsp_index
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_class_tblspc_relfilenode_index
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_locks
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
                     - key: lock_type
                       value:
                         stringValue: relation
@@ -700,14 +798,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "8180271"
+                - asInt: "8028675"
                   attributes:
                     - key: db.namespace
                       value:
                         stringValue: otel
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "8245807"
+                - asInt: "8094211"
                   attributes:
                     - key: db.namespace
                       value:
@@ -1478,14 +1576,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2278"
+                - asInt: "1028"
                   attributes:
                     - key: db.namespace
                       value:
                         stringValue: otel
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "3129"
+                - asInt: "1866"
                   attributes:
                     - key: db.namespace
                       value:
@@ -1520,14 +1618,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "7708"
+                - asInt: "1112"
                   attributes:
                     - key: db.namespace
                       value:
                         stringValue: otel
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "8610"
+                - asInt: "1983"
                   attributes:
                     - key: db.namespace
                       value:

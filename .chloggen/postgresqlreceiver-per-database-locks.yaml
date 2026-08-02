@@ -21,6 +21,11 @@ subtext: |
   instance-level resource without `postgresql.database.name`. Lock data points for database-local relations
   are now emitted on the corresponding per-database resource with the `postgresql.database.name` resource
   attribute. Locks on shared system catalogs (e.g. `pg_database`) are reported once at the instance level.
+  When the `receiver.postgresql.useOTelSemconv` feature gate is enabled there is a single server-level
+  resource, so the data points instead carry a `db.namespace` attribute to identify the database. Without it
+  relations that exist in more than one database (any system catalog, or user tables sharing a name) would
+  collapse into a single series. Locks on shared system catalogs carry an empty `db.namespace`, since they
+  are server-scoped rather than database-scoped.
   The lock count now uses `COUNT(*)` instead of `COUNT(pid)`, so locks held by prepared transactions
   (which have a NULL `pid` in `pg_locks`) are counted instead of being reported as zero.
   The metric is disabled by default and has development stability, so no feature gate is provided for this
