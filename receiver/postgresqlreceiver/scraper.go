@@ -150,6 +150,7 @@ func metricsBuilderConfigForFeatureGate(config metadata.MetricsBuilderConfig, us
 	metrics.PostgresqlBlksRead.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlBlksRead.EnabledAttributes)
 	metrics.PostgresqlBlocksRead.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlBlocksRead.EnabledAttributes)
 	metrics.PostgresqlCommits.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlCommits.EnabledAttributes)
+	metrics.PostgresqlDatabaseLocks.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlDatabaseLocks.EnabledAttributes)
 	metrics.PostgresqlDbSize.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlDbSize.EnabledAttributes)
 	metrics.PostgresqlDeadlocks.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlDeadlocks.EnabledAttributes)
 	metrics.PostgresqlFunctionCalls.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlFunctionCalls.EnabledAttributes)
@@ -838,6 +839,7 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	p.mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(now, bgStats.maxWritten)
 }
 
+// collectDatabaseLocks collects the locks on relations local to the connected database
 func (p *postgreSQLScraper) collectDatabaseLocks(
 	ctx context.Context,
 	now pcommon.Timestamp,
@@ -852,7 +854,7 @@ func (p *postgreSQLScraper) collectDatabaseLocks(
 		return
 	}
 	for _, dbLock := range dbLocks {
-		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType)
+		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType, database)
 	}
 }
 
@@ -868,8 +870,9 @@ func (p *postgreSQLScraper) collectSharedRelationLocks(
 		errs.addPartial(err)
 		return
 	}
+	// Shared relations (pg_locks.database = 0) are server-scoped, so db.namespace is empty.
 	for _, dbLock := range sharedLocks {
-		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType)
+		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType, "")
 	}
 }
 

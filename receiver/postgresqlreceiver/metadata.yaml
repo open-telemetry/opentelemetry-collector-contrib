@@ -461,7 +461,7 @@ metrics:
     unit: "{lock}"
     gauge:
       value_type: int
-    attributes: [relation, mode, lock_type]
+    attributes: [relation, mode, lock_type, db.namespace]
   postgresql.db_size:
     enabled: true
     description: The database disk usage.

@@ -395,7 +395,7 @@ var MetricsInfo = metricsInfo{
 	},
 	PostgresqlDatabaseLocks: metricInfo{
 		Name:       "postgresql.database.locks",
-		Attributes: []string{"relation", "mode", "lock_type"},
+		Attributes: []string{"relation", "mode", "lock_type", "db.namespace"},
 	},
 	PostgresqlDbSize: metricInfo{
 		Name:       "postgresql.db_size",
@@ -1521,7 +1521,7 @@ func (m *metricPostgresqlDatabaseLocks) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricPostgresqlDatabaseLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, relationAttributeValue string, modeAttributeValue string, lockTypeAttributeValue string) {
+func (m *metricPostgresqlDatabaseLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, relationAttributeValue string, modeAttributeValue string, lockTypeAttributeValue string, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1537,6 +1537,9 @@ func (m *metricPostgresqlDatabaseLocks) recordDataPoint(start pcommon.Timestamp,
 	}
 	if slices.Contains(m.config.EnabledAttributes, PostgresqlDatabaseLocksMetricAttributeKeyLockType) {
 		dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlDatabaseLocksMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 
 	var s string
@@ -4622,8 +4625,8 @@ func (mb *MetricsBuilder) RecordPostgresqlDatabaseCountDataPoint(ts pcommon.Time
 }
 
 // RecordPostgresqlDatabaseLocksDataPoint adds a data point to postgresql.database.locks metric.
-func (mb *MetricsBuilder) RecordPostgresqlDatabaseLocksDataPoint(ts pcommon.Timestamp, val int64, relationAttributeValue string, modeAttributeValue string, lockTypeAttributeValue string) {
-	mb.metricPostgresqlDatabaseLocks.recordDataPoint(mb.startTime, ts, val, relationAttributeValue, modeAttributeValue, lockTypeAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlDatabaseLocksDataPoint(ts pcommon.Timestamp, val int64, relationAttributeValue string, modeAttributeValue string, lockTypeAttributeValue string, dbNamespaceAttributeValue string) {
+	mb.metricPostgresqlDatabaseLocks.recordDataPoint(mb.startTime, ts, val, relationAttributeValue, modeAttributeValue, lockTypeAttributeValue, dbNamespaceAttributeValue)
 }
 
 // RecordPostgresqlDbSizeDataPoint adds a data point to postgresql.db_size metric.
