@@ -23,6 +23,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
+// shutdownSignalResendInterval is how often Stop re-sends the shutdown signal while
+// waiting for the Agent to exit. An Agent that received the signal shuts down in
+// well under this interval, so a healthy shutdown never sees a second send.
+const shutdownSignalResendInterval = time.Second
+
 // Commander can start/stop/restart the Agent executable and also watch for a signal
 // for the Agent process to finish.
 type Commander struct {
@@ -449,6 +454,30 @@ func (c *Commander) Stop(ctx context.Context) error {
 	}
 
 	waitCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+
+	// The Agent does not necessarily act on the shutdown signal, because Stop may be
+	// called within milliseconds of starting it - for example to apply a remote config
+	// that arrived just after startup - while it is still coming up. Shutdown signals
+	// are not queued for later: on Windows the signal is a console control event, and
+	// one aimed at a process that has only just been created may never reach it. A
+	// single send can therefore be lost outright, leaving the Agent running until it
+	// is killed. Re-send until the process actually exits.
+	go func() {
+		ticker := time.NewTicker(shutdownSignalResendInterval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-waitCtx.Done():
+				return
+			case <-ticker.C:
+				if err := sendShutdownSignal(c.cmd.Process); err != nil {
+					c.logger.Debug("Could not re-send shutdown signal to agent process",
+						zap.Int("pid", pid), zap.Error(err))
+				}
+			}
+		}
+	}()
 
 	// Setup a goroutine to wait a while for process to finish and send kill signal
 	// to the process if it doesn't finish.
