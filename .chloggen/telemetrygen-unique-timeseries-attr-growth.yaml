@@ -1,0 +1,17 @@
+change_type: bug_fix
+
+component: cmd/telemetrygen
+
+note: Stop accumulating attributes across data points when `--unique-timeseries` is set
+
+issues: [49950]
+
+subtext: |
+  The timebox attribute was appended to the shared signal attribute slice on every
+  iteration, so the slice grew by one attribute per data point and the cost of building
+  each data point grew with it. Generation rate decayed steadily over a run. The slice is
+  now rebuilt per data point, which also stops the worker from mutating the caller's slice.
+  Exponential histogram data points now also carry the `--load-size` attributes, matching
+  the other metric types.
+
+change_logs: [user]

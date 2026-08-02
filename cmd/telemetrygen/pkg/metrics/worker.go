@@ -101,19 +101,24 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 
 	startTime := w.clock.Now()
 
+	// Reused across iterations and rebuilt from signalAttrs every time. Appending to
+	// signalAttrs directly would grow it by one attribute per data point and mutate
+	// the caller's slice.
+	attrs := make([]attribute.KeyValue, 0, len(signalAttrs)+1+w.loadSize)
+
 	var i int64
 	for w.running.Load() {
+		attrs = append(attrs[:0], signalAttrs...)
 		if w.enforceUnique {
-			signalAttrs = append(signalAttrs, tb.getAttribute())
+			attrs = append(attrs, tb.getAttribute())
 		}
 
 		// Add load size attributes if specified
-		loadAttrs := signalAttrs
-		if w.loadSize > 0 {
-			for j := 0; j < w.loadSize; j++ {
-				loadAttrs = append(loadAttrs, config.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
-			}
+		for j := 0; j < w.loadSize; j++ {
+			attrs = append(attrs, config.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
 		}
+		attrSet := attribute.NewSet(attrs...)
+
 		var metrics []metricdata.Metrics
 		now := w.clock.Now()
 		if w.aggregationTemporality.AsTemporality() == metricdata.DeltaTemporality {
@@ -129,7 +134,7 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 						{
 							Time:       now,
 							Value:      i,
-							Attributes: attribute.NewSet(loadAttrs...),
+							Attributes: attrSet,
 							Exemplars:  w.exemplars,
 						},
 					},
@@ -146,7 +151,7 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 							StartTime:  startTime,
 							Time:       now,
 							Value:      i,
-							Attributes: attribute.NewSet(loadAttrs...),
+							Attributes: attrSet,
 							Exemplars:  w.exemplars,
 						},
 					},
@@ -168,7 +173,7 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 						{
 							StartTime:  startTime,
 							Time:       now,
-							Attributes: attribute.NewSet(loadAttrs...),
+							Attributes: attrSet,
 							Exemplars:  w.exemplars,
 							Count:      totalCount,
 							Sum:        sum,
@@ -195,7 +200,7 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 			dp := &metricdata.ExponentialHistogramDataPoint[int64]{
 				StartTime:  startTime,
 				Time:       now,
-				Attributes: attribute.NewSet(signalAttrs...),
+				Attributes: attrSet,
 				Exemplars:  w.exemplars,
 			}
 			expoHistToSDKExponentialDataPoint(hist, dp)

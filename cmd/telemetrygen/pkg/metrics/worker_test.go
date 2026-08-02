@@ -647,6 +647,60 @@ func TestUniqueSumTimeseries(t *testing.T) {
 	}
 }
 
+// TestUniqueTimeseriesDoesNotAccumulateAttributes covers the regression where
+// simulateMetrics appended the timebox attribute to signalAttrs itself, growing the
+// slice by one attribute per data point and mutating the caller's backing array.
+func TestUniqueTimeseriesDoesNotAccumulateAttributes(t *testing.T) {
+	const qty = 20
+
+	m := &mockExporter{}
+	running := &atomic.Bool{}
+	running.Store(true)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	tb := newTimeBox(true, time.Hour)
+	defer tb.shutdown()
+
+	w := worker{
+		metricName:             "test_metric",
+		metricType:             MetricTypeSum,
+		aggregationTemporality: AggregationTemporality(metricdata.DeltaTemporality),
+		numMetrics:             qty,
+		enforceUnique:          true,
+		running:                running,
+		limitPerSecond:         rate.Inf,
+		logger:                 zap.NewNop(),
+		wg:                     wg,
+		clock:                  &realClock{},
+	}
+
+	// Spare capacity makes any in-place append visible to the caller.
+	signalAttrs := make([]attribute.KeyValue, 1, 8)
+	signalAttrs[0] = attribute.String(telemetryAttrKeyOne, telemetryAttrValueOne)
+
+	w.simulateMetrics(resource.Default(), m, signalAttrs, tb)
+	wg.Wait()
+
+	require.Len(t, m.rms, qty)
+
+	// simulateMetrics must not append into the spare capacity of the caller's slice.
+	for i, kv := range signalAttrs[:cap(signalAttrs)][1:] {
+		assert.Empty(t, string(kv.Key), "signalAttrs backing array written at index %d", i+1)
+	}
+
+	seen := make(map[int64]bool, qty)
+	for i, rm := range m.rms {
+		attrs := rm.ScopeMetrics[0].Metrics[0].Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
+		assert.Equal(t, 2, attrs.Len(), "data point %d should carry the signal attribute and one timebox attribute", i)
+
+		value, exist := attrs.Value(timeBoxAttributeName)
+		require.True(t, exist, "data point %d should have the timebox attribute", i)
+		assert.False(t, seen[value.AsInt64()], "timebox value %d reused", value.AsInt64())
+		seen[value.AsInt64()] = true
+	}
+}
+
 // TestBatching tests the basic batching functionality
 func TestBatching(t *testing.T) {
 	mockExp := &mockExporter{}
