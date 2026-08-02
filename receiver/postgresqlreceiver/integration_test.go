@@ -222,7 +222,7 @@ func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
 	_, err = tx.Exec("LOCK TABLE table1 IN ACCESS EXCLUSIVE MODE")
 	require.NoError(t, err)
 
-	clientDB, err := getDB(postgreSQLConfig{
+	clientDB, err := getDB(t.Context(), postgreSQLConfig{
 		username: "otelu",
 		password: "otelp",
 		address: confignet.AddrConfig{
@@ -292,7 +292,7 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 	_, err = tx.Exec("REINDEX INDEX table1_pkey")
 	require.NoError(t, err)
 
-	clientDB, err := getDB(postgreSQLConfig{
+	clientDB, err := getDB(t.Context(), postgreSQLConfig{
 		username: "otelu",
 		password: "otelp",
 		address: confignet.AddrConfig{

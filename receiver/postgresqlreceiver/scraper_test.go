@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -1460,8 +1461,11 @@ func (mockSimpleClientFactory) close() error {
 	return nil
 }
 
+// setCredentialProvider implements postgreSQLClientFactory (no-op for the mock).
+func (mockSimpleClientFactory) setCredentialProvider(dbauth.Provider) {}
+
 // getClient implements postgreSQLClientFactory.
-func (m mockSimpleClientFactory) getClient(string) (client, error) {
+func (m mockSimpleClientFactory) getClient(context.Context, string) (client, error) {
 	return &postgreSQLClient{
 		client:  m.db,
 		closeFn: m.close,
@@ -1570,8 +1574,8 @@ func (m *mockClient) getVersion(_ context.Context) (string, error) {
 	return args.String(0), args.Error(1)
 }
 
-func (m *mockClientFactory) getClient(database string) (client, error) {
-	args := m.Called(database)
+func (m *mockClientFactory) getClient(ctx context.Context, database string) (client, error) {
+	args := m.Called(ctx, database)
 	return args.Get(0).(client), args.Error(1)
 }
 
@@ -1580,15 +1584,17 @@ func (m *mockClientFactory) close() error {
 	return args.Error(0)
 }
 
+func (*mockClientFactory) setCredentialProvider(dbauth.Provider) {}
+
 func (m *mockClientFactory) initMocks(databases []string) {
 	listClient := new(mockClient)
 	listClient.initMocks(defaultPostgreSQLDatabase, "public", databases, 0)
-	m.On("getClient", defaultPostgreSQLDatabase).Return(listClient, nil)
+	m.On("getClient", mock.Anything, defaultPostgreSQLDatabase).Return(listClient, nil)
 
 	for index, db := range databases {
 		client := new(mockClient)
 		client.initMocks(db, "public", databases, index)
-		m.On("getClient", db).Return(client, nil)
+		m.On("getClient", mock.Anything, db).Return(client, nil)
 	}
 }
 
