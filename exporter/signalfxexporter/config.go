@@ -98,7 +98,7 @@ type Config struct {
 	// Dimension update client configuration used for metadata updates.
 	DimensionClient DimensionClientConfig `mapstructure:"dimension_client"`
 
-	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
+	AccessTokenPassthroughConfig splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
 	DisableDefaultTranslationRules bool `mapstructure:"disable_default_translation_rules"`
 

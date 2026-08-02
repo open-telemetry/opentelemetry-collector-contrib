@@ -40,9 +40,9 @@ func NewFactory() receiver.Factory {
 }
 
 type Config struct {
-	fileconsumer.Config `mapstructure:",squash"`
-	StorageID           *component.ID `mapstructure:"storage"`
-	ReplayFile          bool          `mapstructure:"replay_file"`
+	Config     fileconsumer.Config `mapstructure:",squash"`
+	StorageID  *component.ID       `mapstructure:"storage"`
+	ReplayFile bool                `mapstructure:"replay_file"`
 }
 
 func createDefaultConfig() component.Config {
@@ -84,7 +84,7 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
 		for _, token := range tokens {
 			ctx = obsrecv.StartLogsOp(ctx)
 			var l plog.Logs
@@ -134,7 +134,7 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
 		for _, token := range tokens {
 			ctx = obsrecv.StartMetricsOp(ctx)
 			var m pmetric.Metrics
@@ -183,7 +183,7 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
 		for _, token := range tokens {
 			ctx = obsrecv.StartTracesOp(ctx)
 			var t ptrace.Traces
@@ -224,7 +224,7 @@ func createProfilesReceiver(_ context.Context, settings receiver.Settings, confi
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
 		for _, token := range tokens {
 			p, _ := profilesUnmarshaler.UnmarshalProfiles(token)
 			// TODO Append token.Attributes

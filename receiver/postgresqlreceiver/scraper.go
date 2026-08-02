@@ -21,6 +21,7 @@ import (
 	"github.com/google/uuid"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -196,7 +197,7 @@ type dbRetrieval struct {
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
 func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	databases := p.config.Databases
-	listClient, err := p.clientFactory.getClient(defaultPostgreSQLDatabase)
+	listClient, err := p.clientFactory.getClient(ctx, defaultPostgreSQLDatabase)
 	if err != nil {
 		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
 		return pmetric.NewMetrics(), err
@@ -232,7 +233,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
 	for _, database := range databases {
-		dbClient, dbErr := p.clientFactory.getClient(database)
+		dbClient, dbErr := p.clientFactory.getClient(ctx, database)
 		if dbErr != nil {
 			errs.add(dbErr)
 			p.logger.Error("Failed to initialize connection to postgres", zap.String("database", database), zap.Error(dbErr))
@@ -263,7 +264,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 }
 
 func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQuery int64) (plog.Logs, error) {
-	dbClient, err := p.clientFactory.getClient(defaultPostgreSQLDatabase)
+	dbClient, err := p.clientFactory.getClient(ctx, defaultPostgreSQLDatabase)
 	if err != nil {
 		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
 		return plog.NewLogs(), err
@@ -383,7 +384,7 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit, topNQuery, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger, collectionTime time.Time) {
 	timestamp := pcommon.NewTimestampFromTime(collectionTime)
 
-	defaultDbClient, err := clientFactory.getClient(defaultPostgreSQLDatabase)
+	defaultDbClient, err := clientFactory.getClient(ctx, defaultPostgreSQLDatabase)
 	if err != nil {
 		logger.Error("failed to create db client for default postgresql database")
 		mux.addPartial(err)
@@ -479,7 +480,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
 		if !ok && explained < maxExplainEachInterval {
 			database := item.Value[string(semconv.DBNamespaceKey)].(string)
-			dbClient, err := clientFactory.getClient(database)
+			dbClient, err := clientFactory.getClient(ctx, database)
 			if err == nil {
 				plan, err = dbClient.explainQuery(ctx, rawQuery, queryID, logger)
 				if err != nil {
@@ -520,6 +521,20 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 	}
 }
 
+// start resolves the credential provider (if a db_auth block is
+// configured) from the host extension map — only available now, at Start — and
+// injects it into the client factory so connections are built with it.
+func (p *postgreSQLScraper) start(_ context.Context, host component.Host) error {
+	provider, err := p.config.resolveCredentialProvider(host.GetExtensions())
+	if err != nil {
+		return err
+	}
+	if provider != nil {
+		p.clientFactory.setCredentialProvider(provider)
+	}
+	return nil
+}
+
 func (p *postgreSQLScraper) shutdown(_ context.Context) error {
 	if p.clientFactory != nil {
 		p.clientFactory.close()
@@ -544,7 +559,7 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 	// pg_stat_database_conflicts is queried separately and only when the metric is
 	// enabled, since the counters are only populated on standby servers and would
 	// otherwise add an unnecessary query on every scrape.
-	if p.config.Metrics.PostgresqlQueryConflicts.Enabled {
+	if p.config.MetricsBuilderConfig.Metrics.PostgresqlQueryConflicts.Enabled {
 		wg.Add(1)
 		go p.retrieveDatabaseConflicts(ctx, wg, listClient, databases, r, errs)
 	}
@@ -552,7 +567,7 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 	// pg_stat_statements is queried separately and only when the metric is enabled, since it
 	// requires the pg_stat_statements extension and would otherwise add an unnecessary query
 	// (that errors when the extension is absent) on every scrape.
-	if p.config.Metrics.PostgresqlQueryExecutionTime.Enabled {
+	if p.config.MetricsBuilderConfig.Metrics.PostgresqlQueryExecutionTime.Enabled {
 		wg.Add(1)
 		go p.retrieveExecutionTime(ctx, wg, listClient, databases, r, errs)
 	}
@@ -753,9 +768,9 @@ func (p *postgreSQLScraper) recordVectorSearchStats(
 ) bool {
 	// All metrics are opt-in and derived from the same pg_stat_statements query, so skip
 	// the collection entirely unless at least one of them is enabled.
-	if !p.config.Metrics.PostgresqlVectorSearchCalls.Enabled &&
-		!p.config.Metrics.PostgresqlVectorSearchDuration.Enabled &&
-		!p.config.Metrics.PostgresqlVectorSearchRowsReturned.Enabled {
+	if !p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchCalls.Enabled &&
+		!p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchDuration.Enabled &&
+		!p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchRowsReturned.Enabled {
 		return false
 	}
 
@@ -795,8 +810,8 @@ func (p *postgreSQLScraper) recordVectorInsertStats(
 ) bool {
 	// Both metrics are opt-in and derived from the same pg_stat_statements query, so skip
 	// the collection entirely unless at least one of them is enabled.
-	if !p.config.Metrics.PostgresqlVectorInsertRows.Enabled &&
-		!p.config.Metrics.PostgresqlVectorInsertDuration.Enabled {
+	if !p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorInsertRows.Enabled &&
+		!p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorInsertDuration.Enabled {
 		return false
 	}
 

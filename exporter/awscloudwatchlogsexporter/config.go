@@ -48,7 +48,7 @@ type Config struct {
 
 	logger *zap.Logger
 
-	awsutil.AWSSessionSettings `mapstructure:",squash"`
+	AWSSessionSettings awsutil.AWSSessionSettings `mapstructure:",squash"`
 
 	// Export raw log string instead of log wrapper
 	// Required for emf logs
