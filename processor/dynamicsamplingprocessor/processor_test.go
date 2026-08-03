@@ -415,6 +415,45 @@ func TestProcessor_EvictionWithinSingleBatch(t *testing.T) {
 	p.mu.Unlock()
 }
 
+func TestProcessor_ArrivalListCompaction(t *testing.T) {
+	// During normal operation (buffer never full) eviction never pops the
+	// arrival list, so entries for decided traces must be reclaimed by
+	// compaction or the list grows forever.
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  5 * time.Millisecond,
+		DecisionDelay: 5 * time.Millisecond,
+		NumTraces:     10_000,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	const total = 2000
+	for i := range total {
+		var id pcommon.TraceID
+		id[0] = byte(i)
+		id[1] = byte(i >> 8)
+		id[15] = 0x77
+		require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(id, ptrace.StatusCodeUnset)))
+	}
+	// Wait for the whole population to be decided through the normal timer
+	// flow, then run one more batch so the end-of-batch compaction check
+	// observes the (now almost entirely stale) arrival list.
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == total
+	}, 30*time.Second, 10*time.Millisecond)
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID([16]byte{0xEE}), ptrace.StatusCodeUnset)))
+
+	p.mu.Lock()
+	arrivalLen := len(p.arrival)
+	live := len(p.traces)
+	p.mu.Unlock()
+	assert.LessOrEqual(t, arrivalLen, arrivalCompactionFactor*live+arrivalCompactionFloor,
+		"arrival list must be compacted once decided-trace entries dominate")
+}
+
 func TestProcessor_EvictionMetrics(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() {

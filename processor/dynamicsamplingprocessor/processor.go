@@ -374,6 +374,14 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 		evicted = append(evicted, ev)
 	}
 
+	// The arrival list is only consumed by eviction, so during normal
+	// operation (buffer never full) entries for decided traces would
+	// accumulate forever. Compact it once stale entries dominate; amortized
+	// O(1) per trace.
+	if len(p.arrival) > arrivalCompactionFactor*len(p.traces)+arrivalCompactionFloor {
+		p.compactArrivalLocked()
+	}
+
 	active := len(p.traces)
 	stopped := p.stopped
 	p.mu.Unlock()
@@ -430,6 +438,29 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 		}
 	}
 	return nil
+}
+
+// Compaction tuning for the arrival list. Not configurable: entries are
+// 16-byte traceIDs, so the factor bounds the list's memory at a fraction of a
+// percent of the buffered span data it shadows, and the floor only prevents
+// thrashing on a near-empty buffer. Compaction cost is amortized O(1) per
+// trace at any factor > 1.
+const (
+	arrivalCompactionFactor = 2
+	arrivalCompactionFloor  = 1024
+)
+
+// compactArrivalLocked rebuilds the arrival order in place, dropping ids
+// whose traces have already been decided, preserving first-seen order for the
+// rest. The caller must hold p.mu.
+func (p *dynamicSamplingProcessor) compactArrivalLocked() {
+	live := p.arrival[:0]
+	for _, id := range p.arrival {
+		if _, ok := p.traces[id]; ok {
+			live = append(live, id)
+		}
+	}
+	p.arrival = live
 }
 
 // evictOldestLocked removes and returns the oldest pending trace, canceling
