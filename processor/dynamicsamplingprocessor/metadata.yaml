@@ -27,7 +27,7 @@ telemetry:
       stability: development
     processor_dynamic_sampling_decision_triggers:
       enabled: true
-      description: Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout).
+      description: Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction).
       unit: "{decisions}"
       sum:
         value_type: int
@@ -66,7 +66,7 @@ telemetry:
       stability: development
     processor_dynamic_sampling_traces_evicted:
       enabled: true
-      description: Number of traces evicted from the buffer before a decision could be made.
+      description: Number of traces evicted from the buffer due to num_traces pressure. Evicted traces are decided immediately per the configured eviction policy.
       unit: "{traces}"
       sum:
         value_type: int

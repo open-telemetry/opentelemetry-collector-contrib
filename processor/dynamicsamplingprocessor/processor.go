@@ -47,7 +47,13 @@ type triggerSource string
 const (
 	triggerRootSpan     triggerSource = "root_span"
 	triggerTraceTimeout triggerSource = "trace_timeout"
+	triggerEviction     triggerSource = "eviction"
 )
+
+// evictionRuleLabel is the sentinel `rule` label used on decision metrics for
+// traces decided by the probabilistic eviction policy, which bypasses rule
+// evaluation entirely. Same convention as rootSpanConditionRuleLabel.
+const evictionRuleLabel = "_eviction"
 
 // pendingTrace holds spans accumulated for a single trace plus its arrival
 // metadata. Access is guarded by dynamicSamplingProcessor.mu.
@@ -75,6 +81,11 @@ type dynamicSamplingProcessor struct {
 	rules   []*rule
 	stopped bool
 	cache   *decisionCache
+	// arrival records traceIDs in first-seen order so eviction can pick the
+	// oldest pending trace. Entries are appended exactly once per trace and
+	// lazily skipped when the trace has already been decided (popped ids are
+	// checked against the traces map). Guarded by mu.
+	arrival []pcommon.TraceID
 
 	rootSpanCond         *ottl.Condition[*ottlspan.TransformContext]
 	rootSpanCondEvalErrs metric.Int64Counter
@@ -272,6 +283,7 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 	}
 	var lateForwards []lateSampled
 	var newTraces []pcommon.TraceID
+	var evicted []*pendingTrace
 	triggered := make(map[pcommon.TraceID]struct{})
 
 	p.mu.Lock()
@@ -309,18 +321,12 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 				}
 				pt, exists := p.traces[id]
 				if !exists {
-					if len(p.traces) >= p.cfg.NumTraces {
-						for evictID := range p.traces {
-							delete(p.traces, evictID)
-							p.telemetry.ProcessorDynamicSamplingTracesEvicted.Add(ctx, 1)
-							break
-						}
-					}
 					pt = &pendingTrace{
 						traceID:   id,
 						firstSeen: now,
 					}
 					p.traces[id] = pt
+					p.arrival = append(p.arrival, id)
 					newTraces = append(newTraces, id)
 				}
 				pt.spanCount++
@@ -354,6 +360,20 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 		}
 	}
 
+	// Enforce the buffer cap after the whole batch is attached, so an evicted
+	// trace always carries every span seen so far (evicting mid-batch would
+	// decide it without the spans still sitting in this batch's buckets, and
+	// a trace evicted then re-seen within one batch would split in two). The
+	// buffer may transiently exceed NumTraces by the number of new traces in
+	// a single batch.
+	for len(p.traces) > p.cfg.NumTraces {
+		ev := p.evictOldestLocked(ctx)
+		if ev == nil {
+			break
+		}
+		evicted = append(evicted, ev)
+	}
+
 	active := len(p.traces)
 	stopped := p.stopped
 	p.mu.Unlock()
@@ -374,7 +394,13 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 			p.mu.Unlock()
 		})
 		p.mu.Lock()
-		if p.stopped {
+		// Skip storing the timer if we're shutting down, if the trace was
+		// evicted within this same batch (created and then displaced before
+		// its timer was armed), or if a timer already exists (trace evicted
+		// and re-created within one batch lists the id in newTraces twice).
+		_, stillPending := p.traces[traceID]
+		_, hasTimer := p.timers[traceID]
+		if p.stopped || !stillPending || hasTimer {
 			if timer.Stop() {
 				p.wg.Done()
 			}
@@ -386,9 +412,15 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 	}
 
 	if stopped {
-		// Drop late forwards if we're shutting down rather than push into the
-		// downstream consumer.
+		// Drop late forwards and evicted traces if we're shutting down rather
+		// than push into the downstream consumer.
 		return nil
+	}
+
+	// Decide evicted traces outside the lock. Bounded work: at most one
+	// eviction per new trace in the batch.
+	for _, pt := range evicted {
+		p.decideEvicted(ctx, pt)
 	}
 
 	for _, lf := range lateForwards {
@@ -396,6 +428,36 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 		if err := p.next.ConsumeTraces(ctx, lf.td); err != nil {
 			p.logger.Error("forwarding late span failed", zap.Error(err), zap.Stringer("traceID", lf.traceID))
 		}
+	}
+	return nil
+}
+
+// evictOldestLocked removes and returns the oldest pending trace, canceling
+// its trace_timeout timer. Returns nil if nothing is evictable. The caller
+// must hold p.mu.
+func (p *dynamicSamplingProcessor) evictOldestLocked(ctx context.Context) *pendingTrace {
+	for len(p.arrival) > 0 {
+		id := p.arrival[0]
+		p.arrival = p.arrival[1:]
+		// Reclaim the backing array once the live window is a small fraction
+		// of it, so popped head entries don't pin memory indefinitely.
+		if cap(p.arrival) > 1024 && len(p.arrival)*4 < cap(p.arrival) {
+			p.arrival = append([]pcommon.TraceID(nil), p.arrival...)
+		}
+		pt, ok := p.traces[id]
+		if !ok {
+			// Already decided; its arrival entry was left behind by design.
+			continue
+		}
+		delete(p.traces, id)
+		if t, ok := p.timers[id]; ok {
+			if t.Stop() {
+				p.wg.Done()
+			}
+			delete(p.timers, id)
+		}
+		p.telemetry.ProcessorDynamicSamplingTracesEvicted.Add(ctx, 1)
+		return pt
 	}
 	return nil
 }
@@ -493,18 +555,25 @@ func (p *dynamicSamplingProcessor) decide(id pcommon.TraceID) {
 	delete(p.timers, id)
 	p.mu.Unlock()
 
+	p.decideTrace(ctx, pt)
+}
+
+// decideTrace evaluates rules for an already-popped pending trace and either
+// forwards or drops its spans. Shared by the timer-driven decide path and the
+// evaluate eviction policy.
+func (p *dynamicSamplingProcessor) decideTrace(ctx context.Context, pt *pendingTrace) {
 	matchedRule, rate := p.evaluate(ctx, pt)
 	if matchedRule == nil {
 		// No matching rule and no catch-all: drop the trace.
 		p.telemetry.ProcessorDynamicSamplingTracesDropped.Add(ctx, 1,
 			metric.WithAttributes(attribute.String("rule", "unmatched")))
-		p.cache.recordNotSampled(id)
+		p.cache.recordNotSampled(pt.traceID)
 		return
 	}
 
 	ruleAttr := metric.WithAttributes(attribute.String("rule", matchedRule.name))
 
-	upstreamTh, randomness := p.readIncomingSampling(ctx, pt.spans, id)
+	upstreamTh, randomness := p.readIncomingSampling(ctx, pt.spans, pt.traceID)
 	effectiveTh, err := effectiveThreshold(upstreamTh, rate)
 	if err != nil {
 		// The error path is unreachable in practice (rate is clamped to >= 1
@@ -512,25 +581,66 @@ func (p *dynamicSamplingProcessor) decide(id pcommon.TraceID) {
 		// falling back to the upstream threshold preserves whatever decision
 		// upstream already made rather than dropping the trace outright.
 		p.logger.Debug("effective threshold calculation failed, falling back to upstream",
-			zap.Error(err), zap.Stringer("traceID", id))
+			zap.Error(err), zap.Stringer("traceID", pt.traceID))
 		effectiveTh = upstreamTh
 	}
+	p.finishDecision(ctx, pt, matchedRule.name, ruleAttr, effectiveTh, randomness)
+}
+
+// finishDecision applies an already-composed effective threshold: records the
+// sample-rate histogram, performs the keep/drop check, updates the decision
+// cache, and forwards sampled traces. Shared by every decision path.
+func (p *dynamicSamplingProcessor) finishDecision(ctx context.Context, pt *pendingTrace, ruleName string, ruleAttr metric.MeasurementOption, effectiveTh sampling.Threshold, randomness sampling.Randomness) {
 	// Record the effective (post-composition) rate rather than the raw sampler
 	// rate: under equalizing, an upstream stricter than the sampler's rate caps
 	// what we emit, and the histogram should reflect that.
 	p.telemetry.ProcessorDynamicSamplingDecisionSampleRate.Record(ctx, int64(effectiveTh.AdjustedCount()), ruleAttr)
 	if !effectiveTh.ShouldSample(randomness) {
 		p.telemetry.ProcessorDynamicSamplingTracesDropped.Add(ctx, 1, ruleAttr)
-		p.cache.recordNotSampled(id)
+		p.cache.recordNotSampled(pt.traceID)
 		return
 	}
 
-	p.cache.recordSampled(id, cachedDecision{ruleName: matchedRule.name, threshold: effectiveTh})
-	annotated := p.assembleTrace(ctx, pt.spans, matchedRule.name, effectiveTh)
+	p.cache.recordSampled(pt.traceID, cachedDecision{ruleName: ruleName, threshold: effectiveTh})
+	annotated := p.assembleTrace(ctx, pt.spans, ruleName, effectiveTh)
 	p.telemetry.ProcessorDynamicSamplingTracesSampled.Add(ctx, 1, ruleAttr)
 	if err := p.next.ConsumeTraces(ctx, annotated); err != nil {
-		p.logger.Error("forwarding sampled trace failed", zap.Error(err), zap.Stringer("traceID", id))
+		p.logger.Error("forwarding sampled trace failed", zap.Error(err), zap.Stringer("traceID", pt.traceID))
 	}
+}
+
+// decideEvicted decides a trace displaced by buffer pressure, per the
+// configured eviction policy. The trace may be incomplete; decision_delay is
+// deliberately skipped because there is no room to wait.
+func (p *dynamicSamplingProcessor) decideEvicted(ctx context.Context, pt *pendingTrace) {
+	p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1,
+		metric.WithAttributes(attribute.String("trigger", string(triggerEviction))))
+	if p.cfg.Eviction.Policy == EvictionProbabilistic {
+		p.decideEvictedProbabilistic(ctx, pt)
+		return
+	}
+	p.decideTrace(ctx, pt)
+}
+
+// decideEvictedProbabilistic sheds an evicted trace with constant-time work:
+// no rule evaluation, just the configured probability composed with any
+// upstream threshold. Kept traces still carry a correct ot=th, so downstream
+// weighting remains accurate even under pressure.
+func (p *dynamicSamplingProcessor) decideEvictedProbabilistic(ctx context.Context, pt *pendingTrace) {
+	evAttr := metric.WithAttributes(attribute.String("rule", evictionRuleLabel))
+	upstreamTh, randomness := p.readIncomingSampling(ctx, pt.spans, pt.traceID)
+	effectiveTh := upstreamTh
+	if ours, err := sampling.ProbabilityToThreshold(p.cfg.Eviction.SamplingPercentage / 100); err == nil {
+		if !sampling.ThresholdGreater(upstreamTh, ours) {
+			effectiveTh = ours
+		}
+	} else {
+		// Unreachable with a validated config; fall back to the upstream
+		// threshold rather than dropping outright.
+		p.logger.Debug("eviction threshold calculation failed, falling back to upstream",
+			zap.Error(err), zap.Stringer("traceID", pt.traceID))
+	}
+	p.finishDecision(ctx, pt, evictionRuleLabel, evAttr, effectiveTh, randomness)
 }
 
 // evaluate returns the first matching rule and the sample rate it produced.
