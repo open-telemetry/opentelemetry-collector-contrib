@@ -27,7 +27,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.157.1-0.20260730171426-4aa1b2d9586b // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.157.1-0.20260803152855-18ed8fe814ea // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
