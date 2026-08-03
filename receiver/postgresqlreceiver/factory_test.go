@@ -82,7 +82,7 @@ func TestCreateMetricsStartsWithDBAuthProvider(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Username = "otel"
 	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_dbauth"))
-	cfg.InitialDelay = time.Hour
+	cfg.ControllerConfig.InitialDelay = time.Hour
 
 	metricsReceiver, err := factory.CreateMetrics(
 		t.Context(),
@@ -99,10 +99,10 @@ func TestCreateMetricsStartsWithDBAuthProvider(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	defaultCfg := createDefaultConfig().(*Config)
 	assert.Equal(t, int64(1000), defaultCfg.TopQueryCollection.MaxRowsPerQuery)
-	assert.Equal(t, int64(200), defaultCfg.TopNQuery)
-	assert.Equal(t, int64(1000), defaultCfg.MaxExplainEachInterval)
-	assert.Equal(t, 1000, defaultCfg.QueryPlanCacheSize)
-	assert.Equal(t, time.Hour, defaultCfg.QueryPlanCacheTTL)
+	assert.Equal(t, int64(200), defaultCfg.TopQueryCollection.TopNQuery)
+	assert.Equal(t, int64(1000), defaultCfg.TopQueryCollection.MaxExplainEachInterval)
+	assert.Equal(t, 1000, defaultCfg.TopQueryCollection.QueryPlanCacheSize)
+	assert.Equal(t, time.Hour, defaultCfg.TopQueryCollection.QueryPlanCacheTTL)
 
 	assert.Equal(t, int64(1000), defaultCfg.QuerySampleCollection.MaxRowsPerQuery)
 }
