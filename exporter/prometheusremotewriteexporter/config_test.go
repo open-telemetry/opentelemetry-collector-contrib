@@ -267,13 +267,6 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 	flatTimeout := 15 * time.Second
 	httpTimeout := 10 * time.Second
 
-	// Match createDefaultConfig(): confighttp defaults + PRW-specific overrides.
-	defaults := confighttp.NewDefaultClientConfig()
-	defaults.Endpoint = "http://some.url:9411/api/prom/push"
-	defaults.ReadBufferSize = 0
-	defaults.WriteBufferSize = 512 * 1024
-	defaults.Timeout = exporterhelper.NewDefaultTimeoutConfig().Timeout
-
 	testCases := []struct {
 		name                string
 		featureGateEnabled  bool
@@ -355,8 +348,8 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 				require.Equal(t, tc.wantExporterTimeout, cfg.TimeoutSettings.Timeout)
 			}
 			if tc.checkDefaults {
-				require.Equal(t, defaults.WriteBufferSize, cfg.HTTP.WriteBufferSize)
-				require.Equal(t, defaults.MaxIdleConns, cfg.HTTP.MaxIdleConns)
+				require.Equal(t, getDefaultHTTPClientConfig().WriteBufferSize, cfg.HTTP.WriteBufferSize)
+				require.Equal(t, getDefaultHTTPClientConfig().MaxIdleConns, cfg.HTTP.MaxIdleConns)
 			}
 		})
 	}
