@@ -23,7 +23,12 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 	attrs := span.Attributes()
 	if req := seg.HTTP.Request; req != nil {
 		// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-http
-		addString(req.Method, string(conventionsv125.HTTPMethodKey), attrs)
+		if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			addString(req.Method, string(conventions.HTTPRequestMethodKey), attrs)
+		}
+		if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			addString(req.Method, string(conventionsv125.HTTPMethodKey), attrs)
+		}
 
 		if req.ClientIP != nil {
 			// since the ClientIP is not nil, this means that this segment is generated
@@ -37,7 +42,12 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 		}
 
 		addString(req.UserAgent, string(conventionsv118.HTTPUserAgentKey), attrs)
-		addString(req.URL, string(conventionsv125.HTTPURLKey), attrs)
+		if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			addString(req.URL, string(conventions.URLFullKey), attrs)
+		}
+		if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			addString(req.URL, string(conventionsv125.HTTPURLKey), attrs)
+		}
 		addBool(req.XForwardedFor, awsxray.AWSXRayXForwardedForAttribute, attrs)
 	}
 
@@ -49,7 +59,12 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 			// then the span status. Since we are also setting the span attribute
 			// below, the span status code here will not be actually used
 			span.Status().SetCode(otStatus)
-			attrs.PutInt(string(conventionsv125.HTTPStatusCodeKey), *resp.Status)
+			if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				attrs.PutInt(string(conventions.HTTPResponseStatusCodeKey), *resp.Status)
+			}
+			if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				attrs.PutInt(string(conventionsv125.HTTPStatusCodeKey), *resp.Status)
+			}
 		}
 
 		switch val := resp.ContentLength.(type) {
