@@ -168,6 +168,56 @@ func BenchmarkConsumeTraces_Accumulate(b *testing.B) {
 	}
 }
 
+// BenchmarkConsumeTraces_AppendToPending measures the known-traceID path:
+// spans arriving for a trace that already has a pendingTrace entry. Unlike
+// the accumulate benchmark this skips pendingTrace creation, timer arming,
+// and eviction, so it isolates the per-batch bucketing and span-append cost.
+// The pending buffers are reset (untimed) periodically so retained memory
+// stays bounded without touching the timer machinery.
+func BenchmarkConsumeTraces_AppendToPending(b *testing.B) {
+	cfg := benchConfig(benchCatchAllRules())
+	p := newBenchProcessor(b, cfg)
+	ctx := b.Context()
+
+	const spansPerBatch = 10
+	const window = 512
+	// Seed a window of pending traces so every iteration hits an existing
+	// entry. Child spans only, so nothing triggers a decision.
+	batches := make([]ptrace.Traces, window)
+	for i := range batches {
+		batches[i] = benchTrace(benchTraceID(uint64(i)), spansPerBatch, "")
+		if err := p.ConsumeTraces(ctx, batches[i]); err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	// resetPending clears the accumulated span buffers without touching the
+	// traces map or timers, keeping the benchmark's memory bounded.
+	resetPending := func() {
+		p.mu.Lock()
+		for _, pt := range p.traces {
+			pt.spans = nil
+			pt.spanCount = 0
+		}
+		p.mu.Unlock()
+	}
+	const resetEvery = 50_000
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if i > 0 && i%resetEvery == 0 {
+			b.StopTimer()
+			resetPending()
+			b.StartTimer()
+		}
+		if err := p.ConsumeTraces(ctx, batches[i%window]); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.ReportMetric(float64(b.N*spansPerBatch)/b.Elapsed().Seconds(), "spans/sec")
+}
+
 // BenchmarkDecide measures the decision path: rule evaluation (OTTL), incoming
 // tracestate scan, threshold composition, decision-cache record, trace
 // assembly (full span copy + tracestate/attribute stamping), and forwarding to
@@ -183,8 +233,11 @@ func BenchmarkDecide(b *testing.B) {
 		{name: "1span_catchall", spansPerTrace: 1, rules: benchCatchAllRules()},
 		{name: "10spans_catchall", spansPerTrace: 10, rules: benchCatchAllRules()},
 		{name: "100spans_catchall", spansPerTrace: 100, rules: benchCatchAllRules()},
+		{name: "1000spans_catchall", spansPerTrace: 1000, rules: benchCatchAllRules()},
+		{name: "10000spans_catchall", spansPerTrace: 10_000, rules: benchCatchAllRules()},
 		{name: "10spans_5ottl_rules", spansPerTrace: 10, rules: benchOTTLRules()},
 		{name: "100spans_5ottl_rules", spansPerTrace: 100, rules: benchOTTLRules()},
+		{name: "10000spans_5ottl_rules", spansPerTrace: 10_000, rules: benchOTTLRules()},
 		{name: "10spans_catchall_incoming_tracestate", spansPerTrace: 10, rules: benchCatchAllRules(), traceState: "ot=th:8;rv:ab8befca837da2b0"},
 	} {
 		b.Run(bc.name, func(b *testing.B) {
