@@ -136,15 +136,11 @@ func TestObjectModel_Dedup(t *testing.T) {
 				doc.Add("arr", ArrValue(Value{kind: KindObject, doc: embedded}))
 				return doc
 			},
-			want: Document{
-				fields: []field{{"arr", ArrValue(Value{kind: KindObject, doc: Document{
-					fields: []field{
-						{"a", ignoreValue},
-						{"a", IntValue(2)},
-						{"c", IntValue(3)},
-					},
-				}})}},
-			},
+			want: Document{fields: []field{{"arr", ArrValue(Value{kind: KindObject, doc: Document{fields: []field{
+				{"a", ignoreValue},
+				{"a", IntValue(2)},
+				{"c", IntValue(3)},
+			}}})}}},
 		},
 		"dedup mix of primitive and object lifts primitive": {
 			build: func() (doc Document) {

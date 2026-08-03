@@ -36,7 +36,7 @@ import (
 	"io"
 	"maps"
 	"math"
-	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -220,16 +220,14 @@ func (doc *Document) AddLinks(key string, links ptrace.SpanLinkSlice) {
 }
 
 func (doc *Document) sort() {
-	slices.SortStableFunc(doc.fields, fieldKeyCompare)
+	sort.SliceStable(doc.fields, func(i, j int) bool {
+		return doc.fields[i].key < doc.fields[j].key
+	})
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
 		fld.value.sort()
 	}
-}
-
-func fieldKeyCompare(a, b field) int {
-	return strings.Compare(a.key, b.key)
 }
 
 // Dedup removes fields from the document, that have duplicate keys.
@@ -303,9 +301,6 @@ func newJSONVisitor(w io.Writer) *json.Visitor {
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
-	// Default visitor escapes <>& for HTML embedding. ES bulk bodies are plain
-	// JSON, so HTML escaping is unnecessary work on every string field.
-	v.SetEscapeHTML(false)
 	return v
 }
 
@@ -557,9 +552,8 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
 	case KindString:
 		return w.OnString(v.str)
 	case KindTimestamp:
-		var buf [len(tsLayout)]byte
-		b := v.ts.UTC().AppendFormat(buf[:0], tsLayout)
-		return w.OnStringRef(b)
+		str := v.ts.UTC().Format(tsLayout)
+		return w.OnString(str)
 	case KindObject:
 		if len(v.doc.fields) == 0 {
 			return w.OnNil()
