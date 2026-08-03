@@ -1627,7 +1627,7 @@ func (m *mockClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, err
 	return args.Get(0).([]databaseLocks), args.Error(1)
 }
 
-func (m *mockClient) getSharedRelationLocks(ctx context.Context) ([]databaseLocks, error) {
+func (m *mockClient) getServerScopedLocks(ctx context.Context) ([]databaseLocks, error) {
 	args := m.Called(ctx)
 	return args.Get(0).([]databaseLocks), args.Error(1)
 }
@@ -1784,7 +1784,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		}, nil)
 		m.On("getMaxConnections", mock.Anything).Return(int64(100), nil)
 		m.On("getLatestWalAgeSeconds", mock.Anything).Return(int64(3600), nil)
-		m.On("getSharedRelationLocks", mock.Anything).Return([]databaseLocks{
+		m.On("getServerScopedLocks", mock.Anything).Return([]databaseLocks{
 			{
 				relation: "pg_database",
 				mode:     "AccessShareLock",
@@ -1973,15 +1973,15 @@ func TestCollectDatabaseLocksError(t *testing.T) {
 	require.Error(t, errs.combine())
 }
 
-func TestCollectSharedRelationLocksError(t *testing.T) {
+func TestCollectServerScopedLocksError(t *testing.T) {
 	c := new(mockClient)
-	c.On("getSharedRelationLocks", mock.Anything).Return([]databaseLocks(nil), errors.New("some error"))
+	c.On("getServerScopedLocks", mock.Anything).Return([]databaseLocks(nil), errors.New("some error"))
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
 	var errs errsMux
-	scraper.collectSharedRelationLocks(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, &errs)
+	scraper.collectServerScopedLocks(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, &errs)
 	require.Error(t, errs.combine())
 }
 

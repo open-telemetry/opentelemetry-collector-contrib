@@ -257,7 +257,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectWalAge(ctx, now, listClient, &errs)
 	p.collectReplicationStats(ctx, now, listClient, &errs)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
-	p.collectSharedRelationLocks(ctx, now, listClient, &errs)
+	p.collectServerScopedLocks(ctx, now, listClient, &errs)
 
 	if p.useOTelSemconv {
 		rb := p.setupSemconvResourceBuilder(p.mb.NewResourceBuilder())
@@ -886,20 +886,20 @@ func (p *postgreSQLScraper) collectDatabaseLocks(
 	}
 }
 
-func (p *postgreSQLScraper) collectSharedRelationLocks(
+func (p *postgreSQLScraper) collectServerScopedLocks(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
 	errs *errsMux,
 ) {
-	sharedLocks, err := client.getSharedRelationLocks(ctx)
+	serverLocks, err := client.getServerScopedLocks(ctx)
 	if err != nil {
-		p.logger.Error("Errors encountered while fetching shared relation locks", zap.Error(err))
+		p.logger.Error("Errors encountered while fetching server-scoped locks", zap.Error(err))
 		errs.addPartial(err)
 		return
 	}
 	// Shared relations (pg_locks.database = 0) are server-scoped, so db.namespace is empty.
-	for _, dbLock := range sharedLocks {
+	for _, dbLock := range serverLocks {
 		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType, "")
 	}
 }
