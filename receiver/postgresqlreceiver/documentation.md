@@ -360,6 +360,7 @@ The number of database locks.
 | relation | OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation. | Any Str | Recommended | - |
 | mode | Name of the lock mode held or desired by the process. | Any Str | Recommended | - |
 | lock_type | Type of the lockable object. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.deadlocks
 

@@ -151,6 +151,7 @@ func metricsBuilderConfigForFeatureGate(config metadata.MetricsBuilderConfig, us
 	metrics.PostgresqlBlksRead.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlBlksRead.EnabledAttributes)
 	metrics.PostgresqlBlocksRead.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlBlocksRead.EnabledAttributes)
 	metrics.PostgresqlCommits.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlCommits.EnabledAttributes)
+	metrics.PostgresqlDatabaseLocks.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlDatabaseLocks.EnabledAttributes)
 	metrics.PostgresqlDbSize.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlDbSize.EnabledAttributes)
 	metrics.PostgresqlDeadlocks.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlDeadlocks.EnabledAttributes)
 	metrics.PostgresqlFunctionCalls.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlFunctionCalls.EnabledAttributes)
@@ -242,6 +243,9 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		defer dbClient.Close()
 		numTables := p.collectTables(ctx, now, dbClient, database, &errs)
 
+		// Must run before recordDatabase, whose emit attaches these
+		// data points to the per-database resource.
+		p.collectDatabaseLocks(ctx, now, dbClient, database, &errs)
 		p.recordDatabase(now, database, r, numTables)
 		p.collectIndexes(ctx, now, dbClient, database, &errs)
 		p.collectFunctions(ctx, now, dbClient, database, &errs)
@@ -253,7 +257,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectWalAge(ctx, now, listClient, &errs)
 	p.collectReplicationStats(ctx, now, listClient, &errs)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
-	p.collectDatabaseLocks(ctx, now, listClient, &errs)
+	p.collectSharedRelationLocks(ctx, now, listClient, &errs)
 
 	if p.useOTelSemconv {
 		rb := p.setupSemconvResourceBuilder(p.mb.NewResourceBuilder())
@@ -863,20 +867,40 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	p.mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(now, bgStats.maxWritten)
 }
 
+// collectDatabaseLocks collects the locks on relations local to the connected database
 func (p *postgreSQLScraper) collectDatabaseLocks(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	dbClient client,
+	database string,
+	errs *errsMux,
+) {
+	dbLocks, err := dbClient.getDatabaseLocks(ctx)
+	if err != nil {
+		p.logger.Error("Errors encountered while fetching database locks", zap.String("database", database), zap.Error(err))
+		errs.addPartial(err)
+		return
+	}
+	for _, dbLock := range dbLocks {
+		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType, database)
+	}
+}
+
+func (p *postgreSQLScraper) collectSharedRelationLocks(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
 	errs *errsMux,
 ) {
-	dbLocks, err := client.getDatabaseLocks(ctx)
+	sharedLocks, err := client.getSharedRelationLocks(ctx)
 	if err != nil {
-		p.logger.Error("Errors encountered while fetching database locks", zap.Error(err))
+		p.logger.Error("Errors encountered while fetching shared relation locks", zap.Error(err))
 		errs.addPartial(err)
 		return
 	}
-	for _, dbLock := range dbLocks {
-		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType)
+	// Shared relations (pg_locks.database = 0) are server-scoped, so db.namespace is empty.
+	for _, dbLock := range sharedLocks {
+		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType, "")
 	}
 }
 
