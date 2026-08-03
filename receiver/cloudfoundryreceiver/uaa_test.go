@@ -40,7 +40,7 @@ func TestInvalidAuthentication(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	cfg.UAA.Endpoint = ""
+	cfg.UAA.LimitedClientConfig.Endpoint = ""
 
 	uaa, err := newUAATokenProvider(
 		zap.NewNop(),
