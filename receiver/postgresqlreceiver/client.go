@@ -459,30 +459,40 @@ type databaseLocks struct {
 }
 
 func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
-	// Scope to the connected database: shared catalogs (database = 0) are
-	// collected once via getServerScopedLocks, and relation OIDs from other
-	// databases must not resolve against this database's pg_class.
-	return c.queryDatabaseLocks(ctx, `SELECT relname AS relation, mode, locktype,COUNT(*)
+	// Scope to the connected database: shared catalogs (database = 0) and locks
+	// that belong to no database (database IS NULL) are collected once via
+	// getServerScopedLocks, and relation OIDs from other databases must not
+	// resolve against this database's pg_class.
+	//
+	// LEFT JOIN keeps targets that are not relations (frozenid, object,
+	// advisory, ...), whose pg_locks.relation is NULL; they are reported with an
+	// empty relation attribute.
+	return c.queryDatabaseLocks(ctx, `SELECT COALESCE(relname, '') AS relation, mode, locktype,COUNT(*)
 	AS locks FROM pg_locks
-	JOIN pg_class ON pg_locks.relation = pg_class.oid
+	LEFT JOIN pg_class ON pg_locks.relation = pg_class.oid
 	WHERE pg_locks.database = (SELECT oid FROM pg_database WHERE datname = current_database())
 	GROUP BY relname, mode, locktype;`)
 }
 
 func (c *postgreSQLClient) getServerScopedLocks(ctx context.Context) ([]databaseLocks, error) {
-	// Shared relations (pg_database, pg_authid, ...) carry database = 0 and
-	// exist in every database's pg_class, so any connection can resolve them.
-	return c.queryDatabaseLocks(ctx, `SELECT relname AS relation, mode, locktype,COUNT(*)
+	// Locks that belong to no single database, collected once per scrape:
+	//   - shared relations (pg_database, pg_authid, ...) carry database = 0 and
+	//     exist in every database's pg_class, so any connection can resolve them;
+	//   - shared non-relation targets also carry database = 0;
+	//   - transaction ID targets (transactionid, virtualxid, ...) carry a NULL
+	//     database and a NULL relation.
+	return c.queryDatabaseLocks(ctx, `SELECT COALESCE(relname, '') AS relation, mode, locktype,COUNT(*)
 	AS locks FROM pg_locks
-	JOIN pg_class ON pg_locks.relation = pg_class.oid
-	WHERE pg_locks.database = 0 AND pg_class.relisshared
+	LEFT JOIN pg_class ON pg_locks.relation = pg_class.oid
+	WHERE pg_locks.database IS NULL
+	OR (pg_locks.database = 0 AND (pg_locks.relation IS NULL OR pg_class.relisshared))
 	GROUP BY relname, mode, locktype;`)
 }
 
 func (c *postgreSQLClient) queryDatabaseLocks(ctx context.Context, query string) ([]databaseLocks, error) {
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("unable to query pg_locks and pg_locks.relation: %w", err)
+		return nil, fmt.Errorf("unable to query pg_locks: %w", err)
 	}
 	defer rows.Close()
 	var dl []databaseLocks

@@ -867,7 +867,7 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	p.mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(now, bgStats.maxWritten)
 }
 
-// collectDatabaseLocks collects the locks on relations local to the connected database
+// collectDatabaseLocks collects the locks whose target belongs to the connected database
 func (p *postgreSQLScraper) collectDatabaseLocks(
 	ctx context.Context,
 	now pcommon.Timestamp,
@@ -886,6 +886,8 @@ func (p *postgreSQLScraper) collectDatabaseLocks(
 	}
 }
 
+// collectServerScopedLocks collects the locks that belong to no single database:
+// locks on shared catalogs and locks whose target is a transaction ID.
 func (p *postgreSQLScraper) collectServerScopedLocks(
 	ctx context.Context,
 	now pcommon.Timestamp,
@@ -898,7 +900,7 @@ func (p *postgreSQLScraper) collectServerScopedLocks(
 		errs.addPartial(err)
 		return
 	}
-	// Shared relations (pg_locks.database = 0) are server-scoped, so db.namespace is empty.
+	// These locks are not attributable to a database, so db.namespace is empty.
 	for _, dbLock := range serverLocks {
 		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType, "")
 	}
