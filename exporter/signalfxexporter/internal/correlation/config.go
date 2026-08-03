@@ -38,8 +38,8 @@ func DefaultConfig() *Config {
 
 // Config defines configuration for correlation via traces.
 type Config struct {
-	ClientConfig        confighttp.ClientConfig `mapstructure:",squash"`
-	correlations.Config `mapstructure:",squash"`
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
+	Config       correlations.Config     `mapstructure:",squash"`
 
 	// How long to wait after a trace span's service name is last seen before
 	// uncorrelating that service.

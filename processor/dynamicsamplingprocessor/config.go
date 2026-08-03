@@ -52,9 +52,29 @@ type Config struct {
 	// Rules are evaluated in order, first match wins. The matched rule's sampler
 	// produces the sample rate for the trace.
 	Rules []RuleConfig `mapstructure:"rules"`
+	// RootSpanCondition is an OTTL boolean expression evaluated against every
+	// span in the ottlspan context. When it returns true for a span, that span
+	// triggers the trace to move from accumulation to the decision-delay phase.
+	// If unset, defaults to `IsRootSpan()`: any span with an empty ParentSpanID
+	// is treated as a trigger, preserving the historical behavior.
+	//
+	// Example use-cases:
+	//   - Broaden detection to include cross-process server spans:
+	//       IsRootSpan() or (span.kind == SPAN_KIND_SERVER and
+	//                        resource.attributes["service.name"] == "gateway")
+	//   - Accept a producer-side hint attribute:
+	//       IsRootSpan() or span.attributes["otelcol.dynamic_sampling.root_span"] == true
+	//   - Only trigger on explicit hints (no default):
+	//       span.attributes["otelcol.dynamic_sampling.root_span"] == true
+	RootSpanCondition string `mapstructure:"root_span_condition"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
+
+// defaultRootSpanCondition is applied when Config.RootSpanCondition is unset.
+// It matches any span whose ParentSpanID is empty, preserving the behavior
+// the processor shipped with before root_span_condition was configurable.
+const defaultRootSpanCondition = "IsRootSpan()"
 
 // DecisionCacheConfig sizes the LRU caches that record sampling decisions.
 // When a span arrives for a traceID that already has a recorded decision, the
@@ -196,7 +216,23 @@ func (c *Config) Validate() error {
 			return err
 		}
 	}
+	if cond := c.effectiveRootSpanCondition(); cond != "" {
+		settings := component.TelemetrySettings{Logger: zap.NewNop()}
+		if _, err := filterottl.NewBoolExprForSpan([]string{cond}, filterottl.StandardSpanFuncs(), ottl.PropagateError, settings); err != nil {
+			return fmt.Errorf("root_span_condition: %w", err)
+		}
+	}
 	return nil
+}
+
+// effectiveRootSpanCondition returns the OTTL expression that should decide
+// which spans trigger the accumulate to decision transition. Falls back to
+// defaultRootSpanCondition when the operator did not set one.
+func (c *Config) effectiveRootSpanCondition() string {
+	if c.RootSpanCondition == "" {
+		return defaultRootSpanCondition
+	}
+	return c.RootSpanCondition
 }
 
 func (r *RuleConfig) validateMatch() error {
