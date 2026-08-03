@@ -95,8 +95,8 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.LoadbalancerRandomnessTracestateUnparseable, err = builder.meter.Int64Counter(
 		"otelcol_loadbalancer_randomness_tracestate_unparseable",
-		metric.WithDescription("Number of spans whose W3C tracestate failed to parse during randomness routing, falling back to trace ID randomness. [Development]"),
-		metric.WithUnit("{spans}"),
+		metric.WithDescription("Number of tracestate parse failures observed during randomness routing. Counted once per trace per batch (the first span resolved for the trace), not per span. Routing falls back to trace ID randomness only when no valid rv survives the parse. [Development]"),
+		metric.WithUnit("{failures}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

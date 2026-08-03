@@ -111,7 +111,9 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 	case traceIDRouting:
 		return e.consumeTracesPerSpan(ctx, td, spanTraceIDIdentifier)
 	case randomnessRouting:
-		return e.consumeTracesPerSpan(ctx, td, e.randomnessIdentifier)
+		return e.consumeTracesPerSpan(ctx, td, func(span ptrace.Span) []byte {
+			return e.randomnessIdentifier(ctx, span)
+		})
 	}
 
 	batches := batchpersignal.SplitTraces(td)
@@ -165,12 +167,18 @@ func spanTraceIDIdentifier(span ptrace.Span) []byte {
 // randomness value (the 14-hex-digit tracestate ot=rv) when the span carries one, otherwise
 // randomness derived from the trace ID, mirroring the W3C/OTel sampling specification. Traces
 // sharing an rv route to the same backend; traces without one keep per-trace locality.
-func (e *traceExporterImp) randomnessIdentifier(span ptrace.Span) []byte {
+func (e *traceExporterImp) randomnessIdentifier(ctx context.Context, span ptrace.Span) []byte {
 	if raw := span.TraceState().AsRaw(); raw != "" {
 		w3c, err := sampling.NewW3CTraceState(raw)
 		if err != nil {
-			e.telemetry.LoadbalancerRandomnessTracestateUnparseable.Add(context.Background(), 1)
-		} else if rnd, ok := w3c.OTelValue().RValueRandomness(); ok {
+			// Member-level parse failures accumulate without discarding the
+			// members that did parse, so a valid rv can survive alongside a
+			// malformed sibling (e.g. a bad th). Count the failure but route
+			// on whatever was recovered; fall back to trace ID randomness
+			// only when no usable rv is present.
+			e.telemetry.LoadbalancerRandomnessTracestateUnparseable.Add(ctx, 1)
+		}
+		if rnd, ok := w3c.OTelValue().RValueRandomness(); ok {
 			return []byte(rnd.RValue())
 		}
 	}

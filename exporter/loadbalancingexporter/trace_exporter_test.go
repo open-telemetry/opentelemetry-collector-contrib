@@ -296,13 +296,17 @@ func TestRandomnessIdentifier(t *testing.T) {
 		{"no tracestate", "", fallback},
 		{"vendor tracestate without rv", "vendor=value", fallback},
 		{"ot without rv", "ot=th:8", fallback},
-		{"unparseable tracestate", "ot=rv:zz", fallback},
+		{"unparseable rv", "ot=rv:zz", fallback},
+		// A valid rv must survive a malformed sibling member: partial parses
+		// keep the members that did parse, and losing the rv here would break
+		// exactly the grouping this routing mode provides.
+		{"valid rv beside malformed th", "ot=rv:aabbccddeeff00;th:notathreshold", "aabbccddeeff00"},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			span := ptrace.NewSpan()
 			span.SetTraceID(tid)
 			span.TraceState().FromRaw(tt.traceState)
-			assert.Equal(t, tt.expected, string(p.randomnessIdentifier(span)))
+			assert.Equal(t, tt.expected, string(p.randomnessIdentifier(t.Context(), span)))
 		})
 	}
 }

@@ -79,10 +79,10 @@ Number of times the resolver has triggered new resolutions.
 
 ### otelcol_loadbalancer_randomness_tracestate_unparseable
 
-Number of spans whose W3C tracestate failed to parse during randomness routing, falling back to trace ID randomness.
+Number of tracestate parse failures observed during randomness routing. Counted once per trace per batch (the first span resolved for the trace), not per span. Routing falls back to trace ID randomness only when no valid rv survives the parse.
 
 Only produced when routing_key is "randomness".
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | Development |
+| {failures} | Sum | Int | true | Development |
