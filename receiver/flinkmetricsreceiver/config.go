@@ -17,9 +17,9 @@ const defaultEndpoint = "http://localhost:8081"
 
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
-	ControllerConfig              scraperhelper.ControllerConfig `mapstructure:",squash"`
-	ClientConfig                  confighttp.ClientConfig        `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ClientConfig         confighttp.ClientConfig        `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 }
 
 // Validate validates the configuration by checking for missing or invalid fields

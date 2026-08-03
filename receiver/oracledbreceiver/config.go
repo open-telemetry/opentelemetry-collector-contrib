@@ -52,14 +52,14 @@ type SessionWaitEvent struct {
 }
 
 type Config struct {
-	DataSource                    string                         `mapstructure:"datasource"`
-	Endpoint                      string                         `mapstructure:"endpoint"`
-	Password                      string                         `mapstructure:"password"`
-	Service                       string                         `mapstructure:"service"`
-	Username                      string                         `mapstructure:"username"`
-	ControllerConfig              scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	metadata.LogsBuilderConfig    `mapstructure:",squash"`
+	DataSource           string                         `mapstructure:"datasource"`
+	Endpoint             string                         `mapstructure:"endpoint"`
+	Password             string                         `mapstructure:"password"`
+	Service              string                         `mapstructure:"service"`
+	Username             string                         `mapstructure:"username"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	LogsBuilderConfig    metadata.LogsBuilderConfig     `mapstructure:",squash"`
 
 	TopQueryCollection TopQueryCollection `mapstructure:"top_query_collection"`
 	QuerySample        QuerySample        `mapstructure:"query_sample_collection"`

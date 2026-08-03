@@ -97,7 +97,7 @@ func createLogsReceiver(_ context.Context, params receiver.Settings, rConf compo
 
 	opts := make([]scraperhelper.ControllerOption, 0)
 
-	if cfg.Events.DbServerQuerySample.Enabled {
+	if cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled {
 		s, err := scraper.NewLogs(
 			ms.scrapeLogs,
 			scraper.WithStart(ms.start),
@@ -115,7 +115,7 @@ func createLogsReceiver(_ context.Context, params receiver.Settings, rConf compo
 					}, metadata.LogsStability)), nil))
 	}
 
-	if cfg.Events.DbServerTopQuery.Enabled {
+	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		tqms := newMongodbScraper(params, cfg)
 		tqms.planCache = buildPlanCache(cfg, params.Logger)
 		tqs, err := scraper.NewLogs(

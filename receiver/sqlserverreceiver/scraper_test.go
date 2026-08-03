@@ -36,109 +36,109 @@ import (
 func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	// Some of these metrics are enabled by default, but it's still helpful to include
 	// in the case of using a config that may have previously disabled a metric.
-	cfg.Metrics.SqlserverAccessScanRate.Enabled = enabled
-	cfg.Metrics.SqlserverBatchRequestRate.Enabled = enabled
-	cfg.Metrics.SqlserverCPUUtilization.Enabled = enabled
-	cfg.Metrics.SqlserverBatchSQLCompilationRate.Enabled = enabled
-	cfg.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = enabled
-	cfg.Metrics.SqlserverConnectionResetRate.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseCount.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseExecutionErrors.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseFullScanRate.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseIo.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseLatency.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseOperations.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
-	cfg.Metrics.SqlserverDeadlockRate.Enabled = enabled
-	cfg.Metrics.SqlserverDiskOperations.Enabled = enabled
-	cfg.Metrics.SqlserverDiskIo.Enabled = enabled
-	cfg.Metrics.SqlserverErrorRate.Enabled = enabled
-	cfg.Metrics.SqlserverExtentOperationRate.Enabled = enabled
-	cfg.Metrics.SqlserverGhostRecordSkippedRate.Enabled = enabled
-	cfg.Metrics.SqlserverIndexFragmentation.Enabled = enabled
-	cfg.Metrics.SqlserverIndexPageCount.Enabled = enabled
-	cfg.Metrics.SqlserverIndexPageUtilization.Enabled = enabled
-	cfg.Metrics.SqlserverIndexRecordCount.Enabled = enabled
-	cfg.Metrics.SqlserverIndexSearchRate.Enabled = enabled
-	cfg.Metrics.SqlserverIndexSize.Enabled = enabled
-	cfg.Metrics.SqlserverLatchSuperlatchCount.Enabled = enabled
-	cfg.Metrics.SqlserverLatchSuperlatchTransitionRate.Enabled = enabled
-	cfg.Metrics.SqlserverLatchWaitRate.Enabled = enabled
-	cfg.Metrics.SqlserverLatchWaitTimeAvg.Enabled = enabled
-	cfg.Metrics.SqlserverLatchWaitTimeTotal.Enabled = enabled
-	cfg.Metrics.SqlserverLockBlockCount.Enabled = enabled
-	cfg.Metrics.SqlserverLockEscalationRate.Enabled = enabled
-	cfg.Metrics.SqlserverLockMemory.Enabled = enabled
-	cfg.Metrics.SqlserverLockRequestRate.Enabled = enabled
-	cfg.Metrics.SqlserverLockTimeoutRate.Enabled = enabled
-	cfg.Metrics.SqlserverLockWaitCount.Enabled = enabled
-	cfg.Metrics.SqlserverLockWaitRate.Enabled = enabled
-	cfg.Metrics.SqlserverLockWaitTimeAvg.Enabled = enabled
-	cfg.Metrics.SqlserverLockWaitTimeTotal.Enabled = enabled
-	cfg.Metrics.SqlserverLoginRate.Enabled = enabled
-	cfg.Metrics.SqlserverLogoutRate.Enabled = enabled
-	cfg.Metrics.SqlserverMemoryArea.Enabled = enabled
-	cfg.Metrics.SqlserverMemoryCacheObjectCount.Enabled = enabled
-	cfg.Metrics.SqlserverMemoryGrantsPendingCount.Enabled = enabled
-	cfg.Metrics.SqlserverMemoryPageCount.Enabled = enabled
-	cfg.Metrics.SqlserverMemoryUsage.Enabled = enabled
-	cfg.Metrics.SqlserverOsWaitDuration.Enabled = enabled
-	cfg.Metrics.SqlserverPageAllocationRate.Enabled = enabled
-	cfg.Metrics.SqlserverPageCompressionRate.Enabled = enabled
-	cfg.Metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled = enabled
-	cfg.Metrics.SqlserverPageBufferCacheHitRatio.Enabled = enabled
-	cfg.Metrics.SqlserverPageCheckpointFlushRate.Enabled = enabled
-	cfg.Metrics.SqlserverPageLazyWriteRate.Enabled = enabled
-	cfg.Metrics.SqlserverPageLifeExpectancy.Enabled = enabled
-	cfg.Metrics.SqlserverPageLookupRate.Enabled = enabled
-	cfg.Metrics.SqlserverPageOperationRate.Enabled = enabled
-	cfg.Metrics.SqlserverPageReadAheadRate.Enabled = enabled
-	cfg.Metrics.SqlserverPageSplitRate.Enabled = enabled
-	cfg.Metrics.SqlserverProcessesBlocked.Enabled = enabled
-	cfg.Metrics.SqlserverReplicaDataRate.Enabled = enabled
-	cfg.Metrics.SqlserverResourcePoolDiskOperations.Enabled = enabled
-	cfg.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = enabled
-	cfg.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = enabled
-	cfg.Metrics.SqlserverScanPointRevalidationRate.Enabled = enabled
-	cfg.Metrics.SqlserverAttentionRate.Enabled = enabled
-	cfg.Metrics.SqlserverClrExecutionTime.Enabled = enabled
-	cfg.Metrics.SqlserverCursorCount.Enabled = enabled
-	cfg.Metrics.SqlserverCursorMemoryUsage.Enabled = enabled
-	cfg.Metrics.SqlserverCursorPlanCount.Enabled = enabled
-	cfg.Metrics.SqlserverCursorRequestRate.Enabled = enabled
-	cfg.Metrics.SqlserverParameterizationRate.Enabled = enabled
-	cfg.Metrics.SqlserverPlanExecutionRate.Enabled = enabled
-	cfg.Metrics.SqlserverRecompilationRatio.Enabled = enabled
-	cfg.Metrics.SqlserverStoredProcedureInvocationRate.Enabled = enabled
-	cfg.Metrics.SqlserverTableCount.Enabled = enabled
-	cfg.Metrics.SqlserverTaskCount.Enabled = enabled
-	cfg.Metrics.SqlserverTaskRate.Enabled = enabled
-	cfg.Metrics.SqlserverTransactionDelay.Enabled = enabled
-	cfg.Metrics.SqlserverTransactionLogFlushDataRate.Enabled = enabled
-	cfg.Metrics.SqlserverTransactionLogFlushRate.Enabled = enabled
-	cfg.Metrics.SqlserverTransactionLogFlushWaitRate.Enabled = enabled
-	cfg.Metrics.SqlserverTransactionLogGrowthCount.Enabled = enabled
-	cfg.Metrics.SqlserverTransactionLogShrinkCount.Enabled = enabled
-	cfg.Metrics.SqlserverTransactionLogUsage.Enabled = enabled
-	cfg.Metrics.SqlserverTransactionMirrorWriteRate.Enabled = enabled
-	cfg.Metrics.SqlserverTransactionRate.Enabled = enabled
-	cfg.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
-	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
-	cfg.Metrics.SqlserverHostMemoryLimit.Enabled = enabled
-	cfg.Metrics.SqlserverHostMemoryUsage.Enabled = enabled
-	cfg.Metrics.SqlserverWorkerRequestCount.Enabled = enabled
-	cfg.Metrics.SqlserverWorkerThreadCount.Enabled = enabled
-	cfg.Metrics.SqlserverWorktableCacheHitRatio.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverAccessScanRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverCPUUtilization.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLCompilationRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverConnectionResetRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseExecutionErrors.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseFullScanRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIo.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseOperations.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDeadlockRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDiskOperations.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDiskIo.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverErrorRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverExtentOperationRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverGhostRecordSkippedRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexFragmentation.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexPageCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexPageUtilization.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexRecordCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexSearchRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexSize.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLatchSuperlatchCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLatchSuperlatchTransitionRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLatchWaitRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLatchWaitTimeAvg.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLatchWaitTimeTotal.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLockBlockCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLockEscalationRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLockMemory.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLockRequestRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLockTimeoutRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitTimeAvg.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitTimeTotal.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLoginRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLogoutRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverMemoryArea.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverMemoryCacheObjectCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverMemoryGrantsPendingCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverMemoryPageCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverMemoryUsage.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverOsWaitDuration.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageAllocationRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageCompressionRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageBufferCacheHitRatio.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageCheckpointFlushRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageLazyWriteRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageLifeExpectancy.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageLookupRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageOperationRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageReadAheadRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageSplitRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverProcessesBlocked.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverReplicaDataRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskOperations.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverScanPointRevalidationRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverAttentionRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverClrExecutionTime.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverCursorCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverCursorMemoryUsage.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverCursorPlanCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverCursorRequestRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverParameterizationRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPlanExecutionRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverRecompilationRatio.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverStoredProcedureInvocationRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTableCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTaskCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTaskRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionDelay.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionLogFlushDataRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionLogFlushRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionLogFlushWaitRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionLogGrowthCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionLogShrinkCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionLogUsage.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionMirrorWriteRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverHostMemoryLimit.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverHostMemoryUsage.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverWorkerRequestCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverWorkerThreadCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverWorktableCacheHitRatio.Enabled = enabled
 
-	cfg.Metrics.SqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.Enabled = enabled
-	cfg.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueSize.Enabled = enabled
-	cfg.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueRate.Enabled = enabled
-	cfg.Events.DbServerTopQuery.Enabled = enabled
-	cfg.Events.DbServerQuerySample.Enabled = enabled
-	cfg.Metrics.SqlserverCPUCount.Enabled = enabled
-	cfg.Metrics.SqlserverComputerUptime.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueSize.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueRate.Enabled = enabled
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = enabled
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverCPUCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverComputerUptime.Enabled = enabled
 	// cfg.TopQueryCollection.Enabled = enabled
 	// cfg.QuerySample.Enabled = enabled
 }
@@ -314,12 +314,12 @@ func TestScrapeCacheAndDiff(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetricsAndEvents(cfg, false)
 
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
@@ -560,11 +560,11 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetricsAndEvents(cfg, false)
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
 	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
@@ -640,11 +640,11 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetricsAndEvents(cfg, false)
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
 	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
@@ -703,11 +703,11 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetricsAndEvents(cfg, false)
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 
 	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
@@ -796,7 +796,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			assert.NoError(t, cfg.Validate())
 
 			configureAllScraperMetricsAndEvents(cfg, false)
-			cfg.Events.DbServerQuerySample.Enabled = true
+			cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 
 			scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 			assert.NotNil(t, scrapers)
@@ -867,7 +867,7 @@ func setupQuerySampleScraper(t *testing.T, logger *zap.Logger) *sqlServerScraper
 	cfg.Server = "0.0.0.0"
 	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
 	configureAllScraperMetricsAndEvents(cfg, false)
-	cfg.Events.DbServerQuerySample.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	settings := receivertest.NewNopSettings(metadata.Type)
@@ -1044,11 +1044,11 @@ func TestMultiStatementProcNoDuplicateRows(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetricsAndEvents(cfg, false)
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
 	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
@@ -1189,11 +1189,11 @@ func TestRecordDatabaseSampleQueryUsesResourceBuilderForLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.DataSource = "sqlserver://testuser:testpass@datasource-host.example.com:1434?database=testdb"
 	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
-	cfg.Events.DbServerQuerySample.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetricsAndEvents(cfg, false)
-	cfg.Events.DbServerQuerySample.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 
 	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.Len(t, scrapers, 1)
@@ -1231,11 +1231,11 @@ func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) 
 	cfg := createDefaultConfig().(*Config)
 	cfg.DataSource = "sqlserver://testuser:testpass@datasource-host.example.com:1434?database=testdb"
 	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetricsAndEvents(cfg, false)
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
 	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
@@ -1308,8 +1308,8 @@ func TestRecordWorkerThreadMetrics(t *testing.T) {
 	cfg.Server = "0.0.0.0"
 	cfg.Port = 1433
 	assert.NoError(t, cfg.Validate())
-	cfg.Metrics.SqlserverWorkerThreadCount.Enabled = true
-	cfg.Metrics.SqlserverWorkerRequestCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverWorkerThreadCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverWorkerRequestCount.Enabled = true
 
 	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
@@ -1373,11 +1373,11 @@ func TestRecordDatabaseStatusMetricsUsesResourceBuilderForMetrics(t *testing.T) 
 	cfg := createDefaultConfig().(*Config)
 	cfg.DataSource = "sqlserver://testuser:testpass@datasource-host.example.com:1434?database=testdb"
 	enableSQLServerResourceAttributesForTests(&cfg.MetricsBuilderConfig.ResourceAttributes)
-	cfg.Metrics.SqlserverCPUCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverCPUCount.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetricsAndEvents(cfg, false)
-	cfg.Metrics.SqlserverCPUCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverCPUCount.Enabled = true
 
 	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.Len(t, scrapers, 1)
@@ -1425,9 +1425,9 @@ func TestRecordCPUMemoryMetrics(t *testing.T) {
 	cfg.Server = "0.0.0.0"
 	cfg.Port = 1433
 	assert.NoError(t, cfg.Validate())
-	cfg.Metrics.SqlserverCPUUtilization.Enabled = true
-	cfg.Metrics.SqlserverHostMemoryLimit.Enabled = true
-	cfg.Metrics.SqlserverHostMemoryUsage.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverCPUUtilization.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverHostMemoryLimit.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverHostMemoryUsage.Enabled = true
 
 	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
@@ -1514,8 +1514,8 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 	cfg.Server = "0.0.0.0"
 	cfg.Port = 1433
 	assert.NoError(t, cfg.Validate())
-	cfg.Metrics.SqlserverDiskOperations.Enabled = true
-	cfg.Metrics.SqlserverDiskIo.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDiskOperations.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDiskIo.Enabled = true
 
 	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)

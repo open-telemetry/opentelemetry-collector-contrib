@@ -534,7 +534,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 }
 
 func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pcommon.Resource) {
-	if r.config.AccessTokenPassthrough {
+	if r.config.AccessTokenPassthroughConfig.AccessTokenPassthrough {
 		accessToken := req.Header.Get("Authorization")
 		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
 			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]

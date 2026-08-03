@@ -50,6 +50,9 @@ properties:
     type: array
     items:
       type: string
+  db_auth:
+    description: DBAuth optionally sources the connection credential from a db_auth provider extension (e.g. AWS IAM) instead of a static password. When set, the provider supplies the password at connection-open time. Mutually exclusive with the top-level password field.
+    $ref: /config/configdbauth.id
   exclude_databases:
     type: array
     items:

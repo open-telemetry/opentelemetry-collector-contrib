@@ -22,7 +22,7 @@ const (
 type Config struct {
 	ServerConfig confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
+	AccessTokenPassthroughConfig splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
 	Ack Ack `mapstructure:"ack"`
 

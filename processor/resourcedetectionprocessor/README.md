@@ -566,6 +566,7 @@ processors:
 - `cloud.provider`
 - `cloud.platform`
 - `cloud.region`
+- `cloud.resource_id`
 - `cloud.availability_zone`
 - `host.id`
 - `host.name`
