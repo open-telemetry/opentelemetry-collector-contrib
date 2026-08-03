@@ -68,6 +68,14 @@ func populateHTTPAttrsForTests(m map[string]any, httpInfo *awsxray.HTTPData) {
 				m["url.full"] = *req.URL
 			}
 		}
+		if req.ClientIP != nil {
+			if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				m["http.client_ip"] = *req.ClientIP
+			}
+			if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				m["client.address"] = *req.ClientIP
+			}
+		}
 	}
 	if resp := httpInfo.Response; resp != nil {
 		if resp.Status != nil {
@@ -85,7 +93,6 @@ func TestTranslation(t *testing.T) {
 	defaultServerSpanAttrs := func(seg *awsxray.Segment) pcommon.Map {
 		m := pcommon.NewMap()
 		rawMap := map[string]any{
-			"http.client_ip":                      *seg.HTTP.Request.ClientIP,
 			"http.user_agent":                     *seg.HTTP.Request.UserAgent,
 			awsxray.AWSXRayXForwardedForAttribute: *seg.HTTP.Request.XForwardedFor,
 		}
@@ -1031,25 +1038,16 @@ func TestTranslation(t *testing.T) {
 		},
 	}
 
-	permutations := []struct {
-		name string
-		v0   bool
-		v1   bool
-	}{
-		{"v0_only", true, false},
-		{"v0_and_v1", true, true},
-		{"v1_only", false, true},
-	}
+	for _, tc := range tests {
+		for _, emitV0 := range []bool{true, false} {
+			for _, emitV1 := range []bool{true, false} {
+				if !emitV0 && !emitV1 {
+					continue
+				}
+				t.Run(fmt.Sprintf("%s/emitV0=%t/emitV1=%t", tc.testCase, emitV0, emitV1), func(t *testing.T) {
+					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.ID(), !emitV0))
+					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.ID(), emitV1))
 
-	for _, perm := range permutations {
-		t.Run(perm.name, func(t *testing.T) {
-			err := featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.ID(), !perm.v0)
-			assert.NoError(t, err)
-			err = featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.ID(), perm.v1)
-			assert.NoError(t, err)
-
-			for _, tc := range tests {
-				t.Run(tc.testCase, func(t *testing.T) {
 					content, err := os.ReadFile(tc.samplePath)
 					assert.NoError(t, err, "cannot read raw segment")
 					assert.NotEmpty(t, content, "content length is 0")
@@ -1082,9 +1080,11 @@ func TestTranslation(t *testing.T) {
 					record := recorder.Rotate()
 					assert.Equal(t, *tc.expectedRecord.SegmentsReceivedCount, *record.SegmentsReceivedCount)
 					assert.Equal(t, *tc.expectedRecord.SegmentsRejectedCount, *record.SegmentsRejectedCount)
+					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.ID(), false))
+					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.ID(), false))
 				})
 			}
-		})
+		}
 	}
 }
 

@@ -33,7 +33,12 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 		if req.ClientIP != nil {
 			// since the ClientIP is not nil, this means that this segment is generated
 			// by a server serving an incoming request
-			attrs.PutStr(string(conventionsv120.HTTPClientIPKey), *req.ClientIP)
+			if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				attrs.PutStr(string(conventionsv120.HTTPClientIPKey), *req.ClientIP)
+			}
+			if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				attrs.PutStr(string(conventions.ClientAddressKey), *req.ClientIP)
+			}
 		}
 
 		addString(req.UserAgent, string(conventionsv118.HTTPUserAgentKey), attrs)
