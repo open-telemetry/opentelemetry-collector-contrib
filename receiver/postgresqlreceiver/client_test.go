@@ -189,7 +189,6 @@ func TestLockQueries(t *testing.T) {
 	tests := []struct {
 		name        string
 		serverScope bool
-		expectedSQL string
 		rows        *sqlmock.Rows
 		queryErr    error
 		expected    []databaseLocks
@@ -197,7 +196,6 @@ func TestLockQueries(t *testing.T) {
 	}{
 		{
 			name:        "database locks keep relation names and non-relation targets",
-			expectedSQL: databaseLocksSQL,
 			rows: sqlmock.NewRows(columns).
 				AddRow("pg_class", "AccessShareLock", "relation", 2).
 				// COALESCE turns a non-relation target into an empty relation.
@@ -212,7 +210,6 @@ func TestLockQueries(t *testing.T) {
 		{
 			name:        "server scoped locks report transaction id targets",
 			serverScope: true,
-			expectedSQL: serverScopedLocksSQL,
 			rows: sqlmock.NewRows(columns).
 				AddRow("pg_database", "AccessShareLock", "relation", 1).
 				AddRow("", "ExclusiveLock", "transactionid", 3).
@@ -226,7 +223,6 @@ func TestLockQueries(t *testing.T) {
 		{
 			name:        "distinct modes on the same lock type stay separate",
 			serverScope: true,
-			expectedSQL: serverScopedLocksSQL,
 			rows: sqlmock.NewRows(columns).
 				AddRow("", "ExclusiveLock", "transactionid", 1).
 				AddRow("", "ShareLock", "transactionid", 2),
@@ -237,7 +233,6 @@ func TestLockQueries(t *testing.T) {
 		},
 		{
 			name:        "query error is wrapped",
-			expectedSQL: databaseLocksSQL,
 			queryErr:    errors.New("permission denied for table pg_locks"),
 			expected:    nil,
 			wantErr:     true,
@@ -245,7 +240,6 @@ func TestLockQueries(t *testing.T) {
 		{
 			name:        "a NULL relation does not drop the remaining rows",
 			serverScope: true,
-			expectedSQL: serverScopedLocksSQL,
 			// COALESCE means the driver should never hand us a NULL relation, but a
 			// scan failure must not discard the rows that did scan cleanly.
 			rows: sqlmock.NewRows(columns).
@@ -266,18 +260,18 @@ func TestLockQueries(t *testing.T) {
 
 			client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
 
-			if tc.queryErr != nil {
-				mock.ExpectQuery(tc.expectedSQL).WillReturnError(tc.queryErr)
-			} else {
-				mock.ExpectQuery(tc.expectedSQL).WillReturnRows(tc.rows)
+			expectedSQL, queryLocks := databaseLocksSQL, client.getDatabaseLocks
+			if tc.serverScope {
+				expectedSQL, queryLocks = serverScopedLocksSQL, client.getServerScopedLocks
 			}
 
-			var locks []databaseLocks
-			if tc.serverScope {
-				locks, err = client.getServerScopedLocks(t.Context())
+			if tc.queryErr != nil {
+				mock.ExpectQuery(expectedSQL).WillReturnError(tc.queryErr)
 			} else {
-				locks, err = client.getDatabaseLocks(t.Context())
+				mock.ExpectQuery(expectedSQL).WillReturnRows(tc.rows)
 			}
+
+			locks, err := queryLocks(t.Context())
 			if tc.wantErr {
 				require.Error(t, err)
 			} else {
