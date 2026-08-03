@@ -420,6 +420,11 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		serverPortStr = strconv.FormatInt(attrs.ServerAttributes.ServerPort, 10)
 	}
 
+	networkPeerPortStr := serverPortStr
+	if networkPeerPortStr == "" && attrs.NetworkAttributes.NetworkPeerPort != 0 {
+		networkPeerPortStr = strconv.FormatInt(attrs.NetworkAttributes.NetworkPeerPort, 10)
+	}
+
 	switch {
 	case attrs.URLAttributes.URLFull != "":
 		if u, err := url.Parse(attrs.URLAttributes.URLFull); err == nil {
@@ -455,12 +460,12 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		sb.WriteString(serverPortStr)
 		data.Target = sb.String()
 
-	case attrs.URLAttributes.URLScheme != "" && attrs.NetworkAttributes.NetworkPeerAddress != "" && serverPortStr != "" && attrs.URLAttributes.URLPath != "":
+	case attrs.URLAttributes.URLScheme != "" && attrs.NetworkAttributes.NetworkPeerAddress != "" && networkPeerPortStr != "" && attrs.URLAttributes.URLPath != "":
 		sb.WriteString(attrs.URLAttributes.URLScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.NetworkAttributes.NetworkPeerAddress)
 		sb.WriteString(":")
-		sb.WriteString(serverPortStr)
+		sb.WriteString(networkPeerPortStr)
 		sb.WriteString(attrs.URLAttributes.URLPath)
 		if attrs.URLAttributes.URLQuery != "" {
 			sb.WriteString(prefixIfNecessary(attrs.URLAttributes.URLQuery, "?"))
@@ -470,7 +475,7 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		sb.Reset()
 		sb.WriteString(attrs.NetworkAttributes.NetworkPeerAddress)
 		sb.WriteString(":")
-		sb.WriteString(serverPortStr)
+		sb.WriteString(networkPeerPortStr)
 		data.Target = sb.String()
 	}
 }
