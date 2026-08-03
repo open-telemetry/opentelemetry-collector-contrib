@@ -301,6 +301,36 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "partition_processing"),
+			expected: &Config{
+				ClientConfig:   configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
+				Logs: TopicEncodingConfig{
+					Topics:   []string{"otlp_logs"},
+					Encoding: "otlp_proto",
+				},
+				Metrics: TopicEncodingConfig{
+					Topics:   []string{"otlp_metrics"},
+					Encoding: "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topics:   []string{"otlp_spans"},
+					Encoding: "otlp_proto",
+				},
+				Profiles: TopicEncodingConfig{
+					Topics:   []string{"otlp_profiles"},
+					Encoding: "otlp_proto",
+				},
+				PartitionProcessing: PartitionProcessing{
+					Independent:        true,
+					MaxBufferedBatches: 2,
+				},
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -313,6 +343,12 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, confmap.Validate(cfg))
+			expected := tt.expected.(*Config)
+			if expected.PartitionProcessing.MaxBufferedBatches == 0 {
+				expected.PartitionProcessing = PartitionProcessing{
+					MaxBufferedBatches: 1,
+				}
+			}
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -455,6 +491,54 @@ func TestConfigValidate(t *testing.T) {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), tt.expectedErr)
 			}
+		})
+	}
+}
+
+func TestPartitionProcessingConfig(t *testing.T) {
+	t.Run("defaults", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+
+		require.Equal(t, PartitionProcessing{
+			Independent:        false,
+			MaxBufferedBatches: 1,
+		}, cfg.PartitionProcessing)
+	})
+
+	cases := []struct {
+		name    string
+		config  PartitionProcessing
+		wantErr string
+	}{
+		{
+			name: "valid independent processing",
+			config: PartitionProcessing{
+				Independent:        true,
+				MaxBufferedBatches: 1,
+			},
+		},
+		{
+			name: "invalid mailbox capacity",
+			config: PartitionProcessing{
+				Independent:        true,
+				MaxBufferedBatches: 0,
+			},
+			wantErr: "partition_processing.max_buffered_batches must be greater than zero",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &Config{
+				PartitionProcessing: tc.config,
+			}
+
+			err := cfg.Validate()
+			if tc.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.EqualError(t, err, tc.wantErr)
 		})
 	}
 }

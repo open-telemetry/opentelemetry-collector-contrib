@@ -20,6 +20,15 @@ $defs:
       on_permanent_error:
         description: 'If false, only the successfully processed messages are marked. This only applies to permanent errors. It has no impact if After is set to false. Default value inherits from OnError for backward compatibility. Note: this can block the entire partition in case a message processing returns a permanent error.'
         type: boolean
+  partition_processing:
+    type: object
+    properties:
+      independent:
+        description: Independent enables ordered processing by independent partition workers.
+        type: boolean
+      max_buffered_batches:
+        description: MaxBufferedBatches bounds the number of fetched batches waiting for each partition worker.
+        type: integer
   metric_config:
     description: MetricConfig provides common config for a particular metric.
     type: object
@@ -70,6 +79,9 @@ properties:
   message_marking:
     description: MessageMarking controls the way the messages are marked as consumed.
     $ref: message_marking
+  partition_processing:
+    description: PartitionProcessing controls optional independent processing of assigned topic partitions.
+    $ref: partition_processing
   metrics:
     description: Metrics holds configuration about how metrics should be consumed.
     $ref: topic_encoding_config

@@ -89,3 +89,8 @@ kafka/regex_topic_with_exclusion:
 
 kafka/conn_idle_timeout:
   conn_idle_timeout: 5m
+
+kafka/partition_processing:
+  partition_processing:
+    independent: true
+    max_buffered_batches: 2
