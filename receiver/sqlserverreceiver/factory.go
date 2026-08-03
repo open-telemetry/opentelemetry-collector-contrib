@@ -195,7 +195,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 
 		if query == getSQLServerQueryTextAndPlanQuery() {
 			// we have 8 metrics in this query and multiple 2 to allow to cache more queries.
-			cache = newCache(int(cfg.MaxQuerySampleCount * 8 * 2))
+			cache = newCache(int(cfg.TopQueryCollection.MaxQuerySampleCount * 8 * 2))
 		}
 
 		if query == getSQLServerQuerySamplesQuery() {

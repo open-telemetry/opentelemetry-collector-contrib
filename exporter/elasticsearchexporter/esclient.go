@@ -201,8 +201,8 @@ func newElasticsearchClient(
 
 	esLogger := &clientLogger{
 		Logger:          telemetry.Logger,
-		logRequestBody:  config.LogRequestBody,
-		logResponseBody: config.LogResponseBody,
+		logRequestBody:  config.TelemetrySettings.LogRequestBody,
+		logResponseBody: config.TelemetrySettings.LogResponseBody,
 		componentHost:   host,
 	}
 
