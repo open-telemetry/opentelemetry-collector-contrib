@@ -61,9 +61,9 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	ClientConfig              confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	ClientConfig  confighttp.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// AccessToken is the authentication token provided by SignalFx.
 	AccessToken configopaque.String `mapstructure:"access_token"`
@@ -98,7 +98,7 @@ type Config struct {
 	// Dimension update client configuration used for metadata updates.
 	DimensionClient DimensionClientConfig `mapstructure:"dimension_client"`
 
-	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
+	AccessTokenPassthroughConfig splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
 	DisableDefaultTranslationRules bool `mapstructure:"disable_default_translation_rules"`
 
