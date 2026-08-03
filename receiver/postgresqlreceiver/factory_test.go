@@ -82,7 +82,7 @@ func TestCreateMetricsStartsWithDBAuthProvider(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Username = "otel"
 	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_dbauth"))
-	cfg.InitialDelay = time.Hour
+	cfg.ControllerConfig.InitialDelay = time.Hour
 
 	metricsReceiver, err := factory.CreateMetrics(
 		t.Context(),
