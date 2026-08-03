@@ -195,7 +195,7 @@ func TestLockQueries(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			name:        "database locks keep relation names and non-relation targets",
+			name: "database locks keep relation names and non-relation targets",
 			rows: sqlmock.NewRows(columns).
 				AddRow("pg_class", "AccessShareLock", "relation", 2).
 				// COALESCE turns a non-relation target into an empty relation.
@@ -232,10 +232,10 @@ func TestLockQueries(t *testing.T) {
 			},
 		},
 		{
-			name:        "query error is wrapped",
-			queryErr:    errors.New("permission denied for table pg_locks"),
-			expected:    nil,
-			wantErr:     true,
+			name:     "query error is wrapped",
+			queryErr: errors.New("permission denied for table pg_locks"),
+			expected: nil,
+			wantErr:  true,
 		},
 		{
 			name:        "a NULL relation does not drop the remaining rows",
