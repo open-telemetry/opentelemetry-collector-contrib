@@ -10,13 +10,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.157.0
 	github.com/relvacode/iso8601 v1.8.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.63.1-0.20260730171426-4aa1b2d9586b
+	go.opentelemetry.io/collector/component v1.63.1-0.20260803152855-18ed8fe814ea
 	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260730171426-4aa1b2d9586b
-	go.opentelemetry.io/collector/confmap v1.63.1-0.20260730171426-4aa1b2d9586b
-	go.opentelemetry.io/collector/extension v1.63.1-0.20260730171426-4aa1b2d9586b
+	go.opentelemetry.io/collector/confmap v1.63.1-0.20260803152855-18ed8fe814ea
+	go.opentelemetry.io/collector/extension v1.63.1-0.20260803152855-18ed8fe814ea
 	go.opentelemetry.io/collector/extension/extensiontest v0.157.1-0.20260730171426-4aa1b2d9586b
-	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260730171426-4aa1b2d9586b
-	go.opentelemetry.io/collector/pdata v1.63.1-0.20260730171426-4aa1b2d9586b
+	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260803152855-18ed8fe814ea
+	go.opentelemetry.io/collector/pdata v1.63.1-0.20260803152855-18ed8fe814ea
 	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/otel/trace v1.44.0
 	go.uber.org/goleak v1.3.0
