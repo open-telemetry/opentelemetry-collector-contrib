@@ -26,7 +26,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -297,13 +296,18 @@ func TestNativeZstdCompression_WithRotation(t *testing.T) {
 	require.Equal(t, 100, totalTraces, "expected all 100 traces to be recoverable across all files")
 }
 
-// streamDecodableEncoding marshals log bodies as text and is stream-decodable.
-type streamDecodableEncoding struct{}
+// textLogsEncoding marshals log bodies as text and reports whether its output is
+// newline-separated, mirroring the capability textencodingextension exposes.
+type textLogsEncoding struct {
+	lineDelimited bool
+}
 
-func (streamDecodableEncoding) Start(context.Context, component.Host) error { return nil }
-func (streamDecodableEncoding) Shutdown(context.Context) error              { return nil }
+func (textLogsEncoding) Start(context.Context, component.Host) error { return nil }
+func (textLogsEncoding) Shutdown(context.Context) error              { return nil }
 
-func (streamDecodableEncoding) MarshalLogs(ld plog.Logs) ([]byte, error) {
+func (e textLogsEncoding) LogsLineDelimited() bool { return e.lineDelimited }
+
+func (textLogsEncoding) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	var buf bytes.Buffer
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -318,8 +322,15 @@ func (streamDecodableEncoding) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (streamDecodableEncoding) NewLogsDecoder(io.Reader, ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
-	return nil, nil
+// multiSignalEncoding reports line-delimited logs output but also marshals traces, whose
+// output is binary. It must not disable framing, since one export function is shared
+// across every signal.
+type multiSignalEncoding struct {
+	textLogsEncoding
+}
+
+func (multiSignalEncoding) MarshalTraces(ptrace.Traces) ([]byte, error) {
+	return []byte{0x00, 0x01}, nil
 }
 
 func logsWithBody(body string) plog.Logs {
@@ -330,32 +341,60 @@ func logsWithBody(body string) plog.Logs {
 	return ld
 }
 
-// A stream-decodable encoding gets newline framing, yielding clean text.
-func TestNativeCompression_UnframedForStreamDecodableEncoding(t *testing.T) {
-	setNativeCompressionFeatureGate(t, true)
-
-	encID := component.MustNewID("streamdecodable")
-	path := filepath.Join(t.TempDir(), "app.log.zst")
-	conf := &Config{
-		Path:              path,
-		FormatType:        formatTypeJSON,
-		Encoding:          &encID,
-		Compression:       compressionZSTD,
-		CompressionParams: configcompression.CompressionParams{Level: 3},
+// A line-delimited encoding gets newline framing, yielding clean text after decompression.
+func TestNativeCompression_LineDelimitedEncoding(t *testing.T) {
+	tests := []struct {
+		name     string
+		encoding component.Component
+		expected string
+	}{
+		{
+			name:     "line delimited",
+			encoding: textLogsEncoding{lineDelimited: true},
+			expected: "line-one\nline-two\n",
+		},
+		{
+			name:     "not line delimited",
+			encoding: textLogsEncoding{lineDelimited: false},
+			expected: "\x00\x00\x00\x08line-one\x00\x00\x00\x08line-two",
+		},
+		{
+			// Logs report line-delimited output, but the same export function also writes
+			// binary traces, so framing must be kept.
+			name:     "line delimited logs alongside binary traces",
+			encoding: multiSignalEncoding{textLogsEncoding{lineDelimited: true}},
+			expected: "\x00\x00\x00\x08line-one\x00\x00\x00\x08line-two",
+		},
 	}
 
-	host := hostWithEncoding{map[component.ID]component.Component{encID: streamDecodableEncoding{}}}
-	fe := &fileExporter{conf: conf}
-	require.NoError(t, fe.Start(t.Context(), host))
-	require.NoError(t, fe.consumeLogs(t.Context(), logsWithBody("line-one")))
-	require.NoError(t, fe.consumeLogs(t.Context(), logsWithBody("line-two")))
-	require.NoError(t, fe.Shutdown(t.Context()))
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			setNativeCompressionFeatureGate(t, true)
 
-	require.Equal(t, "line-one\nline-two\n", string(decompressZstd(t, path)))
+			encID := component.MustNewID("testencoding")
+			path := filepath.Join(t.TempDir(), "app.log.zst")
+			conf := &Config{
+				Path:              path,
+				FormatType:        formatTypeJSON,
+				Encoding:          &encID,
+				Compression:       compressionZSTD,
+				CompressionParams: configcompression.CompressionParams{Level: 3},
+			}
+
+			host := hostWithEncoding{map[component.ID]component.Component{encID: test.encoding}}
+			fe := &fileExporter{conf: conf}
+			require.NoError(t, fe.Start(t.Context(), host))
+			require.NoError(t, fe.consumeLogs(t.Context(), logsWithBody("line-one")))
+			require.NoError(t, fe.consumeLogs(t.Context(), logsWithBody("line-two")))
+			require.NoError(t, fe.Shutdown(t.Context()))
+
+			require.Equal(t, test.expected, string(decompressZstd(t, path)))
+		})
+	}
 }
 
-// encodingUnframed toggles between newline and length-prefix framing.
-func TestBuildExportFunc_EncodingUnframed(t *testing.T) {
+// encodingLineDelimited toggles between newline and length-prefix framing.
+func TestBuildExportFunc_EncodingLineDelimited(t *testing.T) {
 	setNativeCompressionFeatureGate(t, true)
 
 	encID := component.MustNewID("enc")

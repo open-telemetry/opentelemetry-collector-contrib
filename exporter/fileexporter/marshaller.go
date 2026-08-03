@@ -14,8 +14,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
+
+// lineDelimitedLogsMarshaler is optionally implemented by encoding extensions whose marshaled
+// logs output already uses newline as its record separator. Such output is appended to the file
+// newline-delimited rather than length-prefixed, so the result stays readable by standard
+// tooling. Encodings that do not implement it keep length-prefix framing.
+type lineDelimitedLogsMarshaler interface {
+	LogsLineDelimited() bool
+}
 
 // Marshaler configuration used for marshaling Protobuf
 var tracesMarshalers = map[string]ptrace.Marshaler{
@@ -49,9 +56,9 @@ type marshaller struct {
 
 	formatType string
 
-	// encodingUnframed is true when the encoding can be stream-decoded on
-	// read-back, so length-prefix framing is unnecessary.
-	encodingUnframed bool
+	// encodingLineDelimited is true when the configured encoding marshals records
+	// newline-separated, so length-prefix framing is unnecessary.
+	encodingLineDelimited bool
 }
 
 func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
@@ -74,16 +81,21 @@ func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
 		mm, _ := encodingExt.(pmetric.Marshaler)
 		lm, _ := encodingExt.(plog.Marshaler)
 		pm, _ := encodingExt.(pprofile.Marshaler)
-		// Stream-decodable encodings are self-delimiting, so no framing is needed.
-		_, unframed := encodingExt.(encoding.LogsDecoderFactory)
+		// A single export function is shared across every signal (see the sharedcomponent use
+		// in factory.go), so newline framing is only safe when logs is the only signal this
+		// encoding marshals. Drop the extra conditions once framing is chosen per signal.
+		lineDelimited := false
+		if ldm, ok := encodingExt.(lineDelimitedLogsMarshaler); ok && ldm.LogsLineDelimited() {
+			lineDelimited = tm == nil && mm == nil && pm == nil
+		}
 		return &marshaller{
-			tracesMarshaler:   tm,
-			metricsMarshaler:  mm,
-			logsMarshaler:     lm,
-			profilesMarshaler: pm,
-			compression:       compression,
-			compressor:        compressor,
-			encodingUnframed:  unframed,
+			tracesMarshaler:       tm,
+			metricsMarshaler:      mm,
+			logsMarshaler:         lm,
+			profilesMarshaler:     pm,
+			compression:           compression,
+			compressor:            compressor,
+			encodingLineDelimited: lineDelimited,
 		}, nil
 	}
 	return &marshaller{
