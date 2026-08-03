@@ -47,23 +47,57 @@ type eventProps struct {
 	attrs pcommon.Map
 }
 
+func populateHTTPAttrsForTests(m map[string]any, httpInfo *awsxray.HTTPData) {
+	if httpInfo == nil {
+		return
+	}
+	if req := httpInfo.Request; req != nil {
+		if req.Method != nil {
+			if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				m["http.method"] = *req.Method
+			}
+			if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				m["http.request.method"] = *req.Method
+			}
+		}
+		if req.URL != nil {
+			if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				m["http.url"] = *req.URL
+			}
+			if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				m["url.full"] = *req.URL
+			}
+		}
+		if req.ClientIP != nil {
+			if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				m["http.client_ip"] = *req.ClientIP
+			}
+			if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				m["client.address"] = *req.ClientIP
+			}
+		}
+	}
+	if resp := httpInfo.Response; resp != nil {
+		if resp.Status != nil {
+			if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				m["http.status_code"] = *resp.Status
+			}
+			if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				m["http.response.status_code"] = *resp.Status
+			}
+		}
+	}
+}
+
 func TestTranslation(t *testing.T) {
 	defaultServerSpanAttrs := func(seg *awsxray.Segment) pcommon.Map {
 		m := pcommon.NewMap()
-		raw := map[string]any{
-			"http.method":                         *seg.HTTP.Request.Method,
+		rawMap := map[string]any{
 			"http.user_agent":                     *seg.HTTP.Request.UserAgent,
 			awsxray.AWSXRayXForwardedForAttribute: *seg.HTTP.Request.XForwardedFor,
-			"http.status_code":                    *seg.HTTP.Response.Status,
-			"http.url":                            *seg.HTTP.Request.URL,
 		}
-		if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
-			raw["http.client_ip"] = *seg.HTTP.Request.ClientIP
-		}
-		if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
-			raw["client.address"] = *seg.HTTP.Request.ClientIP
-		}
-		assert.NoError(t, m.FromRaw(raw))
+		populateHTTPAttrsForTests(rawMap, seg.HTTP)
+		assert.NoError(t, m.FromRaw(rawMap))
 		return m
 	}
 
@@ -195,16 +229,17 @@ func TestTranslation(t *testing.T) {
 
 				subseg7318 := seg.Subsegments[0].Subsegments[0]
 				childSpan7318Attrs := pcommon.NewMap()
-				assert.NoError(t, childSpan7318Attrs.FromRaw(map[string]any{
+				rawMap7318 := map[string]any{
 					awsxray.AWSServiceAttribute:     *subseg7318.Name,
 					"http.response_content_length":  int64(subseg7318.HTTP.Response.ContentLength.(float64)),
-					"http.status_code":              *subseg7318.HTTP.Response.Status,
 					awsxray.AWSOperationAttribute:   *subseg7318.AWS.Operation,
 					awsxray.AWSRegionAttribute:      *subseg7318.AWS.RemoteRegion,
 					awsxray.AWSRequestIDAttribute:   *subseg7318.AWS.RequestID,
 					awsxray.AWSTableNameAttribute:   *subseg7318.AWS.TableName,
 					awsxray.AWSXrayRetriesAttribute: *subseg7318.AWS.Retries,
-				}))
+				}
+				populateHTTPAttrsForTests(rawMap7318, subseg7318.HTTP)
+				assert.NoError(t, childSpan7318Attrs.FromRaw(rawMap7318))
 
 				childSpan7318 := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -391,16 +426,17 @@ func TestTranslation(t *testing.T) {
 
 				subseg7163 := seg.Subsegments[0].Subsegments[1]
 				childSpan7163Attrs := pcommon.NewMap()
-				assert.NoError(t, childSpan7163Attrs.FromRaw(map[string]any{
+				rawMap7163 := map[string]any{
 					awsxray.AWSServiceAttribute:     *subseg7163.Name,
-					"http.status_code":              *subseg7163.HTTP.Response.Status,
 					"http.response_content_length":  int64(subseg7163.HTTP.Response.ContentLength.(float64)),
 					awsxray.AWSOperationAttribute:   *subseg7163.AWS.Operation,
 					awsxray.AWSRegionAttribute:      *subseg7163.AWS.RemoteRegion,
 					awsxray.AWSRequestIDAttribute:   *subseg7163.AWS.RequestID,
 					awsxray.AWSTableNameAttribute:   *subseg7163.AWS.TableName,
 					awsxray.AWSXrayRetriesAttribute: *subseg7163.AWS.Retries,
-				}))
+				}
+				populateHTTPAttrsForTests(rawMap7163, subseg7163.HTTP)
+				assert.NoError(t, childSpan7163Attrs.FromRaw(rawMap7163))
 
 				childSpan7163Evts := initExceptionEvents(&subseg7163)
 				assert.Len(t, childSpan7163Evts, 1, testCase+": childSpan7163Evts has incorrect size")
@@ -710,13 +746,12 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
-				assert.NoError(t, attrs.FromRaw(map[string]any{
-					"http.method":                  *seg.HTTP.Request.Method,
-					"http.status_code":             *seg.HTTP.Response.Status,
-					"http.url":                     *seg.HTTP.Request.URL,
+				rawMap := map[string]any{
 					"http.response_content_length": int64(seg.HTTP.Response.ContentLength.(float64)),
 					awsxray.AWSXRayTracedAttribute: true,
-				}))
+				}
+				populateHTTPAttrsForTests(rawMap, seg.HTTP)
+				assert.NoError(t, attrs.FromRaw(rawMap))
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *seg.ID,
@@ -759,13 +794,12 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
-				assert.NoError(t, attrs.FromRaw(map[string]any{
-					"http.method":                  *seg.HTTP.Request.Method,
-					"http.status_code":             *seg.HTTP.Response.Status,
-					"http.url":                     *seg.HTTP.Request.URL,
+				rawMap := map[string]any{
 					"http.response_content_length": seg.HTTP.Response.ContentLength.(string),
 					awsxray.AWSXRayTracedAttribute: true,
-				}))
+				}
+				populateHTTPAttrsForTests(rawMap, seg.HTTP)
+				assert.NoError(t, attrs.FromRaw(rawMap))
 
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
