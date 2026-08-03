@@ -1431,11 +1431,71 @@ func TestExplainQuery(t *testing.T) {
 				sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(tc.mockPlanResult),
 			)
 
-			plan, err := client.explainQuery(tc.query, tc.queryID, logger)
+			// The prepared statement must always be deallocated afterwards,
+			// otherwise it leaks server-side state on pooled connections.
+			normalizedQueryID := strings.ReplaceAll(tc.queryID, "-", "_")
+			mock.ExpectExec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID)).
+				WillReturnResult(sqlmock.NewResult(0, 0))
+
+			plan, err := client.explainQuery(t.Context(), tc.query, tc.queryID, logger)
 			require.NoError(t, err)
 			assert.Equal(t, tc.mockPlanResult, plan)
+			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func TestExplainQueryErrorStillCleansUp(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	logger := zap.NewNop()
+	client := &postgreSQLClient{
+		client:  db,
+		closeFn: func() error { return nil },
+	}
+
+	expectedSQL := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_12345 AS SELECT * FROM users;EXPLAIN(FORMAT JSON) EXECUTE otel_12345;"
+	mock.ExpectQuery(expectedSQL).WillReturnError(errors.New("syntax error"))
+
+	// Even though the EXPLAIN itself failed, PREPARE may have already
+	// registered the statement server-side, so cleanup must still run.
+	mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_12345").
+		WillReturnResult(sqlmock.NewResult(0, 0))
+
+	_, err = client.explainQuery(t.Context(), "SELECT * FROM users", "12345", logger)
+	require.Error(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestExplainQueryUsesContext(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	logger := zap.NewNop()
+	client := &postgreSQLClient{
+		client:  db,
+		closeFn: func() error { return nil },
+	}
+
+	expectedSQL := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_12345 AS SELECT * FROM users;EXPLAIN(FORMAT JSON) EXECUTE otel_12345;"
+	mock.ExpectQuery(expectedSQL).
+		WillDelayFor(200 * time.Millisecond).
+		WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan","Relation Name":"users"}}]`))
+
+	// Cleanup (DEALLOCATE PREPARE) must still run even though ctx expires
+	// mid-query, otherwise the prepared statement leaks on pooled connections.
+	mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_12345").
+		WillReturnResult(sqlmock.NewResult(0, 0))
+
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
+	defer cancel()
+
+	_, err = client.explainQuery(ctx, "SELECT * FROM users", "12345", logger)
+	require.Error(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
 }
 
 type (
@@ -1447,7 +1507,7 @@ type (
 )
 
 // explainQuery implements client.
-func (*mockClient) explainQuery(string, string, *zap.Logger) (string, error) {
+func (*mockClient) explainQuery(context.Context, string, string, *zap.Logger) (string, error) {
 	panic("unimplemented")
 }
 
