@@ -54,6 +54,14 @@ type Config struct {
 	// If > 0, periodically re-run detection for all configured detectors.
 	// When 0 (default), no periodic refresh occurs.
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
+	// FailOnMissingMetadata controls whether network-based detectors treat an
+	// unreachable metadata service as a hard failure. When true, affected detectors
+	// return an error instead of silently returning an empty resource, enabling the
+	// processor's retry mechanism to wait until the metadata service becomes available
+	// (e.g., during GKE/AKS node startup races).
+	// Supersedes the per-detector fail_on_missing_metadata fields (now deprecated).
+	// Default: false (backward compatible).
+	FailOnMissingMetadata bool `mapstructure:"fail_on_missing_metadata"`
 }
 
 // DetectorConfig contains user-specified configurations unique to all individual detectors

@@ -21,7 +21,7 @@ func TestDetectTrue(t *testing.T) {
 	t.Setenv("HEROKU_RELEASE_VERSION", "v1")
 	t.Setenv("HEROKU_SLUG_COMMIT", "23456")
 
-	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(t.Context())
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
@@ -44,7 +44,7 @@ func TestDetectTruePartial(t *testing.T) {
 	t.Setenv("HEROKU_APP_NAME", "appname")
 	t.Setenv("HEROKU_RELEASE_VERSION", "v1")
 
-	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(t.Context())
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
@@ -64,7 +64,7 @@ func TestDetectTruePartialMissingDynoId(t *testing.T) {
 	t.Setenv("HEROKU_APP_NAME", "appname")
 	t.Setenv("HEROKU_RELEASE_VERSION", "v1")
 
-	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(t.Context())
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
@@ -79,7 +79,7 @@ func TestDetectTruePartialMissingDynoId(t *testing.T) {
 }
 
 func TestDetectFalse(t *testing.T) {
-	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)

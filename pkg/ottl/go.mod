@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/alecthomas/participle/v2 v2.1.4
 	github.com/antchfx/xmlquery v1.5.1
-	github.com/antchfx/xpath v1.3.7
+	github.com/antchfx/xpath v1.3.8
 	github.com/elastic/go-grok v0.3.1
 	github.com/gobwas/glob v0.2.3
 	github.com/goccy/go-json v0.10.6
@@ -17,13 +17,13 @@ require (
 	github.com/twmb/murmur3 v1.1.8
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8
 	github.com/zeebo/xxh3 v1.1.0
-	go.opentelemetry.io/collector/client v1.63.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/component v1.63.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/pdata v1.63.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/pdata/pprofile v0.157.1-0.20260723141305-52e6bf4aaaba
-	go.opentelemetry.io/collector/pdata/xpdata v0.157.1-0.20260723141305-52e6bf4aaaba
+	go.opentelemetry.io/collector/client v1.63.1-0.20260730171426-4aa1b2d9586b
+	go.opentelemetry.io/collector/component v1.63.1-0.20260730171426-4aa1b2d9586b
+	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260730171426-4aa1b2d9586b
+	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260730171426-4aa1b2d9586b
+	go.opentelemetry.io/collector/pdata v1.63.1-0.20260730171426-4aa1b2d9586b
+	go.opentelemetry.io/collector/pdata/pprofile v0.157.1-0.20260730171426-4aa1b2d9586b
+	go.opentelemetry.io/collector/pdata/xpdata v0.157.1-0.20260730171426-4aa1b2d9586b
 	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/otel/trace v1.44.0
 	go.uber.org/goleak v1.3.0
