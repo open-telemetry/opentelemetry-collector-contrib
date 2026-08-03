@@ -1349,7 +1349,7 @@ func Test_splunkhecReceiver_Start(t *testing.T) {
 			name: "ack_extension_does_not_exist",
 			getConfig: func() *Config {
 				config := createDefaultConfig().(*Config)
-				config.Extension = &component.ID{}
+				config.Ack.Extension = &component.ID{}
 				return config
 			},
 			errorExpected: true,
@@ -1394,9 +1394,9 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 	t.Parallel()
 	config := createDefaultConfig().(*Config)
 	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
-	config.Path = "/ack"
+	config.Ack.Path = "/ack"
 	id := component.MustNewID("ack_extension")
-	config.Extension = &id
+	config.Ack.Extension = &id
 
 	tests := []struct {
 		name                  string
@@ -1627,7 +1627,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.RawPath = "/foo"
 	id := component.MustNewID("ack_extension")
-	config.Extension = &id
+	config.Ack.Extension = &id
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 	currAckID := uint64(0)
@@ -1792,7 +1792,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 	id := component.MustNewID("ack_extension")
-	config.Extension = &id
+	config.Ack.Extension = &id
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 

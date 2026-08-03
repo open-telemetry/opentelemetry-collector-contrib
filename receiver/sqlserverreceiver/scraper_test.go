@@ -948,7 +948,7 @@ func TestRecordDatabaseSampleQueryFetchesIdleBlockers(t *testing.T) {
 		return queryRowsFuncClient{queryRowsFunc: func(_ context.Context, args ...any) ([]sqlquery.StringMap, error) {
 			idleQueryCalls++
 			assert.Equal(t, []any{
-				sql.Named("top", scraper.config.MaxRowsPerQuery),
+				sql.Named("top", scraper.config.QuerySample.MaxRowsPerQuery),
 			}, args)
 			return idleRows, nil
 		}}
@@ -1019,7 +1019,7 @@ func TestRecordDatabaseSampleQueryIdleBlockerQueryFailureDoesNotFailScrape(t *te
 		return queryRowsFuncClient{queryRowsFunc: func(_ context.Context, args ...any) ([]sqlquery.StringMap, error) {
 			idleQueryCalls++
 			assert.Equal(t, []any{
-				sql.Named("top", scraper.config.MaxRowsPerQuery),
+				sql.Named("top", scraper.config.QuerySample.MaxRowsPerQuery),
 			}, args)
 			return nil, errors.New("idle blocker query failed")
 		}}
