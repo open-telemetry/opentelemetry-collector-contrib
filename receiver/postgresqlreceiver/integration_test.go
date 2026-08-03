@@ -444,8 +444,9 @@ func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
 		locks:    1,
 	})
 	// Relation locks keep their name, so the LEFT JOIN did not regress them.
-	require.NotEmpty(t, filterLocksByType(dbLocks, "relation"))
-	for _, lock := range filterLocksByType(dbLocks, "relation") {
+	relationLocks := filterLocksByType(dbLocks, "relation")
+	require.NotEmpty(t, relationLocks)
+	for _, lock := range relationLocks {
 		assert.NotEmpty(t, lock.relation)
 	}
 	// Transaction ID locks belong to no database, so they must not be counted here.
