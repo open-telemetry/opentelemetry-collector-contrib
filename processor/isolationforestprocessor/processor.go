@@ -71,6 +71,9 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 	if config.IsMultiModelMode() {
 		// Create named models for multi-model configuration
 		for _, modelConfig := range config.Models {
+			// contamination_rate is resolved per-model (outlier fraction varies by service);
+			// min_node_samples is a low-level tree-growth knob kept global on purpose —
+			// ModelConfig intentionally has no per-model override for it.
 			// Use adaptive forest creation if adaptive window is enabled
 			var forest *onlineIsolationForest
 			if config.IsAdaptiveWindowEnabled() {
