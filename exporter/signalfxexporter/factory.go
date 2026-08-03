@@ -141,7 +141,7 @@ func createMetricsExporter(
 
 	// If AccessTokenPassthrough enabled, split the incoming Metrics data by splunk.SFxAccessTokenLabel,
 	// this ensures that we get batches of data for the same token when pushing to the backend.
-	if cfg.AccessTokenPassthrough {
+	if cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough {
 		me = &baseMetricsExporter{
 			Component: me,
 			Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(splunk.SFxAccessTokenLabel, me),
@@ -183,7 +183,7 @@ func createLogsExporter(
 
 	// If AccessTokenPassthrough enabled, split the incoming Metrics data by splunk.SFxAccessTokenLabel,
 	// this ensures that we get batches of data for the same token when pushing to the backend.
-	if expCfg.AccessTokenPassthrough {
+	if expCfg.AccessTokenPassthroughConfig.AccessTokenPassthrough {
 		le = &baseLogsExporter{
 			Component: le,
 			Logs:      batchperresourceattr.NewBatchPerResourceLogs(splunk.SFxAccessTokenLabel, le),

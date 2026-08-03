@@ -102,7 +102,7 @@ func TestIntegration(t *testing.T) {
 			scraperinttest.WithCustomConfig(
 				func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 					rCfg := cfg.(*Config)
-					rCfg.CollectionInterval = 2 * time.Second
+					rCfg.ControllerConfig.CollectionInterval = 2 * time.Second
 					rCfg.Endpoint = fmt.Sprintf("%s://%s", c.URL().Scheme, c.URL().Host)
 					rCfg.Username = simulator.DefaultLogin.Username()
 					rCfg.Password = configopaque.String(pw)
