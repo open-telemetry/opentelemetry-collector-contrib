@@ -9,6 +9,6 @@ This component has the following feature gates:
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `receiver.awsxray.DontEmitV0HttpConventions` | alpha | When enabled, the receiver will stop emitting the legacy HTTP semantic conventions (http.method, http.url, http.status_code). | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45084) |
-| `receiver.awsxray.EmitV1HttpConventions` | alpha | When enabled, the receiver will emit the stable HTTP semantic conventions (http.request.method, url.full, http.response.status_code). | v0.158e.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45084) |
+| `receiver.awsxray.EmitV1HttpConventions` | alpha | When enabled, the receiver will emit the stable HTTP semantic conventions (http.request.method, url.full, http.response.status_code). | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45084) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

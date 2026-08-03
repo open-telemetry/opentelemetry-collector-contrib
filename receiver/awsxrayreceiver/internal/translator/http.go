@@ -8,7 +8,7 @@ import (
 	conventionsv118 "go.opentelemetry.io/otel/semconv/v1.18.0"
 	conventionsv120 "go.opentelemetry.io/otel/semconv/v1.20.0"
 	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"

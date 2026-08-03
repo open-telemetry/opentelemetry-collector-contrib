@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/awsxray
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Migrated HTTP semantic conventions from v1.25.0 to v1.40.0
+note: Migrated HTTP semantic conventions from v1.25.0 to v1.42.0
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [45084]
