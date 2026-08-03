@@ -109,7 +109,7 @@ func NewWatch(reg *FactoryRegistry, config WatchConfig, logger *zap.Logger, hand
 		exclude:          config.Exclude,
 		logger:           logger,
 	}
-	if config.StorageClient != nil && config.IncludeInitialState {
+	if config.StorageClient != nil {
 		o.cp = checkpoint.New(config.StorageClient, logger)
 	}
 	for _, nf := range factories {
