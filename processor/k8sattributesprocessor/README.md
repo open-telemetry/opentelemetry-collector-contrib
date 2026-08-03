@@ -250,34 +250,12 @@ Kubelet mode requires `filter.node`, `filter.node_from_env_var`, or `kubelet.end
 
 When `auth_type` is `kubeConfig`, kubelet requests use the Kubernetes API server node proxy instead of direct node-local kubelet access. Use `serviceAccount` or TLS auth with a kubelet endpoint for the API server load-reduction path.
 
-Reference numbers:
+Basic reference numbers:
 
 - Local `kind` control-plane validation using the stable `apiserver_longrunning_requests` metric showed the expected watch reduction: with `5` collector replicas, the API server `pods` `WATCH` count went from `5` to `10` with the normal API-backed pod source, and stayed at `5` with direct kubelet mode.
-- The existing KWOK load-test baseline reports the resource indicators used by the repository's benchmarks: at `1,000` workloads, CPU avg/max was about `1.9%/10.7%` and RAM avg/max was `81/111 MiB`; at `5,000` workloads, CPU avg/max was about `4.8%/31.3%` and RAM avg/max was `100/130 MiB` ([published results](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/)).
-- Those numbers describe the existing API-backed pod source. The kubelet-specific in-process benchmark measures snapshot reconciliation cost (`ns/op`, `B/op`, and allocations) because it does not run a full collector process; a process-level kubelet-vs-API comparison should use the same KWOK setup and report CPU avg/max and RAM avg/max for both modes.
+- In a local full-Collector comparison using the same `kind` cluster and `34`-pod snapshot, API-backed pod-source mode measured `0.00%/0.04%` CPU avg/max and `9.1/9.1 MiB` RAM avg/max; direct kubelet pod-source mode measured `0.13%/0.22%` CPU avg/max and `8.5/8.5 MiB` RAM avg/max. Each result used `30` one-second Docker resource samples after startup.
 
-These are reference numbers, not universal capacity guidance. The tradeoff is the important part: direct kubelet mode can remove collector-owned API-server pod watch pressure, but it replaces incremental API watch updates with periodic full-snapshot polling and local reconciliation on each collector.
-
-For a cluster-level comparison, use the stable Kubernetes metrics documented in the [Kubernetes metrics reference](https://kubernetes.io/docs/reference/instrumentation/metrics/). Capture the same interval before and after changing the source:
-
-```bash
-# Active pod watches. Expected: API mode +N; direct kubelet mode +0.
-kubectl get --raw /metrics \
-  | awk '/^apiserver_longrunning_requests\{[^}]*resource="pods"[^}]*verb="WATCH"/ {sum += $NF} END {print sum + 0}'
-
-# Pod LIST/WATCH request starts and reconnects. Compare the rate over a fixed window.
-kubectl get --raw /metrics \
-  | awk '/^apiserver_request_total\{[^}]*resource="pods"[^}]*verb="(LIST|WATCH)"/ {print}'
-```
-
-`apiserver_request_total` counts HTTP request starts, including watch reconnects; it does not count each event delivered through an existing watch. For API-server resource impact, compare the same fixed window using stable resource metrics, for example with Prometheus:
-
-```promql
-rate(container_cpu_usage_seconds_total{namespace="kube-system",pod=~"kube-apiserver.*",container="kube-apiserver"}[5m])
-container_memory_working_set_bytes{namespace="kube-system",pod=~"kube-apiserver.*",container="kube-apiserver"}
-```
-
-The expected signal is a reduction in active pod watches and pod LIST/WATCH churn proportional to the number of collector replicas. CPU and memory are cluster-dependent and should be reported from a controlled before/after window, rather than as universal numbers. A small `kind` cluster is suitable for validating the request topology; production-sized multi-node tests are needed to quantify API-server CPU, memory, and network effects.
+These are small-cluster reference numbers, not capacity guarantees. They show the expected tradeoff: direct kubelet mode removes the Collector's API-server pod watch, but adds periodic node-local polling and reconciliation work. Production results will vary with pod count, poll interval, metadata rules, and telemetry traffic.
 
 ```yaml
 processors:
