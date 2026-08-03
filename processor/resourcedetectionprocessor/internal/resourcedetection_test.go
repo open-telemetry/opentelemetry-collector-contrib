@@ -88,14 +88,14 @@ func TestDetect(t *testing.T) {
 				md.On("Detect").Return(res, "", nil)
 
 				mockDetectorType := DetectorType(fmt.Sprintf("mockDetector%v", i))
-				mockDetectors[mockDetectorType] = func(processor.Settings, DetectorConfig) (Detector, error) {
+				mockDetectors[mockDetectorType] = func(processor.Settings, DetectorConfig, bool) (Detector, error) {
 					return md, nil
 				}
 				mockDetectorTypes = append(mockDetectorTypes, mockDetectorType)
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, false, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			// Perform initial detection
@@ -114,18 +114,18 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, false, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
 func TestDetectResource_DetectorFactoryError(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{
-		mockDetectorKey: func(processor.Settings, DetectorConfig) (Detector, error) {
+		mockDetectorKey: func(processor.Settings, DetectorConfig, bool) (Detector, error) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, false, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
@@ -166,9 +166,9 @@ func TestDetectResource_RecordsTelemetry(t *testing.T) {
 	md.On("Detect").Return(res, "", nil)
 
 	f := NewProviderFactory(map[DetectorType]DetectorFactory{
-		"ec2": func(processor.Settings, DetectorConfig) (Detector, error) { return md, nil },
+		"ec2": func(processor.Settings, DetectorConfig, bool) (Detector, error) { return md, nil },
 	})
-	p, err := f.CreateResourceProvider(metadatatest.NewSettings(tt), time.Second, &mockDetectorConfig{}, "ec2")
+	p, err := f.CreateResourceProvider(metadatatest.NewSettings(tt), time.Second, false, &mockDetectorConfig{}, "ec2")
 	require.NoError(t, err)
 
 	require.NoError(t, p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second}))
@@ -193,9 +193,9 @@ func TestDetectResource_RecordsFailureTelemetry(t *testing.T) {
 	md.On("Detect").Return(pcommon.NewResource(), "", context.DeadlineExceeded)
 
 	f := NewProviderFactory(map[DetectorType]DetectorFactory{
-		"ec2": func(processor.Settings, DetectorConfig) (Detector, error) { return md, nil },
+		"ec2": func(processor.Settings, DetectorConfig, bool) (Detector, error) { return md, nil },
 	})
-	p, err := f.CreateResourceProvider(metadatatest.NewSettings(tt), time.Second, &mockDetectorConfig{}, "ec2")
+	p, err := f.CreateResourceProvider(metadatatest.NewSettings(tt), time.Second, false, &mockDetectorConfig{}, "ec2")
 	require.NoError(t, err)
 
 	// Short timeout cuts the inter-retry backoff short via context cancellation.

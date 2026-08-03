@@ -68,13 +68,13 @@ func (rcvr *cesReceiver) Start(ctx context.Context, host component.Host) error {
 }
 
 func (rcvr *cesReceiver) startReadingMetrics(ctx context.Context) {
-	if rcvr.config.InitialDelay > 0 {
-		<-time.After(rcvr.config.InitialDelay)
+	if rcvr.config.ControllerConfig.InitialDelay > 0 {
+		<-time.After(rcvr.config.ControllerConfig.InitialDelay)
 	}
 	if err := rcvr.pollMetricsAndConsume(ctx); err != nil {
 		rcvr.logger.Error(err.Error())
 	}
-	ticker := time.NewTicker(rcvr.config.CollectionInterval)
+	ticker := time.NewTicker(rcvr.config.ControllerConfig.CollectionInterval)
 
 	defer ticker.Stop()
 	for {
@@ -196,7 +196,7 @@ func (rcvr *cesReceiver) listDataPoints(ctx context.Context, metricDefinitions [
 		key := internal.GetMetricKey(metricDefinition)
 		from, ok := rcvr.lastSeenTs[key]
 		if !ok {
-			from = to.Add(-1 * rcvr.config.CollectionInterval)
+			from = to.Add(-1 * rcvr.config.ControllerConfig.CollectionInterval)
 		}
 		resp, dpErr := rcvr.listDataPointsForMetric(ctx, from, to, metricDefinition)
 		if dpErr != nil {
