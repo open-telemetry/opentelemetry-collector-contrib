@@ -98,11 +98,11 @@ func createMetricsProcessor(
 		return nil, err
 	}
 
-	includeMatchProperties, err := filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.Include)
+	includeMatchProperties, err := filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.MatchConfig.Include)
 	if err != nil {
 		return nil, err
 	}
-	excludeMatchProperties, err := filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.Exclude)
+	excludeMatchProperties, err := filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.MatchConfig.Exclude)
 	if err != nil {
 		return nil, err
 	}

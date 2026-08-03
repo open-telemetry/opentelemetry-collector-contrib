@@ -234,6 +234,7 @@ targeting it will have different variables available.
 | type          | `"hostport"`                                     | String                        |
 | id            | ID of source endpoint                            | String                        |
 | process_name  | Name of the process                              | String                        |
+| os            | The OS (as defined by [runtime.GOOS])            | String                        |
 | command       | Command line with the used to invoke the process | String                        |
 | is_ipv6       | true if endpoint is IPv6, otherwise false        | Boolean                       |
 | port          | Port number                                      | Integer                       |
@@ -412,6 +413,16 @@ receivers:
           - endpoint: '`scheme`://`endpoint`:`port``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
             method: GET
           collection_interval: 10s
+ receiver_creator/5:
+   watch_observers: [host_observer]
+   receivers:
+     windows_service:
+       # Enable this receiver if the OS is Windows.
+       rule: type == "hostport" && os == "windows"
+       config:
+         include_services:
+           - MSSQLSERVER
+         collection_interval: 10s
   receiver_creator/logs:
     watch_observers: [ k8s_observer ]
     receivers:
@@ -465,7 +476,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [receiver_creator/1, receiver_creator/2, receiver_creator/3, receiver_creator/4]
+      receivers: [receiver_creator/1, receiver_creator/2, receiver_creator/3, receiver_creator/4, receiver_creator/5]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
     logs:
@@ -777,3 +788,5 @@ spec:
               containerPort: 6379
               protocol: TCP
 ```
+
+[runtime.GOOS]: https://pkg.go.dev/runtime#pkg-constants

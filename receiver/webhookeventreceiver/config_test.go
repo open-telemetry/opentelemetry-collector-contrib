@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
@@ -346,7 +346,7 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			err := test.conf.Validate()
 			require.NoError(t, err)
-			require.Equal(t, test.expected, test.conf.MaxRequestBodySize)
+			require.Equal(t, test.expected, test.conf.ServerConfig.MaxRequestBodySize)
 		})
 	}
 }
@@ -388,7 +388,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	conf := factory.CreateDefaultConfig()
 	require.NoError(t, cmNoStr.Unmarshal(conf))
-	require.NoError(t, xconfmap.Validate(conf))
+	require.NoError(t, confmap.Validate(conf))
 
 	require.Equal(t, expect, conf)
 }

@@ -185,7 +185,7 @@ func newElasticsearchClient(
 	telemetry component.TelemetrySettings,
 	userAgent string,
 ) (elastictransport.Interface, error) {
-	httpClient, err := config.ToClient(ctx, host.GetExtensions(), telemetry)
+	httpClient, err := config.ClientConfig.ToClient(ctx, host.GetExtensions(), telemetry)
 	if err != nil {
 		return nil, err
 	}
@@ -201,8 +201,8 @@ func newElasticsearchClient(
 
 	esLogger := &clientLogger{
 		Logger:          telemetry.Logger,
-		logRequestBody:  config.LogRequestBody,
-		logResponseBody: config.LogResponseBody,
+		logRequestBody:  config.TelemetrySettings.LogRequestBody,
+		logResponseBody: config.TelemetrySettings.LogResponseBody,
 		componentHost:   host,
 	}
 

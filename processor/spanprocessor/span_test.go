@@ -96,7 +96,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Config:   *createMatchConfig(filterset.Strict),
 		Services: []string{"service"},
 	}
@@ -563,12 +563,12 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Config:    *createMatchConfig(filterset.Regexp),
 		Services:  []string{`^banks$`},
 		SpanNames: []string{"/"},
 	}
-	oCfg.Exclude = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Exclude = &filterconfig.MatchProperties{
 		Config:    *createMatchConfig(filterset.Strict),
 		SpanNames: []string{`donot/change`},
 	}
@@ -623,7 +623,7 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 		Description: "custom error message",
 	}
 	// This test number two include rule for applying rule only for status code 400
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Config: filterset.Config{
 			MatchType: filterset.Strict,
 		},

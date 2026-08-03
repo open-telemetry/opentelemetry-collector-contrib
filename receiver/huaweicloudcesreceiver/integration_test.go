@@ -107,7 +107,7 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 	sink := &consumertest.MetricsSink{}
 	cfg := createDefaultConfig().(*Config)
 	cfg.RegionID = "us-east-2"
-	cfg.CollectionInterval = time.Second
+	cfg.ControllerConfig.CollectionInterval = time.Second
 	cfg.ProjectID = "my-project"
 	cfg.Filter = "average"
 
