@@ -95,7 +95,7 @@ type Config struct {
 
 	// TelemetrySettings contains settings useful for testing/debugging purposes.
 	// This is experimental and may change at any time.
-	TelemetrySettings `mapstructure:"telemetry"`
+	TelemetrySettings TelemetrySettings `mapstructure:"telemetry"`
 
 	// IncludeSourceOnError configures whether the bulk index responses include
 	// a part of the source document on error.
@@ -547,13 +547,13 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 }
 
 func handleTelemetryConfig(cfg *Config, logger *zap.Logger) {
-	if cfg.LogRequestBody {
+	if cfg.TelemetrySettings.LogRequestBody {
 		logger.Warn("telemetry::log_request_body is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
 	}
-	if cfg.LogResponseBody {
+	if cfg.TelemetrySettings.LogResponseBody {
 		logger.Warn("telemetry::log_response_body is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
 	}
-	if cfg.LogFailedDocsInput {
+	if cfg.TelemetrySettings.LogFailedDocsInput {
 		logger.Warn("telemetry::log_failed_docs_input is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
 	}
 }

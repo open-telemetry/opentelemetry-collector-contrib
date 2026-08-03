@@ -45,6 +45,8 @@ properties:
     type: string
   logs_index_time_format:
     type: string
+  mapping:
+    $ref: mappings_settings
   namespace:
     type: string
   pipeline:
@@ -64,4 +66,3 @@ properties:
     type: string
 allOf:
   - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
-  - $ref: mappings_settings
