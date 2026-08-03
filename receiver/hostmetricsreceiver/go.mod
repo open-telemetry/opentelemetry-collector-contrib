@@ -29,7 +29,7 @@ require (
 	go.opentelemetry.io/collector/scraper v0.157.1-0.20260730171426-4aa1b2d9586b
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.157.1-0.20260730171426-4aa1b2d9586b
 	go.opentelemetry.io/collector/scraper/scrapertest v0.157.1-0.20260730171426-4aa1b2d9586b
-	go.opentelemetry.io/otel v1.44.0
+	go.opentelemetry.io/otel v1.44.1-0.20260730203235-08c5de4cbe6a
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0
@@ -53,7 +53,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/go-logr/logr v1.4.3 // indirect
+	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
