@@ -331,17 +331,20 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 	require.Contains(t, indexStats, indexKey("otel", "public", "table2", "table2_pkey"))
 }
 
-// TestExplainQueryParamCount verifies pg_prepared_statements reports the correct parameter
-// count for the two shapes that broke text-based $N counting: a placeholder repeated in the
-// query text, and a string literal that merely looks like one.
-func TestExplainQueryParamCount(t *testing.T) {
-	t.Skip("flaky test http://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50144")
+// TestLockCollectionIncludesNonRelationTargets asserts that locks whose target is
+// not a relation are reported, and that each one lands in the bucket that matches
+// its pg_locks.database: advisory locks belong to the connected database, while
+// transaction ID locks belong to no database at all.
+func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
 			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image: fmt.Sprintf("postgres:%s", post17TestVersion),
+				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
+				// A prepared transaction keeps its transactionid lock, with a NULL
+				// pid, until it is rolled back.
+				Cmd: []string{"-c", "max_prepared_transactions=10"},
 				Env: map[string]string{
 					"POSTGRES_USER":     "root",
 					"POSTGRES_PASSWORD": "otel",
@@ -356,14 +359,60 @@ func TestExplainQueryParamCount(t *testing.T) {
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
 			},
-		},
-	)
+		})
 	require.NoError(t, err)
-	require.NoError(t, ci.Start(t.Context()))
+
+	err = ci.Start(t.Context())
+	require.NoError(t, err)
 	defer testcontainers.CleanupContainer(t, ci)
 
 	p, err := ci.MappedPort(t.Context(), postgresqlPort)
 	require.NoError(t, err)
+
+	lockDB, err := sql.Open("postgres", fmt.Sprintf("postgres://root:otel@localhost:%s/otel?sslmode=disable", p.Port()))
+	require.NoError(t, err)
+	defer lockDB.Close()
+
+	// A prepared transaction that has written holds an ExclusiveLock on its
+	// transaction ID, which carries a NULL pg_locks.database.
+	prepConn, err := lockDB.Conn(t.Context())
+	require.NoError(t, err)
+	_, err = prepConn.ExecContext(t.Context(), "BEGIN")
+	require.NoError(t, err)
+	_, err = prepConn.ExecContext(t.Context(), "INSERT INTO table1 (id) VALUES (42)")
+	require.NoError(t, err)
+	_, err = prepConn.ExecContext(t.Context(), "PREPARE TRANSACTION 'otel_non_relation_locks'")
+	require.NoError(t, err)
+	require.NoError(t, prepConn.Close())
+	defer func() {
+		_, rollbackErr := lockDB.ExecContext(t.Context(), "ROLLBACK PREPARED 'otel_non_relation_locks'")
+		assert.NoError(t, rollbackErr)
+	}()
+
+	// A session-level advisory lock carries the connected database's OID.
+	advisoryConn, err := lockDB.Conn(t.Context())
+	require.NoError(t, err)
+	defer advisoryConn.Close()
+	_, err = advisoryConn.ExecContext(t.Context(), "SELECT pg_advisory_lock(4973300)")
+	require.NoError(t, err)
+	defer func() {
+		_, unlockErr := advisoryConn.ExecContext(t.Context(), "SELECT pg_advisory_unlock(4973300)")
+		assert.NoError(t, unlockErr)
+	}()
+
+	// Commenting on a database takes a lock on a shared object: database = 0 with
+	// a NULL relation. Held open in a transaction for the duration of the scrape.
+	objectConn, err := lockDB.Conn(t.Context())
+	require.NoError(t, err)
+	defer objectConn.Close()
+	_, err = objectConn.ExecContext(t.Context(), "BEGIN")
+	require.NoError(t, err)
+	_, err = objectConn.ExecContext(t.Context(), "COMMENT ON DATABASE otel IS 'otel shared object lock'")
+	require.NoError(t, err)
+	defer func() {
+		_, rollbackErr := objectConn.ExecContext(t.Context(), "ROLLBACK")
+		assert.NoError(t, rollbackErr)
+	}()
 
 	clientDB, err := getDB(t.Context(), postgreSQLConfig{
 		username: "otelu",
@@ -376,38 +425,74 @@ func TestExplainQueryParamCount(t *testing.T) {
 		},
 	}, "otel")
 	require.NoError(t, err)
+
 	client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
 	defer func() {
 		require.NoError(t, client.Close())
 	}()
 
-	logger := zap.Must(zap.NewProduction())
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
 
-	testCases := []struct {
-		name  string
-		query string
-	}{
-		{
-			name:  "repeated placeholder counts as one parameter",
-			query: "SELECT * FROM table1 WHERE id = $1 OR id = $1",
-		},
-		{
-			name:  "dollar-sign inside a string literal is not a parameter",
-			query: "SELECT * FROM table1 WHERE id::text = '$123'",
-		},
+	dbLocks, err := client.getDatabaseLocks(ctx)
+	require.NoError(t, err)
+	// The advisory lock's target belongs to the connected database.
+	require.Contains(t, dbLocks, databaseLocks{
+		relation: "",
+		mode:     "ExclusiveLock",
+		lockType: "advisory",
+		locks:    1,
+	})
+	// Relation locks keep their name, so the LEFT JOIN did not regress them.
+	require.NotEmpty(t, filterLocksByType(dbLocks, "relation"))
+	for _, lock := range filterLocksByType(dbLocks, "relation") {
+		assert.NotEmpty(t, lock.relation)
 	}
+	// Transaction ID locks belong to no database, so they must not be counted here.
+	assert.Empty(t, filterLocksByType(dbLocks, "transactionid"))
+	assert.Empty(t, filterLocksByType(dbLocks, "virtualxid"))
 
-	// A text-based $N count gets both cases wrong: 2 instead of 1 for the repeated
-	// placeholder (which PostgreSQL rejects outright -- "wrong number of parameters"), and
-	// 1 instead of 0 for the string literal (which happens to still run, just with an unused
-	// bound null). pg_prepared_statements reports the correct count either way.
-	for i, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			plan, err := client.explainQuery(t.Context(), tc.query, fmt.Sprintf("paramcount%d", i), logger)
-			require.NoError(t, err)
-			require.NotEmpty(t, plan)
-		})
+	serverLocks, err := client.getServerScopedLocks(ctx)
+	require.NoError(t, err)
+
+	var expectedTransactionIDLocks int64
+	require.NoError(t, lockDB.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM pg_locks WHERE locktype = 'transactionid' AND mode = 'ExclusiveLock'`,
+	).Scan(&expectedTransactionIDLocks))
+	require.Positive(t, expectedTransactionIDLocks)
+
+	transactionIDLocks := filterLocksByType(serverLocks, "transactionid")
+	require.Len(t, transactionIDLocks, 1)
+	assert.Empty(t, transactionIDLocks[0].relation)
+	assert.Equal(t, "ExclusiveLock", transactionIDLocks[0].mode)
+	// The prepared transaction has a NULL pid, so it is only counted if the query
+	// counts rows rather than pids.
+	assert.Equal(t, expectedTransactionIDLocks, transactionIDLocks[0].locks)
+
+	// Every backend holds an ExclusiveLock on its own virtual transaction ID.
+	virtualXIDLocks := filterLocksByType(serverLocks, "virtualxid")
+	require.Len(t, virtualXIDLocks, 1)
+	assert.Empty(t, virtualXIDLocks[0].relation)
+	require.Positive(t, virtualXIDLocks[0].locks)
+
+	// A shared object target has database = 0 and a NULL relation, so it is only
+	// reported if the shared bucket keeps non-relation targets.
+	objectLocks := filterLocksByType(serverLocks, "object")
+	require.Len(t, objectLocks, 1)
+	assert.Empty(t, objectLocks[0].relation)
+
+	// The advisory lock is scoped to a database, so it is not reported twice.
+	assert.Empty(t, filterLocksByType(serverLocks, "advisory"))
+}
+
+func filterLocksByType(locks []databaseLocks, lockType string) []databaseLocks {
+	var filtered []databaseLocks
+	for _, lock := range locks {
+		if lock.lockType == lockType {
+			filtered = append(filtered, lock)
+		}
 	}
+	return filtered
 }
 
 func TestScrapeLogsFromContainer(t *testing.T) {
