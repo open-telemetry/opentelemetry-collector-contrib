@@ -1728,6 +1728,19 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				lockType: "relation",
 				locks:    2,
 			},
+			{
+				// Transaction ID targets belong to no database and no relation.
+				relation: "",
+				mode:     "ExclusiveLock",
+				lockType: "transactionid",
+				locks:    3,
+			},
+			{
+				relation: "",
+				mode:     "ExclusiveLock",
+				lockType: "virtualxid",
+				locks:    4,
+			},
 		}, nil)
 		m.On("getReplicationStats", mock.Anything).Return([]replicationStats{
 			{
@@ -1869,6 +1882,13 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				mode:     "AccessShareLock",
 				lockType: "relation",
 				locks:    int64(index + 5600),
+			},
+			{
+				// Non-relation target owned by this database: no relation name.
+				relation: "",
+				mode:     "ExclusiveLock",
+				lockType: "advisory",
+				locks:    int64(index + 7600),
 			},
 		}, nil)
 
