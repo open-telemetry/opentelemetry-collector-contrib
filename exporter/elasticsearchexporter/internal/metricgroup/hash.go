@@ -6,11 +6,8 @@ package metricgroup // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"cmp"
 	"encoding/binary"
-	"hash"
-	"io"
 	"math"
 	"slices"
-	"sync"
 
 	"github.com/cespare/xxhash/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -29,50 +26,14 @@ var (
 	// every empty/bool value write in the hash hot path.
 	hashByteZero = []byte{0}
 	hashByteOne  = []byte{1}
-
-	// Pools keep HashKey/UpdateDataPoint at 0 allocs/op: previously every call
-	// allocated a fresh []kv for sorting and a fresh xxhash.Digest.
-	kvSlicePool = sync.Pool{
-		New: func() any {
-			s := make([]kv, 0, 64)
-			return &s
-		},
-	}
-	xxhashPool = sync.Pool{
-		New: func() any {
-			return xxhash.New()
-		},
-	}
 )
 
-func acquireKVSlice(capHint int) *[]kv {
-	p := kvSlicePool.Get().(*[]kv)
-	if cap(*p) < capHint {
-		*p = make([]kv, 0, capHint)
-	} else {
-		*p = (*p)[:0]
+func resetKVs(kvs []kv, capHint int) []kv {
+	clear(kvs)
+	if cap(kvs) < capHint {
+		return make([]kv, 0, capHint)
 	}
-	return p
-}
-
-func releaseKVSlice(p *[]kv) {
-	// Drop oversized buffers so a rare huge map does not pin memory in the pool.
-	if p == nil || cap(*p) > 1024 {
-		return
-	}
-	// Clear entries so pooled slices do not retain pcommon.Value references.
-	clear(*p)
-	*p = (*p)[:0]
-	kvSlicePool.Put(p)
-}
-
-func acquireXXHash() *xxhash.Digest {
-	return xxhashPool.Get().(*xxhash.Digest)
-}
-
-func releaseXXHash(d *xxhash.Digest) {
-	d.Reset()
-	xxhashPool.Put(d)
+	return kvs[:0]
 }
 
 func isReservedAttr(k string, extraExcludes []string) bool {
@@ -83,33 +44,19 @@ func isReservedAttr(k string, extraExcludes []string) bool {
 	return slices.Contains(extraExcludes, k)
 }
 
-// writeHashString prefers WriteString to avoid the []byte(string) allocation
-// that hasher.Write([]byte(s)) performs. xxhash.Digest implements
-// io.StringWriter.
-func writeHashString(hasher hash.Hash, s string) {
-	if sw, ok := hasher.(io.StringWriter); ok {
-		_, _ = sw.WriteString(s)
-		return
-	}
-	_, _ = hasher.Write([]byte(s))
-}
-
 // mapHashSortedExcludeReservedAttrs is mapHash but ignoring some reserved attributes and is independent of order in Map.
 // e.g. index is already considered during routing and DS attributes do not need to be considered in hashing
 //
 // TODO(carsonip): https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39377
 // Use opentelemetry-collector-contrib/pkg/pdatautil/hash.go when it can optionally exclude attributes
 // We could have used it now but it'll involve creating a new Map and copying things over.
-func mapHashSortedExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extraExcludes ...string) {
-	// Sort into a pooled buffer instead of allocating []kv on every call.
-	kvsPtr := acquireKVSlice(m.Len())
-	kvs := appendSortedKVsExcludeReservedAttrs((*kvsPtr)[:0], m, extraExcludes...)
-	*kvsPtr = kvs
+func mapHashSortedExcludeReservedAttrs(hasher *xxhash.Digest, kvs []kv, m pcommon.Map, extraExcludes ...string) []kv {
+	kvs = appendSortedKVsExcludeReservedAttrs(resetKVs(kvs, m.Len()), m, extraExcludes...)
 	for i := range kvs {
-		writeHashString(hasher, kvs[i].k)
+		_, _ = hasher.WriteString(kvs[i].k)
 		valueHash(hasher, kvs[i].v)
 	}
-	releaseKVSlice(kvsPtr)
+	return kvs
 }
 
 // sortedKVsExcludeReservedAttrs returns a newly allocated sorted kv slice. Used
@@ -134,29 +81,29 @@ func appendSortedKVsExcludeReservedAttrs(kvs []kv, m pcommon.Map, extraExcludes 
 
 // writeMergedSortedKVs hashes the ECS merge of resource and datapoint attributes
 // (datapoint wins on key conflict). Both inputs must already be sorted by key.
-func writeMergedSortedKVs(hasher hash.Hash, resourceKVs, dpKVs []kv) {
+func writeMergedSortedKVs(hasher *xxhash.Digest, resourceKVs, dpKVs []kv) {
 	i, j := 0, 0
 	for i < len(resourceKVs) || j < len(dpKVs) {
 		switch {
 		case j >= len(dpKVs):
-			writeHashString(hasher, resourceKVs[i].k)
+			_, _ = hasher.WriteString(resourceKVs[i].k)
 			valueHash(hasher, resourceKVs[i].v)
 			i++
 		case i >= len(resourceKVs):
-			writeHashString(hasher, dpKVs[j].k)
+			_, _ = hasher.WriteString(dpKVs[j].k)
 			valueHash(hasher, dpKVs[j].v)
 			j++
 		case resourceKVs[i].k < dpKVs[j].k:
-			writeHashString(hasher, resourceKVs[i].k)
+			_, _ = hasher.WriteString(resourceKVs[i].k)
 			valueHash(hasher, resourceKVs[i].v)
 			i++
 		case resourceKVs[i].k > dpKVs[j].k:
-			writeHashString(hasher, dpKVs[j].k)
+			_, _ = hasher.WriteString(dpKVs[j].k)
 			valueHash(hasher, dpKVs[j].v)
 			j++
 		default:
 			// Equal keys: datapoint overwrites resource.
-			writeHashString(hasher, dpKVs[j].k)
+			_, _ = hasher.WriteString(dpKVs[j].k)
 			valueHash(hasher, dpKVs[j].v)
 			i++
 			j++
@@ -164,19 +111,19 @@ func writeMergedSortedKVs(hasher hash.Hash, resourceKVs, dpKVs []kv) {
 	}
 }
 
-func mapHash(hasher hash.Hash, m pcommon.Map) {
+func mapHash(hasher *xxhash.Digest, m pcommon.Map) {
 	for k, v := range m.All() {
-		writeHashString(hasher, k)
+		_, _ = hasher.WriteString(k)
 		valueHash(hasher, v)
 	}
 }
 
-func valueHash(h hash.Hash, v pcommon.Value) {
+func valueHash(h *xxhash.Digest, v pcommon.Value) {
 	switch v.Type() {
 	case pcommon.ValueTypeEmpty:
 		_, _ = h.Write(hashByteZero)
 	case pcommon.ValueTypeStr:
-		writeHashString(h, v.Str())
+		_, _ = h.WriteString(v.Str())
 	case pcommon.ValueTypeBool:
 		if v.Bool() {
 			_, _ = h.Write(hashByteOne)
@@ -200,7 +147,7 @@ func valueHash(h hash.Hash, v pcommon.Value) {
 	}
 }
 
-func sliceHash(h hash.Hash, s pcommon.Slice) {
+func sliceHash(h *xxhash.Digest, s pcommon.Slice) {
 	for _, item := range s.All() {
 		valueHash(h, item)
 	}

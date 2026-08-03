@@ -6,6 +6,7 @@ package metricgroup // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"encoding/binary"
 
+	"github.com/cespare/xxhash/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -41,6 +42,8 @@ type hashableDataPoint interface {
 // allocating a merged pcommon.Map.
 type ECSDataPointHasher struct {
 	resourceKVs []kv
+	dpKVs       []kv
+	hasher      xxhash.Digest
 	dp          hashableDataPoint
 }
 
@@ -56,23 +59,20 @@ func (h *ECSDataPointHasher) UpdateDataPoint(dp datapoints.DataPoint) {
 }
 
 func (h *ECSDataPointHasher) HashKey() HashKey {
-	hasher := acquireXXHash()
-	defer releaseXXHash(hasher)
+	h.hasher.Reset()
 
 	var timestampBuf [8]byte
 	binary.LittleEndian.PutUint64(timestampBuf[:], uint64(h.dp.Timestamp()))
-	_, _ = hasher.Write(timestampBuf[:])
+	_, _ = h.hasher.Write(timestampBuf[:])
 
 	// scope attributes are ignored in ECS mode; datapoint attrs overwrite resource attrs
 	dpAttrs := h.dp.Attributes()
-	dpKVsPtr := acquireKVSlice(dpAttrs.Len())
-	*dpKVsPtr = appendSortedKVsExcludeReservedAttrs((*dpKVsPtr)[:0], dpAttrs, elasticsearch.MappingHintsAttrKey)
-	writeMergedSortedKVs(hasher, h.resourceKVs, *dpKVsPtr)
-	releaseKVSlice(dpKVsPtr)
+	h.dpKVs = appendSortedKVsExcludeReservedAttrs(resetKVs(h.dpKVs, dpAttrs.Len()), dpAttrs, elasticsearch.MappingHintsAttrKey)
+	writeMergedSortedKVs(&h.hasher, h.resourceKVs, h.dpKVs)
 
-	return HashKey{
-		dpHash: hasher.Sum64(),
-	}
+	hashKey := HashKey{dpHash: h.hasher.Sum64()}
+	h.dpKVs = resetKVs(h.dpKVs, 0)
+	return hashKey
 }
 
 // OTelDataPointHasher computes a hash for each of resource, scope and data point on each Update call,
@@ -81,48 +81,50 @@ type OTelDataPointHasher struct {
 	resourceHash uint64
 	scopeHash    uint64
 	dpHash       uint64
+	kvs          []kv
+	hasher       xxhash.Digest
 }
 
 func (h *OTelDataPointHasher) UpdateResource(resource pcommon.Resource) {
 	// We cannot use exp/metrics/identity here because some resource fields e.g. schema url
 	// are not dimensions and should not be part of the hash.
 
-	hasher := acquireXXHash()
+	h.hasher.Reset()
 	// There is special handling to merge geo attributes during serialization,
 	// but we can hash them as if they are separate now.
-	mapHashSortedExcludeReservedAttrs(hasher, resource.Attributes(), elasticsearch.MappingHintsAttrKey)
-	h.resourceHash = hasher.Sum64()
-	releaseXXHash(hasher)
+	h.kvs = mapHashSortedExcludeReservedAttrs(&h.hasher, h.kvs, resource.Attributes(), elasticsearch.MappingHintsAttrKey)
+	h.resourceHash = h.hasher.Sum64()
+	h.kvs = resetKVs(h.kvs, 0)
 }
 
 func (h *OTelDataPointHasher) UpdateScope(scope pcommon.InstrumentationScope) {
-	hasher := acquireXXHash()
-	_, _ = hasher.WriteString(scope.Name())
+	h.hasher.Reset()
+	_, _ = h.hasher.WriteString(scope.Name())
 	// There is special handling to merge geo attributes during serialization,
 	// but we can hash them as if they are separate now.
-	mapHashSortedExcludeReservedAttrs(hasher, scope.Attributes(), elasticsearch.MappingHintsAttrKey)
-	h.scopeHash = hasher.Sum64()
-	releaseXXHash(hasher)
+	h.kvs = mapHashSortedExcludeReservedAttrs(&h.hasher, h.kvs, scope.Attributes(), elasticsearch.MappingHintsAttrKey)
+	h.scopeHash = h.hasher.Sum64()
+	h.kvs = resetKVs(h.kvs, 0)
 }
 
 func (h *OTelDataPointHasher) UpdateDataPoint(dp datapoints.DataPoint) {
-	hasher := acquireXXHash()
+	h.hasher.Reset()
 
 	var timestampBuf [8]byte
 	binary.LittleEndian.PutUint64(timestampBuf[:], uint64(dp.Timestamp()))
-	_, _ = hasher.Write(timestampBuf[:])
+	_, _ = h.hasher.Write(timestampBuf[:])
 
 	binary.LittleEndian.PutUint64(timestampBuf[:], uint64(dp.StartTimestamp()))
-	_, _ = hasher.Write(timestampBuf[:])
+	_, _ = h.hasher.Write(timestampBuf[:])
 
-	_, _ = hasher.WriteString(dp.Metric().Unit())
+	_, _ = h.hasher.WriteString(dp.Metric().Unit())
 
 	// There is special handling to merge geo attributes during serialization,
 	// but we can hash them as if they are separate now.
-	mapHashSortedExcludeReservedAttrs(hasher, dp.Attributes(), elasticsearch.MappingHintsAttrKey)
+	h.kvs = mapHashSortedExcludeReservedAttrs(&h.hasher, h.kvs, dp.Attributes(), elasticsearch.MappingHintsAttrKey)
 
-	h.dpHash = hasher.Sum64()
-	releaseXXHash(hasher)
+	h.dpHash = h.hasher.Sum64()
+	h.kvs = resetKVs(h.kvs, 0)
 }
 
 func (h *OTelDataPointHasher) HashKey() HashKey {

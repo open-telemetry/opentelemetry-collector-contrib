@@ -95,10 +95,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 				doc.AddInt("c", 3)
 				return doc
 			},
-			want: Document{
-				fields: []field{{"a", IntValue(1)}, {"c", IntValue(3)}},
-				sorted: true,
-			},
+			want: Document{fields: []field{{"a", IntValue(1)}, {"c", IntValue(3)}}},
 		},
 		"duplicate keys": {
 			build: func() (doc Document) {
@@ -107,10 +104,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 				doc.AddInt("a", 2)
 				return doc
 			},
-			want: Document{
-				fields: []field{{"a", ignoreValue}, {"a", IntValue(2)}, {"c", IntValue(3)}},
-				sorted: true,
-			},
+			want: Document{fields: []field{{"a", ignoreValue}, {"a", IntValue(2)}, {"c", IntValue(3)}}},
 		},
 		"duplicate after flattening from map: namespace object at end": {
 			build: func() Document {
@@ -120,10 +114,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 				am.PutEmptyMap("namespace").PutInt("a", 23)
 				return DocumentFromAttributes(am)
 			},
-			want: Document{
-				fields: []field{{"namespace.a", ignoreValue}, {"namespace.a", IntValue(23)}, {"toplevel", StringValue("test")}},
-				sorted: true,
-			},
+			want: Document{fields: []field{{"namespace.a", ignoreValue}, {"namespace.a", IntValue(23)}, {"toplevel", StringValue("test")}}},
 		},
 		"duplicate after flattening from map: namespace object at beginning": {
 			build: func() Document {
@@ -133,10 +124,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 				am.PutStr("toplevel", "test")
 				return DocumentFromAttributes(am)
 			},
-			want: Document{
-				fields: []field{{"namespace.a", ignoreValue}, {"namespace.a", IntValue(42)}, {"toplevel", StringValue("test")}},
-				sorted: true,
-			},
+			want: Document{fields: []field{{"namespace.a", ignoreValue}, {"namespace.a", IntValue(42)}, {"toplevel", StringValue("test")}}},
 		},
 		"dedup in arrays": {
 			build: func() (doc Document) {
@@ -155,9 +143,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 						{"a", IntValue(2)},
 						{"c", IntValue(3)},
 					},
-					sorted: true,
 				}})}},
-				sorted: true,
 			},
 		},
 		"dedup mix of primitive and object lifts primitive": {
@@ -166,10 +152,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 				doc.AddInt("namespace.a", 2)
 				return doc
 			},
-			want: Document{
-				fields: []field{{"namespace.a", IntValue(2)}, {"namespace.value", IntValue(1)}},
-				sorted: true,
-			},
+			want: Document{fields: []field{{"namespace.a", IntValue(2)}, {"namespace.value", IntValue(1)}}},
 		},
 		"dedup removes primitive if value exists": {
 			build: func() (doc Document) {
@@ -178,10 +161,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 				doc.AddInt("namespace.value", 3)
 				return doc
 			},
-			want: Document{
-				fields: []field{{"namespace.a", IntValue(2)}, {"namespace.value", ignoreValue}, {"namespace.value", IntValue(3)}},
-				sorted: true,
-			},
+			want: Document{fields: []field{{"namespace.a", IntValue(2)}, {"namespace.value", ignoreValue}, {"namespace.value", IntValue(3)}}},
 		},
 	}
 

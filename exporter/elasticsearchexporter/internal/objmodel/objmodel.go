@@ -51,11 +51,6 @@ import (
 type Document struct {
 	fields           []field
 	dynamicTemplates map[string]string
-	// sorted is true when fields are known to be in key order. Dedup requires a
-	// sorted field list; tracking this avoids re-sorting when Serialize/Dedup
-	// runs again on a document that was already deduped (or never mutated after
-	// sort).
-	sorted bool
 }
 
 type field struct {
@@ -123,7 +118,7 @@ func DocumentFromAttributesWithPath(path string, am pcommon.Map) Document {
 func (doc *Document) Clone() *Document {
 	fields := make([]field, len(doc.fields))
 	copy(fields, doc.fields)
-	return &Document{fields: fields, dynamicTemplates: maps.Clone(doc.dynamicTemplates), sorted: doc.sorted}
+	return &Document{fields: fields, dynamicTemplates: maps.Clone(doc.dynamicTemplates)}
 }
 
 func (doc *Document) AddDynamicTemplate(path, template string) {
@@ -145,8 +140,6 @@ func (doc *Document) AddTimestamp(key string, ts pcommon.Timestamp) {
 // Add adds a converted value to the document.
 func (doc *Document) Add(key string, v Value) {
 	doc.fields = append(doc.fields, field{key: key, value: v})
-	// Append order is not key order, so any prior sort is stale.
-	doc.sorted = false
 }
 
 // AddString adds a string to the document.
@@ -186,8 +179,6 @@ func (doc *Document) AddUInt(key string, value uint64) {
 // the document.
 func (doc *Document) AddAttributes(key string, attributes pcommon.Map) {
 	doc.fields = appendAttributeFields(doc.fields, key, attributes)
-	// Flattened appends are not key-ordered.
-	doc.sorted = false
 }
 
 // AddAttribute converts and adds a AttributeValue to the document. If the attribute represents a map,
@@ -229,10 +220,7 @@ func (doc *Document) AddLinks(key string, links ptrace.SpanLinkSlice) {
 }
 
 func (doc *Document) sort() {
-	if !doc.sorted {
-		slices.SortStableFunc(doc.fields, fieldKeyCompare)
-		doc.sorted = true
-	}
+	slices.SortStableFunc(doc.fields, fieldKeyCompare)
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
@@ -291,8 +279,6 @@ func (doc *Document) Dedup(protectedSet map[string]struct{}) {
 		}
 	}
 	if renamed {
-		// Renaming path.x -> path.x.value can change key order relative to path.x.*.
-		doc.sorted = false
 		doc.sort()
 	}
 
