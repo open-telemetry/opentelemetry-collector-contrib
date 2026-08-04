@@ -167,6 +167,116 @@ func TestGetExecutionTimeStats(t *testing.T) {
 	}
 }
 
+func TestGetBackends(t *testing.T) {
+	const baseSQL = "SELECT datname, coalesce(state, 'unknown') as state, coalesce(wait_event_type, 'none') as wait_event_type, count(*) as count from pg_stat_activity"
+	const groupBy = " GROUP BY datname, state, wait_event_type;"
+	columns := []string{"datname", "state", "wait_event_type", "count"}
+
+	tests := []struct {
+		name        string
+		databases   []string
+		expectedSQL string
+		rows        *sqlmock.Rows
+		queryErr    error
+		expected    map[databaseName][]backendStateCount
+		wantErr     bool
+	}{
+		{
+			name:        "groups backends by state and wait event type",
+			databases:   nil,
+			expectedSQL: baseSQL + groupBy,
+			rows: sqlmock.NewRows(columns).
+				AddRow("otel", "active", "none", 3).
+				AddRow("otel", "idle", "Client", 7).
+				AddRow("telemetry", "idle in transaction", "Lock", 1),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {
+					{state: "active", waitEventType: "none", count: 3},
+					{state: "idle", waitEventType: "Client", count: 7},
+				},
+				"telemetry": {
+					{state: "idle in transaction", waitEventType: "Lock", count: 1},
+				},
+			},
+		},
+		{
+			name:        "filtered by database",
+			databases:   []string{"otel"},
+			expectedSQL: baseSQL + " WHERE datname IN ('otel')" + groupBy,
+			rows: sqlmock.NewRows(columns).
+				AddRow("otel", "active", "none", 2),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {{state: "active", waitEventType: "none", count: 2}},
+			},
+		},
+		{
+			// NULL state and wait_event_type are coalesced by the query itself, so a driver that
+			// returns the coalesced values keeps those backends counted rather than dropping them.
+			name:        "coalesced null state and wait event type are counted",
+			databases:   nil,
+			expectedSQL: baseSQL + groupBy,
+			rows: sqlmock.NewRows(columns).
+				AddRow("otel", "unknown", "none", 4),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {{state: "unknown", waitEventType: "none", count: 4}},
+			},
+		},
+		{
+			name:        "rows with empty datname are skipped",
+			databases:   nil,
+			expectedSQL: baseSQL + groupBy,
+			rows: sqlmock.NewRows(columns).
+				AddRow("", "active", "none", 9).
+				AddRow("otel", "active", "none", 1),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {{state: "active", waitEventType: "none", count: 1}},
+			},
+		},
+		{
+			name:        "query error",
+			databases:   nil,
+			expectedSQL: baseSQL + groupBy,
+			queryErr:    errors.New("permission denied for view pg_stat_activity"),
+			expected:    nil,
+			wantErr:     true,
+		},
+		{
+			name:        "row scan error on non-numeric count",
+			databases:   nil,
+			expectedSQL: baseSQL + groupBy,
+			rows: sqlmock.NewRows(columns).
+				AddRow("otel", "active", "none", "not-a-number"),
+			expected: map[databaseName][]backendStateCount{},
+			wantErr:  true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+			require.NoError(t, err)
+			defer db.Close()
+
+			client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+
+			if tc.queryErr != nil {
+				mock.ExpectQuery(tc.expectedSQL).WillReturnError(tc.queryErr)
+			} else {
+				mock.ExpectQuery(tc.expectedSQL).WillReturnRows(tc.rows)
+			}
+
+			backends, err := client.getBackends(t.Context(), tc.databases)
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tc.expected, backends)
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
 func TestFilterQueryByDatabases(t *testing.T) {
 	tests := []struct {
 		name      string

@@ -60,7 +60,6 @@ func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
 	assert.Equal(t, cfg, semconvConfig)
 
 	legacyConfig := metricsBuilderConfigForFeatureGate(cfg, false)
-	assert.Empty(t, legacyConfig.Metrics.PostgresqlBackends.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlBlksHit.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlBlksRead.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlCommits.EnabledAttributes)
@@ -80,6 +79,8 @@ func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupInserted.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupReturned.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupUpdated.EnabledAttributes)
+	// state and wait_event_type are not semconv attributes, so they survive in legacy mode.
+	assert.Equal(t, []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeySessionState, metadata.PostgresqlBackendsMetricAttributeKeySessionWaitEventType}, legacyConfig.Metrics.PostgresqlBackends.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeySource}, legacyConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlDatabaseLocksMetricAttributeKey{metadata.PostgresqlDatabaseLocksMetricAttributeKeyRelation, metadata.PostgresqlDatabaseLocksMetricAttributeKeyMode, metadata.PostgresqlDatabaseLocksMetricAttributeKeyLockType}, legacyConfig.Metrics.PostgresqlDatabaseLocks.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlFunctionCallsMetricAttributeKey{metadata.PostgresqlFunctionCallsMetricAttributeKeyFunction}, legacyConfig.Metrics.PostgresqlFunctionCalls.EnabledAttributes)
@@ -98,6 +99,72 @@ func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
 	customLegacyConfig := metricsBuilderConfigForFeatureGate(customConfig, false)
 	assert.Empty(t, customLegacyConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeyDbNamespace}, customConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
+}
+
+func TestRecordDatabaseBackendsPerStateAndWaitEventType(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	scraper := &postgreSQLScraper{
+		config:            cfg,
+		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
+		serviceInstanceID: "example.com:5432",
+		useOTelSemconv:    true,
+	}
+	retrieval := &dbRetrieval{
+		backendStateMap: map[databaseName][]backendStateCount{
+			"orders": {
+				{state: "active", waitEventType: "none", count: 3},
+				{state: "idle", waitEventType: "Client", count: 7},
+				{state: "unknown", waitEventType: "none", count: 1},
+			},
+		},
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Unix(0, 1))
+	scraper.recordDatabase(now, "orders", retrieval, 0)
+	rb := scraper.setupSemconvResourceBuilder(scraper.mb.NewResourceBuilder())
+	metrics := scraper.mb.Emit(metadata.WithResource(rb.Emit()))
+
+	backends := pmetric.NewMetric()
+	found := false
+	resourceMetrics := metrics.ResourceMetrics()
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		scopeMetrics := resourceMetrics.At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metricSlice := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metricSlice.Len(); k++ {
+				if metricSlice.At(k).Name() == "postgresql.backends" {
+					backends = metricSlice.At(k)
+					found = true
+				}
+			}
+		}
+	}
+	require.True(t, found)
+
+	type backendKey struct {
+		namespace     string
+		state         string
+		waitEventType string
+	}
+	actual := map[backendKey]int64{}
+	dataPoints := backends.Sum().DataPoints()
+	require.Equal(t, 3, dataPoints.Len())
+	for i := 0; i < dataPoints.Len(); i++ {
+		dp := dataPoints.At(i)
+		namespace, ok := dp.Attributes().Get("db.namespace")
+		require.True(t, ok)
+		state, ok := dp.Attributes().Get("state")
+		require.True(t, ok)
+		waitEventType, ok := dp.Attributes().Get("wait_event_type")
+		require.True(t, ok)
+		actual[backendKey{namespace.Str(), state.Str(), waitEventType.Str()}] = dp.IntValue()
+	}
+
+	assert.Equal(t, map[backendKey]int64{
+		{namespace: "orders", state: "active", waitEventType: "none"}:  3,
+		{namespace: "orders", state: "idle", waitEventType: "Client"}:  7,
+		{namespace: "orders", state: "unknown", waitEventType: "none"}: 1,
+	}, actual)
 }
 
 func TestSemconvQueryConflictsPreserveDatabaseNamespace(t *testing.T) {
@@ -1569,9 +1636,9 @@ func (m *mockClient) getSharedRelationLocks(ctx context.Context) ([]databaseLock
 	return args.Get(0).([]databaseLocks), args.Error(1)
 }
 
-func (m *mockClient) getBackends(_ context.Context, databases []string) (map[databaseName]int64, error) {
+func (m *mockClient) getBackends(_ context.Context, databases []string) (map[databaseName][]backendStateCount, error) {
 	args := m.Called(databases)
-	return args.Get(0).(map[databaseName]int64), args.Error(1)
+	return args.Get(0).(map[databaseName][]backendStateCount), args.Error(1)
 }
 
 func (m *mockClient) getDatabaseSize(_ context.Context, databases []string) (map[databaseName]int64, error) {
@@ -1672,7 +1739,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		dbStats := map[databaseName]databaseStats{}
 		dbConflictStats := map[databaseName]databaseConflictStats{}
 		dbSize := map[databaseName]int64{}
-		backends := map[databaseName]int64{}
+		backends := map[databaseName][]backendStateCount{}
 		execDuration := map[databaseName]float64{}
 
 		for idx, db := range databases {
@@ -1698,7 +1765,9 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				conflDeadlock:   int64(idx + 17),
 			}
 			dbSize[databaseName(db)] = int64(idx + 4)
-			backends[databaseName(db)] = int64(idx + 3)
+			backends[databaseName(db)] = []backendStateCount{
+				{state: "active", waitEventType: "none", count: int64(idx + 3)},
+			}
 			execDuration[databaseName(db)] = float64(idx+1) + 0.5
 		}
 

@@ -14,7 +14,7 @@ metrics:
 
 ### postgresql.backends
 
-The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.
+The number of backend processes associated with each database, broken down by connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -25,6 +25,8 @@ The number of backend processes associated with each database. Counts backends a
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+| state | The current state of a backend, as reported by pg_stat_activity.state. Reports "unknown" when the state is not available, e.g. for non-client backends or when the current user cannot see it. | Any Str | Recommended | - |
+| wait_event_type | The type of event a backend is waiting on, as reported by pg_stat_activity.wait_event_type. Reports "none" when the backend is not waiting. | Any Str | Recommended | - |
 
 ### postgresql.bgwriter.buffers.allocated
 
