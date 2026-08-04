@@ -41,7 +41,7 @@ func setupOpenSearch(t *testing.T) string {
 	t.Helper()
 
 	req := testcontainers.ContainerRequest{
-		Image:        "opensearchproject/opensearch:3.6.0",
+		Image:        "opensearchproject/opensearch:3.6.0@sha256:b5dd1512af2a99748c942cfbbd7f32162623336b210667d0fc6333c6321f171d",
 		ExposedPorts: []string{"9200/tcp"},
 		Env: map[string]string{
 			"discovery.type":              "single-node",
