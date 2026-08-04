@@ -6,6 +6,7 @@ require (
 	github.com/gobwas/glob v0.2.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.157.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.154.1-0.20260612191519-af182d232650
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.63.1-0.20260803152855-18ed8fe814ea
 	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260803152855-18ed8fe814ea
@@ -90,3 +91,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
