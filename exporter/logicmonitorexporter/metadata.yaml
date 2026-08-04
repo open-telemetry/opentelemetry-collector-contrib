@@ -9,6 +9,13 @@ status:
   codeowners:
     active: [bogdandrutu, khyatigandhi6, avadhut123pisal]
 
+feature_gates:
+  - id: exporter.logicmonitor.DisableLegacyResourceToTelemetryConversion
+    description: When enabled, the deprecated enabled and exclude_service_attributes fields in resource_to_telemetry_conversion are disabled, and included/excluded patterns must be used instead
+    stage: alpha
+    from_version: "v0.158.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48861
+
 tests:
   config:
     endpoint: https://company.logicmonitor.com/rest
