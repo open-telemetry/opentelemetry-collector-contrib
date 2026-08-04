@@ -311,17 +311,45 @@ path and may produce a second (possibly inconsistent) decision; with both caches
 disabled, every late span falls through. Operators tune the cache sizes against
 observed late-span volume.
 
-### Buffer overflow vs decision cache
+### Buffer overflow and eviction policy
 
-The in-memory accumulation buffer is sized by `num_traces`. If the buffer is full
-when a span for a brand-new trace arrives, the processor evicts an existing
-pending trace to make room; the evicted trace is dropped without a sampling
-decision and without `ot=th` annotations, and is counted on
-`processor_dynamic_sampling_traces_evicted`. The decision cache
-(`decision_cache.*`) is a separate structure that records the outcome of
-*completed* decisions for late-arriving spans, it does not protect pending traces
-from eviction. Operators sizing the processor should watch `traces_evicted` and
-increase `num_traces` if it is non-zero in steady state.
+The in-memory accumulation buffer is sized by `num_traces`. When the buffer is
+full and spans for brand-new traces arrive, the processor evicts the **oldest**
+pending traces to make room (the buffer may transiently exceed `num_traces` by
+the number of new traces in a single incoming batch). Every evicted trace
+receives a real sampling decision immediately, with the spans seen so far and
+no `decision_delay`; the decision is recorded in the decision cache so
+late-arriving spans are handled consistently, and kept traces carry correct
+`ot=th` annotations. How that decision is made is configurable:
+
+```yaml
+eviction:
+  policy: evaluate            # evaluate (default) | probabilistic
+  sampling_percentage: 10     # required for probabilistic
+```
+
+- `evaluate` (default): the evicted trace runs through the normal rules and
+  sampler path. Your rules keep working under pressure (e.g. a keep-errors
+  rule still keeps error traces), at the cost of OTTL evaluation over every
+  span of every evicted trace.
+- `probabilistic`: rule evaluation is skipped and the trace is decided by
+  comparing a threshold derived from `sampling_percentage` against the trace's
+  randomness. Constant-time work per evicted trace regardless of trace size or
+  rule count, so an overloaded instance sheds load instead of amplifying it.
+  Kept traces are stamped with the corresponding `ot=th` (and the sentinel
+  rule attribution `_eviction`), so downstream weighting stays accurate.
+  Recommended for high-throughput deployments where eviction indicates
+  genuine overload.
+
+Note the decision may be made on an incomplete trace in both modes: spans
+still in flight when the trace is evicted are treated as late spans and follow
+the recorded decision. The decision cache (`decision_cache.*`) is a separate
+structure recording *completed* decisions; it does not protect pending traces
+from eviction.
+
+Operators sizing the processor should watch `traces_evicted` (every eviction)
+and `decision_triggers{trigger="eviction"}` and increase `num_traces` if they
+are non-zero in steady state.
 
 ## Deployment considerations
 
