@@ -3,13 +3,13 @@
 
 module-sets:
   stable-base:
-    version: v1.0.0
+    version: v1.1.0
     modules:
       # Uncomment once https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49152 is merged
       # - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
 
   contrib-base:
-    version: v0.157.0
+    version: v0.158.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
