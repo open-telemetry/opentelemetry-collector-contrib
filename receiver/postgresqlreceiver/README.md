@@ -67,7 +67,7 @@ The following settings are optional:
 
 - `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases.
 
-- `exclude_databases` (default = `[]`): List of databases which will be excluded when collecting statistics. Excluded databases are also skipped by query sample and top query collection: their statements are not reported, and the receiver never connects to them to run `EXPLAIN`. This is the way to silence connection errors from databases a monitoring user can never reach, such as `rdsadmin` on Amazon RDS, `azure_maintenance` on Azure, or `cloudsqladmin` on Cloud SQL. Excluding every database listed in `databases` is a configuration error.
+- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. Excluded databases are never connected to, so use this for databases a monitoring user cannot reach, such as `rdsadmin` on Amazon RDS, `azure_maintenance` on Azure, or `cloudsqladmin` on Cloud SQL. Excluding every database in `databases` is a configuration error.
 
 The following settings are also optional and nested under `tls` to help configure client transport security
 

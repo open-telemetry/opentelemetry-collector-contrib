@@ -1075,10 +1075,8 @@ func parseMajorVersion(ver string) (int, error) {
 	return strconv.Atoi(parts[0])
 }
 
-// quoteDatabaseList renders databases as a comma separated list of SQL string literals,
-// suitable for interpolating into an IN/NOT IN clause. Escaping is delegated to the driver
-// rather than hand rolled. Returns an empty string for an empty list, which callers use to
-// omit the clause entirely.
+// quoteDatabaseList renders databases as SQL string literals for an IN/NOT IN clause.
+// Empty input yields an empty string, which callers use to omit the clause.
 func quoteDatabaseList(databases []string) string {
 	quoted := make([]string, len(databases))
 	for i, db := range databases {

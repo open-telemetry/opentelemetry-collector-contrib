@@ -88,8 +88,7 @@ func (cfg *Config) Validate() error {
 		err = multierr.Append(err, fmt.Errorf(ErrNotSupported, "MinVersion"))
 	}
 
-	// Only the explicit case is detectable here. When 'databases' is empty the list is
-	// discovered from the server at scrape time, so the equivalent check lives in the scraper.
+	// Autodiscovery resolves the list at scrape time, so the scraper repeats this check.
 	remaining := slices.DeleteFunc(slices.Clone(cfg.Databases), func(db string) bool {
 		return slices.Contains(cfg.ExcludeDatabases, db)
 	})

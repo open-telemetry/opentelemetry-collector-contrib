@@ -61,8 +61,7 @@ type postgreSQLScraper struct {
 	newestQueryTimestamp   float64
 	serviceInstanceID      string
 	lastExecutionTimestamp time.Time
-	// warnNoDatabases keeps the "everything is excluded" warning to a single line rather
-	// than repeating it on every scrape, since the condition is configuration shaped.
+	// warnNoDatabases suppresses the "everything is excluded" warning after the first scrape.
 	warnNoDatabases sync.Once
 }
 
@@ -142,8 +141,7 @@ var semconvModeMetricAttributeNames = [...]string{
 	string(metadata.PostgresqlIndexScansMetricAttributeKeyPostgresqlIndexName),
 }
 
-// isExcluded reports whether the database is listed in exclude_databases. The receiver
-// neither collects from nor connects to such a database.
+// isExcluded reports whether the database is listed in exclude_databases.
 func (p *postgreSQLScraper) isExcluded(database string) bool {
 	_, excluded := p.excludes[database]
 	return excluded
@@ -490,8 +488,8 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		query := item.Value[string(semconv.DBQueryTextKey)].(string)
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
 		database := item.Value[string(semconv.DBNamespaceKey)].(string)
-		// Belt and braces on top of the template's server side filter: EXPLAIN opens a
-		// connection, and managed providers reject connections to their internal databases.
+		// EXPLAIN opens a connection, and managed providers reject connections to their
+		// internal databases. The template filters these out already; this is belt and braces.
 		if p.isExcluded(database) {
 			continue
 		}

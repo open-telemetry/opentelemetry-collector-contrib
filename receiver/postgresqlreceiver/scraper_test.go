@@ -680,9 +680,8 @@ func TestScraperExcludeDatabase(t *testing.T) {
 }
 
 func TestScraperSkipsDatabaseMetricsWhenAllDatabasesExcluded(t *testing.T) {
-	// Config validation only catches this when 'databases' is set explicitly. Under
-	// autodiscovery the candidate list comes from the server, so the scraper has to handle
-	// every discovered database being excluded.
+	// Validate() only catches this when 'databases' is set explicitly; autodiscovery
+	// resolves the list at scrape time and needs the runtime guard.
 	listClient := new(mockClient)
 	listClient.initMocks(defaultPostgreSQLDatabase, "public", []string{"otel"}, 0)
 
@@ -954,8 +953,7 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 				"newestQueryTimestamp": float64(0),
 				"excludedDatabases":    quoteDatabaseList([]string{"rdsadmin", "template0"}),
 			},
-			// COALESCE keeps rows whose datname is NULL (background workers), which a bare
-			// NOT IN would discard.
+			// COALESCE keeps NULL datname rows (background workers) that a bare NOT IN would drop.
 			expectedClause: "AND COALESCE(sa.datname, '') NOT IN ('rdsadmin','template0')",
 		},
 	}
@@ -979,8 +977,7 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 			assert.Contains(t, rendered, fmt.Sprintf("LIMIT %v;", tc.params["limit"]))
 			assert.Contains(t, rendered, fmt.Sprintf("TO_TIMESTAMP(%v)", tc.params["newestQueryTimestamp"]))
 
-			// Matched narrowly: the template also carries an unrelated "sa.pid NOT IN (...)"
-			// subquery for blocking sessions.
+			// Narrow match: the template has an unrelated sa.pid NOT IN (...) subquery.
 			if tc.expectedClause == "" {
 				assert.NotContains(t, rendered, "sa.datname, '') NOT IN (", "no database filter should be emitted without excludes")
 			} else {
@@ -1259,8 +1256,7 @@ func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
 	cfg.ExcludeDatabases = []string{"rdsadmin"}
 	cfg.Events.DbServerTopQuery.Enabled = true
 
-	// Regexp matcher (rather than QueryMatcherEqual) so the assertion is on the filter
-	// clause itself, and does not just re-render the template it is meant to verify.
+	// Regexp matcher so the assertion is on the clause itself, not a re-render of the template.
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
@@ -1280,11 +1276,8 @@ func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
 		totalExecTimeColumnName, totalPlanTimeColumnName,
 	}
 
-	// The excluded database is filtered server side. Returning a row for it anyway
-	// exercises the EXPLAIN guard, which must skip the row rather than connect to it --
-	// RDS rejects connections to rdsadmin at pg_hba, so an EXPLAIN can never succeed.
-	// No EXPLAIN expectation is registered: issuing one would leave the plan empty and
-	// the row must not be emitted regardless.
+	// The template filters this row out server side; returning it anyway exercises the
+	// EXPLAIN guard. No EXPLAIN is expected: the row must be skipped, not explained.
 	mock.ExpectQuery(`AND datname NOT IN \('rdsadmin'\)`).
 		WillReturnRows(sqlmock.NewRows(columns).AddRow(
 			"123", "rdsadmin", "1111", "1112", "1113", "1114", "1115", "1116",
@@ -1295,9 +1288,7 @@ func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
 	actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
 	require.NoError(t, err)
 
-	// The query reached the server carrying the filter.
 	require.NoError(t, mock.ExpectationsWereMet())
-	// And no top query event was emitted for the excluded database.
 	assert.Equal(t, 0, actualLogs.LogRecordCount())
 }
 
