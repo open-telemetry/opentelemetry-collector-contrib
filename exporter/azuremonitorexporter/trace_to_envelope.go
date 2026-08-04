@@ -605,7 +605,8 @@ func copyAndExtractHTTPAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }
@@ -619,7 +620,8 @@ func copyAndExtractRPCAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }
@@ -633,7 +635,8 @@ func copyAndExtractDatabaseAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }
@@ -647,7 +650,8 @@ func copyAndExtractMessagingAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }
@@ -661,7 +665,8 @@ func copyAndExtractExceptionAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }

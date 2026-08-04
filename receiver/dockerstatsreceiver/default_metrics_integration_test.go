@@ -52,6 +52,7 @@ func TestIntegration(t *testing.T) {
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()),
+			pmetrictest.IgnoreTimestamp(),
+		),
 	).Run(t)
 }
