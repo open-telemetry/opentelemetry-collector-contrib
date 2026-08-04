@@ -346,6 +346,12 @@ processors:
     decision_cache:
       sampled_cache_size: 100000
       non_sampled_cache_size: 200000
+    # Under sustained overload, shed evicted traces in constant time instead
+    # of paying rule evaluation for every one (see Buffer overflow and
+    # eviction policy below).
+    eviction:
+      policy: probabilistic
+      sampling_percentage: 10
     rules:
       - name: throughput-cap
         sampler:
