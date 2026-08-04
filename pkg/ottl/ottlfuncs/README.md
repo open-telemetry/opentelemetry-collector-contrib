@@ -80,9 +80,9 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 
 `clear(target)`
 
-The `clear` function passes a `nil` value to the `target`'s setter. How the `nil` value is handled depends entirely on the specific target's implementation. 
+The `clear` function infers the zero-value of the `target` and passes it to the `target`'s setter. How the zero-value is handled depends entirely on the specific target's implementation. 
 
-For example, it can be used to clear values in attribute maps (`clear(attributes["key"])`), or it may result in an error for strictly typed fields that do not support empty states.
+For example, clearing a string field will set it to `""`, and clearing an integer field will set it to `0`. If the target's value is `nil` or the zero-value cannot be inferred, an error may be returned.
 
 **Examples:**
 - `clear(attributes["http.method"])`
