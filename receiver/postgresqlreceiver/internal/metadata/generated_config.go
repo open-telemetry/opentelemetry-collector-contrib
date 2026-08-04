@@ -14,7 +14,9 @@ import (
 type PostgresqlBackendsMetricAttributeKey string
 
 const (
-	PostgresqlBackendsMetricAttributeKeyDbNamespace PostgresqlBackendsMetricAttributeKey = "db.namespace"
+	PostgresqlBackendsMetricAttributeKeyDbNamespace          PostgresqlBackendsMetricAttributeKey = "db.namespace"
+	PostgresqlBackendsMetricAttributeKeySessionState         PostgresqlBackendsMetricAttributeKey = "state"
+	PostgresqlBackendsMetricAttributeKeySessionWaitEventType PostgresqlBackendsMetricAttributeKey = "wait_event_type"
 )
 
 // PostgresqlBackendsMetricConfig provides config for the postgresql.backends metric.
@@ -43,9 +45,9 @@ func (ms *PostgresqlBackendsMetricConfig) Unmarshal(parser *confmap.Conf) error 
 func (ms *PostgresqlBackendsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlBackendsMetricAttributeKeyDbNamespace:
+		case PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeySessionState, PostgresqlBackendsMetricAttributeKeySessionWaitEventType:
 		default:
-			return fmt.Errorf("metric postgresql.backends doesn't have an attribute %v, valid attributes: [db.namespace]", val)
+			return fmt.Errorf("metric postgresql.backends doesn't have an attribute %v, valid attributes: [db.namespace, state, wait_event_type]", val)
 		}
 	}
 
@@ -2009,7 +2011,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlBackends: PostgresqlBackendsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace},
+			EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeySessionState, PostgresqlBackendsMetricAttributeKeySessionWaitEventType},
 		},
 		PostgresqlBgwriterBuffersAllocated: PostgresqlBgwriterBuffersAllocatedMetricConfig{
 			Enabled: true,
