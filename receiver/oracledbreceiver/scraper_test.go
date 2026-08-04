@@ -477,31 +477,40 @@ func TestScraper_ScrapeCDBRoot_NewPdbMetrics(t *testing.T) {
 
 	cfg.Metrics.OracledbSessionWaits.EnabledAttributes = append(
 		cfg.Metrics.OracledbSessionWaits.EnabledAttributes,
-		metadata.OracledbSessionWaitsMetricAttributeKeyOracleDbPdb)
+		metadata.OracledbSessionWaitsMetricAttributeKeyOracleDbPdb,
+	)
 	cfg.Metrics.OracledbSessionWaitTime.EnabledAttributes = append(
 		cfg.Metrics.OracledbSessionWaitTime.EnabledAttributes,
-		metadata.OracledbSessionWaitTimeMetricAttributeKeyOracleDbPdb)
+		metadata.OracledbSessionWaitTimeMetricAttributeKeyOracleDbPdb,
+	)
 	cfg.Metrics.OracledbSessionStoredProcedureMemory.EnabledAttributes = append(
 		cfg.Metrics.OracledbSessionStoredProcedureMemory.EnabledAttributes,
-		metadata.OracledbSessionStoredProcedureMemoryMetricAttributeKeyOracleDbPdb)
+		metadata.OracledbSessionStoredProcedureMemoryMetricAttributeKeyOracleDbPdb,
+	)
 	cfg.Metrics.OracledbLockTime.EnabledAttributes = append(
 		cfg.Metrics.OracledbLockTime.EnabledAttributes,
-		metadata.OracledbLockTimeMetricAttributeKeyOracleDbPdb)
+		metadata.OracledbLockTimeMetricAttributeKeyOracleDbPdb,
+	)
 	cfg.Metrics.OracledbTransactionRollbacks.EnabledAttributes = append(
 		cfg.Metrics.OracledbTransactionRollbacks.EnabledAttributes,
-		metadata.OracledbTransactionRollbacksMetricAttributeKeyOracleDbPdb)
+		metadata.OracledbTransactionRollbacksMetricAttributeKeyOracleDbPdb,
+	)
 	cfg.Metrics.OracledbSessionAverage.EnabledAttributes = append(
 		cfg.Metrics.OracledbSessionAverage.EnabledAttributes,
-		metadata.OracledbSessionAverageMetricAttributeKeyOracleDbPdb)
+		metadata.OracledbSessionAverageMetricAttributeKeyOracleDbPdb,
+	)
 	cfg.Metrics.OracledbCPUUsageRate.EnabledAttributes = append(
 		cfg.Metrics.OracledbCPUUsageRate.EnabledAttributes,
-		metadata.OracledbCPUUsageRateMetricAttributeKeyOracleDbPdb)
+		metadata.OracledbCPUUsageRateMetricAttributeKeyOracleDbPdb,
+	)
 	cfg.Metrics.OracledbCursorCacheUtilization.EnabledAttributes = append(
 		cfg.Metrics.OracledbCursorCacheUtilization.EnabledAttributes,
-		metadata.OracledbCursorCacheUtilizationMetricAttributeKeyOracleDbPdb)
+		metadata.OracledbCursorCacheUtilizationMetricAttributeKeyOracleDbPdb,
+	)
 	cfg.Metrics.OracledbTransactionResponseTime.EnabledAttributes = append(
 		cfg.Metrics.OracledbTransactionResponseTime.EnabledAttributes,
-		metadata.OracledbTransactionResponseTimeMetricAttributeKeyOracleDbPdb)
+		metadata.OracledbTransactionResponseTimeMetricAttributeKeyOracleDbPdb,
+	)
 
 	scrpr := oracleScraper{
 		logger: zap.NewNop(),
