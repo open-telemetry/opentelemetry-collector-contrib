@@ -163,7 +163,6 @@ func TestScraperWithEphemeralStorageMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricsOrder()))
 }
 
-
 func TestScraperWithNodeFilesystemInodeMetrics(t *testing.T) {
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
