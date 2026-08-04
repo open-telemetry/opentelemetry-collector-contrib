@@ -7,7 +7,7 @@ require (
 	github.com/containerd/errdefs v1.0.0
 	github.com/gobwas/glob v0.2.3
 	github.com/moby/moby/api v1.55.0
-	github.com/moby/moby/client v0.5.0
+	github.com/moby/moby/client v0.5.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/config/configoptional v1.63.1-0.20260803152855-18ed8fe814ea
 	go.opentelemetry.io/collector/config/configtls v1.63.1-0.20260803152855-18ed8fe814ea
