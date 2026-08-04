@@ -459,14 +459,10 @@ type databaseLocks struct {
 }
 
 func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
-	// Scope to the connected database: shared catalogs (database = 0) and locks
-	// that belong to no database (database IS NULL) are collected once via
-	// getServerScopedLocks, and relation OIDs from other databases must not
-	// resolve against this database's pg_class.
-	//
-	// LEFT JOIN keeps targets that are not relations (frozenid, object,
-	// advisory, ...), whose pg_locks.relation is NULL; they are reported with an
-	// empty relation attribute.
+	// Scoped to the connected database: relation OIDs from other databases would
+	// not resolve against this pg_class, and locks owned by no database are
+	// collected once by getServerScopedLocks. The outer join keeps targets that
+	// are not relations, which report an empty relation.
 	return c.queryDatabaseLocks(ctx, `SELECT COALESCE(relname, '') AS relation, mode, locktype,COUNT(*)
 	AS locks FROM pg_locks
 	LEFT JOIN pg_class ON pg_locks.relation = pg_class.oid
@@ -475,12 +471,10 @@ func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLock
 }
 
 func (c *postgreSQLClient) getServerScopedLocks(ctx context.Context) ([]databaseLocks, error) {
-	// Locks that belong to no single database, collected once per scrape:
-	//   - shared relations (pg_database, pg_authid, ...) carry database = 0 and
-	//     exist in every database's pg_class, so any connection can resolve them;
-	//   - shared non-relation targets also carry database = 0;
-	//   - transaction ID targets (transactionid, virtualxid, ...) carry a NULL
-	//     database and a NULL relation.
+	// Locks owned by no single database, collected once per scrape: shared targets
+	// (database = 0, resolvable from any connection) and transaction ID targets
+	// (database IS NULL). The relation IS NULL branch is required because the outer
+	// join leaves relisshared NULL for targets that are not relations.
 	return c.queryDatabaseLocks(ctx, `SELECT COALESCE(relname, '') AS relation, mode, locktype,COUNT(*)
 	AS locks FROM pg_locks
 	LEFT JOIN pg_class ON pg_locks.relation = pg_class.oid
