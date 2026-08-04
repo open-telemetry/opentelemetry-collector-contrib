@@ -634,7 +634,7 @@ func (p *dynamicSamplingProcessor) assembleTrace(ctx context.Context, spans []pt
 	out := ptrace.NewTraces()
 	for _, rs := range spans {
 		dst := out.ResourceSpans().AppendEmpty()
-		rs.CopyTo(dst)
+		rs.MoveTo(dst)
 		for _, ss := range dst.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
 				span.Attributes().PutStr(ruleAttributeKey, ruleName)
