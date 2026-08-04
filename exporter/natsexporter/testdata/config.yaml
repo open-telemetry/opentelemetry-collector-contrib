@@ -1,0 +1,46 @@
+nats:
+  urls:
+    - nats://localhost:4222
+    - nats://localhost:4223
+  name: otelcol
+  connection:
+    timeout: 5s
+    max_reconnects: -1
+    reconnect_wait: 1s
+  auth:
+    token:
+      token: s3cr3t
+  traces:
+    subject: otel.traces
+    encoding: otlp_proto
+  metrics:
+    subject: otel.metrics
+    encoding: otlp_json
+  logs:
+    subject: otel.logs
+    encoding: otlp_proto
+
+nats/jetstream:
+  urls:
+    - nats://localhost:4222
+  jetstream:
+    publish_timeout: 10s
+
+nats/auth_conflict:
+  urls:
+    - nats://localhost:4222
+  auth:
+    token:
+      token: s3cr3t
+    user_password:
+      username: user
+      password: pass
+
+nats/no_urls:
+  name: otelcol
+
+nats/nkey_no_seed:
+  urls:
+    - nats://localhost:4222
+  auth:
+    nkey: {}
