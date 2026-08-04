@@ -71,7 +71,7 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 
 	// The SDK detector returns an empty resource when not running on a Vultr
 	// instance.
-	if res == nil || len(res.Attributes()) == 0 {
+	if res.Len() == 0 {
 		d.logger.Debug("Vultr detector: not running on a Vultr instance")
 		return pcommon.NewResource(), "", nil
 	}
