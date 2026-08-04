@@ -339,7 +339,6 @@ func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
-			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
 				// A prepared transaction keeps its transactionid lock, with a NULL
