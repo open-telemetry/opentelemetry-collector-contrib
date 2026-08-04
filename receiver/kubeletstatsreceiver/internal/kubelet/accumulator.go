@@ -61,7 +61,6 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	addMemoryMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeMemoryMetrics, s.Memory, currentTime, resources{}, 0)
 	addFilesystemMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeFilesystemMetrics, s.Fs, currentTime)
 	addNetworkMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetrics, s.Network, currentTime, a.allNetworkInterfaces[NodeMetricGroup])
-	addRlimitMetrics(a.mbs.NodeMetricsBuilder, s.Rlimit, currentTime)
 	// todo s.Runtime.ImageFs
 	rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
 	rb.SetK8sNodeName(s.NodeName)
