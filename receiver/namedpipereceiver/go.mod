@@ -6,10 +6,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.157.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.63.1-0.20260803152855-18ed8fe814ea
-	go.opentelemetry.io/collector/confmap v1.63.1-0.20260803152855-18ed8fe814ea
-	go.opentelemetry.io/collector/consumer v1.63.1-0.20260803152855-18ed8fe814ea // indirect
-	go.opentelemetry.io/collector/receiver v1.63.1-0.20260803152855-18ed8fe814ea
+	go.opentelemetry.io/collector/component v1.64.0
+	go.opentelemetry.io/collector/confmap v1.64.0
+	go.opentelemetry.io/collector/consumer v1.64.0 // indirect
+	go.opentelemetry.io/collector/receiver v1.64.0
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.uber.org/goleak v1.3.0
@@ -18,7 +18,7 @@ require (
 require (
 	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260803152855-18ed8fe814ea
 	go.opentelemetry.io/collector/consumer/consumertest v0.157.1-0.20260803152855-18ed8fe814ea
-	go.opentelemetry.io/collector/pdata v1.63.1-0.20260803152855-18ed8fe814ea
+	go.opentelemetry.io/collector/pdata v1.64.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.157.1-0.20260803152855-18ed8fe814ea
 	go.opentelemetry.io/collector/receiver/xreceiver v0.157.1-0.20260803152855-18ed8fe814ea
 	go.uber.org/zap v1.28.0
@@ -53,12 +53,12 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.157.1-0.20260803152855-18ed8fe814ea // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.157.1-0.20260803152855-18ed8fe814ea // indirect
-	go.opentelemetry.io/collector/extension v1.63.1-0.20260803152855-18ed8fe814ea // indirect
+	go.opentelemetry.io/collector/extension v1.64.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.157.1-0.20260803152855-18ed8fe814ea // indirect
-	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260803152855-18ed8fe814ea // indirect
+	go.opentelemetry.io/collector/featuregate v1.64.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.157.1-0.20260803152855-18ed8fe814ea // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.157.1-0.20260803152855-18ed8fe814ea // indirect
-	go.opentelemetry.io/collector/pipeline v1.63.1-0.20260803152855-18ed8fe814ea // indirect
+	go.opentelemetry.io/collector/pipeline v1.64.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.157.1-0.20260803152855-18ed8fe814ea // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.157.1-0.20260803152855-18ed8fe814ea // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect

@@ -6,13 +6,13 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.63.1-0.20260803152855-18ed8fe814ea
+	go.opentelemetry.io/collector/component v1.64.0
 	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260803152855-18ed8fe814ea
-	go.opentelemetry.io/collector/config/configopaque v1.63.1-0.20260803152855-18ed8fe814ea
-	go.opentelemetry.io/collector/config/configtls v1.63.1-0.20260803152855-18ed8fe814ea
-	go.opentelemetry.io/collector/confmap v1.63.1-0.20260803152855-18ed8fe814ea
-	go.opentelemetry.io/collector/extension v1.63.1-0.20260803152855-18ed8fe814ea
-	go.opentelemetry.io/collector/extension/extensionauth v1.63.1-0.20260803152855-18ed8fe814ea
+	go.opentelemetry.io/collector/config/configopaque v1.64.0
+	go.opentelemetry.io/collector/config/configtls v1.64.0
+	go.opentelemetry.io/collector/confmap v1.64.0
+	go.opentelemetry.io/collector/extension v1.64.0
+	go.opentelemetry.io/collector/extension/extensionauth v1.64.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.157.1-0.20260803152855-18ed8fe814ea
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -41,9 +41,9 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260803152855-18ed8fe814ea // indirect
+	go.opentelemetry.io/collector/featuregate v1.64.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.157.1-0.20260803152855-18ed8fe814ea // indirect
-	go.opentelemetry.io/collector/pdata v1.63.1-0.20260803152855-18ed8fe814ea // indirect
+	go.opentelemetry.io/collector/pdata v1.64.0 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
