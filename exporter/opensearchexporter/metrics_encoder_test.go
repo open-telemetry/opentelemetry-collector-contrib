@@ -284,8 +284,11 @@ func TestEncodeMetric_OTelV1(t *testing.T) {
 	doc := encodeToMap(t, payload, err)
 
 	assert.Equal(t, "SUM", doc["kind"])
-	assert.Equal(t, float64(42), doc["value@int"])
-	assert.Equal(t, float64(42), doc["value"]) // Data Prepper-style plain double value
+	// Data Prepper emits a plain double `value` only; the SS4O-style typed
+	// value@int / value@double fields must not appear in otel-v1 documents.
+	assert.Equal(t, float64(42), doc["value"])
+	assert.NotContains(t, doc, "value@int")
+	assert.NotContains(t, doc, "value@double")
 	assert.Contains(t, doc, "time")
 	assert.Contains(t, doc, "flags")
 	assert.Equal(t, "test-service", doc["serviceName"])

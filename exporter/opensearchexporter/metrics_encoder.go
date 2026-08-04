@@ -100,13 +100,17 @@ func (*encodeModel) encodeMetricOTelV1(
 	doc.Time = doc.Timestamp
 	doc.Flags = int64(dp.Flags())
 
-	// Data Prepper emits gauge and sum values as a plain double `value` field.
+	// Data Prepper emits gauge and sum values as a plain double `value` field
+	// instead of the typed value@int / value@double fields used by SS4O, so
+	// the typed fields are cleared after copying.
 	switch {
 	case doc.ValueDouble != nil:
 		doc.Value = doc.ValueDouble
+		doc.ValueDouble = nil
 	case doc.ValueInt != nil:
 		v := float64(*doc.ValueInt)
 		doc.Value = &v
+		doc.ValueInt = nil
 	}
 
 	doc.Resource = otelV1Resource{
