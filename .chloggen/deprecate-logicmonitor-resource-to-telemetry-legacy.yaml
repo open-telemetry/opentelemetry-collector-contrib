@@ -1,0 +1,7 @@
+change_type: deprecation
+component: exporter/logicmonitor
+note: "Deprecate legacy `enabled` and `exclude_service_attributes` fields in `resource_to_telemetry_conversion` in favor of `included` and `excluded` patterns."
+issues: [48861]
+subtext: |
+  Introduces the `exporter.logicmonitor.DisableLegacyResourceToTelemetryConversion` feature gate to disable the legacy fields.
+change_logs: [user]

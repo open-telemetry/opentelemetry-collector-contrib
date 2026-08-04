@@ -836,3 +836,99 @@ func TestPrometheusExporter_BackgroundCleanup(t *testing.T) {
 		assert.True(t, ok, "fresh_accumulated should not have been evicted")
 	})
 }
+
+func TestPrometheusExporterResourceConstantLabels(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr.Endpoint = addr
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+
+	cfg := &Config{
+		ServerConfig:           serverConfig,
+		SendTimestamps:         true,
+		MetricExpiration:       120 * time.Minute,
+		ResourceConstantLabels: resourcetotelemetry.Settings{Included: []string{"k8s.pod.*", "selected.attr"}},
+	}
+
+	factory := NewFactory()
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, exp.Shutdown(t.Context()))
+	}()
+
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+
+	md := testdata.GenerateMetricsOneMetric()
+	res := md.ResourceMetrics().At(0).Resource()
+	res.Attributes().PutStr("k8s.pod.name", "my-pod-123")
+	res.Attributes().PutStr("selected.attr", "my-val")
+	res.Attributes().PutStr("ignored.attr", "should-be-ignored")
+
+	require.NoError(t, exp.ConsumeMetrics(t.Context(), md))
+
+	rsp, err := http.Get("http://" + addr + "/metrics")
+	require.NoError(t, err)
+	defer rsp.Body.Close()
+	assert.Equal(t, http.StatusOK, rsp.StatusCode)
+
+	blob, err := io.ReadAll(rsp.Body)
+	require.NoError(t, err)
+
+	body := string(blob)
+	assert.Contains(t, body, `k8s_pod_name="my-pod-123"`)
+	assert.Contains(t, body, `selected_attr="my-val"`)
+	assert.NotContains(t, body, `ignored_attr="should-be-ignored"`)
+}
+
+func TestPrometheusExporterDisableResourceToTelemetryConversion(t *testing.T) {
+	originalState := metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate.IsEnabled()
+	testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, true)
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, originalState)
+
+	addr := testutil.GetAvailableLocalAddress(t)
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr.Endpoint = addr
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+
+	cfg := &Config{
+		ServerConfig:     serverConfig,
+		SendTimestamps:   true,
+		MetricExpiration: 120 * time.Minute,
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
+			Enabled: true,
+		},
+	}
+
+	factory := NewFactory()
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, exp.Shutdown(t.Context()))
+	}()
+
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+
+	md := testdata.GenerateMetricsOneMetric()
+	require.NoError(t, exp.ConsumeMetrics(t.Context(), md))
+
+	rsp, err := http.Get("http://" + addr + "/metrics")
+	require.NoError(t, err)
+	defer rsp.Body.Close()
+	assert.Equal(t, http.StatusOK, rsp.StatusCode)
+
+	blob, err := io.ReadAll(rsp.Body)
+	require.NoError(t, err)
+
+	body := string(blob)
+	// With the feature gate enabled, ResourceToTelemetrySettings is ignored, so resource_attr should not appear on the counter metric.
+	assert.NotContains(t, body, `resource_attr="resource-attr-val-1"`)
+}
