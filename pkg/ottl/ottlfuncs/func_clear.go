@@ -6,12 +6,14 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"errors"
+	"fmt"
+	"reflect"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type ClearArguments[K any] struct {
-	Target ottl.Setter[K]
+	Target ottl.GetSetter[K]
 }
 
 func NewClearFactory[K any]() ottl.Factory[K] {
@@ -28,11 +30,23 @@ func createClearFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (o
 	return clearFunc(args.Target), nil
 }
 
-func clearFunc[K any](target ottl.Setter[K]) ottl.ExprFunc[K] {
+func clearFunc[K any](target ottl.GetSetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		// Pass nil to the target setter. The underlying path setter will translate
-		// this nil into the appropriate zero-value or empty state for its specific type.
-		err := target.Set(ctx, tCtx, nil)
+		targetVal, err := target.Get(ctx, tCtx)
+		if err != nil {
+			return nil, fmt.Errorf("error getting target value to infer zero value in clear: %w", err)
+		}
+
+		var val any
+		if targetVal != nil {
+			zero := reflect.Zero(reflect.TypeOf(targetVal))
+			if !zero.CanInterface() {
+				return nil, fmt.Errorf("cannot infer zero value for type %T in clear", targetVal)
+			}
+			val = zero.Interface()
+		}
+
+		err = target.Set(ctx, tCtx, val)
 		if err != nil {
 			return nil, err
 		}
