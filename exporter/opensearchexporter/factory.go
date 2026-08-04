@@ -79,7 +79,7 @@ func createMetricsExporter(ctx context.Context,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	c := cfg.(*Config)
-	if c.Mode != MappingSS4O.String() && c.Mode != MappingOTelV1.String() {
+	if c.MappingsSettings.Mode != MappingSS4O.String() && c.MappingsSettings.Mode != MappingOTelV1.String() {
 		return nil, errMetricsMappingModeUnsupported
 	}
 	me := newMetricExporter(c, set)

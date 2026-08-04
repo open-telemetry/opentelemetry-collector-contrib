@@ -17,8 +17,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
@@ -159,8 +159,47 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "translation strategy NoTranslation requires Prometheus Remote Write 2.0",
 		},
 		{
+			id:           component.NewIDWithName(metadata.Type, "reserved_metadata_keys"),
+			errorMessage: "include_metadata_keys entry \"content-type\" collides with a reserved remote write header",
+		},
+		{
 			id:           component.NewIDWithName(metadata.Type, "negative_max_batch_size_bytes"),
 			errorMessage: "max_batch_size_bytes must be greater than 0",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "include_metadata_keys"),
+			expected: &Config{
+				MaxBatchSizeBytes:          3000000,
+				MaxBatchRequestParallelism: nil,
+				TimeoutSettings:            exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig: configretry.BackOffConfig{
+					Enabled:             true,
+					InitialInterval:     50 * time.Millisecond,
+					RandomizationFactor: 0.5,
+					Multiplier:          1.5,
+					MaxInterval:         30 * time.Second,
+					MaxElapsedTime:      5 * time.Minute,
+				},
+				RemoteWriteQueue: RemoteWriteQueue{
+					Enabled:      true,
+					QueueSize:    1000,
+					NumConsumers: 5,
+				},
+				IncludeMetadataKeys: []string{"target-id", "x-org-id"},
+				ExternalLabels:      map[string]string{},
+				AddMetricSuffixes:   true,
+				ClientConfig: func() confighttp.ClientConfig {
+					cc := confighttp.NewDefaultClientConfig()
+					cc.Endpoint = "localhost:8888"
+					cc.WriteBufferSize = 512 * 1024
+					cc.Timeout = 5 * time.Second
+					return cc
+				}(),
+				RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+				TargetInfo: TargetInfo{
+					Enabled: true,
+				},
+			},
 		},
 	}
 
@@ -180,10 +219,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMessage)
+				assert.ErrorContains(t, confmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

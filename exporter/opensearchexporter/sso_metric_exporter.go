@@ -26,8 +26,8 @@ type metricExporter struct {
 
 func newMetricExporter(cfg *Config, set exporter.Settings) *metricExporter {
 	model := &encodeModel{
-		sso:       cfg.Mode == MappingSS4O.String(),
-		otelV1:    cfg.Mode == MappingOTelV1.String(),
+		sso:       cfg.MappingsSettings.Mode == MappingSS4O.String(),
+		otelV1:    cfg.MappingsSettings.Mode == MappingOTelV1.String(),
 		dataset:   cfg.Dataset,
 		namespace: cfg.Namespace,
 	}
@@ -35,7 +35,7 @@ func newMetricExporter(cfg *Config, set exporter.Settings) *metricExporter {
 	defaultPrefix := "ss4o_metrics"
 	dataset := cfg.Dataset
 	namespace := cfg.Namespace
-	if cfg.Mode == MappingOTelV1.String() {
+	if cfg.MappingsSettings.Mode == MappingOTelV1.String() {
 		defaultPrefix = "otel-v1-metrics"
 		dataset = ""
 		namespace = ""

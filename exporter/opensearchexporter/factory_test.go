@@ -24,7 +24,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestFactory_CreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoint = "https://opensearch.example.com:9200"
+		cfg.ClientConfig.Endpoint = "https://opensearch.example.com:9200"
 	})
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
@@ -37,7 +37,7 @@ func TestFactory_CreateTraces(t *testing.T) {
 func TestFactory_CreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoint = "https://opensearch.example.com:9200"
+		cfg.ClientConfig.Endpoint = "https://opensearch.example.com:9200"
 	})
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateLogs(t.Context(), params, cfg)
@@ -50,7 +50,7 @@ func TestFactory_CreateLogs(t *testing.T) {
 func TestFactory_CreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoint = "https://opensearch.example.com:9200"
+		cfg.ClientConfig.Endpoint = "https://opensearch.example.com:9200"
 	})
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateMetrics(t.Context(), params, cfg)
@@ -66,8 +66,8 @@ func TestFactory_CreateMetrics_UnsupportedMode(t *testing.T) {
 
 	for _, mode := range []string{"ecs", "flatten_attributes", "bodymap"} {
 		cfg := withDefaultConfig(func(cfg *Config) {
-			cfg.Endpoint = "https://opensearch.example.com:9200"
-			cfg.Mode = mode
+			cfg.ClientConfig.Endpoint = "https://opensearch.example.com:9200"
+			cfg.MappingsSettings.Mode = mode
 		})
 		exporter, err := factory.CreateMetrics(t.Context(), params, cfg)
 		require.ErrorIs(t, err, errMetricsMappingModeUnsupported, "mode %q", mode)

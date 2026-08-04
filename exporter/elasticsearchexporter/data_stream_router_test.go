@@ -124,13 +124,24 @@ func TestRouteLogRecord(t *testing.T) {
 		assert.Equal(t, "logs", ds.Type) // should equal to logs
 	})
 
-	t.Run("test data_stream.type does not accept values other than logs/metrics", func(t *testing.T) {
+	t.Run("test data_stream.type accepts traces/profiles/synthetics for bodymap mode", func(t *testing.T) {
+		for _, dsType := range []string{"traces", "profiles", "synthetics"} {
+			router := dynamicDocumentRouter{mode: MappingBodyMap}
+			attrs := pcommon.NewMap()
+			attrs.PutStr("data_stream.type", dsType)
+			ds, err := router.routeLogRecord(pcommon.NewResource(), pcommon.NewInstrumentationScope(), attrs)
+			require.NoError(t, err)
+			assert.Equal(t, dsType, ds.Type)
+		}
+	})
+
+	t.Run("test data_stream.type does not accept arbitrary values", func(t *testing.T) {
 		dsType := "random"
 		router := dynamicDocumentRouter{mode: MappingBodyMap}
 		attrs := pcommon.NewMap()
 		attrs.PutStr("data_stream.type", dsType)
 		_, err := router.routeLogRecord(pcommon.NewResource(), pcommon.NewInstrumentationScope(), attrs)
-		require.Error(t, err, "data_stream.type cannot be other than logs or metrics")
+		require.EqualError(t, err, `data_stream.type "random" is not allowed for 'bodymap' mapping mode`)
 	})
 }
 
