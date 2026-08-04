@@ -99,7 +99,8 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 			if !ok {
 				// Stream is still starting up; skip until first frame arrives.
 				errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(
-					fmt.Errorf("no stats available yet for container %s", container.ID), 0))
+					fmt.Errorf("no stats available yet for container %s", container.ID), 0,
+				))
 				continue
 			}
 			if err := r.recordContainerStats(now, stats, &container); err != nil {
@@ -265,7 +266,8 @@ func recordSingleBlkioStat(now pcommon.Timestamp, statEntries []ctypes.BlkioStat
 			int64(stat.Value),
 			strconv.FormatUint(stat.Major, 10),
 			strconv.FormatUint(stat.Minor, 10),
-			strings.ToLower(stat.Op))
+			strings.ToLower(stat.Op),
+		)
 	}
 }
 

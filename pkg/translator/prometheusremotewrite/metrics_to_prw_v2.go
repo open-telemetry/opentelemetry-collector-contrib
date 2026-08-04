@@ -134,7 +134,8 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 						break
 					}
 					errs = multierr.Append(errs, c.addExponentialHistogramDataPoints(
-						dataPoints, resource, scope, settings, promName, m))
+						dataPoints, resource, scope, settings, promName, m,
+					))
 				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					if dataPoints.Len() == 0 {
