@@ -59,13 +59,6 @@ func mapHashSortedExcludeReservedAttrs(hasher *xxhash.Digest, kvs []kv, m pcommo
 	return kvs
 }
 
-// sortedKVsExcludeReservedAttrs returns a newly allocated sorted kv slice. Used
-// by ECSDataPointHasher.UpdateResource to cache resource attrs across HashKey
-// calls.
-func sortedKVsExcludeReservedAttrs(m pcommon.Map, extraExcludes ...string) []kv {
-	return appendSortedKVsExcludeReservedAttrs(make([]kv, 0, m.Len()), m, extraExcludes...)
-}
-
 func appendSortedKVsExcludeReservedAttrs(kvs []kv, m pcommon.Map, extraExcludes ...string) []kv {
 	for k, v := range m.All() {
 		if isReservedAttr(k, extraExcludes) {

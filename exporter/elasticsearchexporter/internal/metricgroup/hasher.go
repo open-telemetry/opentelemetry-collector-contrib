@@ -48,7 +48,7 @@ type ECSDataPointHasher struct {
 }
 
 func (h *ECSDataPointHasher) UpdateResource(resource pcommon.Resource) {
-	h.resourceKVs = sortedKVsExcludeReservedAttrs(resource.Attributes(), elasticsearch.MappingHintsAttrKey)
+	h.resourceKVs = appendSortedKVsExcludeReservedAttrs(resetKVs(h.resourceKVs, resource.Attributes().Len()), resource.Attributes(), elasticsearch.MappingHintsAttrKey)
 }
 
 func (*ECSDataPointHasher) UpdateScope(pcommon.InstrumentationScope) {
