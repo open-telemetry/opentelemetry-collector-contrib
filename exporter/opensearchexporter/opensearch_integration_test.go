@@ -83,7 +83,7 @@ func TestIntegration_OtelV1Mapping_Traces(t *testing.T) {
 
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = endpoint
-	cfg.Mode = "otel-v1"
+	cfg.MappingsSettings.Mode = "otel-v1"
 	cfg.TracesIndex = "otel-v1-apm-span"
 	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 
@@ -114,7 +114,7 @@ func TestIntegration_OtelV1Mapping_Traces(t *testing.T) {
 
 	var lastErr error
 	success := assert.Eventually(t, func() bool {
-		_, err = client.Indices.Refresh(t.Context(), &opensearchapi.IndicesRefreshReq{Indices: []string{"otel-v1-apm-span"}})
+		_, err := client.Indices.Refresh(t.Context(), &opensearchapi.IndicesRefreshReq{Indices: []string{"otel-v1-apm-span"}})
 		if err != nil {
 			lastErr = fmt.Errorf("refresh error: %w", err)
 			return false
@@ -154,17 +154,25 @@ func TestIntegration_OtelV1Mapping_Traces(t *testing.T) {
 			return false
 		}
 
-		// Verify status.code is numeric (long/integer)
-		if statusMap, ok := propertiesMap["status"].(map[string]any); ok {
-			if statusProps, ok := statusMap["properties"].(map[string]any); ok {
-				if codeMap, ok := statusProps["code"].(map[string]any); ok {
-					codeType, _ := codeMap["type"].(string)
-					if codeType != "long" && codeType != "integer" {
-						lastErr = fmt.Errorf("unexpected type for status.code: %s", codeType)
-						return false
-					}
-				}
-			}
+		statusMap, ok := propertiesMap["status"].(map[string]any)
+		if !ok {
+			lastErr = errors.New("status field not found")
+			return false
+		}
+		statusProps, ok := statusMap["properties"].(map[string]any)
+		if !ok {
+			lastErr = errors.New("status.properties not found")
+			return false
+		}
+		codeMap, ok := statusProps["code"].(map[string]any)
+		if !ok {
+			lastErr = errors.New("status.code not found")
+			return false
+		}
+		codeType, _ := codeMap["type"].(string)
+		if codeType != "long" && codeType != "integer" {
+			lastErr = fmt.Errorf("unexpected type for status.code: %s", codeType)
+			return false
 		}
 
 		return true
@@ -183,7 +191,7 @@ func TestIntegration_OtelV1Mapping_Logs(t *testing.T) {
 
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = endpoint
-	cfg.Mode = "otel-v1"
+	cfg.MappingsSettings.Mode = "otel-v1"
 	cfg.LogsIndex = "otel-v1-logs"
 	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 
@@ -211,7 +219,7 @@ func TestIntegration_OtelV1Mapping_Logs(t *testing.T) {
 
 	var lastErr error
 	success := assert.Eventually(t, func() bool {
-		_, err = client.Indices.Refresh(t.Context(), &opensearchapi.IndicesRefreshReq{Indices: []string{"otel-v1-logs"}})
+		_, err := client.Indices.Refresh(t.Context(), &opensearchapi.IndicesRefreshReq{Indices: []string{"otel-v1-logs"}})
 		if err != nil {
 			lastErr = fmt.Errorf("refresh error: %w", err)
 			return false
@@ -235,8 +243,6 @@ func TestIntegration_OtelV1Mapping_Logs(t *testing.T) {
 			return false
 		}
 
-		// The otel-v1 encoder emits "severity" as a nested object with
-		// "number" (int32) and "text" sub-fields.
 		sevMap, ok := propertiesMap["severity"].(map[string]any)
 		if !ok {
 			keys := []string{}
@@ -247,15 +253,21 @@ func TestIntegration_OtelV1Mapping_Logs(t *testing.T) {
 			return false
 		}
 
-		// Verify severity.number is numeric (long/integer)
-		if sevProps, ok := sevMap["properties"].(map[string]any); ok {
-			if numMap, ok := sevProps["number"].(map[string]any); ok {
-				numType, _ := numMap["type"].(string)
-				if numType != "long" && numType != "integer" {
-					lastErr = fmt.Errorf("unexpected type for severity.number: %s", numType)
-					return false
-				}
-			}
+		// Verify severity.number is strictly required and numeric
+		sevProps, ok := sevMap["properties"].(map[string]any)
+		if !ok {
+			lastErr = errors.New("severity.properties not found")
+			return false
+		}
+		numMap, ok := sevProps["number"].(map[string]any)
+		if !ok {
+			lastErr = errors.New("severity.number not found")
+			return false
+		}
+		numType, _ := numMap["type"].(string)
+		if numType != "long" && numType != "integer" {
+			lastErr = fmt.Errorf("unexpected type for severity.number: %s", numType)
+			return false
 		}
 
 		return true
