@@ -40,7 +40,6 @@ require (
 )
 
 require (
-	github.com/sijms/go-ora/v2 v2.9.0
 	go.opentelemetry.io/collector/component/componentstatus v0.158.0
 	go.opentelemetry.io/collector/scraper v0.158.0
 )
