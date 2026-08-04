@@ -168,9 +168,9 @@ func TestGetExecutionTimeStats(t *testing.T) {
 }
 
 func TestGetBackends(t *testing.T) {
-	const baseSQL = "SELECT datname, coalesce(state, 'unknown') as state, coalesce(wait_event_type, 'none') as wait_event_type, count(*) as count from pg_stat_activity"
-	const groupBy = " GROUP BY datname, state, wait_event_type;"
-	columns := []string{"datname", "state", "wait_event_type", "count"}
+	const baseSQL = "SELECT datname, coalesce(backend_type, 'unknown') as backend_type, coalesce(state, 'unknown') as state, coalesce(wait_event_type, 'none') as wait_event_type, count(*) as count from pg_stat_activity"
+	const groupBy = " GROUP BY datname, backend_type, state, wait_event_type;"
+	columns := []string{"datname", "backend_type", "state", "wait_event_type", "count"}
 
 	tests := []struct {
 		name        string
@@ -182,20 +182,22 @@ func TestGetBackends(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			name:        "groups backends by state and wait event type",
+			name:        "groups backends by backend type, state and wait event type",
 			databases:   nil,
 			expectedSQL: baseSQL + groupBy,
 			rows: sqlmock.NewRows(columns).
-				AddRow("otel", "active", "none", 3).
-				AddRow("otel", "idle", "Client", 7).
-				AddRow("telemetry", "idle in transaction", "Lock", 1),
+				AddRow("otel", "client backend", "active", "none", 3).
+				AddRow("otel", "client backend", "idle", "Client", 7).
+				AddRow("otel", "autovacuum worker", "active", "none", 2).
+				AddRow("telemetry", "client backend", "idle in transaction", "Lock", 1),
 			expected: map[databaseName][]backendStateCount{
 				"otel": {
-					{state: "active", waitEventType: "none", count: 3},
-					{state: "idle", waitEventType: "Client", count: 7},
+					{backendType: "client backend", state: "active", waitEventType: "none", count: 3},
+					{backendType: "client backend", state: "idle", waitEventType: "Client", count: 7},
+					{backendType: "autovacuum worker", state: "active", waitEventType: "none", count: 2},
 				},
 				"telemetry": {
-					{state: "idle in transaction", waitEventType: "Lock", count: 1},
+					{backendType: "client backend", state: "idle in transaction", waitEventType: "Lock", count: 1},
 				},
 			},
 		},
@@ -204,21 +206,22 @@ func TestGetBackends(t *testing.T) {
 			databases:   []string{"otel"},
 			expectedSQL: baseSQL + " WHERE datname IN ('otel')" + groupBy,
 			rows: sqlmock.NewRows(columns).
-				AddRow("otel", "active", "none", 2),
+				AddRow("otel", "client backend", "active", "none", 2),
 			expected: map[databaseName][]backendStateCount{
-				"otel": {{state: "active", waitEventType: "none", count: 2}},
+				"otel": {{backendType: "client backend", state: "active", waitEventType: "none", count: 2}},
 			},
 		},
 		{
-			// NULL state and wait_event_type are coalesced by the query itself, so a driver that
-			// returns the coalesced values keeps those backends counted rather than dropping them.
-			name:        "coalesced null state and wait event type are counted",
+			// The nullable columns are coalesced by the query itself, so a driver that returns the
+			// coalesced values keeps those backends counted rather than dropping them. An unprivileged
+			// monitoring user sees this for every backend but its own.
+			name:        "coalesced null backend type, state and wait event type are counted",
 			databases:   nil,
 			expectedSQL: baseSQL + groupBy,
 			rows: sqlmock.NewRows(columns).
-				AddRow("otel", "unknown", "none", 4),
+				AddRow("otel", "unknown", "unknown", "none", 4),
 			expected: map[databaseName][]backendStateCount{
-				"otel": {{state: "unknown", waitEventType: "none", count: 4}},
+				"otel": {{backendType: "unknown", state: "unknown", waitEventType: "none", count: 4}},
 			},
 		},
 		{
@@ -226,10 +229,10 @@ func TestGetBackends(t *testing.T) {
 			databases:   nil,
 			expectedSQL: baseSQL + groupBy,
 			rows: sqlmock.NewRows(columns).
-				AddRow("", "active", "none", 9).
-				AddRow("otel", "active", "none", 1),
+				AddRow("", "client backend", "active", "none", 9).
+				AddRow("otel", "client backend", "active", "none", 1),
 			expected: map[databaseName][]backendStateCount{
-				"otel": {{state: "active", waitEventType: "none", count: 1}},
+				"otel": {{backendType: "client backend", state: "active", waitEventType: "none", count: 1}},
 			},
 		},
 		{
@@ -245,7 +248,7 @@ func TestGetBackends(t *testing.T) {
 			databases:   nil,
 			expectedSQL: baseSQL + groupBy,
 			rows: sqlmock.NewRows(columns).
-				AddRow("otel", "active", "none", "not-a-number"),
+				AddRow("otel", "client backend", "active", "none", "not-a-number"),
 			expected: map[databaseName][]backendStateCount{},
 			wantErr:  true,
 		},

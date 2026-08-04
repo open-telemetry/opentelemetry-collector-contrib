@@ -506,28 +506,30 @@ func (c *postgreSQLClient) queryDatabaseLocks(ctx context.Context, query string)
 }
 
 // backendStateCount is the number of backends within a single database that share the same
-// connection state and wait event type.
+// backend type, connection state and wait event type.
 type backendStateCount struct {
+	backendType   string
 	state         string
 	waitEventType string
 	count         int64
 }
 
 // getBackends returns the number of backend processes for each database, counted from pg_stat_activity
-// and broken down by connection state (e.g. active, idle, idle in transaction) and wait event type
-// (e.g. Lock, IO). All backend types are counted, including non-client backends such as autovacuum and
-// parallel workers. Backends with no associated database (NULL datname, e.g. the background writer and
-// WAL writer) are not attributed to any database.
+// and broken down by backend type (e.g. client backend, autovacuum worker), connection state (e.g.
+// active, idle, idle in transaction) and wait event type (e.g. Lock, IO). All backend types are counted,
+// including non-client backends such as autovacuum and parallel workers. Backends with no associated
+// database (NULL datname, e.g. the background writer and WAL writer) are not attributed to any database.
 //
-// state and wait_event_type are nullable in pg_stat_activity: state is NULL for non-client backends and
-// for backends the current user cannot inspect, and wait_event_type is NULL whenever a backend is not
-// waiting. They are coalesced to "unknown" and "none" respectively so that those backends are still
-// counted rather than dropped by GROUP BY.
+// All three grouping columns are nullable in pg_stat_activity. state is NULL for non-client backends,
+// wait_event_type is NULL whenever a backend is not waiting, and both are NULL along with backend_type
+// for backends the monitoring user cannot inspect, which is every backend but its own unless the user
+// has been granted pg_monitor. They are coalesced so that those backends are still counted rather than
+// dropped by GROUP BY.
 func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) (map[databaseName][]backendStateCount, error) {
 	query := filterQueryByDatabases(
-		"SELECT datname, coalesce(state, 'unknown') as state, coalesce(wait_event_type, 'none') as wait_event_type, count(*) as count from pg_stat_activity",
+		"SELECT datname, coalesce(backend_type, 'unknown') as backend_type, coalesce(state, 'unknown') as state, coalesce(wait_event_type, 'none') as wait_event_type, count(*) as count from pg_stat_activity",
 		databases,
-		"datname, state, wait_event_type",
+		"datname, backend_type, state, wait_event_type",
 	)
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
@@ -537,15 +539,16 @@ func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) 
 	ars := map[databaseName][]backendStateCount{}
 	var errors error
 	for rows.Next() {
-		var datname, state, waitEventType string
+		var datname, backendType, state, waitEventType string
 		var count int64
-		err = rows.Scan(&datname, &state, &waitEventType, &count)
+		err = rows.Scan(&datname, &backendType, &state, &waitEventType, &count)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
 		if datname != "" {
 			ars[databaseName(datname)] = append(ars[databaseName(datname)], backendStateCount{
+				backendType:   backendType,
 				state:         state,
 				waitEventType: waitEventType,
 				count:         count,

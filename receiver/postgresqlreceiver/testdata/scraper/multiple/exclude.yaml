@@ -146,13 +146,16 @@ resourceMetrics:
             stringValue: otel
     scopeMetrics:
       - metrics:
-          - description: The number of backend processes associated with each database, broken down by connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.
+          - description: The number of backend processes associated with each database, broken down by backend type, connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.
             name: postgresql.backends
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "3"
                   attributes:
+                    - key: backend_type
+                      value:
+                        stringValue: client backend
                     - key: state
                       value:
                         stringValue: active
@@ -210,13 +213,16 @@ resourceMetrics:
             stringValue: telemetry
     scopeMetrics:
       - metrics:
-          - description: The number of backend processes associated with each database, broken down by connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.
+          - description: The number of backend processes associated with each database, broken down by backend type, connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.
             name: postgresql.backends
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4"
                   attributes:
+                    - key: backend_type
+                      value:
+                        stringValue: client backend
                     - key: state
                       value:
                         stringValue: active

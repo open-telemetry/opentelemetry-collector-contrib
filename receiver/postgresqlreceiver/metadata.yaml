@@ -88,6 +88,10 @@ resource_attributes:
     type: string
 
 attributes:
+  backend_type:
+    description: The type of backend process, e.g. client backend, autovacuum worker, or checkpointer. Reports "unknown" when the type is not available, which happens when the monitoring user lacks the pg_monitor role.
+    type: string
+    requirement_level: recommended
   bg_buffer_source:
     description: The source of a buffer write.
     type: string
@@ -349,14 +353,14 @@ events:
 metrics:
   postgresql.backends:
     enabled: true
-    description: The number of backend processes associated with each database, broken down by connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.
+    description: The number of backend processes associated with each database, broken down by backend type, connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.
     stability: development
     unit: "1"
     sum:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [db.namespace, session_state, session_wait_event_type]
+    attributes: [db.namespace, backend_type, session_state, session_wait_event_type]
   postgresql.bgwriter.buffers.allocated:
     description: Number of buffers allocated.
     stability: development

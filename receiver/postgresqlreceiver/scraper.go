@@ -583,7 +583,7 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 	dbName := databaseName(db)
 	p.mb.RecordPostgresqlTableCountDataPoint(now, numTables, db)
 	for _, bs := range r.backendStateMap[dbName] {
-		p.mb.RecordPostgresqlBackendsDataPoint(now, bs.count, db, bs.state, bs.waitEventType)
+		p.mb.RecordPostgresqlBackendsDataPoint(now, bs.count, db, bs.backendType, bs.state, bs.waitEventType)
 	}
 	if size, ok := r.dbSizeMap[dbName]; ok {
 		p.mb.RecordPostgresqlDbSizeDataPoint(now, size, db)

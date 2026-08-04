@@ -79,8 +79,8 @@ func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupInserted.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupReturned.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupUpdated.EnabledAttributes)
-	// state and wait_event_type are not semconv attributes, so they survive in legacy mode.
-	assert.Equal(t, []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeySessionState, metadata.PostgresqlBackendsMetricAttributeKeySessionWaitEventType}, legacyConfig.Metrics.PostgresqlBackends.EnabledAttributes)
+	// backend_type, state and wait_event_type are not semconv attributes, so they survive in legacy mode.
+	assert.Equal(t, []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeyBackendType, metadata.PostgresqlBackendsMetricAttributeKeySessionState, metadata.PostgresqlBackendsMetricAttributeKeySessionWaitEventType}, legacyConfig.Metrics.PostgresqlBackends.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeySource}, legacyConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlDatabaseLocksMetricAttributeKey{metadata.PostgresqlDatabaseLocksMetricAttributeKeyRelation, metadata.PostgresqlDatabaseLocksMetricAttributeKeyMode, metadata.PostgresqlDatabaseLocksMetricAttributeKeyLockType}, legacyConfig.Metrics.PostgresqlDatabaseLocks.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlFunctionCallsMetricAttributeKey{metadata.PostgresqlFunctionCallsMetricAttributeKeyFunction}, legacyConfig.Metrics.PostgresqlFunctionCalls.EnabledAttributes)
@@ -101,7 +101,7 @@ func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
 	assert.Equal(t, []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeyDbNamespace}, customConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
 }
 
-func TestRecordDatabaseBackendsPerStateAndWaitEventType(t *testing.T) {
+func TestRecordDatabaseBackendsPerBackendTypeStateAndWaitEventType(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	scraper := &postgreSQLScraper{
 		config:            cfg,
@@ -112,9 +112,14 @@ func TestRecordDatabaseBackendsPerStateAndWaitEventType(t *testing.T) {
 	retrieval := &dbRetrieval{
 		backendStateMap: map[databaseName][]backendStateCount{
 			"orders": {
-				{state: "active", waitEventType: "none", count: 3},
-				{state: "idle", waitEventType: "Client", count: 7},
-				{state: "unknown", waitEventType: "none", count: 1},
+				{backendType: "client backend", state: "active", waitEventType: "none", count: 3},
+				{backendType: "client backend", state: "idle", waitEventType: "Client", count: 7},
+				{backendType: "autovacuum worker", state: "active", waitEventType: "none", count: 1},
+				// Non-client backends report no state, and an unprivileged monitoring user sees
+				// neither state nor backend type. Both land in the "unknown" bucket, and only
+				// backend_type tells the two apart.
+				{backendType: "checkpointer", state: "unknown", waitEventType: "none", count: 1},
+				{backendType: "unknown", state: "unknown", waitEventType: "none", count: 4},
 			},
 		},
 	}
@@ -143,27 +148,32 @@ func TestRecordDatabaseBackendsPerStateAndWaitEventType(t *testing.T) {
 
 	type backendKey struct {
 		namespace     string
+		backendType   string
 		state         string
 		waitEventType string
 	}
 	actual := map[backendKey]int64{}
 	dataPoints := backends.Sum().DataPoints()
-	require.Equal(t, 3, dataPoints.Len())
+	require.Equal(t, 5, dataPoints.Len())
 	for i := 0; i < dataPoints.Len(); i++ {
 		dp := dataPoints.At(i)
 		namespace, ok := dp.Attributes().Get("db.namespace")
+		require.True(t, ok)
+		backendType, ok := dp.Attributes().Get("backend_type")
 		require.True(t, ok)
 		state, ok := dp.Attributes().Get("state")
 		require.True(t, ok)
 		waitEventType, ok := dp.Attributes().Get("wait_event_type")
 		require.True(t, ok)
-		actual[backendKey{namespace.Str(), state.Str(), waitEventType.Str()}] = dp.IntValue()
+		actual[backendKey{namespace.Str(), backendType.Str(), state.Str(), waitEventType.Str()}] = dp.IntValue()
 	}
 
 	assert.Equal(t, map[backendKey]int64{
-		{namespace: "orders", state: "active", waitEventType: "none"}:  3,
-		{namespace: "orders", state: "idle", waitEventType: "Client"}:  7,
-		{namespace: "orders", state: "unknown", waitEventType: "none"}: 1,
+		{namespace: "orders", backendType: "client backend", state: "active", waitEventType: "none"}:    3,
+		{namespace: "orders", backendType: "client backend", state: "idle", waitEventType: "Client"}:    7,
+		{namespace: "orders", backendType: "autovacuum worker", state: "active", waitEventType: "none"}: 1,
+		{namespace: "orders", backendType: "checkpointer", state: "unknown", waitEventType: "none"}:     1,
+		{namespace: "orders", backendType: "unknown", state: "unknown", waitEventType: "none"}:          4,
 	}, actual)
 }
 
@@ -1766,7 +1776,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 			}
 			dbSize[databaseName(db)] = int64(idx + 4)
 			backends[databaseName(db)] = []backendStateCount{
-				{state: "active", waitEventType: "none", count: int64(idx + 3)},
+				{backendType: "client backend", state: "active", waitEventType: "none", count: int64(idx + 3)},
 			}
 			execDuration[databaseName(db)] = float64(idx+1) + 0.5
 		}
