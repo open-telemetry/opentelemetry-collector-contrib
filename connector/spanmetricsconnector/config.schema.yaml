@@ -21,6 +21,12 @@ $defs:
       enabled:
         description: Enabled is a flag to enable events.
         type: boolean
+  self_time_config:
+    type: object
+    properties:
+      enabled:
+        description: Enabled is a flag to enable the self-time histogram metric.
+        type: boolean
   exemplars_config:
     type: object
     properties:
@@ -88,6 +94,9 @@ properties:
   events:
     description: Events defines the configuration for events section of spans.
     $ref: events_config
+  self_time:
+    description: SelfTime defines the configuration for the optional exclusive/self-time histogram. When enabled, the connector computes self time from parent-child span intervals in each trace batch. Requires complete traces. Disabled by default.
+    $ref: self_time_config
   exclude_dimensions:
     type: array
     items:
