@@ -347,7 +347,140 @@ func TestClampToFloat32(t *testing.T) {
 	assert.Equal(t, -float64(math.MaxFloat32), clampToFloat32(-math.MaxFloat64))
 	assert.Equal(t, float64(math.MaxFloat32), clampToFloat32(math.Inf(1)))
 	assert.Equal(t, -float64(math.MaxFloat32), clampToFloat32(math.Inf(-1)))
+	assert.Equal(t, float64(0), clampToFloat32(math.NaN()))
 	assert.Equal(t, 42.5, clampToFloat32(42.5))
+}
+
+func TestEncodeMetric_GaugeNaNValue(t *testing.T) {
+	resource, scope := testMetricResourceAndScope()
+
+	metric := pmetric.NewMetric()
+	metric.SetName("stale.gauge")
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetDoubleValue(math.NaN())
+
+	// A NaN point value (e.g. a Prometheus staleness marker) must not drop
+	// the document; the value fields are omitted instead.
+	payload, err := testMetricEncodeModel().encodeMetric(resource, scope, "", metric, dp)
+	doc := encodeToMap(t, payload, err)
+	assert.Equal(t, "GAUGE", doc["kind"])
+	assert.NotContains(t, doc, "value@double")
+	assert.NotContains(t, doc, "value@int")
+
+	otelV1 := &encodeModel{otelV1: true}
+	payload, err = otelV1.encodeMetric(resource, scope, "", metric, dp)
+	doc = encodeToMap(t, payload, err)
+	assert.Equal(t, "GAUGE", doc["kind"])
+	assert.NotContains(t, doc, "value")
+	assert.NotContains(t, doc, "value@double")
+	assert.NotContains(t, doc, "value@int")
+}
+
+func TestEncodeMetric_GaugeInfValue(t *testing.T) {
+	model := testMetricEncodeModel()
+	resource, scope := testMetricResourceAndScope()
+
+	metric := pmetric.NewMetric()
+	metric.SetName("overflow.gauge")
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetDoubleValue(math.Inf(1))
+
+	payload, err := model.encodeMetric(resource, scope, "", metric, dp)
+	doc := encodeToMap(t, payload, err)
+	assert.Equal(t, math.MaxFloat64, doc["value@double"])
+
+	dp.SetDoubleValue(math.Inf(-1))
+	payload, err = model.encodeMetric(resource, scope, "", metric, dp)
+	doc = encodeToMap(t, payload, err)
+	assert.Equal(t, -math.MaxFloat64, doc["value@double"])
+}
+
+func TestEncodeMetric_HistogramNonFiniteBounds(t *testing.T) {
+	model := testMetricEncodeModel()
+	resource, scope := testMetricResourceAndScope()
+
+	metric := pmetric.NewMetric()
+	metric.SetName("weird.histogram")
+	histogram := metric.SetEmptyHistogram()
+	histogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dp := histogram.DataPoints().AppendEmpty()
+	dp.SetCount(6)
+	dp.SetSum(math.NaN())
+	dp.SetMin(math.Inf(-1))
+	dp.SetMax(math.Inf(1))
+	dp.ExplicitBounds().FromRaw([]float64{math.NaN(), math.Inf(1)})
+	dp.BucketCounts().FromRaw([]uint64{1, 2, 3})
+
+	payload, err := model.encodeMetric(resource, scope, "", metric, dp)
+	doc := encodeToMap(t, payload, err)
+
+	// Non-finite bounds are sanitized (NaN -> 0, +Inf -> MaxFloat32) instead
+	// of failing the JSON encoding and dropping the document.
+	assert.Equal(t, []any{float64(0), float64(math.MaxFloat32)}, doc["explicitBoundsList"])
+	assert.NotContains(t, doc, "sum")
+	assert.Equal(t, -math.MaxFloat64, doc["min"])
+	assert.Equal(t, math.MaxFloat64, doc["max"])
+
+	buckets, ok := doc["buckets"].([]any)
+	require.True(t, ok)
+	require.Len(t, buckets, 3)
+	first := buckets[0].(map[string]any)
+	assert.Equal(t, float64(0), first["max"])
+	last := buckets[2].(map[string]any)
+	assert.Equal(t, float64(math.MaxFloat32), last["min"])
+	assert.Equal(t, float64(math.MaxFloat32), last["max"])
+}
+
+func TestEncodeMetric_SummaryNaNQuantile(t *testing.T) {
+	model := testMetricEncodeModel()
+	resource, scope := testMetricResourceAndScope()
+
+	metric := pmetric.NewMetric()
+	metric.SetName("empty.summary")
+	dp := metric.SetEmptySummary().DataPoints().AppendEmpty()
+	dp.SetCount(0)
+	dp.SetSum(math.NaN())
+	q := dp.QuantileValues().AppendEmpty()
+	q.SetQuantile(0.5)
+	q.SetValue(math.NaN()) // quantile of an empty summary
+	q = dp.QuantileValues().AppendEmpty()
+	q.SetQuantile(0.99)
+	q.SetValue(7.7)
+
+	payload, err := model.encodeMetric(resource, scope, "", metric, dp)
+	doc := encodeToMap(t, payload, err)
+
+	assert.NotContains(t, doc, "sum")
+	assert.Equal(t, float64(1), doc["quantileValuesCount"])
+	quantiles, ok := doc["quantiles"].([]any)
+	require.True(t, ok)
+	require.Len(t, quantiles, 1)
+	kept := quantiles[0].(map[string]any)
+	assert.Equal(t, 0.99, kept["quantile"])
+	assert.Equal(t, 7.7, kept["value"])
+}
+
+func TestEncodeMetric_ExemplarNaNValue(t *testing.T) {
+	model := testMetricEncodeModel()
+	resource, scope := testMetricResourceAndScope()
+
+	metric := pmetric.NewMetric()
+	metric.SetName("with.nan.exemplar")
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetDoubleValue(1)
+	exemplar := dp.Exemplars().AppendEmpty()
+	exemplar.SetDoubleValue(math.NaN())
+	exemplar.SetTraceID([16]byte{1})
+
+	payload, err := model.encodeMetric(resource, scope, "", metric, dp)
+	doc := encodeToMap(t, payload, err)
+
+	exemplars, ok := doc["exemplars"].([]any)
+	require.True(t, ok)
+	require.Len(t, exemplars, 1)
+	e := exemplars[0].(map[string]any)
+	assert.NotContains(t, e, "value")
+	assert.Equal(t, "01000000000000000000000000000000", e["traceId"])
 }
 
 func TestTemporalityString(t *testing.T) {

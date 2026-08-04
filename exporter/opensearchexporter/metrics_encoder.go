@@ -157,8 +157,7 @@ func populateMetricDocBase(doc *metricDocBase, metric pmetric.Metric, dp metricD
 			value := dp.IntValue()
 			doc.ValueInt = &value
 		case pmetric.NumberDataPointValueTypeDouble:
-			value := dp.DoubleValue()
-			doc.ValueDouble = &value
+			doc.ValueDouble = optionalDouble(dp.DoubleValue())
 		}
 		doc.Exemplars = makeExemplars(dp.Exemplars())
 
@@ -168,19 +167,21 @@ func populateMetricDocBase(doc *metricDocBase, metric pmetric.Metric, dp metricD
 		count := dp.Count()
 		doc.Count = &count
 		if dp.HasSum() {
-			sum := dp.Sum()
-			doc.Sum = &sum
+			doc.Sum = optionalDouble(dp.Sum())
 		}
 		if dp.HasMin() {
-			minValue := dp.Min()
-			doc.Min = &minValue
+			doc.Min = optionalDouble(dp.Min())
 		}
 		if dp.HasMax() {
-			maxValue := dp.Max()
-			doc.Max = &maxValue
+			doc.Max = optionalDouble(dp.Max())
 		}
 		counts := dp.BucketCounts().AsRaw()
+		// AsRaw returns a copy, so the bounds can be sanitized in place for
+		// both explicitBoundsList and the materialized buckets.
 		bounds := dp.ExplicitBounds().AsRaw()
+		for i, b := range bounds {
+			bounds[i] = clampToFloat32(b)
+		}
 		doc.BucketCountsList = counts
 		doc.ExplicitBoundsList = bounds
 		bucketCount := len(counts)
@@ -196,16 +197,13 @@ func populateMetricDocBase(doc *metricDocBase, metric pmetric.Metric, dp metricD
 		count := dp.Count()
 		doc.Count = &count
 		if dp.HasSum() {
-			sum := dp.Sum()
-			doc.Sum = &sum
+			doc.Sum = optionalDouble(dp.Sum())
 		}
 		if dp.HasMin() {
-			minValue := dp.Min()
-			doc.Min = &minValue
+			doc.Min = optionalDouble(dp.Min())
 		}
 		if dp.HasMax() {
-			maxValue := dp.Max()
-			doc.Max = &maxValue
+			doc.Max = optionalDouble(dp.Max())
 		}
 		scale := dp.Scale()
 		doc.Scale = &scale
@@ -223,19 +221,26 @@ func populateMetricDocBase(doc *metricDocBase, metric pmetric.Metric, dp metricD
 		doc.Kind = metricKindSummary
 		count := dp.Count()
 		doc.Count = &count
-		sum := dp.Sum()
-		doc.Sum = &sum
+		doc.Sum = optionalDouble(dp.Sum())
 		quantiles := dp.QuantileValues()
 		if quantiles.Len() > 0 {
-			doc.Quantiles = make([]metricQuantile, quantiles.Len())
+			doc.Quantiles = make([]metricQuantile, 0, quantiles.Len())
 			for i := 0; i < quantiles.Len(); i++ {
-				doc.Quantiles[i] = metricQuantile{
-					Quantile: quantiles.At(i).Quantile(),
-					Value:    quantiles.At(i).Value(),
+				// NaN quantile values are legal in OTLP (e.g. quantiles of an
+				// empty summary) but have no JSON representation; drop those
+				// entries rather than failing to encode the whole document.
+				quantile, quantileOK := representableDouble(quantiles.At(i).Quantile())
+				value, valueOK := representableDouble(quantiles.At(i).Value())
+				if !quantileOK || !valueOK {
+					continue
 				}
+				doc.Quantiles = append(doc.Quantiles, metricQuantile{
+					Quantile: quantile,
+					Value:    value,
+				})
 			}
 		}
-		quantileValuesCount := quantiles.Len()
+		quantileValuesCount := len(doc.Quantiles)
 		doc.QuantileValuesCount = &quantileValuesCount
 
 	default:
@@ -308,8 +313,12 @@ func makeExponentialBuckets(scale int32, dpBuckets pmetric.ExponentialHistogramD
 // clampToFloat32 caps a value to the float32 range. The SS4O and Data Prepper
 // metrics index templates map bucket boundaries as 32-bit floats; values
 // beyond that range (including ±Inf produced by overflow) fail to index.
+// NaN, which is legal in OTLP but has no JSON representation, is mapped to 0
+// so that a single bad boundary does not drop the whole document.
 func clampToFloat32(v float64) float64 {
 	switch {
+	case math.IsNaN(v):
+		return 0
 	case v > math.MaxFloat32:
 		return math.MaxFloat32
 	case v < -math.MaxFloat32:
@@ -317,6 +326,35 @@ func clampToFloat32(v float64) float64 {
 	default:
 		return v
 	}
+}
+
+// representableDouble returns a JSON-encodable version of v for fields the
+// index templates map as 64-bit doubles: ±Inf is capped to ±math.MaxFloat64.
+// ok is false for NaN, which has no JSON representation; callers omit the
+// affected field instead of failing to encode the whole document.
+func representableDouble(v float64) (float64, bool) {
+	switch {
+	case math.IsNaN(v):
+		return 0, false
+	case math.IsInf(v, 1):
+		return math.MaxFloat64, true
+	case math.IsInf(v, -1):
+		return -math.MaxFloat64, true
+	default:
+		return v, true
+	}
+}
+
+// optionalDouble returns a pointer to the sanitized value, or nil for NaN so
+// that the field is omitted from the document. OTLP uses NaN point values as
+// "no recorded value" markers (e.g. Prometheus staleness), so omitting the
+// value while keeping the document preserves that meaning.
+func optionalDouble(v float64) *float64 {
+	s, ok := representableDouble(v)
+	if !ok {
+		return nil
+	}
+	return &s
 }
 
 // makeExemplars converts pmetric exemplars to their document representation.
@@ -336,8 +374,7 @@ func makeExemplars(exemplars pmetric.ExemplarSlice) []metricExemplar {
 			value := float64(e.IntValue())
 			exemplar.Value = &value
 		case pmetric.ExemplarValueTypeDouble:
-			value := e.DoubleValue()
-			exemplar.Value = &value
+			exemplar.Value = optionalDouble(e.DoubleValue())
 		}
 		if !e.TraceID().IsEmpty() {
 			exemplar.TraceID = e.TraceID().String()
