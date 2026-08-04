@@ -24,6 +24,15 @@ See PostgreSQL documentation for [supported versions](https://www.postgresql.org
 
 The monitoring user must be granted `SELECT` on `pg_stat_database`.
 
+Metrics derived from `pg_stat_activity`, such as `postgresql.backends`, additionally require the
+monitoring user to be granted `pg_monitor` (or `pg_read_all_stats`). Without it, PostgreSQL hides the
+`state` and `wait_event_type` columns of every backend except the collector's own connection, so
+`postgresql.backends` reports almost all backends with `state` set to `unknown`.
+
+```sql
+GRANT pg_monitor TO otelu;
+```
+
 > [!NOTE]
 > The feature gate `receiver.postgresql.separateSchemaAttr` addresses an inconsistency in how schema names
 > are reported across different metric types. When enabled, schema names are consistently reported in a
