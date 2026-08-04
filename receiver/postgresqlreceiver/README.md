@@ -24,10 +24,11 @@ See PostgreSQL documentation for [supported versions](https://www.postgresql.org
 
 The monitoring user must be granted `SELECT` on `pg_stat_database`.
 
-Metrics derived from `pg_stat_activity`, such as `postgresql.backends`, additionally require the
-monitoring user to be granted `pg_monitor` (or `pg_read_all_stats`). Without it, PostgreSQL hides the
-`state` and `wait_event_type` columns of every backend except the collector's own connection, so
-`postgresql.backends` reports almost all backends with `state` set to `unknown`.
+Telemetry derived from `pg_stat_activity` — the `postgresql.backends` metric and the
+`db.server.query_sample` event — additionally requires the monitoring user to be granted `pg_monitor`
+(or `pg_read_all_stats`). Without it, PostgreSQL hides the `backend_type`, `state` and
+`wait_event_type` columns of every backend except the collector's own connection, so
+`postgresql.backends` reports almost all backends as `unknown`.
 
 ```sql
 GRANT pg_monitor TO otelu;
@@ -129,12 +130,8 @@ from `pg_stat_activity`. To enable it, you will need the following configuration
         enabled: true
 ...
 ```
-By default, query sample collection is disabled, also note, to use it, you will need 
-to grant the user you are using `pg_monitor`. Take the example from `testdata/integration/init.sql`
-
-```sql
-GRANT pg_monitor TO otelu;
-```
+By default, query sample collection is disabled. It also requires the `pg_monitor` grant described
+under [Prerequisites](#prerequisites); see `testdata/integration/init.sql` for an example.
 
 To correlate query samples with traces, set the PostgreSQL [`application_name`](https://www.postgresql.org/docs/current/runtime-config-logging.html#GUC-APPLICATION-NAME)
 for the client connection to a valid [W3C `traceparent`](https://www.w3.org/TR/trace-context/#traceparent-header) value before running the query:

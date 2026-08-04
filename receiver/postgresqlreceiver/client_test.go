@@ -285,7 +285,7 @@ func TestFilterQueryByDatabases(t *testing.T) {
 		name      string
 		baseQuery string
 		databases []string
-		groupBy   string
+		groupBy   []string
 		expected  string
 	}{
 		{
@@ -296,7 +296,7 @@ func TestFilterQueryByDatabases(t *testing.T) {
 		{
 			name:      "no databases with group by",
 			baseQuery: "SELECT datname, count(*) FROM pg_stat_activity",
-			groupBy:   "datname",
+			groupBy:   []string{"datname"},
 			expected:  "SELECT datname, count(*) FROM pg_stat_activity GROUP BY datname;",
 		},
 		{
@@ -309,7 +309,7 @@ func TestFilterQueryByDatabases(t *testing.T) {
 			name:      "multiple databases with group by",
 			baseQuery: "SELECT datname, count(*) FROM pg_stat_activity",
 			databases: []string{"otel", "open"},
-			groupBy:   "datname",
+			groupBy:   []string{"datname"},
 			expected:  "SELECT datname, count(*) FROM pg_stat_activity WHERE datname IN ('otel','open') GROUP BY datname;",
 		},
 		{
@@ -322,14 +322,14 @@ func TestFilterQueryByDatabases(t *testing.T) {
 			name:      "multi-column group by",
 			baseQuery: "SELECT datname, state, count(*) FROM pg_stat_activity",
 			databases: []string{"otel"},
-			groupBy:   "datname, state",
+			groupBy:   []string{"datname", "state"},
 			expected:  "SELECT datname, state, count(*) FROM pg_stat_activity WHERE datname IN ('otel') GROUP BY datname, state;",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, filterQueryByDatabases(tc.baseQuery, tc.databases, tc.groupBy))
+			assert.Equal(t, tc.expected, filterQueryByDatabases(tc.baseQuery, tc.databases, tc.groupBy...))
 		})
 	}
 }

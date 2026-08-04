@@ -14,10 +14,10 @@ import (
 type PostgresqlBackendsMetricAttributeKey string
 
 const (
-	PostgresqlBackendsMetricAttributeKeyDbNamespace          PostgresqlBackendsMetricAttributeKey = "db.namespace"
-	PostgresqlBackendsMetricAttributeKeyBackendType          PostgresqlBackendsMetricAttributeKey = "backend_type"
-	PostgresqlBackendsMetricAttributeKeySessionState         PostgresqlBackendsMetricAttributeKey = "state"
-	PostgresqlBackendsMetricAttributeKeySessionWaitEventType PostgresqlBackendsMetricAttributeKey = "wait_event_type"
+	PostgresqlBackendsMetricAttributeKeyDbNamespace   PostgresqlBackendsMetricAttributeKey = "db.namespace"
+	PostgresqlBackendsMetricAttributeKeyBackendType   PostgresqlBackendsMetricAttributeKey = "backend_type"
+	PostgresqlBackendsMetricAttributeKeySessionState  PostgresqlBackendsMetricAttributeKey = "state"
+	PostgresqlBackendsMetricAttributeKeyWaitEventType PostgresqlBackendsMetricAttributeKey = "wait_event_type"
 )
 
 // PostgresqlBackendsMetricConfig provides config for the postgresql.backends metric.
@@ -46,7 +46,7 @@ func (ms *PostgresqlBackendsMetricConfig) Unmarshal(parser *confmap.Conf) error 
 func (ms *PostgresqlBackendsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeyBackendType, PostgresqlBackendsMetricAttributeKeySessionState, PostgresqlBackendsMetricAttributeKeySessionWaitEventType:
+		case PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeyBackendType, PostgresqlBackendsMetricAttributeKeySessionState, PostgresqlBackendsMetricAttributeKeyWaitEventType:
 		default:
 			return fmt.Errorf("metric postgresql.backends doesn't have an attribute %v, valid attributes: [db.namespace, backend_type, state, wait_event_type]", val)
 		}
@@ -2012,7 +2012,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlBackends: PostgresqlBackendsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeyBackendType, PostgresqlBackendsMetricAttributeKeySessionState, PostgresqlBackendsMetricAttributeKeySessionWaitEventType},
+			EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeyBackendType, PostgresqlBackendsMetricAttributeKeySessionState, PostgresqlBackendsMetricAttributeKeyWaitEventType},
 		},
 		PostgresqlBgwriterBuffersAllocated: PostgresqlBgwriterBuffersAllocatedMetricConfig{
 			Enabled: true,

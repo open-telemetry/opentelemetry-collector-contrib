@@ -351,7 +351,7 @@ var MapAttributeWalOperationLag = map[string]AttributeWalOperationLag{
 var MetricsInfo = metricsInfo{
 	PostgresqlBackends: metricInfo{
 		Name:       "postgresql.backends",
-		Attributes: []string{"db.namespace", "backend_type", "session_state", "session_wait_event_type"},
+		Attributes: []string{"db.namespace", "backend_type", "session_state", "wait_event_type"},
 	},
 	PostgresqlBgwriterBuffersAllocated: metricInfo{
 		Name: "postgresql.bgwriter.buffers.allocated",
@@ -588,7 +588,7 @@ func (m *metricPostgresqlBackends) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricPostgresqlBackends) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, backendTypeAttributeValue string, sessionStateAttributeValue string, sessionWaitEventTypeAttributeValue string) {
+func (m *metricPostgresqlBackends) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, backendTypeAttributeValue string, sessionStateAttributeValue string, waitEventTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -605,8 +605,8 @@ func (m *metricPostgresqlBackends) recordDataPoint(start pcommon.Timestamp, ts p
 	if slices.Contains(m.config.EnabledAttributes, PostgresqlBackendsMetricAttributeKeySessionState) {
 		dp.Attributes().PutStr("state", sessionStateAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, PostgresqlBackendsMetricAttributeKeySessionWaitEventType) {
-		dp.Attributes().PutStr("wait_event_type", sessionWaitEventTypeAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlBackendsMetricAttributeKeyWaitEventType) {
+		dp.Attributes().PutStr("wait_event_type", waitEventTypeAttributeValue)
 	}
 
 	var s string
@@ -4673,8 +4673,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordPostgresqlBackendsDataPoint adds a data point to postgresql.backends metric.
-func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, backendTypeAttributeValue string, sessionStateAttributeValue string, sessionWaitEventTypeAttributeValue string) {
-	mb.metricPostgresqlBackends.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, backendTypeAttributeValue, sessionStateAttributeValue, sessionWaitEventTypeAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, backendTypeAttributeValue string, sessionStateAttributeValue string, waitEventTypeAttributeValue string) {
+	mb.metricPostgresqlBackends.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, backendTypeAttributeValue, sessionStateAttributeValue, waitEventTypeAttributeValue)
 }
 
 // RecordPostgresqlBgwriterBuffersAllocatedDataPoint adds a data point to postgresql.bgwriter.buffers.allocated metric.

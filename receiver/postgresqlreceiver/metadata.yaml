@@ -266,13 +266,9 @@ attributes:
     type: string
     requirement_level: recommended
   session_state:
+    # Overridden because the "state" key is already taken by the tuple state attribute.
     name_override: state
-    description: The current state of a backend, as reported by pg_stat_activity.state. Reports "unknown" when the state is not available, e.g. for non-client backends or when the current user cannot see it.
-    type: string
-    requirement_level: recommended
-  session_wait_event_type:
-    name_override: wait_event_type
-    description: The type of event a backend is waiting on, as reported by pg_stat_activity.wait_event_type. Reports "none" when the backend is not waiting.
+    description: The current state of a backend, as reported by pg_stat_activity.state. Reports "unknown" when the state is not available, e.g. for non-client backends or when the monitoring user lacks the pg_monitor role.
     type: string
     requirement_level: recommended
   source:
@@ -296,6 +292,10 @@ attributes:
   user.name:
     description: Name of the user logged into this backend.
     type: string
+  wait_event_type:
+    description: The type of event a backend is waiting on, as reported by pg_stat_activity.wait_event_type. Reports "none" when the backend is not waiting.
+    type: string
+    requirement_level: recommended
   wal_operation_lag:
     name_override: operation
     description: The operation which is responsible for the lag.
@@ -360,7 +360,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [db.namespace, backend_type, session_state, session_wait_event_type]
+    attributes: [db.namespace, backend_type, session_state, wait_event_type]
   postgresql.bgwriter.buffers.allocated:
     description: Number of buffers allocated.
     stability: development

@@ -80,7 +80,7 @@ func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupReturned.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupUpdated.EnabledAttributes)
 	// backend_type, state and wait_event_type are not semconv attributes, so they survive in legacy mode.
-	assert.Equal(t, []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeyBackendType, metadata.PostgresqlBackendsMetricAttributeKeySessionState, metadata.PostgresqlBackendsMetricAttributeKeySessionWaitEventType}, legacyConfig.Metrics.PostgresqlBackends.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeyBackendType, metadata.PostgresqlBackendsMetricAttributeKeySessionState, metadata.PostgresqlBackendsMetricAttributeKeyWaitEventType}, legacyConfig.Metrics.PostgresqlBackends.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeySource}, legacyConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlDatabaseLocksMetricAttributeKey{metadata.PostgresqlDatabaseLocksMetricAttributeKeyRelation, metadata.PostgresqlDatabaseLocksMetricAttributeKeyMode, metadata.PostgresqlDatabaseLocksMetricAttributeKeyLockType}, legacyConfig.Metrics.PostgresqlDatabaseLocks.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlFunctionCallsMetricAttributeKey{metadata.PostgresqlFunctionCallsMetricAttributeKeyFunction}, legacyConfig.Metrics.PostgresqlFunctionCalls.EnabledAttributes)
@@ -99,6 +99,25 @@ func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
 	customLegacyConfig := metricsBuilderConfigForFeatureGate(customConfig, false)
 	assert.Empty(t, customLegacyConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeyDbNamespace}, customConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
+}
+
+// findMetric returns the metric with the given name, failing the test if it is not present.
+func findMetric(t *testing.T, metrics pmetric.Metrics, name string) pmetric.Metric {
+	t.Helper()
+	resourceMetrics := metrics.ResourceMetrics()
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		scopeMetrics := resourceMetrics.At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metricSlice := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metricSlice.Len(); k++ {
+				if metricSlice.At(k).Name() == name {
+					return metricSlice.At(k)
+				}
+			}
+		}
+	}
+	require.FailNowf(t, "metric not found", "%s", name)
+	return pmetric.NewMetric()
 }
 
 func TestRecordDatabaseBackendsPerBackendTypeStateAndWaitEventType(t *testing.T) {
@@ -129,22 +148,7 @@ func TestRecordDatabaseBackendsPerBackendTypeStateAndWaitEventType(t *testing.T)
 	rb := scraper.setupSemconvResourceBuilder(scraper.mb.NewResourceBuilder())
 	metrics := scraper.mb.Emit(metadata.WithResource(rb.Emit()))
 
-	backends := pmetric.NewMetric()
-	found := false
-	resourceMetrics := metrics.ResourceMetrics()
-	for i := 0; i < resourceMetrics.Len(); i++ {
-		scopeMetrics := resourceMetrics.At(i).ScopeMetrics()
-		for j := 0; j < scopeMetrics.Len(); j++ {
-			metricSlice := scopeMetrics.At(j).Metrics()
-			for k := 0; k < metricSlice.Len(); k++ {
-				if metricSlice.At(k).Name() == "postgresql.backends" {
-					backends = metricSlice.At(k)
-					found = true
-				}
-			}
-		}
-	}
-	require.True(t, found)
+	backends := findMetric(t, metrics, "postgresql.backends")
 
 	type backendKey struct {
 		namespace     string
@@ -211,22 +215,7 @@ func TestSemconvQueryConflictsPreserveDatabaseNamespace(t *testing.T) {
 	rb := scraper.setupSemconvResourceBuilder(scraper.mb.NewResourceBuilder())
 	metrics := scraper.mb.Emit(metadata.WithResource(rb.Emit()))
 
-	queryConflicts := pmetric.NewMetric()
-	found := false
-	resourceMetrics := metrics.ResourceMetrics()
-	for i := 0; i < resourceMetrics.Len(); i++ {
-		scopeMetrics := resourceMetrics.At(i).ScopeMetrics()
-		for j := 0; j < scopeMetrics.Len(); j++ {
-			metricSlice := scopeMetrics.At(j).Metrics()
-			for k := 0; k < metricSlice.Len(); k++ {
-				if metricSlice.At(k).Name() == "postgresql.query.conflicts" {
-					queryConflicts = metricSlice.At(k)
-					found = true
-				}
-			}
-		}
-	}
-	require.True(t, found)
+	queryConflicts := findMetric(t, metrics, "postgresql.query.conflicts")
 
 	actual := map[string]int64{}
 	dataPoints := queryConflicts.Sum().DataPoints()
