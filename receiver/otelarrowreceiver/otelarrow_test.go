@@ -217,7 +217,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = addr
+	cfg.Protocols.GRPC.NetAddr.Endpoint = addr
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, testReceiverID, sink, nil)
 
@@ -232,7 +232,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	assert.NoError(t, cc.Close())
 	require.NoError(t, ocr.Shutdown(t.Context()))
 
-	cfg.GRPC.MaxRecvMsgSizeMiB = 100
+	cfg.Protocols.GRPC.MaxRecvMsgSizeMiB = 100
 
 	ocr = newReceiver(t, factory, tt, cfg, testReceiverID, sink, nil)
 
@@ -255,7 +255,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 func newGRPCReceiver(t *testing.T, endpoint string, settings component.TelemetrySettings, tc consumer.Traces, mc consumer.Metrics) component.Component {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = endpoint
+	cfg.Protocols.GRPC.NetAddr.Endpoint = endpoint
 	return newReceiver(t, factory, settings, cfg, testReceiverID, tc, mc)
 }
 
@@ -286,7 +286,7 @@ func TestStandardShutdown(t *testing.T) {
 	// Create OTelArrow receiver
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
+	cfg.Protocols.GRPC.NetAddr.Endpoint = endpointGrpc
 	set := receivertest.NewNopSettings(componentmetadata.Type)
 	set.ID = testReceiverID
 	r, err := NewFactory().CreateTraces(
@@ -356,16 +356,16 @@ func TestOTelArrowShutdown(t *testing.T) {
 			// Create OTelArrow receiver
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
+			cfg.Protocols.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
 				ServerParameters: configoptional.None[configgrpc.KeepaliveServerParameters](),
 			})
 			if !cooperative {
-				cfg.GRPC.Keepalive.Get().ServerParameters = configoptional.Some(configgrpc.KeepaliveServerParameters{
+				cfg.Protocols.GRPC.Keepalive.Get().ServerParameters = configoptional.Some(configgrpc.KeepaliveServerParameters{
 					MaxConnectionAge:      time.Second,
 					MaxConnectionAgeGrace: 5 * time.Second,
 				})
 			}
-			cfg.GRPC.NetAddr.Endpoint = endpointGrpc
+			cfg.Protocols.GRPC.NetAddr.Endpoint = endpointGrpc
 			set := receivertest.NewNopSettings(componentmetadata.Type)
 			core, obslogs := observer.New(zapcore.DebugLevel)
 			set.Logger = zap.New(core)
@@ -629,8 +629,8 @@ func TestGRPCArrowReceiver(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = addr
-	cfg.GRPC.IncludeMetadata = true
+	cfg.Protocols.GRPC.NetAddr.Endpoint = addr
+	cfg.Protocols.GRPC.IncludeMetadata = true
 	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
@@ -739,9 +739,9 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = addr
-	cfg.GRPC.IncludeMetadata = true
-	cfg.GRPC.Auth = configoptional.Some(configauth.Config{
+	cfg.Protocols.GRPC.NetAddr.Endpoint = addr
+	cfg.Protocols.GRPC.IncludeMetadata = true
+	cfg.Protocols.GRPC.Auth = configoptional.Some(configauth.Config{
 		AuthenticatorID: authID,
 	})
 	id := component.NewID(componentmetadata.Type)
@@ -809,8 +809,8 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = addr
-	cfg.GRPC.IncludeMetadata = true
+	cfg.Protocols.GRPC.NetAddr.Endpoint = addr
+	cfg.Protocols.GRPC.IncludeMetadata = true
 	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
@@ -904,9 +904,9 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.Keepalive = configoptional.None[configgrpc.KeepaliveServerConfig]()
+	cfg.Protocols.GRPC.Keepalive = configoptional.None[configgrpc.KeepaliveServerConfig]()
 	// No keepalive parameters are set
-	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
+	cfg.Protocols.GRPC.NetAddr.Endpoint = endpointGrpc
 	set := receivertest.NewNopSettings(componentmetadata.Type)
 
 	set.ID = testReceiverID

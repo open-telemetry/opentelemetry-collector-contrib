@@ -132,16 +132,25 @@ func integrationTest(
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", pgVersion),
+				// 03-prepared-lock.sql needs prepared transactions, which are off by default.
+				Cmd: []string{"-c", "max_prepared_transactions=10"},
 				Env: map[string]string{
 					"POSTGRES_USER":     "root",
 					"POSTGRES_PASSWORD": "otel",
 					"POSTGRES_DB":       "otel",
 				},
-				Files: []testcontainers.ContainerFile{{
-					HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
-					ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
-					FileMode:          700,
-				}},
+				Files: []testcontainers.ContainerFile{
+					{
+						HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+						FileMode:          700,
+					},
+					{
+						HostFilePath:      filepath.Join("testdata", "integration", "03-prepared-lock.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/03-prepared-lock.sql",
+						FileMode:          700,
+					},
+				},
 				ExposedPorts: []string{postgresqlPort},
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
