@@ -25,7 +25,7 @@ require (
 	go.opentelemetry.io/collector/service/hostcapabilities v0.157.1-0.20260803152855-18ed8fe814ea
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
-	google.golang.org/grpc v1.82.1
+	google.golang.org/grpc v1.83.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
