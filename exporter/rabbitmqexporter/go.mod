@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbit
 go 1.25.0
 
 require (
-	github.com/moby/moby/client v0.5.0
+	github.com/moby/moby/client v0.5.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/rabbitmq v0.157.0
 	github.com/rabbitmq/amqp091-go v1.12.0
