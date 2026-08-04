@@ -154,7 +154,8 @@ func integrationTest(
 				ExposedPorts: []string{postgresqlPort},
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
@@ -177,7 +178,8 @@ func integrationTest(
 				rCfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled = true
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(compareOptions...),
 	).Run
@@ -208,7 +210,8 @@ func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
 			},
-		})
+		},
+	)
 	require.NoError(t, err)
 
 	err = ci.Start(t.Context())
@@ -278,7 +281,8 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
 			},
-		})
+		},
+	)
 	require.NoError(t, err)
 
 	err = ci.Start(t.Context())
@@ -515,7 +519,8 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 					AsRegexp().
 					WithOccurrence(1),
 			},
-		})
+		},
+	)
 	assert.NoError(t, err)
 
 	err = ci.Start(t.Context())
