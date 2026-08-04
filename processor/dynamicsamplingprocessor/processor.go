@@ -304,7 +304,7 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 						lateBuckets[id] = b
 					}
 					dstSS := findOrAppendScopeSpans(b.rs, ss)
-					span.CopyTo(dstSS.Spans().AppendEmpty())
+					span.MoveTo(dstSS.Spans().AppendEmpty())
 					continue
 				}
 				pt, exists := p.traces[id]
@@ -334,7 +334,7 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 					pendingBuckets[id] = rsCopy
 				}
 				dstSS := findOrAppendScopeSpans(pendingBuckets[id], ss)
-				span.CopyTo(dstSS.Spans().AppendEmpty())
+				span.MoveTo(dstSS.Spans().AppendEmpty())
 			}
 		}
 		for id, copied := range pendingBuckets {
