@@ -168,10 +168,8 @@ func TestGetExecutionTimeStats(t *testing.T) {
 }
 
 func TestLockQueries(t *testing.T) {
-	// Both queries LEFT JOIN pg_class so that targets which are not relations are
-	// kept, and split on pg_locks.database so that a lock is reported exactly
-	// once: by the database that owns it, or as server-scoped when it has no
-	// owning database.
+	// Both queries outer-join pg_class to keep non-relation targets, and split on
+	// pg_locks.database so a lock is reported exactly once.
 	const databaseLocksSQL = "SELECT COALESCE(relname, '') AS relation, mode, locktype,COUNT(*) " +
 		"AS locks FROM pg_locks " +
 		"LEFT JOIN pg_class ON pg_locks.relation = pg_class.oid " +

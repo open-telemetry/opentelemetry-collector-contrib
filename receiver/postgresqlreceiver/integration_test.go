@@ -331,18 +331,15 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 	require.Contains(t, indexStats, indexKey("otel", "public", "table2", "table2_pkey"))
 }
 
-// TestLockCollectionIncludesNonRelationTargets asserts that locks whose target is
-// not a relation are reported, and that each one lands in the bucket that matches
-// its pg_locks.database: advisory locks belong to the connected database, while
-// transaction ID locks belong to no database at all.
+// TestLockCollectionIncludesNonRelationTargets asserts that targets which are not
+// relations are reported, each in the bucket matching its pg_locks.database.
 func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
-				// A prepared transaction keeps its transactionid lock, with a NULL
-				// pid, until it is rolled back.
+				// Needed for the prepared transaction below.
 				Cmd: []string{"-c", "max_prepared_transactions=10"},
 				Env: map[string]string{
 					"POSTGRES_USER":     "root",
@@ -372,8 +369,7 @@ func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
 	require.NoError(t, err)
 	defer lockDB.Close()
 
-	// A prepared transaction that has written holds an ExclusiveLock on its
-	// transaction ID, which carries a NULL pg_locks.database.
+	// A prepared transaction holds a transactionid lock with a NULL database.
 	prepConn, err := lockDB.Conn(t.Context())
 	require.NoError(t, err)
 	_, err = prepConn.ExecContext(t.Context(), "BEGIN")
@@ -399,8 +395,7 @@ func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
 		assert.NoError(t, unlockErr)
 	}()
 
-	// Commenting on a database takes a lock on a shared object: database = 0 with
-	// a NULL relation. Held open in a transaction for the duration of the scrape.
+	// Commenting on a database locks a shared object: database = 0, relation NULL.
 	objectConn, err := lockDB.Conn(t.Context())
 	require.NoError(t, err)
 	defer objectConn.Close()
@@ -435,7 +430,6 @@ func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
 
 	dbLocks, err := client.getDatabaseLocks(ctx)
 	require.NoError(t, err)
-	// The advisory lock's target belongs to the connected database.
 	require.Contains(t, dbLocks, databaseLocks{
 		relation: "",
 		mode:     "ExclusiveLock",
@@ -448,7 +442,6 @@ func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
 	for _, lock := range relationLocks {
 		assert.NotEmpty(t, lock.relation)
 	}
-	// Transaction ID locks belong to no database, so they must not be counted here.
 	assert.Empty(t, filterLocksByType(dbLocks, "transactionid"))
 	assert.Empty(t, filterLocksByType(dbLocks, "virtualxid"))
 
@@ -465,8 +458,7 @@ func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
 	require.Len(t, transactionIDLocks, 1)
 	assert.Empty(t, transactionIDLocks[0].relation)
 	assert.Equal(t, "ExclusiveLock", transactionIDLocks[0].mode)
-	// The prepared transaction has a NULL pid, so it is only counted if the query
-	// counts rows rather than pids.
+	// The prepared transaction has a NULL pid: counted only by COUNT(*), not COUNT(pid).
 	assert.Equal(t, expectedTransactionIDLocks, transactionIDLocks[0].locks)
 
 	// Every backend holds an ExclusiveLock on its own virtual transaction ID.
@@ -475,8 +467,7 @@ func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
 	assert.Empty(t, virtualXIDLocks[0].relation)
 	require.Positive(t, virtualXIDLocks[0].locks)
 
-	// A shared object target has database = 0 and a NULL relation, so it is only
-	// reported if the shared bucket keeps non-relation targets.
+	// database = 0 with a NULL relation: only kept if the shared bucket allows it.
 	objectLocks := filterLocksByType(serverLocks, "object")
 	require.Len(t, objectLocks, 1)
 	assert.Empty(t, objectLocks[0].relation)
