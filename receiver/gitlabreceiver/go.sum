@@ -137,8 +137,8 @@ github.com/tklauser/numcpus v0.11.0 h1:nSTwhKH5e1dMNsCdVBukSZrURJRoHbSEQjdEbY+9R
 github.com/tklauser/numcpus v0.11.0/go.mod h1:z+LwcLq54uWZTX0u/bGobaV34u6V7KNlTZejzM6/3MQ=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
-gitlab.com/gitlab-org/api/client-go/v2 v2.51.0 h1:jP3bsuS3WpiEqhxhG58GJtqCyOnjyACQ8u8oyUg7ru8=
-gitlab.com/gitlab-org/api/client-go/v2 v2.51.0/go.mod h1:P0sRPwCAGIek6HIU0JH5W9Ic5+z3eWvCWwXeg7Pwr7o=
+gitlab.com/gitlab-org/api/client-go/v2 v2.55.1 h1:eX0iBhJ9GWP2XqQOH/pkmSvPosFS3rcyFcup/3kHL2k=
+gitlab.com/gitlab-org/api/client-go/v2 v2.55.1/go.mod h1:6GcBiCVrZBtOvl6HiahZ3nq5eBs7JMUARJeLN4/RgZU=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
 go.opentelemetry.io/collector/client v1.63.1-0.20260803152855-18ed8fe814ea h1:cdUo1JYoD4jsjLF4WU1FKIwmL7EcjRKhNv6Y3pjnLPI=
