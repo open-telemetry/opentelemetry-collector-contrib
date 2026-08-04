@@ -1,0 +1,9 @@
+change_type: enhancement
+component: receiver/kubeletstatsreceiver
+note: "Add optional system process limit/count metrics."
+issues: [48926]
+subtext: |
+  Adds the following optional metrics to kubeletstatsreceiver:
+  - system.process.limit
+  - system.process.count
+change_logs: [user]

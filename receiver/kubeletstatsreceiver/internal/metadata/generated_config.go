@@ -1413,6 +1413,74 @@ func (ms *K8sVolumeInodesUsedMetricConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
+// SystemProcessCountMetricAttributeKey specifies the key of an attribute for the system.process.count metric.
+type SystemProcessCountMetricAttributeKey string
+
+const (
+	SystemProcessCountMetricAttributeKeyProcessState SystemProcessCountMetricAttributeKey = "process.state"
+)
+
+// SystemProcessCountMetricConfig provides config for the system.process.count metric.
+type SystemProcessCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemProcessCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemProcessCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemProcessCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemProcessCountMetricAttributeKeyProcessState:
+		default:
+			return fmt.Errorf("metric system.process.count doesn't have an attribute %v, valid attributes: [process.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemProcessLimitMetricConfig provides config for the system.process.limit metric.
+type SystemProcessLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemProcessLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MetricsConfig provides config for kubelet_stats metrics.
 type MetricsConfig struct {
 	ContainerCPUTime                       ContainerCPUTimeMetricConfig                       `mapstructure:"container.cpu.time"`
@@ -1478,6 +1546,8 @@ type MetricsConfig struct {
 	K8sVolumeInodes                        K8sVolumeInodesMetricConfig                        `mapstructure:"k8s.volume.inodes"`
 	K8sVolumeInodesFree                    K8sVolumeInodesFreeMetricConfig                    `mapstructure:"k8s.volume.inodes.free"`
 	K8sVolumeInodesUsed                    K8sVolumeInodesUsedMetricConfig                    `mapstructure:"k8s.volume.inodes.used"`
+	SystemProcessCount                     SystemProcessCountMetricConfig                     `mapstructure:"system.process.count"`
+	SystemProcessLimit                     SystemProcessLimitMetricConfig                     `mapstructure:"system.process.limit"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -1680,6 +1750,14 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sVolumeInodesUsed: K8sVolumeInodesUsedMetricConfig{
 			Enabled: true,
+		},
+		SystemProcessCount: SystemProcessCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemProcessCountMetricAttributeKey{SystemProcessCountMetricAttributeKeyProcessState},
+		},
+		SystemProcessLimit: SystemProcessLimitMetricConfig{
+			Enabled: false,
 		},
 	}
 }

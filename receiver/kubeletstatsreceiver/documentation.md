@@ -560,6 +560,28 @@ The number of used bytes in the pod volume.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
+### system.process.count
+
+Total number of processes in each state.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {process} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| process.state | Status of the processes. | Str: ``running`` | Recommended | - |
+
+### system.process.limit
+
+Total number of processes/threads allowed by the operating system.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {thread} | Sum | Int | Cumulative | false | Development |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
