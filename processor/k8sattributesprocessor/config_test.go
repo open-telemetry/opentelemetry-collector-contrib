@@ -14,12 +14,15 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate, true)()
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -36,6 +39,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -111,6 +115,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -137,6 +142,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -151,6 +157,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -165,6 +172,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -207,6 +215,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -222,6 +231,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 30 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -237,6 +247,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -256,6 +267,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -275,6 +287,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -295,6 +308,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -312,6 +326,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -329,6 +344,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -346,6 +362,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -363,6 +380,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -380,6 +398,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -403,6 +422,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -419,6 +439,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
@@ -436,6 +457,28 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        20 * time.Second,
 				PodDeleteGracePeriod:   30 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "kubelet"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
+				},
+				Filter:                 FilterConfig{Node: "ip-111.us-west-2.compute.internal"},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet: KubeletConfig{
+					Enabled:            true,
+					PollInterval:       15 * time.Second,
+					InsecureSkipVerify: true,
+					AllowInsecureHTTP:  true,
+				},
 			},
 		},
 		{
@@ -453,10 +496,20 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        0,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "bad_pod_delete_grace_period"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_kubelet_poll_interval"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_kubelet_node"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_kubelet_node_from_env_var"),
 		},
 	}
 
@@ -484,6 +537,17 @@ func TestLoadConfig(t *testing.T) {
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func TestValidateKubeletRequiresFeatureGate(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate, false)()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Filter.Node = "node-a"
+	cfg.Kubelet.Enabled = true
+
+	err := cfg.Validate()
+	require.EqualError(t, err, "kubelet.enabled requires feature gate processor.k8sattributes.EnableKubeletPodSource")
 }
 
 func TestFilterConfigInvalidEnvVar(t *testing.T) {

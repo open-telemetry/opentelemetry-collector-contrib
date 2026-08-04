@@ -95,7 +95,7 @@ func Benchmark_RS_ResourceSweep_InProcess(b *testing.B) {
 					return k8sconfig.ClientBundle{K8s: fc}, nil
 				}
 
-				c, err := New(set, k8sconfig.APIConfig{}, rules, filters, nil, Excludes{}, newClientSet, factory, false, 0, 0, time.Second)
+				c, err := New(set, k8sconfig.APIConfig{}, rules, filters, nil, Excludes{}, newClientSet, factory, false, 0, 0, time.Second, KubeletConfig{})
 				if err != nil {
 					b.Fatalf("New: %v", err)
 				}
