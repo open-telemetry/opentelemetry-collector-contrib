@@ -21,12 +21,6 @@ $defs:
       enabled:
         description: Enabled is a flag to enable events.
         type: boolean
-  self_time_config:
-    type: object
-    properties:
-      enabled:
-        description: Enabled is a flag to enable the self-time histogram metric.
-        type: boolean
   exemplars_config:
     type: object
     properties:
@@ -66,6 +60,13 @@ $defs:
         $ref: exponential_histogram_config
       unit:
         $ref: ./internal/metrics.unit
+  self_time_config:
+    description: SelfTimeConfig configures the optional exclusive/self-time histogram metric.
+    type: object
+    properties:
+      enabled:
+        description: Enabled is a flag to enable the self-time metric.
+        type: boolean
 description: Config defines the configuration options for spanmetricsconnector.
 type: object
 properties:
@@ -94,9 +95,6 @@ properties:
   events:
     description: Events defines the configuration for events section of spans.
     $ref: events_config
-  self_time:
-    description: SelfTime defines the configuration for the optional exclusive/self-time histogram. When enabled, the connector computes self time from parent-child span intervals in each trace batch. Requires complete traces. Disabled by default.
-    $ref: self_time_config
   exclude_dimensions:
     type: array
     items:
@@ -133,6 +131,9 @@ properties:
     type: array
     items:
       type: string
+  self_time:
+    description: SelfTime defines the configuration for the optional self-time histogram metric. When enabled, the connector computes exclusive/self time from parent-child span timing in each trace batch and emits a separate histogram. Complete traces must be present in each batch.
+    $ref: self_time_config
   series_expiration:
     description: SeriesExpiration is the time period after which individual metric series are considered stale and will no longer be exported. Default value (0) means that individual metric series will never expire.
     type: string
