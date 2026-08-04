@@ -12,6 +12,7 @@ import (
 	computepb "cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -358,11 +359,12 @@ func TestDetect(t *testing.T) {
 			},
 		},
 		{
+			// With fail_on_missing_metadata off (the default), partial metadata must not
+			// propagate an error: doing so fails collector startup rather than degrading.
 			desc: "error",
 			detector: newTestDetector(&fakeGCPDetector{
 				err: errors.New("failed to get metadata"),
 			}),
-			expectErr: true,
 			expectedResource: map[string]any{
 				"cloud.provider": "gcp",
 			},
@@ -379,6 +381,19 @@ func TestDetect(t *testing.T) {
 			assert.Equal(t, tc.expectedResource, res.Attributes().AsRaw(), "Resource object returned is incorrect")
 		})
 	}
+}
+
+func TestDetectFailOnMissingMetadata(t *testing.T) {
+	d := newTestDetector(&fakeGCPDetector{
+		err: errors.New("failed to get metadata"),
+	})
+	d.failOnMissingMetadata = true
+
+	res, schema, err := d.Detect(t.Context())
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "failed to get metadata")
+	assert.Empty(t, schema)
+	assert.Equal(t, 0, res.Attributes().Len())
 }
 
 func newTestDetector(gcpDetector *fakeGCPDetector, opts ...func(*localMetadata.ResourceAttributesConfig)) *detector {

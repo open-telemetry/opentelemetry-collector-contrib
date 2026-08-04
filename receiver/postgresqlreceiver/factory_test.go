@@ -9,11 +9,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
@@ -28,7 +31,7 @@ func TestValidConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Username = "otel"
 	cfg.Password = "otel"
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func TestCreateMetrics(t *testing.T) {
@@ -50,13 +53,56 @@ func TestCreateMetrics(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 }
 
+func TestCreateMetricsResolvesDBAuthAtStart(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_dbauth"))
+
+	metricsReceiver, err := factory.CreateMetrics(
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	err = metricsReceiver.Start(t.Context(), componenttest.NewNopHost())
+	require.ErrorContains(t, err, "requested credential provider is not present")
+}
+
+type extensionsHost map[component.ID]component.Component
+
+func (h extensionsHost) GetExtensions() map[component.ID]component.Component {
+	return h
+}
+
+func TestCreateMetricsStartsWithDBAuthProvider(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_dbauth"))
+	cfg.ControllerConfig.InitialDelay = time.Hour
+
+	metricsReceiver, err := factory.CreateMetrics(
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, metricsReceiver.Start(t.Context(), extensionsHost(credExtMap())))
+	require.NoError(t, metricsReceiver.Shutdown(t.Context()))
+}
+
 func TestCreateDefaultConfig(t *testing.T) {
 	defaultCfg := createDefaultConfig().(*Config)
 	assert.Equal(t, int64(1000), defaultCfg.TopQueryCollection.MaxRowsPerQuery)
-	assert.Equal(t, int64(200), defaultCfg.TopNQuery)
-	assert.Equal(t, int64(1000), defaultCfg.MaxExplainEachInterval)
-	assert.Equal(t, 1000, defaultCfg.QueryPlanCacheSize)
-	assert.Equal(t, time.Hour, defaultCfg.QueryPlanCacheTTL)
+	assert.Equal(t, int64(200), defaultCfg.TopQueryCollection.TopNQuery)
+	assert.Equal(t, int64(1000), defaultCfg.TopQueryCollection.MaxExplainEachInterval)
+	assert.Equal(t, 1000, defaultCfg.TopQueryCollection.QueryPlanCacheSize)
+	assert.Equal(t, time.Hour, defaultCfg.TopQueryCollection.QueryPlanCacheTTL)
 
 	assert.Equal(t, int64(1000), defaultCfg.QuerySampleCollection.MaxRowsPerQuery)
 }

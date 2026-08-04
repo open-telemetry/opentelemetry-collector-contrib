@@ -6,6 +6,7 @@ package elasticbeanstalk // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strconv"
 
@@ -28,8 +29,9 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	fs fileSystem
-	rb *metadata.ResourceBuilder
+	fs                    fileSystem
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 type EbMetaData struct {
@@ -38,12 +40,12 @@ type EbMetaData struct {
 	VersionLabel    string `json:"version_label"`
 }
 
-func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	return &Detector{fs: &ebFileSystem{}, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
+	return &Detector{fs: &ebFileSystem{}, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes), failOnMissingMetadata: failOnMissingMetadata}, nil
 }
 
-func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	var conf io.ReadCloser
 
 	if d.fs.IsWindows() {
@@ -54,7 +56,9 @@ func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL 
 
 	// Do not want to return error so it fails silently on non-EB instances
 	if err != nil {
-		// TODO: Log a more specific message with zap
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("elastic_beanstalk metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 
