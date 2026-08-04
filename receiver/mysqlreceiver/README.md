@@ -191,3 +191,22 @@ WHERE NAME = 'events_waits_current';
 Run this statement after each restart, or grant the receiver user `UPDATE` on
 `performance_schema.setup_consumers` so that the receiver can re-enable it automatically on
 reconnect.
+
+### Blocking session attributes (InnoDB and Metadata Lock)
+
+The `mysql.blocking.*` attributes on `db.server.query_sample` events provide visibility into
+lock contention. The receiver automatically selects the correct query based on server version:
+
+- **MySQL 8.0.1+**: Uses `performance_schema.data_lock_waits`, `performance_schema.data_locks`,
+  and `performance_schema.metadata_locks` for both InnoDB row-level and MDL blocking.
+- **MySQL < 8.0 / MariaDB**: Uses `information_schema.innodb_lock_waits` and
+  `information_schema.innodb_locks` for InnoDB row-level blocking only (no MDL support).
+
+#### Required privilege
+
+The database user must have the `PROCESS` privilege to read `information_schema.innodb_trx`
+and the blocking-related tables:
+
+```sql
+GRANT PROCESS ON *.* TO '<your-user>'@'%';
+```

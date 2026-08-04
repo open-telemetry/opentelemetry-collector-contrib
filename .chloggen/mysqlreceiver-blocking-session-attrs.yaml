@@ -1,0 +1,16 @@
+change_type: enhancement
+
+component: receiver/mysql
+
+note: Add blocking session attributes to db.server.query_sample events for InnoDB row-level and metadata lock (MDL) blocking visibility. Uses split templates (querySample.tmpl for MySQL 8.0.11+ and querySampleLegacy.tmpl for MySQL <8.0/MariaDB) for clean version-conditional SQL.
+
+issues: [49458]
+
+subtext: |
+  New attributes: mysql.blocking.pids, mysql.blocking.start_time, mysql.blocking.wait_duration,
+  mysql.innodb_lock.mode, mysql.innodb_lock.type, mysql.innodb_lock.wait_resource,
+  mysql.blocking.transaction.start_time, mysql.blocking.lock_level,
+  mysql.mdl_lock.object.type, mysql.mdl_lock.object.schema, mysql.mdl_lock.object.name,
+  mysql.mdl_lock.type. Requires PROCESS privilege for blocking information_schema tables.
+
+change_logs: [user]

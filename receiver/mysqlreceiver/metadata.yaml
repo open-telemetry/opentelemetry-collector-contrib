@@ -159,6 +159,21 @@ attributes:
     type: string
     enum: [waits, write_requests, writes, fsyncs]
     requirement_level: recommended
+  mysql.blocking.lock_level:
+    description: Level of the lock causing the block, either 'row' (InnoDB) or 'metadata' (MDL).
+    type: string
+  mysql.blocking.pids:
+    description: Comma-separated list of session IDs (processlist_id) holding locks that block this session.
+    type: string
+  mysql.blocking.start_time:
+    description: UTC timestamp (ISO 8601) when the blocked session started waiting for the lock.
+    type: string
+  mysql.blocking.transaction.start_time:
+    description: UTC timestamp (ISO 8601) when the blocking transaction started.
+    type: string
+  mysql.blocking.wait_duration:
+    description: Duration in seconds that this session has been waiting for the lock.
+    type: double
   mysql.event_id:
     description: The thread associated with the event and the thread current event number when the event starts.
     type: int
@@ -181,6 +196,27 @@ attributes:
   mysql.events_waits_current.timer_wait:
     description: Timing information for the event, indicating elapsed time the event waited in seconds.
     type: double
+  mysql.innodb_lock.mode:
+    description: The lock mode requested by the blocked session (e.g. X, S, IX, IS).
+    type: string
+  mysql.innodb_lock.type:
+    description: The InnoDB lock type (e.g. RECORD, TABLE, GAP).
+    type: string
+  mysql.innodb_lock.wait_resource:
+    description: Composite lock resource identifier (schema.table/index/lock_data) showing the exact resource being waited on.
+    type: string
+  mysql.mdl_lock.object.name:
+    description: The name of the object involved in the metadata lock.
+    type: string
+  mysql.mdl_lock.object.schema:
+    description: The schema of the object involved in the metadata lock.
+    type: string
+  mysql.mdl_lock.object.type:
+    description: The metadata lock object type (e.g. TABLE, SCHEMA, GLOBAL).
+    type: string
+  mysql.mdl_lock.type:
+    description: The metadata lock type requested (e.g. EXCLUSIVE, SHARED_READ).
+    type: string
   mysql.query_plan:
     description: The query plan for the statement, if available.
     type: string
@@ -328,6 +364,18 @@ events:
       - client.port
       - network.peer.address
       - network.peer.port
+      - mysql.blocking.pids
+      - mysql.blocking.start_time
+      - mysql.blocking.wait_duration
+      - mysql.innodb_lock.mode
+      - mysql.innodb_lock.type
+      - mysql.innodb_lock.wait_resource
+      - mysql.blocking.transaction.start_time
+      - mysql.blocking.lock_level
+      - mysql.mdl_lock.object.type
+      - mysql.mdl_lock.object.schema
+      - mysql.mdl_lock.object.name
+      - mysql.mdl_lock.type
 
   db.server.top_query:
     enabled: false

@@ -70,6 +70,42 @@ resourceLogs:
               - key: network.peer.port
                 value:
                   intValue: "1234"
+              - key: mysql.blocking.pids
+                value:
+                  stringValue: ""
+              - key: mysql.blocking.start_time
+                value:
+                  stringValue: ""
+              - key: mysql.blocking.wait_duration
+                value:
+                  doubleValue: 0
+              - key: mysql.innodb_lock.mode
+                value:
+                  stringValue: ""
+              - key: mysql.innodb_lock.type
+                value:
+                  stringValue: ""
+              - key: mysql.innodb_lock.wait_resource
+                value:
+                  stringValue: ""
+              - key: mysql.blocking.transaction.start_time
+                value:
+                  stringValue: ""
+              - key: mysql.blocking.lock_level
+                value:
+                  stringValue: ""
+              - key: mysql.mdl_lock.object.type
+                value:
+                  stringValue: ""
+              - key: mysql.mdl_lock.object.schema
+                value:
+                  stringValue: ""
+              - key: mysql.mdl_lock.object.name
+                value:
+                  stringValue: ""
+              - key: mysql.mdl_lock.type
+                value:
+                  stringValue: ""
             body: {}
             eventName: db.server.query_sample
             spanId: "2222222222222222"

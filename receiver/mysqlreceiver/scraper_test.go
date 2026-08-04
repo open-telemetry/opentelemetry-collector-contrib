@@ -493,7 +493,7 @@ type queryPlanSpyClient struct {
 	explainPlan  string
 }
 
-func (c *queryPlanSpyClient) getQuerySamples(uint64, bool) ([]querySample, error) {
+func (c *queryPlanSpyClient) getQuerySamples(uint64, bool, bool) ([]querySample, error) {
 	return c.querySamples, nil
 }
 
@@ -781,7 +781,7 @@ func (c *mockClient) getReplicaStatusStats(_ bool) ([]replicaStatusStats, error)
 }
 
 // Generate a function for getQuerySamples to read data from a static file
-func (c *mockClient) getQuerySamples(uint64, bool) ([]querySample, error) {
+func (c *mockClient) getQuerySamples(uint64, bool, bool) ([]querySample, error) {
 	var samples []querySample
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.querySamplesFile+".txt"))
 	if err != nil {
@@ -813,6 +813,20 @@ func (c *mockClient) getQuerySamples(uint64, bool) ([]querySample, error) {
 		s.statementTimerWait, _ = strconv.ParseFloat(text[15], 64)
 		if len(text) > 16 {
 			s.traceparent = text[16]
+		}
+		if len(text) > 17 {
+			s.blockingLockLevel = text[17]
+			s.blockingPIDs = text[18]
+			s.blockingStartTime = text[19]
+			s.blockingWaitDuration, _ = strconv.ParseFloat(text[20], 64)
+			s.blockingLockMode = text[21]
+			s.blockingLockType = text[22]
+			s.blockingWaitResource = text[23]
+			s.blockingTransactionStart = text[24]
+			s.mdlObjectType = text[25]
+			s.mdlObjectSchema = text[26]
+			s.mdlObjectName = text[27]
+			s.mdlLockType = text[28]
 		}
 
 		samples = append(samples, s)
@@ -1443,4 +1457,116 @@ func TestScrapeTopQueryFuncNoDetectedVersion(t *testing.T) {
 	endpoint, ok := attrs.Get("mysql.instance.endpoint")
 	assert.True(t, ok, "mysql.instance.endpoint resource attribute missing")
 	assert.Equal(t, "localhost:3306", endpoint.Str())
+}
+
+func TestScrapeQuerySamplesBlockingInnoDB(t *testing.T) {
+	v8 := mustDBVersion(t, "8.0.27")
+	mc := &mockClient{querySamplesFile: "query_samples_blocking_innodb", dbVersionOverride: &v8}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+	s.sqlclient = mc
+	s.detectedVersion = mc.getDBVersion()
+
+	logs, err := s.scrapeQuerySampleFunc(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+
+	lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	attrs := lr.Attributes()
+
+	lockLevel, ok := attrs.Get("mysql.blocking.lock_level")
+	assert.True(t, ok, "mysql.blocking.lock_level must be present")
+	assert.Equal(t, "row", lockLevel.Str())
+
+	pids, ok := attrs.Get("mysql.blocking.pids")
+	assert.True(t, ok, "mysql.blocking.pids must be present")
+	assert.Equal(t, "42,99", pids.Str())
+
+	startTime, ok := attrs.Get("mysql.blocking.start_time")
+	assert.True(t, ok, "mysql.blocking.start_time must be present")
+	assert.Equal(t, "2026-07-02 10:30:00", startTime.Str())
+
+	waitDur, ok := attrs.Get("mysql.blocking.wait_duration")
+	assert.True(t, ok, "mysql.blocking.wait_duration must be present")
+	assert.InDelta(t, 12.5, waitDur.Double(), 0.001)
+
+	lockMode, ok := attrs.Get("mysql.innodb_lock.mode")
+	assert.True(t, ok, "mysql.innodb_lock.mode must be present")
+	assert.Equal(t, "X", lockMode.Str())
+
+	waitResource, ok := attrs.Get("mysql.innodb_lock.wait_resource")
+	assert.True(t, ok, "mysql.innodb_lock.wait_resource must be present")
+	assert.Equal(t, "adventureworks.orders/PRIMARY/1", waitResource.Str())
+
+	mdlType, ok := attrs.Get("mysql.mdl_lock.object.type")
+	assert.True(t, ok, "mysql.mdl_lock.object.type must be present")
+	assert.Empty(t, mdlType.Str(), "MDL attributes must be empty for InnoDB row-level blocks")
+}
+
+func TestScrapeQuerySamplesBlockingMDL(t *testing.T) {
+	v8 := mustDBVersion(t, "8.0.27")
+	mc := &mockClient{querySamplesFile: "query_samples_blocking_mdl", dbVersionOverride: &v8}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+	s.sqlclient = mc
+	s.detectedVersion = mc.getDBVersion()
+
+	logs, err := s.scrapeQuerySampleFunc(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+
+	lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	attrs := lr.Attributes()
+
+	lockLevel, ok := attrs.Get("mysql.blocking.lock_level")
+	assert.True(t, ok, "mysql.blocking.lock_level must be present")
+	assert.Equal(t, "metadata", lockLevel.Str())
+
+	pids, ok := attrs.Get("mysql.blocking.pids")
+	assert.True(t, ok, "mysql.blocking.pids must be present")
+	assert.Equal(t, "55", pids.Str())
+
+	mdlObjType, ok := attrs.Get("mysql.mdl_lock.object.type")
+	assert.True(t, ok, "mysql.mdl_lock.object.type must be present")
+	assert.Equal(t, "TABLE", mdlObjType.Str())
+
+	mdlLockType, ok := attrs.Get("mysql.mdl_lock.type")
+	assert.True(t, ok, "mysql.mdl_lock.type must be present")
+	assert.Equal(t, "EXCLUSIVE", mdlLockType.Str())
+}
+
+func TestScrapeQuerySamplesNoBlocking(t *testing.T) {
+	v8 := mustDBVersion(t, "8.0.27")
+	mc := &mockClient{querySamplesFile: "query_samples", dbVersionOverride: &v8}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+	s.sqlclient = mc
+	s.detectedVersion = mc.getDBVersion()
+
+	logs, err := s.scrapeQuerySampleFunc(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+
+	lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	attrs := lr.Attributes()
+
+	lockLevel, ok := attrs.Get("mysql.blocking.lock_level")
+	assert.True(t, ok, "mysql.blocking.lock_level attribute must exist even when empty")
+	assert.Empty(t, lockLevel.Str())
+
+	pids, ok := attrs.Get("mysql.blocking.pids")
+	assert.True(t, ok, "mysql.blocking.pids attribute must exist even when empty")
+	assert.Empty(t, pids.Str())
 }

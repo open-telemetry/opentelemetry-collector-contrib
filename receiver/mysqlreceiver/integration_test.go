@@ -601,7 +601,7 @@ func TestVersionCompatibility(t *testing.T) {
 			dv := c.getDBVersion()
 			assert.Equal(t, tc.wantProduct, dv.product, "product mismatch")
 			assert.Equal(t, tc.wantSampleTextCol, dv.supportsQuerySampleText(), "supportsQuerySampleText mismatch")
-			assert.Equal(t, tc.wantReplicaStatus, dv.supportsReplicaStatus(), "supportsReplicaStatus mismatch")
+			assert.Equal(t, tc.wantReplicaStatus, dv.supportsProcesslist(), "supportsProcesslist mismatch")
 
 			// --- getTopQueries: must succeed without error ---
 			// No workload is running, so the result may be empty, but the query
@@ -627,14 +627,14 @@ func TestVersionCompatibility(t *testing.T) {
 
 			// --- getQuerySamples: must succeed without error ---
 			// Result may be empty if no active sessions.
-			_, err = c.getQuerySamples(10, dv.supportsProcesslist())
+			_, err = c.getQuerySamples(10, dv.supportsProcesslist(), dv.supportsDataLockWaits())
 			require.NoError(t, err, "getQuerySamples should not fail (wrong template would cause 'unknown table' error)")
 
 			// --- getReplicaStatusStats: must succeed without error ---
 			// Proves the correct SHOW REPLICA STATUS vs SHOW SLAVE STATUS template was
 			// chosen. The server is not configured as a replica so the result will be
 			// empty, but the query itself must execute without error.
-			_, err = c.getReplicaStatusStats(dv.supportsReplicaStatus())
+			_, err = c.getReplicaStatusStats(dv.supportsProcesslist())
 			require.NoError(t, err, "getReplicaStatusStats should not fail (wrong command would cause syntax error)")
 		})
 	}

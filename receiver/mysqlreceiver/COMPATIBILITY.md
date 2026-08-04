@@ -7,8 +7,8 @@ This document lists every version-gated capability in the MySQL receiver. Versio
 | Predicate | Minimum Version | Fallback Behavior |
 |---|---|---|
 | `supportsQuerySampleText()` | MySQL 8.0.3+ | Top-query scraper uses 5-column fallback template (`topQueryNoSampleText.tmpl`); `querySampleText` is empty and `EXPLAIN` is skipped |
-| `supportsReplicaStatus()` | MySQL 8.0.22+ | `SHOW SLAVE STATUS` is used instead of `SHOW REPLICA STATUS` |
-| `supportsProcesslist()` | MySQL 8.0.22+ | `client.port` and `network.peer.port` remain `0`; `information_schema.PROCESSLIST` is **not** used as a fallback (it holds a global mutex, was deprecated in MySQL 8.0, removed in MySQL 9.0, and has already been removed from this receiver) |
+| `supportsDataLockWaits()` | MySQL 8.0.11+ | Gates query sample template selection: `querySample.tmpl` (uses `performance_schema.data_lock_waits`, `data_locks`, `metadata_locks` for blocking + MDL) vs `querySampleLegacy.tmpl` (MySQL 5.7/MariaDB; uses `information_schema.innodb_lock_waits`/`innodb_locks`, no MDL). The `information_schema` tables were removed in MySQL 8.0, so all GA MySQL 8.0 releases (8.0.11+) use the modern template. |
+| `supportsProcesslist()` | MySQL 8.0.22+ | Within `querySample.tmpl`, controls the `performance_schema.processlist` JOIN (exposes `host:port` for `client.port`/`network.peer.port` population). Also gates `SHOW REPLICA STATUS` vs `SHOW SLAVE STATUS`. On MySQL 8.0.11–8.0.21, `client.port` remains `0` and `SHOW SLAVE STATUS` is used. |
 
 ## Timer Wait Tiers (`querySample.tmpl`)
 
@@ -35,7 +35,7 @@ The following product/version/platform combinations have been validated against 
 - **Platform** — deployment type and instance class (e.g. `AWS RDS db.t3.micro`, `Docker 27.x`, `bare metal`)
 - **Date** — date live validation passed
 
-| Product | Series | Exact Version | Platform | `supportsQuerySampleText` | `supportsProcesslist` | `supportsReplicaStatus` | Timer Wait Tiers | Date |
+| Product | Series | Exact Version | Platform | `supportsQuerySampleText` | `supportsDataLockWaits` | `supportsProcesslist` | Timer Wait Tiers | Date |
 |---|---|---|---|---|---|---|---|---|
 | MySQL | 8.4 | 8.4.7 | AWS RDS db.t3.micro | ✓ | ✓ | ✓ | 1, 2, 3 | 2026-04-21 |
 | MySQL | 5.7 | 5.7.44 | AWS RDS db.t3.micro | ✗ | ✗ | ✗ | 1, 2, 3 | 2026-04-21 |
