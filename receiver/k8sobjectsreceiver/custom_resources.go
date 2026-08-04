@@ -17,10 +17,12 @@ import (
 	"go.opentelemetry.io/collector/filter"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -29,10 +31,13 @@ import (
 )
 
 const (
-	customResourcePageSize         int64 = 100
-	customResourceListMaxAttempts        = 3
-	customResourceListRetryDelay         = time.Second
-	customResourceCacheSyncTimeout       = 2 * time.Minute
+	customResourcePageSize               int64 = 100
+	customResourceCacheSyncTimeout             = 2 * time.Minute
+	customResourceDiscoveryRetryDelay          = 5 * time.Second
+	customResourceDiscoveryMaxRetryDelay       = 5 * time.Minute
+	customResourceDiscoveryOverloadDelay       = 30 * time.Second
+	customResourceDiscoveryRetryJitter         = 0.2
+	customResourceDiscoveryRetrySteps          = 10
 )
 
 var customResourceDefinitionGVR = schema.GroupVersionResource{
@@ -58,8 +63,10 @@ type customResourceCollector struct {
 	informerReady    <-chan error
 	discoveryDirty   atomic.Bool
 	discovered       []discoveredCustomResource
-	listRetryDelay   time.Duration
+	discoveryRetryAt time.Time
+	discoveryBackoff wait.Backoff
 	cacheSyncTimeout time.Duration
+	now              func() time.Time
 }
 
 func newCustomResourceCollector(
@@ -82,8 +89,9 @@ func newCustomResourceCollector(
 		consume:          consume,
 		crdInformer:      crdInformer,
 		informerReady:    informerReady,
-		listRetryDelay:   customResourceListRetryDelay,
+		discoveryBackoff: newCustomResourceDiscoveryBackoff(),
 		cacheSyncTimeout: customResourceCacheSyncTimeout,
+		now:              time.Now,
 	}
 	collector.discoveryDirty.Store(true)
 	_, err := crdInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -262,6 +270,9 @@ func (c *customResourceCollector) collect(ctx context.Context) error {
 			if errors.Is(err, context.Canceled) {
 				return err
 			}
+			if apierrors.IsNotFound(err) || apimeta.IsNoMatchError(err) {
+				c.discoveryDirty.Store(true)
+			}
 			c.logger.Error(
 				"failed to collect custom resource",
 				zap.String("resource", resource.gvr.String()),
@@ -277,16 +288,62 @@ func (c *customResourceCollector) refreshDiscovery() error {
 		return nil
 	}
 
-	resources, discoveryErr := c.discoveryClient.ServerPreferredResources()
-	if discoveryErr != nil && len(resources) == 0 {
-		c.discoveryDirty.Store(true)
-		return fmt.Errorf("failed to discover preferred Kubernetes resources: %w", discoveryErr)
-	}
-	if discoveryErr != nil {
-		c.logger.Warn("some Kubernetes API groups could not be discovered", zap.Error(discoveryErr))
-		c.discoveryDirty.Store(true)
+	crds := c.selectedCustomResourceDefinitions()
+	c.discovered = retainSelectedCustomResources(c.discovered, crds)
+	if len(crds) == 0 {
+		c.resetDiscoveryBackoff()
+		return nil
 	}
 
+	now := c.now()
+	if now.Before(c.discoveryRetryAt) {
+		c.discoveryDirty.Store(true)
+		return nil
+	}
+
+	resources, discoveryErr := c.discoveryClient.ServerPreferredResources()
+	discovered := discoverCustomResources(
+		crds,
+		resources,
+		c.config.Include,
+		c.config.Exclude,
+		c.skipResources,
+	)
+	failedGroups, preserveAll, relevantErr := relevantCustomResourceDiscoveryError(discoveryErr, crds)
+	if relevantErr == nil {
+		c.discovered = discovered
+		c.resetDiscoveryBackoff()
+		if discoveryErr != nil {
+			c.logger.Debug(
+				"ignored discovery failures for unselected Kubernetes API groups",
+				zap.Error(discoveryErr),
+			)
+		}
+		c.logger.Debug("discovered custom resources", zap.Int("count", len(c.discovered)))
+		return nil
+	}
+
+	c.discovered = mergeDiscoveredCustomResources(c.discovered, discovered, crds, failedGroups, preserveAll)
+	c.discoveryDirty.Store(true)
+	retryAfter, overloaded := c.scheduleDiscoveryRetry(relevantErr, now)
+	if len(resources) == 0 && len(c.discovered) == 0 {
+		return fmt.Errorf(
+			"failed to discover preferred Kubernetes resources; retrying after %s: %w",
+			retryAfter,
+			relevantErr,
+		)
+	}
+	c.logger.Warn(
+		"some selected Kubernetes API groups could not be discovered; using last-known-good resources",
+		zap.Error(relevantErr),
+		zap.Duration("retry_after", retryAfter),
+		zap.Bool("api_overloaded", overloaded),
+	)
+	c.logger.Debug("discovered custom resources", zap.Int("count", len(c.discovered)))
+	return nil
+}
+
+func (c *customResourceCollector) selectedCustomResourceDefinitions() map[schema.GroupResource]struct{} {
 	result := make(map[schema.GroupResource]struct{})
 	for _, object := range c.crdInformer.GetStore().List() {
 		crd, ok := object.(*metav1.PartialObjectMetadata)
@@ -294,20 +351,144 @@ func (c *customResourceCollector) refreshDiscovery() error {
 			continue
 		}
 		name, group, ok := strings.Cut(crd.Name, ".")
-		if ok {
-			result[schema.GroupResource{Group: group, Resource: name}] = struct{}{}
+		if !ok {
+			continue
+		}
+		groupResource := schema.GroupResource{Group: group, Resource: name}
+		if _, ok := c.skipResources[groupResource]; ok {
+			continue
+		}
+		if !matchesCustomResourceSelectors(groupResource, c.config.Include) ||
+			matchesCustomResourceSelectors(groupResource, c.config.Exclude) {
+			continue
+		}
+		result[groupResource] = struct{}{}
+	}
+	return result
+}
+
+func retainSelectedCustomResources(
+	resources []discoveredCustomResource,
+	selected map[schema.GroupResource]struct{},
+) []discoveredCustomResource {
+	result := resources[:0]
+	for _, resource := range resources {
+		if _, ok := selected[resource.gvr.GroupResource()]; ok {
+			result = append(result, resource)
+		}
+	}
+	return result
+}
+
+func mergeDiscoveredCustomResources(
+	previous, discovered []discoveredCustomResource,
+	selected map[schema.GroupResource]struct{},
+	failedGroups map[string]struct{},
+	preserveAll bool,
+) []discoveredCustomResource {
+	byGroupResource := make(map[schema.GroupResource]discoveredCustomResource, len(discovered))
+	for _, resource := range discovered {
+		byGroupResource[resource.gvr.GroupResource()] = resource
+	}
+	for _, resource := range previous {
+		groupResource := resource.gvr.GroupResource()
+		if _, ok := selected[groupResource]; !ok {
+			continue
+		}
+		if _, ok := byGroupResource[groupResource]; ok {
+			continue
+		}
+		if _, failed := failedGroups[resource.gvr.Group]; preserveAll || failed {
+			byGroupResource[groupResource] = resource
 		}
 	}
 
-	c.discovered = discoverCustomResources(
-		result,
-		resources,
-		c.config.Include,
-		c.config.Exclude,
-		c.skipResources,
-	)
-	c.logger.Debug("discovered custom resources", zap.Int("count", len(c.discovered)))
-	return nil
+	result := make([]discoveredCustomResource, 0, len(byGroupResource))
+	for _, resource := range byGroupResource {
+		result = append(result, resource)
+	}
+	sortDiscoveredCustomResources(result)
+	return result
+}
+
+func relevantCustomResourceDiscoveryError(
+	err error,
+	selected map[schema.GroupResource]struct{},
+) (map[string]struct{}, bool, error) {
+	if err == nil {
+		return nil, false, nil
+	}
+	failed, ok := discovery.GroupDiscoveryFailedErrorGroups(err)
+	if !ok {
+		return nil, true, err
+	}
+
+	relevant := make(map[schema.GroupVersion]error)
+	failedGroups := make(map[string]struct{})
+	for groupVersion, groupErr := range failed {
+		for groupResource := range selected {
+			if groupResource.Group == groupVersion.Group {
+				relevant[groupVersion] = groupErr
+				failedGroups[groupVersion.Group] = struct{}{}
+				break
+			}
+		}
+	}
+	if len(relevant) == 0 {
+		return nil, false, nil
+	}
+	return failedGroups, false, &discovery.ErrGroupDiscoveryFailed{Groups: relevant}
+}
+
+func newCustomResourceDiscoveryBackoff() wait.Backoff {
+	return wait.Backoff{
+		Duration: customResourceDiscoveryRetryDelay,
+		Factor:   2,
+		Jitter:   customResourceDiscoveryRetryJitter,
+		Steps:    customResourceDiscoveryRetrySteps,
+		Cap:      customResourceDiscoveryMaxRetryDelay,
+	}
+}
+
+func (c *customResourceCollector) scheduleDiscoveryRetry(err error, now time.Time) (time.Duration, bool) {
+	delay := c.discoveryBackoff.Step()
+	suggestedDelay, overloaded := customResourceDiscoveryServerDelay(err)
+	if overloaded && delay < customResourceDiscoveryOverloadDelay {
+		delay = customResourceDiscoveryOverloadDelay
+	}
+	if suggestedDelay > delay {
+		delay = suggestedDelay
+	}
+	c.discoveryRetryAt = now.Add(delay)
+	return delay, overloaded
+}
+
+func (c *customResourceCollector) resetDiscoveryBackoff() {
+	c.discoveryRetryAt = time.Time{}
+	c.discoveryBackoff = newCustomResourceDiscoveryBackoff()
+}
+
+func customResourceDiscoveryServerDelay(err error) (time.Duration, bool) {
+	errs := []error{err}
+	if failed, ok := discovery.GroupDiscoveryFailedErrorGroups(err); ok {
+		errs = errs[:0]
+		for _, groupErr := range failed {
+			errs = append(errs, groupErr)
+		}
+	}
+
+	var suggestedDelay time.Duration
+	overloaded := false
+	for _, currentErr := range errs {
+		if seconds, ok := apierrors.SuggestsClientDelay(currentErr); ok {
+			overloaded = true
+			suggestedDelay = max(suggestedDelay, time.Duration(seconds)*time.Second)
+		}
+		if apierrors.IsTooManyRequests(currentErr) || apierrors.IsServerTimeout(currentErr) {
+			overloaded = true
+		}
+	}
+	return suggestedDelay, overloaded
 }
 
 func discoverCustomResources(
@@ -350,13 +531,17 @@ func discoverCustomResources(
 	for _, resource := range byGroupResource {
 		result = append(result, resource)
 	}
-	sort.Slice(result, func(i, j int) bool {
-		if result[i].gvr.Group != result[j].gvr.Group {
-			return result[i].gvr.Group < result[j].gvr.Group
-		}
-		return result[i].gvr.Resource < result[j].gvr.Resource
-	})
+	sortDiscoveredCustomResources(result)
 	return result
+}
+
+func sortDiscoveredCustomResources(resources []discoveredCustomResource) {
+	sort.Slice(resources, func(i, j int) bool {
+		if resources[i].gvr.Group != resources[j].gvr.Group {
+			return resources[i].gvr.Group < resources[j].gvr.Group
+		}
+		return resources[i].gvr.Resource < resources[j].gvr.Resource
+	})
 }
 
 func matchesCustomResourceSelectors(
@@ -403,7 +588,7 @@ func (c *customResourceCollector) listResource(
 	}
 
 	for {
-		objects, err := c.listPage(ctx, resource, options)
+		objects, err := resource.List(ctx, options)
 		if err != nil {
 			return err
 		}
@@ -424,45 +609,4 @@ func (c *customResourceCollector) listResource(
 		}
 		options.Continue = objects.GetContinue()
 	}
-}
-
-func (c *customResourceCollector) listPage(
-	ctx context.Context,
-	resource dynamic.ResourceInterface,
-	options metav1.ListOptions,
-) (*unstructured.UnstructuredList, error) {
-	var lastErr error
-	for attempt := range customResourceListMaxAttempts {
-		objects, err := resource.List(ctx, options)
-		if err == nil {
-			return objects, nil
-		}
-		lastErr = err
-
-		delay, retry := customResourceListErrorRetryDelay(err, c.listRetryDelay)
-		if !retry || attempt == customResourceListMaxAttempts-1 {
-			return nil, err
-		}
-		timer := time.NewTimer(delay)
-		select {
-		case <-timer.C:
-		case <-ctx.Done():
-			timer.Stop()
-			return nil, ctx.Err()
-		}
-	}
-	return nil, lastErr
-}
-
-func customResourceListErrorRetryDelay(err error, fallback time.Duration) (time.Duration, bool) {
-	if seconds, ok := apierrors.SuggestsClientDelay(err); ok && seconds > 0 {
-		return time.Duration(seconds) * time.Second, true
-	}
-	if apierrors.IsTooManyRequests(err) ||
-		apierrors.IsServiceUnavailable(err) ||
-		apierrors.IsServerTimeout(err) ||
-		apierrors.IsTimeout(err) {
-		return fallback, true
-	}
-	return 0, false
 }

@@ -63,24 +63,15 @@ type testPaginatedResource struct {
 	options []metav1.ListOptions
 }
 
-type testRetryResource struct {
+type testErrorResource struct {
 	dynamic.ResourceInterface
-	errs  []error
+	err   error
 	calls int
 }
 
-func (r *testRetryResource) List(_ context.Context, _ metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+func (r *testErrorResource) List(_ context.Context, _ metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	r.calls++
-	if len(r.errs) != 0 {
-		err := r.errs[0]
-		r.errs = r.errs[1:]
-		return nil, err
-	}
-	return &unstructured.UnstructuredList{
-		Items: []unstructured.Unstructured{
-			*customResource("argoproj.io/v1alpha1", "Application", "example", "default"),
-		},
-	}, nil
+	return nil, r.err
 }
 
 func (r *testPaginatedResource) List(_ context.Context, options metav1.ListOptions) (*unstructured.UnstructuredList, error) {
@@ -255,7 +246,6 @@ func TestCustomResourceCollectorUsesPaginationAndSelectors(t *testing.T) {
 				names = append(names, objects.Items[i].GetName())
 			}
 		},
-		listRetryDelay: customResourceListRetryDelay,
 	}
 
 	resource := &testPaginatedResource{}
@@ -269,42 +259,17 @@ func TestCustomResourceCollectorUsesPaginationAndSelectors(t *testing.T) {
 	assert.Equal(t, "next", resource.options[1].Continue)
 }
 
-func TestCustomResourceCollectorRetriesTransientListErrors(t *testing.T) {
-	t.Parallel()
-
-	var names []string
-	collector := &customResourceCollector{
-		config: &CustomResourcesConfig{},
-		consume: func(_ context.Context, objects *unstructured.UnstructuredList, _ schema.GroupVersionResource) {
-			for i := range objects.Items {
-				names = append(names, objects.Items[i].GetName())
-			}
-		},
-	}
-
-	resource := &testRetryResource{
-		errs: []error{
-			apierrors.NewTooManyRequests("storage is (re)initializing", 0),
-		},
-	}
-	require.NoError(t, collector.listResource(t.Context(), resource, applicationGVR, false))
-	assert.Equal(t, 2, resource.calls)
-	assert.Equal(t, []string{"example"}, names)
-}
-
-func TestCustomResourceCollectorDoesNotRetryPermanentListErrors(t *testing.T) {
+func TestCustomResourceCollectorReturnsListErrorsWithoutAdditionalRetries(t *testing.T) {
 	t.Parallel()
 
 	collector := &customResourceCollector{
 		config:  &CustomResourcesConfig{},
 		consume: func(context.Context, *unstructured.UnstructuredList, schema.GroupVersionResource) {},
 	}
-
-	resource := &testRetryResource{
-		errs: []error{
-			apierrors.NewForbidden(applicationGVR.GroupResource(), "example", errors.New("forbidden")),
-		},
+	resource := &testErrorResource{
+		err: apierrors.NewTooManyRequests("storage is (re)initializing", 0),
 	}
+
 	require.Error(t, collector.listResource(t.Context(), resource, applicationGVR, false))
 	assert.Equal(t, 1, resource.calls)
 }
@@ -419,10 +384,12 @@ func TestCustomResourceCollectorRefreshesPreferredVersion(t *testing.T) {
 	}, collector.discovered)
 }
 
-func TestCustomResourceCollectorRemovesDeletedCRD(t *testing.T) {
+func TestCustomResourceCollectorRemovesDeletedCRDDuringDiscoveryBackoff(t *testing.T) {
 	t.Parallel()
 
-	discoveryClient := newCustomResourceDiscovery(apiResourceList(applicationGVR, true))
+	discoveryClient := &testCustomResourceDiscovery{
+		resources: []*metav1.APIResourceList{apiResourceList(applicationGVR, true)},
+	}
 	collector, err := newCustomResourceCollector(
 		&CustomResourcesConfig{
 			Interval: time.Hour,
@@ -438,27 +405,40 @@ func TestCustomResourceCollectorRemovesDeletedCRD(t *testing.T) {
 		func(context.Context, *unstructured.UnstructuredList, schema.GroupVersionResource) {},
 	)
 	require.NoError(t, err)
+	now := time.Date(2026, 8, 3, 0, 0, 0, 0, time.UTC)
+	collector.now = func() time.Time { return now }
 	crd := customResourceDefinition("applications.argoproj.io")
 	require.NoError(t, collector.crdInformer.GetStore().Add(crd))
 
 	require.NoError(t, collector.refreshDiscovery())
 	require.Len(t, collector.discovered, 1)
 
+	discoveryClient.resources = nil
+	discoveryClient.err = errors.New("discovery unavailable")
+	collector.discoveryDirty.Store(true)
+	require.NoError(t, collector.refreshDiscovery())
+	require.Len(t, collector.discovered, 1)
+	require.True(t, now.Before(collector.discoveryRetryAt))
+
 	require.NoError(t, collector.crdInformer.GetStore().Delete(crd))
 	collector.discoveryDirty.Store(true)
 
 	require.NoError(t, collector.refreshDiscovery())
 	assert.Empty(t, collector.discovered)
+	assert.Equal(t, int64(2), discoveryClient.calls.Load())
+	assert.True(t, collector.discoveryRetryAt.IsZero())
 }
 
-func TestCustomResourceCollectorUsesPartialDiscoveryAndRetries(t *testing.T) {
+func TestCustomResourceCollectorIgnoresUnselectedDiscoveryFailures(t *testing.T) {
 	t.Parallel()
 
 	discoveryClient := &testCustomResourceDiscovery{
 		resources: []*metav1.APIResourceList{
 			apiResourceList(applicationGVR, true),
 		},
-		err: errors.New("another API group is unavailable"),
+		err: &discovery.ErrGroupDiscoveryFailed{Groups: map[schema.GroupVersion]error{
+			{Group: "metrics.k8s.io", Version: "v1beta1"}: errors.New("aggregated API is unavailable"),
+		}},
 	}
 	collector, err := newCustomResourceCollector(
 		&CustomResourcesConfig{
@@ -481,15 +461,125 @@ func TestCustomResourceCollectorUsesPartialDiscoveryAndRetries(t *testing.T) {
 	assert.Equal(t, []discoveredCustomResource{
 		{gvr: applicationGVR, namespaced: true},
 	}, collector.discovered)
-	assert.True(t, collector.discoveryDirty.Load())
+	assert.False(t, collector.discoveryDirty.Load())
+	assert.True(t, collector.discoveryRetryAt.IsZero())
 
 	discoveryClient.err = nil
 	require.NoError(t, collector.refreshDiscovery())
-	assert.Equal(t, int64(2), discoveryClient.calls.Load())
+	assert.Equal(t, int64(1), discoveryClient.calls.Load())
 	assert.False(t, collector.discoveryDirty.Load())
 }
 
-func TestCustomResourceCollectorRetriesFailedDiscovery(t *testing.T) {
+func TestCustomResourceCollectorPreservesFailedGroupAndRecovers(t *testing.T) {
+	t.Parallel()
+
+	applicationV1GVR := schema.GroupVersionResource{
+		Group: applicationGVR.Group, Version: "v1", Resource: applicationGVR.Resource,
+	}
+	discoveryClient := &testCustomResourceDiscovery{
+		resources: []*metav1.APIResourceList{
+			apiResourceList(applicationGVR, true),
+			apiResourceList(clusterWidgetGVR, false),
+		},
+	}
+	collector, err := newCustomResourceCollector(
+		&CustomResourcesConfig{
+			Interval: time.Hour,
+			Include: []CustomResourceSelector{
+				{Group: "*", Resources: []string{"*"}},
+			},
+		},
+		newCustomResourceDynamicClient(),
+		newCustomResourceMetadataClient(),
+		discoveryClient,
+		nil,
+		zaptest.NewLogger(t),
+		func(context.Context, *unstructured.UnstructuredList, schema.GroupVersionResource) {},
+	)
+	require.NoError(t, err)
+	seedCustomResourceDefinitionCache(t, collector,
+		"applications.argoproj.io",
+		"clusterwidgets.example.com",
+	)
+	now := time.Date(2026, 8, 3, 0, 0, 0, 0, time.UTC)
+	collector.now = func() time.Time { return now }
+
+	require.NoError(t, collector.refreshDiscovery())
+	require.Equal(t, []discoveredCustomResource{
+		{gvr: applicationGVR, namespaced: true},
+		{gvr: clusterWidgetGVR},
+	}, collector.discovered)
+
+	discoveryClient.resources = []*metav1.APIResourceList{apiResourceList(clusterWidgetGVR, false)}
+	discoveryClient.err = &discovery.ErrGroupDiscoveryFailed{Groups: map[schema.GroupVersion]error{
+		applicationGVR.GroupVersion(): errors.New("temporarily unavailable"),
+	}}
+	collector.discoveryDirty.Store(true)
+	require.NoError(t, collector.refreshDiscovery())
+	assert.Equal(t, []discoveredCustomResource{
+		{gvr: applicationGVR, namespaced: true},
+		{gvr: clusterWidgetGVR},
+	}, collector.discovered)
+	assert.True(t, collector.discoveryDirty.Load())
+	assert.Equal(t, int64(2), discoveryClient.calls.Load())
+	require.True(t, now.Before(collector.discoveryRetryAt))
+
+	require.NoError(t, collector.refreshDiscovery())
+	assert.Equal(t, int64(2), discoveryClient.calls.Load())
+
+	now = collector.discoveryRetryAt
+	discoveryClient.resources = []*metav1.APIResourceList{
+		apiResourceList(applicationV1GVR, true),
+		apiResourceList(clusterWidgetGVR, false),
+	}
+	discoveryClient.err = nil
+	require.NoError(t, collector.refreshDiscovery())
+	assert.Equal(t, []discoveredCustomResource{
+		{gvr: applicationV1GVR, namespaced: true},
+		{gvr: clusterWidgetGVR},
+	}, collector.discovered)
+	assert.False(t, collector.discoveryDirty.Load())
+	assert.True(t, collector.discoveryRetryAt.IsZero())
+}
+
+func TestCustomResourceCollectorUsesLastKnownResourcesDuringTotalDiscoveryFailure(t *testing.T) {
+	t.Parallel()
+
+	discoveryClient := &testCustomResourceDiscovery{
+		resources: []*metav1.APIResourceList{apiResourceList(applicationGVR, true)},
+	}
+	collector, err := newCustomResourceCollector(
+		&CustomResourcesConfig{
+			Interval: time.Hour,
+			Include: []CustomResourceSelector{
+				{Group: applicationGVR.Group, Resources: []string{applicationGVR.Resource}},
+			},
+		},
+		newCustomResourceDynamicClient(),
+		newCustomResourceMetadataClient(),
+		discoveryClient,
+		nil,
+		zaptest.NewLogger(t),
+		func(context.Context, *unstructured.UnstructuredList, schema.GroupVersionResource) {},
+	)
+	require.NoError(t, err)
+	seedCustomResourceDefinitionCache(t, collector, "applications.argoproj.io")
+	now := time.Date(2026, 8, 3, 0, 0, 0, 0, time.UTC)
+	collector.now = func() time.Time { return now }
+
+	require.NoError(t, collector.refreshDiscovery())
+	discoveryClient.resources = nil
+	discoveryClient.err = errors.New("discovery unavailable")
+	collector.discoveryDirty.Store(true)
+
+	require.NoError(t, collector.refreshDiscovery())
+	assert.Equal(t, []discoveredCustomResource{
+		{gvr: applicationGVR, namespaced: true},
+	}, collector.discovered)
+	assert.True(t, collector.discoveryDirty.Load())
+}
+
+func TestCustomResourceCollectorBacksOffFailedInitialDiscovery(t *testing.T) {
 	t.Parallel()
 
 	discoveryClient := &testCustomResourceDiscovery{
@@ -511,18 +601,91 @@ func TestCustomResourceCollectorRetriesFailedDiscovery(t *testing.T) {
 	)
 	require.NoError(t, err)
 	seedCustomResourceDefinitionCache(t, collector, "applications.argoproj.io")
+	now := time.Date(2026, 8, 3, 0, 0, 0, 0, time.UTC)
+	collector.now = func() time.Time { return now }
 
 	require.ErrorContains(t, collector.refreshDiscovery(), "failed to discover preferred Kubernetes resources")
 	assert.True(t, collector.discoveryDirty.Load())
+	require.True(t, now.Before(collector.discoveryRetryAt))
 
 	discoveryClient.resources = []*metav1.APIResourceList{
 		apiResourceList(applicationGVR, true),
 	}
 	discoveryClient.err = nil
 	require.NoError(t, collector.refreshDiscovery())
+	assert.Empty(t, collector.discovered)
+	assert.Equal(t, int64(1), discoveryClient.calls.Load())
+
+	now = collector.discoveryRetryAt
+	require.NoError(t, collector.refreshDiscovery())
 	assert.Equal(t, []discoveredCustomResource{
 		{gvr: applicationGVR, namespaced: true},
 	}, collector.discovered)
+	assert.Equal(t, int64(2), discoveryClient.calls.Load())
+}
+
+func TestCustomResourceCollectorHonorsOverloadRetryAfter(t *testing.T) {
+	t.Parallel()
+
+	discoveryClient := &testCustomResourceDiscovery{
+		err: &discovery.ErrGroupDiscoveryFailed{Groups: map[schema.GroupVersion]error{
+			applicationGVR.GroupVersion(): apierrors.NewTooManyRequests("API is overloaded", 45),
+		}},
+	}
+	collector, err := newCustomResourceCollector(
+		&CustomResourcesConfig{
+			Interval: time.Second,
+			Include: []CustomResourceSelector{
+				{Group: applicationGVR.Group, Resources: []string{applicationGVR.Resource}},
+			},
+		},
+		newCustomResourceDynamicClient(),
+		newCustomResourceMetadataClient(),
+		discoveryClient,
+		nil,
+		zaptest.NewLogger(t),
+		func(context.Context, *unstructured.UnstructuredList, schema.GroupVersionResource) {},
+	)
+	require.NoError(t, err)
+	seedCustomResourceDefinitionCache(t, collector, "applications.argoproj.io")
+	now := time.Date(2026, 8, 3, 0, 0, 0, 0, time.UTC)
+	collector.now = func() time.Time { return now }
+
+	require.Error(t, collector.refreshDiscovery())
+	assert.Equal(t, 45*time.Second, collector.discoveryRetryAt.Sub(now))
+	require.NoError(t, collector.refreshDiscovery())
+	assert.Equal(t, int64(1), discoveryClient.calls.Load())
+
+	now = collector.discoveryRetryAt
+	discoveryClient.err = &discovery.ErrGroupDiscoveryFailed{Groups: map[schema.GroupVersion]error{
+		applicationGVR.GroupVersion(): apierrors.NewTooManyRequests("API is overloaded", 0),
+	}}
+	require.Error(t, collector.refreshDiscovery())
+	assert.Equal(t, customResourceDiscoveryOverloadDelay, collector.discoveryRetryAt.Sub(now))
+	assert.Equal(t, int64(2), discoveryClient.calls.Load())
+}
+
+func TestCustomResourceDiscoveryBackoffIsExponentialAndCapped(t *testing.T) {
+	t.Parallel()
+
+	collector := &customResourceCollector{discoveryBackoff: newCustomResourceDiscoveryBackoff()}
+	collector.discoveryBackoff.Jitter = 0
+	now := time.Date(2026, 8, 3, 0, 0, 0, 0, time.UTC)
+	for _, expected := range []time.Duration{
+		5 * time.Second,
+		10 * time.Second,
+		20 * time.Second,
+		40 * time.Second,
+		80 * time.Second,
+		160 * time.Second,
+		5 * time.Minute,
+		5 * time.Minute,
+	} {
+		delay, overloaded := collector.scheduleDiscoveryRetry(errors.New("unavailable"), now)
+		assert.Equal(t, expected, delay)
+		assert.False(t, overloaded)
+		assert.Equal(t, expected, collector.discoveryRetryAt.Sub(now))
+	}
 }
 
 func TestCustomResourceCollectorContinuesAfterNamespaceError(t *testing.T) {
@@ -558,6 +721,28 @@ func TestCustomResourceCollectorContinuesAfterNamespaceError(t *testing.T) {
 	})
 	require.ErrorContains(t, err, `namespace "unavailable": forbidden`)
 	assert.Equal(t, []string{"example"}, names)
+}
+
+func TestCustomResourceCollectorRefreshesDiscoveryAfterNotFound(t *testing.T) {
+	t.Parallel()
+
+	dynamicClient := newCustomResourceDynamicClient()
+	fakeClient := dynamicClient.(*fakedynamic.FakeDynamicClient)
+	fakeClient.PrependReactor("list", applicationGVR.Resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, apierrors.NewNotFound(applicationGVR.GroupResource(), applicationGVR.Resource)
+	})
+	collector := &customResourceCollector{
+		config:        &CustomResourcesConfig{},
+		dynamicClient: dynamicClient,
+		logger:        zaptest.NewLogger(t),
+		discovered: []discoveredCustomResource{
+			{gvr: applicationGVR, namespaced: true},
+		},
+		consume: func(context.Context, *unstructured.UnstructuredList, schema.GroupVersionResource) {},
+	}
+
+	require.NoError(t, collector.collect(t.Context()))
+	assert.True(t, collector.discoveryDirty.Load())
 }
 
 func TestCustomResourcesOnlyReceiver(t *testing.T) {

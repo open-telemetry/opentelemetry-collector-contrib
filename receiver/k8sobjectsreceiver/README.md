@@ -121,6 +121,8 @@ Custom resources can be listed individually in `objects`. Use `custom_resources`
 
 Collection is pull-only. The receiver watches CRD metadata for changes, lists selected resources sequentially with pagination, and does not overlap collection cycles. A resource type listed explicitly in `objects` is not collected again through `custom_resources`.
 
+If API discovery is partially unavailable, the receiver keeps last-known-good mappings for selected CRDs that still exist and ignores failures from unselected API groups. Relevant discovery failures are retried with capped exponential backoff and jitter; server overload signals and `Retry-After` delays are honored. CRDs removed from the informer cache are removed from collection even while discovery is backing off.
+
 `interval` is the delay between completed collection cycles; it uses the top-level `interval`, or `1h`, when unset. `initial_delay` delays the first cycle. Namespace, label, and field filters apply to every selected resource type, so a label selector should use a convention shared by those resources. Namespace filters do not affect cluster-scoped resources, and field selectors must be supported by the selected APIs.
 
 To collect every custom resource type, use an explicit wildcard:
