@@ -11,5 +11,5 @@ var ProcessorResourcedetectionConsulPrefixMetaAttributesFeatureGate = featuregat
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, Consul node metadata is emitted as `consul.meta.<key>` resource attributes instead of `<key>`."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49988"),
-	featuregate.WithRegisterFromVersion("v0.158.0"),
+	featuregate.WithRegisterFromVersion("v0.159.0"),
 )

@@ -6,7 +6,7 @@ feature_gates:
   - id: processor.resourcedetection.consul.prefixMetaAttributes
     stage: alpha
     description: When enabled, Consul node metadata is emitted as `consul.meta.<key>` resource attributes instead of `<key>`.
-    from_version: v0.158.0
+    from_version: v0.159.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49988
 
 resource_attributes:

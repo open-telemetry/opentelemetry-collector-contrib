@@ -18,6 +18,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `processor.resourcedetection.consul.prefixMetaAttributes` | alpha | When enabled, Consul node metadata is emitted as `consul.meta.<key>` resource attributes instead of `<key>`. | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49988) |
+| `processor.resourcedetection.consul.prefixMetaAttributes` | alpha | When enabled, Consul node metadata is emitted as `consul.meta.<key>` resource attributes instead of `<key>`. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49988) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
