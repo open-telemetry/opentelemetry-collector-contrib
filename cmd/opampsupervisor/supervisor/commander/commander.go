@@ -23,6 +23,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
+// stopGracePeriod is how long Stop waits for the Agent process to exit after the
+// graceful shutdown signal before killing it forcibly. It is a variable so tests
+// can shorten it.
+var stopGracePeriod = 10 * time.Second
+
 // Commander can start/stop/restart the Agent executable and also watch for a signal
 // for the Agent process to finish.
 type Commander struct {
@@ -430,7 +435,7 @@ func (c *Commander) IsRunning() bool {
 	return c.running.Load() != 0
 }
 
-// Stop the Agent process. Sends SIGTERM to the process and wait for up 10 seconds
+// Stop the Agent process. Sends SIGTERM to the process and wait for up to stopGracePeriod
 // and if the process does not finish kills it forcedly by sending SIGKILL.
 // Returns after the process is terminated.
 func (c *Commander) Stop(ctx context.Context) error {
@@ -447,12 +452,15 @@ func (c *Commander) Stop(ctx context.Context) error {
 		return err
 	}
 
-	waitCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	waitCtx, cancel := context.WithTimeout(ctx, stopGracePeriod)
+	defer cancel()
 
 	// Setup a goroutine to wait a while for process to finish and send kill signal
-	// to the process if it doesn't finish.
-	var innerErr error
+	// to the process if it doesn't finish. The result is communicated over a channel
+	// so that it can be read without racing with the goroutine.
+	killErrCh := make(chan error, 1)
 	go func() {
+		defer close(killErrCh)
 		<-waitCtx.Done()
 
 		if !errors.Is(waitCtx.Err(), context.DeadlineExceeded) {
@@ -464,8 +472,8 @@ func (c *Commander) Stop(ctx context.Context) error {
 		c.logger.Debug(
 			"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
 			zap.Int("pid", pid))
-		if innerErr = c.cmd.Process.Signal(os.Kill); innerErr != nil {
-			return
+		if err := c.cmd.Process.Signal(os.Kill); err != nil {
+			killErrCh <- err
 		}
 	}()
 
@@ -477,7 +485,8 @@ func (c *Commander) Stop(ctx context.Context) error {
 	// Let goroutine know process is finished.
 	cancel()
 
-	return innerErr
+	// Wait for the goroutine to finish before reading its result.
+	return <-killErrCh
 }
 
 func envVarMapToEnvMapSlice(m map[string]string) []string {
