@@ -6,10 +6,10 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/go-cmp v0.7.0
 	github.com/mongodb-forks/digest v1.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.157.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.157.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.157.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.157.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.158.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.158.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.158.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.158.0
 	github.com/stretchr/testify v1.11.1
 	go.mongodb.org/atlas v0.38.0
 	go.opentelemetry.io/collector/component v1.64.0
@@ -74,8 +74,8 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.157.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.157.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.158.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.158.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.27 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/cors v1.11.1 // indirect

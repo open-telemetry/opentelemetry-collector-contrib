@@ -5,8 +5,8 @@ go 1.25.0
 require (
 	github.com/goccy/go-json v0.10.6
 	github.com/google/pprof v0.0.0-20260604005048-7023385849c0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.157.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.157.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.158.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.158.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/pdata v1.64.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.158.0
