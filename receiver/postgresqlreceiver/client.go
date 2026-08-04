@@ -329,7 +329,7 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 	query := filterQueryByDatabases(
 		"SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files, temp_bytes, tup_updated, tup_returned, tup_fetched, tup_inserted, tup_deleted, blks_hit, blks_read FROM pg_stat_database",
 		databases,
-		false,
+		"",
 	)
 
 	rows, err := c.client.QueryContext(ctx, query)
@@ -376,7 +376,7 @@ func (c *postgreSQLClient) getExecutionTimeStats(ctx context.Context, databases 
 	query := filterQueryByDatabases(
 		"SELECT pd.datname AS datname, SUM(pss.total_exec_time) / 1000.0 AS execution_time_seconds FROM pg_stat_statements pss JOIN pg_database pd ON pss.dbid = pd.oid",
 		databases,
-		true,
+		"datname",
 	)
 
 	rows, err := c.client.QueryContext(ctx, query)
@@ -418,7 +418,7 @@ func (c *postgreSQLClient) getDatabaseConflicts(ctx context.Context, databases [
 	query := filterQueryByDatabases(
 		"SELECT datname, confl_tablespace, confl_lock, confl_snapshot, confl_bufferpin, confl_deadlock FROM pg_stat_database_conflicts",
 		databases,
-		false,
+		"",
 	)
 
 	rows, err := c.client.QueryContext(ctx, query)
@@ -510,7 +510,7 @@ func (c *postgreSQLClient) queryDatabaseLocks(ctx context.Context, query string)
 // non-client backends such as autovacuum and parallel workers. Backends with no associated database
 // (NULL datname, e.g. the background writer and WAL writer) are not attributed to any database.
 func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error) {
-	query := filterQueryByDatabases("SELECT datname, count(*) as count from pg_stat_activity", databases, true)
+	query := filterQueryByDatabases("SELECT datname, count(*) as count from pg_stat_activity", databases, "datname")
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -534,7 +534,7 @@ func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) 
 }
 
 func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error) {
-	query := filterQueryByDatabases("SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false", databases, false)
+	query := filterQueryByDatabases("SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false", databases, "")
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -1154,7 +1154,9 @@ func parseMajorVersion(ver string) (int, error) {
 	return strconv.Atoi(parts[0])
 }
 
-func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) string {
+// filterQueryByDatabases appends a "WHERE datname IN (...)" clause when databases is non-empty, and a
+// "GROUP BY <groupBy>" clause when groupBy is non-empty.
+func filterQueryByDatabases(baseQuery string, databases []string, groupBy string) string {
 	if len(databases) > 0 {
 		var queryDatabases []string
 		for _, db := range databases {
@@ -1166,8 +1168,8 @@ func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) 
 			baseQuery += fmt.Sprintf(" WHERE datname IN (%s)", strings.Join(queryDatabases, ","))
 		}
 	}
-	if groupBy {
-		baseQuery += " GROUP BY datname"
+	if groupBy != "" {
+		baseQuery += " GROUP BY " + groupBy
 	}
 
 	return baseQuery + ";"

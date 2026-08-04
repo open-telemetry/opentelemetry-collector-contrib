@@ -166,3 +166,57 @@ func TestGetExecutionTimeStats(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterQueryByDatabases(t *testing.T) {
+	tests := []struct {
+		name      string
+		baseQuery string
+		databases []string
+		groupBy   string
+		expected  string
+	}{
+		{
+			name:      "no databases and no group by",
+			baseQuery: "SELECT datname FROM pg_stat_database",
+			expected:  "SELECT datname FROM pg_stat_database;",
+		},
+		{
+			name:      "no databases with group by",
+			baseQuery: "SELECT datname, count(*) FROM pg_stat_activity",
+			groupBy:   "datname",
+			expected:  "SELECT datname, count(*) FROM pg_stat_activity GROUP BY datname;",
+		},
+		{
+			name:      "single database",
+			baseQuery: "SELECT datname FROM pg_stat_database",
+			databases: []string{"otel"},
+			expected:  "SELECT datname FROM pg_stat_database WHERE datname IN ('otel');",
+		},
+		{
+			name:      "multiple databases with group by",
+			baseQuery: "SELECT datname, count(*) FROM pg_stat_activity",
+			databases: []string{"otel", "open"},
+			groupBy:   "datname",
+			expected:  "SELECT datname, count(*) FROM pg_stat_activity WHERE datname IN ('otel','open') GROUP BY datname;",
+		},
+		{
+			name:      "existing WHERE clause is extended with AND",
+			baseQuery: "SELECT datname FROM pg_catalog.pg_database WHERE datistemplate = false",
+			databases: []string{"otel"},
+			expected:  "SELECT datname FROM pg_catalog.pg_database WHERE datistemplate = false AND datname IN ('otel');",
+		},
+		{
+			name:      "multi-column group by",
+			baseQuery: "SELECT datname, state, count(*) FROM pg_stat_activity",
+			databases: []string{"otel"},
+			groupBy:   "datname, state",
+			expected:  "SELECT datname, state, count(*) FROM pg_stat_activity WHERE datname IN ('otel') GROUP BY datname, state;",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, filterQueryByDatabases(tc.baseQuery, tc.databases, tc.groupBy))
+		})
+	}
+}
