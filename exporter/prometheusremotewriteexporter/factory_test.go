@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -15,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 // Tests whether or not the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
@@ -73,6 +76,19 @@ func Test_createMetricsExporter(t *testing.T) {
 			false,
 			true,
 		},
+		{
+			"resource_constant_labels_case",
+			func() component.Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ResourceConstantLabels = resourcetotelemetry.Settings{
+					Included: []string{"service*"},
+				}
+				return cfg
+			}(),
+			exportertest.NewNopSettings(metadata.Type),
+			false,
+			false,
+		},
 	}
 	// run tests
 	for _, tt := range tests {
@@ -93,4 +109,19 @@ func Test_createMetricsExporter(t *testing.T) {
 			assert.NoError(t, exp.Shutdown(t.Context()))
 		})
 	}
+}
+
+func Test_createMetricsExporter_disableResourceToTelemetryConversion(t *testing.T) {
+	oldValue := metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate.IsEnabled()
+	testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate, true)
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate, oldValue)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{Enabled: true}
+
+	exp, err := createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, exp)
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, exp.Shutdown(t.Context()))
 }

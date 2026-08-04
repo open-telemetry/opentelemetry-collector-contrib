@@ -63,8 +63,17 @@ func createMetricsExporter(
 		return nil, err
 	}
 
+	settings := pcfg.ResourceConstantLabels
+	if settings.IsEmpty() && !metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate.IsEnabled() {
+		settings = pcfg.ResourceToTelemetrySettings
+	}
+	if metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate.IsEnabled() {
+		settings.Enabled = false                  //nolint:staticcheck // ignore deprecated field
+		settings.ExcludeServiceAttributes = false //nolint:staticcheck // ignore deprecated field
+	}
+
 	return &wrapMetricsExporter{
-		Metrics:  resourcetotelemetry.WrapMetricsExporter(pcfg.ResourceToTelemetrySettings, exporter),
+		Metrics:  resourcetotelemetry.WrapMetricsExporter(settings, exporter),
 		exporter: prometheus,
 	}, nil
 }

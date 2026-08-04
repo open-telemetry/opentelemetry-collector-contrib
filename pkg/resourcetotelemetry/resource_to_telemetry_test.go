@@ -87,6 +87,63 @@ func TestConvertResourceToAttributesWithExcludeServiceAttributes(t *testing.T) {
 	assert.False(t, hasServiceNamespace)
 }
 
+func TestConvertResourceToAttributesWithResourceConstantLabels(t *testing.T) {
+	md := testdata.GenerateMetricsOneMetric()
+	assert.NotNil(t, md)
+
+	resource := md.ResourceMetrics().At(0).Resource()
+	resource.Attributes().PutStr("k8s.pod.name", "test-pod")
+	resource.Attributes().PutStr("k8s.namespace.name", "test-namespace")
+	resource.Attributes().PutStr("k8s.secret.name", "secret")
+	resource.Attributes().PutStr("ignored.attribute", "ignored-value")
+
+	wme := &wrapperMetricsExporter{
+		constantLabelsMatcher: newResourceAttributeMatcher(Settings{
+			Included: []string{"k8s.*"},
+			Excluded: []string{"*.secret.*"},
+		}),
+	}
+	md = wme.convertToMetricsAttributes(md)
+
+	dpAttrs := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes()
+	_, hasPodName := dpAttrs.Get("k8s.pod.name")
+	_, hasNamespaceName := dpAttrs.Get("k8s.namespace.name")
+	_, hasSecret := dpAttrs.Get("k8s.secret.name")
+	_, hasIgnored := dpAttrs.Get("ignored.attribute")
+	assert.True(t, hasPodName)
+	assert.True(t, hasNamespaceName)
+	assert.False(t, hasSecret)
+	assert.False(t, hasIgnored)
+}
+
+func TestSettings_Validate(t *testing.T) {
+	valid := Settings{Included: []string{"foo*", "bar?"}, Excluded: []string{"*secret*"}}
+	assert.NoError(t, valid.Validate())
+	assert.False(t, valid.IsEmpty())
+
+	empty := Settings{}
+	assert.True(t, empty.IsEmpty())
+	assert.NoError(t, empty.Validate())
+
+	invalid := Settings{Enabled: true, Included: []string{"foo*"}}
+	assert.Error(t, invalid.Validate())
+}
+
+func TestWrapMetricsExporterWithSettingsResourceConstantLabels(t *testing.T) {
+	exp := &wrapperMetricsExporter{}
+	set := Settings{
+		Included: []string{"attr1"},
+	}
+	assert.NoError(t, set.Validate())
+
+	wrapped := WrapMetricsExporter(set, exp)
+	wme, ok := wrapped.(*wrapperMetricsExporter)
+	assert.True(t, ok)
+	assert.NotNil(t, wme.constantLabelsMatcher)
+	assert.True(t, wme.constantLabelsMatcher.matches("attr1"))
+	assert.False(t, wme.constantLabelsMatcher.matches("attr2"))
+}
+
 func BenchmarkJoinAttributes(b *testing.B) {
 	type args struct {
 		from int

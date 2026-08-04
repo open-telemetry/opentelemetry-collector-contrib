@@ -66,5 +66,11 @@ func createMetricsExporter(ctx context.Context, params exporter.Settings, config
 		return nil, err
 	}
 
-	return resourcetotelemetry.WrapMetricsExporter(expCfg.ResourceToTelemetrySettings, exporter), nil
+	rttSettings := expCfg.ResourceToTelemetrySettings
+	if metadata.ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate.IsEnabled() {
+		rttSettings.Enabled = false                  //nolint:staticcheck // ignore deprecated field
+		rttSettings.ExcludeServiceAttributes = false //nolint:staticcheck // ignore deprecated field
+	}
+
+	return resourcetotelemetry.WrapMetricsExporter(rttSettings, exporter), nil
 }
