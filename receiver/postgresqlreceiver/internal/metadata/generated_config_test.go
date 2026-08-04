@@ -30,7 +30,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlBackends: PostgresqlBackendsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeyBackendType, PostgresqlBackendsMetricAttributeKeySessionState, PostgresqlBackendsMetricAttributeKeySessionWaitEventType},
+						EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeyBackendType, PostgresqlBackendsMetricAttributeKeySessionState, PostgresqlBackendsMetricAttributeKeyWaitEventType},
 					},
 					PostgresqlBgwriterBuffersAllocated: PostgresqlBgwriterBuffersAllocatedMetricConfig{
 						Enabled: true,
@@ -254,7 +254,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlBackends: PostgresqlBackendsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeyBackendType, PostgresqlBackendsMetricAttributeKeySessionState, PostgresqlBackendsMetricAttributeKeySessionWaitEventType},
+						EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeyBackendType, PostgresqlBackendsMetricAttributeKeySessionState, PostgresqlBackendsMetricAttributeKeyWaitEventType},
 					},
 					PostgresqlBgwriterBuffersAllocated: PostgresqlBgwriterBuffersAllocatedMetricConfig{
 						Enabled: false,

@@ -584,7 +584,6 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 	query := filterQueryByDatabases(
 		"SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files, temp_bytes, tup_updated, tup_returned, tup_fetched, tup_inserted, tup_deleted, blks_hit, blks_read FROM pg_stat_database",
 		databases,
-		"",
 	)
 
 	rows, err := c.client.QueryContext(ctx, query)
@@ -673,7 +672,6 @@ func (c *postgreSQLClient) getDatabaseConflicts(ctx context.Context, databases [
 	query := filterQueryByDatabases(
 		"SELECT datname, confl_tablespace, confl_lock, confl_snapshot, confl_bufferpin, confl_deadlock FROM pg_stat_database_conflicts",
 		databases,
-		"",
 	)
 
 	rows, err := c.client.QueryContext(ctx, query)
@@ -788,7 +786,7 @@ func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) 
 	query := filterQueryByDatabases(
 		"SELECT datname, coalesce(backend_type, 'unknown') as backend_type, coalesce(state, 'unknown') as state, coalesce(wait_event_type, 'none') as wait_event_type, count(*) as count from pg_stat_activity",
 		databases,
-		"datname, backend_type, state, wait_event_type",
+		"datname", "backend_type", "state", "wait_event_type",
 	)
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
@@ -798,27 +796,23 @@ func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) 
 	ars := map[databaseName][]backendStateCount{}
 	var errors error
 	for rows.Next() {
-		var datname, backendType, state, waitEventType string
-		var count int64
-		err = rows.Scan(&datname, &backendType, &state, &waitEventType, &count)
+		var datname string
+		var bsc backendStateCount
+		err = rows.Scan(&datname, &bsc.backendType, &bsc.state, &bsc.waitEventType, &bsc.count)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
 		if datname != "" {
-			ars[databaseName(datname)] = append(ars[databaseName(datname)], backendStateCount{
-				backendType:   backendType,
-				state:         state,
-				waitEventType: waitEventType,
-				count:         count,
-			})
+			db := databaseName(datname)
+			ars[db] = append(ars[db], bsc)
 		}
 	}
 	return ars, errors
 }
 
 func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error) {
-	query := filterQueryByDatabases("SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false", databases, "")
+	query := filterQueryByDatabases("SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false", databases)
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -1500,8 +1494,8 @@ func quoteDatabaseList(databases []string) string {
 }
 
 // filterQueryByDatabases appends a "WHERE datname IN (...)" clause when databases is non-empty, and a
-// "GROUP BY <groupBy>" clause when groupBy is non-empty.
-func filterQueryByDatabases(baseQuery string, databases []string, groupBy string) string {
+// "GROUP BY" clause over groupByColumns when any are given.
+func filterQueryByDatabases(baseQuery string, databases []string, groupByColumns ...string) string {
 	if len(databases) > 0 {
 		keyword := " WHERE"
 		if strings.Contains(baseQuery, "WHERE") {
@@ -1509,8 +1503,8 @@ func filterQueryByDatabases(baseQuery string, databases []string, groupBy string
 		}
 		baseQuery += keyword + " datname IN (" + quoteDatabaseList(databases) + ")"
 	}
-	if groupBy != "" {
-		baseQuery += " GROUP BY " + groupBy
+	if len(groupByColumns) > 0 {
+		baseQuery += " GROUP BY " + strings.Join(groupByColumns, ", ")
 	}
 
 	return baseQuery + ";"
