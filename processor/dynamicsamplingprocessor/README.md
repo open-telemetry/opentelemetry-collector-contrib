@@ -358,32 +358,6 @@ processors:
 
 The goal is enforced per collector instance: a fleet of N instances emits up to N times the configured throughput, so divide the backend budget by the instance count. Keying by `service.name` means each service's share adapts to its share of total traffic rather than being fixed.
 
-## Configuration changes
-
-Alpha components may change configuration between releases. Renames so far, from [#49569](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49569):
-
-- Sampler settings were flattened: fields previously nested under a per-type block (`ema_dynamic:`, `ema_throughput:`, `windowed_throughput:`, `deterministic:`) now sit directly under `sampler:`.
-- `key_fields` was renamed to `key_attributes`.
-
-Before:
-
-```yaml
-sampler:
-  type: ema_dynamic
-  ema_dynamic:
-    goal_sampling_percentage: 10
-    key_fields: ["service.name"]
-```
-
-After:
-
-```yaml
-sampler:
-  type: ema_dynamic
-  goal_sampling_percentage: 10
-  key_attributes: ["service.name"]
-```
-
 ## Decision cache
 
 When a trace's decision is finalised, the trace ID and outcome are recorded in
