@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxra
 go 1.25.0
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.43.0
-	github.com/aws/aws-sdk-go-v2/service/xray v1.39.0
-	github.com/aws/smithy-go v1.27.4
+	github.com/aws/aws-sdk-go-v2 v1.43.3
+	github.com/aws/aws-sdk-go-v2/service/xray v1.39.3
+	github.com/aws/smithy-go v1.27.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.157.0
@@ -28,8 +28,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.31 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.30 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.31 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.31 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.31 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.34 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.32 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.31 // indirect
