@@ -12,7 +12,7 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
-	go_ora "github.com/sijms/go-ora/v3"
+	go_ora "github.com/sijms/go-ora/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -118,7 +118,7 @@ func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clie
 		}
 
 		// cacheSize is kept at 2 times MaxQuerySampleCount to keep queries of adjacent collections available for delta calculation.
-		cacheSize := sqlCfg.MaxQuerySampleCount * 2
+		cacheSize := sqlCfg.TopQueryCollection.MaxQuerySampleCount * 2
 		metricCache, err := lru.New[string, map[string]int64](int(cacheSize))
 		if err != nil {
 			settings.Logger.Error("Failed to create LRU cache, skipping the current scraper", zap.Error(err))

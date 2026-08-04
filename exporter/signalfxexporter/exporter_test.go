@@ -570,7 +570,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			}
 			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
-			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
 			sfxExp, err := NewFactory().CreateMetrics(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
@@ -692,7 +692,7 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			}
 			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
-			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
 			cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 			sfxExp, err := NewFactory().CreateMetrics(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
@@ -792,7 +792,7 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 			cfg.APIURL = server.URL
 			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
-			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 			sfxExp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
@@ -1052,7 +1052,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg.APIURL = server.URL
 			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
-			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(t.Context(), componenttest.NewNopHost()))

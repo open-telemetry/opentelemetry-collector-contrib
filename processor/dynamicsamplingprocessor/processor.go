@@ -20,10 +20,19 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor/internal/sampler"
 )
+
+// rootSpanConditionRuleLabel is the sentinel value stamped on the
+// ProcessorDynamicSamplingOttlEvalErrors counter's `rule` label when the
+// root_span_condition expression fails to evaluate. Chosen to sort separately
+// from user-defined rule names and to be recognizable as processor-owned.
+const rootSpanConditionRuleLabel = "_root_span_condition"
 
 // ruleAttributeKey is the namespaced attribute set on every span in a sampled
 // trace to record which rule selected it. This is an interim convention; a
@@ -67,6 +76,10 @@ type dynamicSamplingProcessor struct {
 	stopped bool
 	cache   *decisionCache
 
+	rootSpanCond         *ottl.Condition[*ottlspan.TransformContext]
+	rootSpanCondEvalErrs metric.Int64Counter
+	rootSpanCondAttrSet  metric.MeasurementOption
+
 	wg sync.WaitGroup
 }
 
@@ -80,12 +93,17 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*d
 		return nil, err
 	}
 
-	rules, err := buildRules(cfg)
+	rules, err := buildRules(cfg, set.TelemetrySettings, tb.ProcessorDynamicSamplingOttlEvalErrors)
 	if err != nil {
 		return nil, err
 	}
 
 	warnUnreachableRules(set.Logger, cfg.Rules)
+
+	rootSpanCond, err := compileRootSpanCondition(cfg.effectiveRootSpanCondition(), set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 
 	cache, err := newDecisionCache(cfg.DecisionCache)
 	if err != nil {
@@ -93,15 +111,34 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*d
 	}
 
 	return &dynamicSamplingProcessor{
-		logger:    set.Logger,
-		telemetry: tb,
-		cfg:       cfg,
-		next:      next,
-		traces:    make(map[pcommon.TraceID]*pendingTrace),
-		timers:    make(map[pcommon.TraceID]*time.Timer),
-		rules:     rules,
-		cache:     cache,
+		logger:               set.Logger,
+		telemetry:            tb,
+		cfg:                  cfg,
+		next:                 next,
+		traces:               make(map[pcommon.TraceID]*pendingTrace),
+		timers:               make(map[pcommon.TraceID]*time.Timer),
+		rules:                rules,
+		cache:                cache,
+		rootSpanCond:         rootSpanCond,
+		rootSpanCondEvalErrs: tb.ProcessorDynamicSamplingOttlEvalErrors,
+		rootSpanCondAttrSet:  metric.WithAttributes(attribute.String("rule", rootSpanConditionRuleLabel)),
 	}, nil
+}
+
+// compileRootSpanCondition parses the operator-supplied (or defaulted) OTTL
+// expression once and returns the compiled condition for per-span evaluation.
+// The same ottlspan parser configuration is used as for rule conditions so the
+// two share the same function set and path-context conventions.
+func compileRootSpanCondition(expr string, settings component.TelemetrySettings) (*ottl.Condition[*ottlspan.TransformContext], error) {
+	parser, err := ottlspan.NewParser(filterottl.StandardSpanFuncs(), settings, ottlspan.EnablePathContextNames())
+	if err != nil {
+		return nil, fmt.Errorf("root_span_condition: build OTTL parser: %w", err)
+	}
+	cond, err := parser.ParseCondition(expr)
+	if err != nil {
+		return nil, fmt.Errorf("root_span_condition: %w", err)
+	}
+	return cond, nil
 }
 
 // warnUnreachableRules logs a warning when a no-conditions catch-all rule is
@@ -120,7 +157,7 @@ func warnUnreachableRules(logger *zap.Logger, rules []RuleConfig) {
 	}
 }
 
-func buildRules(cfg *Config) ([]*rule, error) {
+func buildRules(cfg *Config, settings component.TelemetrySettings, evalErrs metric.Int64Counter) ([]*rule, error) {
 	rules := make([]*rule, 0, len(cfg.Rules))
 	for i := range cfg.Rules {
 		rc := &cfg.Rules[i]
@@ -128,7 +165,7 @@ func buildRules(cfg *Config) ([]*rule, error) {
 		if err != nil {
 			return nil, fmt.Errorf("rule %q: %w", rc.Name, err)
 		}
-		r, err := compileRule(rc, s, keyFields)
+		r, err := compileRule(rc, s, keyFields, settings, evalErrs)
 		if err != nil {
 			return nil, err
 		}
@@ -138,42 +175,39 @@ func buildRules(cfg *Config) ([]*rule, error) {
 }
 
 func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []string, error) {
-	switch rc.Sampler.Type {
+	sc := rc.Sampler
+	switch sc.Type {
 	case AlwaysSample:
 		return sampler.NewAlwaysSample(), nil, nil
 	case Deterministic:
-		s, err := sampler.NewDeterministic(rc.Sampler.Deterministic.SamplingPercentage)
+		s, err := sampler.NewDeterministic(sc.SamplingPercentage)
 		return s, nil, err
 	case EMADynamic:
-		c := rc.Sampler.EMADynamic
 		s, err := sampler.NewEMADynamic(sampler.EMADynamicConfig{
-			GoalSamplingPercentage: c.GoalSamplingPercentage,
-			AdjustmentInterval:     c.AdjustmentInterval,
-			Weight:                 c.Weight,
-			MaxKeys:                c.MaxKeys,
+			GoalSamplingPercentage: sc.GoalSamplingPercentage,
+			AdjustmentInterval:     sc.AdjustmentInterval,
+			Weight:                 sc.Weight,
+			MaxKeys:                sc.MaxKeys,
 		})
-		return s, append([]string(nil), c.KeyFields...), err
+		return s, append([]string(nil), sc.KeyAttributes...), err
 	case EMAThroughput:
-		c := rc.Sampler.EMAThroughput
 		s, err := sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
-			GoalThroughputPerSec: c.GoalThroughputPerSec,
-			InitialSamplingRate:  c.InitialSamplingRate,
-			AdjustmentInterval:   c.AdjustmentInterval,
-			Weight:               c.Weight,
-			MaxKeys:              c.MaxKeys,
+			GoalThroughputPerSec: sc.GoalThroughputPerSec,
+			AdjustmentInterval:   sc.AdjustmentInterval,
+			Weight:               sc.Weight,
+			MaxKeys:              sc.MaxKeys,
 		})
-		return s, append([]string(nil), c.KeyFields...), err
+		return s, append([]string(nil), sc.KeyAttributes...), err
 	case WindowedThroughput:
-		c := rc.Sampler.WindowedThroughput
 		s, err := sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
-			GoalThroughputPerSec: c.GoalThroughputPerSec,
-			UpdateFrequency:      c.UpdateFrequency,
-			LookbackFrequency:    c.LookbackFrequency,
-			MaxKeys:              c.MaxKeys,
+			GoalThroughputPerSec: float64(sc.GoalThroughputPerSec),
+			UpdateFrequency:      sc.UpdateFrequency,
+			LookbackFrequency:    sc.LookbackFrequency,
+			MaxKeys:              sc.MaxKeys,
 		})
-		return s, append([]string(nil), c.KeyFields...), err
+		return s, append([]string(nil), sc.KeyAttributes...), err
 	default:
-		return nil, nil, fmt.Errorf("unknown sampler type %q", rc.Sampler.Type)
+		return nil, nil, fmt.Errorf("unknown sampler type %q", sc.Type)
 	}
 }
 
@@ -290,7 +324,7 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 					newTraces = append(newTraces, id)
 				}
 				pt.spanCount++
-				if span.ParentSpanID().IsEmpty() {
+				if !pt.hasRootSpan && p.evalRootSpanCondition(ctx, rs, ss, span) {
 					pt.hasRootSpan = true
 				}
 				if _, ok := pendingBuckets[id]; !ok {
@@ -366,6 +400,26 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 	return nil
 }
 
+// evalRootSpanCondition returns true if the operator-configured OTTL boolean
+// expression matches the given span. Evaluation errors are counted on
+// ProcessorDynamicSamplingOttlEvalErrors under the sentinel
+// rootSpanConditionRuleLabel so operators can distinguish them from rule
+// condition errors, and treated as a non-match so a broken expression can't
+// silently trigger every trace.
+func (p *dynamicSamplingProcessor) evalRootSpanCondition(ctx context.Context, rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, span ptrace.Span) bool {
+	tCtx := ottlspan.NewTransformContextPtr(rs, ss, span)
+	ok, err := p.rootSpanCond.Eval(ctx, tCtx)
+	tCtx.Close()
+	if err != nil {
+		if p.rootSpanCondEvalErrs != nil {
+			p.rootSpanCondEvalErrs.Add(ctx, 1, p.rootSpanCondAttrSet)
+		}
+		p.logger.Debug("root_span_condition evaluation failed", zap.Error(err))
+		return false
+	}
+	return ok
+}
+
 // trigger transitions a pending trace from the buffering phase to the
 // decision-delay phase. The caller must hold p.mu. Returns true if a decision
 // timer was actually armed (false if the trace was already triggered, missing,
@@ -439,7 +493,7 @@ func (p *dynamicSamplingProcessor) decide(id pcommon.TraceID) {
 	delete(p.timers, id)
 	p.mu.Unlock()
 
-	matchedRule, rate := p.evaluate(pt)
+	matchedRule, rate := p.evaluate(ctx, pt)
 	if matchedRule == nil {
 		// No matching rule and no catch-all: drop the trace.
 		p.telemetry.ProcessorDynamicSamplingTracesDropped.Add(ctx, 1,
@@ -480,9 +534,9 @@ func (p *dynamicSamplingProcessor) decide(id pcommon.TraceID) {
 }
 
 // evaluate returns the first matching rule and the sample rate it produced.
-func (p *dynamicSamplingProcessor) evaluate(pt *pendingTrace) (*rule, int) {
+func (p *dynamicSamplingProcessor) evaluate(ctx context.Context, pt *pendingTrace) (*rule, int) {
 	for _, r := range p.rules {
-		if !r.matches(pt.spans) {
+		if !r.matches(ctx, pt.spans) {
 			continue
 		}
 		var key string
