@@ -106,6 +106,10 @@ attributes:
     description: Name of the network interface.
     requirement_level: recommended
     type: string
+  process.state:
+    description: Status of the processes.
+    type: string
+    enum: [running]
 
 metrics:
   container.cpu.time:
@@ -637,6 +641,26 @@ metrics:
     stability: development
     gauge:
       value_type: int
+    attributes: []
+  system.process.count:
+    enabled: false
+    description: "Total number of processes in each state."
+    unit: "{process}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [process.state]
+  system.process.limit:
+    enabled: false
+    description: "Total number of processes/threads allowed by the operating system."
+    unit: "{thread}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
     attributes: []
 
 feature_gates:

@@ -72,6 +72,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["k8s.node.network.io"] = mb.metricK8sNodeNetworkIo.config.AggregationStrategy
 			aggMap["k8s.pod.network.errors"] = mb.metricK8sPodNetworkErrors.config.AggregationStrategy
 			aggMap["k8s.pod.network.io"] = mb.metricK8sPodNetworkIo.config.AggregationStrategy
+			aggMap["system.process.count"] = mb.metricSystemProcessCount.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.resAttrsSet == testDataSetAll {
@@ -309,6 +310,15 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sVolumeInodesUsedDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordSystemProcessCountDataPoint(ts, 1, AttributeProcessStateRunning)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemProcessCountDataPoint(ts, 3, AttributeProcessStateRunning)
+			}
+
+			allMetricsCount++
+			mb.RecordSystemProcessLimitDataPoint(ts, 1)
+
 			rb := mb.NewResourceBuilder()
 			rb.SetAwsVolumeID("aws.volume.id-val")
 			rb.SetContainerID("container.id-val")
@@ -334,6 +344,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricK8sNodeNetworkIo.aggDataPoints)
 				assert.Empty(t, mb.metricK8sPodNetworkErrors.aggDataPoints)
 				assert.Empty(t, mb.metricK8sPodNetworkIo.aggDataPoints)
+				assert.Empty(t, mb.metricSystemProcessCount.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
@@ -1309,6 +1320,64 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.", mi.Description())
 					assert.Equal(t, "1", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.process.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.process.count"], "Found a duplicate in the metrics slice: system.process.count")
+						validatedMetrics["system.process.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Total number of processes in each state.", mi.Description())
+						assert.Equal(t, "{process}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						processStateAttrVal, ok := dp.Attributes().Get("process.state")
+						assert.True(t, ok)
+						assert.Equal(t, "running", processStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.process.count"], "Found a duplicate in the metrics slice: system.process.count")
+						validatedMetrics["system.process.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Total number of processes in each state.", mi.Description())
+						assert.Equal(t, "{process}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.process.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("process.state")
+						assert.False(t, ok)
+					}
+				case "system.process.limit":
+					assert.False(t, validatedMetrics["system.process.limit"], "Found a duplicate in the metrics slice: system.process.limit")
+					validatedMetrics["system.process.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of processes/threads allowed by the operating system.", mi.Description())
+					assert.Equal(t, "{thread}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
