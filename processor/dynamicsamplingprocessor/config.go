@@ -67,6 +67,11 @@ type Config struct {
 	//   - Only trigger on explicit hints (no default):
 	//       span.attributes["otelcol.dynamic_sampling.root_span"] == true
 	RootSpanCondition string `mapstructure:"root_span_condition"`
+	// Eviction controls what happens to the oldest pending trace when the
+	// buffer is full (NumTraces reached) and a new trace arrives. Both
+	// policies emit a real decision (recorded in the decision cache and, for
+	// kept traces, stamped with ot=th) rather than silently dropping spans.
+	Eviction EvictionConfig `mapstructure:"eviction"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -75,6 +80,34 @@ type Config struct {
 // It matches any span whose ParentSpanID is empty, preserving the behavior
 // the processor shipped with before root_span_condition was configurable.
 const defaultRootSpanCondition = "IsRootSpan()"
+
+// EvictionPolicy selects how an evicted trace is decided.
+type EvictionPolicy string
+
+const (
+	// EvictionEvaluate runs the evicted trace through the normal rules and
+	// threshold path immediately, with the spans seen so far and no
+	// decision_delay. Honors the configured rules at the cost of OTTL
+	// evaluation per evicted span.
+	EvictionEvaluate EvictionPolicy = "evaluate"
+	// EvictionProbabilistic skips rule evaluation and decides the evicted
+	// trace by comparing a threshold derived from SamplingPercentage against
+	// the trace's randomness. Constant-time load shedding under pressure;
+	// kept traces still carry a correct ot=th.
+	EvictionProbabilistic EvictionPolicy = "probabilistic"
+)
+
+// EvictionConfig configures the decision made for evicted traces.
+type EvictionConfig struct {
+	// Policy selects the eviction decision mode. Defaults to evaluate.
+	Policy EvictionPolicy `mapstructure:"policy"`
+	// SamplingPercentage is the percentage of evicted traces to keep (0-100]
+	// under the probabilistic policy. Required for probabilistic; must be
+	// unset for evaluate.
+	SamplingPercentage float64 `mapstructure:"sampling_percentage"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
 
 // DecisionCacheConfig sizes the LRU caches that record sampling decisions.
 // When a span arrives for a traceID that already has a recorded decision, the
@@ -221,6 +254,25 @@ func (c *Config) Validate() error {
 		if _, err := filterottl.NewBoolExprForSpan([]string{cond}, filterottl.StandardSpanFuncs(), ottl.PropagateError, settings); err != nil {
 			return fmt.Errorf("root_span_condition: %w", err)
 		}
+	}
+	if err := c.Eviction.validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *EvictionConfig) validate() error {
+	switch e.Policy {
+	case "", EvictionEvaluate:
+		if e.SamplingPercentage != 0 {
+			return errors.New("eviction: sampling_percentage is only used by the probabilistic policy")
+		}
+	case EvictionProbabilistic:
+		if e.SamplingPercentage <= 0 || e.SamplingPercentage > 100 {
+			return errors.New("eviction: sampling_percentage must be in (0, 100] for the probabilistic policy")
+		}
+	default:
+		return fmt.Errorf("eviction: policy must be %q or %q", EvictionEvaluate, EvictionProbabilistic)
 	}
 	return nil
 }

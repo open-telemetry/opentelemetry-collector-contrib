@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.157.0
 	github.com/prometheus/common v0.70.1
-	github.com/prometheus/prometheus v0.313.1
+	github.com/prometheus/prometheus v0.313.2
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.63.1-0.20260803152855-18ed8fe814ea
 	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260803152855-18ed8fe814ea

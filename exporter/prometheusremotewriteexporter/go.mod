@@ -13,7 +13,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.157.0
 	github.com/prometheus/client_golang/exp v0.0.0-20260602051030-3537b20ac86b
 	github.com/prometheus/otlptranslator v1.0.0
-	github.com/prometheus/prometheus v0.313.1
+	github.com/prometheus/prometheus v0.313.2
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/wal v1.2.1
 	go.opentelemetry.io/collector/client v1.63.1-0.20260803152855-18ed8fe814ea
