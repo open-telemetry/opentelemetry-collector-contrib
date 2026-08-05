@@ -576,14 +576,6 @@ As a rule of thumb, if you want to add probabilistic sampling and...
 [probabilistic_sampling_processor]: ../probabilisticsamplerprocessor
 [loadbalancing_exporter]: ../../exporter/loadbalancingexporter
 
-## Feature Gates
-
-This component leverages OTTL, which includes the following feature gate:
-
-### `ottl.set.allowNil`
-
-The `ottl.set.allowNil` [feature gate](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/documentation.md) changes the behavior of the OTTL `set` function when a `nil` value is evaluated. When enabled, `set` will pass the `nil` value directly to the target. Depending on the target, this may result in an error or an empty value. See the [OTTL Documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) for full details and migration instructions.
-
 ## FAQ
 
 **Q. Why am I seeing high values for the error metric `sampling_trace_dropped_too_early`?**
