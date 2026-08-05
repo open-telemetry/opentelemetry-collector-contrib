@@ -48,7 +48,7 @@ type Config struct {
 
 	logger *zap.Logger
 
-	awsutil.AWSSessionSettings `mapstructure:",squash"`
+	AWSSessionSettings awsutil.AWSSessionSettings `mapstructure:",squash"`
 
 	// Export raw log string instead of log wrapper
 	// Required for emf logs
@@ -66,10 +66,10 @@ func (config *Config) Validate() error {
 		return errors.New("'log_stream_name' must be set")
 	}
 
-	if isPatternValid, invalidPattern := (isPatternValid(config.LogGroupName)); !isPatternValid {
+	if isPatternValid, invalidPattern := isPatternValid(config.LogGroupName); !isPatternValid {
 		return errors.New("'log_group_name' has an invalid pattern between curly brackets: " + invalidPattern)
 	}
-	if isPatternValid, invalidPattern := (isPatternValid(config.LogStreamName)); !isPatternValid {
+	if isPatternValid, invalidPattern := isPatternValid(config.LogStreamName); !isPatternValid {
 		return errors.New("'log_stream_name'  has an invalid pattern between curly brackets: " + invalidPattern)
 	}
 

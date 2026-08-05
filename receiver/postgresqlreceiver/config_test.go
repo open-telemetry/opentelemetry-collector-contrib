@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
@@ -103,7 +103,7 @@ func TestValidate(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			tC.defaultConfigModifier(cfg)
-			actual := xconfmap.Validate(cfg)
+			actual := confmap.Validate(cfg)
 			if len(tC.expected) > 0 {
 				for _, err := range tC.expected {
 					require.ErrorContains(t, actual, err.Error())
@@ -129,8 +129,8 @@ func TestLoadConfig(t *testing.T) {
 		expected.AddrConfig.Endpoint = "localhost:5432"
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
-		expected.TopNQuery = 1234
-		expected.QueryPlanCacheTTL = time.Second * 123
+		expected.TopQueryCollection.TopNQuery = 1234
+		expected.TopQueryCollection.QueryPlanCacheTTL = time.Second * 123
 		require.Equal(t, expected, cfg)
 	})
 

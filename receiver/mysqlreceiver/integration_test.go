@@ -105,11 +105,12 @@ func TestIntegration(t *testing.T) {
 								FileMode:          700,
 							},
 						},
-					}),
+					},
+				),
 				scraperinttest.WithCustomConfig(
 					func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 						rCfg := cfg.(*Config)
-						rCfg.CollectionInterval = time.Second
+						rCfg.ControllerConfig.CollectionInterval = time.Second
 						rCfg.AddrConfig.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, mysqlPort))
 						rCfg.Username = "otel"
 						rCfg.Password = "otel"
@@ -118,7 +119,8 @@ func TestIntegration(t *testing.T) {
 						} else {
 							rCfg.TLS.Insecure = true
 						}
-					}),
+					},
+				),
 				scraperinttest.WithExpectedFile(
 					filepath.Join("testdata", "integration", tc.expectedFile),
 				),

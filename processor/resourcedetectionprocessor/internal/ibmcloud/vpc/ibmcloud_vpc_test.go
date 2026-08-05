@@ -18,7 +18,7 @@ import (
 
 func TestNewDetector(t *testing.T) {
 	cfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg)
+	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg, false)
 	require.NoError(t, err)
 	require.NotNil(t, d)
 }
@@ -26,7 +26,7 @@ func TestNewDetector(t *testing.T) {
 func TestNewDetectorHTTPS(t *testing.T) {
 	cfg := CreateDefaultConfig()
 	cfg.Protocol = "https"
-	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg)
+	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg, false)
 	require.NoError(t, err)
 	require.NotNil(t, d)
 }
@@ -34,7 +34,7 @@ func TestNewDetectorHTTPS(t *testing.T) {
 func TestNewDetectorInvalidProtocol(t *testing.T) {
 	cfg := CreateDefaultConfig()
 	cfg.Protocol = "ftp"
-	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg)
+	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg, false)
 	require.Error(t, err)
 	require.Nil(t, d)
 	require.Contains(t, err.Error(), `invalid protocol "ftp"`)
@@ -113,6 +113,27 @@ func TestDetectError(t *testing.T) {
 
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err) // errors are swallowed, not returned
+	assert.Empty(t, schemaURL)
+	assert.Equal(t, 0, res.Attributes().Len())
+
+	mp.AssertExpectations(t)
+}
+
+func TestDetectErrorWithFailOnMissingMetadata(t *testing.T) {
+	mp := &vpcprovider.MockProvider{}
+	mp.On("InstanceMetadata").Return(nil, errors.New("connection refused"))
+
+	detector := &Detector{
+		provider:              mp,
+		logger:                processortest.NewNopSettings(metadata.Type).Logger,
+		rb:                    metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+		failOnMissingMetadata: true,
+	}
+
+	res, schemaURL, err := detector.Detect(t.Context())
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "ibmcloud vpc metadata unavailable")
+	assert.ErrorContains(t, err, "connection refused") // verify original error is wrapped
 	assert.Empty(t, schemaURL)
 	assert.Equal(t, 0, res.Attributes().Len())
 
