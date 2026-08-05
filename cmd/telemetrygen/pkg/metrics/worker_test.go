@@ -680,11 +680,13 @@ func TestUniqueTimeseriesDoesNotGrowBaseAttrs(t *testing.T) {
 	wg.Wait()
 
 	require.Len(t, m.rms, 200)
-	assert.Equal(t, origLen, len(base), "base attrs must not grow across iterations")
+	assert.Len(t, base, origLen, "base attrs must not grow across iterations")
 	assert.Equal(t, origCap, cap(base), "base capacity must be unchanged")
 	// With the buggy append-into-shared-slice, spare capacity is overwritten even
 	// though the caller's slice header length stays the same. Assert that did not happen.
-	assert.Equal(t, attribute.KeyValue{}, base[:origCap][1], "spare capacity must remain untouched")
+	for i, kv := range base[origLen:origCap] {
+		assert.Equal(t, attribute.KeyValue{}, kv, "spare capacity must remain untouched at %d", i)
+	}
 
 	for _, rm := range m.rms {
 		attrs := rm.ScopeMetrics[0].Metrics[0].Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
