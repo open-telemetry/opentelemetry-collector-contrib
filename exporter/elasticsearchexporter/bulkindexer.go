@@ -102,7 +102,7 @@ func bulkIndexerConfig(client elastictransport.Interface, config *Config, requir
 		RetryOnDocumentStatus:   config.Retry.RetryOnDocumentStatus,
 		RequireDataStream:       requireDataStream,
 		CompressionLevel:        compressionLevel,
-		PopulateFailedDocsInput: config.LogFailedDocsInput,
+		PopulateFailedDocsInput: config.TelemetrySettings.LogFailedDocsInput,
 		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.IncludeSourceOnError),
 		QueryParams:             getQueryParamsFromEndpoint(config, logger),
 		FilterPath:              config.BulkResponseFilterPath,
@@ -511,10 +511,10 @@ func getErrorHint(mode MappingMode, index, errorType string) string {
 }
 
 func newFailedDocsInputLogger(logger *zap.Logger, config *Config) *zap.Logger {
-	if !config.LogFailedDocsInput {
+	if !config.TelemetrySettings.LogFailedDocsInput {
 		return zap.NewNop()
 	}
-	return logger.WithOptions(logging.WithRateLimit(config.LogFailedDocsInputRateLimit))
+	return logger.WithOptions(logging.WithRateLimit(config.TelemetrySettings.LogFailedDocsInputRateLimit))
 }
 
 type bulkIndexers struct {

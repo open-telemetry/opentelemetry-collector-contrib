@@ -4,13 +4,13 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: exporter/prometheus_remote_write
+component: processor/dynamic_sampling
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `include_metadata_keys` to `remote_write_queue` configuration to forward client metadata as HTTP headers.
+note: Move buffered spans into the output at decision time instead of copying them, halving decision-path allocations.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [47317]
+issues: [49311]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
@@ -25,4 +25,3 @@ subtext:
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
 change_logs: [user]
-
