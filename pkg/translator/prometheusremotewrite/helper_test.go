@@ -1195,6 +1195,7 @@ func TestPrometheusConverter_AddHistogramDataPointsNormalizedLeLabels(t *testing
 	// e.g. a bound of 10 must be rendered as "10.0".
 	assert.ElementsMatch(t, []string{"0.5", "10.0", "250.0", "+Inf"}, leValues)
 	assert.Empty(t, converter.conflicts)
+}
 // findSeriesTS returns the unique RW1 time series whose __name__ label equals name, or nil.
 func findSeriesTS(c *prometheusConverter, name string) *prompb.TimeSeries {
 	for _, ts := range c.unique {

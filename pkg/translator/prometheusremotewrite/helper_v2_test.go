@@ -535,6 +535,7 @@ func TestPrometheusConverterV2_AddHistogramDataPointsNormalizedLeLabels(t *testi
 	// e.g. a bound of 10 must be rendered as "10.0".
 	assert.ElementsMatch(t, []string{"0.5", "10.0", "250.0", "+Inf"}, leValues)
 	assert.Empty(t, converter.conflicts)
+}
 // v2SeriesByName resolves each RW2 time series' labels through the symbol table and
 // returns the one whose __name__ equals name, or nil.
 func v2SeriesByName(t *testing.T, c *prometheusConverterV2, name string) *writev2.TimeSeries {
