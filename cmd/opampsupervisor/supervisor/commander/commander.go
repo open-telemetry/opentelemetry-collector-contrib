@@ -28,6 +28,11 @@ import (
 // well under this interval, so a healthy shutdown never sees a second send.
 const shutdownSignalResendInterval = time.Second
 
+// stopGracePeriod is how long Stop waits for the Agent process to exit after the
+// graceful shutdown signal before killing it forcibly. It is a variable so tests
+// can shorten it.
+var stopGracePeriod = 10 * time.Second
+
 // Commander can start/stop/restart the Agent executable and also watch for a signal
 // for the Agent process to finish.
 type Commander struct {
@@ -41,6 +46,10 @@ type Commander struct {
 	exitCh             chan struct{}
 	outputDoneCh       chan struct{}
 	running            *atomic.Int64
+	// stopMu serializes Stop calls. The process exiting is announced once on
+	// doneCh, so concurrent Stop calls would race to consume it and the loser
+	// would never return.
+	stopMu sync.Mutex
 }
 
 func NewCommander(logger *zap.Logger, logFilePath string, cfg config.Agent, args ...string) (*Commander, error) {
@@ -436,10 +445,14 @@ func (c *Commander) IsRunning() bool {
 	return c.running.Load() != 0
 }
 
-// Stop the Agent process. Sends SIGTERM to the process and wait for up 10 seconds
-// and if the process does not finish kills it forcedly by sending SIGKILL.
-// Returns after the process is terminated.
+// Stop the Agent process. Signals the process to stop gracefully, re-sending the
+// signal periodically, and kills it forcibly if it has not exited within
+// stopGracePeriod. Stop returns an error only when the process could not be
+// terminated at all; a failed graceful shutdown alone is not an error.
 func (c *Commander) Stop(ctx context.Context) error {
+	c.stopMu.Lock()
+	defer c.stopMu.Unlock()
+
 	if c.running.Load() == 0 {
 		// Not started, nothing to do.
 		return nil
@@ -448,12 +461,19 @@ func (c *Commander) Stop(ctx context.Context) error {
 	pid := c.cmd.Process.Pid
 	c.logger.Debug("sending shutdown signal to agent process", zap.Int("pid", pid))
 
-	// Gracefully signal process to stop.
+	// Gracefully signal process to stop. A failed send is not fatal: the process
+	// still has to be terminated, so fall through to the re-send loop and the kill
+	// deadline below instead of returning with the process left running.
 	if err := sendShutdownSignal(c.cmd.Process); err != nil {
-		return err
+		c.logger.Debug("Could not send shutdown signal to agent process",
+			zap.Int("pid", pid), zap.Error(err))
 	}
 
-	waitCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	// The deadline is deliberately detached from ctx's cancellation: Stop has to
+	// terminate the process even when the caller's context is already cancelled,
+	// for example while the Supervisor itself is shutting down.
+	waitCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), stopGracePeriod)
+	defer cancel()
 
 	// The Agent does not necessarily act on the shutdown signal, because Stop may be
 	// called within milliseconds of starting it - for example to apply a remote config
@@ -480,12 +500,15 @@ func (c *Commander) Stop(ctx context.Context) error {
 	}()
 
 	// Setup a goroutine to wait a while for process to finish and send kill signal
-	// to the process if it doesn't finish.
-	var innerErr error
+	// to the process if it doesn't finish. A kill that fails is reported over
+	// killFailed so Stop can return an error instead of waiting forever for an
+	// exit that will never come.
+	killFailed := make(chan error, 1)
 	go func() {
 		<-waitCtx.Done()
 
 		if !errors.Is(waitCtx.Err(), context.DeadlineExceeded) {
+			// cancel() ran because the process exited.
 			c.logger.Debug("Agent process successfully stopped.", zap.Int("pid", pid))
 			return
 		}
@@ -495,20 +518,21 @@ func (c *Commander) Stop(ctx context.Context) error {
 			"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
 			zap.Int("pid", pid),
 		)
-		if innerErr = c.cmd.Process.Signal(os.Kill); innerErr != nil {
-			return
+		if err := c.cmd.Process.Signal(os.Kill); err != nil && !errors.Is(err, os.ErrProcessDone) {
+			killFailed <- err
 		}
 	}()
 
 	// Wait for process to terminate
-	<-c.doneCh
+	select {
+	case <-c.doneCh:
+	case err := <-killFailed:
+		return fmt.Errorf("could not stop the agent process: %w", err)
+	}
 
 	c.running.Store(0)
 
-	// Let goroutine know process is finished.
-	cancel()
-
-	return innerErr
+	return nil
 }
 
 func envVarMapToEnvMapSlice(m map[string]string) []string {

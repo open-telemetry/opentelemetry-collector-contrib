@@ -4,6 +4,7 @@
 package commander
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -62,6 +63,16 @@ func TestMain(m *testing.M) {
 
 		<-ch
 		os.Exit(0)
+	case "ignore-signals-forever":
+		// Swallow shutdown signals for good, so the process can only be terminated
+		// forcibly. Used to prove Stop kills a process whose graceful shutdown
+		// cannot succeed.
+		ch := make(chan os.Signal, 8)
+		signal.Notify(ch, os.Interrupt)
+		_, _ = fmt.Fprintln(os.Stderr, childReadyLine)
+		for {
+			<-ch
+		}
 	}
 	os.Exit(m.Run())
 }
@@ -108,6 +119,112 @@ func TestStopResendsShutdownSignalUntilAgentExits(t *testing.T) {
 		"agent should have exited on a re-sent shutdown signal rather than being killed")
 	require.Less(t, elapsed, 8*time.Second,
 		"agent should have exited well before Stop's kill deadline")
+}
+
+// Stop must terminate the Agent even when graceful shutdown cannot succeed, and
+// even when the caller's context is already cancelled. An error from Stop means
+// the process could not be killed - not that the graceful path failed.
+func TestStopKillsAgentThatIgnoresShutdownSignals(t *testing.T) {
+	prev := stopGracePeriod
+	stopGracePeriod = 2 * time.Second
+	t.Cleanup(func() { stopGracePeriod = prev })
+
+	cmdr, err := NewCommander(
+		zap.NewNop(),
+		filepath.Join(t.TempDir(), "agent.log"),
+		config.Agent{
+			Executable:      os.Args[0],
+			PassthroughLogs: true,
+			Env: map[string]string{
+				passthroughTestModeEnv: "ignore-signals-forever",
+			},
+		},
+	)
+	require.NoError(t, err)
+
+	ready := make(chan struct{})
+	var once sync.Once
+	cmdr.SetPassthroughLogHook(func(line string) {
+		if strings.Contains(line, childReadyLine) {
+			once.Do(func() { close(ready) })
+		}
+	})
+
+	require.NoError(t, cmdr.Start(t.Context()))
+
+	select {
+	case <-ready:
+	case <-time.After(10 * time.Second):
+		t.Fatal("timed out waiting for the agent to start ignoring shutdown signals")
+	}
+
+	// A cancelled caller context must not skip the kill.
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	stopDone := make(chan error, 1)
+	go func() { stopDone <- cmdr.Stop(ctx) }()
+
+	select {
+	case err := <-stopDone:
+		require.NoError(t, err,
+			"Stop should kill the unresponsive agent and report success")
+	case <-time.After(8 * time.Second):
+		t.Fatal("Stop did not terminate an agent that ignores shutdown signals")
+	}
+	require.False(t, cmdr.IsRunning())
+}
+
+// Concurrent Stop calls must all return: the process exit is announced only
+// once, so without serialization one caller would consume it and the other
+// would wait forever.
+func TestStopCalledConcurrentlyBothReturn(t *testing.T) {
+	prev := stopGracePeriod
+	stopGracePeriod = 2 * time.Second
+	t.Cleanup(func() { stopGracePeriod = prev })
+
+	cmdr, err := NewCommander(
+		zap.NewNop(),
+		filepath.Join(t.TempDir(), "agent.log"),
+		config.Agent{
+			Executable:      os.Args[0],
+			PassthroughLogs: true,
+			Env: map[string]string{
+				passthroughTestModeEnv: "ignore-signals-forever",
+			},
+		},
+	)
+	require.NoError(t, err)
+
+	ready := make(chan struct{})
+	var once sync.Once
+	cmdr.SetPassthroughLogHook(func(line string) {
+		if strings.Contains(line, childReadyLine) {
+			once.Do(func() { close(ready) })
+		}
+	})
+
+	require.NoError(t, cmdr.Start(t.Context()))
+
+	select {
+	case <-ready:
+	case <-time.After(10 * time.Second):
+		t.Fatal("timed out waiting for the agent to start ignoring shutdown signals")
+	}
+
+	stopDone := make(chan error, 2)
+	go func() { stopDone <- cmdr.Stop(t.Context()) }()
+	go func() { stopDone <- cmdr.Stop(t.Context()) }()
+
+	for range 2 {
+		select {
+		case err := <-stopDone:
+			require.NoError(t, err)
+		case <-time.After(8 * time.Second):
+			t.Fatal("a concurrent Stop call never returned")
+		}
+	}
+	require.False(t, cmdr.IsRunning())
 }
 
 func TestWaitForOutputDrainCapturesFinalPassthroughLine(t *testing.T) {
