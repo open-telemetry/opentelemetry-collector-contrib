@@ -94,6 +94,10 @@ func TestConfigValidate(t *testing.T) {
 	cfg.ResourceConstantLabels = resourcetotelemetry.Settings{Included: []string{"foo"}}
 	assert.NoError(t, cfg.Validate())
 
+	invalidCfg := createDefaultConfig().(*Config)
+	invalidCfg.ResourceConstantLabels = resourcetotelemetry.Settings{Enabled: true} //nolint:staticcheck // testing deprecated field rejection
+	assert.Error(t, invalidCfg.Validate())
+
 	cfg.ResourceToTelemetrySettings.Enabled = true //nolint:staticcheck // ignore deprecated field
 	assert.Error(t, cfg.Validate())
 
