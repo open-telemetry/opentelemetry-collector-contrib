@@ -179,6 +179,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerHealthStatusDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordContainerMemoryActiveAnonDataPoint(ts, 1)
@@ -1034,6 +1037,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "container.health.status":
+					assert.False(t, validatedMetrics["container.health.status"], "Found a duplicate in the metrics slice: container.health.status")
+					validatedMetrics["container.health.status"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The health status of the container.", mi.Description())
+					assert.Empty(t, mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "container.memory.active_anon":
 					assert.False(t, validatedMetrics["container.memory.active_anon"], "Found a duplicate in the metrics slice: container.memory.active_anon")
 					validatedMetrics["container.memory.active_anon"] = true

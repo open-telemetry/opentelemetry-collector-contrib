@@ -306,6 +306,16 @@ metrics:
     unit: "1"
     gauge:
       value_type: double
+
+  # Health
+  container.health.status:
+    enabled: true
+    stability: development
+    description: "The health status of the container."
+    unit: ""
+    gauge:
+      value_type: int
+
   container.memory.active_anon:
     enabled: false
     stability: development

@@ -50,6 +50,8 @@ all_set:
       enabled: true
     container.cpu.utilization:
       enabled: true
+    container.health.status:
+      enabled: true
     container.memory.active_anon:
       enabled: true
     container.memory.active_file:
@@ -226,6 +228,8 @@ reaggregate_set:
       enabled: true
     container.cpu.utilization:
       enabled: true
+    container.health.status:
+      enabled: true
     container.memory.active_anon:
       enabled: true
     container.memory.active_file:
@@ -401,6 +405,8 @@ none_set:
     container.cpu.usage.usermode:
       enabled: false
     container.cpu.utilization:
+      enabled: false
+    container.health.status:
       enabled: false
     container.memory.active_anon:
       enabled: false
