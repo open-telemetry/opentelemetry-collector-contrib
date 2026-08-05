@@ -12,8 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
@@ -386,4 +389,157 @@ func TestLogsReceiver_Timeout(t *testing.T) {
 			return false
 		}
 	}, time.Second, 5*time.Millisecond, "expected a recoverable error status caused by the query timeout")
+}
+
+func TestLogsQueryReceiver_StoragePersistence(t *testing.T) {
+	fakeClient := &sqlquery.FakeDBClient{
+		StringMaps: [][]sqlquery.StringMap{
+			{{"col1": "42", "id": "1"}, {"col1": "63", "id": "2"}, {"col1": "84", "id": "3"}},
+		},
+	}
+	mockStorage := &mockStorageClient{
+		data: make(map[string][]byte),
+	}
+	queryReceiver := logsQueryReceiver{
+		id:     "my-query",
+		client: fakeClient,
+		query: sqlquery.Query{
+			TrackingColumn: "id",
+			Logs: []sqlquery.LogsCfg{
+				{
+					BodyColumn: "col1",
+				},
+			},
+		},
+		storageClient:           mockStorage,
+		trackingValueStorageKey: "my-query.trackingValue",
+	}
+
+	logs, err := queryReceiver.collect(t.Context())
+	assert.NoError(t, err)
+	assert.NotNil(t, logs)
+	assert.Equal(t, 3, logs.LogRecordCount())
+
+	// Set should not have been called yet
+	assert.Equal(t, 0, mockStorage.setCalls)
+
+	// Call commitTrackingValue to persist
+	err = queryReceiver.commitTrackingValue(t.Context())
+	assert.NoError(t, err)
+
+	// Set should have been called exactly once (for the last row "3")
+	assert.Equal(t, 1, mockStorage.setCalls)
+	assert.Equal(t, "3", string(mockStorage.data["my-query.trackingValue"]))
+}
+
+func TestLogsReceiver_CommitTrackingValueOnConsumeLogs(t *testing.T) {
+	fakeClient := &sqlquery.FakeDBClient{
+		StringMaps: [][]sqlquery.StringMap{
+			{{"col1": "42", "id": "1"}, {"col1": "63", "id": "2"}},
+			{{"col1": "42", "id": "1"}, {"col1": "63", "id": "2"}},
+		},
+	}
+	mockStorage := &mockStorageClient{
+		data: make(map[string][]byte),
+	}
+
+	createReceiver := createLogsReceiverFunc(fakeDBConnect, func(sqlquery.Db, string, *zap.Logger, sqlquery.TelemetryConfig) sqlquery.DbClient {
+		return fakeClient
+	})
+
+	ctx := t.Context()
+	collectionInterval := 50 * time.Millisecond
+	consumer := &mockLogsConsumer{
+		Logs: consumertest.NewNop(),
+	}
+
+	receiver, err := createReceiver(
+		ctx,
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{
+			Config: sqlquery.Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: collectionInterval,
+				},
+				Driver:     "postgres",
+				DataSource: "my-datasource",
+				Queries: []sqlquery.Query{{
+					SQL:            "select * from foo",
+					TrackingColumn: "id",
+					Logs: []sqlquery.LogsCfg{{
+						BodyColumn: "col1",
+					}},
+				}},
+			},
+		},
+		consumer,
+	)
+	require.NoError(t, err)
+
+	logsRecv := receiver.(*logsReceiver)
+	logsRecv.storageClient = mockStorage
+
+	err = logsRecv.createQueryReceivers()
+	require.NoError(t, err)
+	for _, qr := range logsRecv.queryReceivers {
+		qr.client = fakeClient
+		qr.storageClient = mockStorage
+		qr.trackingValueStorageKey = "my-query.trackingValue"
+	}
+
+	// 1. Simulate failure in ConsumeLogs: storage should NOT update
+	consumer.err = mockError{}
+	logsRecv.collect()
+
+	assert.Equal(t, 0, mockStorage.setCalls)
+
+	// 2. Simulate success in ConsumeLogs: storage should update
+	consumer.err = nil
+	logsRecv.collect()
+
+	assert.Equal(t, 1, mockStorage.setCalls)
+	assert.Equal(t, "2", string(mockStorage.data["my-query.trackingValue"]))
+}
+
+type mockError struct{}
+
+func (mockError) Error() string {
+	return "consumer failed"
+}
+
+type mockLogsConsumer struct {
+	consumer.Logs
+	err error
+}
+
+func (m *mockLogsConsumer) ConsumeLogs(_ context.Context, _ plog.Logs) error {
+	return m.err
+}
+
+type mockStorageClient struct {
+	storage.Client
+	data     map[string][]byte
+	setCalls int
+}
+
+func (m *mockStorageClient) Get(_ context.Context, key string) ([]byte, error) {
+	return m.data[key], nil
+}
+
+func (m *mockStorageClient) Set(_ context.Context, key string, val []byte) error {
+	m.setCalls++
+	if m.data == nil {
+		m.data = make(map[string][]byte)
+	}
+	m.data[key] = val
+	return nil
+}
+
+func (m *mockStorageClient) Delete(_ context.Context, key string) error {
+	delete(m.data, key)
+	return nil
+}
+
+func (*mockStorageClient) Close(_ context.Context) error {
+	return nil
 }
