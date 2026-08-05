@@ -87,7 +87,7 @@ func TestWatchingTimeouts(t *testing.T) {
 	err = cli.loadContainerList(t.Context())
 	require.Error(t, err)
 
-	ctx, fetchCancel := context.WithTimeout(t.Context(), config.Timeout)
+	ctx, fetchCancel := context.WithTimeout(t.Context(), config.ControllerConfig.Timeout)
 	defer fetchCancel()
 
 	container, err := cli.fetchContainerStats(ctx, container{})

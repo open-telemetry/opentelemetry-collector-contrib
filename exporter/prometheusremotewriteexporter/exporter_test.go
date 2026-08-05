@@ -787,7 +787,8 @@ func Test_PushMetrics(t *testing.T) {
 								sdkmetric.Stream{
 									Aggregation: sdkmetric.AggregationDrop{},
 								},
-							))),
+							),
+						)),
 					)
 					t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 					set := metadatatest.NewSettings(tel)

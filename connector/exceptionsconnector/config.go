@@ -6,7 +6,7 @@ package exceptionsconnector // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
@@ -39,7 +39,7 @@ type Config struct {
 	_ struct{}
 }
 
-var _ xconfmap.Validator = (*Config)(nil)
+var _ confmap.Validator = (*Config)(nil)
 
 // Validate checks if the connector configuration is valid
 func (c Config) Validate() error {

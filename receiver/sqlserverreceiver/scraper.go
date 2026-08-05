@@ -1605,7 +1605,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	rows, err := s.client.QueryRows(
 		ctx,
 		sql.Named("lookbackTime", -int(s.config.EffectiveLookbackTime().Seconds())),
-		sql.Named("maxSampleCount", s.config.MaxQuerySampleCount),
+		sql.Named("maxSampleCount", s.config.TopQueryCollection.MaxQuerySampleCount),
 	)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
@@ -1636,7 +1636,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	}
 	// sort the rows based on the totalElapsedTimeDiffs in descending order,
 	// only report first T(T=topQueryCount) rows.
-	rows = sortRows(rows, totalElapsedTimeDiffsMicrosecond, s.config.TopQueryCount)
+	rows = sortRows(rows, totalElapsedTimeDiffsMicrosecond, s.config.TopQueryCollection.TopQueryCount)
 
 	// sort the totalElapsedTimeDiffs in descending order as well
 	sort.Slice(totalElapsedTimeDiffsMicrosecond, func(i, j int) bool { return totalElapsedTimeDiffsMicrosecond[i] > totalElapsedTimeDiffsMicrosecond[j] })
@@ -2003,7 +2003,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 	rows, err := s.client.QueryRows(
 		ctx,
-		sql.Named("top", s.config.MaxRowsPerQuery),
+		sql.Named("top", s.config.QuerySample.MaxRowsPerQuery),
 	)
 	resources := pcommon.NewResource()
 	if err != nil {
@@ -2049,7 +2049,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 		idleRows, idleErr := idleBlockingClient.QueryRows(
 			ctx,
-			sql.Named("top", s.config.MaxRowsPerQuery),
+			sql.Named("top", s.config.QuerySample.MaxRowsPerQuery),
 		)
 		if idleErr != nil {
 			s.logger.Warn("problems encountered getting idle blocker log rows", zap.Error(idleErr))

@@ -29,10 +29,10 @@ const (
 
 // Config defines configuration for OpenSearch exporter.
 type Config struct {
-	ClientConfig     confighttp.ClientConfig      `mapstructure:"http"`
-	BackOffConfig    configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
-	TimeoutSettings  exporterhelper.TimeoutConfig `mapstructure:",squash"`
-	MappingsSettings `mapstructure:"mapping"`
+	ClientConfig     confighttp.ClientConfig                                  `mapstructure:"http"`
+	BackOffConfig    configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	TimeoutSettings  exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+	MappingsSettings MappingsSettings                                         `mapstructure:"mapping"`
 	QueueConfig      configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// The Observability indices would follow the recommended for immutable data stream ingestion pattern using
@@ -176,7 +176,7 @@ func (cfg *Config) Validate() error {
 		multiErr = append(multiErr, errConfigNoEndpoint)
 	}
 
-	if cfg.Mode == MappingOTelV1.String() {
+	if cfg.MappingsSettings.Mode == MappingOTelV1.String() {
 		// otel-v1 emits Data Prepper-style index names (otel-v1-apm-span,
 		// otel-v1-logs); dataset/namespace would be silently dropped, so reject
 		// any user-supplied (i.e. non-default) values up front instead of
@@ -214,11 +214,11 @@ func (cfg *Config) Validate() error {
 		return errBulkActionInvalid
 	}
 
-	if _, ok := mappingModes[cfg.Mode]; !ok {
+	if _, ok := mappingModes[cfg.MappingsSettings.Mode]; !ok {
 		multiErr = append(multiErr, errMappingModeInvalid)
 	}
 
-	if cfg.ManageIndexTemplate && cfg.Mode != MappingOTelV1.String() {
+	if cfg.MappingsSettings.ManageIndexTemplate && cfg.MappingsSettings.Mode != MappingOTelV1.String() {
 		multiErr = append(multiErr, errManageIndexTemplateInvalidMode)
 	}
 

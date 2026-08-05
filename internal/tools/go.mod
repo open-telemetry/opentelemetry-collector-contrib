@@ -283,22 +283,22 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.30.1-0.20260702202003-335e29c1ae8a // indirect
 	go.opentelemetry.io/build-tools/issuegenerator v0.30.0 // indirect
 	go.opentelemetry.io/build-tools/multimod v0.30.0 // indirect
-	go.opentelemetry.io/collector/cmd/builder v0.157.1-0.20260723141305-52e6bf4aaaba // indirect
-	go.opentelemetry.io/collector/cmd/mdatagen v0.157.1-0.20260723141305-52e6bf4aaaba // indirect
-	go.opentelemetry.io/collector/component v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
-	go.opentelemetry.io/collector/confmap v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
-	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
-	go.opentelemetry.io/collector/filter v0.157.1-0.20260723141305-52e6bf4aaaba // indirect
-	go.opentelemetry.io/collector/internal/schemagen v0.157.1-0.20260723141305-52e6bf4aaaba // indirect
-	go.opentelemetry.io/collector/pdata v1.63.1-0.20260723141305-52e6bf4aaaba // indirect
+	go.opentelemetry.io/collector/cmd/builder v0.158.0 // indirect
+	go.opentelemetry.io/collector/cmd/mdatagen v0.158.0 // indirect
+	go.opentelemetry.io/collector/component v1.64.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.64.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.64.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.64.0 // indirect
+	go.opentelemetry.io/collector/filter v0.158.0 // indirect
+	go.opentelemetry.io/collector/internal/schemagen v0.158.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.64.0 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.5 // indirect
 	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20251023183803-a4bb9ffd2546 // indirect
@@ -317,7 +317,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/gotestsum v1.13.0 // indirect
 	honnef.co/go/tools v0.7.0-0.dev.0.20250523013057-bbc2f4dd71ea // indirect
-	mvdan.cc/gofumpt v0.9.2 // indirect
+	mvdan.cc/gofumpt v0.11.0 // indirect
 	mvdan.cc/unparam v0.0.0-20251027182757-5beb8c8f8f15 // indirect
 )
 

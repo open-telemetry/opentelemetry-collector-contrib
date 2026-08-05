@@ -42,7 +42,8 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -66,39 +67,39 @@ func createDefaultConfig() component.Config {
 func setupQueries(cfg *Config) []string {
 	var queries []string
 
-	if isAvailabilityGroupQueryEnabled(&cfg.Metrics) {
+	if isAvailabilityGroupQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerAvailabilityGroupQuery(cfg.InstanceName))
 	}
 
-	if isDatabaseIOQueryEnabled(&cfg.Metrics) {
+	if isDatabaseIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
 	}
 
-	if isPerfCounterQueryEnabled(&cfg.Metrics) {
+	if isPerfCounterQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
 	}
 
-	if cfg.Metrics.SqlserverDatabaseCount.Enabled || cfg.Metrics.SqlserverCPUCount.Enabled || cfg.Metrics.SqlserverComputerUptime.Enabled {
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled || cfg.MetricsBuilderConfig.Metrics.SqlserverCPUCount.Enabled || cfg.MetricsBuilderConfig.Metrics.SqlserverComputerUptime.Enabled {
 		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
 	}
 
-	if isWaitStatsQueryEnabled(&cfg.Metrics) {
+	if isWaitStatsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
 	}
 
-	if isWorkerThreadsQueryEnabled(&cfg.Metrics) {
+	if isWorkerThreadsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerWorkerThreadsQuery(cfg.InstanceName))
 	}
 
-	if isIndexPhysicalStatsQueryEnabled(&cfg.Metrics) {
+	if isIndexPhysicalStatsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName))
 	}
 
-	if isCPUMemoryQueryEnabled(&cfg.Metrics) {
+	if isCPUMemoryQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerCPUMemoryQuery(cfg.InstanceName))
 	}
 
-	if isDiskIOQueryEnabled(&cfg.Metrics) {
+	if isDiskIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerDiskIOQuery(cfg.InstanceName))
 	}
 
@@ -108,11 +109,11 @@ func setupQueries(cfg *Config) []string {
 func setupLogQueries(cfg *Config) []string {
 	var queries []string
 
-	if cfg.Events.DbServerQuerySample.Enabled {
+	if cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled {
 		queries = append(queries, getSQLServerQuerySamplesQuery())
 	}
 
-	if cfg.Events.DbServerTopQuery.Enabled {
+	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		queries = append(queries, getSQLServerQueryTextAndPlanQuery())
 	}
 
@@ -195,7 +196,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 
 		if query == getSQLServerQueryTextAndPlanQuery() {
 			// we have 8 metrics in this query and multiple 2 to allow to cache more queries.
-			cache = newCache(int(cfg.MaxQuerySampleCount * 8 * 2))
+			cache = newCache(int(cfg.TopQueryCollection.MaxQuerySampleCount * 8 * 2))
 		}
 
 		if query == getSQLServerQuerySamplesQuery() {
@@ -257,7 +258,8 @@ func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.C
 			scraper.NewFactory(metadata.Type, nil,
 				scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
 					return s, nil
-				}, component.StabilityLevelAlpha)), nil)
+				}, component.StabilityLevelAlpha)), nil,
+		)
 		opts = append(opts, opt)
 	}
 
