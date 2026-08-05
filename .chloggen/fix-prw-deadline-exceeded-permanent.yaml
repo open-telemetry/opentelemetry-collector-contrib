@@ -1,6 +1,6 @@
 change_type: bug_fix
 
-component: exporter/prometheusremotewrite
+component: exporter/prometheus_remote_write
 
 note: "Fix context.DeadlineExceeded being incorrectly treated as a permanent error, which caused metrics to be dropped instead of retried on timeout."
 
