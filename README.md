@@ -14,9 +14,6 @@
   <a href="https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml?query=branch%3Amain">
     <img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/open-telemetry/opentelemetry-collector-contrib/build-and-test.yml?branch=main&style=for-the-badge">
   </a>
-  <a href="https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-collector-contrib">
-    <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-collector-contrib?style=for-the-badge">
-  </a>
   <a href="https://codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/branch/main/">
     <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/open-telemetry/opentelemetry-collector-contrib?style=for-the-badge">
   </a>
@@ -85,7 +82,6 @@ For more information about the maintainer role, see the [community repository](h
 
 ### Approvers
 
-- [Andrew Wilkins](https://github.com/axw), Elastic
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
 - [Braydon Kains](https://github.com/braydonk), Google
 - [Curtis Robert](https://github.com/crobert-1), Splunk
@@ -105,8 +101,10 @@ For more information about the approver role, see the [community repository](htt
 - [Constança Manteigas](https://github.com/constanca-m), Elastic
 - [Dónal O'Sullivan](https://github.com/osullivandonal), Elastic
 - [Douglas Camata](https://github.com/douglascamata), Coralogix
+- [Dylan Strohschein](https://github.com/dyl10s), Dynatrace
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
+- [Khushi Jain](https://github.com/khushijain21), Elastic
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Paulo Dias](https://github.com/paulojmdias), Five9
@@ -119,6 +117,7 @@ For more information about the triager role, see the [community repository](http
 ### Emeritus
 
 - [Alolita Sharma](https://github.com/alolita), Triager
+- [Andrew Wilkins](https://github.com/axw), Approver
 - [Anthony Mirabella](https://github.com/Aneurysm9), Approver
 - [Bryan Aguilar](https://github.com/bryan-aguilar), Approver
 - [Daniel Jaglowski](https://github.com/djaglowski), Maintainer

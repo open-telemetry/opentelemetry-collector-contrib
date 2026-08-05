@@ -26,11 +26,16 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
 const querySampleTraceContextKey = "_otel_trace_context"
+
+// detachedCleanupTimeout bounds the best-effort DEALLOCATE PREPARE cleanup in
+// explainQuery so a truly unresponsive backend can't hang cleanup forever.
+const detachedCleanupTimeout = 5 * time.Second
 
 // databaseName is a name that refers to a database so that it can be uniquely referred to later
 // i.e. database1
@@ -53,7 +58,10 @@ var errNoLastArchive = errors.New("no last archive found, not able to calculate 
 type client interface {
 	Close() error
 	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
+	getExecutionTimeStats(ctx context.Context, databases []string) (map[databaseName]float64, error)
+	getDatabaseConflicts(ctx context.Context, databases []string) (map[databaseName]databaseConflictStats, error)
 	getDatabaseLocks(ctx context.Context) ([]databaseLocks, error)
+	getSharedRelationLocks(ctx context.Context) ([]databaseLocks, error)
 	getBGWriterStats(ctx context.Context) (*bgStat, error)
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
@@ -64,11 +72,13 @@ type client interface {
 	getMaxConnections(ctx context.Context) (int64, error)
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
 	getFunctionStats(ctx context.Context, database string) (map[functionIdentifer]functionStat, error)
+	getVectorSearchStats(ctx context.Context) ([]vectorSearchStat, error)
+	getVectorInsertStats(ctx context.Context) ([]vectorInsertStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 	getVersion(ctx context.Context) (string, error)
 	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error)
 	getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
-	explainQuery(query, queryID string, logger *zap.Logger) (string, error)
+	explainQuery(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error)
 }
 
 type postgreSQLClient struct {
@@ -129,7 +139,7 @@ func isExplainableQuery(query string) bool {
 }
 
 // explainQuery implements client.
-func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logger) (string, error) {
+func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error) {
 	// Check if the query is explainable before attempting EXPLAIN
 	if !isExplainableQuery(query) {
 		logger.Debug("skipping EXPLAIN for non-explainable query", zap.String("queryID", queryID))
@@ -148,8 +158,12 @@ func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logge
 		nulls[i] = "null"
 	}
 
+	// Deallocate the prepared statement on a context detached from ctx so the
+	// cleanup still runs even if ctx was already canceled or timed out.
 	defer func() {
-		_, _ = c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
+		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), detachedCleanupTimeout)
+		defer cancel()
+		_, _ = c.client.ExecContext(cleanupCtx, fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
 	}()
 
 	// if there is no parameter needed, we can not put an empty bracket
@@ -164,7 +178,7 @@ func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logge
 
 	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, setPlanCacheMode+prepareStatement+explainStatement, logger, sqlquery.TelemetryConfig{})
 
-	result, err := wrappedDb.QueryRows(context.Background())
+	result, err := wrappedDb.QueryRows(ctx)
 	if err != nil {
 		logger.Error("failed to explain statement", zap.Error(err))
 		return "", err
@@ -187,6 +201,22 @@ type postgreSQLConfig struct {
 	database string
 	address  confignet.AddrConfig
 	tls      configtls.ClientConfig
+	// credentialProvider, when non-nil, supplies the password (and optionally the
+	// username) at connection-string-build time instead of the static password.
+	// Non-pool path: resolved once per *sql.DB build (one build per scrape), so
+	// each scrape picks up a freshly-minted credential. Pool path: resolved per
+	// physical connection by credentialConnector, so a long-lived pool re-mints on
+	// every new connection it opens. Either way, no collector restart is needed.
+	credentialProvider dbauth.Provider
+}
+
+var conninfoValueEscaper = strings.NewReplacer(`\`, `\\`, `'`, `\'`)
+
+// quoteConninfoValue encodes a value for lib/pq's keyword/value connection
+// string format. Quoting every value prevents credential or configuration data
+// containing whitespace, quotes, or backslashes from becoming new options.
+func quoteConninfoValue(value string) string {
+	return `'` + conninfoValueEscaper.Replace(value) + `'`
 }
 
 func sslConnectionString(tls configtls.ClientConfig) string {
@@ -203,21 +233,25 @@ func sslConnectionString(tls configtls.ClientConfig) string {
 	}
 
 	if tls.CAFile != "" {
-		conn += fmt.Sprintf(" sslrootcert='%s'", tls.CAFile)
+		conn += " sslrootcert=" + quoteConninfoValue(tls.CAFile)
 	}
 
 	if tls.KeyFile != "" {
-		conn += fmt.Sprintf(" sslkey='%s'", tls.KeyFile)
+		conn += " sslkey=" + quoteConninfoValue(tls.KeyFile)
 	}
 
 	if tls.CertFile != "" {
-		conn += fmt.Sprintf(" sslcert='%s'", tls.CertFile)
+		conn += " sslcert=" + quoteConninfoValue(tls.CertFile)
 	}
 
 	return conn
 }
 
-func (c postgreSQLConfig) ConnectionString() (string, error) {
+// ConnectionString builds the lib/pq DSN, resolving the credential provider (if
+// any) with the supplied context. The pool path resolves per physical connection
+// via credentialConnector, so the connection context flows through to credential
+// minting.
+func (c postgreSQLConfig) ConnectionString(ctx context.Context) (string, error) {
 	// postgres will assume the supplied user as the database name if none is provided,
 	// so we must specify a database name even when we are just collecting the list of databases.
 	database := defaultPostgreSQLDatabase
@@ -235,7 +269,38 @@ func (c postgreSQLConfig) ConnectionString() (string, error) {
 		host = "/" + host
 	}
 
-	return fmt.Sprintf("port=%s host=%s user=%s password=%s dbname=%s %s", port, host, c.username, c.password, database, sslConnectionString(c.tls)), nil
+	username, password := c.username, c.password
+	if c.credentialProvider != nil {
+		// Resolve the credential at build time so each new connection uses a
+		// currently-valid secret (e.g. a freshly-minted AWS IAM token).
+		cred, credErr := c.credentialProvider.GetCredential(ctx, dbauth.Request{
+			Endpoint: c.address.Endpoint,
+			Username: c.username,
+		})
+		if credErr != nil {
+			return "", fmt.Errorf("resolve credential: %w", credErr)
+		}
+		if cred == nil {
+			// A provider must return either a credential or an error. Guard against a
+			// contract-violating provider so a bad extension fails this scrape closed
+			// rather than panicking the whole collector on the nil dereference below.
+			return "", errors.New("resolve credential: provider returned a nil credential")
+		}
+		password = cred.Secret
+		if cred.Username != nil {
+			username = *cred.Username
+		}
+	}
+
+	return fmt.Sprintf(
+		"port=%s host=%s user=%s password=%s dbname=%s %s",
+		quoteConninfoValue(port),
+		quoteConninfoValue(host),
+		quoteConninfoValue(username),
+		quoteConninfoValue(password),
+		quoteConninfoValue(database),
+		sslConnectionString(c.tls),
+	), nil
 }
 
 func (c *postgreSQLClient) Close() error {
@@ -303,6 +368,89 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 	return dbStats, errs
 }
 
+// getExecutionTimeStats returns, per database, the cumulative time (in seconds) spent executing
+// SQL statements. It aggregates the total_exec_time column of pg_stat_statements (reported in
+// milliseconds) across all currently tracked statements and requires the pg_stat_statements
+// extension to be installed.
+func (c *postgreSQLClient) getExecutionTimeStats(ctx context.Context, databases []string) (map[databaseName]float64, error) {
+	query := filterQueryByDatabases(
+		"SELECT pd.datname AS datname, SUM(pss.total_exec_time) / 1000.0 AS execution_time_seconds FROM pg_stat_statements pss JOIN pg_database pd ON pss.dbid = pd.oid",
+		databases,
+		true,
+	)
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var errs error
+	stats := map[databaseName]float64{}
+
+	for rows.Next() {
+		var datname string
+		var executionTime float64
+		err = rows.Scan(&datname, &executionTime)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		if datname != "" {
+			stats[databaseName(datname)] = executionTime
+		}
+	}
+	return stats, multierr.Append(errs, rows.Err())
+}
+
+// databaseConflictStats holds the per-database query cancellation counters from
+// pg_stat_database_conflicts. These counters are only incremented on standby
+// servers, where queries can be canceled due to conflicts with recovery.
+type databaseConflictStats struct {
+	conflTablespace int64
+	conflLock       int64
+	conflSnapshot   int64
+	conflBufferpin  int64
+	conflDeadlock   int64
+}
+
+func (c *postgreSQLClient) getDatabaseConflicts(ctx context.Context, databases []string) (map[databaseName]databaseConflictStats, error) {
+	query := filterQueryByDatabases(
+		"SELECT datname, confl_tablespace, confl_lock, confl_snapshot, confl_bufferpin, confl_deadlock FROM pg_stat_database_conflicts",
+		databases,
+		false,
+	)
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var errs error
+	conflictStats := map[databaseName]databaseConflictStats{}
+
+	for rows.Next() {
+		var datname string
+		var conflTablespace, conflLock, conflSnapshot, conflBufferpin, conflDeadlock int64
+		err = rows.Scan(&datname, &conflTablespace, &conflLock, &conflSnapshot, &conflBufferpin, &conflDeadlock)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		if datname != "" {
+			conflictStats[databaseName(datname)] = databaseConflictStats{
+				conflTablespace: conflTablespace,
+				conflLock:       conflLock,
+				conflSnapshot:   conflSnapshot,
+				conflBufferpin:  conflBufferpin,
+				conflDeadlock:   conflDeadlock,
+			}
+		}
+	}
+	return conflictStats, multierr.Append(errs, rows.Err())
+}
+
 type databaseLocks struct {
 	relation string
 	mode     string
@@ -311,11 +459,27 @@ type databaseLocks struct {
 }
 
 func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
-	query := `SELECT relname AS relation, mode, locktype,COUNT(pid)
+	// Scope to the connected database: shared catalogs (database = 0) are
+	// collected once via getSharedRelationLocks, and relation OIDs from other
+	// databases must not resolve against this database's pg_class.
+	return c.queryDatabaseLocks(ctx, `SELECT relname AS relation, mode, locktype,COUNT(*)
 	AS locks FROM pg_locks
 	JOIN pg_class ON pg_locks.relation = pg_class.oid
-	GROUP BY relname, mode, locktype;`
+	WHERE pg_locks.database = (SELECT oid FROM pg_database WHERE datname = current_database())
+	GROUP BY relname, mode, locktype;`)
+}
 
+func (c *postgreSQLClient) getSharedRelationLocks(ctx context.Context) ([]databaseLocks, error) {
+	// Shared relations (pg_database, pg_authid, ...) carry database = 0 and
+	// exist in every database's pg_class, so any connection can resolve them.
+	return c.queryDatabaseLocks(ctx, `SELECT relname AS relation, mode, locktype,COUNT(*)
+	AS locks FROM pg_locks
+	JOIN pg_class ON pg_locks.relation = pg_class.oid
+	WHERE pg_locks.database = 0 AND pg_class.relisshared
+	GROUP BY relname, mode, locktype;`)
+}
+
+func (c *postgreSQLClient) queryDatabaseLocks(ctx context.Context, query string) ([]databaseLocks, error) {
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("unable to query pg_locks and pg_locks.relation: %w", err)
@@ -341,7 +505,10 @@ func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLock
 	return dl, multierr.Combine(errs...)
 }
 
-// getBackends returns a map of database names to the number of active connections
+// getBackends returns the number of backend processes for each database, counted from pg_stat_activity
+// across all connection states (active, idle, idle-in-transaction) and all backend types, including
+// non-client backends such as autovacuum and parallel workers. Backends with no associated database
+// (NULL datname, e.g. the background writer and WAL writer) are not attributed to any database.
 func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error) {
 	query := filterQueryByDatabases("SELECT datname, count(*) as count from pg_stat_activity", databases, true)
 	rows, err := c.client.QueryContext(ctx, query)
@@ -407,17 +574,29 @@ type tableStats struct {
 }
 
 func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error) {
-	query := `SELECT schemaname as schema, relname AS table,
-	n_live_tup AS live,
-	n_dead_tup AS dead,
-	n_tup_ins AS ins,
-	n_tup_upd AS upd,
-	n_tup_del AS del,
-	n_tup_hot_upd AS hot_upd,
-	seq_scan AS seq_scans,
-	pg_relation_size(relid) AS table_size,
-	vacuum_count
-	FROM pg_stat_user_tables;`
+	// explicitly ignore the relations which have an active `AccessExclusiveLock`
+	// this is to prevent the current query's `AccessShareLock` from getting stalled
+	query := `SELECT
+    s.schemaname AS schema,
+    s.relname AS table,
+    s.n_live_tup AS live,
+    s.n_dead_tup AS dead,
+    s.n_tup_ins AS ins,
+    s.n_tup_upd AS upd,
+    s.n_tup_del AS del,
+    s.n_tup_hot_upd AS hot_upd,
+    s.seq_scan AS seq_scans,
+    pg_relation_size(s.relid) AS table_size,
+    s.vacuum_count
+FROM pg_stat_user_tables s
+LEFT JOIN (
+    SELECT DISTINCT relation
+    FROM pg_locks
+    WHERE locktype = 'relation'
+      AND mode = 'AccessExclusiveLock'
+      AND granted = true
+) l ON s.relid = l.relation
+WHERE l.relation IS NULL;`
 
 	ts := map[tableIdentifier]tableStats{}
 	var errors error
@@ -518,10 +697,20 @@ type indexStat struct {
 }
 
 func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
+	// explicitly ignore indexes which have an active `AccessExclusiveLock`
+	// this is to prevent the current query's `AccessShareLock` from getting stalled
 	query := `SELECT schemaname, relname, indexrelname,
 	pg_relation_size(indexrelid) AS index_size,
 	idx_scan
-	FROM pg_stat_user_indexes;`
+	FROM pg_stat_user_indexes s
+	LEFT JOIN (
+		SELECT DISTINCT relation
+		FROM pg_locks
+		WHERE locktype = 'relation'
+		  AND mode = 'AccessExclusiveLock'
+		  AND granted = true
+	) l ON s.indexrelid = l.relation
+	WHERE l.relation IS NULL;`
 
 	stats := map[indexIdentifer]indexStat{}
 
@@ -606,6 +795,92 @@ SELECT s.schemaname,
 		}
 	}
 	return stats, multierr.Combine(errs...)
+}
+
+// vectorSearchStat holds the aggregated pgvector search statistics for a single distance function.
+type vectorSearchStat struct {
+	// distanceFunction is the pgvector distance function classification (e.g. cosine, l2, hamming).
+	distanceFunction string
+	// calls is the cumulative number of executions of statements using this distance function.
+	calls int64
+	// totalExecTime is the cumulative execution time in seconds.
+	totalExecTime float64
+	// rowsReturned is the cumulative number of rows returned by statements using this distance function.
+	rowsReturned int64
+}
+
+//go:embed templates/vectorSearchStatsTemplate.tmpl
+var vectorSearchStatsQuery string
+
+func (c *postgreSQLClient) getVectorSearchStats(ctx context.Context) ([]vectorSearchStat, error) {
+	rows, err := c.client.QueryContext(ctx, vectorSearchStatsQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []vectorSearchStat
+	var errs error
+	for rows.Next() {
+		var distanceFunction string
+		var calls int64
+		var totalExecTimeMs float64
+		var rowsReturned int64
+		if err := rows.Scan(&distanceFunction, &calls, &totalExecTimeMs, &rowsReturned); err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		stats = append(stats, vectorSearchStat{
+			distanceFunction: distanceFunction,
+			calls:            calls,
+			// pg_stat_statements reports total_exec_time in milliseconds; convert to seconds.
+			totalExecTime: totalExecTimeMs / 1000.0,
+			rowsReturned:  rowsReturned,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+	return stats, errs
+}
+
+// vectorInsertStat holds the aggregated pgvector insert statistics.
+type vectorInsertStat struct {
+	// rows is the cumulative number of vectors inserted into pgvector tables.
+	rows int64
+	// totalExecTime is the cumulative execution time in seconds.
+	totalExecTime float64
+}
+
+//go:embed templates/vectorInsertStatsTemplate.tmpl
+var vectorInsertStatsQuery string
+
+func (c *postgreSQLClient) getVectorInsertStats(ctx context.Context) ([]vectorInsertStat, error) {
+	rows, err := c.client.QueryContext(ctx, vectorInsertStatsQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []vectorInsertStat
+	var errs error
+	for rows.Next() {
+		var insertedRows int64
+		var totalExecTimeMs float64
+		if err := rows.Scan(&insertedRows, &totalExecTimeMs); err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		stats = append(stats, vectorInsertStat{
+			rows: insertedRows,
+			// pg_stat_statements reports total_exec_time in milliseconds; convert to seconds.
+			totalExecTime: totalExecTimeMs / 1000.0,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+	return stats, errs
 }
 
 type bgStat struct {

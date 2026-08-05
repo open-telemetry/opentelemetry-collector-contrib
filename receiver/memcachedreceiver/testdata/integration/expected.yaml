@@ -111,7 +111,7 @@ resourceMetrics:
                         stringValue: sent
                   timeUnixNano: "1639770622333015000"
               isMonotonic: true
-            unit: by
+            unit: By
           - description: Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.
             gauge:
               dataPoints:

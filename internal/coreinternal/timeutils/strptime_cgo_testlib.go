@@ -1,16 +1,28 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build cgo && unix
+//go:build cgo && unix && !aix
 
 // This file is ONLY used as part of TestTimeParserStrptimeCgo to verify that TestParseStrptime is correct.
 
 package timeutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 
 // #define _XOPEN_SOURCE
+// // _DEFAULT_SOURCE only exists since glibc 2.19 (2014); _BSD_SOURCE is the
+// // spelling older glibc versions understand for the same feature set. Both
+// // are defined so tm_gmtoff is visible regardless of glibc version.
 // #define _DEFAULT_SOURCE
+// #define _BSD_SOURCE
 // #include <stdlib.h>
 // #include <time.h>
+//
+// // glibc's strptime only started accepting "Z" and colon-separated
+// // ([+-]HH:MM) UTC offsets in %z as of glibc 2.23 (2016). Musl rejects them too.
+// #if defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 23))
+// #define STRPTIME_SUPPORTS_EXTENDED_TZ 1
+// #else
+// #define STRPTIME_SUPPORTS_EXTENDED_TZ 0
+// #endif
 import (
 	"C" //nolint: gocritic // Buggy: https://github.com/go-critic/go-critic/issues/845
 )
@@ -21,6 +33,10 @@ import (
 	"time"
 	"unsafe" //nolint: gocritic
 )
+
+// SupportsExtendedTZOffset reports whether the host libc's strptime accepts
+// the "Z" and colon-separated ([+-]HH:MM) forms of %z.
+const SupportsExtendedTZOffset = C.STRPTIME_SUPPORTS_EXTENDED_TZ != 0
 
 func tm2Time(tm C.struct_tm) time.Time {
 	return time.Date(

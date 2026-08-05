@@ -10,10 +10,10 @@
   "schedule": [
     "on tuesday"
   ],
+  "minimumReleaseAge": "2 days",
   "extends": [
     "config:recommended",
-    "customManagers:githubActionsVersions",
-    "helpers:pinGitHubActionDigests"
+    "helpers:pinGitHubActionDigestsToSemver"
   ],
   "ignorePaths": [
     "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",

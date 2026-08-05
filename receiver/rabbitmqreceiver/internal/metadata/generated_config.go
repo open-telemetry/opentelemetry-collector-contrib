@@ -29,6 +29,46 @@ func (ms *RabbitmqConsumerCountMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
+// RabbitmqExchangeMessagesPublishedInMetricConfig provides config for the rabbitmq.exchange.messages.published_in metric.
+type RabbitmqExchangeMessagesPublishedInMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RabbitmqExchangeMessagesPublishedInMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RabbitmqExchangeMessagesPublishedOutMetricConfig provides config for the rabbitmq.exchange.messages.published_out metric.
+type RabbitmqExchangeMessagesPublishedOutMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RabbitmqExchangeMessagesPublishedOutMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // RabbitmqMessageAcknowledgedMetricConfig provides config for the rabbitmq.message.acknowledged metric.
 type RabbitmqMessageAcknowledgedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1640,6 +1680,8 @@ func (ms *RabbitmqNodeUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error 
 // MetricsConfig provides config for rabbitmq metrics.
 type MetricsConfig struct {
 	RabbitmqConsumerCount                       RabbitmqConsumerCountMetricConfig                       `mapstructure:"rabbitmq.consumer.count"`
+	RabbitmqExchangeMessagesPublishedIn         RabbitmqExchangeMessagesPublishedInMetricConfig         `mapstructure:"rabbitmq.exchange.messages.published_in"`
+	RabbitmqExchangeMessagesPublishedOut        RabbitmqExchangeMessagesPublishedOutMetricConfig        `mapstructure:"rabbitmq.exchange.messages.published_out"`
 	RabbitmqMessageAcknowledged                 RabbitmqMessageAcknowledgedMetricConfig                 `mapstructure:"rabbitmq.message.acknowledged"`
 	RabbitmqMessageCurrent                      RabbitmqMessageCurrentMetricConfig                      `mapstructure:"rabbitmq.message.current"`
 	RabbitmqMessageDelivered                    RabbitmqMessageDeliveredMetricConfig                    `mapstructure:"rabbitmq.message.delivered"`
@@ -1725,6 +1767,12 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		RabbitmqConsumerCount: RabbitmqConsumerCountMetricConfig{
 			Enabled: true,
+		},
+		RabbitmqExchangeMessagesPublishedIn: RabbitmqExchangeMessagesPublishedInMetricConfig{
+			Enabled: false,
+		},
+		RabbitmqExchangeMessagesPublishedOut: RabbitmqExchangeMessagesPublishedOutMetricConfig{
+			Enabled: false,
 		},
 		RabbitmqMessageAcknowledged: RabbitmqMessageAcknowledgedMetricConfig{
 			Enabled: true,
@@ -1996,13 +2044,21 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for rabbitmq resource attributes.
 type ResourceAttributesConfig struct {
-	RabbitmqNodeName  ResourceAttributeConfig `mapstructure:"rabbitmq.node.name"`
-	RabbitmqQueueName ResourceAttributeConfig `mapstructure:"rabbitmq.queue.name"`
-	RabbitmqVhostName ResourceAttributeConfig `mapstructure:"rabbitmq.vhost.name"`
+	RabbitmqExchangeName ResourceAttributeConfig `mapstructure:"rabbitmq.exchange.name"`
+	RabbitmqExchangeType ResourceAttributeConfig `mapstructure:"rabbitmq.exchange.type"`
+	RabbitmqNodeName     ResourceAttributeConfig `mapstructure:"rabbitmq.node.name"`
+	RabbitmqQueueName    ResourceAttributeConfig `mapstructure:"rabbitmq.queue.name"`
+	RabbitmqVhostName    ResourceAttributeConfig `mapstructure:"rabbitmq.vhost.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		RabbitmqExchangeName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		RabbitmqExchangeType: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		RabbitmqNodeName: ResourceAttributeConfig{
 			Enabled: true,
 		},

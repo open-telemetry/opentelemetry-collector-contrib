@@ -20,10 +20,10 @@ import (
 	azmetricsfake "github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	armmonitorfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor/fake"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
-	armresourcesfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3/fake"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
-	armsubscriptionsfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/fake"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
+	armresourcesfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4/fake"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/v2"
+	armsubscriptionsfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/v2/fake"
 )
 
 // newMockSubscriptionsListPager is a helper function to create a list pager for subscriptions.
@@ -429,6 +429,14 @@ func newMetricsClientListResponseMockData(inputMap map[string]map[string][]metri
 					},
 					Unit:       &input.Unit,
 					Timeseries: input.TimeSeries,
+				}
+				for _, ts := range result3.Value[i].Timeseries {
+					for _, d := range ts.Data {
+						if d.TimeStamp == nil {
+							t := time.Unix(1, 0).UTC()
+							d.TimeStamp = &t
+						}
+					}
 				}
 			}
 			result2[metricNames] = result3

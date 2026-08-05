@@ -11,6 +11,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,14 +20,18 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/tj/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -37,14 +42,138 @@ import (
 func TestUnsuccessfulScrape(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "fake:11111"
+	cfg.AddrConfig.Endpoint = "fake:11111"
 
-	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
 
 	actualMetrics, err := scraper.scrape(t.Context())
 	require.Error(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
+}
+
+func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+
+	semconvConfig := metricsBuilderConfigForFeatureGate(cfg, true)
+	assert.Equal(t, cfg, semconvConfig)
+
+	legacyConfig := metricsBuilderConfigForFeatureGate(cfg, false)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlBackends.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlBlksHit.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlBlksRead.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlCommits.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlDbSize.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlDeadlocks.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlIndexScans.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlIndexSize.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlRollbacks.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlSequentialScans.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableCount.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableSize.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableVacuumCount.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTempIo.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTempFiles.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupDeleted.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupFetched.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupInserted.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupReturned.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupUpdated.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeySource}, legacyConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlDatabaseLocksMetricAttributeKey{metadata.PostgresqlDatabaseLocksMetricAttributeKeyRelation, metadata.PostgresqlDatabaseLocksMetricAttributeKeyMode, metadata.PostgresqlDatabaseLocksMetricAttributeKeyLockType}, legacyConfig.Metrics.PostgresqlDatabaseLocks.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlFunctionCallsMetricAttributeKey{metadata.PostgresqlFunctionCallsMetricAttributeKeyFunction}, legacyConfig.Metrics.PostgresqlFunctionCalls.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlOperationsMetricAttributeKey{metadata.PostgresqlOperationsMetricAttributeKeyOperation}, legacyConfig.Metrics.PostgresqlOperations.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlQueryConflictsMetricAttributeKey{metadata.PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType}, legacyConfig.Metrics.PostgresqlQueryConflicts.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlRowsMetricAttributeKey{metadata.PostgresqlRowsMetricAttributeKeyState}, legacyConfig.Metrics.PostgresqlRows.EnabledAttributes)
+	assert.Equal(t, cfg.Metrics.PostgresqlReplicationDataDelay.EnabledAttributes, legacyConfig.Metrics.PostgresqlReplicationDataDelay.EnabledAttributes)
+	assert.Equal(t, cfg.Metrics.PostgresqlWalDelay.EnabledAttributes, legacyConfig.Metrics.PostgresqlWalDelay.EnabledAttributes)
+	assert.Equal(t, cfg.Metrics.PostgresqlWalLag.EnabledAttributes, legacyConfig.Metrics.PostgresqlWalLag.EnabledAttributes)
+	assert.NotEmpty(t, cfg.Metrics.PostgresqlBackends.EnabledAttributes)
+	assert.Contains(t, cfg.Metrics.PostgresqlQueryConflicts.EnabledAttributes, metadata.PostgresqlQueryConflictsMetricAttributeKeyDbNamespace)
+	assert.Equal(t, metadata.NewDefaultMetricsBuilderConfig(), cfg)
+
+	customConfig := cfg
+	customConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes = []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeyDbNamespace}
+	customLegacyConfig := metricsBuilderConfigForFeatureGate(customConfig, false)
+	assert.Empty(t, customLegacyConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeyDbNamespace}, customConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
+}
+
+func TestSemconvQueryConflictsPreserveDatabaseNamespace(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.PostgresqlQueryConflicts.Enabled = true
+	scraper := &postgreSQLScraper{
+		config:            cfg,
+		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
+		serviceInstanceID: "example.com:5432",
+		useOTelSemconv:    true,
+	}
+	retrieval := &dbRetrieval{
+		dbConflictStats: map[databaseName]databaseConflictStats{
+			"orders": {
+				conflTablespace: 1,
+				conflLock:       2,
+				conflSnapshot:   3,
+				conflBufferpin:  4,
+				conflDeadlock:   5,
+			},
+			"users": {
+				conflTablespace: 6,
+				conflLock:       7,
+				conflSnapshot:   8,
+				conflBufferpin:  9,
+				conflDeadlock:   10,
+			},
+		},
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Unix(0, 1))
+	scraper.recordDatabase(now, "orders", retrieval, 0)
+	scraper.recordDatabase(now, "users", retrieval, 0)
+	rb := scraper.setupSemconvResourceBuilder(scraper.mb.NewResourceBuilder())
+	metrics := scraper.mb.Emit(metadata.WithResource(rb.Emit()))
+
+	queryConflicts := pmetric.NewMetric()
+	found := false
+	resourceMetrics := metrics.ResourceMetrics()
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		scopeMetrics := resourceMetrics.At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metricSlice := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metricSlice.Len(); k++ {
+				if metricSlice.At(k).Name() == "postgresql.query.conflicts" {
+					queryConflicts = metricSlice.At(k)
+					found = true
+				}
+			}
+		}
+	}
+	require.True(t, found)
+
+	actual := map[string]int64{}
+	dataPoints := queryConflicts.Sum().DataPoints()
+	require.Equal(t, 10, dataPoints.Len())
+	for i := 0; i < dataPoints.Len(); i++ {
+		dp := dataPoints.At(i)
+		namespace, ok := dp.Attributes().Get("db.namespace")
+		require.True(t, ok)
+		conflictType, ok := dp.Attributes().Get("postgresql.conflict.type")
+		require.True(t, ok)
+		actual[namespace.Str()+"/"+conflictType.Str()] = dp.IntValue()
+	}
+	require.Equal(t, map[string]int64{
+		"orders/tablespace": 1,
+		"orders/lock":       2,
+		"orders/snapshot":   3,
+		"orders/bufferpin":  4,
+		"orders/deadlock":   5,
+		"users/tablespace":  6,
+		"users/lock":        7,
+		"users/snapshot":    8,
+		"users/bufferpin":   9,
+		"users/deadlock":    10,
+	}, actual)
 }
 
 func TestScraper(t *testing.T) {
@@ -56,21 +185,23 @@ func TestScraper(t *testing.T) {
 
 		cfg := createDefaultConfig().(*Config)
 		cfg.Databases = []string{"otel"}
-		cfg.Metrics.PostgresqlWalDelay.Enabled = true
-		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
-		cfg.Metrics.PostgresqlTempFiles.Enabled = true
-		cfg.Metrics.PostgresqlTempIo.Enabled = true
-		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
-		cfg.Metrics.PostgresqlTupReturned.Enabled = true
-		cfg.Metrics.PostgresqlTupFetched.Enabled = true
-		cfg.Metrics.PostgresqlTupInserted.Enabled = true
-		cfg.Metrics.PostgresqlTupDeleted.Enabled = true
-		cfg.Metrics.PostgresqlBlksHit.Enabled = true
-		cfg.Metrics.PostgresqlBlksRead.Enabled = true
-		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
-		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlQueryConflicts.Enabled = true
 
-		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+		scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+		require.NoError(t, err)
 
 		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
@@ -87,6 +218,124 @@ func TestScraper(t *testing.T) {
 	runTest(false, "expected.yaml")
 }
 
+func TestScraperWithExecutionTime(t *testing.T) {
+	factory := new(mockClientFactory)
+	factory.initMocks([]string{"otel"})
+
+	runTest := func(separateSchemaAttr bool, file string) {
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.Databases = []string{"otel"}
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlQueryExecutionTime.Enabled = true
+
+		scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+		require.NoError(t, err)
+
+		actualMetrics, err := scraper.scrape(t.Context())
+		require.NoError(t, err)
+
+		expectedFile := filepath.Join("testdata", "scraper", "otel", file)
+		// golden.WriteMetrics(t, expectedFile, actualMetrics)
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
+
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+	}
+
+	runTest(true, "expected_execution_time_schemaattr.yaml")
+	runTest(false, "expected_execution_time.yaml")
+}
+
+func TestScraperVectorMetrics(t *testing.T) {
+	factory := new(mockClientFactory)
+	factory.initMocks([]string{"otel"})
+
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, false)()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{"otel"}
+	// Opt in to all pgvector metrics; everything else stays at defaults.
+	require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchCalls.Enabled)
+	cfg.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchCalls.Enabled = true
+	require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchDuration.Enabled)
+	cfg.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchDuration.Enabled = true
+	require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchRowsReturned.Enabled)
+	cfg.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchRowsReturned.Enabled = true
+	require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlVectorInsertRows.Enabled)
+	cfg.MetricsBuilderConfig.Metrics.PostgresqlVectorInsertRows.Enabled = true
+	require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlVectorInsertDuration.Enabled)
+	cfg.MetricsBuilderConfig.Metrics.PostgresqlVectorInsertDuration.Enabled = true
+
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	actualMetrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected_vector.yaml")
+	// Uncomment line below to re-generate expected metrics.
+	// golden.WriteMetrics(t, expectedFile, actualMetrics)
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+}
+
+func TestGetVectorSearchStats(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	c := &postgreSQLClient{client: db}
+
+	rows := sqlmock.NewRows([]string{"distance_function", "calls", "total_exec_time", "rows_returned"}).
+		AddRow("cosine", int64(50), 8.429, int64(500)).
+		AddRow("l2", int64(50), 10.408, int64(510))
+	mock.ExpectQuery(vectorSearchStatsQuery).WillReturnRows(rows)
+
+	stats, err := c.getVectorSearchStats(t.Context())
+	require.NoError(t, err)
+	require.Len(t, stats, 2)
+
+	assert.Equal(t, "cosine", stats[0].distanceFunction)
+	assert.Equal(t, int64(50), stats[0].calls)
+	// total_exec_time is reported in milliseconds by pg_stat_statements and converted to seconds.
+	assert.InDelta(t, 0.008429, stats[0].totalExecTime, 1e-9)
+	assert.Equal(t, int64(500), stats[0].rowsReturned)
+
+	assert.Equal(t, "l2", stats[1].distanceFunction)
+	assert.Equal(t, int64(50), stats[1].calls)
+	assert.InDelta(t, 0.010408, stats[1].totalExecTime, 1e-9)
+	assert.Equal(t, int64(510), stats[1].rowsReturned)
+
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetVectorInsertStats(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	c := &postgreSQLClient{client: db}
+
+	rows := sqlmock.NewRows([]string{"rows", "total_exec_time"}).
+		AddRow(int64(1234), 56.789)
+	mock.ExpectQuery(vectorInsertStatsQuery).WillReturnRows(rows)
+
+	stats, err := c.getVectorInsertStats(t.Context())
+	require.NoError(t, err)
+	require.Len(t, stats, 1)
+
+	assert.Equal(t, int64(1234), stats[0].rows)
+	// total_exec_time is reported in milliseconds by pg_stat_statements and converted to seconds.
+	assert.InDelta(t, 0.056789, stats[0].totalExecTime, 1e-9)
+
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestScraperNoDatabaseSingle(t *testing.T) {
 	factory := new(mockClientFactory)
 	factory.initMocks([]string{"otel"})
@@ -97,34 +346,37 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 
 		// Validate expected default config values and then enable all metrics
-		require.False(t, cfg.Metrics.PostgresqlWalDelay.Enabled)
-		cfg.Metrics.PostgresqlWalDelay.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlDeadlocks.Enabled)
-		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
-		cfg.Metrics.PostgresqlTempFiles.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
-		cfg.Metrics.PostgresqlTempIo.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
-		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
-		cfg.Metrics.PostgresqlTupReturned.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupFetched.Enabled)
-		cfg.Metrics.PostgresqlTupFetched.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupInserted.Enabled)
-		cfg.Metrics.PostgresqlTupInserted.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupDeleted.Enabled)
-		cfg.Metrics.PostgresqlTupDeleted.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlBlksHit.Enabled)
-		cfg.Metrics.PostgresqlBlksHit.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlBlksRead.Enabled)
-		cfg.Metrics.PostgresqlBlksRead.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlSequentialScans.Enabled)
-		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
-		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlQueryConflicts.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlQueryConflicts.Enabled = true
 
-		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+		scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+		require.NoError(t, err)
 		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
@@ -135,21 +387,23 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
-		cfg.Metrics.PostgresqlWalDelay.Enabled = false
-		cfg.Metrics.PostgresqlDeadlocks.Enabled = false
-		cfg.Metrics.PostgresqlTempFiles.Enabled = false
-		cfg.Metrics.PostgresqlTempIo.Enabled = false
-		cfg.Metrics.PostgresqlTupUpdated.Enabled = false
-		cfg.Metrics.PostgresqlTupReturned.Enabled = false
-		cfg.Metrics.PostgresqlTupFetched.Enabled = false
-		cfg.Metrics.PostgresqlTupInserted.Enabled = false
-		cfg.Metrics.PostgresqlTupDeleted.Enabled = false
-		cfg.Metrics.PostgresqlBlksHit.Enabled = false
-		cfg.Metrics.PostgresqlBlksRead.Enabled = false
-		cfg.Metrics.PostgresqlSequentialScans.Enabled = false
-		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlQueryConflicts.Enabled = false
 
-		scraper = newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+		scraper, err = newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+		require.NoError(t, err)
 		actualMetrics, err = scraper.scrape(t.Context())
 		require.NoError(t, err)
 
@@ -176,32 +430,33 @@ func TestScraperNoDatabaseMultipleWithoutPreciseLag(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 
 		// Validate expected default config values and then enable all metrics except wal delay
-		require.False(t, cfg.Metrics.PostgresqlWalDelay.Enabled)
-		require.False(t, cfg.Metrics.PostgresqlDeadlocks.Enabled)
-		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
-		cfg.Metrics.PostgresqlTempFiles.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
-		cfg.Metrics.PostgresqlTempIo.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
-		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
-		cfg.Metrics.PostgresqlTupReturned.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupFetched.Enabled)
-		cfg.Metrics.PostgresqlTupFetched.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupInserted.Enabled)
-		cfg.Metrics.PostgresqlTupInserted.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupDeleted.Enabled)
-		cfg.Metrics.PostgresqlTupDeleted.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlBlksHit.Enabled)
-		cfg.Metrics.PostgresqlBlksHit.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlBlksRead.Enabled)
-		cfg.Metrics.PostgresqlBlksRead.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlSequentialScans.Enabled)
-		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
-		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
-		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled = true
+		scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
+		require.NoError(t, err)
 
 		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
@@ -222,39 +477,41 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	factory := mockClientFactory{}
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
-	runTest := func(separateSchemaAttr bool, file string) {
+	runTest := func(separateSchemaAttr, useOTelSemconv bool, file string) {
 		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, useOTelSemconv)()
 
 		cfg := createDefaultConfig().(*Config)
 
 		// Validate expected default config values and then enable all metrics
-		require.False(t, cfg.Metrics.PostgresqlWalDelay.Enabled)
-		cfg.Metrics.PostgresqlWalDelay.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlDeadlocks.Enabled)
-		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
-		cfg.Metrics.PostgresqlTempFiles.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
-		cfg.Metrics.PostgresqlTempIo.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
-		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
-		cfg.Metrics.PostgresqlTupReturned.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupFetched.Enabled)
-		cfg.Metrics.PostgresqlTupFetched.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupInserted.Enabled)
-		cfg.Metrics.PostgresqlTupInserted.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupDeleted.Enabled)
-		cfg.Metrics.PostgresqlTupDeleted.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlBlksHit.Enabled)
-		cfg.Metrics.PostgresqlBlksHit.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlBlksRead.Enabled)
-		cfg.Metrics.PostgresqlBlksRead.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlSequentialScans.Enabled)
-		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
-		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
-		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled = true
+		scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
+		require.NoError(t, err)
 
 		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
@@ -262,12 +519,25 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		expectedFile := filepath.Join("testdata", "scraper", "multiple", file)
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+		compareOpts := []pmetrictest.CompareMetricsOption{
+			pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp(),
+		}
+		if useOTelSemconv {
+			compareOpts = append(compareOpts,
+				pmetrictest.IgnoreResourceAttributeValue("server.address"),
+				pmetrictest.IgnoreResourceAttributeValue("server.port"),
+			)
+		}
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, compareOpts...))
 	}
 
-	runTest(true, "expected_schemaattr.yaml")
-	runTest(false, "expected.yaml")
+	runTest(true, false, "expected_schemaattr.yaml")
+	runTest(false, false, "expected.yaml")
+	runTest(false, true, "expected_semconv.yaml")
 }
 
 func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
@@ -280,34 +550,35 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 
 		// Validate expected default config values and then enable all metrics
-		require.False(t, cfg.Metrics.PostgresqlWalDelay.Enabled)
-		cfg.Metrics.PostgresqlWalDelay.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlDeadlocks.Enabled)
-		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
-		cfg.Metrics.PostgresqlTempFiles.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
-		cfg.Metrics.PostgresqlTempIo.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
-		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
-		cfg.Metrics.PostgresqlTupReturned.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupFetched.Enabled)
-		cfg.Metrics.PostgresqlTupFetched.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupInserted.Enabled)
-		cfg.Metrics.PostgresqlTupInserted.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupDeleted.Enabled)
-		cfg.Metrics.PostgresqlTupDeleted.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlBlksHit.Enabled)
-		cfg.Metrics.PostgresqlBlksHit.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlBlksRead.Enabled)
-		cfg.Metrics.PostgresqlBlksRead.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlSequentialScans.Enabled)
-		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
-		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled = true
 
-		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
+		scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
+		require.NoError(t, err)
 
 		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
@@ -334,33 +605,36 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 
 		// Validate expected default config values and then enable all metrics
-		require.False(t, cfg.Metrics.PostgresqlWalDelay.Enabled)
-		cfg.Metrics.PostgresqlWalDelay.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlDeadlocks.Enabled)
-		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
-		cfg.Metrics.PostgresqlTempFiles.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTempIo.Enabled)
-		cfg.Metrics.PostgresqlTempIo.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
-		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
-		cfg.Metrics.PostgresqlTupReturned.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupFetched.Enabled)
-		cfg.Metrics.PostgresqlTupFetched.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupInserted.Enabled)
-		cfg.Metrics.PostgresqlTupInserted.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlTupDeleted.Enabled)
-		cfg.Metrics.PostgresqlTupDeleted.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlBlksHit.Enabled)
-		cfg.Metrics.PostgresqlBlksHit.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlBlksRead.Enabled)
-		cfg.Metrics.PostgresqlBlksRead.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlSequentialScans.Enabled)
-		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
-		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
-		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled = true
+		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlQueryConflicts.Enabled)
+		cfg.MetricsBuilderConfig.Metrics.PostgresqlQueryConflicts.Enabled = true
+		scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
+		require.NoError(t, err)
 
 		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
@@ -387,7 +661,8 @@ func TestScraperExcludeDatabase(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.ExcludeDatabases = []string{"open"}
 
-		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
+		scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
+		require.NoError(t, err)
 
 		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
@@ -403,6 +678,19 @@ func TestScraperExcludeDatabase(t *testing.T) {
 
 	runTest(true, "exclude_schemaattr.yaml")
 	runTest(false, "exclude.yaml")
+}
+
+func TestMutualExclusionOfFeatureGates(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, true)()
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, true)()
+
+	cfg := createDefaultConfig().(*Config)
+	factory := new(mockClientFactory)
+	factory.initMocks([]string{"otel"})
+
+	_, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "mutually exclusive")
 }
 
 //go:embed testdata/scraper/query-sample/expectedSql.sql
@@ -451,7 +739,7 @@ func newQuerySampleRows(t *testing.T, values map[string]any) *sqlmock.Rows {
 func TestScrapeQuerySample(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
-	cfg.Events.DbServerQuerySample.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 
@@ -467,7 +755,8 @@ func TestScrapeQuerySample(t *testing.T) {
 	settings.TelemetrySettings = component.TelemetrySettings{
 		Logger: logger,
 	}
-	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, scraperErr)
 	scraper.newestQueryTimestamp = 123440.111
 	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
 		querySampleColumnDatname:              "postgres",
@@ -496,10 +785,59 @@ func TestScrapeQuerySample(t *testing.T) {
 	assert.NoError(t, errs)
 }
 
+func TestScrapeQuerySampleSemconv(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, true)()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{db: db}
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, scraperErr)
+	scraper.newestQueryTimestamp = 123440.111
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+		querySampleColumnDatname:              "postgres",
+		querySampleColumnUsename:              "otelu",
+		querySampleColumnClientAddr:           "11.4.5.14",
+		querySampleColumnClientHostname:       "otel",
+		querySampleColumnClientPort:           "114514",
+		querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
+		querySampleColumnQueryID:              "123131231231",
+		querySampleColumnPID:                  "1450",
+		querySampleColumnApplicationName:      "receiver",
+		querySampleColumnQueryStartTimestamp:  "123445.123",
+		querySampleColumnState:                "idle",
+		querySampleColumnQuery:                "select * from pg_stat_activity where id = 32",
+		querySampleColumnDurationMilliseconds: "1.2",
+		querySampleColumnBlockingPIDs:         "{}",
+	}))
+
+	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
+	require.NoError(t, err)
+	expectedFile := filepath.Join("testdata", "scraper", "query-sample", "expected_semconv.yaml")
+	expectedLogs, err := golden.ReadLogs(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs,
+		plogtest.IgnoreResourceAttributeValue("service.instance.id"),
+		plogtest.IgnoreResourceAttributeValue("server.address"),
+		plogtest.IgnoreResourceAttributeValue("server.port"),
+		plogtest.IgnoreTimestamp(),
+	))
+}
+
 func TestScrapeQuerySampleWithTraceparent(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
-	cfg.Events.DbServerQuerySample.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	require.NoError(t, err)
 
@@ -516,7 +854,8 @@ func TestScrapeQuerySampleWithTraceparent(t *testing.T) {
 		Logger: logger,
 	}
 
-	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, scraperErr)
 	scraper.newestQueryTimestamp = 123440.111
 
 	traceparent := "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
@@ -602,7 +941,7 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 func TestScrapeQuerySampleNoResults(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
-	cfg.Events.DbServerQuerySample.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	require.NoError(t, err)
 
@@ -615,7 +954,8 @@ func TestScrapeQuerySampleNoResults(t *testing.T) {
 	require.NoError(t, err)
 	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
 
-	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, scraperErr)
 	scraper.newestQueryTimestamp = 123440.111
 
 	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(sqlmock.NewRows(querySampleColumns))
@@ -636,7 +976,7 @@ func TestScrapeQuerySampleNoResults(t *testing.T) {
 func TestScrapeQuerySampleMultipleRows(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
-	cfg.Events.DbServerQuerySample.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	require.NoError(t, err)
 
@@ -649,7 +989,8 @@ func TestScrapeQuerySampleMultipleRows(t *testing.T) {
 	require.NoError(t, err)
 	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
 
-	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, scraperErr)
 	scraper.newestQueryTimestamp = 123440.111
 
 	row1 := map[string]any{
@@ -711,7 +1052,7 @@ func TestScrapeQuerySampleMultipleRows(t *testing.T) {
 func TestScrapeQuerySampleBlockedSession(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
-	cfg.Events.DbServerQuerySample.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	require.NoError(t, err)
 	defer db.Close()
@@ -723,7 +1064,8 @@ func TestScrapeQuerySampleBlockedSession(t *testing.T) {
 	require.NoError(t, err)
 	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
 
-	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, scraperErr)
 	scraper.newestQueryTimestamp = 123440.111
 
 	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
@@ -766,7 +1108,7 @@ func TestScrapeQuerySampleBlockedSession(t *testing.T) {
 func TestScrapeQuerySampleMultiBlocker(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
-	cfg.Events.DbServerQuerySample.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	require.NoError(t, err)
 	defer db.Close()
@@ -778,7 +1120,8 @@ func TestScrapeQuerySampleMultiBlocker(t *testing.T) {
 	require.NoError(t, err)
 	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
 
-	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, scraperErr)
 	scraper.newestQueryTimestamp = 123440.111
 
 	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
@@ -827,7 +1170,7 @@ var expectedExplain string
 func TestScrapeTopQueries(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 
@@ -870,7 +1213,8 @@ func TestScrapeTopQueries(t *testing.T) {
 	}
 	expectedValues := expectedValuesBuilder.String()
 
-	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
+	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
+	require.NoError(t, scraperErr)
 	scraper.cache.Add(queryid+totalExecTimeColumnName, 10)
 	scraper.cache.Add(queryid+totalPlanTimeColumnName, 11)
 	scraper.cache.Add(queryid+callsColumnName, 120)
@@ -977,7 +1321,7 @@ func TestIsExplainableQuery(t *testing.T) {
 func TestScrapeTopQueriesCollectsOnlyWhenIntervalHasElapsed(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.CollectionInterval = 600 * time.Second
 	db, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
@@ -995,7 +1339,8 @@ func TestScrapeTopQueriesCollectsOnlyWhenIntervalHasElapsed(t *testing.T) {
 		Logger: logger,
 	}
 
-	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
+	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
+	require.NoError(t, scraperErr)
 
 	assert.True(t, scraper.lastExecutionTimestamp.IsZero(), "lastExecutionTimestamp should be zero before first collection")
 	logs1, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
@@ -1086,11 +1431,71 @@ func TestExplainQuery(t *testing.T) {
 				sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(tc.mockPlanResult),
 			)
 
-			plan, err := client.explainQuery(tc.query, tc.queryID, logger)
+			// The prepared statement must always be deallocated afterwards,
+			// otherwise it leaks server-side state on pooled connections.
+			normalizedQueryID := strings.ReplaceAll(tc.queryID, "-", "_")
+			mock.ExpectExec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID)).
+				WillReturnResult(sqlmock.NewResult(0, 0))
+
+			plan, err := client.explainQuery(t.Context(), tc.query, tc.queryID, logger)
 			require.NoError(t, err)
 			assert.Equal(t, tc.mockPlanResult, plan)
+			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func TestExplainQueryErrorStillCleansUp(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	logger := zap.NewNop()
+	client := &postgreSQLClient{
+		client:  db,
+		closeFn: func() error { return nil },
+	}
+
+	expectedSQL := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_12345 AS SELECT * FROM users;EXPLAIN(FORMAT JSON) EXECUTE otel_12345;"
+	mock.ExpectQuery(expectedSQL).WillReturnError(errors.New("syntax error"))
+
+	// Even though the EXPLAIN itself failed, PREPARE may have already
+	// registered the statement server-side, so cleanup must still run.
+	mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_12345").
+		WillReturnResult(sqlmock.NewResult(0, 0))
+
+	_, err = client.explainQuery(t.Context(), "SELECT * FROM users", "12345", logger)
+	require.Error(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestExplainQueryUsesContext(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	logger := zap.NewNop()
+	client := &postgreSQLClient{
+		client:  db,
+		closeFn: func() error { return nil },
+	}
+
+	expectedSQL := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_12345 AS SELECT * FROM users;EXPLAIN(FORMAT JSON) EXECUTE otel_12345;"
+	mock.ExpectQuery(expectedSQL).
+		WillDelayFor(200 * time.Millisecond).
+		WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan","Relation Name":"users"}}]`))
+
+	// Cleanup (DEALLOCATE PREPARE) must still run even though ctx expires
+	// mid-query, otherwise the prepared statement leaks on pooled connections.
+	mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_12345").
+		WillReturnResult(sqlmock.NewResult(0, 0))
+
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
+	defer cancel()
+
+	_, err = client.explainQuery(ctx, "SELECT * FROM users", "12345", logger)
+	require.Error(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
 }
 
 type (
@@ -1102,7 +1507,7 @@ type (
 )
 
 // explainQuery implements client.
-func (*mockClient) explainQuery(string, string, *zap.Logger) (string, error) {
+func (*mockClient) explainQuery(context.Context, string, string, *zap.Logger) (string, error) {
 	panic("unimplemented")
 }
 
@@ -1116,8 +1521,11 @@ func (mockSimpleClientFactory) close() error {
 	return nil
 }
 
+// setCredentialProvider implements postgreSQLClientFactory (no-op for the mock).
+func (mockSimpleClientFactory) setCredentialProvider(dbauth.Provider) {}
+
 // getClient implements postgreSQLClientFactory.
-func (m mockSimpleClientFactory) getClient(string) (client, error) {
+func (m mockSimpleClientFactory) getClient(context.Context, string) (client, error) {
 	return &postgreSQLClient{
 		client:  m.db,
 		closeFn: m.close,
@@ -1141,7 +1549,22 @@ func (m *mockClient) getDatabaseStats(_ context.Context, databases []string) (ma
 	return args.Get(0).(map[databaseName]databaseStats), args.Error(1)
 }
 
+func (m *mockClient) getDatabaseConflicts(_ context.Context, databases []string) (map[databaseName]databaseConflictStats, error) {
+	args := m.Called(databases)
+	return args.Get(0).(map[databaseName]databaseConflictStats), args.Error(1)
+}
+
+func (m *mockClient) getExecutionTimeStats(_ context.Context, databases []string) (map[databaseName]float64, error) {
+	args := m.Called(databases)
+	return args.Get(0).(map[databaseName]float64), args.Error(1)
+}
+
 func (m *mockClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]databaseLocks), args.Error(1)
+}
+
+func (m *mockClient) getSharedRelationLocks(ctx context.Context) ([]databaseLocks, error) {
 	args := m.Called(ctx)
 	return args.Get(0).([]databaseLocks), args.Error(1)
 }
@@ -1176,6 +1599,16 @@ func (m *mockClient) getFunctionStats(ctx context.Context, database string) (map
 	return args.Get(0).(map[functionIdentifer]functionStat), args.Error(1)
 }
 
+func (m *mockClient) getVectorSearchStats(ctx context.Context) ([]vectorSearchStat, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]vectorSearchStat), args.Error(1)
+}
+
+func (m *mockClient) getVectorInsertStats(ctx context.Context) ([]vectorInsertStat, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]vectorInsertStat), args.Error(1)
+}
+
 func (m *mockClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
 	args := m.Called(ctx)
 	return args.Get(0).(*bgStat), args.Error(1)
@@ -1206,8 +1639,8 @@ func (m *mockClient) getVersion(_ context.Context) (string, error) {
 	return args.String(0), args.Error(1)
 }
 
-func (m *mockClientFactory) getClient(database string) (client, error) {
-	args := m.Called(database)
+func (m *mockClientFactory) getClient(ctx context.Context, database string) (client, error) {
+	args := m.Called(ctx, database)
 	return args.Get(0).(client), args.Error(1)
 }
 
@@ -1216,15 +1649,17 @@ func (m *mockClientFactory) close() error {
 	return args.Error(0)
 }
 
+func (*mockClientFactory) setCredentialProvider(dbauth.Provider) {}
+
 func (m *mockClientFactory) initMocks(databases []string) {
 	listClient := new(mockClient)
 	listClient.initMocks(defaultPostgreSQLDatabase, "public", databases, 0)
-	m.On("getClient", defaultPostgreSQLDatabase).Return(listClient, nil)
+	m.On("getClient", mock.Anything, defaultPostgreSQLDatabase).Return(listClient, nil)
 
 	for index, db := range databases {
 		client := new(mockClient)
 		client.initMocks(db, "public", databases, index)
-		m.On("getClient", db).Return(client, nil)
+		m.On("getClient", mock.Anything, db).Return(client, nil)
 	}
 }
 
@@ -1235,8 +1670,10 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		m.On("listDatabases").Return(databases, nil)
 
 		dbStats := map[databaseName]databaseStats{}
+		dbConflictStats := map[databaseName]databaseConflictStats{}
 		dbSize := map[databaseName]int64{}
 		backends := map[databaseName]int64{}
+		execDuration := map[databaseName]float64{}
 
 		for idx, db := range databases {
 			dbStats[databaseName(db)] = databaseStats{
@@ -1253,11 +1690,21 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				blksRead:             int64(idx + 11),
 				tempIo:               int64(idx + 12),
 			}
+			dbConflictStats[databaseName(db)] = databaseConflictStats{
+				conflTablespace: int64(idx + 13),
+				conflLock:       int64(idx + 14),
+				conflSnapshot:   int64(idx + 15),
+				conflBufferpin:  int64(idx + 16),
+				conflDeadlock:   int64(idx + 17),
+			}
 			dbSize[databaseName(db)] = int64(idx + 4)
 			backends[databaseName(db)] = int64(idx + 3)
+			execDuration[databaseName(db)] = float64(idx+1) + 0.5
 		}
 
 		m.On("getDatabaseStats", databases).Return(dbStats, nil)
+		m.On("getDatabaseConflicts", databases).Return(dbConflictStats, nil)
+		m.On("getExecutionTimeStats", databases).Return(execDuration, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
 		m.On("getBackends", databases).Return(backends, nil)
 		m.On("getBGWriterStats", mock.Anything).Return(&bgStat{
@@ -1274,34 +1721,14 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		}, nil)
 		m.On("getMaxConnections", mock.Anything).Return(int64(100), nil)
 		m.On("getLatestWalAgeSeconds", mock.Anything).Return(int64(3600), nil)
-		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
+		m.On("getSharedRelationLocks", mock.Anything).Return([]databaseLocks{
 			{
-				relation: "pg_locks",
+				relation: "pg_database",
 				mode:     "AccessShareLock",
 				lockType: "relation",
-				locks:    3600,
-			},
-			{
-				relation: "pg_class",
-				mode:     "AccessShareLock",
-				lockType: "relation",
-				locks:    5600,
+				locks:    2,
 			},
 		}, nil)
-		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
-			{
-				relation: "abd_table",
-				mode:     "ExplicitLock",
-				lockType: "relation",
-				locks:    1600,
-			},
-			{
-				relation: "pg_class",
-				mode:     "AccessShareLock",
-				lockType: "relation",
-				locks:    5600,
-			},
-		}, errors.New("some error"))
 		m.On("getReplicationStats", mock.Anything).Return([]replicationStats{
 			{
 				clientAddr:   "unix",
@@ -1429,7 +1856,70 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 			},
 		}
 		m.On("getFunctionStats", mock.Anything, database).Return(functionStats, nil)
+
+		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
+			{
+				relation: "pg_locks",
+				mode:     "AccessShareLock",
+				lockType: "relation",
+				locks:    int64(index + 3600),
+			},
+			{
+				relation: "pg_class",
+				mode:     "AccessShareLock",
+				lockType: "relation",
+				locks:    int64(index + 5600),
+			},
+		}, nil)
+
+		vectorSearchStats := []vectorSearchStat{
+			{
+				distanceFunction: "cosine",
+				calls:            int64(index + 60),
+				totalExecTime:    float64(index) + 0.5,
+				rowsReturned:     int64(index + 600),
+			},
+			{
+				distanceFunction: "l2",
+				calls:            int64(index + 61),
+				totalExecTime:    float64(index) + 1.5,
+				rowsReturned:     int64(index + 610),
+			},
+		}
+		m.On("getVectorSearchStats", mock.Anything).Return(vectorSearchStats, nil)
+
+		vectorInsertStats := []vectorInsertStat{
+			{
+				rows:          int64(index + 70),
+				totalExecTime: float64(index) + 2.5,
+			},
+		}
+		m.On("getVectorInsertStats", mock.Anything).Return(vectorInsertStats, nil)
 	}
+}
+
+func TestCollectDatabaseLocksError(t *testing.T) {
+	c := new(mockClient)
+	c.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks(nil), errors.New("some error"))
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+	var errs errsMux
+	scraper.collectDatabaseLocks(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, "otel", &errs)
+	require.Error(t, errs.combine())
+}
+
+func TestCollectSharedRelationLocksError(t *testing.T) {
+	c := new(mockClient)
+	c.On("getSharedRelationLocks", mock.Anything).Return([]databaseLocks(nil), errors.New("some error"))
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+	var errs errsMux
+	scraper.collectSharedRelationLocks(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, &errs)
+	require.Error(t, errs.combine())
 }
 
 func TestGetInstanceId(t *testing.T) {
@@ -1458,4 +1948,265 @@ func TestGetInstanceId(t *testing.T) {
 	localInstanceID = getInstanceID(hostNameErrorSample, zap.NewNop())
 	assert.NotNil(t, localInstanceID)
 	assert.Equal(t, "unknown:5432", localInstanceID)
+}
+
+func TestResolveServiceInstanceSeed(t *testing.T) {
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
+	localEndpoint := net.JoinHostPort(hostname, "5432")
+
+	tests := []struct {
+		name     string
+		endpoint string
+		expected string
+	}{
+		{
+			name:     "hostname",
+			endpoint: "db.example.com:5432",
+			expected: "db.example.com:5432",
+		},
+		{
+			name:     "IPv6",
+			endpoint: "[2001:db8::1]:5432",
+			expected: "[2001:db8::1]:5432",
+		},
+		{
+			name:     "localhost",
+			endpoint: "localhost:5432",
+			expected: localEndpoint,
+		},
+		{
+			name:     "case-insensitive localhost",
+			endpoint: "Localhost:5432",
+			expected: localEndpoint,
+		},
+		{
+			name:     "IPv4 loopback",
+			endpoint: "127.0.0.1:5432",
+			expected: localEndpoint,
+		},
+		{
+			name:     "IPv6 loopback",
+			endpoint: "[::1]:5432",
+			expected: localEndpoint,
+		},
+		{
+			name:     "invalid endpoint",
+			endpoint: "localhost",
+			expected: "localhost",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.AddrConfig.Endpoint = tt.endpoint
+			assert.Equal(t, tt.expected, resolveServiceInstanceSeed(cfg, zap.NewNop()))
+		})
+	}
+}
+
+func TestResolveUnixServiceInstanceSeed(t *testing.T) {
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
+	unixSeed := func(endpoint string) string {
+		cfg := createDefaultConfig().(*Config)
+		cfg.AddrConfig.Endpoint = endpoint
+		cfg.AddrConfig.Transport = confignet.TransportTypeUnix
+		return resolveServiceInstanceSeed(cfg, zap.NewNop())
+	}
+
+	seed := unixSeed("var/run/postgresql:5432")
+	assert.Equal(t, strings.Join([]string{"unix", hostname, "/var/run/postgresql/.s.PGSQL.5432"}, "\x00"), seed)
+	assert.Equal(t, seed, unixSeed("/var/run/postgresql:5432"))
+	assert.NotEqual(t, seed, unixSeed("var/lib/postgresql:5432"))
+	assert.NotEqual(t, seed, unixSeed("var/run/postgresql:5433"))
+	assert.Equal(t, strings.Join([]string{"unix", hostname, "var/run/postgresql"}, "\x00"), unixSeed("var/run/postgresql"))
+
+	tcpConfig := createDefaultConfig().(*Config)
+	tcpConfig.AddrConfig.Endpoint = "var/run/postgresql:5432"
+	assert.NotEqual(t, seed, resolveServiceInstanceSeed(tcpConfig, zap.NewNop()))
+}
+
+func TestNewPostgreSQLScraperSemconvServiceInstanceID(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, true)()
+
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
+	cfg := createDefaultConfig().(*Config)
+	cfg.AddrConfig.Endpoint = "[::1]:5432"
+	scraper, err := newPostgreSQLScraper(
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		newDefaultClientFactory(cfg),
+		newCache(1),
+		newTTLCache[string](1, time.Second),
+	)
+	require.NoError(t, err)
+
+	seed := net.JoinHostPort(hostname, "5432")
+	expected := uuid.NewSHA1(otelNamespaceUUID, []byte(seed)).String()
+	assert.Equal(t, expected, scraper.serviceInstanceID)
+}
+
+func TestNewPostgreSQLScraperSemconvUnixServiceInstanceID(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, true)()
+
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
+	cfg := createDefaultConfig().(*Config)
+	cfg.AddrConfig.Endpoint = "var/run/postgresql:5432"
+	cfg.AddrConfig.Transport = confignet.TransportTypeUnix
+	scraper, err := newPostgreSQLScraper(
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		newDefaultClientFactory(cfg),
+		newCache(1),
+		newTTLCache[string](1, time.Second),
+	)
+	require.NoError(t, err)
+
+	seed := strings.Join([]string{"unix", hostname, "/var/run/postgresql/.s.PGSQL.5432"}, "\x00")
+	expected := uuid.NewSHA1(otelNamespaceUUID, []byte(seed)).String()
+	assert.Equal(t, expected, scraper.serviceInstanceID)
+}
+
+func TestSetupSemconvResourceBuilder(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.AddrConfig.Endpoint = "127.0.0.1:5432"
+	serviceInstanceID := uuid.NewSHA1(otelNamespaceUUID, []byte("collector-host:5432")).String()
+	scraper := &postgreSQLScraper{
+		logger:            zap.NewNop(),
+		config:            cfg,
+		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
+		serviceInstanceID: serviceInstanceID,
+		useOTelSemconv:    true,
+	}
+
+	rb := scraper.mb.NewResourceBuilder()
+	scraper.setupSemconvResourceBuilder(rb)
+	res := rb.Emit()
+
+	serverHost, ok := res.Attributes().Get("server.address")
+	require.True(t, ok)
+	assert.Equal(t, "127.0.0.1", serverHost.Str())
+
+	serverPort, ok := res.Attributes().Get("server.port")
+	require.True(t, ok)
+	assert.Equal(t, int64(5432), serverPort.Int())
+
+	instanceID, ok := res.Attributes().Get("service.instance.id")
+	require.True(t, ok)
+	assert.Equal(t, serviceInstanceID, instanceID.Str())
+	_, err := uuid.Parse(instanceID.Str())
+	require.NoError(t, err)
+
+	rb2 := scraper.mb.NewResourceBuilder()
+	scraper.setupSemconvResourceBuilder(rb2)
+	res2 := rb2.Emit()
+	uuid2, _ := res2.Attributes().Get("service.instance.id")
+	assert.Equal(t, instanceID.Str(), uuid2.Str())
+
+	_, hasServiceName := res.Attributes().Get("service.name")
+	assert.False(t, hasServiceName)
+}
+
+func TestServerEndpointAttributes(t *testing.T) {
+	tests := []struct {
+		name            string
+		endpoint        string
+		transport       confignet.TransportType
+		expectedAddress string
+		expectedPort    int64
+		wantErr         bool
+	}{
+		{
+			name:            "hostname",
+			endpoint:        "db.example.com:5432",
+			transport:       confignet.TransportTypeTCP,
+			expectedAddress: "db.example.com",
+			expectedPort:    5432,
+		},
+		{
+			name:            "loopback IPv4",
+			endpoint:        "127.0.0.1:5433",
+			transport:       confignet.TransportTypeTCP,
+			expectedAddress: "127.0.0.1",
+			expectedPort:    5433,
+		},
+		{
+			name:            "IPv6",
+			endpoint:        "[2001:db8::1]:5434",
+			transport:       confignet.TransportTypeTCP,
+			expectedAddress: "2001:db8::1",
+			expectedPort:    5434,
+		},
+		{
+			name:            "Unix socket",
+			endpoint:        "var/run/postgresql:5435",
+			transport:       confignet.TransportTypeUnix,
+			expectedAddress: "/var/run/postgresql/.s.PGSQL.5435",
+			expectedPort:    5435,
+		},
+		{
+			name:      "invalid endpoint",
+			endpoint:  "localhost",
+			transport: confignet.TransportTypeTCP,
+			wantErr:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.AddrConfig.Endpoint = tt.endpoint
+			cfg.AddrConfig.Transport = tt.transport
+			address, port, err := serverEndpointAttributes(cfg)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedAddress, address)
+			assert.Equal(t, tt.expectedPort, port)
+		})
+	}
+}
+
+func TestSetupLegacyResourceBuilder(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	scraper := &postgreSQLScraper{
+		logger:            zap.NewNop(),
+		config:            cfg,
+		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
+		serviceInstanceID: "localhost:5432",
+		useOTelSemconv:    false,
+	}
+
+	rb := scraper.mb.NewResourceBuilder()
+	scraper.setupLegacyResourceBuilder(rb, "mydb", "myschema", "mytable", "myindex")
+	res := rb.Emit()
+
+	instanceID, ok := res.Attributes().Get("service.instance.id")
+	require.True(t, ok)
+	assert.Equal(t, "localhost:5432", instanceID.Str())
+
+	dbName, ok := res.Attributes().Get("postgresql.database.name")
+	require.True(t, ok)
+	assert.Equal(t, "mydb", dbName.Str())
+
+	schemaName, ok := res.Attributes().Get("postgresql.schema.name")
+	require.True(t, ok)
+	assert.Equal(t, "myschema", schemaName.Str())
+
+	tableName, ok := res.Attributes().Get("postgresql.table.name")
+	require.True(t, ok)
+	assert.Equal(t, "mytable", tableName.Str())
+
+	indexName, ok := res.Attributes().Get("postgresql.index.name")
+	require.True(t, ok)
+	assert.Equal(t, "myindex", indexName.Str())
+
+	_, hasServerAddr := res.Attributes().Get("server.address")
+	assert.False(t, hasServerAddr)
+	_, hasServerPort := res.Attributes().Get("server.port")
+	assert.False(t, hasServerPort)
 }

@@ -256,7 +256,11 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 					extractedMetrics := pmetric.NewMetricSlice()
 					extractAndRemoveMatchedMetrics(extractedMetrics, transform.MetricIncludeFilter, metrics)
 					combinedMetric := combine(transform, extractedMetrics)
-					if transformMetric(combinedMetric, transform) {
+					valid, err := transformMetric(combinedMetric, transform)
+					if err != nil {
+						mtp.logger.Warn(err.Error())
+					}
+					if valid {
 						combinedMetric.MoveTo(metrics.AppendEmpty())
 					}
 				case Insert:
@@ -272,7 +276,11 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 							newMetric = pmetric.NewMetric()
 							metric.CopyTo(newMetric)
 						}
-						if transformMetric(newMetric, transform) {
+						valid, err := transformMetric(newMetric, transform)
+						if err != nil {
+							mtp.logger.Warn(err.Error())
+						}
+						if valid {
 							newMetric.MoveTo(metrics.AppendEmpty())
 						}
 					}
@@ -283,7 +291,11 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 						}
 
 						// Drop the metric if all the data points were dropped after transformations.
-						return !transformMetric(metric, transform)
+						valid, err := transformMetric(metric, transform)
+						if err != nil {
+							mtp.logger.Warn(err.Error())
+						}
+						return !valid
 					})
 				}
 			}
@@ -355,26 +367,30 @@ func canBeCombined(metrics []pmetric.Metric) error {
 			if firstMetric.Sum().AggregationTemporality() != metric.Sum().AggregationTemporality() {
 				return fmt.Errorf(
 					"metrics cannot be combined as they have different aggregation temporalities: %v (%v) and %v (%v)",
-					firstMetric.Name(), firstMetric.Sum().AggregationTemporality(), metric.Name(), metric.Sum().AggregationTemporality())
+					firstMetric.Name(), firstMetric.Sum().AggregationTemporality(), metric.Name(), metric.Sum().AggregationTemporality(),
+				)
 			}
 			if firstMetric.Sum().IsMonotonic() != metric.Sum().IsMonotonic() {
 				return fmt.Errorf(
 					"metrics cannot be combined as they have different monotonicity: %v (%v) and %v (%v)",
-					firstMetric.Name(), firstMetric.Sum().IsMonotonic(), metric.Name(), metric.Sum().IsMonotonic())
+					firstMetric.Name(), firstMetric.Sum().IsMonotonic(), metric.Name(), metric.Sum().IsMonotonic(),
+				)
 			}
 		case pmetric.MetricTypeHistogram:
 			if firstMetric.Histogram().AggregationTemporality() != metric.Histogram().AggregationTemporality() {
 				return fmt.Errorf(
 					"metrics cannot be combined as they have different aggregation temporalities: %v (%v) and %v (%v)",
 					firstMetric.Name(), firstMetric.Histogram().AggregationTemporality(), metric.Name(),
-					metric.Histogram().AggregationTemporality())
+					metric.Histogram().AggregationTemporality(),
+				)
 			}
 		case pmetric.MetricTypeExponentialHistogram:
 			if firstMetric.ExponentialHistogram().AggregationTemporality() != metric.ExponentialHistogram().AggregationTemporality() {
 				return fmt.Errorf(
 					"metrics cannot be combined as they have different aggregation temporalities: %v (%v) and %v (%v)",
 					firstMetric.Name(), firstMetric.ExponentialHistogram().AggregationTemporality(), metric.Name(),
-					metric.ExponentialHistogram().AggregationTemporality())
+					metric.ExponentialHistogram().AggregationTemporality(),
+				)
 			}
 		}
 	}
@@ -533,7 +549,8 @@ func countDataPoints(metric pmetric.Metric) int {
 // transformMetric updates the metric content based on operations indicated in transform and returns a flag
 // specifying whether the metric is valid after applying the translations,
 // e.g. false is returned if all the data points were removed after applying the translations.
-func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
+// A non-nil error is returned when an operation is not supported for the metric type; the metric is left unchanged.
+func transformMetric(metric pmetric.Metric, transform internalTransform) (bool, error) {
 	isMetricEmpty := countDataPoints(metric) == 0
 	canChangeMetric := transform.Action != Update || matchAllDps(metric, transform.MetricIncludeFilter)
 
@@ -558,11 +575,15 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 						attrs = append(attrs, k)
 					}
 				}
-				aggregateLabelsOp(metric, attrs, op.configOperation.AggregationType)
+				if err := aggregateLabelsOp(metric, attrs, op.configOperation.AggregationType); err != nil {
+					return true, err
+				}
 			}
 		case aggregateLabelValues:
 			if canChangeMetric {
-				aggregateLabelValuesOp(metric, op)
+				if err := aggregateLabelValuesOp(metric, op); err != nil {
+					return true, err
+				}
 			}
 		case toggleScalarDataType:
 			toggleScalarDataTypeOp(metric, transform.MetricIncludeFilter)
@@ -580,5 +601,5 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 	}
 
 	// Consider metric invalid if all its data points were removed after applying the operations.
-	return isMetricEmpty || countDataPoints(metric) > 0
+	return isMetricEmpty || countDataPoints(metric) > 0, nil
 }
