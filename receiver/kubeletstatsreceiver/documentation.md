@@ -456,6 +456,22 @@ Container memory utilization as a ratio of the container's requests
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
+### k8s.node.filesystem.inode.count
+
+Total number of inodes in the node's root filesystem.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {inode} | Sum | Int | Cumulative | false | Development |
+
+### k8s.node.filesystem.inode.free
+
+Number of free inodes in the node's root filesystem.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {inode} | Sum | Int | Cumulative | false | Development |
+
 ### k8s.node.system_container.cpu.time
 
 Total cumulative CPU time (sum of all cores) spent by the system container since its creation

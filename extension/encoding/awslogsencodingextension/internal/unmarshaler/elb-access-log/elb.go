@@ -169,7 +169,8 @@ func convertTextToNLBAccessLogRecord(fields []string) (NLBAccessLogRecord, error
 	fieldsCount := len(fields)
 	if fieldsCount < 22 {
 		return NLBAccessLogRecord{}, fmt.Errorf(
-			"nlb access logs do not have enough fields. Expected 22, got %d", fieldsCount)
+			"nlb access logs do not have enough fields. Expected 22, got %d", fieldsCount,
+		)
 	}
 
 	// Map fields to the struct

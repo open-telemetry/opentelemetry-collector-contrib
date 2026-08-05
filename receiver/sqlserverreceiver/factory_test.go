@@ -98,7 +98,7 @@ func TestFactory(t *testing.T) {
 				cfg.Server = "0.0.0.0"
 				cfg.Port = 1433
 				require.NoError(t, cfg.Validate())
-				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
 
 				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
@@ -154,7 +154,8 @@ func TestFactory(t *testing.T) {
 					t.Context(),
 					receivertest.NewNopSettings(metadata.Type),
 					nil,
-					consumertest.NewNop())
+					consumertest.NewNop(),
+				)
 				require.ErrorIs(t, err, errConfigNotSQLServer)
 			},
 		},
@@ -186,7 +187,7 @@ func TestFactory(t *testing.T) {
 				cfg.Server = "0.0.0.0"
 				cfg.Port = 1433
 				require.NoError(t, cfg.Validate())
-				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
 
 				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
@@ -200,7 +201,7 @@ func TestFactory(t *testing.T) {
 				require.Empty(t, sqlScrapers)
 
 				cfg.InstanceName = "instanceName"
-				cfg.Events.DbServerTopQuery.Enabled = true
+				cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 				scrapers, err = setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
