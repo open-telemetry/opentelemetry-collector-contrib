@@ -92,7 +92,7 @@ func newSQLServerScraper(id component.ID,
 		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
 		cache:                  cache,
 		lastExecutionTimestamp: time.Unix(0, 0),
-		obfuscator:             newObfuscator(),
+		obfuscator:             newObfuscator(params.Logger),
 		serviceInstanceID:      serviceInstanceID,
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestObfuscateSQL(t *testing.T) {
@@ -20,13 +21,13 @@ func TestObfuscateSQL(t *testing.T) {
 	input, err := os.ReadFile(filepath.Join("testdata", "inputSQL.sql"))
 	assert.NoError(t, err)
 
-	result, err := newObfuscator().obfuscateSQLString(string(input))
+	result, err := newObfuscator(zap.NewNop()).obfuscateSQLString(string(input))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSQL, result)
 }
 
 func TestObfuscateInvalidSQL(t *testing.T) {
-	obf := newObfuscator()
+	obf := newObfuscator(zap.NewNop())
 	sql := "SELECT cpu_time AS [CPU Usage (time)"
 	result, err := obf.obfuscateSQLString(sql)
 
@@ -48,13 +49,13 @@ func TestObfuscateQueryPlan(t *testing.T) {
 	input, err := os.ReadFile(filepath.Join("testdata", "inputQueryPlan.xml"))
 	assert.NoError(t, err)
 
-	result, err := newObfuscator().obfuscateXMLPlan(string(input))
+	result, err := newObfuscator(zap.NewNop()).obfuscateXMLPlan(string(input))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedQueryPlan, result)
 }
 
 func TestInvalidQueryPlans(t *testing.T) {
-	obf := newObfuscator()
+	obf := newObfuscator(zap.NewNop())
 
 	plan := `<ShowPlanXml</ShowPlanXML>`
 	result, err := obf.obfuscateXMLPlan(plan)
@@ -71,15 +72,15 @@ func TestInvalidQueryPlans(t *testing.T) {
 	assert.Empty(t, result)
 	assert.Error(t, err)
 
-	// obfuscate failure, return empty string
+	// obfuscate failure: the failing attribute is redacted and the rest of the plan is preserved
 	plan = `<ShowPlanXML StatementText="[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]/(10000)*(3600)+[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]%(10000)/(100)*(60)+[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]%(100)"></ShowPlanXML>`
 	result, err = obf.obfuscateXMLPlan(plan)
-	assert.Empty(t, result)
 	assert.NoError(t, err)
+	assert.Equal(t, `<ShowPlanXML StatementText="?"></ShowPlanXML>`, result)
 }
 
 func TestValidQueryPlans(t *testing.T) {
-	obf := newObfuscator()
+	obf := newObfuscator(zap.NewNop())
 
 	plan := `<ShowPlanXML value="abc"></ShowPlanXML>`
 	_, err := obf.obfuscateXMLPlan(plan)

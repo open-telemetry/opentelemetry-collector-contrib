@@ -6,10 +6,10 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
+	"go.uber.org/zap"
 )
 
 var xmlPlanObfuscationAttrs = []string{
@@ -19,18 +19,24 @@ var xmlPlanObfuscationAttrs = []string{
 	"ParameterCompiledValue",
 }
 
-type obfuscator obfuscate.Obfuscator
+type obfuscator struct {
+	*obfuscate.Obfuscator
+	logger *zap.Logger
+}
 
-func newObfuscator() *obfuscator {
-	return (*obfuscator)(obfuscate.NewObfuscator(obfuscate.Config{
-		SQL: obfuscate.SQLConfig{
-			DBMS: "mssql",
-		},
-	}))
+func newObfuscator(logger *zap.Logger) *obfuscator {
+	return &obfuscator{
+		Obfuscator: obfuscate.NewObfuscator(obfuscate.Config{
+			SQL: obfuscate.SQLConfig{
+				DBMS: "mssql",
+			},
+		}),
+		logger: logger,
+	}
 }
 
 func (o *obfuscator) obfuscateSQLString(sql string) (string, error) {
-	obfuscatedQuery, err := (*obfuscate.Obfuscator)(o).ObfuscateSQLString(sql)
+	obfuscatedQuery, err := o.ObfuscateSQLString(sql)
 	if err != nil {
 		return "", err
 	}
@@ -62,8 +68,9 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 						}
 						val, err := o.obfuscateSQLString(elem.Attr[i].Value)
 						if err != nil {
-							fmt.Println("Unable to obfuscate SQL statement in query plan, skipping: " + elem.Attr[i].Value)
-							return "", nil
+							o.logger.Warn("Unable to obfuscate SQL statement in query plan, redacting attribute", zap.Error(err))
+							elem.Attr[i].Value = "?"
+							continue
 						}
 						elem.Attr[i].Value = val
 					}
