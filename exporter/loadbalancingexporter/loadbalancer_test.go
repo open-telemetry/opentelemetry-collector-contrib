@@ -264,7 +264,7 @@ func TestRemoveExtraExporters(t *testing.T) {
 	resolved := []string{"endpoint-1"}
 
 	// test
-	p.removeExtraExporters(t.Context(), resolved)
+	p.removeExtraExporters(resolved)
 
 	// verify
 	assert.Len(t, p.exporters, 1)
@@ -509,7 +509,7 @@ func TestRemoveExtraExporters_HungShutdown_GoRoutineTimesOut(t *testing.T) {
 	p.exporterShutdownTimeout = 50 * time.Millisecond
 
 	p.exporters["hanging:4317"] = newWrappedExporter(&hangingShutdownComponent{}, "hanging:4317")
-	p.removeExtraExporters(t.Context(), []string{})
+	p.removeExtraExporters([]string{})
 
 	done := make(chan struct{})
 	go func() {

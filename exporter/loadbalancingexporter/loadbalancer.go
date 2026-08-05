@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -18,7 +19,9 @@ import (
 )
 
 const (
-	defaultPort = "4317"
+	defaultPort                    = "4317"
+	defaultExporterAddTimeout      = 30 * time.Second
+	defaultExporterShutdownTimeout = 30 * time.Second
 )
 
 var (
@@ -38,6 +41,9 @@ type loadBalancer struct {
 	componentFactory    componentFactory
 	exporters           map[string]*wrappedExporter
 	exportersShutdownWG sync.WaitGroup
+
+	exporterAddTimeout      time.Duration
+	exporterShutdownTimeout time.Duration
 
 	stopped    bool
 	updateLock sync.RWMutex
@@ -137,10 +143,12 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 	}
 
 	return &loadBalancer{
-		logger:           logger,
-		res:              res,
-		componentFactory: factory,
-		exporters:        map[string]*wrappedExporter{},
+		logger:                  logger,
+		res:                     res,
+		componentFactory:        factory,
+		exporters:               map[string]*wrappedExporter{},
+		exporterAddTimeout:      defaultExporterAddTimeout,
+		exporterShutdownTimeout: defaultExporterShutdownTimeout,
 	}, nil
 }
 
@@ -159,12 +167,12 @@ func (lb *loadBalancer) onBackendChanges(resolved []string) {
 
 		lb.ring = newRing
 
-		// TODO: set a timeout?
-		ctx := context.Background()
+		addCtx, addCancel := context.WithTimeout(context.Background(), lb.exporterAddTimeout)
+		defer addCancel()
 
 		// add the missing exporters first
-		lb.addMissingExporters(ctx, resolved)
-		lb.removeExtraExporters(ctx, resolved)
+		lb.addMissingExporters(addCtx, resolved)
+		lb.removeExtraExporters(resolved)
 	}
 }
 
@@ -195,7 +203,7 @@ func endpointWithPort(endpoint string) string {
 	return endpoint
 }
 
-func (lb *loadBalancer) removeExtraExporters(ctx context.Context, endpoints []string) {
+func (lb *loadBalancer) removeExtraExporters(endpoints []string) {
 	endpointsWithPort := make([]string, len(endpoints))
 	for i, e := range endpoints {
 		endpointsWithPort[i] = endpointWithPort(e)
@@ -205,7 +213,9 @@ func (lb *loadBalancer) removeExtraExporters(ctx context.Context, endpoints []st
 			exp := lb.exporters[existing]
 			// Shutdown the exporter asynchronously to avoid blocking the resolver
 			lb.exportersShutdownWG.Go(func() {
-				_ = exp.Shutdown(ctx)
+				shutdownCtx, cancel := context.WithTimeout(context.Background(), lb.exporterShutdownTimeout)
+				defer cancel()
+				_ = exp.Shutdown(shutdownCtx)
 			})
 			delete(lb.exporters, existing)
 		}
