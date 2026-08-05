@@ -12,11 +12,11 @@ import (
 // GroupSpansByTraceID collects spans from a traces payload by trace ID.
 func GroupSpansByTraceID(td ptrace.Traces) map[pcommon.TraceID][]ptrace.Span {
 	traceSpanMap := make(map[pcommon.TraceID][]ptrace.Span)
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		rs := td.ResourceSpans().At(i)
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			scopeSpans := rs.ScopeSpans().At(j)
-			for k := 0; k < scopeSpans.Spans().Len(); k++ {
+			for k := range scopeSpans.Spans().Len() {
 				span := scopeSpans.Spans().At(k)
 				traceID := span.TraceID()
 				traceSpanMap[traceID] = append(traceSpanMap[traceID], span)
@@ -47,7 +47,7 @@ func (idx ServiceNameIndex) ServiceName(id pcommon.SpanID) (string, bool) {
 // ServiceNamesBySpanID resolves each span's resource `service.name`
 func ServiceNamesBySpanID(td ptrace.Traces) ServiceNameIndex {
 	idx := ServiceNameIndex{bySpanID: make(map[pcommon.SpanID]uint32, td.SpanCount())}
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		rs := td.ResourceSpans().At(i)
 		nameVal, ok := rs.Resource().Attributes().Get(string(conventions.ServiceNameKey))
 		if !ok {
@@ -55,9 +55,9 @@ func ServiceNamesBySpanID(td ptrace.Traces) ServiceNameIndex {
 		}
 		ord := uint32(len(idx.names))
 		idx.names = append(idx.names, nameVal.Str())
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			scopeSpans := rs.ScopeSpans().At(j)
-			for k := 0; k < scopeSpans.Spans().Len(); k++ {
+			for k := range scopeSpans.Spans().Len() {
 				idx.bySpanID[scopeSpans.Spans().At(k).SpanID()] = ord
 			}
 		}
@@ -72,7 +72,7 @@ func ServiceNamesBySpanID(td ptrace.Traces) ServiceNameIndex {
 func GroupSpansByTraceIDWithServiceNames(td ptrace.Traces) (map[pcommon.TraceID][]ptrace.Span, ServiceNameIndex) {
 	traceSpanMap := make(map[pcommon.TraceID][]ptrace.Span)
 	idx := ServiceNameIndex{bySpanID: make(map[pcommon.SpanID]uint32, td.SpanCount())}
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		rs := td.ResourceSpans().At(i)
 		nameVal, hasServiceName := rs.Resource().Attributes().Get(string(conventions.ServiceNameKey))
 		var ord uint32
@@ -80,9 +80,9 @@ func GroupSpansByTraceIDWithServiceNames(td ptrace.Traces) (map[pcommon.TraceID]
 			ord = uint32(len(idx.names))
 			idx.names = append(idx.names, nameVal.Str())
 		}
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			scopeSpans := rs.ScopeSpans().At(j)
-			for k := 0; k < scopeSpans.Spans().Len(); k++ {
+			for k := range scopeSpans.Spans().Len() {
 				span := scopeSpans.Spans().At(k)
 				traceSpanMap[span.TraceID()] = append(traceSpanMap[span.TraceID()], span)
 				if hasServiceName {
