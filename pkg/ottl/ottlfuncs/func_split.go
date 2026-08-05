@@ -40,6 +40,11 @@ func split[K any](target, delimiter ottl.StringGetter[K]) ottl.ExprFunc[K] {
 		if err != nil {
 			return nil, err
 		}
-		return strings.Split(val, delimiterVal), nil
+		split := strings.Split(val, delimiterVal)
+		result := make([]any, len(split))
+		for i, s := range split {
+			result[i] = s
+		}
+		return result, nil
 	}
 }

@@ -613,6 +613,12 @@ func (p *parseContext[K]) buildArg(argVal value, argType reflect.Type) (any, err
 			return nil, err
 		}
 		return newStandardStringGetter[K](arg)
+	case strings.HasPrefix(name, "StringLikeSliceGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return newStandardStringLikeSliceGetter[K](arg)
 	case strings.HasPrefix(name, "StringLikeGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
@@ -674,6 +680,12 @@ func (p *parseContext[K]) buildArg(argVal value, argType reflect.Type) (any, err
 			return nil, err
 		}
 		return newStandardPSliceGetter[K](arg)
+	case strings.HasPrefix(name, "SliceGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return newStandardSliceGetter[K](arg)
 	case strings.HasPrefix(name, "DurationGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
@@ -915,4 +927,12 @@ func NewTestingLiteralGetter[K, V any](literal bool, getter typedGetter[K, V]) (
 		return newLiteral[K, V](val), nil
 	}
 	return mockLiteralGetter[K, V]{valueGetter: getter.Get}, nil
+}
+
+// NewTestingSliceGetter creates a SliceGetter backed by the given element Getters for testing
+// OTTL functions. The returned SliceGetter's Getters method reports the provided element Getters,
+// mimicking a SliceGetter parsed from a literal list.
+func NewTestingSliceGetter[K any](getters ...Getter[K]) SliceGetter[K] {
+	g, _ := newStandardSliceGetter[K](&listGetter[K]{slice: getters})
+	return g
 }

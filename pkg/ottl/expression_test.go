@@ -1629,6 +1629,263 @@ func Test_StandardStringLikeGetter_WrappedError(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func Test_StandardStringLikeSliceGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StringLikeSliceGetter[any]
+		want             []string
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "[]string type",
+			getter: StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []string{"a", "b"}, nil
+				},
+			},
+			want:  []string{"a", "b"},
+			valid: true,
+		},
+		{
+			name: "[]any with mixed and nil elements",
+			getter: StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []any{"a", int64(1), true, nil}, nil
+				},
+			},
+			want:  []string{"a", "1", "true", ""},
+			valid: true,
+		},
+		{
+			name: "pcommon.Slice type",
+			getter: StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					s := pcommon.NewSlice()
+					_ = s.FromRaw([]any{"a", 1, true})
+					return s, nil
+				},
+			},
+			want:  []string{"a", "1", "true"},
+			valid: true,
+		},
+		{
+			name: "pcommon.Value slice type",
+			getter: StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					v := pcommon.NewValueSlice()
+					_ = v.Slice().FromRaw([]any{"a", "b"})
+					return v, nil
+				},
+			},
+			want:  []string{"a", "b"},
+			valid: true,
+		},
+		{
+			name: "nil",
+			getter: StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return nil, nil
+				},
+			},
+			want:  nil,
+			valid: true,
+		},
+		{
+			name: "not a list",
+			getter: StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "not a list", nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unsupported type: string",
+		},
+		{
+			name: "pcommon.Value non-slice",
+			getter: StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return pcommon.NewValueInt(1), nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected a list but got Int",
+		},
+		{
+			name: "invalid element type",
+			getter: StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []any{make(chan int)}, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unsupported type: chan int",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(t.Context(), nil)
+			if tt.valid {
+				require.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				var typeErr TypeError
+				assert.ErrorAs(t, err, &typeErr)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+func Test_StandardSliceGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           SliceGetter[any]
+		want             []any
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "[]any type",
+			getter: StandardSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []any{"a", int64(1), true}, nil
+				},
+			},
+			want:  []any{"a", int64(1), true},
+			valid: true,
+		},
+		{
+			name: "[]string type",
+			getter: StandardSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []string{"a", "b"}, nil
+				},
+			},
+			want:  []any{"a", "b"},
+			valid: true,
+		},
+		{
+			name: "[]int64 type",
+			getter: StandardSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []int64{1, 2}, nil
+				},
+			},
+			want:  []any{int64(1), int64(2)},
+			valid: true,
+		},
+		{
+			name: "pcommon.Slice type",
+			getter: StandardSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					s := pcommon.NewSlice()
+					_ = s.FromRaw([]any{"a", 1})
+					return s, nil
+				},
+			},
+			want:  []any{"a", int64(1)},
+			valid: true,
+		},
+		{
+			name: "pcommon.Value slice type",
+			getter: StandardSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					v := pcommon.NewValueSlice()
+					_ = v.Slice().FromRaw([]any{"a", "b"})
+					return v, nil
+				},
+			},
+			want:  []any{"a", "b"},
+			valid: true,
+		},
+		{
+			name: "nil",
+			getter: StandardSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return nil, nil
+				},
+			},
+			want:  nil,
+			valid: true,
+		},
+		{
+			name: "not a list",
+			getter: StandardSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "not a list", nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unsupported type: string",
+		},
+		{
+			name: "byte slice is not a list",
+			getter: StandardSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []byte{1, 2}, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unsupported type: []uint8",
+		},
+		{
+			name: "pcommon.Value non-slice",
+			getter: StandardSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return pcommon.NewValueInt(1), nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected a list but got Int",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(t.Context(), nil)
+			if tt.valid {
+				require.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				var typeErr TypeError
+				assert.ErrorAs(t, err, &typeErr)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+func Test_StandardSliceGetter_Getters(t *testing.T) {
+	elementGetters := []Getter[any]{
+		StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) { return "a", nil }},
+		StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) { return "b", nil }},
+	}
+
+	t.Run("backed by a literal list exposes element getters", func(t *testing.T) {
+		g, err := newStandardSliceGetter[any](&listGetter[any]{slice: elementGetters})
+		require.NoError(t, err)
+		assert.Len(t, g.Getters(), 2)
+
+		val, err := g.Get(context.Background(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, []any{"a", "b"}, val)
+	})
+
+	t.Run("backed by a single expression returns nil getters", func(t *testing.T) {
+		g, err := newStandardSliceGetter[any](StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) { return []any{"a", "b"}, nil },
+		})
+		require.NoError(t, err)
+		assert.Nil(t, g.Getters())
+
+		val, err := g.Get(context.Background(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, []any{"a", "b"}, val)
+	})
+}
+
 func Test_StandardFloatGetter(t *testing.T) {
 	tests := []struct {
 		name             string

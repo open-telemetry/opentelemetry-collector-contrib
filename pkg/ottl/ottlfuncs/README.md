@@ -817,6 +817,9 @@ Examples:
 
 - `Concat(["HTTP method is: ", span.attributes["http.method"]], "")`
 
+
+- `Concat(Split(span.attributes["id"], "-"), "")`
+
 ### ContainsValue
 
 `ContainsValue(target, item)`

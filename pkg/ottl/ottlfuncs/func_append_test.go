@@ -24,7 +24,7 @@ func Test_Append(t *testing.T) {
 	}
 
 	var nilOptional ottl.Optional[ottl.Getter[any]]
-	var nilSliceOptional ottl.Optional[[]ottl.Getter[any]]
+	var nilSliceOptional ottl.Optional[ottl.SliceGetter[any]]
 
 	singleGetter := ottl.NewTestingOptional[ottl.Getter[any]](ottl.StandardGetSetter[any]{
 		Getter: func(context.Context, any) (any, error) {
@@ -38,17 +38,10 @@ func Test_Append(t *testing.T) {
 		},
 	})
 
-	multiGetter := ottl.NewTestingOptional[[]ottl.Getter[any]](
-		[]ottl.Getter[any]{
-			ottl.StandardGetSetter[any]{
-				Getter: func(context.Context, any) (any, error) {
-					return "a", nil
-				},
-			},
-			ottl.StandardGetSetter[any]{
-				Getter: func(context.Context, any) (any, error) {
-					return "b", nil
-				},
+	multiGetter := ottl.NewTestingOptional[ottl.SliceGetter[any]](
+		ottl.StandardSliceGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return []any{"a", "b"}, nil
 			},
 		},
 	)
@@ -57,7 +50,7 @@ func Test_Append(t *testing.T) {
 		Name   string
 		Target ottl.GetSetter[any]
 		Value  ottl.Optional[ottl.Getter[any]]
-		Values ottl.Optional[[]ottl.Getter[any]]
+		Values ottl.Optional[ottl.SliceGetter[any]]
 		Want   func(pcommon.Slice)
 	}{
 		{
@@ -632,7 +625,7 @@ func TestTargetType(t *testing.T) {
 				},
 			}
 
-			var nilSlice ottl.Optional[[]ottl.Getter[any]]
+			var nilSlice ottl.Optional[ottl.SliceGetter[any]]
 			exprFunc, err := appendTo[any](target, singleIntGetter, nilSlice)
 			require.NoError(t, err)
 
@@ -656,31 +649,24 @@ func TestTargetType(t *testing.T) {
 
 func Test_ArgumentsArePresent(t *testing.T) {
 	var nilOptional ottl.Optional[ottl.Getter[any]]
-	var nilSliceOptional ottl.Optional[[]ottl.Getter[any]]
+	var nilSliceOptional ottl.Optional[ottl.SliceGetter[any]]
 	singleGetter := ottl.NewTestingOptional[ottl.Getter[any]](ottl.StandardGetSetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return "val", nil
 		},
 	})
 
-	multiGetter := ottl.NewTestingOptional[[]ottl.Getter[any]](
-		[]ottl.Getter[any]{
-			ottl.StandardGetSetter[any]{
-				Getter: func(context.Context, any) (any, error) {
-					return "val1", nil
-				},
-			},
-			ottl.StandardGetSetter[any]{
-				Getter: func(context.Context, any) (any, error) {
-					return "val2", nil
-				},
+	multiGetter := ottl.NewTestingOptional[ottl.SliceGetter[any]](
+		ottl.StandardSliceGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return []any{"val1", "val2"}, nil
 			},
 		},
 	)
 	testCases := []struct {
 		Name            string
 		Value           ottl.Optional[ottl.Getter[any]]
-		Values          ottl.Optional[[]ottl.Getter[any]]
+		Values          ottl.Optional[ottl.SliceGetter[any]]
 		IsErrorExpected bool
 	}{
 		{"providedBoth", singleGetter, multiGetter, false},

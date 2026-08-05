@@ -1144,6 +1144,92 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "stringlikeslicegetter arg with literal list",
+			inv: editor{
+				Function: "testing_stringlikeslicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("test"),
+									},
+									{
+										Literal: &mathExprLiteral{
+											Int: ottltest.Intp(1),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: int64(2),
+		},
+		{
+			name: "stringlikeslicegetter arg with converter (non-literal-list)",
+			inv: editor{
+				Function: "testing_stringlikeslicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Converter: &converter{
+									Function: "testing_returns_string_slice",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: int64(3),
+		},
+		{
+			name: "slicegetter arg with literal list",
+			inv: editor{
+				Function: "testing_slicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("test"),
+									},
+									{
+										Literal: &mathExprLiteral{
+											Int: ottltest.Intp(1),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: int64(2),
+		},
+		{
+			name: "slicegetter arg with converter (non-literal-list)",
+			inv: editor{
+				Function: "testing_slicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Converter: &converter{
+									Function: "testing_returns_string_slice",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: int64(3),
+		},
+		{
 			name: "floatlikegetter slice arg",
 			inv: editor{
 				Function: "testing_floatlikegetter_slice",
@@ -2657,6 +2743,42 @@ func functionWithByteSliceLikeGetter(ByteSliceLikeGetter[any]) (ExprFunc[any], e
 	}, nil
 }
 
+type stringLikeSliceGetterArguments struct {
+	StringLikeSliceGetterArg StringLikeSliceGetter[any]
+}
+
+func functionWithStringLikeSliceGetter(StringLikeSliceGetterArg StringLikeSliceGetter[any]) (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (any, error) {
+		val, err := StringLikeSliceGetterArg.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		return int64(len(val)), nil
+	}, nil
+}
+
+// functionThatReturnsStringSlice is a converter used to verify that a
+// StringLikeSliceGetter accepts a non-literal-list expression (e.g. the output of Split).
+func functionThatReturnsStringSlice() (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return []string{"a", "b", "c"}, nil
+	}, nil
+}
+
+type sliceGetterArguments struct {
+	SliceGetterArg SliceGetter[any]
+}
+
+func functionWithSliceGetter(SliceGetterArg SliceGetter[any]) (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (any, error) {
+		val, err := SliceGetterArg.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		return int64(len(val)), nil
+	}, nil
+}
+
 type pMapGetSetterArguments struct {
 	PMapGetSetterArg PMapGetSetter[any]
 }
@@ -2992,6 +3114,23 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_byteslicelikegetter",
 			&byteSliceLikeGetterArguments{},
 			functionWithByteSliceLikeGetter,
+		),
+		createFactory[any](
+			"testing_stringlikeslicegetter",
+			&stringLikeSliceGetterArguments{},
+			functionWithStringLikeSliceGetter,
+		),
+		NewFactory(
+			"testing_returns_string_slice",
+			nil,
+			func(FunctionContext, Arguments) (ExprFunc[any], error) {
+				return functionThatReturnsStringSlice()
+			},
+		),
+		createFactory[any](
+			"testing_slicegetter",
+			&sliceGetterArguments{},
+			functionWithSliceGetter,
 		),
 		createFactory[any](
 			"testing_pmapgetter",
