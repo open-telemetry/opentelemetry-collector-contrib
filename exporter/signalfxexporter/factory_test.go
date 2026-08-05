@@ -72,7 +72,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	exp, err := factory.CreateMetrics(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -83,14 +84,16 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	exp, err = factory.CreateMetrics(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
 	logExp, err := factory.CreateLogs(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, logExp)
 

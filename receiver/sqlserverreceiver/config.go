@@ -54,21 +54,21 @@ type TopQueryCollection struct {
 
 // Config defines configuration for a sqlserver receiver.
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	metadata.LogsBuilderConfig     `mapstructure:",squash"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	LogsBuilderConfig    metadata.LogsBuilderConfig     `mapstructure:",squash"`
 	// EnableTopQueryCollection enables the collection of the top queries by the execution time.
 	// It will collect the top N queries based on totalElapsedTimeDiffs during the last collection interval.
 	// The query statement will also be reported, hence, it is not ideal to send it as a metric. Hence
 	// we are reporting them as logs.
 	// The `N` is configured via `TopQueryCount`
-	TopQueryCollection `mapstructure:"top_query_collection"`
+	TopQueryCollection TopQueryCollection `mapstructure:"top_query_collection"`
 
-	QuerySample `mapstructure:"query_sample_collection"`
+	QuerySample QuerySample `mapstructure:"query_sample_collection"`
 
 	// ConnectionPool tunes the shared database connection pool used by all
 	// scrapers of this receiver.
-	ConnectionPool `mapstructure:"connection_pool,omitempty"`
+	ConnectionPool ConnectionPool `mapstructure:"connection_pool,omitempty"`
 
 	InstanceName string `mapstructure:"instance_name"`
 	ComputerName string `mapstructure:"computer_name"`
@@ -91,15 +91,15 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 
-	if cfg.LookbackTime < 0 {
+	if cfg.TopQueryCollection.LookbackTime < 0 {
 		return errors.New("lookback_time cannot have negative values")
 	}
 
-	if cfg.MaxQuerySampleCount > 10000 {
+	if cfg.TopQueryCollection.MaxQuerySampleCount > 10000 {
 		return errors.New("`max_query_sample_count` must be between 0 and 10000")
 	}
 
-	if cfg.TopQueryCount > cfg.MaxQuerySampleCount {
+	if cfg.TopQueryCollection.TopQueryCount > cfg.TopQueryCollection.MaxQuerySampleCount {
 		return errors.New("`top_query_count` must be less than or equal to `max_query_sample_count`")
 	}
 
@@ -117,16 +117,17 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) validateConnectionPool() error {
-	if cfg.MaxOpen != nil && *cfg.MaxOpen < 0 {
+	pool := cfg.ConnectionPool
+	if pool.MaxOpen != nil && *pool.MaxOpen < 0 {
 		return errors.New("`connection_pool.max_open` must not be negative")
 	}
-	if cfg.MaxIdle != nil && *cfg.MaxIdle < 0 {
+	if pool.MaxIdle != nil && *pool.MaxIdle < 0 {
 		return errors.New("`connection_pool.max_idle` must not be negative")
 	}
-	if cfg.MaxLifetime != nil && *cfg.MaxLifetime < 0 {
+	if pool.MaxLifetime != nil && *pool.MaxLifetime < 0 {
 		return errors.New("`connection_pool.max_lifetime` must not be negative")
 	}
-	if cfg.MaxIdleTime != nil && *cfg.MaxIdleTime < 0 {
+	if pool.MaxIdleTime != nil && *pool.MaxIdleTime < 0 {
 		return errors.New("`connection_pool.max_idle_time` must not be negative")
 	}
 	return nil
@@ -153,8 +154,8 @@ func directDBConnectionEnabled(config *Config) (bool, error) {
 }
 
 func (cfg *Config) EffectiveLookbackTime() time.Duration {
-	if cfg.LookbackTime == 0 {
+	if cfg.TopQueryCollection.LookbackTime == 0 {
 		return 2 * cfg.TopQueryCollection.CollectionInterval
 	}
-	return cfg.LookbackTime
+	return cfg.TopQueryCollection.LookbackTime
 }

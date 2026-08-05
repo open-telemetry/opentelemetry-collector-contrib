@@ -96,11 +96,11 @@ func TestIndexPhysicalStatsScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := basicConfig(uint(portNumber))
-	cfg.Metrics.SqlserverIndexFragmentation.Enabled = true
-	cfg.Metrics.SqlserverIndexPageCount.Enabled = true
-	cfg.Metrics.SqlserverIndexPageUtilization.Enabled = true
-	cfg.Metrics.SqlserverIndexRecordCount.Enabled = true
-	cfg.Metrics.SqlserverIndexSize.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexFragmentation.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexPageCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexPageUtilization.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexRecordCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexSize.Enabled = true
 
 	settings := receiver.Settings{
 		TelemetrySettings: component.TelemetrySettings{
@@ -192,7 +192,7 @@ func TestEventsScraper(t *testing.T) {
 			name:        "QuerySample",
 			clientQuery: "WAITFOR DELAY '00:01:00' SELECT * FROM dbo.test_table",
 			configModifyFunc: func(cfg *Config) *Config {
-				cfg.Events.DbServerQuerySample.Enabled = true
+				cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 				return cfg
 			},
 
@@ -236,7 +236,7 @@ func TestEventsScraper(t *testing.T) {
 			name:        "TopQuery",
 			clientQuery: "SELECT * FROM dbo.test_table",
 			configModifyFunc: func(cfg *Config) *Config {
-				cfg.Events.DbServerTopQuery.Enabled = true
+				cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 				return cfg
 			},
 			validateFunc: func(t *testing.T, scraper *sqlServerScraperHelper, queryCount *atomic.Int32, finished *atomic.Bool) {
@@ -368,9 +368,9 @@ func TestSharedConnectionPool(t *testing.T) {
 	// Enable metrics that map to several distinct queries so more than one
 	// metric scraper is created and pool sharing can be observed.
 	cfg.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.SqlserverDatabaseLatency.Enabled = true  // database IO query
-	cfg.Metrics.SqlserverBatchRequestRate.Enabled = true // performance counter query
-	cfg.Metrics.SqlserverOsWaitDuration.Enabled = true   // wait stats query
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true  // database IO query
+	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled = true // performance counter query
+	cfg.MetricsBuilderConfig.Metrics.SqlserverOsWaitDuration.Enabled = true   // wait stats query
 
 	settings := receiver.Settings{
 		TelemetrySettings: component.TelemetrySettings{

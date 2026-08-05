@@ -99,7 +99,7 @@ func TestFactory(t *testing.T) {
 				cfg.Server = "0.0.0.0"
 				cfg.Port = 1433
 				require.NoError(t, cfg.Validate())
-				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
 
 				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
@@ -155,7 +155,8 @@ func TestFactory(t *testing.T) {
 					t.Context(),
 					receivertest.NewNopSettings(metadata.Type),
 					nil,
-					consumertest.NewNop())
+					consumertest.NewNop(),
+				)
 				require.ErrorIs(t, err, errConfigNotSQLServer)
 			},
 		},
@@ -187,7 +188,7 @@ func TestFactory(t *testing.T) {
 				cfg.Server = "0.0.0.0"
 				cfg.Port = 1433
 				require.NoError(t, cfg.Validate())
-				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
 
 				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
@@ -201,7 +202,7 @@ func TestFactory(t *testing.T) {
 				require.Empty(t, sqlScrapers)
 
 				cfg.InstanceName = "instanceName"
-				cfg.Events.DbServerTopQuery.Enabled = true
+				cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 				scrapers, _, err = setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
@@ -264,9 +265,9 @@ func TestScrapersShareSingleConnectionPool(t *testing.T) {
 	cfg.Port = 1433
 	// Enable metrics that map to several distinct queries so more than one
 	// scraper is created.
-	cfg.Metrics.SqlserverDatabaseLatency.Enabled = true // database IO query
-	cfg.Metrics.SqlserverOsWaitDuration.Enabled = true  // wait stats query
-	cfg.Metrics.SqlserverDatabaseCount.Enabled = true   // properties query
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true // database IO query
+	cfg.MetricsBuilderConfig.Metrics.SqlserverOsWaitDuration.Enabled = true  // wait stats query
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled = true   // properties query
 	require.NoError(t, cfg.Validate())
 	require.True(t, cfg.isDirectDBConnectionEnabled)
 
@@ -371,7 +372,7 @@ func TestSetupQueries(t *testing.T) {
 
 	metricsMetadata, ok := metadata["metrics"].(map[string]any)
 	require.True(t, ok)
-	require.Len(t, metricsMetadata, 95, "Every time metrics are added or removed, the function `setupQueries` must "+
+	require.Len(t, metricsMetadata, 100, "Every time metrics are added or removed, the function `setupQueries` must "+
 		"be modified to properly account for the change. Please update `setupQueries` and then, "+
 		"and only then, update the expected metric count here.")
 }

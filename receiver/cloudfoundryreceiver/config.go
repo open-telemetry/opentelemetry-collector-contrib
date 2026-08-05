@@ -40,7 +40,7 @@ type LimitedClientConfig struct {
 }
 
 type UAAConfig struct {
-	LimitedClientConfig `mapstructure:",squash"`
+	LimitedClientConfig LimitedClientConfig `mapstructure:",squash"`
 	Username            string              `mapstructure:"username"`
 	Password            configopaque.String `mapstructure:"password"`
 
@@ -67,7 +67,7 @@ func (c *Config) Validate() error {
 		return errors.New("shardID cannot be empty")
 	}
 
-	err = validateURLOption("uaa.endpoint", c.UAA.Endpoint)
+	err = validateURLOption("uaa.endpoint", c.UAA.LimitedClientConfig.Endpoint)
 	if err != nil {
 		return err
 	}
