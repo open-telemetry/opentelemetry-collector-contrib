@@ -116,6 +116,28 @@ func TestConvertResourceToAttributesWithResourceConstantLabels(t *testing.T) {
 	assert.False(t, hasIgnored)
 }
 
+func TestConvertResourceToAttributesWithEmptyIncludedAndNonEmptyExcluded(t *testing.T) {
+	md := testdata.GenerateMetricsOneMetric()
+	assert.NotNil(t, md)
+
+	resource := md.ResourceMetrics().At(0).Resource()
+	resource.Attributes().PutStr("k8s.pod.name", "test-pod")
+	resource.Attributes().PutStr("k8s.secret.name", "secret")
+
+	wme := &wrapperMetricsExporter{
+		constantLabelsMatcher: newResourceAttributeMatcher(Settings{
+			Excluded: []string{"*.secret.*"},
+		}),
+	}
+	md = wme.convertToMetricsAttributes(md)
+
+	dpAttrs := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes()
+	_, hasPodName := dpAttrs.Get("k8s.pod.name")
+	_, hasSecret := dpAttrs.Get("k8s.secret.name")
+	assert.True(t, hasPodName)
+	assert.False(t, hasSecret)
+}
+
 func TestSettings_Validate(t *testing.T) {
 	valid := Settings{Included: []string{"foo*", "bar?"}, Excluded: []string{"*secret*"}}
 	assert.NoError(t, valid.Validate())
