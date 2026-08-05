@@ -23,11 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
-// shutdownSignalResendInterval is how often Stop re-sends the shutdown signal while
-// waiting for the Agent to exit. An Agent that received the signal shuts down in
-// well under this interval, so a healthy shutdown never sees a second send.
-const shutdownSignalResendInterval = time.Second
-
 // stopGracePeriod is how long Stop waits for the Agent process to exit after the
 // graceful shutdown signal before killing it forcibly. It is a variable so tests
 // can shorten it.
@@ -445,10 +440,10 @@ func (c *Commander) IsRunning() bool {
 	return c.running.Load() != 0
 }
 
-// Stop the Agent process. Signals the process to stop gracefully, re-sending the
-// signal periodically, and kills it forcibly if it has not exited within
-// stopGracePeriod. Stop returns an error only when the process could not be
-// terminated at all; a failed graceful shutdown alone is not an error.
+// Stop the Agent process. Signals the process to stop gracefully and kills it
+// forcibly if it has not exited within stopGracePeriod. Stop returns an error
+// only when the process could not be terminated at all; a failed graceful
+// shutdown alone is not an error.
 func (c *Commander) Stop(ctx context.Context) error {
 	c.stopMu.Lock()
 	defer c.stopMu.Unlock()
@@ -474,30 +469,6 @@ func (c *Commander) Stop(ctx context.Context) error {
 	// for example while the Supervisor itself is shutting down.
 	waitCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), stopGracePeriod)
 	defer cancel()
-
-	// The Agent does not necessarily act on the shutdown signal, because Stop may be
-	// called within milliseconds of starting it - for example to apply a remote config
-	// that arrived just after startup - while it is still coming up. Shutdown signals
-	// are not queued for later: on Windows the signal is a console control event, and
-	// one aimed at a process that has only just been created may never reach it. A
-	// single send can therefore be lost outright, leaving the Agent running until it
-	// is killed. Re-send until the process actually exits.
-	go func() {
-		ticker := time.NewTicker(shutdownSignalResendInterval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-waitCtx.Done():
-				return
-			case <-ticker.C:
-				if err := sendShutdownSignal(c.cmd.Process); err != nil {
-					c.logger.Debug("Could not re-send shutdown signal to agent process",
-						zap.Int("pid", pid), zap.Error(err))
-				}
-			}
-		}
-	}()
 
 	// Setup a goroutine to wait a while for process to finish and send kill signal
 	// to the process if it doesn't finish. A kill that fails is reported over
