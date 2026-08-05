@@ -104,8 +104,6 @@ func TestFixedNumberOfProfiles(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	require.NoError(t, run(cfg, exporterFactory, logger))
 
-	time.Sleep(1 * time.Second)
-
 	assert.Equal(t, 5, countProfileRecords(m.profiles))
 }
 
@@ -187,6 +185,7 @@ func TestProfileStructure(t *testing.T) {
 		SampleTypeUnit:  "nanoseconds",
 		PeriodTypeName:  "cpu",
 		PeriodTypeUnit:  "nanoseconds",
+		Period:          10000000,
 	}
 
 	m := &mockProfileExporter{}
@@ -674,7 +673,7 @@ func TestFlushBufferAllowFailuresContinues(t *testing.T) {
 	td.ResourceProfiles().AppendEmpty()
 	w := &worker{
 		logger:        zap.New(core),
-		batchBuffer:   &td,
+		batchBuffer:   td,
 		bufferCount:   1,
 		allowFailures: true,
 	}
@@ -683,7 +682,6 @@ func TestFlushBufferAllowFailuresContinues(t *testing.T) {
 
 	require.Equal(t, 1, exporter.exportCalls)
 	assert.Equal(t, 0, w.bufferCount)
-	require.NotNil(t, w.batchBuffer)
 	assert.Equal(t, 0, w.batchBuffer.ResourceProfiles().Len())
 	logEntries := observedLogs.All()
 	require.Len(t, logEntries, 1)
@@ -698,7 +696,7 @@ func TestFlushBufferDisallowFailuresFatals(t *testing.T) {
 	td.ResourceProfiles().AppendEmpty()
 	w := &worker{
 		logger:      zap.New(core, zap.WithFatalHook(zapcore.WriteThenPanic)),
-		batchBuffer: &td,
+		batchBuffer: td,
 		bufferCount: 1,
 	}
 
@@ -707,7 +705,7 @@ func TestFlushBufferDisallowFailuresFatals(t *testing.T) {
 	})
 	require.Equal(t, 1, exporter.exportCalls)
 	assert.Equal(t, 1, w.bufferCount)
-	assert.Same(t, &td, w.batchBuffer)
+	assert.Equal(t, td, w.batchBuffer)
 	logEntries := observedLogs.All()
 	require.Len(t, logEntries, 1)
 	assert.Equal(t, zap.FatalLevel, logEntries[0].Level)

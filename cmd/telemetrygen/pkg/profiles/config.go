@@ -29,6 +29,7 @@ type Config struct {
 	SampleTypeUnit  string
 	PeriodTypeName  string
 	PeriodTypeUnit  string
+	Period          int64
 }
 
 func NewConfig() *Config {
@@ -55,6 +56,7 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.SampleTypeUnit, "sample-type-unit", c.SampleTypeUnit, "Unit of the profile's sample type (e.g. nanoseconds, bytes)")
 	fs.StringVar(&c.PeriodTypeName, "period-type-name", c.PeriodTypeName, "Name of the profile's period type")
 	fs.StringVar(&c.PeriodTypeUnit, "period-type-unit", c.PeriodTypeUnit, "Unit of the profile's period type")
+	fs.Int64Var(&c.Period, "period", c.Period, "Sampling period of the profile, expressed in the unit given by period-type-unit")
 }
 
 // SetDefaults sets the default values for the configuration.
@@ -73,6 +75,7 @@ func (c *Config) SetDefaults() {
 	c.SampleTypeUnit = "nanoseconds"
 	c.PeriodTypeName = "cpu"
 	c.PeriodTypeUnit = "nanoseconds"
+	c.Period = 10000000 // 10ms in nanoseconds
 }
 
 // Validate validates the test scenario parameters.

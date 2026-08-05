@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
@@ -26,11 +27,7 @@ func Start(cfg *Config) error {
 
 	logger.Info("starting the profiles generator with configuration", zap.Any("config", cfg))
 
-	if err := run(cfg, exporterFactory(cfg, logger), logger); err != nil {
-		return err
-	}
-
-	return nil
+	return run(cfg, exporterFactory(cfg, logger), logger)
 }
 
 type exporterFunc func() (profileExporter, error)
@@ -90,6 +87,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			traceID:         c.TraceID,
 			spanID:          c.SpanID,
 			batch:           c.Batch,
+			batchBuffer:     pprofile.NewProfiles(),
 			batchSize:       c.BatchSize,
 			loadSize:        c.LoadSize,
 			allowFailures:   c.AllowExportFailures,
@@ -98,6 +96,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			sampleTypeUnit:  c.SampleTypeUnit,
 			periodTypeName:  c.PeriodTypeName,
 			periodTypeUnit:  c.PeriodTypeUnit,
+			period:          c.Period,
 		}
 
 		exp, err := expF()

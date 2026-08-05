@@ -38,9 +38,8 @@ type worker struct {
 	traceID         string                // traceID for profile-to-trace correlation
 	spanID          string                // spanID for profile-to-trace correlation
 	batch           bool                  // whether to batch profiles
-	batchBuffer     *pprofile.Profiles    // buffer for batching profiles into a single export request
+	batchBuffer     pprofile.Profiles     // buffer for batching profiles into a single export request
 	bufferCount     int                   // number of profile records in the buffer
-	bufferMutex     sync.Mutex            // mutex for thread-safe access to buffer
 	batchSize       int                   // number of profiles to batch before flushing
 	loadSize        int                   // desired minimum size in MB of string data for each generated profile
 	allowFailures   bool                  // whether to continue on export failures
@@ -49,6 +48,7 @@ type worker struct {
 	sampleTypeUnit  string                // unit of the profile's sample type
 	periodTypeName  string                // name of the profile's period type
 	periodTypeUnit  string                // unit of the profile's period type
+	period          int64                 // sampling period, in the unit given by periodTypeUnit
 }
 
 func (w *worker) simulateProfiles(res pcommon.Map, exporter profileExporter, telemetryAttributes []attribute.KeyValue) {
@@ -213,7 +213,7 @@ func (w *worker) generateProfile(td pprofile.Profiles, res pcommon.Map, telemetr
 
 	profile.PeriodType().SetTypeStrindex(periodTypeIdx)
 	profile.PeriodType().SetUnitStrindex(periodUnitIdx)
-	profile.SetPeriod(10000000) // 10ms in nanoseconds
+	profile.SetPeriod(w.period)
 
 	for _, attr := range telemetryAttributes {
 		keyIdx, _ := pprofile.SetString(st, string(attr.Key))
@@ -250,15 +250,7 @@ func (w *worker) generateProfile(td pprofile.Profiles, res pcommon.Map, telemetr
 }
 
 func (w *worker) addToBuffer(res pcommon.Map, telemetryAttributes []attribute.KeyValue, exporter profileExporter) error {
-	w.bufferMutex.Lock()
-	defer w.bufferMutex.Unlock()
-
-	if w.batchBuffer == nil {
-		td := pprofile.NewProfiles()
-		w.batchBuffer = &td
-	}
-
-	if err := w.generateProfile(*w.batchBuffer, res, telemetryAttributes); err != nil {
+	if err := w.generateProfile(w.batchBuffer, res, telemetryAttributes); err != nil {
 		return err
 	}
 	w.bufferCount++
@@ -271,11 +263,11 @@ func (w *worker) addToBuffer(res pcommon.Map, telemetryAttributes []attribute.Ke
 }
 
 func (w *worker) flushBuffer(exporter profileExporter) {
-	if w.batchBuffer == nil || w.bufferCount == 0 {
+	if w.bufferCount == 0 {
 		return
 	}
 
-	if err := exporter.Export(context.Background(), *w.batchBuffer); err != nil {
+	if err := exporter.Export(context.Background(), w.batchBuffer); err != nil {
 		if w.allowFailures {
 			w.logger.Error("failed to export batched profiles, continuing due to --allow-export-failures", zap.Error(err))
 		} else {
@@ -285,7 +277,6 @@ func (w *worker) flushBuffer(exporter profileExporter) {
 		w.logger.Debug("exported batched profiles", zap.Int("count", w.bufferCount))
 	}
 
-	td := pprofile.NewProfiles()
-	w.batchBuffer = &td
+	w.batchBuffer = pprofile.NewProfiles()
 	w.bufferCount = 0
 }
