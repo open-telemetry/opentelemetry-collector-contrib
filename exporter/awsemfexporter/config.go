@@ -106,12 +106,12 @@ var _ component.Config = (*Config)(nil)
 
 // Validate filters out invalid metricDeclarations and metricDescriptors
 func (config *Config) Validate() error {
-	if err := config.ResourceToTelemetrySettings.Validate(); err != nil {
-		return err
-	}
 	if metadata.ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate.IsEnabled() {
 		config.ResourceToTelemetrySettings.Enabled = false                  //nolint:staticcheck // ignore deprecated field
 		config.ResourceToTelemetrySettings.ExcludeServiceAttributes = false //nolint:staticcheck // ignore deprecated field
+	}
+	if err := config.ResourceToTelemetrySettings.Validate(); err != nil {
+		return err
 	}
 	var validDeclarations []*MetricDeclaration
 	for _, declaration := range config.MetricDeclarations {
