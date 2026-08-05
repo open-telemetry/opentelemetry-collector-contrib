@@ -5,6 +5,8 @@ package containerapps // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
+	"os"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -16,6 +18,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 )
+
+// containerAppNameEnvVar is the environment variable the detector uses
+// to determine whether the process is running on Azure Container Apps.
+const containerAppNameEnvVar = "CONTAINER_APP_NAME"
 
 const (
 	// TypeStr is type of detector.
@@ -30,11 +36,12 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector detects resource attributes when running on Azure Container Apps.
 type Detector struct {
-	sdkDetector sdkresource.Detector
+	sdkDetector           sdkresource.Detector
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new Azure Container Apps detector.
-func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	ra := dcfg.(Config).ResourceAttributes
 
 	enabled := map[string]bool{
@@ -50,11 +57,16 @@ func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.D
 				return enabled[string(kv.Key)]
 			}),
 		),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 // Detect returns resource attributes when running on Azure Container Apps.
-// Returns an empty resource when not running on Azure Container Apps.
+// Returns an empty resource when not running on Azure Container Apps, unless
+// failOnMissingMetadata is set, in which case it returns an error.
 func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+	if d.failOnMissingMetadata && os.Getenv(containerAppNameEnvVar) == "" {
+		return pcommon.NewResource(), "", errors.New("azure container apps metadata unavailable: " + containerAppNameEnvVar + " env var not set")
+	}
 	return sdkbridge.Detect(ctx, d.sdkDetector)
 }

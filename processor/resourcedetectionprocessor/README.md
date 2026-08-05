@@ -532,6 +532,8 @@ processors:
     override: false
 ```
 
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the `CONTAINER_APP_NAME` environment variable is not set (not running on Azure Container Apps), instead of silently returning an empty resource.
+
 ### Consul
 
 Queries a [consul agent](https://www.consul.io/docs/agent) and reads its [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve related resource attributes:
