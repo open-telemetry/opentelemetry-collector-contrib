@@ -64,7 +64,7 @@ func TestDetectAllowlist(t *testing.T) {
 func TestDetectAllowlistUnsetAllowsAll(t *testing.T) {
 	t.Setenv(envVar, "a=1,b=2")
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), Config{}, false)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
