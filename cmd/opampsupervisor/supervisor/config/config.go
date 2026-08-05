@@ -45,6 +45,15 @@ type Supervisor struct {
 	Telemetry    Telemetry         `mapstructure:"telemetry"`
 	HealthCheck  HealthCheck       `mapstructure:"healthcheck"`
 	Extensions   extensions.Config `mapstructure:"extensions,omitempty"`
+	Gateway      Gateway           `mapstructure:"gateway"`
+}
+
+// Gateway configures the supervisor to accept downstream OpAMP agent
+// connections and multiplex them over its existing upstream connection.
+type Gateway struct {
+	Enabled        bool   `mapstructure:"enabled"`
+	ListenEndpoint string `mapstructure:"listen_endpoint"`
+	MaxAgents      int    `mapstructure:"max_agents"`
 }
 
 // Load loads the Supervisor config from a file.
