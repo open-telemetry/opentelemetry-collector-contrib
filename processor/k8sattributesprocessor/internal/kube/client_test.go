@@ -2368,25 +2368,35 @@ func TestJobExtractionRules(t *testing.T) {
 
 func TestFilters(t *testing.T) {
 	testCases := []struct {
-		name    string
-		filters Filters
-		labels  string
-		fields  string
+		name               string
+		filters            Filters
+		labels             string
+		fields             string
+		expectedNamespaces []string
 	}{
 		{
-			name:    "no-filters",
-			filters: Filters{},
+			name:               "no-filters",
+			filters:            Filters{},
+			expectedNamespaces: []string{""},
 		}, {
 			name: "namespace",
 			filters: Filters{
 				Namespace: "default",
 			},
+			expectedNamespaces: []string{"default"},
+		}, {
+			name: "namespaces",
+			filters: Filters{
+				Namespaces: []string{"default", "observability"},
+			},
+			expectedNamespaces: []string{"default", "observability"},
 		}, {
 			name: "node",
 			filters: Filters{
 				Node: "ec2-test",
 			},
-			fields: "spec.nodeName=ec2-test",
+			fields:             "spec.nodeName=ec2-test",
+			expectedNamespaces: []string{""},
 		}, {
 			name: "labels-and-fields",
 			filters: Filters{
@@ -2415,18 +2425,24 @@ func TestFilters(t *testing.T) {
 					},
 				},
 			},
-			labels: "k1=v1,k2!=v2",
-			fields: "k1=v1,k2!=v2",
+			labels:             "k1=v1,k2!=v2",
+			fields:             "k1=v1,k2!=v2",
+			expectedNamespaces: []string{""},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			c, _ := newTestClientWithRulesAndFilters(t, tc.filters)
-			inf := c.informer.(*FakeInformer)
-			assert.Equal(t, tc.filters.Namespace, inf.namespace)
-			assert.Equal(t, tc.labels, inf.labelSelector.String())
-			assert.Equal(t, tc.fields, inf.fieldSelector.String())
+
+			allPodInformers := append([]cache.SharedInformer{c.informer}, c.additionalPodInformers...)
+			require.Len(t, allPodInformers, len(tc.expectedNamespaces))
+			for idx, informer := range allPodInformers {
+				inf := informer.(*FakeInformer)
+				assert.Equal(t, tc.expectedNamespaces[idx], inf.namespace)
+				assert.Equal(t, tc.labels, inf.labelSelector.String())
+				assert.Equal(t, tc.fields, inf.fieldSelector.String())
+			}
 		})
 	}
 }

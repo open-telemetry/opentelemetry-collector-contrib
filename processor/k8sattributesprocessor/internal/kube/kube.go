@@ -179,10 +179,17 @@ type deleteRequest struct {
 // for performance reasons. We can support adding additional custom filters
 // in future if there is a real need.
 type Filters struct {
-	Node      string
+	Node string
+	// Namespace filters pods by a single namespace.
+	//
+	// Superseded by Namespaces. It is retained for backwards compatibility and
+	// is only consulted when Namespaces is empty.
 	Namespace string
-	Fields    []FieldFilter
-	Labels    []LabelFilter
+	// Namespaces filters pods by one or more namespaces. An empty slice (or a
+	// single empty-string entry) means all namespaces are watched.
+	Namespaces []string
+	Fields     []FieldFilter
+	Labels     []LabelFilter
 }
 
 // FieldFilter represents exactly one filter by field rule.

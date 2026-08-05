@@ -263,8 +263,14 @@ type FilterConfig struct {
 	// More on downward API here: https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/
 	NodeFromEnvVar string `mapstructure:"node_from_env_var"`
 
-	// Namespace filters all pods by the provided namespace. All other pods are ignored.
-	Namespace string `mapstructure:"namespace"`
+	// Namespace filters all pods by the provided namespace(s). All other pods are ignored.
+	//
+	// This field accepts either a single namespace string:
+	//   namespace: default
+	//
+	// or a list of namespaces:
+	//   namespace: [default, observability]
+	Namespace []string `mapstructure:"namespace"`
 
 	// Fields allows to filter pods by generic k8s fields.
 	// Only the following operations are supported:

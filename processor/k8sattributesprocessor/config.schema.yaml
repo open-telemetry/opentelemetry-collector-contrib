@@ -82,8 +82,10 @@ $defs:
         items:
           $ref: field_filter_config
       namespace:
-        description: Namespace filters all pods by the provided namespace. All other pods are ignored.
-        type: string
+        description: 'Namespace filters all pods by the provided namespace(s). All other pods are ignored. This field accepts either a single namespace string: namespace: default or a list of namespaces: namespace: [default, observability]'
+        type: array
+        items:
+          type: string
       node:
         description: Node represents a k8s node or host. If specified, any pods not running on the specified node will be ignored by the tagger.
         type: string

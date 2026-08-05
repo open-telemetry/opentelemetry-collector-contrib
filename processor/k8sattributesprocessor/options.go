@@ -306,10 +306,13 @@ func withFilterNode(node, nodeFromEnvVar string) option {
 	}
 }
 
-// withFilterNamespace allows specifying options to control filtering pods by a namespace.
-func withFilterNamespace(ns string) option {
+// withFilterNamespace allows specifying options to control filtering pods by namespace(s).
+func withFilterNamespace(namespaces ...string) option {
 	return func(p *kubernetesprocessor) error {
-		p.filters.Namespace = ns
+		// Only the multi-value Namespaces field is populated here; the client
+		// reads it as authoritative. The single Namespace field is left for
+		// external callers that construct Filters directly.
+		p.filters.Namespaces = kube.NormalizeFilterNamespaces(namespaces)
 		return nil
 	}
 }
