@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -442,4 +443,83 @@ func TestNewLoadBalancerInvalidServiceAwsResolver(t *testing.T) {
 
 func newNopMockExporter() *wrappedExporter {
 	return newWrappedExporter(mockComponent{}, "mock")
+}
+
+// hangingShutdownComponent blocks in Shutdown until its context is cancelled.
+// Used to test that per-goroutine shutdown timeouts are enforced.
+type hangingShutdownComponent struct {
+	component.StartFunc
+}
+
+func (h *hangingShutdownComponent) Shutdown(ctx context.Context) error {
+	<-ctx.Done()
+	return ctx.Err()
+}
+
+// TestOnBackendChanges_HungFactory_ReturnsAfterTimeout verifies that a factory
+// that blocks during addMissingExporters does not hold the write lock indefinitely.
+// The loadBalancer must impose a per-call timeout so that onBackendChanges returns
+// and the ring update is not stalled.
+func TestOnBackendChanges_HungFactory_ReturnsAfterTimeout(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	blocked := make(chan struct{})
+	defer close(blocked)
+	componentFactory := func(ctx context.Context, _ string) (component.Component, error) {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-blocked:
+			return newNopMockExporter(), nil
+		}
+	}
+
+	p, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+	p.exporterAddTimeout = 50 * time.Millisecond
+
+	done := make(chan struct{})
+	go func() {
+		p.onBackendChanges([]string{"endpoint-1"})
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("onBackendChanges did not return: hung factory is holding the write lock indefinitely")
+	}
+
+	p.updateLock.RLock()
+	count := len(p.exporters)
+	p.updateLock.RUnlock()
+	assert.Zero(t, count, "no exporter should be added when the factory times out")
+}
+
+// TestRemoveExtraExporters_HungShutdown_GoRoutineTimesOut verifies that the
+// goroutine spawned for an async exporter shutdown completes on its own timeout
+// even when the exporter's Shutdown only returns after context cancellation.
+func TestRemoveExtraExporters_HungShutdown_GoRoutineTimesOut(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	p, err := newLoadBalancer(ts.Logger, simpleConfig(), nil, tb)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+	p.exporterShutdownTimeout = 50 * time.Millisecond
+
+	p.exporters["hanging:4317"] = newWrappedExporter(&hangingShutdownComponent{}, "hanging:4317")
+	p.removeExtraExporters(t.Context(), []string{})
+
+	done := make(chan struct{})
+	go func() {
+		p.exportersShutdownWG.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("async shutdown goroutine did not return: per-goroutine shutdown timeout not enforced")
+	}
 }
