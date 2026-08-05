@@ -355,7 +355,8 @@ func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
 			},
-		})
+		},
+	)
 	require.NoError(t, err)
 
 	err = ci.Start(t.Context())
