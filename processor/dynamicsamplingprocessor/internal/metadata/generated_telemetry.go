@@ -22,15 +22,17 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                      metric.Meter
-	mu                                         sync.Mutex
-	registrations                              []metric.Registration
-	ProcessorDynamicSamplingDecisionSampleRate metric.Int64Histogram
-	ProcessorDynamicSamplingDecisionTriggers   metric.Int64Counter
-	ProcessorDynamicSamplingTracesActive       metric.Int64Gauge
-	ProcessorDynamicSamplingTracesDropped      metric.Int64Counter
-	ProcessorDynamicSamplingTracesEvicted      metric.Int64Counter
-	ProcessorDynamicSamplingTracesSampled      metric.Int64Counter
+	meter                                                 metric.Meter
+	mu                                                    sync.Mutex
+	registrations                                         []metric.Registration
+	ProcessorDynamicSamplingDecisionSampleRate            metric.Int64Histogram
+	ProcessorDynamicSamplingDecisionTriggers              metric.Int64Counter
+	ProcessorDynamicSamplingIncomingTracestateUnparseable metric.Int64Counter
+	ProcessorDynamicSamplingOttlEvalErrors                metric.Int64Counter
+	ProcessorDynamicSamplingTracesActive                  metric.Int64Gauge
+	ProcessorDynamicSamplingTracesDropped                 metric.Int64Counter
+	ProcessorDynamicSamplingTracesEvicted                 metric.Int64Counter
+	ProcessorDynamicSamplingTracesSampled                 metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -70,8 +72,20 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorDynamicSamplingDecisionTriggers, err = builder.meter.Int64Counter(
 		"otelcol_processor_dynamic_sampling_decision_triggers",
-		metric.WithDescription("Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout). [Development]"),
+		metric.WithDescription("Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction). [Development]"),
 		metric.WithUnit("{decisions}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorDynamicSamplingIncomingTracestateUnparseable, err = builder.meter.Int64Counter(
+		"otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable",
+		metric.WithDescription("Number of spans whose incoming W3C tracestate could not be parsed when applying the sampling threshold. [Development]"),
+		metric.WithUnit("{spans}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorDynamicSamplingOttlEvalErrors, err = builder.meter.Int64Counter(
+		"otelcol_processor_dynamic_sampling_ottl_eval_errors",
+		metric.WithDescription("Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to. [Development]"),
+		metric.WithUnit("{errors}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorDynamicSamplingTracesActive, err = builder.meter.Int64Gauge(
@@ -88,7 +102,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorDynamicSamplingTracesEvicted, err = builder.meter.Int64Counter(
 		"otelcol_processor_dynamic_sampling_traces_evicted",
-		metric.WithDescription("Number of traces evicted from the buffer before a decision could be made. [Development]"),
+		metric.WithDescription("Number of traces evicted from the buffer due to num_traces pressure. Evicted traces are decided immediately per the configured eviction policy. [Development]"),
 		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)

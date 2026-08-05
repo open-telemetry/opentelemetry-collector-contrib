@@ -27,13 +27,14 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector queries the IBM Cloud VPC Instance Metadata Service and emits resource attributes.
 type Detector struct {
-	provider vpcprovider.Provider
-	logger   *zap.Logger
-	rb       *metadata.ResourceBuilder
+	provider              vpcprovider.Provider
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates an IBM Cloud VPC detector.
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	switch cfg.Protocol {
@@ -43,9 +44,10 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 	}
 
 	return &Detector{
-		provider: vpcprovider.NewProvider(cfg.Protocol),
-		logger:   p.Logger,
-		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		provider:              vpcprovider.NewProvider(cfg.Protocol),
+		logger:                p.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
@@ -54,6 +56,9 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 	meta, err := d.provider.InstanceMetadata(ctx)
 	if err != nil {
 		d.logger.Debug("IBM Cloud VPC metadata not available", zap.Error(err))
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("ibmcloud vpc metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 

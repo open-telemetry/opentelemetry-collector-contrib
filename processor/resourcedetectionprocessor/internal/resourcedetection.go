@@ -37,7 +37,7 @@ type ResourceDetectorConfig interface {
 	GetConfigFromType(DetectorType) DetectorConfig
 }
 
-type DetectorFactory func(processor.Settings, DetectorConfig) (Detector, error)
+type DetectorFactory func(processor.Settings, DetectorConfig, bool) (Detector, error)
 
 // detectorEntry pairs a detector with its type so detection telemetry can be
 // attributed to the specific detector.
@@ -58,10 +58,11 @@ func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourcePro
 func (f *ResourceProviderFactory) CreateResourceProvider(
 	params processor.Settings,
 	timeout time.Duration,
+	failOnMissingMetadata bool,
 	detectorConfigs ResourceDetectorConfig,
 	detectorTypes ...DetectorType,
 ) (*ResourceProvider, error) {
-	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
+	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes, failOnMissingMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +88,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 	return provider, nil
 }
 
-func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType) ([]detectorEntry, error) {
+func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType, failOnMissingMetadata bool) ([]detectorEntry, error) {
 	detectors := make([]detectorEntry, 0, len(detectorTypes))
 	for _, detectorType := range detectorTypes {
 		detectorFactory, ok := f.detectors[detectorType]
@@ -95,7 +96,7 @@ func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detect
 			return nil, fmt.Errorf("invalid detector key: %v", detectorType)
 		}
 
-		detector, err := detectorFactory(params, detectorConfigs.GetConfigFromType(detectorType))
+		detector, err := detectorFactory(params, detectorConfigs.GetConfigFromType(detectorType), failOnMissingMetadata)
 		if err != nil {
 			return nil, fmt.Errorf("failed creating detector type %q: %w", detectorType, err)
 		}

@@ -4,6 +4,7 @@
 package observer
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -153,6 +154,7 @@ func TestEndpointEnv(t *testing.T) {
 				"endpoint":     "127.0.0.1",
 				"id":           "port_id",
 				"process_name": "process_name",
+				"os":           runtime.GOOS,
 				"command":      "./cmd --config config.yaml",
 				"is_ipv6":      true,
 				"port":         uint16(2379),
