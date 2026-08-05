@@ -1,0 +1,14 @@
+change_type: enhancement
+
+component: receiver/elasticsearch
+
+note: Add `cluster_stats_master_only` and `index_stats_master_only` config options to optionally restrict cluster stats and index stats collection to the cluster's elected master node.
+
+issues: [49937]
+
+subtext: |
+  This is useful when running one receiver instance per node against the same cluster, to avoid every
+  instance issuing the same cluster-wide calls on every collection interval. Both options default to
+  `false`, preserving existing behavior.
+
+change_logs: [user]

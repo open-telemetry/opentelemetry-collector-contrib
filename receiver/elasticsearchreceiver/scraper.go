@@ -31,7 +31,10 @@ var (
 	}()
 )
 
-var errUnknownClusterStatus = errors.New("unknown cluster status")
+var (
+	errUnknownClusterStatus = errors.New("unknown cluster status")
+	errNoLocalNode          = errors.New("could not determine id of local elasticsearch node")
+)
 
 type elasticsearchScraper struct {
 	client      elasticsearchClient
@@ -339,9 +342,43 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
+func (r *elasticsearchScraper) isCurrentNodeMaster(ctx context.Context) (bool, error) {
+	localNode, err := r.client.Nodes(ctx, []string{"_local"})
+	if err != nil {
+		return false, err
+	}
+
+	var localNodeID string
+	for id := range localNode.Nodes {
+		localNodeID = id
+		break
+	}
+	if localNodeID == "" {
+		return false, errNoLocalNode
+	}
+
+	masterNode, err := r.client.MasterNode(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return localNodeID == masterNode.MasterNode, nil
+}
+
 func (r *elasticsearchScraper) scrapeClusterStatsMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	if len(r.cfg.Nodes) == 0 {
 		return
+	}
+
+	if r.cfg.ClusterStatsMasterOnly {
+		isMaster, err := r.isCurrentNodeMaster(ctx)
+		if err != nil {
+			errs.AddPartial(3, err)
+			return
+		}
+		if !isMaster {
+			return
+		}
 	}
 
 	clusterStats, err := r.client.ClusterStats(ctx, r.cfg.Nodes)
@@ -402,6 +439,17 @@ func (r *elasticsearchScraper) scrapeClusterHealthMetrics(ctx context.Context, n
 func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	if len(r.cfg.Indices) == 0 {
 		return
+	}
+
+	if r.cfg.IndexStatsMasterOnly {
+		isMaster, err := r.isCurrentNodeMaster(ctx)
+		if err != nil {
+			errs.AddPartial(63, err)
+			return
+		}
+		if !isMaster {
+			return
+		}
 	}
 
 	indexStats, err := r.client.IndexStats(ctx, r.cfg.Indices)
