@@ -451,7 +451,7 @@ type hangingShutdownComponent struct {
 	component.StartFunc
 }
 
-func (h *hangingShutdownComponent) Shutdown(ctx context.Context) error {
+func (*hangingShutdownComponent) Shutdown(ctx context.Context) error {
 	<-ctx.Done()
 	return ctx.Err()
 }
