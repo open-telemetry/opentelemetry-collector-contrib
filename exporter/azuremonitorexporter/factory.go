@@ -39,7 +39,8 @@ func NewFactory() exporter.Factory {
 		createDefaultConfig,
 		exporter.WithTraces(f.createTracesExporter, metadata.TracesStability),
 		exporter.WithLogs(f.createLogsExporter, metadata.LogsStability),
-		exporter.WithMetrics(f.createMetricsExporter, metadata.MetricsStability))
+		exporter.WithMetrics(f.createMetricsExporter, metadata.MetricsStability),
+	)
 }
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
@@ -88,7 +89,8 @@ func (f *factory) createTracesExporter(
 		origComp.consumeTraces,
 		exporterhelper.WithQueue(config.QueueSettings),
 		exporterhelper.WithStart(ame.Start),
-		exporterhelper.WithShutdown(ame.Shutdown))
+		exporterhelper.WithShutdown(ame.Shutdown),
+	)
 }
 
 func (f *factory) createLogsExporter(
@@ -111,7 +113,8 @@ func (f *factory) createLogsExporter(
 		origComp.consumeLogs,
 		exporterhelper.WithQueue(config.QueueSettings),
 		exporterhelper.WithStart(ame.Start),
-		exporterhelper.WithShutdown(ame.Shutdown))
+		exporterhelper.WithShutdown(ame.Shutdown),
+	)
 }
 
 func (f *factory) createMetricsExporter(
@@ -134,7 +137,8 @@ func (f *factory) createMetricsExporter(
 		origComp.consumeMetrics,
 		exporterhelper.WithQueue(config.QueueSettings),
 		exporterhelper.WithStart(ame.Start),
-		exporterhelper.WithShutdown(ame.Shutdown))
+		exporterhelper.WithShutdown(ame.Shutdown),
+	)
 }
 
 func getOrCreateAzureMonitorExporter(cfg component.Config, set exporter.Settings) *sharedcomponent.SharedComponent {
