@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -493,4 +495,180 @@ func TestOpenSearchLogExporter_TransportFailureRetryable(t *testing.T) {
 	require.Error(t, err)
 	require.False(t, consumererror.IsPermanent(err),
 		"a transport/flush failure (timeout) must be retryable, not permanent")
+}
+
+// TestOpenSearchLogExporter_RetryPreservesWholeBatch is the regression test for the
+// partial-loss variant of #49208. A flush failure fires the per-item OnFailure for
+// every buffered record, and exporterhelper's OnError resolves the first
+// consumererror it finds and retries only that payload. If the retryable error
+// carried a single record, the retry would be narrowed to that one and the rest of
+// the batch dropped. The first bulk request here fails at the transport level and
+// the second succeeds, so every record in the batch must arrive on the retry.
+func TestOpenSearchLogExporter_RetryPreservesWholeBatch(t *testing.T) {
+	logs, err := golden.ReadLogs("testdata/logs-sample-a.yaml")
+	require.NoError(t, err)
+	wantRecords := logs.LogRecordCount()
+	require.Greater(t, wantRecords, 1, "fixture must hold several records for this to mean anything")
+
+	var mu sync.Mutex
+	var attempts int
+	var indexed int
+	done := make(chan struct{})
+	var closeOnce sync.Once
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		attempts++
+		attempt := attempts
+		mu.Unlock()
+
+		if attempt == 1 {
+			// Stall past the client timeout so the flush fails with a deadline,
+			// which is the transport failure #49208 is about.
+			time.Sleep(500 * time.Millisecond)
+			return
+		}
+
+		body, readErr := io.ReadAll(r.Body)
+		require.NoError(t, readErr)
+		// The bulk body is action/document line pairs, so each action line is one record.
+		var items []string
+		for _, line := range strings.Split(strings.TrimSpace(string(body)), "\n") {
+			if strings.Contains(line, `"create"`) || strings.Contains(line, `"index"`) {
+				items = append(items, line)
+			}
+		}
+
+		mu.Lock()
+		indexed += len(items)
+		mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		var sb strings.Builder
+		sb.WriteString(`{"took":1,"errors":false,"items":[`)
+		for i := range items {
+			if i > 0 {
+				sb.WriteString(",")
+			}
+			sb.WriteString(`{"create":{"_index":"logs","status":201}}`)
+		}
+		sb.WriteString(`]}`)
+		_, _ = w.Write([]byte(sb.String()))
+		closeOnce.Do(func() { close(done) })
+	}))
+	defer ts.Close()
+
+	cfg := withDefaultConfig(func(config *Config) {
+		config.Endpoint = ts.URL
+		config.TimeoutSettings.Timeout = 100 * time.Millisecond
+		config.BackOffConfig.Enabled = true
+		config.BackOffConfig.InitialInterval = 10 * time.Millisecond
+		config.BackOffConfig.MaxInterval = 20 * time.Millisecond
+		config.BackOffConfig.MaxElapsedTime = 10 * time.Second
+	})
+
+	f := NewFactory()
+	exporter, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	require.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, exporter.Shutdown(t.Context())) }()
+
+	require.NoError(t, exporter.ConsumeLogs(t.Context(), logs))
+
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("timed out waiting for the retried bulk request")
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.GreaterOrEqual(t, attempts, 2, "the first attempt must fail and be retried")
+	assert.Equal(t, wantRecords, indexed,
+		"every record in the batch must be resent on the retry, not just the first")
+}
+
+// TestOpenSearchTraceExporter_RetryPreservesWholeBatch is the trace counterpart of
+// TestOpenSearchLogExporter_RetryPreservesWholeBatch: the trace indexer shares the
+// same per-item failure path, so it must also resend the whole batch on a retry.
+func TestOpenSearchTraceExporter_RetryPreservesWholeBatch(t *testing.T) {
+	traces, err := golden.ReadTraces("testdata/traces-sample-a.yaml")
+	require.NoError(t, err)
+	wantSpans := traces.SpanCount()
+	require.Greater(t, wantSpans, 1, "fixture must hold several spans for this to mean anything")
+
+	var mu sync.Mutex
+	var attempts, indexed int
+	done := make(chan struct{})
+	var closeOnce sync.Once
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		attempts++
+		attempt := attempts
+		mu.Unlock()
+
+		if attempt == 1 {
+			// Stall past the client timeout so the flush fails with a deadline,
+			// which is the transport failure #49208 is about.
+			time.Sleep(500 * time.Millisecond)
+			return
+		}
+
+		body, readErr := io.ReadAll(r.Body)
+		require.NoError(t, readErr)
+		var items int
+		for _, line := range strings.Split(strings.TrimSpace(string(body)), "\n") {
+			if strings.Contains(line, `"create"`) || strings.Contains(line, `"index"`) {
+				items++
+			}
+		}
+
+		mu.Lock()
+		indexed += items
+		mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		var sb strings.Builder
+		sb.WriteString(`{"took":1,"errors":false,"items":[`)
+		for i := 0; i < items; i++ {
+			if i > 0 {
+				sb.WriteString(",")
+			}
+			sb.WriteString(`{"create":{"_index":"traces","status":201}}`)
+		}
+		sb.WriteString(`]}`)
+		_, _ = w.Write([]byte(sb.String()))
+		closeOnce.Do(func() { close(done) })
+	}))
+	defer ts.Close()
+
+	cfg := withDefaultConfig(func(config *Config) {
+		config.Endpoint = ts.URL
+		config.TimeoutSettings.Timeout = 100 * time.Millisecond
+		config.BackOffConfig.Enabled = true
+		config.BackOffConfig.InitialInterval = 10 * time.Millisecond
+		config.BackOffConfig.MaxInterval = 20 * time.Millisecond
+		config.BackOffConfig.MaxElapsedTime = 10 * time.Second
+	})
+
+	f := NewFactory()
+	exporter, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	require.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, exporter.Shutdown(t.Context())) }()
+
+	require.NoError(t, exporter.ConsumeTraces(t.Context(), traces))
+
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("timed out waiting for the retried bulk request")
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.GreaterOrEqual(t, attempts, 2, "the first attempt must fail and be retried")
+	assert.Equal(t, wantSpans, indexed,
+		"every span in the batch must be resent on the retry, not just the first")
 }

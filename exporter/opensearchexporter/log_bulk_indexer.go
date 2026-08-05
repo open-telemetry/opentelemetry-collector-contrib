@@ -137,8 +137,15 @@ func (lbi *logBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem, i
 		// (permanent). On a flush failure opensearchutil reports the same error
 		// through both this per-item path and onIndexerError, so both must land
 		// on retryable or the joined error is still permanent via errors.As.
+		//
+		// The retryable error is deliberately bare rather than carrying this one
+		// item. A flush failure fires this callback for every buffered item, and
+		// exporterhelper's OnError resolves the first consumererror it finds and
+		// retries only that payload, so wrapping here would narrow the retry to a
+		// single record and silently drop the rest of the batch. With no payload
+		// attached, OnError falls through and the whole request is resent.
 		if isRetryableError(itemErr) {
-			lbi.appendRetryLogError(itemErr, logs)
+			lbi.errs = append(lbi.errs, itemErr)
 		} else {
 			lbi.appendPermanentError(itemErr)
 		}

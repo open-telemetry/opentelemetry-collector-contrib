@@ -18,8 +18,12 @@ issues: [49208, 45147, 45120]
 subtext: |
   Indexer-level failures such as connection refused, timeouts, and DNS errors were wrapped as
   permanent errors, so exporterhelper dropped the batch even with retry_on_failure enabled. They
-  are now surfaced as retryable, and per-item transport errors (net.OpError) are retried as well,
-  while encoding and bad-document errors remain permanent.
+  are now surfaced as retryable, and per-item transport failures are retried as well, while
+  encoding and bad-document errors remain permanent.
+
+  A transport failure reports every buffered record through the per-item callback, so the
+  retryable error is reported without an attached payload. Otherwise exporterhelper would
+  resolve the first one and retry only that record, dropping the rest of the batch.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
