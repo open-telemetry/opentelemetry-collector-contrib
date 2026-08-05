@@ -28,6 +28,11 @@ import (
 // can shorten it.
 var stopGracePeriod = 10 * time.Second
 
+// AgentStartedLogMsg is logged every time an Agent process is started. Tests
+// count occurrences of it to observe how often the Agent was (re)started, so
+// keep the message and the log sites in sync.
+const AgentStartedLogMsg = "Agent process started"
+
 // Commander can start/stop/restart the Agent executable and also watch for a signal
 // for the Agent process to finish.
 type Commander struct {
@@ -153,7 +158,7 @@ func (c *Commander) startNormal() error {
 		return fmt.Errorf("startNormal: %w", err)
 	}
 
-	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
+	c.logger.Debug(AgentStartedLogMsg, zap.Int("pid", c.cmd.Process.Pid))
 	c.running.Store(1)
 	close(c.outputDoneCh)
 
@@ -229,7 +234,7 @@ func (c *Commander) startWithPassthroughLogging() error {
 		}
 	})
 
-	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
+	c.logger.Debug(AgentStartedLogMsg, zap.Int("pid", c.cmd.Process.Pid))
 
 	go func() {
 		outputWG.Wait()
@@ -359,7 +364,7 @@ func (c *Commander) StartOneShot() ([]byte, []byte, error) {
 		}
 	}()
 
-	c.logger.Debug("Agent process started", zap.Int("pid", cmd.Process.Pid))
+	c.logger.Debug(AgentStartedLogMsg, zap.Int("pid", cmd.Process.Pid))
 
 	doneCh := make(chan struct{}, 1)
 

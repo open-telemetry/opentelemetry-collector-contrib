@@ -43,10 +43,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -292,16 +294,25 @@ func newSupervisor(t *testing.T, configType string, extraConfigData map[string]s
 }
 
 func newSupervisorFromConfigFile(t *testing.T, path string) (*supervisor.Supervisor, *config.Supervisor) {
+	s, cfg, _ := newSupervisorFromConfigFileWithObservedLogs(t, path)
+	return s, cfg
+}
+
+// newSupervisorFromConfigFileWithObservedLogs also returns the Supervisor's
+// logs so tests can assert on the Supervisor's behavior through them.
+func newSupervisorFromConfigFileWithObservedLogs(t *testing.T, path string) (*supervisor.Supervisor, *config.Supervisor, *observer.ObservedLogs) {
 	cfg, err := config.Load(path)
 	require.NoError(t, err)
 
-	logger, err := zap.NewDevelopment()
+	devLogger, err := zap.NewDevelopment()
 	require.NoError(t, err)
+	obsCore, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(zapcore.NewTee(devLogger.Core(), obsCore))
 
 	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
 	require.NoError(t, err)
 
-	return s, &cfg
+	return s, &cfg, logs
 }
 
 func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[string]string) *os.File {
@@ -350,7 +361,9 @@ func writeTempConfigFile(t *testing.T, body string) string {
 	return f.Name()
 }
 
-func writeCountingCollectorWrapper(t *testing.T, invocationsFile string) string {
+// collectorExecutablePath returns the absolute path of the Collector binary the
+// e2e-test Makefile target builds.
+func collectorExecutablePath(t *testing.T) string {
 	t.Helper()
 
 	var extension string
@@ -359,33 +372,13 @@ func writeCountingCollectorWrapper(t *testing.T, invocationsFile string) string 
 	}
 	collectorPath, err := filepath.Abs("../../bin/otelcontribcol_" + runtime.GOOS + "_" + runtime.GOARCH + extension)
 	require.NoError(t, err)
-
-	wrapperPath := filepath.Join(t.TempDir(), "otelcontribcol-wrapper")
-	if runtime.GOOS == "windows" {
-		wrapperPath += ".bat"
-		script := fmt.Sprintf("@echo off\r\necho %%* >> %q\r\n%q %%*\r\nexit /b %%ERRORLEVEL%%\r\n", invocationsFile, collectorPath)
-		require.NoError(t, os.WriteFile(wrapperPath, []byte(script), 0o600))
-		return wrapperPath
-	}
-
-	script := fmt.Sprintf("#!/bin/sh\nprintf '%%s\\n' \"$*\" >> %q\nexec %q \"$@\"\n", invocationsFile, collectorPath)
-	require.NoError(t, os.WriteFile(wrapperPath, []byte(script), 0o700))
-	return wrapperPath
+	return collectorPath
 }
 
-func collectorInvocationCount(t *testing.T, invocationsFile string) int {
-	t.Helper()
-
-	content, err := os.ReadFile(invocationsFile)
-	if errors.Is(err, os.ErrNotExist) {
-		return 0
-	}
-	require.NoError(t, err)
-	trimmed := strings.TrimSpace(string(content))
-	if trimmed == "" {
-		return 0
-	}
-	return len(strings.Split(trimmed, "\n"))
+// agentStartCount returns how many Agent processes the Supervisor started so
+// far, observed through the Commander's start log entries.
+func agentStartCount(logs *observer.ObservedLogs) int {
+	return len(logs.FilterMessage(commander.AgentStartedLogMsg).All())
 }
 
 func waitForEffectiveConfigMessage(t *testing.T, effectiveConfig *atomic.Value) string {
@@ -1145,8 +1138,6 @@ func TestSupervisorDoesNotTightlyLoopWhenRestoredLastWorkingRemoteConfigFails(t 
 			require.NoError(t, err)
 			workingCfg, workingHash := createHealthCheckCollectorConfWithPort(t, strconv.Itoa(workingPort))
 			badCfg, badHash := createBadCollectorConf(t)
-			collectorInvocationsFile := filepath.Join(t.TempDir(), "collector-invocations.txt")
-			collectorWrapper := writeCountingCollectorWrapper(t, collectorInvocationsFile)
 
 			server := newOpAMPServer(
 				t,
@@ -1176,9 +1167,9 @@ agent:
   bootstrap_timeout: 10s
   automatic_config_rollback: true
   use_hup_config_reload: %v
-`, "ws://"+server.addr+"/v1/opamp", storageDir, collectorWrapper, mode.UseHUPConfigReload))
+`, "ws://"+server.addr+"/v1/opamp", storageDir, collectorExecutablePath(t), mode.UseHUPConfigReload))
 
-			s, supervisorCfg := newSupervisorFromConfigFile(t, cfgFile)
+			s, supervisorCfg, supervisorLogs := newSupervisorFromConfigFileWithObservedLogs(t, cfgFile)
 			require.True(t, supervisorCfg.Agent.AutomaticConfigRollback)
 			if mode.UseHUPConfigReload {
 				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
@@ -1208,7 +1199,7 @@ agent:
 				return err == nil
 			}, 15*time.Second, 100*time.Millisecond, "Working remote config was not saved as last working")
 
-			invocationsBeforeBadConfig := collectorInvocationCount(t, collectorInvocationsFile)
+			invocationsBeforeBadConfig := agentStartCount(supervisorLogs)
 			claimedWorkingPortCh := claimPortWhenFree(t, workingPort)
 			server.sendToSupervisor(&protobufs.ServerToAgent{
 				RemoteConfig: &protobufs.AgentRemoteConfig{
@@ -1241,11 +1232,11 @@ agent:
 				minInvocations = 1
 			}
 			require.Eventually(t, func() bool {
-				return collectorInvocationCount(t, collectorInvocationsFile) >= invocationsBeforeBadConfig+minInvocations
+				return agentStartCount(supervisorLogs) >= invocationsBeforeBadConfig+minInvocations
 			}, 15*time.Second, 100*time.Millisecond, "Restored last working config was not started after the bad config")
 
 			require.Never(t, func() bool {
-				return collectorInvocationCount(t, collectorInvocationsFile) > invocationsBeforeBadConfig+2
+				return agentStartCount(supervisorLogs) > invocationsBeforeBadConfig+2
 			}, 2*time.Second, 100*time.Millisecond, "Restored last working remote config failed repeatedly without waiting for restart backoff")
 		})
 	}
