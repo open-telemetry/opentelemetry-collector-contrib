@@ -162,6 +162,10 @@ func (wme *wrapperMetricsExporter) convertToMetricsAttributes(md pmetric.Metrics
 			attrsToAdd = resourceAttrs
 		}
 
+		if attrsToAdd.Len() == 0 {
+			continue
+		}
+
 		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
