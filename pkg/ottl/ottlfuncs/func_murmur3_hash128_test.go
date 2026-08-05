@@ -78,7 +78,8 @@ func Test_CreateMurmur3Hash128Func(t *testing.T) {
 					return "Hello World", nil
 				},
 			},
-		})
+		},
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 }

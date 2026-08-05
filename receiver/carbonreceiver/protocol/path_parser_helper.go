@@ -115,7 +115,7 @@ func (pph *pathParserHelper) Parse(line string) (pmetric.Metric, error) {
 		}
 		sec, frac := math.Modf(dblVal)
 		unixTime = int64(sec)
-		unixTimeNs = int64(frac * (1e9))
+		unixTimeNs = int64(frac * 1e9)
 	}
 
 	intVal, errIsFloat := strconv.ParseInt(valueStr, 10, 64)

@@ -408,7 +408,8 @@ func testMeasuredAndClientKind(t *testing.T, enableOperationAndResourceNameV2 bo
 		cgss,
 		expected,
 		protocmp.Transform(),
-		protocmp.IgnoreFields(&pb.ClientGroupedStats{}, "duration", "okSummary", "errorSummary")); diff != "" {
+		protocmp.IgnoreFields(&pb.ClientGroupedStats{}, "duration", "okSummary", "errorSummary"),
+	); diff != "" {
 		t.Errorf("Diff between APM stats -want +got:\n%v", diff)
 	}
 }
@@ -494,7 +495,8 @@ func TestObfuscate(t *testing.T) {
 		cgss,
 		expected,
 		protocmp.Transform(),
-		protocmp.IgnoreFields(&pb.ClientGroupedStats{}, "duration", "okSummary", "errorSummary")); diff != "" {
+		protocmp.IgnoreFields(&pb.ClientGroupedStats{}, "duration", "okSummary", "errorSummary"),
+	); diff != "" {
 		t.Errorf("Diff between APM stats -want +got:\n%v", diff)
 	}
 }

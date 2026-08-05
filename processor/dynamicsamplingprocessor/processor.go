@@ -316,7 +316,7 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 						lateBuckets[id] = b
 					}
 					dstSS := findOrAppendScopeSpans(b.rs, ss)
-					span.CopyTo(dstSS.Spans().AppendEmpty())
+					span.MoveTo(dstSS.Spans().AppendEmpty())
 					continue
 				}
 				pt, exists := p.traces[id]
@@ -340,7 +340,7 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 					pendingBuckets[id] = rsCopy
 				}
 				dstSS := findOrAppendScopeSpans(pendingBuckets[id], ss)
-				span.CopyTo(dstSS.Spans().AppendEmpty())
+				span.MoveTo(dstSS.Spans().AppendEmpty())
 			}
 		}
 		for id, copied := range pendingBuckets {
@@ -633,7 +633,9 @@ func (p *dynamicSamplingProcessor) finishDecision(ctx context.Context, pt *pendi
 	}
 
 	p.cache.recordSampled(pt.traceID, cachedDecision{ruleName: ruleName, threshold: effectiveTh})
+	// assembleTrace consumes pt.spans; nothing may read them after this call.
 	annotated := p.assembleTrace(ctx, pt.spans, ruleName, effectiveTh)
+	pt.spans = nil
 	p.telemetry.ProcessorDynamicSamplingTracesSampled.Add(ctx, 1, ruleAttr)
 	if err := p.next.ConsumeTraces(ctx, annotated); err != nil {
 		p.logger.Error("forwarding sampled trace failed", zap.Error(err), zap.Stringer("traceID", pt.traceID))
@@ -771,11 +773,15 @@ func effectiveThreshold(upstream sampling.Threshold, rate int) (sampling.Thresho
 
 // assembleTrace combines accumulated ResourceSpans into a single ptrace.Traces
 // and stamps every span with the rule attribute and `ot=th` TraceState.
+// The buffered ResourceSpans are MOVED into the output, not copied: they are
+// processor-owned (created fresh in ConsumeTraces) and the pendingTrace is
+// discarded after the decision, so the sources are left empty deliberately.
+// readIncomingSampling must run before this (it reads the same spans).
 func (p *dynamicSamplingProcessor) assembleTrace(ctx context.Context, spans []ptrace.ResourceSpans, ruleName string, threshold sampling.Threshold) ptrace.Traces {
 	out := ptrace.NewTraces()
 	for _, rs := range spans {
 		dst := out.ResourceSpans().AppendEmpty()
-		rs.CopyTo(dst)
+		rs.MoveTo(dst)
 		for _, ss := range dst.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
 				span.Attributes().PutStr(ruleAttributeKey, ruleName)
