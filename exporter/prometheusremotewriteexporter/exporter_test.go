@@ -1118,6 +1118,9 @@ func assertNonPermanentError(t assert.TestingT, err error, _ ...any) bool {
 }
 
 func TestRetries(t *testing.T) {
+	deadlineExceededContext, cancel := context.WithDeadline(t.Context(), time.Now().Add(-time.Second))
+	defer cancel()
+
 	tts := []struct {
 		name             string
 		serverErrorCount int // number of times server should return error
@@ -1183,6 +1186,17 @@ func TestRetries(t *testing.T) {
 			assert.Error,
 			assertPermanentConsumerError,
 			canceledContext(),
+		},
+		{
+			"test deadline exceeded context should return non-permanent error",
+			4,
+			0,
+			http.StatusInternalServerError,
+			false,
+			true,
+			assert.Error,
+			assertNonPermanentError,
+			deadlineExceededContext,
 		},
 		{
 			"test 5xx with retry disabled returns non-permanent error",
