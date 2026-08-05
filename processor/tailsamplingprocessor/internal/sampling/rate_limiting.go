@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
@@ -33,7 +34,14 @@ func NewRateLimiting(settings component.TelemetrySettings, spansPerSecond int64)
 // burst capacity, using a token bucket algorithm. Tokens (spans) refill continuously at
 // spansPerSecond and the bucket holds at most burstCapacity tokens. A single trace whose span
 // count exceeds the burst capacity will not pass.
+//
+// When the usetracestate feature gate is enabled the policy is instead a predictiveLimiter,
+// which applies spansPerSecond as a sampling probability so kept traces can report the
+// threshold that admitted them. burstCapacity does not apply to that implementation.
 func NewRateLimitingWithBurstCapacity(settings component.TelemetrySettings, spansPerSecond, burstCapacity int64) samplingpolicy.Evaluator {
+	if metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate.IsEnabled() {
+		return newPredictiveLimiter(spansPerSecond, traceSpanCount)
+	}
 	return &rateLimiting{
 		limiter: rate.NewLimiter(rate.Limit(spansPerSecond), int(burstCapacity)),
 		logger:  settings.Logger,
