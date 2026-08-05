@@ -261,22 +261,33 @@ func BenchmarkDecide(b *testing.B) {
 		{name: "10spans_5ottl_rules", spansPerTrace: 10, rules: benchOTTLRules()},
 		{name: "100spans_5ottl_rules", spansPerTrace: 100, rules: benchOTTLRules()},
 		{name: "10000spans_5ottl_rules", spansPerTrace: 10_000, rules: benchOTTLRules()},
-		{name: "10spans_catchall_incoming_tracestate", spansPerTrace: 10, rules: benchCatchAllRules(), traceState: "ot=th:8;rv:ab8befca837da2b0"},
+		{name: "10spans_catchall_incoming_tracestate", spansPerTrace: 10, rules: benchCatchAllRules(), traceState: "ot=th:8;rv:ab8befca837da2"},
 	} {
 		b.Run(bc.name, func(b *testing.B) {
 			p := newBenchProcessor(b, benchConfig(bc.rules))
 
 			id := benchTraceID(1)
-			td := benchTrace(id, bc.spansPerTrace, bc.traceState)
-			spans := make([]ptrace.ResourceSpans, 0, td.ResourceSpans().Len())
-			for _, rs := range td.ResourceSpans().All() {
-				spans = append(spans, rs)
+			template := benchTrace(id, bc.spansPerTrace, bc.traceState)
+
+			// The pending trace is rebuilt (untimed) every iteration: the
+			// decide path consumes pt.spans, and reusing one pendingTrace
+			// would also understate steady-state behavior.
+			newPT := func() *pendingTrace {
+				td := ptrace.NewTraces()
+				template.CopyTo(td)
+				spans := make([]ptrace.ResourceSpans, 0, td.ResourceSpans().Len())
+				for _, rs := range td.ResourceSpans().All() {
+					spans = append(spans, rs)
+				}
+				return &pendingTrace{traceID: id, spans: spans, spanCount: bc.spansPerTrace}
 			}
-			pt := &pendingTrace{traceID: id, spans: spans, spanCount: bc.spansPerTrace}
 
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
+				b.StopTimer()
+				pt := newPT()
+				b.StartTimer()
 				p.mu.Lock()
 				p.traces[id] = pt
 				p.mu.Unlock()
