@@ -206,10 +206,11 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.ResourceConstantLabels.Enabled || cfg.ResourceConstantLabels.ExcludeServiceAttributes {
+		return errors.New("enabled and exclude_service_attributes are not supported under resource_constant_labels; use included and excluded instead")
+	}
 	if metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate.IsEnabled() {
 		cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{}
-		cfg.ResourceConstantLabels.Enabled = false                  //nolint:staticcheck // ignore deprecated field
-		cfg.ResourceConstantLabels.ExcludeServiceAttributes = false //nolint:staticcheck // ignore deprecated field
 	} else if !cfg.ResourceToTelemetrySettings.IsEmpty() && !cfg.ResourceConstantLabels.IsEmpty() {
 		return errors.New("cannot configure both resource_to_telemetry_conversion and resource_constant_labels; resource_to_telemetry_conversion is deprecated")
 	}
