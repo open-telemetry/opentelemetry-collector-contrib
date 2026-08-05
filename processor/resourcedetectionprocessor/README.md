@@ -533,6 +533,14 @@ processors:
     override: false
 ```
 
+Consul node metadata keys are emitted verbatim, without a namespace of their own. Enabling the `processor.resourcedetection.consul.prefixMetaAttributes` feature gate namespaces each key as `consul.meta.<key>`, consistent with the other detectors that expose user-defined key/value data (`ec2.tag.`, `azure.tag.`, `gcp.gce.instance.labels.`, `openstack.nova.meta.`):
+
+```shell
+otelcol --feature-gates=processor.resourcedetection.consul.prefixMetaAttributes
+```
+
+The gate is alpha (disabled by default) and is expected to become the default in a future release.
+
 ### Kubeadm Metadata
 
 Queries the K8S API server to retrieve kubeadm resource attributes:

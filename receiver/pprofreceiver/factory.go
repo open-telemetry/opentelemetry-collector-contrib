@@ -22,7 +22,8 @@ func NewFactory() receiver.Factory {
 	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		xreceiver.WithProfiles(createProfilesReceiver, metadata.ProfilesStability))
+		xreceiver.WithProfiles(createProfilesReceiver, metadata.ProfilesStability),
+	)
 }
 
 func defaultControllerConfig() scraperhelper.ControllerConfig {
