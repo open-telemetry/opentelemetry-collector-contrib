@@ -129,9 +129,14 @@ func TestSanitizeSQL(t *testing.T) {
 			expected: "SELECT * FROM table",
 		},
 		{
-			name:     "all zero width characters",
-			sql:      "\ufeff\u200b\u200c\u200d",
-			expected: "",
+			name:     "word joiner",
+			sql:      "SELECT \u2060* FROM table",
+			expected: "SELECT * FROM table",
+		},
+		{
+			name:     "right to left override",
+			sql:      "SELECT \u202e* FROM table",
+			expected: "SELECT * FROM table",
 		},
 	}
 	for _, tt := range tests {
@@ -155,8 +160,5 @@ func TestObfuscateQueryPlanWithZeroWidthSpace(t *testing.T) {
 	plan := "<ShowPlanXML StatementText=\"SELECT \u200b* FROM table\"></ShowPlanXML>"
 	result, err := obf.obfuscateXMLPlan(plan)
 	assert.NoError(t, err)
-	// The sanitized statement obfuscates successfully, so the plan is preserved
-	// with the obfuscated statement instead of redacting the attribute to "?".
-	assert.NotEqual(t, `<ShowPlanXML StatementText="?"></ShowPlanXML>`, result)
-	assert.NotContains(t, result, "?")
+	assert.Equal(t, `<ShowPlanXML StatementText="SELECT * FROM table"></ShowPlanXML>`, result)
 }

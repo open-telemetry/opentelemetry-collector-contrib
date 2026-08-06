@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"strings"
+	"unicode"
 
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
 	"go.uber.org/zap"
@@ -35,14 +36,13 @@ func newObfuscator(logger *zap.Logger) *obfuscator {
 	}
 }
 
-// sanitizeSQL strips non-semantic zero-width and format characters that can
-// cause the tokenizer to fail (e.g. a zero-width space U+200B in a query text
-// makes the DataDog tokenizer abort with "unexpected byte 8203"), even though
-// they carry no SQL semantics.
+// sanitizeSQL strips non-semantic Unicode format characters that can cause the
+// tokenizer to fail (e.g. a zero-width space U+200B in a query text makes the
+// DataDog tokenizer abort with "unexpected byte 8203"), even though they carry
+// no SQL semantics.
 func sanitizeSQL(sql string) string {
 	return strings.Map(func(r rune) rune {
-		switch r {
-		case '\u200b', '\u200c', '\u200d', '\ufeff': // ZWSP, ZWNJ, ZWJ, BOM
+		if unicode.Is(unicode.Cf, r) {
 			return -1
 		}
 		return r

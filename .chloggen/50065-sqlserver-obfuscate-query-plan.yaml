@@ -17,7 +17,7 @@ issues: [50065]
 # Use pipe (|) for multiline entries.
 subtext: |
   Also replaces the fmt.Println call used to report the failure with a structured zap logger warning that includes the failing attribute name.
-  Zero-width space (U+200B), zero-width non-joiner (U+200C), zero-width joiner (U+200D) and byte order mark (U+FEFF) characters are stripped from SQL before obfuscation.
+  All Unicode format characters (Cf category, e.g. zero-width space U+200B) are stripped from SQL before obfuscation so queries containing them are not dropped.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
