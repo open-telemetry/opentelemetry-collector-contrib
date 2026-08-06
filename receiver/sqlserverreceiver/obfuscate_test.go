@@ -94,3 +94,69 @@ func TestValidQueryPlans(t *testing.T) {
 	_, err = obf.obfuscateXMLPlan(plan)
 	assert.NoError(t, err)
 }
+
+func TestSanitizeSQL(t *testing.T) {
+	obf := newObfuscator(zap.NewNop())
+
+	tests := []struct {
+		name     string
+		sql      string
+		expected string
+	}{
+		{
+			name:     "no zero width characters",
+			sql:      "SELECT * FROM table",
+			expected: "SELECT * FROM table",
+		},
+		{
+			name:     "zero width space",
+			sql:      "SELECT \u200b* FROM table",
+			expected: "SELECT * FROM table",
+		},
+		{
+			name:     "zero width non-joiner",
+			sql:      "SELECT \u200c* FROM table",
+			expected: "SELECT * FROM table",
+		},
+		{
+			name:     "zero width joiner",
+			sql:      "SELECT \u200d* FROM table",
+			expected: "SELECT * FROM table",
+		},
+		{
+			name:     "byte order mark",
+			sql:      "\ufeffSELECT * FROM table",
+			expected: "SELECT * FROM table",
+		},
+		{
+			name:     "all zero width characters",
+			sql:      "\ufeff\u200b\u200c\u200d",
+			expected: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, sanitizeSQL(tt.sql))
+		})
+	}
+
+	// A statement containing a zero-width space (as seen in Blue Prism work-queue
+	// statements from sys.dm_exec_sql_text) should obfuscate successfully after
+	// sanitization instead of failing.
+	statement := "SELECT \u200b[WQ_Definition] FROM [BluePrism].[WorkQueue]"
+	result, err := obf.obfuscateSQLString(statement)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, result)
+}
+
+func TestObfuscateQueryPlanWithZeroWidthSpace(t *testing.T) {
+	obf := newObfuscator(zap.NewNop())
+
+	plan := "<ShowPlanXML StatementText=\"SELECT \u200b* FROM table\"></ShowPlanXML>"
+	result, err := obf.obfuscateXMLPlan(plan)
+	assert.NoError(t, err)
+	// The sanitized statement obfuscates successfully, so the plan is preserved
+	// with the obfuscated statement instead of redacting the attribute to "?".
+	assert.NotEqual(t, `<ShowPlanXML StatementText="?"></ShowPlanXML>`, result)
+	assert.NotContains(t, result, "?")
+}

@@ -35,8 +35,22 @@ func newObfuscator(logger *zap.Logger) *obfuscator {
 	}
 }
 
+// sanitizeSQL strips non-semantic zero-width and format characters that can
+// cause the tokenizer to fail (e.g. a zero-width space U+200B in a query text
+// makes the DataDog tokenizer abort with "unexpected byte 8203"), even though
+// they carry no SQL semantics.
+func sanitizeSQL(sql string) string {
+	return strings.Map(func(r rune) rune {
+		switch r {
+		case '\u200b', '\u200c', '\u200d', '\ufeff': // ZWSP, ZWNJ, ZWJ, BOM
+			return -1
+		}
+		return r
+	}, sql)
+}
+
 func (o *obfuscator) obfuscateSQLString(sql string) (string, error) {
-	obfuscatedQuery, err := o.ObfuscateSQLString(sql)
+	obfuscatedQuery, err := o.ObfuscateSQLString(sanitizeSQL(sql))
 	if err != nil {
 		return "", err
 	}
@@ -68,7 +82,7 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 						}
 						val, err := o.obfuscateSQLString(elem.Attr[i].Value)
 						if err != nil {
-							o.logger.Warn("Unable to obfuscate SQL statement in query plan, redacting attribute", zap.Error(err))
+							o.logger.Warn("Unable to obfuscate SQL statement in query plan, redacting attribute", zap.String("attr", attrName), zap.Error(err))
 							elem.Attr[i].Value = "?"
 							continue
 						}

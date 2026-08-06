@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/sqlserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix the SQL Server receiver dropping the entire query plan when obfuscating a single attribute fails; the failing attribute is now redacted and the rest of the plan is preserved.
+note: Fix the SQL Server receiver dropping the entire query plan when obfuscating a single attribute fails; the failing attribute is now redacted and the rest of the plan is preserved. Also sanitize zero-width and format characters from SQL before obfuscating so queries containing them are not dropped.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50065]
@@ -15,7 +15,9 @@ issues: [50065]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Also replaces the fmt.Println call used to report the failure with a structured zap logger warning.
+subtext: |
+  Also replaces the fmt.Println call used to report the failure with a structured zap logger warning that includes the failing attribute name.
+  Zero-width space (U+200B), zero-width non-joiner (U+200C), zero-width joiner (U+200D) and byte order mark (U+FEFF) characters are stripped from SQL before obfuscation.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
