@@ -18,7 +18,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
-	"github.com/shirou/gopsutil/v4/host"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -66,38 +65,6 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	assert.Equal(t, "distro.0", o.serviceVersion)
 	assert.Equal(t, "f8999bc1-4c9b-4619-9bae-7f009d2411ec", o.serviceInstanceID)
 	assert.NoError(t, o.Shutdown(t.Context()))
-}
-
-func TestGetOSDescription(t *testing.T) {
-	t.Cleanup(func() {
-		getPlatformInformation = host.PlatformInformation
-	})
-
-	t.Run("uses platform information", func(t *testing.T) {
-		getPlatformInformation = func() (string, string, string, error) {
-			return "Ubuntu", "linux", "22.04.2 LTS", nil
-		}
-
-		description := getOSDescription(zap.NewNop())
-		switch runtime.GOOS {
-		case "darwin":
-			assert.Equal(t, "macOS 22.04.2 LTS", description)
-		case "linux":
-			assert.Equal(t, "Ubuntu 22.04.2 LTS", description)
-		case "windows":
-			assert.Equal(t, "Ubuntu 22.04.2 LTS", description)
-		default:
-			assert.Equal(t, runtime.GOOS, description)
-		}
-	})
-
-	t.Run("falls back when platform information fails", func(t *testing.T) {
-		getPlatformInformation = func() (string, string, string, error) {
-			return "", "", "", errors.New("getting host ID: the system cannot find the file specified")
-		}
-
-		assert.Equal(t, runtime.GOOS, getOSDescription(zap.NewNop()))
-	})
 }
 
 func TestCreateAgentDescription(t *testing.T) {

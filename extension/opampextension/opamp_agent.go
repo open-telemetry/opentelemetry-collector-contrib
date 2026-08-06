@@ -501,14 +501,12 @@ func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
 	}
 }
 
-// getPlatformInformation is overridden in tests. Uses PlatformInformation instead of
-// host.Info so Windows containers without MachineGuid can still report os.description.
-var getPlatformInformation = host.PlatformInformation
-
 func getOSDescription(logger *zap.Logger) string {
-	platform, _, version, err := getPlatformInformation()
+	// Use PlatformInformation instead of host.Info so Windows containers without
+	// MachineGuid can still report os.description.
+	platform, _, version, err := host.PlatformInformation()
 	if err != nil {
-		logger.Warn("failed getting platform information", zap.Error(err))
+		logger.Error("failed getting platform information", zap.Error(err))
 		return runtime.GOOS
 	}
 	switch runtime.GOOS {
