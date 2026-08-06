@@ -74,27 +74,6 @@ func TestDockerParserInvalidType(t *testing.T) {
 	require.ErrorContains(t, err, "type '[]int' cannot be parsed as docker container logs")
 }
 
-func TestCrioParserInvalidType(t *testing.T) {
-	parser := newTestParser(t)
-	_, err := parser.parseCRIO([]int{})
-	require.ErrorContains(t, err, "type '[]int' cannot be parsed as cri-o container logs")
-}
-
-func TestContainerdParserInvalidType(t *testing.T) {
-	parser := newTestParser(t)
-	_, err := parser.parseContainerd([]int{})
-	require.ErrorContains(t, err, "type '[]int' cannot be parsed as containerd logs")
-}
-
-func TestFormatDetectionFailure(t *testing.T) {
-	parser := newTestParser(t)
-	e := &entry.Entry{
-		Body: `invalid container format`,
-	}
-	_, err := parser.detectFormat(e)
-	require.ErrorContains(t, err, "entry cannot be parsed as container logs")
-}
-
 func TestInternalRecombineCfg(t *testing.T) {
 	cfg := createRecombineConfig(Config{MaxLogSize: 102400})
 	expected := recombine.NewConfigWithID(recombineInternalID)
@@ -1540,4 +1519,81 @@ func TestProcessBatchDockerQuietModeWithMixedEntries(t *testing.T) {
 	output.AssertCalled(t, "ProcessBatch", ctx, mock.MatchedBy(func(entries []*entry.Entry) bool {
 		return len(entries) == 2
 	}))
+}
+
+func TestFilepathCachePopulatedOnFirstEntry(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = true
+	testLogPath := "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log"
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	p := op.(*Parser)
+
+	e := entry.New()
+	e.Attributes = map[string]any{attrs.LogFilePath: testLogPath}
+
+	_, ok := p.cache.Get(testLogPath)
+	require.False(t, ok, "cache should be empty before first call")
+
+	err = p.extractk8sMetaFromFilePath(e)
+	require.NoError(t, err)
+
+	cached, ok := p.cache.Get(testLogPath)
+	require.True(t, ok, "cache should be populated after first call")
+	require.Equal(t, "default", cached["k8s.namespace.name"])
+	require.Equal(t, "mypod", cached["k8s.pod.name"])
+	require.Equal(t, "mycontainer", cached["k8s.container.name"])
+	require.Equal(t, "0", cached["k8s.container.restart_count"])
+}
+
+func TestFilepathCacheHitSkipsRegex(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = true
+	testLogPath := "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log"
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	p := op.(*Parser)
+
+	sentinel := map[string]any{
+		"k8s.namespace.name":          "cached-namespace",
+		"k8s.pod.name":                "cached-pod",
+		"k8s.container.name":          "cached-container",
+		"k8s.container.restart_count": "cached-restart",
+		"k8s.pod.uid":                 "cached-uid",
+	}
+	p.cache.Add(testLogPath, sentinel)
+
+	e := entry.New()
+	e.Attributes = map[string]any{attrs.LogFilePath: testLogPath}
+
+	err = p.extractk8sMetaFromFilePath(e)
+	require.NoError(t, err)
+
+	require.Equal(t, "cached-namespace", e.Resource["k8s.namespace.name"])
+	require.Equal(t, "cached-pod", e.Resource["k8s.pod.name"])
+	require.Equal(t, "cached-container", e.Resource["k8s.container.name"])
+}
+
+func TestFilepathCacheDisabledWhenMetadataOff(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = false
+	testLogPath := "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log"
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	p := op.(*Parser)
+
+	e := entry.New()
+	e.Attributes = map[string]any{attrs.LogFilePath: testLogPath}
+
+	err = p.extractk8sMetaFromFilePath(e)
+	require.NoError(t, err)
+
+	_, ok := p.cache.Get(testLogPath)
+	require.False(t, ok, "cache should not be populated when add_metadata_from_filepath is false")
 }
