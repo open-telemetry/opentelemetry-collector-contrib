@@ -26,8 +26,11 @@ The Dynamic Sampling Processor performs adaptive tail-based trace sampling using
    - `trace_timeout` elapses since the first span of the trace arrived. This timer is set on first-seen and is never extended by subsequent spans, ensuring a predictable upper bound on buffer occupancy.
 3. After the trigger fires, the processor pauses for `decision_delay` to let in-flight straggler spans land. The same delay applies regardless of which event fired the trigger.
 4. Rules are then evaluated in order against the accumulated trace. The first rule whose conditions all match selects the sampler; once a rule is selected, its sampler's keep/drop decision is final and no later rules are considered. A rule with no conditions is a catch-all.
-5. The matched sampler produces a sample rate (1-in-N).
-6. The keep/drop decision is made deterministically by comparing the sample rate's threshold against the randomness of the trace ID, using the [OTel consistent probability sampling](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/) algorithm.
+5. The matched sampler produces a sample rate (1-in-N). Samplers only ever produce rates; no sampler makes a keep/drop decision itself.
+6. The processor converts the rate to a threshold (a rate of N becomes the threshold encoding probability 1/N) and makes the keep/drop decision by comparing that threshold against the trace's randomness (`ot=rv` when present, otherwise derived from the trace ID), using the [OTel consistent probability sampling](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/) algorithm.
+
+> [!NOTE]
+> The adaptive samplers come from [dynsampler-go](https://github.com/honeycombio/dynsampler-go), which the processor uses **only** to compute rates. dynsampler-go's own samplers can make keep/drop decisions internally (its `DeterministicSampler` applies its own hash-based check, for example), but this processor never uses that path: the rate-to-threshold conversion and the randomness comparison in step 6 are the single decision mechanism for every sampler type, including this processor's `deterministic` type. This is what makes decisions reproducible for a given trace and correctly weighted downstream via `ot=th`.
 7. Sampled traces are forwarded with two annotations on every span:
    - `otelcol.processor.dynamic_sampling.rule`: the name of the matched rule
    - W3C TraceState `ot=th:<hex>`: the threshold encoding the effective sample rate
@@ -78,7 +81,42 @@ processors:
           type: ema_dynamic
           goal_sampling_percentage: 20
           key_attributes: ["service.name", "http.status_code"]
+
+    # Optional. OTTL boolean expression evaluated per span. When it returns true
+    # for any span in the trace, the trace transitions from accumulation to the
+    # decision-delay phase without waiting for trace_timeout. Defaults to
+    # IsRootSpan() when unset.
+    # root_span_condition: 'IsRootSpan() or span.attributes["otelcol.dynamic_sampling.root_span"] == true'
 ```
+
+### Root-span detection
+
+The processor moves a trace out of accumulation and into the decision-delay phase as soon as it sees a span it considers a "root". By default that means `IsRootSpan()`: any span whose W3C `ParentSpanID` is empty. This works for producer-side head-sampled traces where the true root always lands at the same collector, but it stalls when:
+
+- Only the server side of a cross-process trace reaches this collector, so no observed span has an empty parent.
+- The operator wants to trigger on a producer-supplied hint (e.g. a message-broker consumer or batch-job entry point) rather than on the transport-level root.
+
+`root_span_condition` lets the operator override the trigger with any OTTL boolean expression evaluated in the `ottlspan` context. The first span for which it returns true starts the decision-delay timer.
+
+Producer hint (fires on any real root, or on any span the producer explicitly tagged):
+
+```yaml
+root_span_condition: 'IsRootSpan() or span.attributes["otelcol.dynamic_sampling.root_span"] == true'
+```
+
+Cross-process server (accept the gateway's server span as a trigger even though it has a parent):
+
+```yaml
+root_span_condition: 'IsRootSpan() or (span.kind == SPAN_KIND_SERVER and resource.attributes["service.name"] == "gateway")'
+```
+
+Message consumer (trigger on the consumer side of a queue rather than waiting for `trace_timeout`):
+
+```yaml
+root_span_condition: 'IsRootSpan() or (span.kind == SPAN_KIND_CONSUMER and IsMatch(span.name, "^receive "))'
+```
+
+Evaluation errors are counted on `processor_dynamic_sampling_ottl_eval_errors` under the sentinel `rule="_root_span_condition"` label so they show up separately from rule-condition errors. A span whose evaluation errored is treated as non-matching, so a broken expression can only delay the trigger to `trace_timeout`, never fire it prematurely.
 
 ### Rules
 
@@ -173,9 +211,8 @@ Keep traces from either the checkout or the billing service, at a modest adaptiv
     - resource.attributes["service.name"] == "checkout" or resource.attributes["service.name"] == "billing"
   sampler:
     type: ema_dynamic
-    ema_dynamic:
-      goal_sampling_percentage: 25
-      key_fields: ["service.name", "http.route"]
+    goal_sampling_percentage: 25
+    key_attributes: ["service.name", "http.route"]
 ```
 
 Match on span name prefix using OTTL's `IsMatch` regex helper:
@@ -259,6 +296,74 @@ sampler:
 
 For samplers that accept `key_attributes`, the sampling key for a trace is built by collecting distinct values of each named attribute (across resource and span attributes), sorting them, and joining with the `•` separator. Missing attributes are replaced with `<missing>`.
 
+## Worked examples
+
+Two complete configurations for the most common deployment shapes.
+
+### Error retention with an adaptive default
+
+Keep every error trace, and let an adaptive sampler settle the rest at a target percentage per traffic class. This is the right starting shape for most single-instance deployments: errors are never lost, and the default rule adapts as traffic mix shifts.
+
+```yaml
+processors:
+  dynamic_sampling:
+    trace_timeout: 30s
+    decision_delay: 2s
+    num_traces: 50000
+    decision_cache:
+      sampled_cache_size: 50000
+      non_sampled_cache_size: 100000
+    rules:
+      # Errors are always kept, evaluated first.
+      - name: keep-errors
+        conditions:
+          - span.status.code == STATUS_CODE_ERROR
+        sampler:
+          type: always_sample
+      # Everything else settles at ~10% per (service, route) class, so
+      # low-traffic routes stay visible while hot routes are downsampled.
+      - name: default
+        sampler:
+          type: ema_dynamic
+          goal_sampling_percentage: 10
+          key_attributes: ["service.name", "http.route"]
+          adjustment_interval: 15s
+          weight: 0.5
+```
+
+Sizing guidance: `num_traces` bounds memory and should cover the number of traces that start within one `trace_timeout` window at peak. The decision caches should be a small multiple of that, since they only store trace IDs and outcomes; undersizing them turns late spans of decided traces back into new partial traces.
+
+### Throughput-bounded fleet
+
+Cap the spans-per-second this collector emits regardless of incoming volume, useful when the downstream backend is provisioned for a fixed ingest rate. The throughput sampler continuously adjusts per-key rates to hold the total near the goal.
+
+```yaml
+processors:
+  dynamic_sampling:
+    trace_timeout: 30s
+    decision_delay: 2s
+    num_traces: 100000
+    decision_cache:
+      sampled_cache_size: 100000
+      non_sampled_cache_size: 200000
+    # Under sustained overload, shed evicted traces in constant time instead
+    # of paying rule evaluation for every one (see Buffer overflow and
+    # eviction policy below).
+    eviction:
+      policy: probabilistic
+      sampling_percentage: 10
+    rules:
+      - name: throughput-cap
+        sampler:
+          type: windowed_throughput
+          goal_throughput_per_sec: 1000
+          key_attributes: ["service.name"]
+          update_frequency: 1s
+          lookback_frequency: 30s
+```
+
+The goal is enforced per collector instance: a fleet of N instances emits up to N times the configured throughput, so divide the backend budget by the instance count. Keying by `service.name` means each service's share adapts to its share of total traffic rather than being fixed.
+
 ## Decision cache
 
 When a trace's decision is finalised, the trace ID and outcome are recorded in
@@ -277,17 +382,45 @@ path and may produce a second (possibly inconsistent) decision; with both caches
 disabled, every late span falls through. Operators tune the cache sizes against
 observed late-span volume.
 
-### Buffer overflow vs decision cache
+### Buffer overflow and eviction policy
 
-The in-memory accumulation buffer is sized by `num_traces`. If the buffer is full
-when a span for a brand-new trace arrives, the processor evicts an existing
-pending trace to make room; the evicted trace is dropped without a sampling
-decision and without `ot=th` annotations, and is counted on
-`processor_dynamic_sampling_traces_evicted`. The decision cache
-(`decision_cache.*`) is a separate structure that records the outcome of
-*completed* decisions for late-arriving spans, it does not protect pending traces
-from eviction. Operators sizing the processor should watch `traces_evicted` and
-increase `num_traces` if it is non-zero in steady state.
+The in-memory accumulation buffer is sized by `num_traces`. When the buffer is
+full and spans for brand-new traces arrive, the processor evicts the **oldest**
+pending traces to make room (the buffer may transiently exceed `num_traces` by
+the number of new traces in a single incoming batch). Every evicted trace
+receives a real sampling decision immediately, with the spans seen so far and
+no `decision_delay`; the decision is recorded in the decision cache so
+late-arriving spans are handled consistently, and kept traces carry correct
+`ot=th` annotations. How that decision is made is configurable:
+
+```yaml
+eviction:
+  policy: evaluate            # evaluate (default) | probabilistic
+  sampling_percentage: 10     # required for probabilistic
+```
+
+- `evaluate` (default): the evicted trace runs through the normal rules and
+  sampler path. Your rules keep working under pressure (e.g. a keep-errors
+  rule still keeps error traces), at the cost of OTTL evaluation over every
+  span of every evicted trace.
+- `probabilistic`: rule evaluation is skipped and the trace is decided by
+  comparing a threshold derived from `sampling_percentage` against the trace's
+  randomness. Constant-time work per evicted trace regardless of trace size or
+  rule count, so an overloaded instance sheds load instead of amplifying it.
+  Kept traces are stamped with the corresponding `ot=th` (and the sentinel
+  rule attribution `_eviction`), so downstream weighting stays accurate.
+  Recommended for high-throughput deployments where eviction indicates
+  genuine overload.
+
+Note the decision may be made on an incomplete trace in both modes: spans
+still in flight when the trace is evicted are treated as late spans and follow
+the recorded decision. The decision cache (`decision_cache.*`) is a separate
+structure recording *completed* decisions; it does not protect pending traces
+from eviction.
+
+Operators sizing the processor should watch `traces_evicted` (every eviction)
+and `decision_triggers{trigger="eviction"}` and increase `num_traces` if they
+are non-zero in steady state.
 
 ## Deployment considerations
 
@@ -342,7 +475,7 @@ The processor honours any incoming `ot=th` (sampling threshold) and `ot=rv` (exp
 
 ### Accuracy under non-uniform upstream sampling
 
-The equalizing composition above is exact when upstream sampling is uniform across the keys the rule's adaptive sampler uses (`key_fields`). If upstream head-samples different classes of traffic at different rates and those classes overlap with the tail sampler's keys, the adaptive samplers observe a population that under-represents heavily-downsampled keys and can misjudge their per-key rate. Improving accuracy in that case requires per-key upstream tracking in the sampler and is tracked as follow-up work in [#49517](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49517). Under uniform upstream sampling (the common case, e.g. an SDK `TraceIdRatioBased` sampler) the rates are exact.
+The equalizing composition above is exact when upstream sampling is uniform across the keys the rule's adaptive sampler uses (`key_attributes`). If upstream head-samples different classes of traffic at different rates and those classes overlap with the tail sampler's keys, the adaptive samplers observe a population that under-represents heavily-downsampled keys and can misjudge their per-key rate. Improving accuracy in that case requires per-key upstream tracking in the sampler and is tracked as follow-up work in [#49517](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49517). Under uniform upstream sampling (the common case, e.g. an SDK `TraceIdRatioBased` sampler) the rates are exact.
 
 ### Grouping unrelated traces with a shared `ot=rv`
 

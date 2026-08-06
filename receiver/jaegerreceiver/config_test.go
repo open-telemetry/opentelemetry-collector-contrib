@@ -245,14 +245,14 @@ func TestInvalidConfig(t *testing.T) {
 					Endpoint:  "localhost:",
 					Transport: confignet.TransportTypeTCP,
 				}
-				cfg.ThriftHTTP = configoptional.Some(thriftHTTPServerConfig)
+				cfg.Protocols.ThriftHTTP = configoptional.Some(thriftHTTPServerConfig)
 			},
 			err: "receiver creation with no port number for Thrift HTTP must fail",
 		},
 		{
 			desc: "thrift-udp-compact-no-port",
 			apply: func(cfg *Config) {
-				cfg.ThriftCompactUDP = configoptional.Some(ProtocolUDP{
+				cfg.Protocols.ThriftCompactUDP = configoptional.Some(ProtocolUDP{
 					Endpoint: "localhost:",
 				})
 			},
@@ -261,7 +261,7 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "thrift-udp-binary-no-port",
 			apply: func(cfg *Config) {
-				cfg.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
+				cfg.Protocols.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
 					Endpoint: "localhost:",
 				})
 			},
@@ -270,7 +270,7 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "grpc-invalid-host",
 			apply: func(cfg *Config) {
-				cfg.GRPC = configoptional.Some(configgrpc.ServerConfig{
+				cfg.Protocols.GRPC = configoptional.Some(configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "1234",
 						Transport: confignet.TransportTypeTCP,
@@ -289,7 +289,7 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "port-outside-of-range",
 			apply: func(cfg *Config) {
-				cfg.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
+				cfg.Protocols.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
 					Endpoint: "localhost:65536",
 				})
 			},
