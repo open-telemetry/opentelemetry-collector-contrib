@@ -1155,7 +1155,8 @@ func (tsp *tailSamplingSpanProcessor) forwardSpans(ctx context.Context, td ptrac
 	if err := tsp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
 		tsp.logger.Warn(
 			"Error sending spans to destination",
-			zap.Error(err))
+			zap.Error(err),
+		)
 	}
 }
 

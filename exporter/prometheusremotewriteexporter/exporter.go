@@ -540,7 +540,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 	}
 
 	if err != nil {
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		if errors.Is(err, context.Canceled) {
 			return consumererror.NewPermanent(err)
 		}
 		return err

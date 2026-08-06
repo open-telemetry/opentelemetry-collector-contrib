@@ -65,7 +65,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Maintainers
 
-- [Alex Boten](https://github.com/codeboten), Honeycomb
+- [Alex Boten](https://github.com/codeboten), Grafana Labs
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
