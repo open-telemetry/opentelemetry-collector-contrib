@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
@@ -306,8 +307,9 @@ func TestWALWrite_Telemetry(t *testing.T) {
 	// Test successful WAL write
 	err = prw.handleExport(t.Context(), metrics, nil)
 	require.NoError(t, err)
+	exporterAttr := attribute.NewSet(attribute.String("exporter", set.ID.String()))
 	metadatatest.AssertEqualExporterPrometheusremotewriteWalWrites(t, tel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
+		[]metricdata.DataPoint[int64]{{Value: 1, Attributes: exporterAttr}},
 		metricdatatest.IgnoreTimestamp())
 
 	// Test failed WAL write by causing an out-of-order write error
@@ -317,7 +319,7 @@ func TestWALWrite_Telemetry(t *testing.T) {
 	err = prw.handleExport(t.Context(), metrics, nil)
 	require.Error(t, err)
 	metadatatest.AssertEqualExporterPrometheusremotewriteWalWritesFailures(t, tel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
+		[]metricdata.DataPoint[int64]{{Value: 1, Attributes: exporterAttr}},
 		metricdatatest.IgnoreTimestamp())
 
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_write_latency")
@@ -458,8 +460,15 @@ func TestWALLag_Telemetry(t *testing.T) {
 	// Wait for lag recording to happen (longer than lagRecordFrequency)
 	time.Sleep(5 * cfg.WAL.Get().LagRecordFrequency)
 
-	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_lag")
-	require.NoError(t, err)
+	// The wal_lag metric must carry the exporter attribute set to the
+	// component ID supplied by the test settings. We ideally would use
+	// otelcol.component.id, but the rest of the PRW exporter self-observability
+	// metrics currently use "exporter"; this can be switched for the whole
+	// exporter at a future point.
+	exporterAttr := attribute.NewSet(attribute.String("exporter", set.ID.String()))
+	metadatatest.AssertEqualExporterPrometheusremotewriteWalLag(t, tel,
+		[]metricdata.DataPoint[int64]{{Attributes: exporterAttr}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 }
 
 // TestWAL_IdleFlush verifies that buffered WAL entries are flushed to the
