@@ -5,8 +5,10 @@ package textencodingextension
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -66,7 +68,7 @@ func TestNoSeparatorLargeMessage(t *testing.T) {
 	codec := &textLogCodec{decoder: enc.NewDecoder()}
 
 	// Create a message larger than bufio.Scanner's default 4096 byte buffer
-	largeMessage := make([]byte, 16384)
+	largeMessage := make([]byte, 10*1024*1024)
 	for i := range largeMessage {
 		largeMessage[i] = byte('a' + (i % 26))
 	}
@@ -175,4 +177,23 @@ func TestStreamDecoding_flushAll(t *testing.T) {
 	ld, err = decoder.DecodeLogs()
 	assert.ErrorIs(t, err, io.EOF)
 	assert.Equal(t, 0, ld.LogRecordCount())
+}
+
+func TestUnmarshalLogsAcrossMultipleBatches(t *testing.T) {
+	// Regression test: inputs with more than the default 1000-item flush
+	// threshold must not be silently truncated by UnmarshalLogs.
+	enc, err := textutils.LookupEncoding("utf8")
+	require.NoError(t, err)
+	r := regexp.MustCompile(`\r?\n`)
+	codec := &textLogCodec{decoder: enc.NewDecoder(), unmarshalingSeparator: r, marshalingSeparator: "\n"}
+
+	var input strings.Builder
+	const recordCount = 1863
+	for i := range recordCount {
+		fmt.Fprintf(&input, "record-%d\n", i)
+	}
+
+	logs, err := codec.UnmarshalLogs([]byte(input.String()))
+	require.NoError(t, err)
+	require.Equal(t, recordCount, logs.LogRecordCount())
 }

@@ -37,6 +37,9 @@ properties:
   add_metric_suffixes:
     description: 'AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export Deprecated: Use TranslationStrategy instead. It will be removed in v0.153.0.'
     type: boolean
+  convert_explicit_histograms_to_nhcb:
+    description: ConvertExplicitHistogramsToNHCB converts explicit-bucket histograms to NHCB (schema -53) instead of classic series.
+    type: boolean
   disable_scope_info:
     description: DisableScopeInfo allows disabling the export of the scope info labels
     type: boolean
@@ -45,6 +48,14 @@ properties:
     type: object
     additionalProperties:
       type: string
+  include_metadata_keys:
+    description: IncludeMetadataKeys is a list of client metadata keys whose values are forwarded as HTTP request headers on every remote write call.
+    type: array
+    items:
+      type: string
+  keep_classic_histograms:
+    description: KeepClassicHistograms also emits the classic series alongside NHCB; no effect unless convert_explicit_histograms_to_nhcb is set.
+    type: boolean
   max_batch_request_parallelism:
     description: maximum amount of parallel requests to do when handling large batch request
     x-pointer: true
@@ -64,6 +75,8 @@ properties:
   resource_to_telemetry_conversion:
     description: ResourceToTelemetrySettings is the option for converting resource attributes to telemetry attributes. "Enabled" - A boolean field to enable/disable this option. Default is `false`. If enabled, all the resource attributes will be converted to metric labels by default. "ExcludeServiceAttributes" - If set to `true`, the `service.name`, `service.instance.id` and `service.namespace` resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics.
     $ref: /pkg/resourcetotelemetry.settings
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   send_metadata:
     description: SendMetadata controls whether prometheus metadata will be generated and sent, this option is ignored when using PRW 2.0, which always includes metadata.
     type: boolean
@@ -79,5 +92,4 @@ properties:
     $ref: wal_config
 allOf:
   - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
-  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   - $ref: go.opentelemetry.io/collector/config/confighttp.client_config

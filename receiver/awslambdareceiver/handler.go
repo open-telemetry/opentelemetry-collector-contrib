@@ -74,7 +74,6 @@ func (h *handlerProviderImpl) getHandler(eventType eventType) (lambdaEventHandle
 
 // lambdaEventHandler defines the contract for AWS Lambda event handlers
 type lambdaEventHandler interface {
-	handlerType() eventType
 	handle(ctx context.Context, event json.RawMessage) error
 }
 
@@ -183,10 +182,6 @@ func newS3MetricsHandler(
 	}
 }
 
-func (*s3Handler) handlerType() eventType {
-	return s3Event
-}
-
 func (s *s3Handler) handle(ctx context.Context, event json.RawMessage) error {
 	var err error
 	parsedEvent, err := parseS3Event(event)
@@ -260,10 +255,6 @@ func newCWLogsSubscriptionHandler(
 	}
 }
 
-func (*cwLogsSubscriptionHandler) handlerType() eventType {
-	return cwEvent
-}
-
 func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMessage) error {
 	var log events.CloudwatchLogsEvent
 	if err := gojson.Unmarshal(event, &log); err != nil {
@@ -312,6 +303,45 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 
 		getEnrichedCWLog(logs, mData)
 		if err = c.consumer.ConsumeLogs(getEnrichedCtxForCWLogs(ctx, mData), logs); err != nil {
+			return checkConsumerErrorAndWrap(err)
+		}
+	}
+
+	return nil
+}
+
+// customHandler implements the custom event handling.
+type customHandler struct {
+	logsDecoder encoding.LogsDecoderFactory
+	consumer    consumer.Logs
+}
+
+func newCustomHandler(logsDecoder encoding.LogsDecoderFactory, consumer consumer.Logs) *customHandler {
+	return &customHandler{
+		logsDecoder: logsDecoder,
+		consumer:    consumer,
+	}
+}
+
+func (c *customHandler) handle(ctx context.Context, event json.RawMessage) error {
+	decoder, err := c.logsDecoder.NewLogsDecoder(bytes.NewReader(event))
+	if err != nil {
+		return fmt.Errorf("failed to create decoder for the Custom event: %w", err)
+	}
+
+	for {
+		var logs plog.Logs
+		logs, err = decoder.DecodeLogs()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			return fmt.Errorf("failed to decode the Custom event: %w", err)
+		}
+
+		err = c.consumer.ConsumeLogs(ctx, logs)
+		if err != nil {
 			return checkConsumerErrorAndWrap(err)
 		}
 	}

@@ -25,13 +25,15 @@ var MetricsInfo = metricsInfo{
 		Name: "sshcheck.duration",
 	},
 	SshcheckError: metricInfo{
-		Name: "sshcheck.error",
+		Name:       "sshcheck.error",
+		Attributes: []string{"error.message"},
 	},
 	SshcheckSftpDuration: metricInfo{
 		Name: "sshcheck.sftp_duration",
 	},
 	SshcheckSftpError: metricInfo{
-		Name: "sshcheck.sftp_error",
+		Name:       "sshcheck.sftp_error",
+		Attributes: []string{"error.message"},
 	},
 	SshcheckSftpStatus: metricInfo{
 		Name: "sshcheck.sftp_status",
@@ -51,7 +53,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSshcheckDuration struct {

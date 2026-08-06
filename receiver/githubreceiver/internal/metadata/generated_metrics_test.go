@@ -84,28 +84,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcsChangeCountDataPoint(ts, 1, "vcs.repository.url.full-val", AttributeVcsChangeStateOpen, "vcs.repository.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcsChangeCountDataPoint(ts, 3, "vcs.repository.url.full-val-2", AttributeVcsChangeStateMerged, "vcs.repository.name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcsChangeDurationDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsChangeStateOpen)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcsChangeDurationDataPoint(ts, 3, "vcs.repository.url.full-val-2", "vcs.repository.name-val-2", "vcs.ref.head.name-val-2", AttributeVcsChangeStateMerged)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcsChangeTimeToApprovalDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcsChangeTimeToApprovalDataPoint(ts, 3, "vcs.repository.url.full-val-2", "vcs.repository.name-val-2", "vcs.ref.head.name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcsChangeTimeToMergeDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val")
@@ -118,35 +114,30 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcsContributorCountDataPoint(ts, 3, "vcs.repository.url.full-val-2", "vcs.repository.name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcsRefCountDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", AttributeVcsRefTypeBranch)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcsRefCountDataPoint(ts, 3, "vcs.repository.url.full-val-2", "vcs.repository.name-val-2", AttributeVcsRefTypeTag)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcsRefLinesDeltaDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsRefHeadTypeBranch, "vcs.ref.base.name-val", AttributeVcsRefBaseTypeBranch, AttributeVcsLineChangeTypeAdded)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcsRefLinesDeltaDataPoint(ts, 3, "vcs.repository.url.full-val-2", "vcs.repository.name-val-2", "vcs.ref.head.name-val-2", AttributeVcsRefHeadTypeTag, "vcs.ref.base.name-val-2", AttributeVcsRefBaseTypeTag, AttributeVcsLineChangeTypeRemoved)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcsRefRevisionsDeltaDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsRefHeadTypeBranch, "vcs.ref.base.name-val", AttributeVcsRefBaseTypeBranch, AttributeVcsRevisionDeltaDirectionAhead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcsRefRevisionsDeltaDataPoint(ts, 3, "vcs.repository.url.full-val-2", "vcs.repository.name-val-2", "vcs.ref.head.name-val-2", AttributeVcsRefHeadTypeTag, "vcs.ref.base.name-val-2", AttributeVcsRefBaseTypeTag, AttributeVcsRevisionDeltaDirectionBehind)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcsRefTimeDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsRefHeadTypeBranch)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcsRefTimeDataPoint(ts, 3, "vcs.repository.url.full-val-2", "vcs.repository.name-val-2", "vcs.ref.head.name-val-2", AttributeVcsRefHeadTypeTag)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcsRepositoryCountDataPoint(ts, 1)

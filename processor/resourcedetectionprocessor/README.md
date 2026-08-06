@@ -7,7 +7,7 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fresourcedetection%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fresourcedetection) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fresourcedetection%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fresourcedetection) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_resourcedetection)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_resourcedetection&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole), [@paulojmdias](https://www.github.com/paulojmdias) \| Seeking more code owners! |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -103,6 +103,10 @@ be found at [Docker Detector Resource Attributes](./internal/docker/documentatio
 You need to mount the Docker socket (`/var/run/docker.sock` on Linux) to contact the Docker daemon.
 Docker detection does not work on macOS.
 
+If `container.name` or `container.image.name` is enabled, the detector inspects the current container
+by using the container hostname as the Docker container name or ID. This can fail when the container
+hostname is changed, for example when running with `network_mode: host`.
+
 Example:
 
 ```yaml
@@ -112,6 +116,8 @@ processors:
     timeout: 2s
     override: false
 ```
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the Docker daemon cannot be contacted. When `false` (default), failures are logged and an empty resource is returned.
 
 #### Docker Socket Permissions
 
@@ -150,6 +156,8 @@ processors:
     timeout: 2s
     override: false
 ```
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if both `HEROKU_DYNO_ID` and `HEROKU_APP_ID` environment variables are not set, instead of silently returning an empty resource.
 
 ### GCP Metadata
 
@@ -197,7 +205,7 @@ The list of the populated resource attributes can be found at [GCP Detector Reso
     * cloud.provider ("gcp")
     * cloud.platform ("gcp_kubernetes_engine")
     * cloud.account.id (project id)
-    * cloud.region (only for regional GKE clusters; e.g. "us-central1")
+    * cloud.region (e.g. "us-central1")
     * cloud.availability_zone (only for zonal GKE clusters; e.g. "us-central1-c")
     * k8s.cluster.name
     * host.id (instance id)
@@ -223,6 +231,16 @@ The list of the populated resource attributes can be found at [GCP Detector Reso
     * faas.name (service name)
     * gcp.cloud_run.job.execution ("my-service-ajg89")
     * gcp.cloud_run.job.task_index ("0")
+
+#### Cloud Run Worker Pools Metadata
+
+    * cloud.provider ("gcp")
+    * cloud.platform ("gcp_cloud_run")
+    * cloud.account.id (project id)
+    * cloud.region (e.g. "us-central1")
+    * faas.instance (instance id)
+    * faas.name (worker pool name)
+    * faas.version (worker pool revision)
 
 #### Google Cloud Functions Metadata
 
@@ -297,15 +315,8 @@ processors:
       max_backoff: 5m
 ```
 
-The EC2 detector will report an error in logs if the EC2 metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resource_detection/ec2:
-    detectors: ["ec2"]
-    ec2:
-      fail_on_missing_metadata: true
-```
+> **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
+> `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
 
 ### Amazon ECS
 
@@ -323,6 +334,8 @@ processors:
     override: false
 ```
 
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the ECS Task Metadata Endpoint is not detected (not running on ECS) or if container sidecar metadata retrieval fails, instead of silently returning an empty or partial resource.
+
 ### Amazon Elastic Beanstalk
 
 Reads the AWS X-Ray configuration file available on all Beanstalk instances with [X-Ray Enabled](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environment-configuration-debugging.html).
@@ -338,6 +351,8 @@ processors:
     timeout: 2s
     override: false
 ```
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the Elastic Beanstalk configuration file is not found, instead of silently returning an empty resource.
 
 ### Amazon EKS
 
@@ -358,6 +373,8 @@ processors:
     timeout: 15s
     override: false
 ```
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if EKS cannot be detected (environment check fails) or if metadata retrieval fails, instead of silently returning an empty resource.
 
 #### Cluster Name
 
@@ -418,6 +435,8 @@ processors:
     timeout: 0.2s
     override: false
 ```
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the `AWS_LAMBDA_FUNCTION_NAME` environment variable is not set (not running on Lambda), instead of silently returning an empty resource.
 
 ### Azure
 
@@ -514,11 +533,21 @@ processors:
     override: false
 ```
 
+Consul node metadata keys are emitted verbatim, without a namespace of their own. Enabling the `processor.resourcedetection.consul.prefixMetaAttributes` feature gate namespaces each key as `consul.meta.<key>`, consistent with the other detectors that expose user-defined key/value data (`ec2.tag.`, `azure.tag.`, `gcp.gce.instance.labels.`, `openstack.nova.meta.`):
+
+```shell
+otelcol --feature-gates=processor.resourcedetection.consul.prefixMetaAttributes
+```
+
+The gate is alpha (disabled by default) and is expected to become the default in a future release.
+
 ### Kubeadm Metadata
 
 Queries the K8S API server to retrieve kubeadm resource attributes:
 
 The list of the populated resource attributes can be found at [kubeadm Detector Resource Attributes](./internal/kubeadm/documentation.md).
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if Kubernetes API calls fail. When `false` (default), failures are logged and an empty resource is returned.
 
 ---
 
@@ -545,6 +574,7 @@ processors:
 - `cloud.provider`
 - `cloud.platform`
 - `cloud.region`
+- `cloud.resource_id`
 - `cloud.availability_zone`
 - `host.id`
 - `host.name`
@@ -596,6 +626,8 @@ roleRef:
 Queries the K8S API server to retrieve node and cluster resource attributes. The `k8snode` detector name is deprecated — use `k8s_api` instead.
 
 The list of the populated resource attributes can be found at [k8s_api Detector Resource Attributes](./internal/k8sapi/documentation.md).
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if Kubernetes API calls fail. When `false` (default), failures are logged and an empty resource is returned.
 
 The following permissions are required:
 ```yaml
@@ -775,15 +807,8 @@ processors:
     detectors: ["upcloud"]
 ```
 
-The Upcloud detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resource_detection/upcloud:
-    detectors: ["upcloud"]
-    upcloud:
-      fail_on_missing_metadata: true
-```
+> **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
+> `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
 
 ### Vultr
 
@@ -799,15 +824,8 @@ processors:
     detectors: ["vultr"]
 ```
 
-The Vultr detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resource_detection/vultr:
-    detectors: ["vultr"]
-    vultr:
-      fail_on_missing_metadata: true
-```
+> **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
+> `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
 
 ### Digital Ocean
 
@@ -844,15 +862,8 @@ processors:
         - ^label.*$
 ```
 
-The Nova detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resource_detection/nova:
-    detectors: ["nova"]
-    nova:
-      fail_on_missing_metadata: true
-```
+> **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
+> `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
 
 ### Alibaba Cloud ECS
 
@@ -868,15 +879,8 @@ processors:
     detectors: ["alibaba_ecs"]
 ```
 
-The Alibaba Cloud ECS detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resource_detection/alibaba_ecs:
-    detectors: ["alibaba_ecs"]
-    alibaba_ecs:
-      fail_on_missing_metadata: true
-```
+> **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
+> `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
 
 ### Tencent Cloud CVM
 
@@ -892,15 +896,8 @@ processors:
     detectors: ["tencent_cvm"]
 ```
 
-The Tencent Cloud CVM detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resource_detection/tencent_cvm:
-    detectors: ["tencent_cvm"]
-    tencent_cvm:
-      fail_on_missing_metadata: true
-```
+> **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
+> `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
 
 ### IBM Cloud VPC
 
@@ -963,6 +960,9 @@ detectors: [ <string> ]
 override: <bool>
 # how often resource detection should be refreshed; if unset, detection runs only once at startup
 refresh_interval: <duration>
+# controls whether network-based detectors treat an unreachable metadata service as a hard failure;
+# supersedes the per-detector fail_on_missing_metadata fields (now deprecated). Default: false
+fail_on_missing_metadata: <bool>
 ```
 
 You have the ability to specify which detector should collect each attribute with `resource_attributes` option. An example of such a configuration is:
@@ -996,6 +996,21 @@ The `refresh_interval` option allows resource attributes to be periodically refr
 
 **Recommendation**: In most environments, a single resource detection at startup is sufficient. Periodic refresh should be used only when resource attributes are expected to change during the Collector's lifetime (e.g., Kubernetes pod labels, cloud instance tags).
 
+### Using the `fail_on_missing_metadata` parameter
+
+The `fail_on_missing_metadata` option controls whether detectors treat an unreachable metadata service as a hard failure. When set to `true`, affected detectors return an error instead of silently returning an empty resource, enabling the collector's retry mechanism to wait until the metadata service becomes available.
+
+This is particularly useful for workloads where the metadata service may be temporarily unavailable during node startup.
+
+```yaml
+processors:
+  resource_detection/gke:
+    detectors: [gcp]
+    fail_on_missing_metadata: true
+```
+
+> **Note**: The per-detector `fail_on_missing_metadata` fields in the `ec2`, `alibaba_ecs`, `tencent_cvm`, `upcloud`, `vultr`, and `nova` detector configs are deprecated. Use this top-level flag instead.
+
 ## Performance
 
 ### Benchmark Tests
@@ -1013,6 +1028,10 @@ go test -bench=. -benchmem
 ```
 
 For the latest benchmark results, see the [GitHub Actions workflow runs](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml).
+
+## Internal Telemetry
+
+The processor emits internal telemetry to observe resource detection. For the complete list of metrics and their attributes, see the [Internal Telemetry documentation](./documentation.md#internal-telemetry).
 
 ## Ordering
 

@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudstorageexporter/internal/metadata"
@@ -58,6 +58,25 @@ func TestLoadConfig(t *testing.T) {
 					Format: "year=%Y",
 					Prefix: "my-logs",
 				}
+				return cfg
+			}(),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_resource_attrs_to_gcs"),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Encoding = func() *component.ID {
+					id := component.MustNewID("test")
+					return &id
+				}()
+				cfg.Bucket.Name = "test-bucket"
+				cfg.Bucket.Region = "test-region"
+				cfg.Bucket.ProjectID = "test-project-id"
+				cfg.Bucket.Partition = partitionConfig{
+					Format: "%Y-%m-%d/%H",
+					Prefix: "storage",
+				}
+				cfg.ResourceAttrsToGCS = ResourceAttrsToGCS{Prefix: "service.name"}
 				return cfg
 			}(),
 		},
@@ -128,6 +147,21 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "unsupported_compression"),
 			expectedErr: errUnknownCompression,
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_universe_domain"),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Encoding = func() *component.ID {
+					id := component.MustNewID("test")
+					return &id
+				}()
+				cfg.Bucket.Name = "test-bucket"
+				cfg.Bucket.Region = "test-region"
+				cfg.Bucket.ProjectID = "test-project-id"
+				cfg.UniverseDomain = "apis.example.com"
+				return cfg
+			}(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -142,7 +176,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			err = xconfmap.Validate(cfg)
+			err = confmap.Validate(cfg)
 			if tt.expectedErr != nil {
 				require.ErrorIs(t, err, tt.expectedErr)
 			} else {

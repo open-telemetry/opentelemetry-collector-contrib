@@ -739,7 +739,11 @@ func TestCollectMetrics(t *testing.T) {
 						continue
 					}
 
-					require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
+					expectedName := "test_space_test_metric"
+					if tt.metricType == prometheus.CounterValue {
+						expectedName += "_total"
+					}
+					require.Contains(t, m.Desc().String(), `fqName: "`+expectedName+`"`)
 					require.Contains(t, m.Desc().String(), `variableLabels: {label_1,label_2,otel_scope_name,otel_scope_version,otel_scope_schema_url,job,instance}`)
 
 					pbMetric := io_prometheus_client.Metric{}
@@ -751,7 +755,7 @@ func TestCollectMetrics(t *testing.T) {
 					}
 
 					if sendTimestamp {
-						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						require.Equal(t, ts.UnixNano()/1e6, *pbMetric.TimestampMs)
 						// Prometheus gauges don't have created timestamp.
 						if tt.metricType == prometheus.CounterValue {
 							require.Equal(t, timestamppb.New(ts), pbMetric.Counter.CreatedTimestamp)
@@ -866,7 +870,7 @@ func TestAccumulateHistograms(t *testing.T) {
 					}
 
 					if sendTimestamp {
-						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						require.Equal(t, ts.UnixNano()/1e6, *pbMetric.TimestampMs)
 						require.Equal(t, timestamppb.New(ts), pbMetric.Histogram.CreatedTimestamp)
 					} else {
 						require.Nil(t, pbMetric.TimestampMs)
@@ -1000,7 +1004,7 @@ func TestAccumulateExponentialHistograms(t *testing.T) {
 
 					// Assert timestamp behavior
 					if sendTimestamp {
-						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						require.Equal(t, ts.UnixNano()/1e6, *pbMetric.TimestampMs)
 						// withStartTime is tied to sendTimestamp in this test
 						require.Equal(t, timestamppb.New(ts), pbMetric.Histogram.CreatedTimestamp)
 					} else {
@@ -1129,7 +1133,7 @@ func TestAccumulateSummary(t *testing.T) {
 					}
 
 					if sendTimestamp {
-						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						require.Equal(t, ts.UnixNano()/1e6, *pbMetric.TimestampMs)
 						require.Equal(t, timestamppb.New(ts), pbMetric.Summary.CreatedTimestamp)
 					} else {
 						require.Nil(t, pbMetric.TimestampMs)

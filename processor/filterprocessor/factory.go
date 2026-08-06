@@ -198,12 +198,8 @@ func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 }
 
 func (f *filterProcessorFactory) createDefaultConfig() component.Config {
-	defaultErrorMode := ottl.PropagateError
-	if metadata.ProcessorFilterDefaultErrorModeIgnoreFeatureGate.IsEnabled() {
-		defaultErrorMode = ottl.IgnoreError
-	}
 	return &Config{
-		ErrorMode:          defaultErrorMode,
+		ErrorMode:          ottl.IgnoreError,
 		resourceFunctions:  f.resourceFunctions,
 		dataPointFunctions: f.dataPointFunctions,
 		logFunctions:       f.logFunctions,
@@ -237,7 +233,8 @@ func (f *filterProcessorFactory) createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		fp.processMetrics,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func (f *filterProcessorFactory) createLogsProcessor(
@@ -262,7 +259,8 @@ func (f *filterProcessorFactory) createLogsProcessor(
 		cfg,
 		nextConsumer,
 		fp.processLogs,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func (f *filterProcessorFactory) createTracesProcessor(
@@ -288,7 +286,8 @@ func (f *filterProcessorFactory) createTracesProcessor(
 		cfg,
 		nextConsumer,
 		fp.processTraces,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func (f *filterProcessorFactory) createProfilesProcessor(
@@ -313,5 +312,6 @@ func (f *filterProcessorFactory) createProfilesProcessor(
 		cfg,
 		nextConsumer,
 		fp.processProfiles,
-		xprocessorhelper.WithCapabilities(processorCapabilities))
+		xprocessorhelper.WithCapabilities(processorCapabilities),
+	)
 }
