@@ -108,6 +108,19 @@ func Test_PathExpressionParser(t *testing.T) {
 		require.NotEqual(t, cache, val)
 	})
 
+	t.Run("modify entire cache nil clears", func(t *testing.T) {
+		path := &pathtest.Path[testContext]{
+			N: "cache",
+		}
+
+		getter, err := parser(path)
+		require.NoError(t, err)
+
+		err = getter.Set(t.Context(), ctx, nil)
+		require.NoError(t, err)
+		assert.Equal(t, 0, ctx.cache.Len())
+	})
+
 	t.Run("modify specific cache key", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
 			N: "cache",
@@ -148,6 +161,27 @@ func Test_PathExpressionParser(t *testing.T) {
 		v, ok := ctx.cache.Get("key3")
 		assert.True(t, ok)
 		assert.Equal(t, "value3", v.Str())
+	})
+
+	t.Run("modify specific cache key nil does not error", func(t *testing.T) {
+		path := &pathtest.Path[testContext]{
+			N: "cache",
+			KeySlice: []ottl.Key[testContext]{
+				&pathtest.Key[testContext]{
+					S: ottltest.Strp("key1"),
+				},
+			},
+		}
+
+		getter, err := parser(path)
+		require.NoError(t, err)
+
+		err = getter.Set(t.Context(), ctx, nil)
+		require.NoError(t, err)
+
+		v, ok := ctx.cache.Get("key1")
+		assert.True(t, ok)
+		assert.Equal(t, pcommon.ValueTypeEmpty, v.Type())
 	})
 
 	t.Run("access nested key", func(t *testing.T) {

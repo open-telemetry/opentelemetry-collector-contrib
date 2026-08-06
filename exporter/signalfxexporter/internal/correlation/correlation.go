@@ -51,12 +51,12 @@ func NewTracker(cfg *Config, accessToken configopaque.String, params exporter.Se
 func newCorrelationClient(ctx context.Context, cfg *Config, accessToken configopaque.String, params exporter.Settings, host component.Host) (
 	*correlationContext, error,
 ) {
-	corrURL, err := url.Parse(cfg.Endpoint)
+	corrURL, err := url.Parse(cfg.ClientConfig.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %w", cfg.Endpoint, err)
+		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %w", cfg.ClientConfig.Endpoint, err)
 	}
 
-	httpClient, err := cfg.ToClient(ctx, host.GetExtensions(), params.TelemetrySettings)
+	httpClient, err := cfg.ClientConfig.ToClient(ctx, host.GetExtensions(), params.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create correlation API client: %w", err)
 	}
@@ -105,7 +105,8 @@ func (cor *Tracker) ProcessTraces(ctx context.Context, traces ptrace.Traces) err
 			map[string]string{
 				hostDimension: hostID.ID,
 			},
-			cor.cfg.SyncAttributes)
+			cor.cfg.SyncAttributes,
+		)
 
 		cor.pTicker = &timeutils.PolicyTicker{OnTickFunc: cor.traceTracker.Purge}
 		cor.pTicker.Start(cor.cfg.StaleServiceTimeout)
