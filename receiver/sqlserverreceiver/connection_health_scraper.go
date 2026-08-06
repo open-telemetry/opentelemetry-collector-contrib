@@ -5,8 +5,6 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
 	"net"
 	"strconv"
 	"time"
@@ -39,7 +37,12 @@ const reachabilityProbeQuery = "SELECT 1"
 //     TCP connection, performed by parsing the connection string with the driver's
 //     own parser and dialing the resolved host:port outside the connection pool.
 //   - queryable: an end-to-end check that the receiver can authenticate and run a
-//     trivial query (SELECT 1) through the pool.
+//     trivial query (SELECT 1). A fresh connection is opened and closed for every
+//     scrape rather than reusing a pooled one, so the probe tests whether a brand
+//     new authenticated session can be established right now. Reusing a pooled
+//     connection would report success as long as a previously-opened session
+//     survived, masking failures that only affect new sessions (rotated
+//     credentials, login-limit exhaustion, an auth path broken for new logins).
 //
 // Both checks are emitted every collection interval. ScrapeMetrics never returns
 // an error for a failed probe: an unreachable or unauthenticated database is
@@ -51,8 +54,6 @@ type connectionHealthScraper struct {
 	telemetry          sqlquery.TelemetryConfig
 	dbProviderFunc     sqlquery.DbProviderFunc
 	clientProviderFunc sqlquery.ClientProviderFunc
-	db                 *sql.DB
-	client             sqlquery.DbClient
 	mb                 *metadata.MetricsBuilder
 	serviceInstanceID  string
 }
@@ -89,14 +90,11 @@ func (s *connectionHealthScraper) ID() component.ID {
 	return s.id
 }
 
+// Start is a no-op: unlike the metric/log scrapers, the health scraper holds no
+// long-lived connection. Each scrape's queryable probe opens and closes its own
+// connection so that it always tests a fresh authenticated session (see
+// probeQueryable).
 func (s *connectionHealthScraper) Start(context.Context, component.Host) error {
-	var err error
-	s.db, err = s.dbProviderFunc()
-	if err != nil {
-		return fmt.Errorf("failed to open Db connection: %w", err)
-	}
-	s.client = s.clientProviderFunc(sqlquery.DbWrapper{Db: s.db}, reachabilityProbeQuery, s.logger, s.telemetry)
-
 	return nil
 }
 
@@ -154,10 +152,28 @@ func (s *connectionHealthScraper) probeReachable(ctx context.Context, host strin
 	return true
 }
 
-// probeQueryable runs a trivial query through the pool. It returns true if the
-// receiver can authenticate and execute the statement end-to-end.
+// probeQueryable opens a fresh connection, runs a trivial query (SELECT 1), and
+// closes the connection. It returns true if the receiver can authenticate and
+// execute the statement end-to-end. A new connection is opened for every scrape
+// rather than reusing a pooled one: reuse would report success as long as a
+// previously-established session survived, so it would not catch failures that
+// only affect new logins (rotated credentials, login-limit exhaustion, an auth
+// path that is broken for new sessions but fine for an existing one). Opening and
+// closing per scrape makes queryable a true test of "can I connect right now".
 func (s *connectionHealthScraper) probeQueryable(ctx context.Context) bool {
-	if _, err := s.client.QueryRows(ctx); err != nil {
+	db, err := s.dbProviderFunc()
+	if err != nil {
+		s.logger.Debug("Connection health: queryable check could not open a connection", zap.Error(err))
+		return false
+	}
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			s.logger.Debug("Connection health: failed to close queryable-probe connection", zap.Error(closeErr))
+		}
+	}()
+
+	client := s.clientProviderFunc(sqlquery.DbWrapper{Db: db}, reachabilityProbeQuery, s.logger, s.telemetry)
+	if _, err := client.QueryRows(ctx); err != nil {
 		s.logger.Debug("Connection health: queryable check failed", zap.Error(err))
 		return false
 	}
@@ -184,10 +200,9 @@ func (s *connectionHealthScraper) setupResourceBuilder(rb *metadata.ResourceBuil
 	}
 }
 
+// Shutdown is a no-op: the queryable probe opens and closes its own connection
+// each scrape, so there is no long-lived connection to release here.
 func (s *connectionHealthScraper) Shutdown(context.Context) error {
-	if s.db != nil {
-		return s.db.Close()
-	}
 	return nil
 }
 

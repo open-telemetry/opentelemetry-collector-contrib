@@ -4,6 +4,7 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
+	"database/sql"
 	"errors"
 	"net"
 	"testing"
@@ -13,20 +14,29 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
-// newTestHealthScraper builds a connectionHealthScraper wired to the supplied
-// DB client, bypassing Start so tests can inject a fake client directly.
+// newTestHealthScraper builds a connectionHealthScraper whose queryable probe
+// resolves to the supplied fake DB client. The db provider returns a lazily
+// opened *sql.DB (sql.Open does not dial until a query runs, and the fake client
+// short-circuits the query, so the connection is never actually established); it
+// is safe to Close. The client provider ignores its db argument and always hands
+// back the injected fake, so RequestCounter reflects the probe's calls.
 func newTestHealthScraper(t *testing.T, cfg *Config, client sqlquery.DbClient) *connectionHealthScraper {
 	t.Helper()
 	params := receivertest.NewNopSettings(metadata.Type)
 	id := component.NewIDWithName(metadata.Type, "connection-health")
-	s := newConnectionHealthScraper(id, sqlquery.TelemetryConfig{}, nil, sqlquery.NewDbClient, params, cfg)
-	s.client = client
-	return s
+	dbProvider := func() (*sql.DB, error) {
+		return sql.Open("sqlserver", "server=127.0.0.1")
+	}
+	clientProvider := func(sqlquery.Db, string, *zap.Logger, sqlquery.TelemetryConfig) sqlquery.DbClient {
+		return client
+	}
+	return newConnectionHealthScraper(id, sqlquery.TelemetryConfig{}, dbProvider, clientProvider, params, cfg)
 }
 
 func TestBoolToStatus(t *testing.T) {
@@ -82,6 +92,54 @@ func TestProbeQueryable(t *testing.T) {
 	errClient := &sqlquery.FakeDBClient{Err: errors.New("login failed")}
 	s = newTestHealthScraper(t, cfg, errClient)
 	assert.False(t, s.probeQueryable(t.Context()))
+}
+
+// TestProbeQueryableOpensFreshConnectionEachScrape asserts the queryable probe
+// opens a new connection (via dbProviderFunc) on every call rather than reusing
+// one long-lived pooled connection. Reuse would let a stale but still-open
+// session report queryable=1 after new logins have started failing.
+func TestProbeQueryableOpensFreshConnectionEachScrape(t *testing.T) {
+	cfg := &Config{DataSource: "server=127.0.0.1;port=1433"}
+	params := receivertest.NewNopSettings(metadata.Type)
+	id := component.NewIDWithName(metadata.Type, "connection-health")
+
+	var opened int
+	dbProvider := func() (*sql.DB, error) {
+		opened++
+		// sql.Open does not dial; the fake client below short-circuits the query,
+		// so the connection is never actually established. Safe to Close.
+		return sql.Open("sqlserver", "server=127.0.0.1")
+	}
+	client := &sqlquery.FakeDBClient{StringMaps: [][]sqlquery.StringMap{{{"": "1"}}, {{"": "1"}}}}
+	clientProvider := func(sqlquery.Db, string, *zap.Logger, sqlquery.TelemetryConfig) sqlquery.DbClient {
+		return client
+	}
+	s := newConnectionHealthScraper(id, sqlquery.TelemetryConfig{}, dbProvider, clientProvider, params, cfg)
+
+	require.True(t, s.probeQueryable(t.Context()))
+	require.True(t, s.probeQueryable(t.Context()))
+
+	assert.Equal(t, 2, opened, "each scrape must open its own connection")
+	assert.Equal(t, 2, client.RequestCounter, "each scrape must run its own query")
+}
+
+// TestProbeQueryableOpenFailure asserts that when a connection cannot even be
+// opened, the probe reports not-queryable rather than panicking.
+func TestProbeQueryableOpenFailure(t *testing.T) {
+	cfg := &Config{DataSource: "server=127.0.0.1;port=1433"}
+	params := receivertest.NewNopSettings(metadata.Type)
+	id := component.NewIDWithName(metadata.Type, "connection-health")
+
+	dbProvider := func() (*sql.DB, error) {
+		return nil, errors.New("cannot open connection")
+	}
+	clientProvider := func(sqlquery.Db, string, *zap.Logger, sqlquery.TelemetryConfig) sqlquery.DbClient {
+		t.Fatal("client provider must not be called when the connection cannot be opened")
+		return nil
+	}
+	s := newConnectionHealthScraper(id, sqlquery.TelemetryConfig{}, dbProvider, clientProvider, params, cfg)
+
+	assert.False(t, s.probeQueryable(t.Context()), "open failure => not queryable")
 }
 
 // statusByCheck extracts the sqlserver.health datapoint values keyed by the
