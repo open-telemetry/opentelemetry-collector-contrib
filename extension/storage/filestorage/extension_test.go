@@ -11,11 +11,11 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.etcd.io/bbolt"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
@@ -793,11 +793,17 @@ func TestCompactionOnStartWithCorruption(t *testing.T) {
 			require.True(t, ok)
 			lfs, ok := se.(*localFileStorage)
 			require.True(t, ok)
-			lfs.compactFunc = func(*fileStorageClient, string, time.Duration, int64) error {
+			
+			client, err = se.GetClient(ctx, component.KindReceiver, newTestEntity("my_component"), "")
+			require.NoError(t, err)
+			fileClient, ok := client.(*fileStorageClient)
+			require.True(t, ok)
+			absoluteName := fileClient.db.Path()
+			fileClient.compactFunc = func(*bbolt.DB, *bbolt, int64) error {
 				panic("simulated compaction panic due to corruption")
 			}
 
-			client, err = se.GetClient(ctx, component.KindReceiver, newTestEntity("my_component"), "")
+			client, err = lfs.compactOnStart(ctx, fileClient, absoluteName)
 			require.NotEmpty(t, logObserver.FilterMessage("panic during on_start compaction, database may be corrupted").All())
 
 			if testCase.expectError {

@@ -24,8 +24,6 @@ import (
 type localFileStorage struct {
 	cfg    *Config
 	logger *zap.Logger
-	// compactFunc is the compaction entry point and can be replaced by tests.
-	compactFunc func(*fileStorageClient, string, time.Duration, int64) error
 }
 
 // Ensure this storage extension implements the appropriate interface
@@ -45,15 +43,10 @@ func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extensio
 			}
 		}
 	}
-	lfs := &localFileStorage{
+	return &localFileStorage{
 		cfg:    config,
 		logger: logger,
-	}
-	// Default compaction function - can be overridden in tests
-	lfs.compactFunc = func(c *fileStorageClient, dir string, timeout time.Duration, maxTxSize int64) error {
-		return c.Compact(dir, timeout, maxTxSize)
-	}
-	return lfs, nil
+	}, nill
 }
 
 // Start runs cleanup if configured
@@ -136,7 +129,7 @@ func (lfs *localFileStorage) compactOnStart(ctx context.Context, client *fileSto
 		}
 	}()
 
-	err = lfs.compactFunc(client, lfs.cfg.Compaction.Directory, lfs.cfg.Timeout, lfs.cfg.Compaction.MaxTransactionSize)
+	err = client.Compact(lfs.cfg.Compaction.Directory, lfs.cfg.Timeout, lfs.cfg.Compaction.MaxTransactionSize)
 	return recoveredClient, err
 }
 
