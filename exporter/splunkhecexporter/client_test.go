@@ -1326,7 +1326,7 @@ func TestErrorReceived(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
-	cfg.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 
@@ -1378,7 +1378,7 @@ func TestErrorReceivedForbidden(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
-	cfg.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 
@@ -1432,7 +1432,7 @@ func TestInvalidURL(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
-	cfg.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.ClientConfig.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopSettings(metadata.Type)
@@ -1471,7 +1471,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
-	cfg.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = true
@@ -1512,7 +1512,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
-	cfg.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = false
@@ -1547,7 +1547,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
-	cfg.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = true

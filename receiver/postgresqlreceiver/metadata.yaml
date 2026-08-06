@@ -339,7 +339,7 @@ events:
 metrics:
   postgresql.backends:
     enabled: true
-    description: The number of backends.
+    description: The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.
     stability: development
     unit: "1"
     sum:
@@ -461,7 +461,7 @@ metrics:
     unit: "{lock}"
     gauge:
       value_type: int
-    attributes: [relation, mode, lock_type]
+    attributes: [relation, mode, lock_type, db.namespace]
   postgresql.db_size:
     enabled: true
     description: The database disk usage.
@@ -530,6 +530,16 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [postgresql.conflict.type, db.namespace]
+  postgresql.query.execution.time:
+    enabled: false
+    description: The total execution time of SQL statements currently tracked by pg_stat_statements for the database.
+    stability: development
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.replication.data_delay:
     attributes: [replication_client]
     description: The amount of data delayed in replication.

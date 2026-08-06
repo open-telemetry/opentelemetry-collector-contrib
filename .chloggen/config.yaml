@@ -37,8 +37,8 @@ components:
     - exporter/awss3
     - exporter/awsxray
     - exporter/azure_blob
+    - exporter/azure_monitor
     - exporter/azuredataexplorer
-    - exporter/azuremonitor
     - exporter/bmc_helix
     - exporter/cassandra
     - exporter/clickhouse
@@ -79,6 +79,7 @@ components:
     - extension/ack
     - extension/asapclient
     - extension/avro_log_encoding
+    - extension/aws_iam_db_auth
     - extension/aws_logs_encoding
     - extension/awscloudwatchmetricstreams_encoding
     - extension/awsproxy
@@ -159,6 +160,7 @@ components:
     - pkg/faro
     - pkg/fileconsumer
     - pkg/golden
+    - pkg/jaeger
     - pkg/kafka/configkafka
     - pkg/otelarrow
     - pkg/ottl
@@ -171,9 +173,9 @@ components:
     - pkg/stanza
     - pkg/stanza/operator/input/journald
     - pkg/status
+    - pkg/tcp_input
     - pkg/topic
     - pkg/translator/azure
-    - pkg/translator/jaeger
     - pkg/translator/loki
     - pkg/translator/pprof
     - pkg/translator/prometheusremotewrite
@@ -191,8 +193,8 @@ components:
     - processor/cardinality_guardian
     - processor/coralogix
     - processor/cumulative_to_delta
+    - processor/delta_to_cumulative
     - processor/delta_to_rate
-    - processor/deltatocumulative
     - processor/digitaloceandetector
     - processor/drain
     - processor/dynamic_sampling
@@ -261,6 +263,7 @@ components:
     - receiver/collectd
     - receiver/couchdb
     - receiver/datadog
+    - receiver/dns_check
     - receiver/docker_stats
     - receiver/elasticsearch
     - receiver/envoy_als
