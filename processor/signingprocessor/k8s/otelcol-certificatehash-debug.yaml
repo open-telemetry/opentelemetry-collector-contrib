@@ -1,0 +1,266 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: otel-demo
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openbao-token
+  namespace: otel-demo
+type: Opaque
+stringData:
+  token: ""
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: otelcol-test-certs
+  namespace: otel-demo
+type: Opaque
+data:
+  cert.pem: ""
+  key.pem: ""
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otelcol-signing
+  namespace: otel-demo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: otelcol-secret-reader
+  namespace: otel-demo
+rules:
+  - apiGroups: [ "" ]
+    resources: [ "secrets" ]
+    resourceNames: [ "otelcol-test-certs" ]
+    verbs: [ "get", "create", "update", "patch" ]
+  - apiGroups: [ "" ]
+    resources: [ "secrets" ]
+    verbs: [ "get", "create", "update", "patch" ]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: otelcol-secret-reader
+  namespace: otel-demo
+subjects:
+  - kind: ServiceAccount
+    name: otelcol-signing
+    namespace: otel-demo
+roleRef:
+  kind: Role
+  name: otelcol-secret-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otelcol-signing
+  namespace: otel-demo
+  labels:
+    app: otelcol-signing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otelcol-signing
+  template:
+    metadata:
+      labels:
+        app: otelcol-signing
+    spec:
+      serviceAccountName: otelcol-signing
+      initContainers:
+        - name: fetch-certs-from-openbao
+          image: alpine:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              apk add --no-cache curl jq > /dev/null 2>&1
+
+              KUBECTL_VERSION="v1.28.0"
+              if ! command -v kubectl > /dev/null 2>&1; then
+                echo "Downloading kubectl..."
+                curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" 2>/dev/null || \
+                curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/arm64/kubectl" 2>/dev/null || \
+                echo "Warning: Could not download kubectl, assuming it's available"
+                chmod +x kubectl 2>/dev/null || true
+                export PATH="$PWD:$PATH"
+              fi
+
+              echo "Fetching certificates from OpenBao..."
+
+              OPENBAO_ADDR="${OPENBAO_ADDR:-http://openbao:8200}"
+              OPENBAO_PATH="${OPENBAO_PATH:-secret/data/certificates}"
+              OPENBAO_TOKEN="${OPENBAO_TOKEN}"
+
+              if [ -z "$OPENBAO_TOKEN" ]; then
+                echo "ERROR: OPENBAO_TOKEN environment variable is required"
+                exit 1
+              fi
+
+              echo "Connecting to OpenBao at $OPENBAO_ADDR"
+              echo "Fetching from path: $OPENBAO_PATH"
+
+              if [ -n "$OPENBAO_NAMESPACE" ]; then
+                CERT_RESPONSE=$(curl -s \
+                  -H "X-Vault-Token: $OPENBAO_TOKEN" \
+                  -H "X-Vault-Namespace: $OPENBAO_NAMESPACE" \
+                  "$OPENBAO_ADDR/v1/$OPENBAO_PATH" 2>&1)
+              else
+                CERT_RESPONSE=$(curl -s \
+                  -H "X-Vault-Token: $OPENBAO_TOKEN" \
+                  "$OPENBAO_ADDR/v1/$OPENBAO_PATH" 2>&1)
+              fi
+
+              if echo "$CERT_RESPONSE" | grep -q "errors"; then
+                echo "ERROR: Failed to fetch certificates from OpenBao"
+                echo "Response: $CERT_RESPONSE"
+                exit 1
+              fi
+
+              if [ -z "$CERT_RESPONSE" ]; then
+                echo "ERROR: Empty response from OpenBao"
+                exit 1
+              fi
+
+              CERT_PEM=$(echo "$CERT_RESPONSE" | jq -r '.data.data.certificate // .data.certificate // .data.data.cert // .data.cert // empty' 2>/dev/null || echo "")
+              KEY_PEM=$(echo "$CERT_RESPONSE" | jq -r '.data.data.private_key // .data.private_key // .data.data.key // .data.key // empty' 2>/dev/null || echo "")
+
+              CA_CHAIN_RAW=$(echo "$CERT_RESPONSE" | jq '.data.data.ca_chain // .data.ca_chain // .data.data.ca // .data.ca // empty' 2>/dev/null || echo "")
+              if [ -n "$CA_CHAIN_RAW" ] && [ "$CA_CHAIN_RAW" != "null" ] && [ "$CA_CHAIN_RAW" != "" ]; then
+                CA_CHAIN_TYPE=$(echo "$CERT_RESPONSE" | jq -r '.data.data.ca_chain // .data.ca_chain // .data.data.ca // .data.ca | type' 2>/dev/null || echo "string")
+                if [ "$CA_CHAIN_TYPE" = "array" ]; then
+                  CA_PEM=$(echo "$CERT_RESPONSE" | jq -r '(.data.data.ca_chain // .data.ca_chain // .data.data.ca // .data.ca) | join("\n")' 2>/dev/null || echo "")
+                else
+                  CA_PEM=$(echo "$CERT_RESPONSE" | jq -r '.data.data.ca_chain // .data.ca_chain // .data.data.ca // .data.ca // empty' 2>/dev/null || echo "")
+                fi
+              else
+                CA_PEM=""
+              fi
+
+              if [ -z "$CERT_PEM" ] || [ "$CERT_PEM" = "null" ]; then
+                echo "ERROR: Certificate not found in OpenBao response"
+                echo "Response preview: $(echo "$CERT_RESPONSE" | head -c 500)"
+                exit 1
+              fi
+
+              if [ -z "$KEY_PEM" ] || [ "$KEY_PEM" = "null" ]; then
+                echo "ERROR: Private key not found in OpenBao response"
+                echo "Response preview: $(echo "$CERT_RESPONSE" | head -c 500)"
+                exit 1
+              fi
+
+              echo "Successfully fetched certificates from OpenBao"
+              echo "Certificate length: $(echo "$CERT_PEM" | wc -c) bytes"
+              echo "Key length: $(echo "$KEY_PEM" | wc -c) bytes"
+
+              SECRET_NAME="otelcol-test-certs"
+              NAMESPACE="otel-demo"
+
+              echo "Creating/updating Kubernetes secret: $SECRET_NAME in namespace $NAMESPACE"
+
+              kubectl create secret generic "$SECRET_NAME" \
+                --namespace="$NAMESPACE" \
+                --from-literal=cert.pem="$CERT_PEM" \
+                --from-literal=key.pem="$KEY_PEM" \
+                --dry-run=client -o yaml | kubectl apply -f -
+
+              echo "Secret updated successfully"
+          env:
+            - name: OPENBAO_ADDR
+              value: "http://openbao.openbao.svc.cluster.local:8200"
+            - name: OPENBAO_PATH
+              value: "certs/data/test1"
+            - name: OPENBAO_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openbao-token
+                  key: token
+                  optional: false
+            - name: OPENBAO_NAMESPACE
+              value: ""
+      containers:
+        - name: otelcol
+          image: otelcol-signing:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 4317
+              name: otlp-grpc
+            - containerPort: 4318
+              name: otlp-http
+            - containerPort: 8888
+              name: metrics
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otelcol
+          env:
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name=otelcol-signing"
+      volumes:
+        - name: config
+          configMap:
+            name: otelcol-signing-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otelcol-signing-config
+  namespace: otel-demo
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    processors:
+      signing:
+        hash_algorithm: SHA256
+        key_source:
+          type: k8s_secret
+          k8s_secret:
+            name: otelcol-test-certs
+            namespace: otel-demo
+            cert_key: cert.pem
+            key_key: key.pem
+      batch:
+
+    exporters:
+      debug:
+        verbosity: detailed
+
+    service:
+      pipelines:
+        logs:
+          receivers: [otlp]
+          processors: [signing, batch]
+          exporters: [debug]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otelcol-signing
+  namespace: otel-demo
+spec:
+  type: ClusterIP
+  ports:
+    - port: 4317
+      targetPort: 4317
+      protocol: TCP
+      name: otlp-grpc
+    - port: 4318
+      targetPort: 4318
+      protocol: TCP
+      name: otlp-http
+  selector:
+    app: otelcol-signing
