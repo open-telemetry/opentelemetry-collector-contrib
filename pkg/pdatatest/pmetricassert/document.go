@@ -161,7 +161,7 @@ func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
 		if err := v.Decode(&eb); err != nil {
 			return fmt.Errorf("datapoint assertion: decode explicit_bounds: %w", err)
 		}
-		d.ExplicitBounds = eb
+		d.ExplicitBounds = &eb
 	}
 	if v, ok := raw["bucket_counts"]; ok {
 		var bc []uint64
