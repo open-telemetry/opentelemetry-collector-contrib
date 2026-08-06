@@ -44,7 +44,7 @@ type receiverSignals struct {
 
 // receiverTemplate is the configuration of a single subreceiver.
 type receiverTemplate struct {
-	receiverConfig
+	receiverConfig receiverConfig
 
 	// Rule is the discovery rule that when matched will create a receiver instance
 	// based on receiverTemplate.
