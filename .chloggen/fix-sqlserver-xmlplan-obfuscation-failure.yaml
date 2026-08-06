@@ -1,0 +1,15 @@
+change_type: bug_fix
+
+component: receiver/sqlserver
+
+note: Fix `obfuscateXMLPlan` silently dropping the entire XML query plan when a single attribute (e.g. `StatementText`) fails obfuscation due to SQL Server's ~4000-character truncation limit.
+
+issues: [50065]
+
+subtext: |
+  Previously, any obfuscation failure caused the full plan to be discarded and an empty
+  string returned. The failing attribute is now replaced with `?` and processing continues,
+  preserving all other plan content (operator costs, row estimates, join types, index usage).
+  The error is logged via the collector's structured logger instead of `fmt.Println`.
+
+change_logs: [user]
