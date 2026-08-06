@@ -92,6 +92,16 @@ func Test_clear(t *testing.T) {
 			initialValue:  10 * time.Second,
 			expectedValue: time.Duration(0),
 		},
+		{
+			name:          "nil",
+			initialValue:  nil,
+			expectedValue: nil,
+		},
+		{
+			name:          "pointer",
+			initialValue:  new(string),
+			expectedValue: (*string)(nil),
+		},
 	}
 
 	for _, tt := range tests {
