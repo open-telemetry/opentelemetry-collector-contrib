@@ -370,6 +370,7 @@ func (r *elasticsearchScraper) scrapeClusterStatsMetrics(ctx context.Context, no
 		return
 	}
 
+	nodes := r.cfg.Nodes
 	if r.cfg.ClusterStatsMasterOnly {
 		isMaster, err := r.isCurrentNodeMaster(ctx)
 		if err != nil {
@@ -379,9 +380,13 @@ func (r *elasticsearchScraper) scrapeClusterStatsMetrics(ctx context.Context, no
 		if !isMaster {
 			return
 		}
+		// The elected master reports cluster stats on behalf of the whole cluster, so
+		// the node filter used for per-node NodeStats (e.g. "_local") must not be applied
+		// here, or the "cluster-wide aggregate" stats would silently narrow to this one node.
+		nodes = []string{"_all"}
 	}
 
-	clusterStats, err := r.client.ClusterStats(ctx, r.cfg.Nodes)
+	clusterStats, err := r.client.ClusterStats(ctx, nodes)
 	if err != nil {
 		errs.AddPartial(3, err)
 		return

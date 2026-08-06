@@ -301,6 +301,42 @@ func TestScraperClusterStatsMasterOnlyDetectionError(t *testing.T) {
 	mockClient.AssertNotCalled(t, "ClusterStats", mock.Anything, mock.Anything)
 }
 
+func TestScraperClusterStatsMasterOnlyIgnoresNodeFilter(t *testing.T) {
+	t.Parallel()
+
+	conf := createDefaultConfig().(*Config)
+	conf.Nodes = []string{"_local"}
+	conf.ClusterStatsMasterOnly = true
+
+	sc := newElasticSearchScraper(receivertest.NewNopSettings(metadata.Type), conf)
+	err := sc.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	localNodeID := "szaFXm55RIeu8X-PTv5unQ"
+	localNode := nodes(t)
+	localNode.Nodes = map[string]model.NodeInfo{localNodeID: localNode.Nodes[localNodeID]}
+
+	mockClient := mocks.MockElasticsearchClient{}
+	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
+	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+	mockClient.On("Nodes", mock.Anything, []string{"_local"}).Return(localNode, nil)
+	mockClient.On("MasterNode", mock.Anything).Return(&model.MasterNodeResponse{MasterNode: localNodeID}, nil)
+	mockClient.On("NodeStats", mock.Anything, []string{"_local"}).Return(nodeStatsLinux(t), nil)
+	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
+	mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
+
+	sc.client = &mockClient
+
+	_, err = sc.scrape(t.Context())
+	require.NoError(t, err)
+
+	// Even though the receiver is configured with nodes: ["_local"] (as recommended for
+	// per-node NodeStats attribution), ClusterStats must still be fetched with "_all" so the
+	// elected master reports true cluster-wide aggregates rather than narrowing to itself.
+	mockClient.AssertCalled(t, "ClusterStats", mock.Anything, []string{"_all"})
+	mockClient.AssertNotCalled(t, "ClusterStats", mock.Anything, []string{"_local"})
+}
+
 func TestScraperIndexStatsMasterOnly(t *testing.T) {
 	t.Parallel()
 
