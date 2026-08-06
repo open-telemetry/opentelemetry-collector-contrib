@@ -300,7 +300,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap)),
+					}, labelMap),
+				),
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
@@ -319,7 +320,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap)),
+					}, labelMap),
+				),
 				doubleSFxDataPoint(
 					fmt.Sprintf("l%sng_name", strings.Repeat("o", 256)),
 					&sfxMetricTypeGauge,
@@ -328,7 +330,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap)),
+					}, labelMap),
+				),
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
@@ -372,7 +375,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, longLabelMap)),
+					}, longLabelMap),
+				),
 			},
 		},
 		{

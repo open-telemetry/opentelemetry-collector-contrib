@@ -7,7 +7,7 @@ change_type: breaking
 component: exporter/signalfx
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Log a debug message instead of dropping datapoints with an invalid metric name, dimension name, dimension value, or number of dimensions, since the backend already enforces these constraints and drops offending datapoints at ingest.
+note: Datapoints that fail validation are no longer dropped in the exporter. This may increase the ingest `sf.org.numDatapointsDroppedInvalid` org metric. No action required;
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50011]
@@ -16,11 +16,11 @@ issues: [50011]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  With this change, the SignalFx exporter only logs a debug message instead of dropping datapoints with an invalid metric name, 
-  dimension name, dimension value, or number of dimensions. 
-  The backend already enforces these constraints and drops offending datapoints at ingest. 
-  In order to track the number of dropped datapoints, you can monitor your org metrics, mainly [sf.org.numDatapointsDroppedInvalid]
-  (https://help.splunk.com/en/splunk-observability-cloud/monitor-infrastructure/metrics-pipeline-management/related-org-metrics-for-metrics-pipeline-management)
+  Previously, the SignalFx exporter dropped datapoints with an invalid metric name, dimension name, dimension value, or number of
+  dimensions before sending them to the backend. The backend already enforces the same constraints and drops offending datapoints at
+  ingest, so this exporter-side enforcement was redundant. With this change, the exporter no longer drops these datapoints itself and
+  only logs a debug message; the backend will now drop them. As a result, these datapoints now count toward
+  [sf.org.numDatapointsDroppedInvalid](https://help.splunk.com/en/splunk-observability-cloud/monitor-infrastructure/metrics-pipeline-management/related-org-metrics-for-metrics-pipeline-management).
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
