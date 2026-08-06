@@ -37,7 +37,8 @@ func ValidateMetrics(md pmetric.Metrics) error {
 		if sms.Len() == 0 {
 			errs = multierr.Append(errs, fmt.Errorf(
 				`resource "%v" at index %d has no scope metrics`,
-				rm.Resource().Attributes().AsRaw(), i))
+				rm.Resource().Attributes().AsRaw(), i,
+			))
 		}
 
 		for j := 0; j < sms.Len(); j++ {
