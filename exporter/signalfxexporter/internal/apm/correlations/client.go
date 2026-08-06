@@ -326,14 +326,16 @@ func (cc *Client) makeRequest(r *request) {
 
 			// cancel the request context
 			r.cancel()
-		})))
+		})),
+	)
 
 	req = req.WithContext(
 		context.WithValue(req.Context(), requests.RequestSuccessCallbackKey, requests.RequestSuccessCallback(func(body []byte) {
 			r.callback(body, http.StatusOK, nil)
 			// close the request context
 			r.cancel()
-		})))
+		})),
+	)
 
 	// This will block if we don't have enough requests
 	cc.requestSender.Send(req)

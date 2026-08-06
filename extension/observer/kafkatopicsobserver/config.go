@@ -14,9 +14,9 @@ import (
 
 // Config defines configuration for docker observer
 type Config struct {
-	configkafka.ClientConfig `mapstructure:",squash"`
-	TopicRegex               string        `mapstructure:"topic_regex"`
-	TopicsSyncInterval       time.Duration `mapstructure:"topics_sync_interval"`
+	ClientConfig       configkafka.ClientConfig `mapstructure:",squash"`
+	TopicRegex         string                   `mapstructure:"topic_regex"`
+	TopicsSyncInterval time.Duration            `mapstructure:"topics_sync_interval"`
 }
 
 func (config *Config) Validate() (errs error) {

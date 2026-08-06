@@ -480,9 +480,10 @@ func (ms *PostgresqlDatabaseCountMetricConfig) Unmarshal(parser *confmap.Conf) e
 type PostgresqlDatabaseLocksMetricAttributeKey string
 
 const (
-	PostgresqlDatabaseLocksMetricAttributeKeyRelation PostgresqlDatabaseLocksMetricAttributeKey = "relation"
-	PostgresqlDatabaseLocksMetricAttributeKeyMode     PostgresqlDatabaseLocksMetricAttributeKey = "mode"
-	PostgresqlDatabaseLocksMetricAttributeKeyLockType PostgresqlDatabaseLocksMetricAttributeKey = "lock_type"
+	PostgresqlDatabaseLocksMetricAttributeKeyRelation    PostgresqlDatabaseLocksMetricAttributeKey = "relation"
+	PostgresqlDatabaseLocksMetricAttributeKeyMode        PostgresqlDatabaseLocksMetricAttributeKey = "mode"
+	PostgresqlDatabaseLocksMetricAttributeKeyLockType    PostgresqlDatabaseLocksMetricAttributeKey = "lock_type"
+	PostgresqlDatabaseLocksMetricAttributeKeyDbNamespace PostgresqlDatabaseLocksMetricAttributeKey = "db.namespace"
 )
 
 // PostgresqlDatabaseLocksMetricConfig provides config for the postgresql.database.locks metric.
@@ -511,9 +512,9 @@ func (ms *PostgresqlDatabaseLocksMetricConfig) Unmarshal(parser *confmap.Conf) e
 func (ms *PostgresqlDatabaseLocksMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType:
+		case PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType, PostgresqlDatabaseLocksMetricAttributeKeyDbNamespace:
 		default:
-			return fmt.Errorf("metric postgresql.database.locks doesn't have an attribute %v, valid attributes: [relation, mode, lock_type]", val)
+			return fmt.Errorf("metric postgresql.database.locks doesn't have an attribute %v, valid attributes: [relation, mode, lock_type, db.namespace]", val)
 		}
 	}
 
@@ -2060,7 +2061,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlDatabaseLocks: PostgresqlDatabaseLocksMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType},
+			EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType, PostgresqlDatabaseLocksMetricAttributeKeyDbNamespace},
 		},
 		PostgresqlDbSize: PostgresqlDbSizeMetricConfig{
 			Enabled:             true,
