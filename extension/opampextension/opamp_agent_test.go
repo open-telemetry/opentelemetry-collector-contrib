@@ -93,7 +93,7 @@ func TestGetOSDescription(t *testing.T) {
 
 	t.Run("falls back when platform information fails", func(t *testing.T) {
 		getPlatformInformation = func() (string, string, string, error) {
-			return "", "", "", errors.New("getting host ID: The system cannot find the file specified.")
+			return "", "", "", errors.New("getting host ID: the system cannot find the file specified")
 		}
 
 		assert.Equal(t, runtime.GOOS, getOSDescription(zap.NewNop()))
