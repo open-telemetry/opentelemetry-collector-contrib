@@ -117,24 +117,47 @@ func benchTrace(traceID pcommon.TraceID, nSpans int, traceState string) ptrace.T
 // BenchmarkConsumeTraces_Accumulate measures the buffering path: per-span
 // bucketing, the per-span root-span OTTL evaluation, span copy into the
 // pending buffer, and the trace_timeout timer arm for new traces. Timers use
-// a 1h timeout so none fire during measurement; NumTraces caps the buffer so
-// long runs exercise eviction the way a saturated deployment would.
+// a 1h timeout so none fire during measurement. The eviction-pressure cases
+// cap NumTraces low so every new trace also evicts and decides the oldest,
+// exercising the saturated-deployment path for both eviction policies.
 func BenchmarkConsumeTraces_Accumulate(b *testing.B) {
 	for _, bc := range []struct {
 		name          string
 		spansPerTrace int
 		rootCondition string
+		numTraces     int
+		eviction      EvictionConfig
 	}{
-		{name: "10spans_default_root_condition", spansPerTrace: 10},
-		{name: "1span_default_root_condition", spansPerTrace: 1},
+		// Pure accumulation: NumTraces is set high enough that no eviction
+		// happens during measurement (evictions now decide traces, which
+		// would fold decision cost into these numbers).
+		{name: "10spans_default_root_condition", spansPerTrace: 10, numTraces: 2_000_000},
+		{name: "1span_default_root_condition", spansPerTrace: 1, numTraces: 2_000_000},
 		{
 			name: "10spans_custom_root_condition", spansPerTrace: 10,
 			rootCondition: `span.attributes["otelcol.dynamic_sampling.root_span"] == true`,
+			numTraces:     2_000_000,
+		},
+		// Sustained buffer pressure: every new trace evicts (and decides) the
+		// oldest one. The two policies bound the cost of overload differently;
+		// this makes the delta visible in the baseline.
+		{
+			name: "10spans_eviction_pressure_evaluate", spansPerTrace: 10,
+			numTraces: 64,
+		},
+		{
+			name: "10spans_eviction_pressure_probabilistic", spansPerTrace: 10,
+			numTraces: 64,
+			eviction:  EvictionConfig{Policy: EvictionProbabilistic, SamplingPercentage: 10},
 		},
 	} {
 		b.Run(bc.name, func(b *testing.B) {
 			cfg := benchConfig(benchCatchAllRules())
 			cfg.RootSpanCondition = bc.rootCondition
+			if bc.numTraces > 0 {
+				cfg.NumTraces = bc.numTraces
+			}
+			cfg.Eviction = bc.eviction
 			p := newBenchProcessor(b, cfg)
 			ctx := b.Context()
 
@@ -238,22 +261,33 @@ func BenchmarkDecide(b *testing.B) {
 		{name: "10spans_5ottl_rules", spansPerTrace: 10, rules: benchOTTLRules()},
 		{name: "100spans_5ottl_rules", spansPerTrace: 100, rules: benchOTTLRules()},
 		{name: "10000spans_5ottl_rules", spansPerTrace: 10_000, rules: benchOTTLRules()},
-		{name: "10spans_catchall_incoming_tracestate", spansPerTrace: 10, rules: benchCatchAllRules(), traceState: "ot=th:8;rv:ab8befca837da2b0"},
+		{name: "10spans_catchall_incoming_tracestate", spansPerTrace: 10, rules: benchCatchAllRules(), traceState: "ot=th:8;rv:ab8befca837da2"},
 	} {
 		b.Run(bc.name, func(b *testing.B) {
 			p := newBenchProcessor(b, benchConfig(bc.rules))
 
 			id := benchTraceID(1)
-			td := benchTrace(id, bc.spansPerTrace, bc.traceState)
-			spans := make([]ptrace.ResourceSpans, 0, td.ResourceSpans().Len())
-			for _, rs := range td.ResourceSpans().All() {
-				spans = append(spans, rs)
+			template := benchTrace(id, bc.spansPerTrace, bc.traceState)
+
+			// The pending trace is rebuilt (untimed) every iteration: the
+			// decide path consumes pt.spans, and reusing one pendingTrace
+			// would also understate steady-state behavior.
+			newPT := func() *pendingTrace {
+				td := ptrace.NewTraces()
+				template.CopyTo(td)
+				spans := make([]ptrace.ResourceSpans, 0, td.ResourceSpans().Len())
+				for _, rs := range td.ResourceSpans().All() {
+					spans = append(spans, rs)
+				}
+				return &pendingTrace{traceID: id, spans: spans, spanCount: bc.spansPerTrace}
 			}
-			pt := &pendingTrace{traceID: id, spans: spans, spanCount: bc.spansPerTrace}
 
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
+				b.StopTimer()
+				pt := newPT()
+				b.StartTimer()
 				p.mu.Lock()
 				p.traces[id] = pt
 				p.mu.Unlock()
