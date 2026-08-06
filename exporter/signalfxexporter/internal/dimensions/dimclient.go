@@ -274,7 +274,8 @@ func (dc *DimensionClient) handleDimensionUpdate(ctx context.Context, dimUpdate 
 					zap.Int("statusCode", statusCode),
 				)
 			}
-		})))
+		})),
+	)
 
 	req = req.WithContext(
 		context.WithValue(req.Context(), RequestSuccessCallbackKey, RequestSuccessCallback(func([]byte) {
@@ -284,7 +285,8 @@ func (dc *DimensionClient) handleDimensionUpdate(ctx context.Context, dimUpdate 
 					zap.String("dimensionUpdate", dimUpdate.String()),
 				)
 			}
-		})))
+		})),
+	)
 
 	dc.requestSender.Send(ctx, req)
 
@@ -361,7 +363,8 @@ func (dc *DimensionClient) makePatchRequest(ctx context.Context, dim *DimensionU
 		ctx,
 		http.MethodPatch,
 		strings.TrimRight(url.String(), "/")+"/_/sfxagent",
-		bytes.NewReader(json))
+		bytes.NewReader(json),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -404,7 +407,8 @@ func (dc *DimensionClient) makePutRequest(ctx context.Context, dim *DimensionUpd
 		ctx,
 		http.MethodPut,
 		strings.TrimRight(url.String(), "/"),
-		bytes.NewReader(json))
+		bytes.NewReader(json),
+	)
 	if err != nil {
 		return nil, err
 	}

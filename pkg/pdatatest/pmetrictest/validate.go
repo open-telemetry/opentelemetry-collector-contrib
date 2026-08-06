@@ -148,7 +148,8 @@ func checkDuplicateDatapointAttrs(attrs []pcommon.Map) error {
 		if firstIdx, exists := seen[h]; exists {
 			errs = multierr.Append(errs, fmt.Errorf(
 				"datapoint at index %d has duplicate attributes with datapoint at index %d, attributes: %v",
-				i, firstIdx, a.AsRaw()))
+				i, firstIdx, a.AsRaw(),
+			))
 		} else {
 			seen[h] = i
 		}
