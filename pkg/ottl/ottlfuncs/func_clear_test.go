@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -55,6 +56,41 @@ func Test_clear(t *testing.T) {
 			name:          "pcommon.Value",
 			initialValue:  pcommon.NewValueStr("test"),
 			expectedValue: pcommon.Value{},
+		},
+		{
+			name:          "pcommon.Map",
+			initialValue:  pcommon.NewMap(),
+			expectedValue: pcommon.Map{},
+		},
+		{
+			name:          "pcommon.Slice",
+			initialValue:  pcommon.NewSlice(),
+			expectedValue: pcommon.Slice{},
+		},
+		{
+			name:          "[]byte",
+			initialValue:  []byte{1, 2, 3},
+			expectedValue: []byte(nil),
+		},
+		{
+			name:          "pcommon.SpanID",
+			initialValue:  pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+			expectedValue: pcommon.SpanID([8]byte{}),
+		},
+		{
+			name:          "pcommon.TraceID",
+			initialValue:  pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}),
+			expectedValue: pcommon.TraceID([16]byte{}),
+		},
+		{
+			name:          "time.Time",
+			initialValue:  time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+			expectedValue: time.Time{},
+		},
+		{
+			name:          "time.Duration",
+			initialValue:  10 * time.Second,
+			expectedValue: time.Duration(0),
 		},
 	}
 
