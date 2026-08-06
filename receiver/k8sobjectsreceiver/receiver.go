@@ -227,7 +227,8 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 				if err != nil {
 					kr.setting.Logger.Error("shutdown receiver error:", zap.Error(err))
 				}
-			})
+			},
+		)
 	} else {
 		cctx, cancel := context.WithCancel(ctx)
 		kr.cancel = cancel

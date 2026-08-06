@@ -349,7 +349,8 @@ func TestScrapeV2(t *testing.T) {
 				defer mockDockerEngine.Close()
 
 				receiver := newMetricsReceiver(
-					receivertest.NewNopSettings(metadata.Type), tc.cfgBuilder.withEndpoint(mockDockerEngine.URL).build())
+					receivertest.NewNopSettings(metadata.Type), tc.cfgBuilder.withEndpoint(mockDockerEngine.URL).build(),
+				)
 				err := receiver.start(t.Context(), componenttest.NewNopHost())
 				require.NoError(t, err)
 				defer func() { require.NoError(t, receiver.shutdown(t.Context())) }()
@@ -397,7 +398,8 @@ func TestScrapeV2Streaming(t *testing.T) {
 			withMetrics(allMetricsEnabled).
 			withAPIVersion(dockerAPIVersion).
 			withStreamStats(true).
-			withEndpoint(mockDockerEngine.URL).build())
+			withEndpoint(mockDockerEngine.URL).build(),
+	)
 
 	err = receiver.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
