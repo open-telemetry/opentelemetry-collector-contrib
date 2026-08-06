@@ -5,6 +5,7 @@ package azure // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -27,14 +28,15 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is an Azure metadata detector
 type Detector struct {
-	provider      azure.Provider
-	tagKeyRegexes []*regexp.Regexp
-	logger        *zap.Logger
-	rb            *metadata.ResourceBuilder
+	provider              azure.Provider
+	tagKeyRegexes         []*regexp.Regexp
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new Azure metadata detector
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	tagKeyRegexes, err := compileRegexes(cfg)
@@ -43,10 +45,11 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 	}
 
 	return &Detector{
-		provider:      azure.NewProvider(),
-		tagKeyRegexes: tagKeyRegexes,
-		logger:        p.Logger,
-		rb:            metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		provider:              azure.NewProvider(),
+		tagKeyRegexes:         tagKeyRegexes,
+		logger:                p.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
@@ -55,7 +58,9 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	compute, err := d.provider.Metadata(ctx)
 	if err != nil {
 		d.logger.Debug("Azure detector metadata retrieval failed", zap.Error(err))
-		// return an empty Resource and no error
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("azure metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 
