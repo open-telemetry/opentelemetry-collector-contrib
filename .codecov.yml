@@ -569,6 +569,10 @@ component_management:
     name: processor_schema
     paths:
     - processor/schemaprocessor/**
+  - component_id: processor_signing
+    name: processor_signing
+    paths:
+    - processor/signingprocessor/**
   - component_id: processor_span
     name: processor_span
     paths:
