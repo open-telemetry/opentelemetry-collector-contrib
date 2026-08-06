@@ -58,21 +58,24 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 	res, err := d.detector.Detect(ctx)
 	if err != nil {
 		d.logger.Debug("Vultr metadata unavailable", zap.Error(err))
-		if d.failOnMissingMetadata {
-			return pcommon.NewResource(), "", err
-		}
-		// Anything other than a partial result leaves nothing usable behind, so
-		// report no resource rather than an error, as this detector has always
-		// done when fail_on_missing_metadata is not set.
+		// A partial result still came from a reachable metadata service, so keep
+		// what it did return. fail_on_missing_metadata covers an unusable
+		// metadata service, not individual fields absent from its response.
 		if !errors.Is(err, sdkresource.ErrPartialResource) {
+			if d.failOnMissingMetadata {
+				return pcommon.NewResource(), "", err
+			}
 			return pcommon.NewResource(), "", nil
 		}
 	}
 
-	// The SDK detector returns an empty resource when not running on a Vultr
-	// instance.
+	// The SDK detector reports an empty resource and no error both when the
+	// metadata service is unreachable and when running outside Vultr.
 	if res.Len() == 0 {
-		d.logger.Debug("Vultr detector: not running on a Vultr instance")
+		d.logger.Debug("Vultr detector: metadata unavailable or not running on a Vultr instance")
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("vultr metadata unavailable")
+		}
 		return pcommon.NewResource(), "", nil
 	}
 
@@ -92,5 +95,5 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 		}
 	}
 
-	return d.rb.Emit(), res.SchemaURL(), nil
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }
