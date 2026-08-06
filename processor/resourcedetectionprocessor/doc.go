@@ -18,6 +18,7 @@
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/ibmcloud/classic/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/ibmcloud/vpc/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/openshift/metadata.yaml
+//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/oraclecloud/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/system/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/k8sapi/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/kubeadm/metadata.yaml
