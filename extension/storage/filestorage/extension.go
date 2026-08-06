@@ -137,7 +137,7 @@ func (lfs *localFileStorage) compactOnStart(ctx context.Context, client *fileSto
 	}()
 
 	err = lfs.compactFunc(client, lfs.cfg.Compaction.Directory, lfs.cfg.Timeout, lfs.cfg.Compaction.MaxTransactionSize)
-	return
+	return recoveredClient, err
 }
 
 // createClientWithPanicRecovery attempts to create a client, and if recreate is enabled
