@@ -38,8 +38,7 @@ func TestFactoryOtherOS(t *testing.T) {
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
 				params := receivertest.NewNopSettings(metadata.Type)
-				scrapers, err := setupScrapers(params, cfg)
-				require.NoError(t, err)
+				scrapers := setupScrapers(params, cfg)
 				require.NotEmpty(t, scrapers)
 
 				sqlScrapers := setupSQLServerScrapers(params, cfg)
