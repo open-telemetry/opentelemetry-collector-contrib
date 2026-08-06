@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -173,4 +174,39 @@ func Test_Bool(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func Test_BoolFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewBoolFactory[any]()
+		assert.Equal(t, "Bool", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewBoolFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &BoolArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewBoolFactory[any]()
+		args := factory.CreateDefaultArguments()
+		boolArgs, ok := args.(*BoolArguments[any])
+		require.True(t, ok)
+		boolArgs.Target = &ottl.StandardBoolLikeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "true", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createBoolFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "BoolFactory args must be of type *BoolArguments[K]")
+	})
 }

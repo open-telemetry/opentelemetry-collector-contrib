@@ -144,3 +144,38 @@ func TestConvertTextToElementsXMLMaxDepth(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "exceeded maximum XML nesting depth")
 }
+
+func Test_ConvertTextToElementsXMLFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewConvertTextToElementsXMLFactory[any]()
+		assert.Equal(t, "ConvertTextToElementsXML", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewConvertTextToElementsXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ConvertTextToElementsXMLArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewConvertTextToElementsXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+		convertArgs, ok := args.(*ConvertTextToElementsXMLArguments[any])
+		require.True(t, ok)
+		convertArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return `<a>hello<b/>world</a>`, nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createConvertTextToElementsXMLFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ConvertTextToElementsXML args must be of type *ConvertTextToElementsXMLAguments[K]")
+	})
+}

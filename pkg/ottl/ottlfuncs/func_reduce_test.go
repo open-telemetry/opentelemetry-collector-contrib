@@ -236,35 +236,45 @@ func Test_reduce_error(t *testing.T) {
 	})
 }
 
-func Test_createReduceFunction(t *testing.T) {
-	fCtx := ottl.FunctionContext{}
-	accumulator := ottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
-		acc := resolveBinding("acc")
-		return acc, nil
+func Test_ReduceFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewReduceFactory[any]()
+		assert.Equal(t, "Reduce", factory.Name())
 	})
-	source := ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return pcommon.NewMap(), nil
-		},
-	}
-	seed := ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return int64(0), nil
-		},
-	}
 
-	t.Run("valid args", func(t *testing.T) {
-		fn, err := createReduceFunction[any](fCtx, &ReduceArguments[any]{
-			Source:      source,
-			Seed:        seed,
-			Accumulator: accumulator,
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewReduceFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ReduceArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewReduceFactory[any]()
+		args := factory.CreateDefaultArguments()
+		reduceArgs, ok := args.(*ReduceArguments[any])
+		require.True(t, ok)
+		reduceArgs.Source = ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+		reduceArgs.Seed = ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return int64(0), nil
+			},
+		}
+		reduceArgs.Accumulator = ottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			return resolveBinding("acc"), nil
 		})
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
 		require.NoError(t, err)
-		require.NotNil(t, fn)
+		assert.NotNil(t, fn)
 	})
 
-	t.Run("invalid args type", func(t *testing.T) {
-		_, err := createReduceFunction[any](fCtx, &struct{}{})
-		assert.EqualError(t, err, "ReduceFactory args must be of type *ReduceArguments[K]")
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createReduceFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ReduceFactory args must be of type *ReduceArguments[K]")
 	})
 }

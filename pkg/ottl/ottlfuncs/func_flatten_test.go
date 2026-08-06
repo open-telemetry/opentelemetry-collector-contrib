@@ -591,3 +591,41 @@ func compareSlices[K string | any](a, b []K) bool {
 
 	return reflect.DeepEqual(aMap, bMap)
 }
+
+func Test_FlattenFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewFlattenFactory[any]()
+		assert.Equal(t, "flatten", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewFlattenFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &FlattenArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewFlattenFactory[any]()
+		args := factory.CreateDefaultArguments()
+		flattenArgs, ok := args.(*FlattenArguments[any])
+		require.True(t, ok)
+		flattenArgs.Target = &ottl.StandardPMapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.NewMap(), nil
+			},
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createFlattenFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "FlattenFactory args must be of type *FlattenArguments[K]")
+	})
+}

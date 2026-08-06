@@ -53,3 +53,38 @@ func Test_Year_Error(t *testing.T) {
 	assert.Nil(t, result)
 	assert.Error(t, err)
 }
+
+func Test_YearFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewYearFactory[any]()
+		assert.Equal(t, "Year", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewYearFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &YearArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewYearFactory[any]()
+		args := factory.CreateDefaultArguments()
+		timeArgs, ok := args.(*YearArguments[any])
+		require.True(t, ok)
+		timeArgs.Time = &ottl.StandardTimeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return time.Now(), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createYearFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "YearFactory args must be of type *YearArguments[K]")
+	})
+}

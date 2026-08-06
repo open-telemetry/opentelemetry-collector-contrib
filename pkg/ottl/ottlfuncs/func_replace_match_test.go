@@ -258,3 +258,51 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, result)
 }
+
+func Test_ReplaceMatchFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewReplaceMatchFactory[any]()
+		assert.Equal(t, "replace_match", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewReplaceMatchFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ReplaceMatchArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewReplaceMatchFactory[any]()
+		args := factory.CreateDefaultArguments()
+		replaceArgs, ok := args.(*ReplaceMatchArguments[any])
+		require.True(t, ok)
+		replaceArgs.Target = &ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello world", nil
+			},
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+		replaceArgs.Pattern = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "*", nil
+			},
+		}
+		replaceArgs.Replacement = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "replacement", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createReplaceMatchFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ReplaceMatchFactory args must be of type *ReplaceMatchArguments[K]")
+	})
+}

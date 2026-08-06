@@ -83,3 +83,38 @@ func Test_IsDouble_Error(t *testing.T) {
 	_, ok := err.(ottl.TypeError)
 	assert.False(t, ok)
 }
+
+func Test_IsDoubleFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewIsDoubleFactory[any]()
+		assert.Equal(t, "IsDouble", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewIsDoubleFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &IsDoubleArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewIsDoubleFactory[any]()
+		args := factory.CreateDefaultArguments()
+		isDoubleArgs, ok := args.(*IsDoubleArguments[any])
+		require.True(t, ok)
+		isDoubleArgs.Target = &ottl.StandardFloatGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return 1.0, nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createIsDoubleFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "IsDoubleFactory args must be of type *IsDoubleArguments[K]")
+	})
+}

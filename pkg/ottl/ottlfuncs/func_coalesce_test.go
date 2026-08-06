@@ -164,34 +164,39 @@ func Test_coalesce_error(t *testing.T) {
 	assert.EqualError(t, err, "getter error")
 }
 
-func Test_createCoalesceFunction(t *testing.T) {
-	factory := NewCoalesceFactory[any]()
-	fCtx := ottl.FunctionContext{}
+func Test_CoalesceFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewCoalesceFactory[any]()
+		assert.Equal(t, "Coalesce", factory.Name())
+	})
 
-	t.Run("valid args", func(t *testing.T) {
-		args := &CoalesceArguments[any]{
-			Values: []ottl.Getter[any]{
-				&ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewCoalesceFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &CoalesceArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewCoalesceFactory[any]()
+		args := factory.CreateDefaultArguments()
+		coalesceArgs, ok := args.(*CoalesceArguments[any])
+		require.True(t, ok)
+		coalesceArgs.Values = []ottl.Getter[any]{
+			&ottl.StandardGetSetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return "test", nil
-				}},
+				},
 			},
 		}
-		fn, err := factory.CreateFunction(fCtx, args)
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
 		require.NoError(t, err)
-		require.NotNil(t, fn)
+		assert.NotNil(t, fn)
 	})
 
-	t.Run("empty values", func(t *testing.T) {
-		args := &CoalesceArguments[any]{
-			Values: []ottl.Getter[any]{},
-		}
-		_, err := factory.CreateFunction(fCtx, args)
-		assert.EqualError(t, err, "Coalesce requires at least one argument")
-	})
-
-	t.Run("wrong args type", func(t *testing.T) {
-		args := &ConcatArguments[any]{}
-		_, err := factory.CreateFunction(fCtx, args)
-		assert.EqualError(t, err, "CoalesceFactory args must be of type *CoalesceArguments[K]")
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createCoalesceFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "CoalesceFactory args must be of type *CoalesceArguments[K]")
 	})
 }

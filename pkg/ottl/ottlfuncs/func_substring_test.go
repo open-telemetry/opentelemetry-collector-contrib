@@ -423,3 +423,48 @@ func Test_substring_utf8Safe_error(t *testing.T) {
 		)
 	}
 }
+
+func Test_SubstringFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewSubstringFactory[any]()
+		assert.Equal(t, "Substring", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewSubstringFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &SubstringArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewSubstringFactory[any]()
+		args := factory.CreateDefaultArguments()
+		substringArgs, ok := args.(*SubstringArguments[any])
+		require.True(t, ok)
+		substringArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello world", nil
+			},
+		}
+		substringArgs.Start = &ottl.StandardIntGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return int64(0), nil
+			},
+		}
+		substringArgs.Length = &ottl.StandardIntGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return int64(3), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createSubstringFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "SubstringFactory args must be of type *SubstringArguments[K]")
+	})
+}

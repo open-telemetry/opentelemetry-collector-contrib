@@ -343,3 +343,42 @@ func Test_truncateAll_truncationMarker(t *testing.T) {
 		})
 	}
 }
+
+func Test_TruncateAllFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewTruncateAllFactory[any]()
+		assert.Equal(t, "truncate_all", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewTruncateAllFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &TruncateAllArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewTruncateAllFactory[any]()
+		args := factory.CreateDefaultArguments()
+		truncateAllArgs, ok := args.(*TruncateAllArguments[any])
+		require.True(t, ok)
+		truncateAllArgs.Target = &ottl.StandardPMapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.NewMap(), nil
+			},
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+		truncateAllArgs.Limit = 10
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createTruncateAllFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "TruncateAllFactory args must be of type *TruncateAllArguments[K]")
+	})
+}

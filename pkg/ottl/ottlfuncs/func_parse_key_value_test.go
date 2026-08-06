@@ -374,3 +374,38 @@ func Test_parseKeyValue_empty_delimiters(t *testing.T) {
 	_, err = parseKeyValue[any](target, ottl.Optional[string]{}, delimiter)
 	assert.ErrorContains(t, err, "pair delimiter cannot be set to an empty string")
 }
+
+func Test_ParseKeyValueFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewParseKeyValueFactory[any]()
+		assert.Equal(t, "ParseKeyValue", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewParseKeyValueFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ParseKeyValueArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewParseKeyValueFactory[any]()
+		args := factory.CreateDefaultArguments()
+		kvArgs, ok := args.(*ParseKeyValueArguments[any])
+		require.True(t, ok)
+		kvArgs.Target = ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "key=value", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createParseKeyValueFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ParseKeyValueFactory args must be of type *ParseKeyValueArguments[K]")
+	})
+}

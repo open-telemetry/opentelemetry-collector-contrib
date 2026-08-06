@@ -88,3 +88,38 @@ func Test_IsInt_Error(t *testing.T) {
 	_, ok := err.(ottl.TypeError)
 	assert.False(t, ok)
 }
+
+func Test_IsIntFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewIsIntFactory[any]()
+		assert.Equal(t, "IsInt", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewIsIntFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &IsIntArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewIsIntFactory[any]()
+		args := factory.CreateDefaultArguments()
+		isIntArgs, ok := args.(*IsIntArguments[any])
+		require.True(t, ok)
+		isIntArgs.Target = &ottl.StandardIntGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return int64(1), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createIsIntFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "IsIntFactory args must be of type *IsIntArguments[K]")
+	})
+}

@@ -92,3 +92,43 @@ func Test_HasSuffix_Error_suffix(t *testing.T) {
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
+
+func Test_HasSuffixFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewHasSuffixFactory[any]()
+		assert.Equal(t, "HasSuffix", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewHasSuffixFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &HasSuffixArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewHasSuffixFactory[any]()
+		args := factory.CreateDefaultArguments()
+		hasSuffixArgs, ok := args.(*HasSuffixArguments[any])
+		require.True(t, ok)
+		hasSuffixArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "value", nil
+			},
+		}
+		hasSuffixArgs.Suffix = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "lue", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createHasSuffixFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "HasSuffixFactory args must be of type *HasSuffixArguments[K]")
+	})
+}

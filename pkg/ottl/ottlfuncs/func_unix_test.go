@@ -43,3 +43,38 @@ func Test_Unix(t *testing.T) {
 		})
 	}
 }
+
+func Test_UnixFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewUnixFactory[any]()
+		assert.Equal(t, "Unix", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewUnixFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &UnixArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewUnixFactory[any]()
+		args := factory.CreateDefaultArguments()
+		unixArgs, ok := args.(*UnixArguments[any])
+		require.True(t, ok)
+		unixArgs.Seconds = &ottl.StandardIntGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return int64(1672531200), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createUnixFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "UnixFactory args must be of type *UnixArguments[K]")
+	})
+}

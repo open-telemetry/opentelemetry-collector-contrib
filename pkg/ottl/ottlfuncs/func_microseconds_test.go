@@ -67,3 +67,38 @@ func Test_Microseconds(t *testing.T) {
 		})
 	}
 }
+
+func Test_MicrosecondsFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewMicrosecondsFactory[any]()
+		assert.Equal(t, "Microseconds", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewMicrosecondsFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &MicrosecondsArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewMicrosecondsFactory[any]()
+		args := factory.CreateDefaultArguments()
+		microsecondsArgs, ok := args.(*MicrosecondsArguments[any])
+		require.True(t, ok)
+		microsecondsArgs.Duration = ottl.StandardDurationGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return time.Duration(100), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createMicrosecondsFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "MicrosecondsFactory args must be of type *MicrosecondsArguments[K]")
+	})
+}
