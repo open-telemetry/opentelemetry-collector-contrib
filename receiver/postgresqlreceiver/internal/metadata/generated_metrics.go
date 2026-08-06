@@ -395,7 +395,7 @@ var MetricsInfo = metricsInfo{
 	},
 	PostgresqlDatabaseLocks: metricInfo{
 		Name:       "postgresql.database.locks",
-		Attributes: []string{"relation", "mode", "lock_type"},
+		Attributes: []string{"relation", "mode", "lock_type", "db.namespace"},
 	},
 	PostgresqlDbSize: metricInfo{
 		Name:       "postgresql.db_size",
@@ -424,6 +424,10 @@ var MetricsInfo = metricsInfo{
 	PostgresqlQueryConflicts: metricInfo{
 		Name:       "postgresql.query.conflicts",
 		Attributes: []string{"postgresql.conflict.type", "db.namespace"},
+	},
+	PostgresqlQueryExecutionTime: metricInfo{
+		Name:       "postgresql.query.execution.time",
+		Attributes: []string{"db.namespace"},
 	},
 	PostgresqlReplicationDataDelay: metricInfo{
 		Name:       "postgresql.replication.data_delay",
@@ -535,6 +539,7 @@ type metricsInfo struct {
 	PostgresqlIndexSize                metricInfo
 	PostgresqlOperations               metricInfo
 	PostgresqlQueryConflicts           metricInfo
+	PostgresqlQueryExecutionTime       metricInfo
 	PostgresqlReplicationDataDelay     metricInfo
 	PostgresqlRollbacks                metricInfo
 	PostgresqlRows                     metricInfo
@@ -574,7 +579,7 @@ type metricPostgresqlBackends struct {
 // init fills postgresql.backends metric with initial data.
 func (m *metricPostgresqlBackends) init() {
 	m.data.SetName("postgresql.backends")
-	m.data.SetDescription("The number of backends.")
+	m.data.SetDescription("The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.")
 	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1521,7 +1526,7 @@ func (m *metricPostgresqlDatabaseLocks) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricPostgresqlDatabaseLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, relationAttributeValue string, modeAttributeValue string, lockTypeAttributeValue string) {
+func (m *metricPostgresqlDatabaseLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, relationAttributeValue string, modeAttributeValue string, lockTypeAttributeValue string, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1537,6 +1542,9 @@ func (m *metricPostgresqlDatabaseLocks) recordDataPoint(start pcommon.Timestamp,
 	}
 	if slices.Contains(m.config.EnabledAttributes, PostgresqlDatabaseLocksMetricAttributeKeyLockType) {
 		dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlDatabaseLocksMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 
 	var s string
@@ -2250,6 +2258,97 @@ func (m *metricPostgresqlQueryConflicts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricPostgresqlQueryConflicts(cfg PostgresqlQueryConflictsMetricConfig) metricPostgresqlQueryConflicts {
 	m := metricPostgresqlQueryConflicts{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlQueryExecutionTime struct {
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        PostgresqlQueryExecutionTimeMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
+}
+
+// init fills postgresql.query.execution.time metric with initial data.
+func (m *metricPostgresqlQueryExecutionTime) init() {
+	m.data.SetName("postgresql.query.execution.time")
+	m.data.SetDescription("The total execution time of SQL statements currently tracked by pg_stat_statements for the database.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricPostgresqlQueryExecutionTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlQueryExecutionTimeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlQueryExecutionTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlQueryExecutionTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlQueryExecutionTime(cfg PostgresqlQueryExecutionTimeMetricConfig) metricPostgresqlQueryExecutionTime {
+	m := metricPostgresqlQueryExecutionTime{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4273,6 +4372,7 @@ type MetricsBuilder struct {
 	metricPostgresqlIndexSize                metricPostgresqlIndexSize
 	metricPostgresqlOperations               metricPostgresqlOperations
 	metricPostgresqlQueryConflicts           metricPostgresqlQueryConflicts
+	metricPostgresqlQueryExecutionTime       metricPostgresqlQueryExecutionTime
 	metricPostgresqlReplicationDataDelay     metricPostgresqlReplicationDataDelay
 	metricPostgresqlRollbacks                metricPostgresqlRollbacks
 	metricPostgresqlRows                     metricPostgresqlRows
@@ -4340,6 +4440,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(mbc.Metrics.PostgresqlIndexSize),
 		metricPostgresqlOperations:               newMetricPostgresqlOperations(mbc.Metrics.PostgresqlOperations),
 		metricPostgresqlQueryConflicts:           newMetricPostgresqlQueryConflicts(mbc.Metrics.PostgresqlQueryConflicts),
+		metricPostgresqlQueryExecutionTime:       newMetricPostgresqlQueryExecutionTime(mbc.Metrics.PostgresqlQueryExecutionTime),
 		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(mbc.Metrics.PostgresqlReplicationDataDelay),
 		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(mbc.Metrics.PostgresqlRollbacks),
 		metricPostgresqlRows:                     newMetricPostgresqlRows(mbc.Metrics.PostgresqlRows),
@@ -4508,6 +4609,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlIndexSize.emit(ils.Metrics())
 	mb.metricPostgresqlOperations.emit(ils.Metrics())
 	mb.metricPostgresqlQueryConflicts.emit(ils.Metrics())
+	mb.metricPostgresqlQueryExecutionTime.emit(ils.Metrics())
 	mb.metricPostgresqlReplicationDataDelay.emit(ils.Metrics())
 	mb.metricPostgresqlRollbacks.emit(ils.Metrics())
 	mb.metricPostgresqlRows.emit(ils.Metrics())
@@ -4622,8 +4724,8 @@ func (mb *MetricsBuilder) RecordPostgresqlDatabaseCountDataPoint(ts pcommon.Time
 }
 
 // RecordPostgresqlDatabaseLocksDataPoint adds a data point to postgresql.database.locks metric.
-func (mb *MetricsBuilder) RecordPostgresqlDatabaseLocksDataPoint(ts pcommon.Timestamp, val int64, relationAttributeValue string, modeAttributeValue string, lockTypeAttributeValue string) {
-	mb.metricPostgresqlDatabaseLocks.recordDataPoint(mb.startTime, ts, val, relationAttributeValue, modeAttributeValue, lockTypeAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlDatabaseLocksDataPoint(ts pcommon.Timestamp, val int64, relationAttributeValue string, modeAttributeValue string, lockTypeAttributeValue string, dbNamespaceAttributeValue string) {
+	mb.metricPostgresqlDatabaseLocks.recordDataPoint(mb.startTime, ts, val, relationAttributeValue, modeAttributeValue, lockTypeAttributeValue, dbNamespaceAttributeValue)
 }
 
 // RecordPostgresqlDbSizeDataPoint adds a data point to postgresql.db_size metric.
@@ -4659,6 +4761,11 @@ func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timesta
 // RecordPostgresqlQueryConflictsDataPoint adds a data point to postgresql.query.conflicts metric.
 func (mb *MetricsBuilder) RecordPostgresqlQueryConflictsDataPoint(ts pcommon.Timestamp, val int64, postgresqlConflictTypeAttributeValue AttributePostgresqlConflictType, dbNamespaceAttributeValue string) {
 	mb.metricPostgresqlQueryConflicts.recordDataPoint(mb.startTime, ts, val, postgresqlConflictTypeAttributeValue.String(), dbNamespaceAttributeValue)
+}
+
+// RecordPostgresqlQueryExecutionTimeDataPoint adds a data point to postgresql.query.execution.time metric.
+func (mb *MetricsBuilder) RecordPostgresqlQueryExecutionTimeDataPoint(ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string) {
+	mb.metricPostgresqlQueryExecutionTime.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
 }
 
 // RecordPostgresqlReplicationDataDelayDataPoint adds a data point to postgresql.replication.data_delay metric.

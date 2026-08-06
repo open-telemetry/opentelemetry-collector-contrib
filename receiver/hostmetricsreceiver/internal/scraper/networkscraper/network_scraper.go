@@ -154,7 +154,7 @@ func (s *networkScraper) recordNetworkIOMetric(now pcommon.Timestamp, ioCounters
 }
 
 func (s *networkScraper) recordNetworkConnectionsMetrics(ctx context.Context) error {
-	if !s.config.Metrics.SystemNetworkConnections.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.SystemNetworkConnections.Enabled {
 		return nil
 	}
 

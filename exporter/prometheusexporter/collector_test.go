@@ -755,7 +755,7 @@ func TestCollectMetrics(t *testing.T) {
 					}
 
 					if sendTimestamp {
-						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						require.Equal(t, ts.UnixNano()/1e6, *pbMetric.TimestampMs)
 						// Prometheus gauges don't have created timestamp.
 						if tt.metricType == prometheus.CounterValue {
 							require.Equal(t, timestamppb.New(ts), pbMetric.Counter.CreatedTimestamp)
@@ -870,7 +870,7 @@ func TestAccumulateHistograms(t *testing.T) {
 					}
 
 					if sendTimestamp {
-						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						require.Equal(t, ts.UnixNano()/1e6, *pbMetric.TimestampMs)
 						require.Equal(t, timestamppb.New(ts), pbMetric.Histogram.CreatedTimestamp)
 					} else {
 						require.Nil(t, pbMetric.TimestampMs)
@@ -1004,7 +1004,7 @@ func TestAccumulateExponentialHistograms(t *testing.T) {
 
 					// Assert timestamp behavior
 					if sendTimestamp {
-						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						require.Equal(t, ts.UnixNano()/1e6, *pbMetric.TimestampMs)
 						// withStartTime is tied to sendTimestamp in this test
 						require.Equal(t, timestamppb.New(ts), pbMetric.Histogram.CreatedTimestamp)
 					} else {
@@ -1133,7 +1133,7 @@ func TestAccumulateSummary(t *testing.T) {
 					}
 
 					if sendTimestamp {
-						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						require.Equal(t, ts.UnixNano()/1e6, *pbMetric.TimestampMs)
 						require.Equal(t, timestamppb.New(ts), pbMetric.Summary.CreatedTimestamp)
 					} else {
 						require.Nil(t, pbMetric.TimestampMs)
