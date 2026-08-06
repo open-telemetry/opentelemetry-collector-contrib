@@ -41,9 +41,7 @@ type fileStorageClient struct {
 	db              *bbolt.DB
 	dbOptions       bbolt.Options
 	compactionCfg   *CompactionConfig
-	compactFunc     func(*bbolt.DB, *bbolt.DB, int64) error
 	stopCh          chan struct{}
-	stopOnce        sync.Once
 	wg              sync.WaitGroup
 	closed          bool
 }
@@ -82,7 +80,6 @@ func newClient(logger *zap.Logger, filePath string, cfg *Config) (*fileStorageCl
 		db:            db,
 		dbOptions:     options,
 		compactionCfg: cfg.Compaction,
-		compactFunc:   bbolt.Compact,
 		stopCh:        make(chan struct{}),
 		wg:            sync.WaitGroup{},
 	}
@@ -204,11 +201,6 @@ func updateBucket(bucket *bbolt.Bucket, ops ...*storage.Operation) error {
 
 // Close will close the database
 func (c *fileStorageClient) Close(_ context.Context) error {
-	c.stopOnce.Do(func() {
-		close(c.stopCh)
-	})
-	c.wg.Wait()
-
 	c.compactionMutex.Lock()
 	defer c.compactionMutex.Unlock()
 
@@ -216,6 +208,8 @@ func (c *fileStorageClient) Close(_ context.Context) error {
 		return nil
 	}
 
+	close(c.stopCh)
+	c.wg.Wait()
 	c.closed = true
 	return c.db.Close()
 }
@@ -265,11 +259,10 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	if err != nil {
 		return err
 	}
-	defer compactedDb.Close()
 
 	compactionStart := time.Now()
 
-	err = c.compactFunc(compactedDb, c.db, maxTransactionSize)
+	err = bbolt.Compact(compactedDb, c.db, maxTransactionSize)
 	if err != nil {
 		_ = compactedDb.Close()
 		return err
