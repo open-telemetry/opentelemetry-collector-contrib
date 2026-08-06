@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/sqlserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Share a single, tunable database connection pool across all scrapers of a receiver instead of opening one pool per query.
+note: Share a single, tunable database connection pool across all scrapers of a metrics or logs receiver instead of opening one pool per query.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47219]
@@ -17,8 +17,9 @@ issues: [47219]
 # Use pipe (|) for multiline entries.
 subtext: |
   Previously each enabled query created its own *sql.DB connection pool to the same instance. All
-  scrapers of a receiver now share a single pool that is owned by the receiver and closed on
-  shutdown, reducing connection and memory overhead as more queries are enabled. The pool can be
+  scrapers now share one pool per receiver instance — the metrics and logs receivers each own
+  their own pool — that is owned by the receiver and closed on shutdown, reducing connection and
+  memory overhead as more queries are enabled. The pool can be
   tuned via a new optional `connection_pool` config block (`max_open`, `max_idle`, `max_lifetime`,
   `max_idle_time`); by default `max_open` and `max_idle` are derived from the number of scrapers,
   replacing the sub-optimal Go driver defaults. Emitted telemetry is unchanged.

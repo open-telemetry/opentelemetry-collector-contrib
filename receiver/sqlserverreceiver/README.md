@@ -89,8 +89,10 @@ Direct connection options (optional, but all must be specified to enable):
 For finer control over the direct connection use the `datasource`, a.k.a. the "connection string", instead.
 Note: it can't be used in conjunction with the `username`, `password`, `server` and `port` options.
 
-When a direct connection is used, all scrapers of the receiver share a single database connection pool
-instead of each opening its own. The pool can be tuned with the `connection_pool` options (all optional):
+When a direct connection is used, all scrapers created for a signal share a single database connection pool
+instead of each opening its own. The pool is scoped per receiver instance: if this receiver is used in both a
+metrics and a logs pipeline, the metrics and logs receivers each own a separate pool. The pool can be tuned
+with the `connection_pool` options (all optional):
 - `max_open` (default = number of scrapers): The maximum number of open connections to the database. `0` means unlimited.
 - `max_idle` (default = number of scrapers): The maximum number of idle connections kept in the pool.
 - `max_lifetime` (optional, example = `5m`, default = unset): The maximum amount of time a connection may be reused. `0` means connections are reused forever.
