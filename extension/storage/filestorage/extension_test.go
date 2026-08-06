@@ -69,7 +69,7 @@ func TestExtensionIntegrity(t *testing.T) {
 		}
 
 		// Repeatedly thrash client
-		for range 100 {
+		for i := 0; i < 100; i++ {
 			// Make sure my values are still mine
 			for i := range keys {
 				v, err := c.Get(ctx, keys[i])
@@ -799,7 +799,7 @@ func TestCompactionOnStartWithCorruption(t *testing.T) {
 			fileClient, ok := client.(*fileStorageClient)
 			require.True(t, ok)
 			absoluteName := fileClient.db.Path()
-			fileClient.compactFunc = func(*bbolt.DB, *bbolt, int64) error {
+			fileClient.compactFunc = func(*bbolt.DB, *bbolt.DB, int64) error {
 				panic("simulated compaction panic due to corruption")
 			}
 

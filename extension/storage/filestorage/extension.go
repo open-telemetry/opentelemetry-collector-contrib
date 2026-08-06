@@ -46,7 +46,7 @@ func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extensio
 	return &localFileStorage{
 		cfg:    config,
 		logger: logger,
-	}, nill
+	}, nil
 }
 
 // Start runs cleanup if configured
