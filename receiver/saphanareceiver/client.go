@@ -80,7 +80,7 @@ type sapHanaConnectionFactory interface {
 type defaultConnectionFactory struct{}
 
 func (*defaultConnectionFactory) getConnection(c driver.Connector) dbWrapper {
-	wrapper := standardDBWrapper{db: sql.OpenDB((c))}
+	wrapper := standardDBWrapper{db: sql.OpenDB(c)}
 	return &wrapper
 }
 

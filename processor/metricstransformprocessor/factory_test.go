@@ -144,7 +144,8 @@ func TestCreateProcessors(t *testing.T) {
 					t.Context(),
 					processortest.NewNopSettings(metadata.Type),
 					cfg,
-					consumertest.NewNop())
+					consumertest.NewNop(),
+				)
 				// Not implemented error
 				assert.Error(t, tErr)
 				assert.Nil(t, tp)
@@ -153,7 +154,8 @@ func TestCreateProcessors(t *testing.T) {
 					t.Context(),
 					processortest.NewNopSettings(metadata.Type),
 					cfg,
-					consumertest.NewNop())
+					consumertest.NewNop(),
+				)
 				if tt.succeed {
 					assert.NotNil(t, mp)
 					assert.NoError(t, mErr)
