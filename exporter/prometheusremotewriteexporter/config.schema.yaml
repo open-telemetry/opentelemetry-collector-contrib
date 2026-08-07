@@ -31,6 +31,8 @@ $defs:
       truncate_frequency:
         type: string
         format: duration
+      segment_cache_size:
+        type: integer
 description: Config defines configuration for Remote Write exporter.
 type: object
 properties:

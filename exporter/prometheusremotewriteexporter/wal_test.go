@@ -56,6 +56,68 @@ func TestWALCreation_nonNilConfig(t *testing.T) {
 	assert.NoError(t, pwal.stop())
 }
 
+func TestWALConfig_segmentCacheSize(t *testing.T) {
+	tests := []struct {
+		name       string
+		bufferSize int
+		segment    int
+		want       int
+	}{
+		{
+			name:       "defaults to buffer size when unset",
+			bufferSize: 0,
+			segment:    0,
+			want:       defaultWALBufferSize,
+		},
+		{
+			name:       "defaults to explicit buffer size when unset",
+			bufferSize: 42,
+			segment:    0,
+			want:       42,
+		},
+		{
+			name:       "uses explicit segment cache size when set",
+			bufferSize: 42,
+			segment:    7,
+			want:       7,
+		},
+		{
+			name:       "negative segment cache size falls back to buffer size",
+			bufferSize: 42,
+			segment:    -1,
+			want:       42,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wc := &WALConfig{
+				BufferSize:       tt.bufferSize,
+				SegmentCacheSize: tt.segment,
+			}
+			assert.Equal(t, tt.want, wc.segmentCacheSize())
+		})
+	}
+}
+
+func TestWALCreation_withSegmentCacheSize(t *testing.T) {
+	config := &WALConfig{
+		Directory:        t.TempDir(),
+		SegmentCacheSize: 5,
+	}
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
+	require.NoError(t, err)
+	require.NotNil(t, pwal)
+	t.Cleanup(func() { assert.NoError(t, pwal.stop()) })
+
+	// The WAL should open successfully with the configured segment cache size.
+	log, walPath, err := config.createWAL()
+	require.NoError(t, err)
+	require.NotNil(t, log)
+	assert.NotEmpty(t, walPath)
+	assert.NoError(t, log.Close())
+}
+
 func orderByLabelValueForEach(reqL []*prompb.WriteRequest) {
 	for _, req := range reqL {
 		orderByLabelValue(req)

@@ -257,5 +257,11 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	if cfg.WAL.HasValue() {
+		if cfg.WAL.Get().SegmentCacheSize < 0 {
+			return errors.New("wal segment_cache_size can't be negative")
+		}
+	}
+
 	return nil
 }

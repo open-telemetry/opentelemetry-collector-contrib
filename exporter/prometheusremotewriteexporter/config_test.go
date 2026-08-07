@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -357,4 +358,31 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 
 func toPtr[T any](val T) *T {
 	return &val
+}
+
+func TestConfigValidateWALSegmentCacheSize(t *testing.T) {
+	tests := []struct {
+		name             string
+		segmentCacheSize int
+		wantErr          bool
+	}{
+		{name: "negative", segmentCacheSize: -1, wantErr: true},
+		{name: "zero", segmentCacheSize: 0, wantErr: false},
+		{name: "positive", segmentCacheSize: 10, wantErr: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.WAL = configoptional.Some(WALConfig{
+				Directory:        t.TempDir(),
+				SegmentCacheSize: tt.segmentCacheSize,
+			})
+			err := cfg.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
