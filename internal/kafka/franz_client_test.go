@@ -764,9 +764,24 @@ func TestNewRetryBackoffFn(t *testing.T) {
 		}
 	})
 
+	t.Run("small_backoff_keeps_doubling_past_ten_failures", func(t *testing.T) {
+		// 1ms is still under the cap at failure 11, so it must keep doubling.
+		fn := newRetryBackoffFn(time.Millisecond)
+		for fails, unjittered := range map[int]time.Duration{
+			10: 512 * time.Millisecond,
+			11: 1024 * time.Millisecond,
+			12: 2048 * time.Millisecond,
+		} {
+			got := fn(fails)
+			assert.GreaterOrEqual(t, got, time.Duration(float64(unjittered)*0.8))
+			assert.LessOrEqual(t, got, time.Duration(float64(unjittered)*1.2))
+		}
+		// Clamps only once the doubling passes the cap.
+		assert.Equal(t, 5*time.Second, fn(20))
+	})
+
 	t.Run("extreme_backoff_does_not_overflow", func(t *testing.T) {
-		// 100000h parses and passes validation, but doubling it overflows
-		// time.Duration; a negative result would remove the backoff entirely.
+		// 100000h passes validation but overflows when doubled.
 		minBackoff := 100000 * time.Hour
 		fn := newRetryBackoffFn(minBackoff)
 		for fails := range 100 {
