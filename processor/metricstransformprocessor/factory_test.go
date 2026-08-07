@@ -110,6 +110,16 @@ func TestCreateProcessors(t *testing.T) {
 			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, aggregationTypeFieldName, aggregateutil.AggregationTypes),
 		},
 		{
+			configName:   "config_invalid_aggregate_labels_missing_aggregationtype.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("operation %v: missing required field %q while %q is %v", 1, aggregationTypeFieldName, actionFieldName, aggregateLabels),
+		},
+		{
+			configName:   "config_invalid_aggregate_label_values_missing_aggregationtype.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("operation %v: missing required field %q while %q is %v", 1, aggregationTypeFieldName, actionFieldName, aggregateLabelValues),
+		},
+		{
 			configName:   "config_invalid_submatchcase.yaml",
 			succeed:      false,
 			errorMessage: fmt.Sprintf("%q must be in %q", submatchCaseFieldName, submatchCases),
@@ -198,6 +208,79 @@ func TestFactory_validateConfiguration(t *testing.T) {
 
 	err = validateConfiguration(&v2)
 	assert.EqualError(t, err, "operation 1: missing required field \"new_value\" while \"action\" is add_label")
+
+	v3 := Config{
+		Transforms: []transform{
+			{
+				MetricIncludeFilter: filterConfig{
+					Include:   "mymetric",
+					MatchType: strictMatchType,
+				},
+				Action: Update,
+				Operations: []operation{
+					{
+						Action:   aggregateLabels,
+						LabelSet: []string{"label1"},
+					},
+				},
+			},
+		},
+	}
+
+	err = validateConfiguration(&v3)
+	assert.EqualError(t, err, "operation 1: missing required field \"aggregation_type\" while \"action\" is aggregate_labels")
+
+	v4 := Config{
+		Transforms: []transform{
+			{
+				MetricIncludeFilter: filterConfig{
+					Include:   "mymetric",
+					MatchType: strictMatchType,
+				},
+				Action: Update,
+				Operations: []operation{
+					{
+						Action:           aggregateLabelValues,
+						Label:            "label1",
+						AggregatedValues: []string{"value1"},
+						NewValue:         "new_value",
+					},
+				},
+			},
+		},
+	}
+
+	err = validateConfiguration(&v4)
+	assert.EqualError(t, err, "operation 1: missing required field \"aggregation_type\" while \"action\" is aggregate_label_values")
+
+	v5 := Config{
+		Transforms: []transform{
+			{
+				MetricIncludeFilter: filterConfig{
+					Include:   "mymetric",
+					MatchType: strictMatchType,
+				},
+				Action: Update,
+				Operations: []operation{
+					{
+						Action:          aggregateLabels,
+						LabelSet:        []string{"label1"},
+						AggregationType: aggregateutil.Sum,
+					},
+					{
+						Action:           aggregateLabelValues,
+						Label:            "label1",
+						AggregatedValues: []string{"value1"},
+						NewValue:         "new_value",
+						AggregationType:  aggregateutil.Sum,
+					},
+				},
+			},
+		},
+	}
+
+	err = validateConfiguration(&v5)
+	assert.NoError(t, err)
 }
 
 func TestBuildHelperConfig_SubmatchCaseCopied(t *testing.T) {
