@@ -31,7 +31,8 @@ var errLogsPartitionExclusive = errors.New(
 )
 
 var (
-	errTracesMessageKeyExclusive        = errors.New("traces::message_key_from_metadata_key cannot be combined with partition_traces_by_id")
+	errTracesPartitionExclusive         = errors.New("partition_traces_by_id and partition_traces_by_resource_attributes cannot both be enabled")
+	errTracesMessageKeyExclusive        = errors.New("traces::message_key_from_metadata_key cannot be combined with partition_traces_by_id or partition_traces_by_resource_attributes")
 	errMetricsMessageKeyExclusive       = errors.New("metrics::message_key_from_metadata_key cannot be combined with partition_metrics_by_resource_attributes")
 	errLogsMessageKeyExclusive          = errors.New("logs::message_key_from_metadata_key cannot be combined with partition_logs_by_resource_attributes or partition_logs_by_trace_id")
 	errMessageKeyMetadataKeyNotIncluded = errors.New("message_key_from_metadata_key must be present in sending_queue::batch::partition::metadata_keys if batching is enabled")
@@ -162,6 +163,14 @@ type Config struct {
 	// use the trace ID for the message key.
 	PartitionTracesByID bool `mapstructure:"partition_traces_by_id"`
 
+	// PartitionTracesByResourceAttributes controls the partitioning of trace messages by
+	// resource. If any attribute keys are configured, then the message key will be set to a
+	// hash of those attributes' values, in the order given. Keys are listed individually
+	// rather than hashing the whole resource, so that attributes varying per producer
+	// (host.name, k8s.pod.name) do not spread one service across partitions. Mutually
+	// exclusive with partition_traces_by_id and traces::message_key_from_metadata_key.
+	PartitionTracesByResourceAttributes []string `mapstructure:"partition_traces_by_resource_attributes"`
+
 	// PartitionMetricsByResourceAttributes controls the partitioning of metrics messages by
 	// resource. If this is true, then the message key will be set to a hash of the resource's
 	// identifying attributes.
@@ -191,7 +200,10 @@ func (c *Config) Validate() error {
 	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
 		return errLogsPartitionExclusive
 	}
-	if c.Traces.MessageKeyFromMetadataKey != "" && c.PartitionTracesByID {
+	if c.PartitionTracesByID && len(c.PartitionTracesByResourceAttributes) > 0 {
+		return errTracesPartitionExclusive
+	}
+	if c.Traces.MessageKeyFromMetadataKey != "" && (c.PartitionTracesByID || len(c.PartitionTracesByResourceAttributes) > 0) {
 		return errTracesMessageKeyExclusive
 	}
 	if c.Metrics.MessageKeyFromMetadataKey != "" && c.PartitionMetricsByResourceAttributes {

@@ -47,6 +47,12 @@ kafka/per_signal_encoding:
     encoding: per_signal_encoding
   profiles:
     encoding: per_signal_encoding
+kafka/partition_traces_by_resource_attributes:
+  brokers:
+    - "localhost:9092"
+  partition_traces_by_resource_attributes:
+    - service.name
+    - deployment.environment
 kafka/round_robin_partitioner:
   brokers:
     - "localhost:9092"

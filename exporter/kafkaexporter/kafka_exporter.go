@@ -261,15 +261,24 @@ func (e *kafkaTracesMessenger) partitionData(td ptrace.Traces) iter.Seq2[[]byte,
 			}
 			return
 		}
-		if e.config.TopicFromAttribute != "" {
+		splitByResource := len(e.config.PartitionTracesByResourceAttributes) > 0 ||
+			e.config.TopicFromAttribute != ""
+		if splitByResource {
 			newTraces := ptrace.NewTraces()
 			target := newTraces.ResourceSpans().AppendEmpty()
 			for _, resourceSpans := range td.ResourceSpans().All() {
+				var key []byte
+				if len(e.config.PartitionTracesByResourceAttributes) > 0 {
+					key = hashResourceAttributes(
+						resourceSpans.Resource().Attributes(),
+						e.config.PartitionTracesByResourceAttributes,
+					)
+				}
 				resourceSpans.CopyTo(target)
 				// NOTE: The same ptrace.Traces instance (newTraces) is reused and mutated on each iteration.
 				// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
 				// the current callback/iteration, as its contents will be overwritten on the next yield.
-				if !yield(nil, newTraces) {
+				if !yield(key, newTraces) {
 					return
 				}
 			}
@@ -463,6 +472,21 @@ type resourceSlice[T any] interface {
 
 type resource interface {
 	Resource() pcommon.Resource
+}
+
+// hashResourceAttributes hashes the values of the given attribute keys, in the order
+// provided. Attribute names are folded into the hash so that a missing attribute is
+// distinguishable from one present with an empty value.
+func hashResourceAttributes(attrs pcommon.Map, keys []string) []byte {
+	opts := make([]pdatautil.HashOption, 0, len(keys)*2)
+	for _, k := range keys {
+		opts = append(opts, pdatautil.WithString(k))
+		if v, ok := attrs.Get(k); ok {
+			opts = append(opts, pdatautil.WithValue(v))
+		}
+	}
+	hash := pdatautil.Hash(opts...)
+	return hash[:]
 }
 
 func getMessageKey(ctx context.Context, signalCfg SignalConfig) []byte {
