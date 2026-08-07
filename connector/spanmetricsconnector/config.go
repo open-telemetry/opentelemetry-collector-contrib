@@ -99,6 +99,12 @@ type Config struct {
 	// Events defines the configuration for events section of spans.
 	Events EventsConfig `mapstructure:"events"`
 
+	// SelfTime defines the configuration for the optional self-time histogram metric.
+	// When enabled, the connector computes exclusive/self time from parent-child span
+	// timing in each trace batch and emits a separate histogram. Complete traces must
+	// be present in each batch.
+	SelfTime SelfTimeConfig `mapstructure:"self_time"`
+
 	IncludeInstrumentationScope []string `mapstructure:"include_instrumentation_scope"`
 
 	AggregationCardinalityLimit int `mapstructure:"aggregation_cardinality_limit"`
@@ -148,6 +154,14 @@ type EventsConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 	// Dimensions defines the list of dimensions to add to the events metric.
 	Dimensions []Dimension `mapstructure:"dimensions"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// SelfTimeConfig configures the optional exclusive/self-time histogram metric.
+type SelfTimeConfig struct {
+	// Enabled is a flag to enable the self-time metric.
+	Enabled bool `mapstructure:"enabled"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
