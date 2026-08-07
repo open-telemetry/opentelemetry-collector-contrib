@@ -4,8 +4,11 @@
 package pmetricassert // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetricassert"
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
+	"sort"
 
 	"gopkg.in/yaml.v3"
 )
@@ -65,7 +68,13 @@ func readDocument(path string) (*document, error) {
 		return nil, fmt.Errorf("read assertion file: %w", err)
 	}
 	var doc document
-	if err := yaml.Unmarshal(b, &doc); err != nil {
+	// Strict decoding rejects unknown fields (including mistyped or
+	// unsupported operator suffixes) everywhere except maps: attribute maps
+	// accept arbitrary keys by design, and datapointAssertion.Rest absorbs
+	// operator-suffixed value keys, which validateDocument checks below.
+	dec := yaml.NewDecoder(bytes.NewReader(b))
+	dec.KnownFields(true)
+	if err := dec.Decode(&doc); err != nil {
 		return nil, fmt.Errorf("parse assertion file %s: %w", path, err)
 	}
 	if doc.Version != documentVersion {
@@ -76,8 +85,39 @@ func readDocument(path string) (*document, error) {
 		return nil, fmt.Errorf("assertion file %s: unsupported signal %q (want %q)",
 			path, doc.Signal, "metrics")
 	}
+	if err := validateDocument(&doc); err != nil {
+		return nil, fmt.Errorf("assertion file %s: %w", path, err)
+	}
 	expandShorthand(&doc)
 	return &doc, nil
+}
+
+// validateDocument rejects assertion keys that would otherwise be silently
+// ignored. Datapoint field keys, unlike attribute keys, never contain '/', so
+// any inline key that is not value/<numeric operator> is a typo or an
+// unsupported operator rather than a literal key.
+func validateDocument(doc *document) error {
+	var errs []error
+	for _, r := range doc.Resources {
+		for _, s := range r.Scopes {
+			for _, m := range s.Metrics {
+				for _, dp := range m.Datapoints {
+					keys := make([]string, 0, len(dp.Rest))
+					for k := range dp.Rest {
+						keys = append(keys, k)
+					}
+					sort.Strings(keys)
+					for _, k := range keys {
+						key, op := parseKeyAndOperator(k)
+						if key != "value" || !isNumericOperator(op) {
+							errs = append(errs, fmt.Errorf("metric %q: unsupported datapoint assertion key %q (supported: value/gt, value/gte, value/lt, value/lte)", m.Name, k))
+						}
+					}
+				}
+			}
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // expandShorthand fills in the implicit single-datapoint-with-no-attributes

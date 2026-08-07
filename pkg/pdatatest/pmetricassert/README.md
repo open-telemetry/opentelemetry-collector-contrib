@@ -115,6 +115,36 @@ Regex matchers are supported for resource attributes and datapoint attributes.
 The attribute map remains exact: unexpected attributes still fail the
 assertion.
 
+### Numeric comparison matchers
+
+Datapoint `value` keys and attribute keys can use the `/gt`, `/gte`, `/lt`,
+and `/lte` suffixes when a numeric value is meaningful but not exact, such as
+durations and other runtime-dependent measurements. Operators can be combined
+on the same key to assert a range:
+
+```yaml
+datapoints:
+  - attributes:
+      method: GET
+    value/gte: 0
+    value/lt: 1000
+```
+
+```yaml
+attributes:
+  queue.depth/gte: 1
+```
+
+Value matchers apply to number datapoints (gauge and sum metrics); attribute
+matchers apply to resource attributes and datapoint attributes. The expected
+and actual values must both be numeric.
+
+An unrecognized operator suffix on a datapoint `value` key is rejected when
+the assertion file is read. On attribute keys, a key with an unrecognized
+suffix is matched exactly as a literal key, because attribute keys may
+legitimately contain `/` (e.g. `app.kubernetes.io/name`); a mistyped operator
+therefore fails the assertion as a missing attribute.
+
 ### Shorthand: single empty-attribute datapoint
 
 A metric with exactly one datapoint that has no attributes can omit
@@ -143,7 +173,7 @@ must contain at least one datapoint; see
 ## Roadmap
 
 This is the identity-only subset of the grammar in #48079. Operator-suffix
-extensions beyond attribute `/exists` and `/regex` (`/include`, `/exclude`,
-`/all`, `/count`, `/approx`, `/gt|gte|lt|lte`) and opt-in fields
-(`IncludeValues()`, `IncludeTimestamps()`, `IncludeExemplars()`, type-specific
-histogram fields) are tracked as follow-ups under that issue.
+extensions beyond `/exists`, `/regex`, and the numeric comparison matchers
+(`/include`, `/exclude`, `/all`, `/count`, `/approx`) and further opt-in
+fields (`IncludeTimestamps()`, `IncludeExemplars()`, type-specific histogram
+fields) are tracked as follow-ups under that issue.

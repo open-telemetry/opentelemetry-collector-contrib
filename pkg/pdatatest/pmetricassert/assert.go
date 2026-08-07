@@ -158,12 +158,17 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 				dpValErrs = append(dpValErrs, err)
 			}
 		}
-		for k, v := range edp.Rest {
-			key, op := parseKeyAndOperator(k)
-			if key == "value" && (op == "gt" || op == "gte" || op == "lt" || op == "lte") {
-				if err := compareNumericOp("value", op, v, actual[idx].Value); err != nil {
-					dpValErrs = append(dpValErrs, err)
-				}
+		restKeys := make([]string, 0, len(edp.Rest))
+		for k := range edp.Rest {
+			restKeys = append(restKeys, k)
+		}
+		sort.Strings(restKeys)
+		for _, k := range restKeys {
+			// Keys not of the form value/<numeric operator> are rejected by
+			// validateDocument at read time.
+			_, op := parseKeyAndOperator(k)
+			if err := compareNumericOp("value", op, edp.Rest[k], actual[idx].Value); err != nil {
+				dpValErrs = append(dpValErrs, err)
 			}
 		}
 
@@ -373,6 +378,16 @@ func opToSymbol(op string) string {
 	return op
 }
 
+// parseKeyAndOperator splits a raw map key into key and operator, defaulting
+// to "exact" when no operator suffix is present.
+//
+// An unrecognized suffix falls back to treating the whole raw key as a literal
+// exact-match key rather than erroring, because attribute keys may legitimately
+// contain '/' (e.g. app.kubernetes.io/name). A mistyped operator on an
+// attribute key still fails the assertion loudly via the resulting
+// missing/unexpected attribute mismatch. Datapoint field keys never contain
+// '/', so unrecognized operator suffixes there are rejected up front by
+// validateDocument.
 func parseKeyAndOperator(rawKey string) (string, string) {
 	idx := strings.LastIndexByte(rawKey, '/')
 	if idx < 0 {
@@ -385,6 +400,14 @@ func parseKeyAndOperator(rawKey string) (string, string) {
 	default:
 		return rawKey, "exact"
 	}
+}
+
+func isNumericOperator(op string) bool {
+	switch op {
+	case "gt", "gte", "lt", "lte":
+		return true
+	}
+	return false
 }
 
 // findMatchingAttributes returns the first unmatched index whose attributes
