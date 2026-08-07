@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: pkg/pdatatest
+
+note: Add `WithAttributeExists` and `WithAttributeRegex` options to pmetricassert snapshot generation.
+
+issues: [49734]
+
+subtext: |
+
+change_logs: [api]
