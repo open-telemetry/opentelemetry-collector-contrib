@@ -5,6 +5,7 @@ package dynamicsamplingprocessor
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
@@ -302,6 +304,193 @@ func TestProcessor_Eviction(t *testing.T) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	assert.LessOrEqual(t, len(p.traces), 2, "buffer should be capped at NumTraces")
+}
+
+func TestProcessor_EvictionEvaluate_DecidesOldest(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour, // decisions can only come from eviction
+		DecisionDelay: time.Hour,
+		NumTraces:     2,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	oldest := pcommon.TraceID([16]byte{0xA1})
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(oldest, ptrace.StatusCodeUnset)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID([16]byte{0xA2}), ptrace.StatusCodeUnset)))
+	// Third trace overflows the buffer and must evict the OLDEST trace, which
+	// is decided immediately through the rules (always_sample keeps it).
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID([16]byte{0xA3}), ptrace.StatusCodeUnset)))
+
+	require.Equal(t, 1, sink.SpanCount(), "evicted trace should be decided and forwarded synchronously")
+	out := sink.AllTraces()[0]
+	span := out.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	assert.Equal(t, oldest, span.TraceID(), "the oldest trace should be the eviction victim")
+	rule, ok := span.Attributes().Get(ruleAttributeKey)
+	require.True(t, ok)
+	assert.Equal(t, "default", rule.AsString())
+	assert.Contains(t, span.TraceState().AsRaw(), "th:", "evicted-and-kept trace must carry ot=th")
+
+	// The decision was recorded: a late span for the evicted trace takes the
+	// sampled-cache fast path instead of forming a new partial trace.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(oldest, ptrace.StatusCodeUnset)))
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 2
+	}, time.Second, 10*time.Millisecond)
+	p.mu.Lock()
+	_, buffered := p.traces[oldest]
+	p.mu.Unlock()
+	assert.False(t, buffered, "late span of evicted trace must not re-open a pending trace")
+}
+
+func TestProcessor_EvictionProbabilistic(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Hour,
+		NumTraces:     1,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+		Eviction:      EvictionConfig{Policy: EvictionProbabilistic, SamplingPercentage: 50},
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	// Randomness comes from the last 7 bytes of the traceID: all-zero sorts
+	// below the 50% threshold (dropped), all-0xFF above it (kept).
+	low := pcommon.TraceID([16]byte{0xB1})
+	high := pcommon.TraceID([16]byte{0xB2, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF})
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(low, ptrace.StatusCodeUnset)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(high, ptrace.StatusCodeUnset)))                            // evicts low: dropped
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID([16]byte{0xB3}), ptrace.StatusCodeUnset))) // evicts high: kept
+
+	require.Equal(t, 1, sink.SpanCount())
+	span := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	assert.Equal(t, high, span.TraceID())
+	rule, ok := span.Attributes().Get(ruleAttributeKey)
+	require.True(t, ok)
+	assert.Equal(t, evictionRuleLabel, rule.AsString(), "probabilistic evictions carry the sentinel rule label")
+	assert.Contains(t, span.TraceState().AsRaw(), "th:8", "50%% keep must encode ot=th:8")
+
+	// The dropped trace's decision is cached: its late spans are discarded.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(low, ptrace.StatusCodeUnset)))
+	assert.Equal(t, 1, sink.SpanCount(), "late span of a probabilistically dropped trace must be discarded")
+}
+
+func TestProcessor_EvictionWithinSingleBatch(t *testing.T) {
+	// Multiple new traces in one ConsumeTraces call with NumTraces: 1 forces
+	// evictions before the evicted traces' timers were ever armed. Shutdown
+	// hanging (leaked waitgroup slot) is the failure mode this guards.
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Hour,
+		NumTraces:     1,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+	for i := range byte(3) {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(pcommon.TraceID([16]byte{0xC0 + i}))
+		span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+		span.SetParentSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9})
+		span.SetName("op")
+	}
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	assert.Equal(t, 2, sink.SpanCount(), "two of three traces should be evicted and decided")
+	p.mu.Lock()
+	assert.Len(t, p.traces, 1)
+	p.mu.Unlock()
+}
+
+func TestProcessor_ArrivalListCompaction(t *testing.T) {
+	// During normal operation (buffer never full) eviction never pops the
+	// arrival list, so entries for decided traces must be reclaimed by
+	// compaction or the list grows forever.
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  5 * time.Millisecond,
+		DecisionDelay: 5 * time.Millisecond,
+		NumTraces:     10_000,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	const total = 2000
+	for i := range total {
+		var id pcommon.TraceID
+		id[0] = byte(i)
+		id[1] = byte(i >> 8)
+		id[15] = 0x77
+		require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(id, ptrace.StatusCodeUnset)))
+	}
+	// Wait for the whole population to be decided through the normal timer
+	// flow, then run one more batch so the end-of-batch compaction check
+	// observes the (now almost entirely stale) arrival list.
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == total
+	}, 30*time.Second, 10*time.Millisecond)
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID([16]byte{0xEE}), ptrace.StatusCodeUnset)))
+
+	p.mu.Lock()
+	arrivalLen := len(p.arrival)
+	live := len(p.traces)
+	p.mu.Unlock()
+	assert.LessOrEqual(t, arrivalLen, arrivalCompactionFactor*live+arrivalCompactionFloor,
+		"arrival list must be compacted once decided-trace entries dominate")
+}
+
+func TestProcessor_EvictionMetrics(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Hour,
+		NumTraces:     1,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID([16]byte{0xD1}), ptrace.StatusCodeUnset)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID([16]byte{0xD2}), ptrace.StatusCodeUnset)))
+
+	metadatatest.AssertEqualProcessorDynamicSamplingTracesEvicted(t, tt,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
+	metadatatest.AssertEqualProcessorDynamicSamplingDecisionTriggers(t, tt,
+		[]metricdata.DataPoint[int64]{{
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("trigger", "eviction")),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
 }
 
 func TestProcessor_RootSpanTriggersEarlyDecision(t *testing.T) {
@@ -766,4 +955,23 @@ func TestProcessor_DecisionCacheDisabled(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return sink.SpanCount() == 2
 	}, time.Second, 10*time.Millisecond)
+}
+
+// TestSerializedEmptyTraceState_MatchesFullSerialize guards the fast path in
+// updateTraceState: for a span with no incoming tracestate, the precomputed
+// string must be byte-identical to what the parse/update/serialize round trip
+// produces.
+func TestSerializedEmptyTraceState_MatchesFullSerialize(t *testing.T) {
+	for _, prob := range []float64{1.0, 0.5, 0.1, 0.01, 1.0 / 3.0} {
+		th, err := sampling.ProbabilityToThreshold(prob)
+		require.NoError(t, err)
+
+		w3c, err := sampling.NewW3CTraceState("")
+		require.NoError(t, err)
+		require.NoError(t, w3c.OTelValue().UpdateTValueWithSampling(th))
+		var sb strings.Builder
+		require.NoError(t, w3c.Serialize(&sb))
+
+		assert.Equal(t, sb.String(), serializedEmptyTraceState(th), "prob %v", prob)
+	}
 }

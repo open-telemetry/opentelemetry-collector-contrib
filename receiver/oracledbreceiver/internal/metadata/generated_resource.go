@@ -42,13 +42,6 @@ func (rb *ResourceBuilder) SetOracleDbOpenMode(val string) {
 	}
 }
 
-// SetOracleDbPdb sets provided value as "oracle.db.pdb" attribute.
-func (rb *ResourceBuilder) SetOracleDbPdb(val string) {
-	if rb.config.OracleDbPdb.Enabled {
-		rb.res.Attributes().PutStr("oracle.db.pdb", val)
-	}
-}
-
 // SetOracleDbRole sets provided value as "oracle.db.role" attribute.
 func (rb *ResourceBuilder) SetOracleDbRole(val string) {
 	if rb.config.OracleDbRole.Enabled {

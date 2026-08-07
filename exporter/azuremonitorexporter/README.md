@@ -66,7 +66,7 @@ Example — Azure Container Apps, where `service.instance.id` is set to a random
 
 ```yaml
 exporters:
-  azuremonitor:
+  azure_monitor:
     connection_string: "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/"
     tag_mappings:
       cloud_role_instance: [host.name, service.instance.id, unknown-instance]
@@ -81,7 +81,7 @@ Example:
 # It is highly recommended to use the connection string which includes the InstrumentationKey and IngestionEndpoint
 # This is the preferred method over using 'instrumentation_key' alone.
 exporters:
-  azuremonitor:
+  azure_monitor:
     connection_string: "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/"
 ```
 
@@ -92,7 +92,7 @@ exporters:
 # The use of 'instrumentation_key' alone is not recommended and will be deprecated in the future. It is advised to use the connection_string instead.
 # This example is provided primarily for existing configurations that have not yet transitioned to the connection string.
 exporters:
-  azuremonitor:
+  azure_monitor:
     instrumentation_key: b1cd0778-85fc-4677-a3fa-79d3c23e0efd
 ```
 
@@ -102,7 +102,7 @@ Ensure `APPLICATIONINSIGHTS_CONNECTION_STRING` is set in your environment, then 
 
 ```yaml
 exporters:
-  azuremonitor:
+  azure_monitor:
 ```
 
 ## Attribute mapping
