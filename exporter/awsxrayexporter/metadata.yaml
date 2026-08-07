@@ -16,6 +16,13 @@ feature_gates:
     from_version: v0.84.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48737
 
+  - id: exporter.xray.allowDot
+    description: "X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled. "
+    stage: beta
+    from_version: v0.97.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116
+    skip_strict_validation: true
+
 tests:
   config:
     region: 'us-west-2'
