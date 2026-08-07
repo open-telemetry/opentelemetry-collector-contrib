@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -26,29 +27,105 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					OracledbBufferInspected: OracledbBufferInspectedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbBufferInspectedMetricAttributeKey{OracledbBufferInspectedMetricAttributeKeyOracledbBufferState},
+					},
+					OracledbBufferRequests: OracledbBufferRequestsMetricConfig{
+						Enabled: true,
+					},
+					OracledbBufferCacheBlockChanges: OracledbBufferCacheBlockChangesMetricConfig{
+						Enabled: true,
+					},
+					OracledbBufferCacheBlockChangesRate: OracledbBufferCacheBlockChangesRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbBufferCacheBlockChangesRateMetricAttributeKey{OracledbBufferCacheBlockChangesRateMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbBufferCacheBlockGets: OracledbBufferCacheBlockGetsMetricConfig{
+						Enabled: true,
+					},
 					OracledbBufferCacheUtilization: OracledbBufferCacheUtilizationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbBufferCacheUtilizationMetricAttributeKey{OracledbBufferCacheUtilizationMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbCallCount: OracledbCallCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbCallCountMetricAttributeKey{OracledbCallCountMetricAttributeKeyOracledbCallType},
+					},
+					OracledbCallRecursiveCPUTime: OracledbCallRecursiveCPUTimeMetricConfig{
+						Enabled: true,
+					},
+					OracledbCheckpointBuffers: OracledbCheckpointBuffersMetricConfig{
+						Enabled: true,
+					},
+					OracledbCheckpointCompleted: OracledbCheckpointCompletedMetricConfig{
 						Enabled: true,
 					},
 					OracledbConsistentGets: OracledbConsistentGetsMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbConsistentGetsMetricAttributeKey{OracledbConsistentGetsMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbCPUUsageRate: OracledbCPUUsageRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbCPUUsageRateMetricAttributeKey{OracledbCPUUsageRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbCPUTime: OracledbCPUTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbCPUTimeMetricAttributeKey{OracledbCPUTimeMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbCursorCacheHits: OracledbCursorCacheHitsMetricConfig{
 						Enabled: true,
+					},
+					OracledbCursorCacheSize: OracledbCursorCacheSizeMetricConfig{
+						Enabled: true,
+					},
+					OracledbCursorCacheUtilization: OracledbCursorCacheUtilizationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbCursorCacheUtilizationMetricAttributeKey{OracledbCursorCacheUtilizationMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbCursorOpen: OracledbCursorOpenMetricConfig{
+						Enabled: true,
+					},
+					OracledbCursorOpenRate: OracledbCursorOpenRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbCursorOpenRateMetricAttributeKey{OracledbCursorOpenRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbDataDictionaryHitRatio: OracledbDataDictionaryHitRatioMetricConfig{
 						Enabled: true,
 					},
 					OracledbDatabaseCPUUtilization: OracledbDatabaseCPUUtilizationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbDatabaseCPUUtilizationMetricAttributeKey{OracledbDatabaseCPUUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbDatabaseWaitUtilization: OracledbDatabaseWaitUtilizationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbDatabaseWaitUtilizationMetricAttributeKey{OracledbDatabaseWaitUtilizationMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbDbTime: OracledbDbTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbDbTimeMetricAttributeKey{OracledbDbTimeMetricAttributeKeyOracledbSessionType},
 					},
 					OracledbDbBlockGets: OracledbDbBlockGetsMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbDbBlockGetsMetricAttributeKey{OracledbDbBlockGetsMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbDdlStatementsParallelized: OracledbDdlStatementsParallelizedMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbDdlStatementsParallelizedMetricAttributeKey{OracledbDdlStatementsParallelizedMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbDmlLocksLimit: OracledbDmlLocksLimitMetricConfig{
 						Enabled: true,
@@ -57,10 +134,29 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					OracledbDmlStatementsParallelized: OracledbDmlStatementsParallelizedMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbDmlStatementsParallelizedMetricAttributeKey{OracledbDmlStatementsParallelizedMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbEnqueueDeadlocksRate: OracledbEnqueueDeadlocksRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbEnqueueDeadlocksRateMetricAttributeKey{OracledbEnqueueDeadlocksRateMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbEnqueueOperations: OracledbEnqueueOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbEnqueueOperationsMetricAttributeKey{OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueType},
+					},
+					OracledbEnqueueTimeoutsRate: OracledbEnqueueTimeoutsRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbEnqueueTimeoutsRateMetricAttributeKey{OracledbEnqueueTimeoutsRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbEnqueueDeadlocks: OracledbEnqueueDeadlocksMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbEnqueueDeadlocksMetricAttributeKey{OracledbEnqueueDeadlocksMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbEnqueueLocksLimit: OracledbEnqueueLocksLimitMetricConfig{
 						Enabled: true,
@@ -75,93 +171,222 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					OracledbExchangeDeadlocks: OracledbExchangeDeadlocksMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbExchangeDeadlocksMetricAttributeKey{OracledbExchangeDeadlocksMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbExecutionUtilization: OracledbExecutionUtilizationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbExecutionUtilizationMetricAttributeKey{OracledbExecutionUtilizationMetricAttributeKeyOracledbParseType},
+						EnabledAttributes:   []OracledbExecutionUtilizationMetricAttributeKey{OracledbExecutionUtilizationMetricAttributeKeyOracledbParseType, OracledbExecutionUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbExecutions: OracledbExecutionsMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbExecutionsMetricAttributeKey{OracledbExecutionsMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbExecutionsRate: OracledbExecutionsRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbExecutionsRateMetricAttributeKey{OracledbExecutionsRateMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbGcCurrentBlockTime: OracledbGcCurrentBlockTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbGcCurrentBlockTimeMetricAttributeKey{OracledbGcCurrentBlockTimeMetricAttributeKeyNetworkIoDirection},
 					},
 					OracledbHardParses: OracledbHardParsesMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbHardParsesMetricAttributeKey{OracledbHardParsesMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbHardParsesRate: OracledbHardParsesRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbHardParsesRateMetricAttributeKey{OracledbHardParsesRateMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbHostCPUUsageRate: OracledbHostCPUUsageRateMetricConfig{
 						Enabled: true,
 					},
 					OracledbHostCPUUtilization: OracledbHostCPUUtilizationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbHostCPUUtilizationMetricAttributeKey{OracledbHostCPUUtilizationMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbIoRequestsRate: OracledbIoRequestsRateMetricConfig{
+						Enabled: true,
+					},
+					OracledbIoSingleBlockReadLatency: OracledbIoSingleBlockReadLatencyMetricConfig{
+						Enabled: true,
+					},
+					OracledbIoThroughputRate: OracledbIoThroughputRateMetricConfig{
+						Enabled: true,
+					},
+					OracledbJvmMemoryCommitted: OracledbJvmMemoryCommittedMetricConfig{
+						Enabled: true,
+					},
+					OracledbJvmMemoryLive: OracledbJvmMemoryLiveMetricConfig{
+						Enabled: true,
+					},
+					OracledbJvmMemoryUsed: OracledbJvmMemoryUsedMetricConfig{
 						Enabled: true,
 					},
 					OracledbLibraryCacheUtilization: OracledbLibraryCacheUtilizationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbLibraryCacheUtilizationMetricAttributeKey{OracledbLibraryCacheUtilizationMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbLobOperations: OracledbLobOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbLobOperationsMetricAttributeKey{OracledbLobOperationsMetricAttributeKeyDiskIoDirection},
+					},
+					OracledbLockTime: OracledbLockTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbLockTimeMetricAttributeKey{OracledbLockTimeMetricAttributeKeyOracleDbPdb, OracledbLockTimeMetricAttributeKeyOracledbSessionType},
 					},
 					OracledbLogicalReads: OracledbLogicalReadsMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbLogicalReadsMetricAttributeKey{OracledbLogicalReadsMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbLogicalReadsRate: OracledbLogicalReadsRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbLogicalReadsRateMetricAttributeKey{OracledbLogicalReadsRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbLogons: OracledbLogonsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbLogonsMetricAttributeKey{OracledbLogonsMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbLogonsRate: OracledbLogonsRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbLogonsRateMetricAttributeKey{OracledbLogonsRateMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbOsSwaps: OracledbOsSwapsMetricConfig{
 						Enabled: true,
 					},
 					OracledbParallelOperationsDowngraded1To25Pct: OracledbParallelOperationsDowngraded1To25PctMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbParallelOperationsDowngraded1To25PctMetricAttributeKey{OracledbParallelOperationsDowngraded1To25PctMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParallelOperationsDowngraded25To50Pct: OracledbParallelOperationsDowngraded25To50PctMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbParallelOperationsDowngraded25To50PctMetricAttributeKey{OracledbParallelOperationsDowngraded25To50PctMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParallelOperationsDowngraded50To75Pct: OracledbParallelOperationsDowngraded50To75PctMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbParallelOperationsDowngraded50To75PctMetricAttributeKey{OracledbParallelOperationsDowngraded50To75PctMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParallelOperationsDowngraded75To99Pct: OracledbParallelOperationsDowngraded75To99PctMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbParallelOperationsDowngraded75To99PctMetricAttributeKey{OracledbParallelOperationsDowngraded75To99PctMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParallelOperationsDowngradedToSerial: OracledbParallelOperationsDowngradedToSerialMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbParallelOperationsDowngradedToSerialMetricAttributeKey{OracledbParallelOperationsDowngradedToSerialMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParallelOperationsNotDowngraded: OracledbParallelOperationsNotDowngradedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbParallelOperationsNotDowngradedMetricAttributeKey{OracledbParallelOperationsNotDowngradedMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbParseCPUTime: OracledbParseCPUTimeMetricConfig{
+						Enabled: true,
+					},
+					OracledbParseElapsedTime: OracledbParseElapsedTimeMetricConfig{
 						Enabled: true,
 					},
 					OracledbParseRate: OracledbParseRateMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbParseRateMetricAttributeKey{OracledbParseRateMetricAttributeKeyOracledbParseResult},
+						EnabledAttributes:   []OracledbParseRateMetricAttributeKey{OracledbParseRateMetricAttributeKeyOracledbParseResult, OracledbParseRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParseUtilization: OracledbParseUtilizationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbParseUtilizationMetricAttributeKey{OracledbParseUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParseCalls: OracledbParseCallsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbParseCallsMetricAttributeKey{OracledbParseCallsMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbPgaCacheUtilization: OracledbPgaCacheUtilizationMetricConfig{
 						Enabled: true,
 					},
 					OracledbPgaMemory: OracledbPgaMemoryMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPgaMemoryMetricAttributeKey{OracledbPgaMemoryMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalIoCacheWrites: OracledbPhysicalIoCacheWritesMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalIoCacheWritesMetricAttributeKey{OracledbPhysicalIoCacheWritesMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalIoRequests: OracledbPhysicalIoRequestsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbPhysicalIoRequestsMetricAttributeKey{OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize},
+						EnabledAttributes:   []OracledbPhysicalIoRequestsMetricAttributeKey{OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize, OracledbPhysicalIoRequestsMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbPhysicalIoRequestsRate: OracledbPhysicalIoRequestsRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbPhysicalIoRequestsRateMetricAttributeKey{OracledbPhysicalIoRequestsRateMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoRequestsRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalIoTransferred: OracledbPhysicalIoTransferredMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbPhysicalIoTransferredMetricAttributeKey{OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType},
+						EnabledAttributes:   []OracledbPhysicalIoTransferredMetricAttributeKey{OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType, OracledbPhysicalIoTransferredMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbPhysicalIoTransferredRate: OracledbPhysicalIoTransferredRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbPhysicalIoTransferredRateMetricAttributeKey{OracledbPhysicalIoTransferredRateMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredRateMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbPhysicalOperationsRate: OracledbPhysicalOperationsRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbPhysicalOperationsRateMetricAttributeKey{OracledbPhysicalOperationsRateMetricAttributeKeyDiskIoDirection, OracledbPhysicalOperationsRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalReadIoRequests: OracledbPhysicalReadIoRequestsMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalReadIoRequestsMetricAttributeKey{OracledbPhysicalReadIoRequestsMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalReads: OracledbPhysicalReadsMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalReadsMetricAttributeKey{OracledbPhysicalReadsMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalReadsDirect: OracledbPhysicalReadsDirectMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalReadsDirectMetricAttributeKey{OracledbPhysicalReadsDirectMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalWriteIoRequests: OracledbPhysicalWriteIoRequestsMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalWriteIoRequestsMetricAttributeKey{OracledbPhysicalWriteIoRequestsMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalWrites: OracledbPhysicalWritesMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalWritesMetricAttributeKey{OracledbPhysicalWritesMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalWritesDirect: OracledbPhysicalWritesDirectMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalWritesDirectMetricAttributeKey{OracledbPhysicalWritesDirectMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbProcessesLimit: OracledbProcessesLimitMetricConfig{
 						Enabled: true,
@@ -170,13 +395,81 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					OracledbQueriesParallelized: OracledbQueriesParallelizedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbQueriesParallelizedMetricAttributeKey{OracledbQueriesParallelizedMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbRecoveryBlocks: OracledbRecoveryBlocksMetricConfig{
 						Enabled: true,
 					},
 					OracledbRecycleBinLimit: OracledbRecycleBinLimitMetricConfig{
 						Enabled: true,
 					},
-					OracledbRedoAllocationUtilization: OracledbRedoAllocationUtilizationMetricConfig{
+					OracledbRedoBlocks: OracledbRedoBlocksMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbRedoBlocksMetricAttributeKey{OracledbRedoBlocksMetricAttributeKeyDiskIoDirection},
+					},
+					OracledbRedoOperations: OracledbRedoOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbRedoOperationsMetricAttributeKey{OracledbRedoOperationsMetricAttributeKeyDiskIoDirection},
+					},
+					OracledbRedoRequests: OracledbRedoRequestsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbRedoRequestsMetricAttributeKey{OracledbRedoRequestsMetricAttributeKeyOracledbRedoRequestType},
+					},
+					OracledbRedoRetries: OracledbRedoRetriesMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbRedoRetriesMetricAttributeKey{OracledbRedoRetriesMetricAttributeKeyOracledbRedoRetryType},
+					},
+					OracledbRedoSize: OracledbRedoSizeMetricConfig{
 						Enabled: true,
+					},
+					OracledbRedoSizeRate: OracledbRedoSizeRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbRedoSizeRateMetricAttributeKey{OracledbRedoSizeRateMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbRedoTime: OracledbRedoTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbRedoTimeMetricAttributeKey{OracledbRedoTimeMetricAttributeKeyOracledbRedoType},
+					},
+					OracledbRedoAllocationUtilization: OracledbRedoAllocationUtilizationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbRedoAllocationUtilizationMetricAttributeKey{OracledbRedoAllocationUtilizationMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbScanCount: OracledbScanCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbScanCountMetricAttributeKey{OracledbScanCountMetricAttributeKeyOracledbScanType, OracledbScanCountMetricAttributeKeyOracledbScanMode},
+					},
+					OracledbScanTableRows: OracledbScanTableRowsMetricConfig{
+						Enabled: true,
+					},
+					OracledbSessionAverage: OracledbSessionAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbSessionAverageMetricAttributeKey{OracledbSessionAverageMetricAttributeKeySessionStatus, OracledbSessionAverageMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbSessionStoredProcedureMemory: OracledbSessionStoredProcedureMemoryMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbSessionStoredProcedureMemoryMetricAttributeKey{OracledbSessionStoredProcedureMemoryMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbSessionWaitTime: OracledbSessionWaitTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbSessionWaitTimeMetricAttributeKey{OracledbSessionWaitTimeMetricAttributeKeyOracledbSessionWaitState, OracledbSessionWaitTimeMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbSessionWaits: OracledbSessionWaitsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbSessionWaitsMetricAttributeKey{OracledbSessionWaitsMetricAttributeKeyOracledbSessionWaitState, OracledbSessionWaitsMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbSessionsLimit: OracledbSessionsLimitMetricConfig{
 						Enabled: true,
@@ -184,23 +477,48 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbSessionsUsage: OracledbSessionsUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus},
+						EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus, OracledbSessionsUsageMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbSgaLimit: OracledbSgaLimitMetricConfig{
+						Enabled: true,
+					},
+					OracledbSgaUsage: OracledbSgaUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbSgaUsageMetricAttributeKey{OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName},
 					},
 					OracledbSharedPoolUtilization: OracledbSharedPoolUtilizationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbSharedPoolUtilizationMetricAttributeKey{OracledbSharedPoolUtilizationMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbSmonPosts: OracledbSmonPostsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbSmonPostsMetricAttributeKey{OracledbSmonPostsMetricAttributeKeyOracledbSmonType},
+					},
+					OracledbSortOperations: OracledbSortOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbSortOperationsMetricAttributeKey{OracledbSortOperationsMetricAttributeKeyOracledbSortType},
 					},
 					OracledbSortRatio: OracledbSortRatioMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbSortRatioMetricAttributeKey{OracledbSortRatioMetricAttributeKeyOracledbSortType},
+						EnabledAttributes:   []OracledbSortRatioMetricAttributeKey{OracledbSortRatioMetricAttributeKeyOracledbSortType, OracledbSortRatioMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbSortRows: OracledbSortRowsMetricConfig{
+						Enabled: true,
 					},
 					OracledbSQLServiceResponseDuration: OracledbSQLServiceResponseDurationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbSQLServiceResponseDurationMetricAttributeKey{OracledbSQLServiceResponseDurationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbSqlnetIoTransferred: OracledbSqlnetIoTransferredMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbSqlnetIoTransferredMetricAttributeKey{OracledbSqlnetIoTransferredMetricAttributeKeyNetworkIoDirection, OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType},
+						EnabledAttributes:   []OracledbSqlnetIoTransferredMetricAttributeKey{OracledbSqlnetIoTransferredMetricAttributeKeyNetworkIoDirection, OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType, OracledbSqlnetIoTransferredMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbStorageUsage: OracledbStorageUsageMetricConfig{
 						Enabled: true,
@@ -208,38 +526,67 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbStorageUtilization: OracledbStorageUtilizationMetricConfig{
 						Enabled: true,
 					},
+					OracledbSystemCPUCount: OracledbSystemCPUCountMetricConfig{
+						Enabled: true,
+					},
+					OracledbSystemMemoryLimit: OracledbSystemMemoryLimitMetricConfig{
+						Enabled: true,
+					},
+					OracledbSystemProcessCount: OracledbSystemProcessCountMetricConfig{
+						Enabled: true,
+					},
 					OracledbTablespaceSizeLimit: OracledbTablespaceSizeLimitMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbTablespaceSizeLimitMetricAttributeKey{OracledbTablespaceSizeLimitMetricAttributeKeyTablespaceName},
+						EnabledAttributes:   []OracledbTablespaceSizeLimitMetricAttributeKey{OracledbTablespaceSizeLimitMetricAttributeKeyTablespaceName, OracledbTablespaceSizeLimitMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbTablespaceSizeUsage: OracledbTablespaceSizeUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbTablespaceSizeUsageMetricAttributeKey{OracledbTablespaceSizeUsageMetricAttributeKeyTablespaceName},
+						EnabledAttributes:   []OracledbTablespaceSizeUsageMetricAttributeKey{OracledbTablespaceSizeUsageMetricAttributeKeyTablespaceName, OracledbTablespaceSizeUsageMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbTransactionResponseTime: OracledbTransactionResponseTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbTransactionResponseTimeMetricAttributeKey{OracledbTransactionResponseTimeMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbTransactionRollbacks: OracledbTransactionRollbacksMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbTransactionRollbacksMetricAttributeKey{OracledbTransactionRollbacksMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbTransactionsLimit: OracledbTransactionsLimitMetricConfig{
 						Enabled: true,
+					},
+					OracledbTransactionsRate: OracledbTransactionsRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbTransactionsRateMetricAttributeKey{OracledbTransactionsRateMetricAttributeKeyOracledbTransactionType, OracledbTransactionsRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbTransactionsUsage: OracledbTransactionsUsageMetricConfig{
 						Enabled: true,
 					},
 					OracledbUserCommits: OracledbUserCommitsMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbUserCommitsMetricAttributeKey{OracledbUserCommitsMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbUserRollbacks: OracledbUserRollbacksMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbUserRollbacksMetricAttributeKey{OracledbUserRollbacksMetricAttributeKeyOracleDbPdb},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					HostName:             ResourceAttributeConfig{Enabled: true},
-					OracleDbHostingType:  ResourceAttributeConfig{Enabled: true},
-					OracleDbOpenMode:     ResourceAttributeConfig{Enabled: true},
-					OracleDbPdb:          ResourceAttributeConfig{Enabled: true},
-					OracleDbRole:         ResourceAttributeConfig{Enabled: true},
-					OracleDbVersion:      ResourceAttributeConfig{Enabled: true},
-					OracledbInstanceName: ResourceAttributeConfig{Enabled: true},
-					ServiceInstanceID:    ResourceAttributeConfig{Enabled: true},
+					HostName:             HostNameResourceAttributeConfig{Enabled: true},
+					OracleDbHostingType:  OracleDbHostingTypeResourceAttributeConfig{Enabled: true},
+					OracleDbOpenMode:     OracleDbOpenModeResourceAttributeConfig{Enabled: true},
+					OracleDbRole:         OracleDbRoleResourceAttributeConfig{Enabled: true},
+					OracleDbVersion:      OracleDbVersionResourceAttributeConfig{Enabled: true},
+					OracledbInstanceName: OracledbInstanceNameResourceAttributeConfig{Enabled: true},
+					ServiceInstanceID:    ServiceInstanceIDResourceAttributeConfig{Enabled: true},
+					ServiceName:          ServiceNameResourceAttributeConfig{Enabled: true},
+					ServiceNamespace:     ServiceNamespaceResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -247,29 +594,105 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					OracledbBufferInspected: OracledbBufferInspectedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbBufferInspectedMetricAttributeKey{OracledbBufferInspectedMetricAttributeKeyOracledbBufferState},
+					},
+					OracledbBufferRequests: OracledbBufferRequestsMetricConfig{
+						Enabled: false,
+					},
+					OracledbBufferCacheBlockChanges: OracledbBufferCacheBlockChangesMetricConfig{
+						Enabled: false,
+					},
+					OracledbBufferCacheBlockChangesRate: OracledbBufferCacheBlockChangesRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbBufferCacheBlockChangesRateMetricAttributeKey{OracledbBufferCacheBlockChangesRateMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbBufferCacheBlockGets: OracledbBufferCacheBlockGetsMetricConfig{
+						Enabled: false,
+					},
 					OracledbBufferCacheUtilization: OracledbBufferCacheUtilizationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbBufferCacheUtilizationMetricAttributeKey{OracledbBufferCacheUtilizationMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbCallCount: OracledbCallCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbCallCountMetricAttributeKey{OracledbCallCountMetricAttributeKeyOracledbCallType},
+					},
+					OracledbCallRecursiveCPUTime: OracledbCallRecursiveCPUTimeMetricConfig{
+						Enabled: false,
+					},
+					OracledbCheckpointBuffers: OracledbCheckpointBuffersMetricConfig{
+						Enabled: false,
+					},
+					OracledbCheckpointCompleted: OracledbCheckpointCompletedMetricConfig{
 						Enabled: false,
 					},
 					OracledbConsistentGets: OracledbConsistentGetsMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbConsistentGetsMetricAttributeKey{OracledbConsistentGetsMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbCPUUsageRate: OracledbCPUUsageRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbCPUUsageRateMetricAttributeKey{OracledbCPUUsageRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbCPUTime: OracledbCPUTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbCPUTimeMetricAttributeKey{OracledbCPUTimeMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbCursorCacheHits: OracledbCursorCacheHitsMetricConfig{
 						Enabled: false,
+					},
+					OracledbCursorCacheSize: OracledbCursorCacheSizeMetricConfig{
+						Enabled: false,
+					},
+					OracledbCursorCacheUtilization: OracledbCursorCacheUtilizationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbCursorCacheUtilizationMetricAttributeKey{OracledbCursorCacheUtilizationMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbCursorOpen: OracledbCursorOpenMetricConfig{
+						Enabled: false,
+					},
+					OracledbCursorOpenRate: OracledbCursorOpenRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbCursorOpenRateMetricAttributeKey{OracledbCursorOpenRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbDataDictionaryHitRatio: OracledbDataDictionaryHitRatioMetricConfig{
 						Enabled: false,
 					},
 					OracledbDatabaseCPUUtilization: OracledbDatabaseCPUUtilizationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbDatabaseCPUUtilizationMetricAttributeKey{OracledbDatabaseCPUUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbDatabaseWaitUtilization: OracledbDatabaseWaitUtilizationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbDatabaseWaitUtilizationMetricAttributeKey{OracledbDatabaseWaitUtilizationMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbDbTime: OracledbDbTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbDbTimeMetricAttributeKey{OracledbDbTimeMetricAttributeKeyOracledbSessionType},
 					},
 					OracledbDbBlockGets: OracledbDbBlockGetsMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbDbBlockGetsMetricAttributeKey{OracledbDbBlockGetsMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbDdlStatementsParallelized: OracledbDdlStatementsParallelizedMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbDdlStatementsParallelizedMetricAttributeKey{OracledbDdlStatementsParallelizedMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbDmlLocksLimit: OracledbDmlLocksLimitMetricConfig{
 						Enabled: false,
@@ -278,10 +701,29 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					OracledbDmlStatementsParallelized: OracledbDmlStatementsParallelizedMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbDmlStatementsParallelizedMetricAttributeKey{OracledbDmlStatementsParallelizedMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbEnqueueDeadlocksRate: OracledbEnqueueDeadlocksRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbEnqueueDeadlocksRateMetricAttributeKey{OracledbEnqueueDeadlocksRateMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbEnqueueOperations: OracledbEnqueueOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbEnqueueOperationsMetricAttributeKey{OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueType},
+					},
+					OracledbEnqueueTimeoutsRate: OracledbEnqueueTimeoutsRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbEnqueueTimeoutsRateMetricAttributeKey{OracledbEnqueueTimeoutsRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbEnqueueDeadlocks: OracledbEnqueueDeadlocksMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbEnqueueDeadlocksMetricAttributeKey{OracledbEnqueueDeadlocksMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbEnqueueLocksLimit: OracledbEnqueueLocksLimitMetricConfig{
 						Enabled: false,
@@ -296,93 +738,222 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					OracledbExchangeDeadlocks: OracledbExchangeDeadlocksMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbExchangeDeadlocksMetricAttributeKey{OracledbExchangeDeadlocksMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbExecutionUtilization: OracledbExecutionUtilizationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbExecutionUtilizationMetricAttributeKey{OracledbExecutionUtilizationMetricAttributeKeyOracledbParseType},
+						EnabledAttributes:   []OracledbExecutionUtilizationMetricAttributeKey{OracledbExecutionUtilizationMetricAttributeKeyOracledbParseType, OracledbExecutionUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbExecutions: OracledbExecutionsMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbExecutionsMetricAttributeKey{OracledbExecutionsMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbExecutionsRate: OracledbExecutionsRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbExecutionsRateMetricAttributeKey{OracledbExecutionsRateMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbGcCurrentBlockTime: OracledbGcCurrentBlockTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbGcCurrentBlockTimeMetricAttributeKey{OracledbGcCurrentBlockTimeMetricAttributeKeyNetworkIoDirection},
 					},
 					OracledbHardParses: OracledbHardParsesMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbHardParsesMetricAttributeKey{OracledbHardParsesMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbHardParsesRate: OracledbHardParsesRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbHardParsesRateMetricAttributeKey{OracledbHardParsesRateMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbHostCPUUsageRate: OracledbHostCPUUsageRateMetricConfig{
 						Enabled: false,
 					},
 					OracledbHostCPUUtilization: OracledbHostCPUUtilizationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbHostCPUUtilizationMetricAttributeKey{OracledbHostCPUUtilizationMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbIoRequestsRate: OracledbIoRequestsRateMetricConfig{
+						Enabled: false,
+					},
+					OracledbIoSingleBlockReadLatency: OracledbIoSingleBlockReadLatencyMetricConfig{
+						Enabled: false,
+					},
+					OracledbIoThroughputRate: OracledbIoThroughputRateMetricConfig{
+						Enabled: false,
+					},
+					OracledbJvmMemoryCommitted: OracledbJvmMemoryCommittedMetricConfig{
+						Enabled: false,
+					},
+					OracledbJvmMemoryLive: OracledbJvmMemoryLiveMetricConfig{
+						Enabled: false,
+					},
+					OracledbJvmMemoryUsed: OracledbJvmMemoryUsedMetricConfig{
 						Enabled: false,
 					},
 					OracledbLibraryCacheUtilization: OracledbLibraryCacheUtilizationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbLibraryCacheUtilizationMetricAttributeKey{OracledbLibraryCacheUtilizationMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbLobOperations: OracledbLobOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbLobOperationsMetricAttributeKey{OracledbLobOperationsMetricAttributeKeyDiskIoDirection},
+					},
+					OracledbLockTime: OracledbLockTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbLockTimeMetricAttributeKey{OracledbLockTimeMetricAttributeKeyOracleDbPdb, OracledbLockTimeMetricAttributeKeyOracledbSessionType},
 					},
 					OracledbLogicalReads: OracledbLogicalReadsMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbLogicalReadsMetricAttributeKey{OracledbLogicalReadsMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbLogicalReadsRate: OracledbLogicalReadsRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbLogicalReadsRateMetricAttributeKey{OracledbLogicalReadsRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbLogons: OracledbLogonsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbLogonsMetricAttributeKey{OracledbLogonsMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbLogonsRate: OracledbLogonsRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbLogonsRateMetricAttributeKey{OracledbLogonsRateMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbOsSwaps: OracledbOsSwapsMetricConfig{
 						Enabled: false,
 					},
 					OracledbParallelOperationsDowngraded1To25Pct: OracledbParallelOperationsDowngraded1To25PctMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbParallelOperationsDowngraded1To25PctMetricAttributeKey{OracledbParallelOperationsDowngraded1To25PctMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParallelOperationsDowngraded25To50Pct: OracledbParallelOperationsDowngraded25To50PctMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbParallelOperationsDowngraded25To50PctMetricAttributeKey{OracledbParallelOperationsDowngraded25To50PctMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParallelOperationsDowngraded50To75Pct: OracledbParallelOperationsDowngraded50To75PctMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbParallelOperationsDowngraded50To75PctMetricAttributeKey{OracledbParallelOperationsDowngraded50To75PctMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParallelOperationsDowngraded75To99Pct: OracledbParallelOperationsDowngraded75To99PctMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbParallelOperationsDowngraded75To99PctMetricAttributeKey{OracledbParallelOperationsDowngraded75To99PctMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParallelOperationsDowngradedToSerial: OracledbParallelOperationsDowngradedToSerialMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbParallelOperationsDowngradedToSerialMetricAttributeKey{OracledbParallelOperationsDowngradedToSerialMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParallelOperationsNotDowngraded: OracledbParallelOperationsNotDowngradedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbParallelOperationsNotDowngradedMetricAttributeKey{OracledbParallelOperationsNotDowngradedMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbParseCPUTime: OracledbParseCPUTimeMetricConfig{
+						Enabled: false,
+					},
+					OracledbParseElapsedTime: OracledbParseElapsedTimeMetricConfig{
 						Enabled: false,
 					},
 					OracledbParseRate: OracledbParseRateMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbParseRateMetricAttributeKey{OracledbParseRateMetricAttributeKeyOracledbParseResult},
+						EnabledAttributes:   []OracledbParseRateMetricAttributeKey{OracledbParseRateMetricAttributeKeyOracledbParseResult, OracledbParseRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParseUtilization: OracledbParseUtilizationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbParseUtilizationMetricAttributeKey{OracledbParseUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParseCalls: OracledbParseCallsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbParseCallsMetricAttributeKey{OracledbParseCallsMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbPgaCacheUtilization: OracledbPgaCacheUtilizationMetricConfig{
 						Enabled: false,
 					},
 					OracledbPgaMemory: OracledbPgaMemoryMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPgaMemoryMetricAttributeKey{OracledbPgaMemoryMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalIoCacheWrites: OracledbPhysicalIoCacheWritesMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalIoCacheWritesMetricAttributeKey{OracledbPhysicalIoCacheWritesMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalIoRequests: OracledbPhysicalIoRequestsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbPhysicalIoRequestsMetricAttributeKey{OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize},
+						EnabledAttributes:   []OracledbPhysicalIoRequestsMetricAttributeKey{OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize, OracledbPhysicalIoRequestsMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbPhysicalIoRequestsRate: OracledbPhysicalIoRequestsRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbPhysicalIoRequestsRateMetricAttributeKey{OracledbPhysicalIoRequestsRateMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoRequestsRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalIoTransferred: OracledbPhysicalIoTransferredMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbPhysicalIoTransferredMetricAttributeKey{OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType},
+						EnabledAttributes:   []OracledbPhysicalIoTransferredMetricAttributeKey{OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType, OracledbPhysicalIoTransferredMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbPhysicalIoTransferredRate: OracledbPhysicalIoTransferredRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbPhysicalIoTransferredRateMetricAttributeKey{OracledbPhysicalIoTransferredRateMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredRateMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbPhysicalOperationsRate: OracledbPhysicalOperationsRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbPhysicalOperationsRateMetricAttributeKey{OracledbPhysicalOperationsRateMetricAttributeKeyDiskIoDirection, OracledbPhysicalOperationsRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalReadIoRequests: OracledbPhysicalReadIoRequestsMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalReadIoRequestsMetricAttributeKey{OracledbPhysicalReadIoRequestsMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalReads: OracledbPhysicalReadsMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalReadsMetricAttributeKey{OracledbPhysicalReadsMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalReadsDirect: OracledbPhysicalReadsDirectMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalReadsDirectMetricAttributeKey{OracledbPhysicalReadsDirectMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalWriteIoRequests: OracledbPhysicalWriteIoRequestsMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalWriteIoRequestsMetricAttributeKey{OracledbPhysicalWriteIoRequestsMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalWrites: OracledbPhysicalWritesMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalWritesMetricAttributeKey{OracledbPhysicalWritesMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalWritesDirect: OracledbPhysicalWritesDirectMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalWritesDirectMetricAttributeKey{OracledbPhysicalWritesDirectMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbProcessesLimit: OracledbProcessesLimitMetricConfig{
 						Enabled: false,
@@ -391,13 +962,81 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					OracledbQueriesParallelized: OracledbQueriesParallelizedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbQueriesParallelizedMetricAttributeKey{OracledbQueriesParallelizedMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbRecoveryBlocks: OracledbRecoveryBlocksMetricConfig{
 						Enabled: false,
 					},
 					OracledbRecycleBinLimit: OracledbRecycleBinLimitMetricConfig{
 						Enabled: false,
 					},
-					OracledbRedoAllocationUtilization: OracledbRedoAllocationUtilizationMetricConfig{
+					OracledbRedoBlocks: OracledbRedoBlocksMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbRedoBlocksMetricAttributeKey{OracledbRedoBlocksMetricAttributeKeyDiskIoDirection},
+					},
+					OracledbRedoOperations: OracledbRedoOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbRedoOperationsMetricAttributeKey{OracledbRedoOperationsMetricAttributeKeyDiskIoDirection},
+					},
+					OracledbRedoRequests: OracledbRedoRequestsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbRedoRequestsMetricAttributeKey{OracledbRedoRequestsMetricAttributeKeyOracledbRedoRequestType},
+					},
+					OracledbRedoRetries: OracledbRedoRetriesMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbRedoRetriesMetricAttributeKey{OracledbRedoRetriesMetricAttributeKeyOracledbRedoRetryType},
+					},
+					OracledbRedoSize: OracledbRedoSizeMetricConfig{
 						Enabled: false,
+					},
+					OracledbRedoSizeRate: OracledbRedoSizeRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbRedoSizeRateMetricAttributeKey{OracledbRedoSizeRateMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbRedoTime: OracledbRedoTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbRedoTimeMetricAttributeKey{OracledbRedoTimeMetricAttributeKeyOracledbRedoType},
+					},
+					OracledbRedoAllocationUtilization: OracledbRedoAllocationUtilizationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbRedoAllocationUtilizationMetricAttributeKey{OracledbRedoAllocationUtilizationMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbScanCount: OracledbScanCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbScanCountMetricAttributeKey{OracledbScanCountMetricAttributeKeyOracledbScanType, OracledbScanCountMetricAttributeKeyOracledbScanMode},
+					},
+					OracledbScanTableRows: OracledbScanTableRowsMetricConfig{
+						Enabled: false,
+					},
+					OracledbSessionAverage: OracledbSessionAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbSessionAverageMetricAttributeKey{OracledbSessionAverageMetricAttributeKeySessionStatus, OracledbSessionAverageMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbSessionStoredProcedureMemory: OracledbSessionStoredProcedureMemoryMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbSessionStoredProcedureMemoryMetricAttributeKey{OracledbSessionStoredProcedureMemoryMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbSessionWaitTime: OracledbSessionWaitTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbSessionWaitTimeMetricAttributeKey{OracledbSessionWaitTimeMetricAttributeKeyOracledbSessionWaitState, OracledbSessionWaitTimeMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbSessionWaits: OracledbSessionWaitsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbSessionWaitsMetricAttributeKey{OracledbSessionWaitsMetricAttributeKeyOracledbSessionWaitState, OracledbSessionWaitsMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbSessionsLimit: OracledbSessionsLimitMetricConfig{
 						Enabled: false,
@@ -405,23 +1044,48 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbSessionsUsage: OracledbSessionsUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus},
+						EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus, OracledbSessionsUsageMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbSgaLimit: OracledbSgaLimitMetricConfig{
+						Enabled: false,
+					},
+					OracledbSgaUsage: OracledbSgaUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbSgaUsageMetricAttributeKey{OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName},
 					},
 					OracledbSharedPoolUtilization: OracledbSharedPoolUtilizationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbSharedPoolUtilizationMetricAttributeKey{OracledbSharedPoolUtilizationMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbSmonPosts: OracledbSmonPostsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbSmonPostsMetricAttributeKey{OracledbSmonPostsMetricAttributeKeyOracledbSmonType},
+					},
+					OracledbSortOperations: OracledbSortOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbSortOperationsMetricAttributeKey{OracledbSortOperationsMetricAttributeKeyOracledbSortType},
 					},
 					OracledbSortRatio: OracledbSortRatioMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbSortRatioMetricAttributeKey{OracledbSortRatioMetricAttributeKeyOracledbSortType},
+						EnabledAttributes:   []OracledbSortRatioMetricAttributeKey{OracledbSortRatioMetricAttributeKeyOracledbSortType, OracledbSortRatioMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbSortRows: OracledbSortRowsMetricConfig{
+						Enabled: false,
 					},
 					OracledbSQLServiceResponseDuration: OracledbSQLServiceResponseDurationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbSQLServiceResponseDurationMetricAttributeKey{OracledbSQLServiceResponseDurationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbSqlnetIoTransferred: OracledbSqlnetIoTransferredMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbSqlnetIoTransferredMetricAttributeKey{OracledbSqlnetIoTransferredMetricAttributeKeyNetworkIoDirection, OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType},
+						EnabledAttributes:   []OracledbSqlnetIoTransferredMetricAttributeKey{OracledbSqlnetIoTransferredMetricAttributeKeyNetworkIoDirection, OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType, OracledbSqlnetIoTransferredMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbStorageUsage: OracledbStorageUsageMetricConfig{
 						Enabled: false,
@@ -429,38 +1093,67 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbStorageUtilization: OracledbStorageUtilizationMetricConfig{
 						Enabled: false,
 					},
+					OracledbSystemCPUCount: OracledbSystemCPUCountMetricConfig{
+						Enabled: false,
+					},
+					OracledbSystemMemoryLimit: OracledbSystemMemoryLimitMetricConfig{
+						Enabled: false,
+					},
+					OracledbSystemProcessCount: OracledbSystemProcessCountMetricConfig{
+						Enabled: false,
+					},
 					OracledbTablespaceSizeLimit: OracledbTablespaceSizeLimitMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbTablespaceSizeLimitMetricAttributeKey{OracledbTablespaceSizeLimitMetricAttributeKeyTablespaceName},
+						EnabledAttributes:   []OracledbTablespaceSizeLimitMetricAttributeKey{OracledbTablespaceSizeLimitMetricAttributeKeyTablespaceName, OracledbTablespaceSizeLimitMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbTablespaceSizeUsage: OracledbTablespaceSizeUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbTablespaceSizeUsageMetricAttributeKey{OracledbTablespaceSizeUsageMetricAttributeKeyTablespaceName},
+						EnabledAttributes:   []OracledbTablespaceSizeUsageMetricAttributeKey{OracledbTablespaceSizeUsageMetricAttributeKeyTablespaceName, OracledbTablespaceSizeUsageMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbTransactionResponseTime: OracledbTransactionResponseTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbTransactionResponseTimeMetricAttributeKey{OracledbTransactionResponseTimeMetricAttributeKeyOracleDbPdb},
+					},
+					OracledbTransactionRollbacks: OracledbTransactionRollbacksMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbTransactionRollbacksMetricAttributeKey{OracledbTransactionRollbacksMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbTransactionsLimit: OracledbTransactionsLimitMetricConfig{
 						Enabled: false,
+					},
+					OracledbTransactionsRate: OracledbTransactionsRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbTransactionsRateMetricAttributeKey{OracledbTransactionsRateMetricAttributeKeyOracledbTransactionType, OracledbTransactionsRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbTransactionsUsage: OracledbTransactionsUsageMetricConfig{
 						Enabled: false,
 					},
 					OracledbUserCommits: OracledbUserCommitsMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbUserCommitsMetricAttributeKey{OracledbUserCommitsMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbUserRollbacks: OracledbUserRollbacksMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbUserRollbacksMetricAttributeKey{OracledbUserRollbacksMetricAttributeKeyOracleDbPdb},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					HostName:             ResourceAttributeConfig{Enabled: false},
-					OracleDbHostingType:  ResourceAttributeConfig{Enabled: false},
-					OracleDbOpenMode:     ResourceAttributeConfig{Enabled: false},
-					OracleDbPdb:          ResourceAttributeConfig{Enabled: false},
-					OracleDbRole:         ResourceAttributeConfig{Enabled: false},
-					OracleDbVersion:      ResourceAttributeConfig{Enabled: false},
-					OracledbInstanceName: ResourceAttributeConfig{Enabled: false},
-					ServiceInstanceID:    ResourceAttributeConfig{Enabled: false},
+					HostName:             HostNameResourceAttributeConfig{Enabled: false},
+					OracleDbHostingType:  OracleDbHostingTypeResourceAttributeConfig{Enabled: false},
+					OracleDbOpenMode:     OracleDbOpenModeResourceAttributeConfig{Enabled: false},
+					OracleDbRole:         OracleDbRoleResourceAttributeConfig{Enabled: false},
+					OracleDbVersion:      OracleDbVersionResourceAttributeConfig{Enabled: false},
+					OracledbInstanceName: OracledbInstanceNameResourceAttributeConfig{Enabled: false},
+					ServiceInstanceID:    ServiceInstanceIDResourceAttributeConfig{Enabled: false},
+					ServiceName:          ServiceNameResourceAttributeConfig{Enabled: false},
+					ServiceNamespace:     ServiceNamespaceResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -468,10 +1161,249 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(OracledbBufferCacheUtilizationMetricConfig{}, OracledbConsistentGetsMetricConfig{}, OracledbCPUTimeMetricConfig{}, OracledbDataDictionaryHitRatioMetricConfig{}, OracledbDatabaseCPUUtilizationMetricConfig{}, OracledbDatabaseWaitUtilizationMetricConfig{}, OracledbDbBlockGetsMetricConfig{}, OracledbDdlStatementsParallelizedMetricConfig{}, OracledbDmlLocksLimitMetricConfig{}, OracledbDmlLocksUsageMetricConfig{}, OracledbDmlStatementsParallelizedMetricConfig{}, OracledbEnqueueDeadlocksMetricConfig{}, OracledbEnqueueLocksLimitMetricConfig{}, OracledbEnqueueLocksUsageMetricConfig{}, OracledbEnqueueResourcesLimitMetricConfig{}, OracledbEnqueueResourcesUsageMetricConfig{}, OracledbExchangeDeadlocksMetricConfig{}, OracledbExecutionUtilizationMetricConfig{}, OracledbExecutionsMetricConfig{}, OracledbHardParsesMetricConfig{}, OracledbHostCPUUtilizationMetricConfig{}, OracledbLibraryCacheUtilizationMetricConfig{}, OracledbLogicalReadsMetricConfig{}, OracledbLogonsMetricConfig{}, OracledbParallelOperationsDowngraded1To25PctMetricConfig{}, OracledbParallelOperationsDowngraded25To50PctMetricConfig{}, OracledbParallelOperationsDowngraded50To75PctMetricConfig{}, OracledbParallelOperationsDowngraded75To99PctMetricConfig{}, OracledbParallelOperationsDowngradedToSerialMetricConfig{}, OracledbParallelOperationsNotDowngradedMetricConfig{}, OracledbParseRateMetricConfig{}, OracledbParseUtilizationMetricConfig{}, OracledbParseCallsMetricConfig{}, OracledbPgaMemoryMetricConfig{}, OracledbPhysicalIoCacheWritesMetricConfig{}, OracledbPhysicalIoRequestsMetricConfig{}, OracledbPhysicalIoTransferredMetricConfig{}, OracledbPhysicalReadIoRequestsMetricConfig{}, OracledbPhysicalReadsMetricConfig{}, OracledbPhysicalReadsDirectMetricConfig{}, OracledbPhysicalWriteIoRequestsMetricConfig{}, OracledbPhysicalWritesMetricConfig{}, OracledbPhysicalWritesDirectMetricConfig{}, OracledbProcessesLimitMetricConfig{}, OracledbProcessesUsageMetricConfig{}, OracledbQueriesParallelizedMetricConfig{}, OracledbRecycleBinLimitMetricConfig{}, OracledbRedoAllocationUtilizationMetricConfig{}, OracledbSessionsLimitMetricConfig{}, OracledbSessionsUsageMetricConfig{}, OracledbSharedPoolUtilizationMetricConfig{}, OracledbSortRatioMetricConfig{}, OracledbSQLServiceResponseDurationMetricConfig{}, OracledbSqlnetIoTransferredMetricConfig{}, OracledbStorageUsageMetricConfig{}, OracledbStorageUtilizationMetricConfig{}, OracledbTablespaceSizeLimitMetricConfig{}, OracledbTablespaceSizeUsageMetricConfig{}, OracledbTransactionsLimitMetricConfig{}, OracledbTransactionsUsageMetricConfig{}, OracledbUserCommitsMetricConfig{}, OracledbUserRollbacksMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(OracledbBufferInspectedMetricConfig{}, OracledbBufferRequestsMetricConfig{}, OracledbBufferCacheBlockChangesMetricConfig{}, OracledbBufferCacheBlockChangesRateMetricConfig{}, OracledbBufferCacheBlockGetsMetricConfig{}, OracledbBufferCacheUtilizationMetricConfig{}, OracledbCallCountMetricConfig{}, OracledbCallRecursiveCPUTimeMetricConfig{}, OracledbCheckpointBuffersMetricConfig{}, OracledbCheckpointCompletedMetricConfig{}, OracledbConsistentGetsMetricConfig{}, OracledbCPUUsageRateMetricConfig{}, OracledbCPUTimeMetricConfig{}, OracledbCursorCacheHitsMetricConfig{}, OracledbCursorCacheSizeMetricConfig{}, OracledbCursorCacheUtilizationMetricConfig{}, OracledbCursorOpenMetricConfig{}, OracledbCursorOpenRateMetricConfig{}, OracledbDataDictionaryHitRatioMetricConfig{}, OracledbDatabaseCPUUtilizationMetricConfig{}, OracledbDatabaseWaitUtilizationMetricConfig{}, OracledbDbTimeMetricConfig{}, OracledbDbBlockGetsMetricConfig{}, OracledbDdlStatementsParallelizedMetricConfig{}, OracledbDmlLocksLimitMetricConfig{}, OracledbDmlLocksUsageMetricConfig{}, OracledbDmlStatementsParallelizedMetricConfig{}, OracledbEnqueueDeadlocksRateMetricConfig{}, OracledbEnqueueOperationsMetricConfig{}, OracledbEnqueueTimeoutsRateMetricConfig{}, OracledbEnqueueDeadlocksMetricConfig{}, OracledbEnqueueLocksLimitMetricConfig{}, OracledbEnqueueLocksUsageMetricConfig{}, OracledbEnqueueResourcesLimitMetricConfig{}, OracledbEnqueueResourcesUsageMetricConfig{}, OracledbExchangeDeadlocksMetricConfig{}, OracledbExecutionUtilizationMetricConfig{}, OracledbExecutionsMetricConfig{}, OracledbExecutionsRateMetricConfig{}, OracledbGcCurrentBlockTimeMetricConfig{}, OracledbHardParsesMetricConfig{}, OracledbHardParsesRateMetricConfig{}, OracledbHostCPUUsageRateMetricConfig{}, OracledbHostCPUUtilizationMetricConfig{}, OracledbIoRequestsRateMetricConfig{}, OracledbIoSingleBlockReadLatencyMetricConfig{}, OracledbIoThroughputRateMetricConfig{}, OracledbJvmMemoryCommittedMetricConfig{}, OracledbJvmMemoryLiveMetricConfig{}, OracledbJvmMemoryUsedMetricConfig{}, OracledbLibraryCacheUtilizationMetricConfig{}, OracledbLobOperationsMetricConfig{}, OracledbLockTimeMetricConfig{}, OracledbLogicalReadsMetricConfig{}, OracledbLogicalReadsRateMetricConfig{}, OracledbLogonsMetricConfig{}, OracledbLogonsRateMetricConfig{}, OracledbOsSwapsMetricConfig{}, OracledbParallelOperationsDowngraded1To25PctMetricConfig{}, OracledbParallelOperationsDowngraded25To50PctMetricConfig{}, OracledbParallelOperationsDowngraded50To75PctMetricConfig{}, OracledbParallelOperationsDowngraded75To99PctMetricConfig{}, OracledbParallelOperationsDowngradedToSerialMetricConfig{}, OracledbParallelOperationsNotDowngradedMetricConfig{}, OracledbParseCPUTimeMetricConfig{}, OracledbParseElapsedTimeMetricConfig{}, OracledbParseRateMetricConfig{}, OracledbParseUtilizationMetricConfig{}, OracledbParseCallsMetricConfig{}, OracledbPgaCacheUtilizationMetricConfig{}, OracledbPgaMemoryMetricConfig{}, OracledbPhysicalIoCacheWritesMetricConfig{}, OracledbPhysicalIoRequestsMetricConfig{}, OracledbPhysicalIoRequestsRateMetricConfig{}, OracledbPhysicalIoTransferredMetricConfig{}, OracledbPhysicalIoTransferredRateMetricConfig{}, OracledbPhysicalOperationsRateMetricConfig{}, OracledbPhysicalReadIoRequestsMetricConfig{}, OracledbPhysicalReadsMetricConfig{}, OracledbPhysicalReadsDirectMetricConfig{}, OracledbPhysicalWriteIoRequestsMetricConfig{}, OracledbPhysicalWritesMetricConfig{}, OracledbPhysicalWritesDirectMetricConfig{}, OracledbProcessesLimitMetricConfig{}, OracledbProcessesUsageMetricConfig{}, OracledbQueriesParallelizedMetricConfig{}, OracledbRecoveryBlocksMetricConfig{}, OracledbRecycleBinLimitMetricConfig{}, OracledbRedoBlocksMetricConfig{}, OracledbRedoOperationsMetricConfig{}, OracledbRedoRequestsMetricConfig{}, OracledbRedoRetriesMetricConfig{}, OracledbRedoSizeMetricConfig{}, OracledbRedoSizeRateMetricConfig{}, OracledbRedoTimeMetricConfig{}, OracledbRedoAllocationUtilizationMetricConfig{}, OracledbScanCountMetricConfig{}, OracledbScanTableRowsMetricConfig{}, OracledbSessionAverageMetricConfig{}, OracledbSessionStoredProcedureMemoryMetricConfig{}, OracledbSessionWaitTimeMetricConfig{}, OracledbSessionWaitsMetricConfig{}, OracledbSessionsLimitMetricConfig{}, OracledbSessionsUsageMetricConfig{}, OracledbSgaLimitMetricConfig{}, OracledbSgaUsageMetricConfig{}, OracledbSharedPoolUtilizationMetricConfig{}, OracledbSmonPostsMetricConfig{}, OracledbSortOperationsMetricConfig{}, OracledbSortRatioMetricConfig{}, OracledbSortRowsMetricConfig{}, OracledbSQLServiceResponseDurationMetricConfig{}, OracledbSqlnetIoTransferredMetricConfig{}, OracledbStorageUsageMetricConfig{}, OracledbStorageUtilizationMetricConfig{}, OracledbSystemCPUCountMetricConfig{}, OracledbSystemMemoryLimitMetricConfig{}, OracledbSystemProcessCountMetricConfig{}, OracledbTablespaceSizeLimitMetricConfig{}, OracledbTablespaceSizeUsageMetricConfig{}, OracledbTransactionResponseTimeMetricConfig{}, OracledbTransactionRollbacksMetricConfig{}, OracledbTransactionsLimitMetricConfig{}, OracledbTransactionsRateMetricConfig{}, OracledbTransactionsUsageMetricConfig{}, OracledbUserCommitsMetricConfig{}, OracledbUserRollbacksMetricConfig{}, HostNameResourceAttributeConfig{}, OracleDbHostingTypeResourceAttributeConfig{}, OracleDbOpenModeResourceAttributeConfig{}, OracleDbRoleResourceAttributeConfig{}, OracleDbVersionResourceAttributeConfig{}, OracledbInstanceNameResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+func TestOracledbBufferInspectedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbBufferInspected
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbBufferInspectedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.buffer.inspected doesn't have an attribute invalid, valid attributes: [oracledb.buffer.state]")
+
+	cfg = DefaultMetricsConfig().OracledbBufferInspected
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbBufferCacheBlockChangesRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbBufferCacheBlockChangesRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbBufferCacheBlockChangesRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.buffer_cache.block.changes.rate doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbBufferCacheBlockChangesRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbBufferCacheUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbBufferCacheUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbBufferCacheUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.buffer_cache.utilization doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbBufferCacheUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbCallCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbCallCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbCallCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.call.count doesn't have an attribute invalid, valid attributes: [oracledb.call.type]")
+
+	cfg = DefaultMetricsConfig().OracledbCallCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbConsistentGetsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbConsistentGets
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbConsistentGetsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.consistent_gets doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbConsistentGets
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbCPUUsageRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbCPUUsageRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbCPUUsageRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.cpu.usage.rate doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbCPUUsageRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbCPUTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbCPUTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbCPUTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.cpu_time doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbCPUTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbCursorCacheUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbCursorCacheUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbCursorCacheUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.cursor.cache.utilization doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbCursorCacheUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbCursorOpenRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbCursorOpenRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbCursorOpenRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.cursor.open.rate doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbCursorOpenRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbDatabaseCPUUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbDatabaseCPUUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbDatabaseCPUUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.database.cpu.utilization doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbDatabaseCPUUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbDatabaseWaitUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbDatabaseWaitUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbDatabaseWaitUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.database.wait.utilization doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbDatabaseWaitUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbDbTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbDbTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbDbTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.db.time doesn't have an attribute invalid, valid attributes: [oracledb.session.type]")
+
+	cfg = DefaultMetricsConfig().OracledbDbTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbDbBlockGetsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbDbBlockGets
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbDbBlockGetsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.db_block_gets doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbDbBlockGets
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbDdlStatementsParallelizedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbDdlStatementsParallelized
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbDdlStatementsParallelizedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.ddl_statements_parallelized doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbDdlStatementsParallelized
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbDmlStatementsParallelizedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbDmlStatementsParallelized
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbDmlStatementsParallelizedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.dml_statements_parallelized doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbDmlStatementsParallelized
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbEnqueueDeadlocksRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbEnqueueDeadlocksRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbEnqueueDeadlocksRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.enqueue.deadlocks.rate doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbEnqueueDeadlocksRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbEnqueueOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbEnqueueOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbEnqueueOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.enqueue.operations doesn't have an attribute invalid, valid attributes: [oracledb.enqueue.type]")
+
+	cfg = DefaultMetricsConfig().OracledbEnqueueOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbEnqueueTimeoutsRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbEnqueueTimeoutsRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbEnqueueTimeoutsRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.enqueue.timeouts.rate doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbEnqueueTimeoutsRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbEnqueueDeadlocksMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbEnqueueDeadlocks
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbEnqueueDeadlocksMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.enqueue_deadlocks doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbEnqueueDeadlocks
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbExchangeDeadlocksMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbExchangeDeadlocks
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbExchangeDeadlocksMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.exchange_deadlocks doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbExchangeDeadlocks
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func TestOracledbExecutionUtilizationMetricsConfig_Validate(t *testing.T) {
@@ -479,9 +1411,237 @@ func TestOracledbExecutionUtilizationMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []OracledbExecutionUtilizationMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.execution.utilization doesn't have an attribute invalid, valid attributes: [oracledb.parse.type]")
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.execution.utilization doesn't have an attribute invalid, valid attributes: [oracledb.parse.type, oracle.db.pdb]")
 
 	cfg = DefaultMetricsConfig().OracledbExecutionUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbExecutionsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbExecutions
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbExecutionsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.executions doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbExecutions
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbExecutionsRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbExecutionsRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbExecutionsRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.executions.rate doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbExecutionsRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbGcCurrentBlockTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbGcCurrentBlockTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbGcCurrentBlockTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.gc.current_block.time doesn't have an attribute invalid, valid attributes: [network.io.direction]")
+
+	cfg = DefaultMetricsConfig().OracledbGcCurrentBlockTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbHardParsesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbHardParses
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbHardParsesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.hard_parses doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbHardParses
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbHardParsesRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbHardParsesRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbHardParsesRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.hard_parses.rate doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbHardParsesRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbHostCPUUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbHostCPUUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbHostCPUUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.host.cpu.utilization doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbHostCPUUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbLibraryCacheUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbLibraryCacheUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbLibraryCacheUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.library_cache.utilization doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbLibraryCacheUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbLobOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbLobOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbLobOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.lob.operations doesn't have an attribute invalid, valid attributes: [disk.io.direction]")
+
+	cfg = DefaultMetricsConfig().OracledbLobOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbLockTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbLockTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbLockTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.lock.time doesn't have an attribute invalid, valid attributes: [oracle.db.pdb, oracledb.session.type]")
+
+	cfg = DefaultMetricsConfig().OracledbLockTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbLogicalReadsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbLogicalReads
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbLogicalReadsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.logical_reads doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbLogicalReads
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbLogicalReadsRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbLogicalReadsRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbLogicalReadsRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.logical_reads.rate doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbLogicalReadsRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbLogonsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbLogons
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbLogonsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.logons doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbLogons
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbLogonsRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbLogonsRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbLogonsRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.logons.rate doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbLogonsRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbParallelOperationsDowngraded1To25PctMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbParallelOperationsDowngraded1To25Pct
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbParallelOperationsDowngraded1To25PctMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.parallel_operations_downgraded_1_to_25_pct doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbParallelOperationsDowngraded1To25Pct
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbParallelOperationsDowngraded25To50PctMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbParallelOperationsDowngraded25To50Pct
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbParallelOperationsDowngraded25To50PctMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.parallel_operations_downgraded_25_to_50_pct doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbParallelOperationsDowngraded25To50Pct
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbParallelOperationsDowngraded50To75PctMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbParallelOperationsDowngraded50To75Pct
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbParallelOperationsDowngraded50To75PctMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.parallel_operations_downgraded_50_to_75_pct doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbParallelOperationsDowngraded50To75Pct
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbParallelOperationsDowngraded75To99PctMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbParallelOperationsDowngraded75To99Pct
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbParallelOperationsDowngraded75To99PctMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.parallel_operations_downgraded_75_to_99_pct doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbParallelOperationsDowngraded75To99Pct
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbParallelOperationsDowngradedToSerialMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbParallelOperationsDowngradedToSerial
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbParallelOperationsDowngradedToSerialMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.parallel_operations_downgraded_to_serial doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbParallelOperationsDowngradedToSerial
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbParallelOperationsNotDowngradedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbParallelOperationsNotDowngraded
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbParallelOperationsNotDowngradedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.parallel_operations_not_downgraded doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbParallelOperationsNotDowngraded
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -491,9 +1651,57 @@ func TestOracledbParseRateMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []OracledbParseRateMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.parse.rate doesn't have an attribute invalid, valid attributes: [oracledb.parse.result]")
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.parse.rate doesn't have an attribute invalid, valid attributes: [oracledb.parse.result, oracle.db.pdb]")
 
 	cfg = DefaultMetricsConfig().OracledbParseRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbParseUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbParseUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbParseUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.parse.utilization doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbParseUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbParseCallsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbParseCalls
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbParseCallsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.parse_calls doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbParseCalls
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbPgaMemoryMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbPgaMemory
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbPgaMemoryMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.pga_memory doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbPgaMemory
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbPhysicalIoCacheWritesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbPhysicalIoCacheWrites
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbPhysicalIoCacheWritesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_io.cache_writes doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbPhysicalIoCacheWrites
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -503,9 +1711,21 @@ func TestOracledbPhysicalIoRequestsMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []OracledbPhysicalIoRequestsMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_io.requests doesn't have an attribute invalid, valid attributes: [disk.io.direction, disk.io.block_size]")
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_io.requests doesn't have an attribute invalid, valid attributes: [disk.io.direction, disk.io.block_size, oracle.db.pdb]")
 
 	cfg = DefaultMetricsConfig().OracledbPhysicalIoRequests
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbPhysicalIoRequestsRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbPhysicalIoRequestsRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbPhysicalIoRequestsRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_io.requests.rate doesn't have an attribute invalid, valid attributes: [disk.io.direction, oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbPhysicalIoRequestsRate
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -515,9 +1735,261 @@ func TestOracledbPhysicalIoTransferredMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []OracledbPhysicalIoTransferredMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_io.transferred doesn't have an attribute invalid, valid attributes: [disk.io.direction, disk.io.type]")
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_io.transferred doesn't have an attribute invalid, valid attributes: [disk.io.direction, disk.io.type, oracle.db.pdb]")
 
 	cfg = DefaultMetricsConfig().OracledbPhysicalIoTransferred
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbPhysicalIoTransferredRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbPhysicalIoTransferredRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbPhysicalIoTransferredRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_io.transferred.rate doesn't have an attribute invalid, valid attributes: [disk.io.direction, oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbPhysicalIoTransferredRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbPhysicalOperationsRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbPhysicalOperationsRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbPhysicalOperationsRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_operations.rate doesn't have an attribute invalid, valid attributes: [disk.io.direction, oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbPhysicalOperationsRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbPhysicalReadIoRequestsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbPhysicalReadIoRequests
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbPhysicalReadIoRequestsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_read_io_requests doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbPhysicalReadIoRequests
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbPhysicalReadsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbPhysicalReads
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbPhysicalReadsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_reads doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbPhysicalReads
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbPhysicalReadsDirectMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbPhysicalReadsDirect
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbPhysicalReadsDirectMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_reads_direct doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbPhysicalReadsDirect
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbPhysicalWriteIoRequestsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbPhysicalWriteIoRequests
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbPhysicalWriteIoRequestsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_write_io_requests doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbPhysicalWriteIoRequests
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbPhysicalWritesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbPhysicalWrites
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbPhysicalWritesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_writes doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbPhysicalWrites
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbPhysicalWritesDirectMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbPhysicalWritesDirect
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbPhysicalWritesDirectMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_writes_direct doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbPhysicalWritesDirect
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbQueriesParallelizedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbQueriesParallelized
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbQueriesParallelizedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.queries_parallelized doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbQueriesParallelized
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbRedoBlocksMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbRedoBlocks
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbRedoBlocksMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.redo.blocks doesn't have an attribute invalid, valid attributes: [disk.io.direction]")
+
+	cfg = DefaultMetricsConfig().OracledbRedoBlocks
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbRedoOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbRedoOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbRedoOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.redo.operations doesn't have an attribute invalid, valid attributes: [disk.io.direction]")
+
+	cfg = DefaultMetricsConfig().OracledbRedoOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbRedoRequestsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbRedoRequests
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbRedoRequestsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.redo.requests doesn't have an attribute invalid, valid attributes: [oracledb.redo.request.type]")
+
+	cfg = DefaultMetricsConfig().OracledbRedoRequests
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbRedoRetriesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbRedoRetries
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbRedoRetriesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.redo.retries doesn't have an attribute invalid, valid attributes: [oracledb.redo.retry.type]")
+
+	cfg = DefaultMetricsConfig().OracledbRedoRetries
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbRedoSizeRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbRedoSizeRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbRedoSizeRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.redo.size.rate doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbRedoSizeRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbRedoTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbRedoTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbRedoTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.redo.time doesn't have an attribute invalid, valid attributes: [oracledb.redo.type]")
+
+	cfg = DefaultMetricsConfig().OracledbRedoTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbRedoAllocationUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbRedoAllocationUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbRedoAllocationUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.redo_allocation.utilization doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbRedoAllocationUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbScanCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbScanCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbScanCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.scan.count doesn't have an attribute invalid, valid attributes: [oracledb.scan.type, oracledb.scan.mode]")
+
+	cfg = DefaultMetricsConfig().OracledbScanCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbSessionAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbSessionAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbSessionAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.session.average doesn't have an attribute invalid, valid attributes: [session_status, oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbSessionAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbSessionStoredProcedureMemoryMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbSessionStoredProcedureMemory
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbSessionStoredProcedureMemoryMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.session.stored_procedure.memory doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbSessionStoredProcedureMemory
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbSessionWaitTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbSessionWaitTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbSessionWaitTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.session.wait.time doesn't have an attribute invalid, valid attributes: [oracledb.session.wait.state, oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbSessionWaitTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbSessionWaitsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbSessionWaits
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbSessionWaitsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.session.waits doesn't have an attribute invalid, valid attributes: [oracledb.session.wait.state, oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbSessionWaits
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -527,9 +1999,57 @@ func TestOracledbSessionsUsageMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []OracledbSessionsUsageMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.sessions.usage doesn't have an attribute invalid, valid attributes: [session_type, session_status]")
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.sessions.usage doesn't have an attribute invalid, valid attributes: [session_type, session_status, oracle.db.pdb]")
 
 	cfg = DefaultMetricsConfig().OracledbSessionsUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbSgaUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbSgaUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbSgaUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.sga.usage doesn't have an attribute invalid, valid attributes: [oracledb.sga.component.name]")
+
+	cfg = DefaultMetricsConfig().OracledbSgaUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbSharedPoolUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbSharedPoolUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbSharedPoolUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.shared_pool.utilization doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbSharedPoolUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbSmonPostsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbSmonPosts
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbSmonPostsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.smon.posts doesn't have an attribute invalid, valid attributes: [oracledb.smon.type]")
+
+	cfg = DefaultMetricsConfig().OracledbSmonPosts
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbSortOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbSortOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbSortOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.sort.operations doesn't have an attribute invalid, valid attributes: [oracledb.sort.type]")
+
+	cfg = DefaultMetricsConfig().OracledbSortOperations
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -539,9 +2059,21 @@ func TestOracledbSortRatioMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []OracledbSortRatioMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.sort.ratio doesn't have an attribute invalid, valid attributes: [oracledb.sort.type]")
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.sort.ratio doesn't have an attribute invalid, valid attributes: [oracledb.sort.type, oracle.db.pdb]")
 
 	cfg = DefaultMetricsConfig().OracledbSortRatio
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbSQLServiceResponseDurationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbSQLServiceResponseDuration
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbSQLServiceResponseDurationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.sql_service.response.duration doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbSQLServiceResponseDuration
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -551,7 +2083,7 @@ func TestOracledbSqlnetIoTransferredMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []OracledbSqlnetIoTransferredMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.sqlnet.io.transferred doesn't have an attribute invalid, valid attributes: [network.io.direction, destination.type]")
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.sqlnet.io.transferred doesn't have an attribute invalid, valid attributes: [network.io.direction, destination.type, oracle.db.pdb]")
 
 	cfg = DefaultMetricsConfig().OracledbSqlnetIoTransferred
 	cfg.AggregationStrategy = "invalid"
@@ -563,7 +2095,7 @@ func TestOracledbTablespaceSizeLimitMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []OracledbTablespaceSizeLimitMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.tablespace_size.limit doesn't have an attribute invalid, valid attributes: [tablespace_name]")
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.tablespace_size.limit doesn't have an attribute invalid, valid attributes: [tablespace_name, oracle.db.pdb]")
 
 	cfg = DefaultMetricsConfig().OracledbTablespaceSizeLimit
 	cfg.AggregationStrategy = "invalid"
@@ -575,9 +2107,69 @@ func TestOracledbTablespaceSizeUsageMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []OracledbTablespaceSizeUsageMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.tablespace_size.usage doesn't have an attribute invalid, valid attributes: [tablespace_name]")
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.tablespace_size.usage doesn't have an attribute invalid, valid attributes: [tablespace_name, oracle.db.pdb]")
 
 	cfg = DefaultMetricsConfig().OracledbTablespaceSizeUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbTransactionResponseTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbTransactionResponseTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbTransactionResponseTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.transaction.response.time doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbTransactionResponseTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbTransactionRollbacksMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbTransactionRollbacks
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbTransactionRollbacksMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.transaction.rollbacks doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbTransactionRollbacks
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbTransactionsRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbTransactionsRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbTransactionsRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.transactions.rate doesn't have an attribute invalid, valid attributes: [oracledb.transaction.type, oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbTransactionsRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbUserCommitsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbUserCommits
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbUserCommitsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.user_commits doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbUserCommits
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbUserRollbacksMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbUserRollbacks
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbUserRollbacksMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.user_rollbacks doesn't have an attribute invalid, valid attributes: [oracle.db.pdb]")
+
+	cfg = DefaultMetricsConfig().OracledbUserRollbacks
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -614,37 +2206,52 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				HostName:             ResourceAttributeConfig{Enabled: true},
-				OracleDbHostingType:  ResourceAttributeConfig{Enabled: true},
-				OracleDbOpenMode:     ResourceAttributeConfig{Enabled: true},
-				OracleDbPdb:          ResourceAttributeConfig{Enabled: true},
-				OracleDbRole:         ResourceAttributeConfig{Enabled: true},
-				OracleDbVersion:      ResourceAttributeConfig{Enabled: true},
-				OracledbInstanceName: ResourceAttributeConfig{Enabled: true},
-				ServiceInstanceID:    ResourceAttributeConfig{Enabled: true},
+				HostName:             HostNameResourceAttributeConfig{Enabled: true},
+				OracleDbHostingType:  OracleDbHostingTypeResourceAttributeConfig{Enabled: true},
+				OracleDbOpenMode:     OracleDbOpenModeResourceAttributeConfig{Enabled: true},
+				OracleDbRole:         OracleDbRoleResourceAttributeConfig{Enabled: true},
+				OracleDbVersion:      OracleDbVersionResourceAttributeConfig{Enabled: true},
+				OracledbInstanceName: OracledbInstanceNameResourceAttributeConfig{Enabled: true},
+				ServiceInstanceID:    ServiceInstanceIDResourceAttributeConfig{Enabled: true},
+				ServiceName:          ServiceNameResourceAttributeConfig{Enabled: true},
+				ServiceNamespace:     ServiceNamespaceResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				HostName:             ResourceAttributeConfig{Enabled: false},
-				OracleDbHostingType:  ResourceAttributeConfig{Enabled: false},
-				OracleDbOpenMode:     ResourceAttributeConfig{Enabled: false},
-				OracleDbPdb:          ResourceAttributeConfig{Enabled: false},
-				OracleDbRole:         ResourceAttributeConfig{Enabled: false},
-				OracleDbVersion:      ResourceAttributeConfig{Enabled: false},
-				OracledbInstanceName: ResourceAttributeConfig{Enabled: false},
-				ServiceInstanceID:    ResourceAttributeConfig{Enabled: false},
+				HostName:             HostNameResourceAttributeConfig{Enabled: false},
+				OracleDbHostingType:  OracleDbHostingTypeResourceAttributeConfig{Enabled: false},
+				OracleDbOpenMode:     OracleDbOpenModeResourceAttributeConfig{Enabled: false},
+				OracleDbRole:         OracleDbRoleResourceAttributeConfig{Enabled: false},
+				OracleDbVersion:      OracleDbVersionResourceAttributeConfig{Enabled: false},
+				OracledbInstanceName: OracledbInstanceNameResourceAttributeConfig{Enabled: false},
+				ServiceInstanceID:    ServiceInstanceIDResourceAttributeConfig{Enabled: false},
+				ServiceName:          ServiceNameResourceAttributeConfig{Enabled: false},
+				ServiceNamespace:     ServiceNamespaceResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(HostNameResourceAttributeConfig{}, OracleDbHostingTypeResourceAttributeConfig{}, OracleDbOpenModeResourceAttributeConfig{}, OracleDbRoleResourceAttributeConfig{}, OracleDbVersionResourceAttributeConfig{}, OracledbInstanceNameResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+
+func TestResourceAttributesOverrideConfig(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	assert.NotNil(t, cfg.HostName.OverrideValue, "override_value should be set for host.name")
+	assert.NotNil(t, cfg.OracleDbHostingType.OverrideValue, "override_value should be set for oracle.db.hosting_type")
+	assert.NotNil(t, cfg.OracleDbOpenMode.OverrideValue, "override_value should be set for oracle.db.open_mode")
+	assert.NotNil(t, cfg.OracleDbRole.OverrideValue, "override_value should be set for oracle.db.role")
+	assert.NotNil(t, cfg.OracleDbVersion.OverrideValue, "override_value should be set for oracle.db.version")
+	assert.NotNil(t, cfg.OracledbInstanceName.OverrideValue, "override_value should be set for oracledb.instance.name")
+	assert.NotNil(t, cfg.ServiceInstanceID.OverrideValue, "override_value should be set for service.instance.id")
+	assert.NotNil(t, cfg.ServiceName.OverrideValue, "override_value should be set for service.name")
+	assert.NotNil(t, cfg.ServiceNamespace.OverrideValue, "override_value should be set for service.namespace")
 }
 
 func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {

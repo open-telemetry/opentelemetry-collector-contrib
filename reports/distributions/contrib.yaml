@@ -23,8 +23,8 @@ components:
         - awss3
         - awsxray
         - azure_blob
+        - azure_monitor
         - azuredataexplorer
-        - azuremonitor
         - bmc_helix
         - cassandra
         - clickhouse
@@ -103,9 +103,9 @@ components:
     processor:
         - attributes
         - cardinality_guardian
-        - cumulativetodelta
-        - deltatocumulative
-        - deltatorate
+        - cumulative_to_delta
+        - delta_to_cumulative
+        - delta_to_rate
         - drain
         - filter
         - gen_ai_normalizer
@@ -126,7 +126,7 @@ components:
         - resource_detection
         - schema
         - span
-        - spanpruning
+        - span_pruning
         - sumologic
         - tail_sampling
         - transform
@@ -180,7 +180,6 @@ components:
         - iis
         - influxdb
         - jaeger
-        - jmx
         - journald
         - k8s_cluster
         - k8s_events

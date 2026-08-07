@@ -183,7 +183,7 @@ metrics:
     stability: development
     gauge:
       value_type: int
-    unit: "°C"
+    unit: "Cel"
     attributes: [chassis.id, temperature.name]
   temperature.status.health:
     description: Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 warning).

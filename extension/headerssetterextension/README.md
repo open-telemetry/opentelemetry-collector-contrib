@@ -48,8 +48,11 @@ The following settings are available:
     - `from_context`: The header value is looked up from the request metadata,
       such as HTTP headers, using the property value as the key (likely a header
       name).
-    - `from_attribute`: The header value is taken from the request's authentication data,
-      may include attributes like `subject` and `membership`.
+    - `from_attribute`: The header value is taken from the request's authentication data
+      (the `client.Info.Auth` attributes produced by a server-side authenticator extension
+      configured on the receiver), and may include attributes like `subject` and `membership`.
+      This is **not** the resource, scope, span, metric, log, or any other attribute on the
+      telemetry payload itself.
 
 The `value`, `value_file`, `from_context,default_value` and `from_attribute,default_value` properties are mutually exclusive.
 

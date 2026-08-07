@@ -225,9 +225,9 @@ endpoint: 1.2.3.4:6379`
 			}
 			if !test.wantError {
 				require.NoError(t, err)
-				require.Equal(t, subreceiverTemplate.config, test.expectedReceiver.config)
+				require.Equal(t, subreceiverTemplate.receiverConfig.config, test.expectedReceiver.receiverConfig.config)
 				require.Equal(t, subreceiverTemplate.signals, test.expectedReceiver.signals)
-				require.Equal(t, subreceiverTemplate.id, test.expectedReceiver.id)
+				require.Equal(t, subreceiverTemplate.receiverConfig.id, test.expectedReceiver.receiverConfig.id)
 			} else {
 				require.Error(t, err)
 			}
@@ -590,7 +590,8 @@ include:
 						"operators":         []any{map[string]any{"id": "container-parser", "type": "container"}},
 					},
 				},
-				logger)
+				logger,
+			)
 			env, err := test.inputEndpoint.Env()
 			require.NoError(t, err)
 			subreceiverTemplate, err := builder.createReceiverTemplateFromHints(env)
@@ -600,9 +601,9 @@ include:
 			}
 			if !test.wantError {
 				require.NoError(t, err)
-				require.Equal(t, subreceiverTemplate.config, test.expectedReceiver.config)
+				require.Equal(t, subreceiverTemplate.receiverConfig.config, test.expectedReceiver.receiverConfig.config)
 				require.Equal(t, subreceiverTemplate.signals, test.expectedReceiver.signals)
-				require.Equal(t, subreceiverTemplate.id, test.expectedReceiver.id)
+				require.Equal(t, subreceiverTemplate.receiverConfig.id, test.expectedReceiver.receiverConfig.id)
 			} else {
 				require.Error(t, err)
 			}
@@ -687,7 +688,8 @@ nested_example:
 				assert.Equal(
 					t,
 					test.expectedConf,
-					conf)
+					conf,
+				)
 			}
 		})
 	}
@@ -758,7 +760,8 @@ operators:
 					userConfigMap{
 						"include_file_path": true,
 					},
-					zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))),
+					zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)),
+				),
 			)
 		})
 	}
