@@ -305,7 +305,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		// Try to add a new in-flight message processing goroutine to the
 		// partition consumer. Return immediately if the partition has been
 		// lost or reassigned.
-		if !assign.add(1) {
+		if !assign.add() {
 			return
 		}
 		wg.Add(1)
@@ -316,7 +316,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		)
 		go func(pc *pc, partition kgo.FetchTopicPartition) {
 			defer wg.Done()
-			defer pc.done()
+			defer pc.wg.Done()
 			c.processPartitionBatch(ctx, pc, partition)
 		}(assign, p)
 	})
@@ -577,7 +577,7 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 					partitionConsumer.ctx,
 					c.config.PartitionProcessing.MaxBufferedBatches,
 				)
-				if partitionConsumer.add(1) {
+				if partitionConsumer.add() {
 					go c.runPartitionWorker(&partitionConsumer, tp)
 				}
 			}
@@ -618,7 +618,7 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 					"stopping processing: partition reassigned or lost",
 				))
 				wg.Go(func() {
-					pc.wait()
+					pc.wg.Wait()
 				})
 				c.telemetryBuilder.KafkaReceiverPartitionClose.Add(context.Background(), 1)
 			}

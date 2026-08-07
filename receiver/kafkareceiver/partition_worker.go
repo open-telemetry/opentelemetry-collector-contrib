@@ -21,7 +21,6 @@ type partitionPauseReason uint32
 const (
 	partitionPauseBackpressure partitionPauseReason = 1 << iota
 	partitionPauseRewind
-	partitionPauseProcessingError
 )
 
 // partitionBatchResult returns offset operations to the poll loop. franz-go
@@ -49,16 +48,14 @@ type pc struct {
 
 	mu sync.RWMutex // protects the fields below
 	// wg tracks the number of in-flight message processing goroutines for this
-	// partition. The wg must not be used directly; instead, the helper methods
-	// add() and done() should be called to safely mutate it. These methods ensure
-	// that no new goroutines are added once the partition consumer is stopping
-	// (i.e. after the partition is lost / revoked).
+	// partition. New goroutines must call add() so none are added after the
+	// partition consumer starts stopping.
 	wg sync.WaitGroup
 }
 
 // add increments the wait group counter if the partition consumer is not
 // stopping. It returns true if the counter was incremented, false otherwise.
-func (p *pc) add(delta int) bool {
+func (p *pc) add() bool {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	select {
@@ -66,7 +63,7 @@ func (p *pc) add(delta int) bool {
 		return false
 	default:
 	}
-	p.wg.Add(delta)
+	p.wg.Add(1)
 	return true
 }
 
@@ -78,12 +75,6 @@ func (p *pc) cancelContext(err error) {
 	p.cancel(err)
 }
 
-// done decrements the wait group counter.
-func (p *pc) done() { p.wg.Done() }
-
-// wait waits for all in-flight goroutines to finish.
-func (p *pc) wait() { p.wg.Wait() }
-
 // addPauseReason records why fetching must remain paused.
 func (p *pc) addPauseReason(reason partitionPauseReason) {
 	p.pauseReasons.Or(uint32(reason))
@@ -94,14 +85,15 @@ func (p *pc) addPauseReason(reason partitionPauseReason) {
 func (p *pc) clearPauseReasons(reasons partitionPauseReason) bool {
 	mask := uint32(reasons)
 	previous := p.pauseReasons.And(^mask)
-	return previous&mask != 0 && previous&^mask == 0
+	remaining := previous &^ mask
+	return previous&mask != 0 && remaining == 0
 }
 
 // runPartitionWorker processes exactly one partition in offset order. Workers
 // are independent, so downstream backpressure on one partition does not stop
 // the shared poll loop or workers for other partitions.
 func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
-	defer pc.done()
+	defer pc.wg.Done()
 	partition := map[string][]int32{tp.topic: {tp.partition}}
 	for {
 		select {
@@ -122,32 +114,29 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 				}
 			})
 			if !ok {
-				if pc.mailbox.hasPendingRewind() {
-					if !c.sendControl(partitionControl{
-						tp:     tp,
-						pc:     pc,
-						rewind: true,
-						done:   make(chan struct{}),
-					}) {
-						return
-					}
-					if pc.clearPauseReasons(partitionPauseRewind | partitionPauseBackpressure) {
-						c.client.ResumeFetchPartitions(partition)
-					}
+				if !pc.mailbox.hasPendingRewind() {
 					break
+				}
+				if !c.sendControl(partitionControl{
+					tp:     tp,
+					pc:     pc,
+					rewind: true,
+					done:   make(chan struct{}),
+				}) {
+					return
+				}
+				if pc.clearPauseReasons(partitionPauseRewind | partitionPauseBackpressure) {
+					c.client.ResumeFetchPartitions(partition)
 				}
 				break
 			}
 
-			result := c.processPartitionBatch(context.Background(), pc, batch)
+			result := c.processPartitionBatch(pc.ctx, pc, batch)
 			if result.rewindRecord != nil {
 				pc.mailbox.requestRewind(result.rewindRecord, true, func() {
 					pc.addPauseReason(partitionPauseRewind)
 					c.client.PauseFetchPartitions(partition)
 				})
-				if !pc.mailbox.hasPendingRewind() {
-					break
-				}
 				if !c.sendControl(partitionControl{
 					tp:           tp,
 					pc:           pc,
@@ -236,17 +225,14 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 					zap.Int64("offset", fatalRecord.Offset),
 				)
 			}
-		case fatalIsPermanent:
-			pc.addPauseReason(partitionPauseProcessingError)
-			c.client.PauseFetchPartitions(map[string][]int32{p.Topic: {p.Partition}})
-			pc.logger.Error("pausing partition due to permanent processing error, partition will remain paused until rebalance",
-				zap.Int64("offset", fatalRecord.Offset),
-			)
-			result.terminal = true
 		default:
-			pc.addPauseReason(partitionPauseProcessingError)
 			c.client.PauseFetchPartitions(map[string][]int32{p.Topic: {p.Partition}})
-			pc.logger.Error("pausing partition due to processing error (no backoff configured), partition will remain paused until rebalance",
+			reason := "processing error with no backoff configured"
+			if fatalIsPermanent {
+				reason = "permanent processing error"
+			}
+			pc.logger.Error("pausing partition until rebalance",
+				zap.String("reason", reason),
 				zap.Int64("offset", fatalRecord.Offset),
 			)
 			result.terminal = true
@@ -256,7 +242,7 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 		return result
 	}
 	c.telemetryBuilder.KafkaReceiverOffsetLag.Record(
-		context.Background(),
+		ctx,
 		(p.HighWatermark-1)-lastProcessed.Offset,
 		metric.WithAttributeSet(pc.attrs),
 	)
