@@ -12,7 +12,7 @@ require (
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.313.2
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/pdata v1.64.0
+	go.opentelemetry.io/collector/pdata v1.64.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/otel v1.44.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -72,7 +72,7 @@ require (
 	github.com/prometheus/procfs v0.21.0 // indirect
 	github.com/prometheus/sigv4 v0.4.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.64.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.64.1-0.20260805181402-19664a7b14af // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.158.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect

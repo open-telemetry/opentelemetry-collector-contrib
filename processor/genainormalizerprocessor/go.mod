@@ -6,13 +6,13 @@ require (
 	github.com/Arize-ai/openinference/go/openinference-semantic-conventions v0.1.2
 	github.com/stretchr/testify v1.11.1
 	github.com/traceloop/go-openllmetry/semconv-ai v0.0.0-20260117121325-ee5a5c89c1f5
-	go.opentelemetry.io/collector/component v1.64.0
+	go.opentelemetry.io/collector/component v1.64.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/collector/component/componenttest v0.158.0
-	go.opentelemetry.io/collector/confmap v1.64.0
-	go.opentelemetry.io/collector/consumer v1.64.0
+	go.opentelemetry.io/collector/confmap v1.64.1-0.20260805181402-19664a7b14af
+	go.opentelemetry.io/collector/consumer v1.64.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/collector/consumer/consumertest v0.158.0
-	go.opentelemetry.io/collector/pdata v1.64.0
-	go.opentelemetry.io/collector/processor v1.64.0
+	go.opentelemetry.io/collector/pdata v1.64.1-0.20260805181402-19664a7b14af
+	go.opentelemetry.io/collector/processor v1.64.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/collector/processor/processorhelper v0.158.0
 	go.opentelemetry.io/collector/processor/processortest v0.158.0
 	go.opentelemetry.io/otel v1.44.0
@@ -40,11 +40,11 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.158.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.158.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.64.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.64.1-0.20260805181402-19664a7b14af // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.158.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.158.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.158.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.64.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.64.1-0.20260805181402-19664a7b14af // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.158.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect

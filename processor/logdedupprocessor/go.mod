@@ -9,15 +9,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.158.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.158.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/client v1.64.0
-	go.opentelemetry.io/collector/component v1.64.0
+	go.opentelemetry.io/collector/client v1.64.1-0.20260805181402-19664a7b14af
+	go.opentelemetry.io/collector/component v1.64.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/collector/component/componenttest v0.158.0
-	go.opentelemetry.io/collector/confmap v1.64.0
-	go.opentelemetry.io/collector/consumer v1.64.0
+	go.opentelemetry.io/collector/confmap v1.64.1-0.20260805181402-19664a7b14af
+	go.opentelemetry.io/collector/consumer v1.64.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/collector/consumer/consumererror v0.158.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.158.0
-	go.opentelemetry.io/collector/pdata v1.64.0
-	go.opentelemetry.io/collector/processor v1.64.0
+	go.opentelemetry.io/collector/pdata v1.64.1-0.20260805181402-19664a7b14af
+	go.opentelemetry.io/collector/processor v1.64.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/collector/processor/processortest v0.158.0
 	go.opentelemetry.io/collector/processor/xprocessor v0.158.0
 	go.opentelemetry.io/otel v1.44.0
@@ -69,12 +69,12 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.158.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.158.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.64.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.64.1-0.20260805181402-19664a7b14af // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.158.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.158.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.158.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.158.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.64.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.64.1-0.20260805181402-19664a7b14af // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
