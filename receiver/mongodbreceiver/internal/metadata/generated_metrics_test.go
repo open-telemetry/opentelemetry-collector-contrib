@@ -101,14 +101,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMongodbActiveWritesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbCacheOperationsDataPoint(ts, 1, AttributeTypeHit)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbCacheOperationsDataPoint(ts, 3, AttributeTypeMiss)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbCollectionCountDataPoint(ts, 1, "db.namespace-val")
@@ -118,43 +116,36 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMongodbCommandsRateDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbConnectionCountDataPoint(ts, 1, AttributeConnectionTypeActive, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbConnectionCountDataPoint(ts, 3, AttributeConnectionTypeAvailable, "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbCursorCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbCursorTimeoutCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbDataSizeDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbDataSizeDataPoint(ts, 3, "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbDatabaseCountDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordMongodbDeletesRateDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbDocumentOperationCountDataPoint(ts, 1, AttributeOperationInsert, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbDocumentOperationCountDataPoint(ts, 3, AttributeOperationQuery, "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbExtentCountDataPoint(ts, 1, "db.namespace-val")
@@ -167,28 +158,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMongodbGetmoresRateDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbGlobalLockTimeDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordMongodbHealthDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbIndexAccessCountDataPoint(ts, 1, "collection-val", "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbIndexAccessCountDataPoint(ts, 3, "collection-val-2", "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbIndexCountDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbIndexCountDataPoint(ts, 3, "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbIndexSizeDataPoint(ts, 1, "db.namespace-val")
@@ -222,33 +209,27 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbLockDeadlockCountDataPoint(ts, 3, AttributeLockTypeReplicationStateTransition, AttributeLockModeExclusive, "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbMemoryUsageDataPoint(ts, 1, AttributeMemoryTypeResident, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbMemoryUsageDataPoint(ts, 3, AttributeMemoryTypeVirtual, "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbNetworkIoReceiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbNetworkIoTransmitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbNetworkRequestCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbObjectCountDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbObjectCountDataPoint(ts, 3, "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbOperationCountDataPoint(ts, 1, AttributeOperationInsert)
@@ -267,7 +248,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbOperationReplCountDataPoint(ts, 3, AttributeOperationQuery)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbOperationTimeDataPoint(ts, 1, AttributeOperationInsert)
@@ -298,11 +278,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMongodbReplUpdatesPerSecDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbSessionCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbStorageSizeDataPoint(ts, 1, "db.namespace-val")
@@ -323,6 +301,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
+			rb.SetServiceNamespace("service.namespace-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
@@ -1001,7 +981,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Cumulative wait time for the lock acquisitions.", mi.Description())
-						assert.Equal(t, "microseconds", mi.Unit())
+						assert.Equal(t, "us", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1024,7 +1004,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Cumulative wait time for the lock acquisitions.", mi.Description())
-						assert.Equal(t, "microseconds", mi.Unit())
+						assert.Equal(t, "us", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)

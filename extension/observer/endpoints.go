@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"runtime"
 )
 
 type (
@@ -285,6 +286,7 @@ func (h *HostPort) Env() EndpointEnv {
 		"is_ipv6":      h.IsIPv6,
 		"port":         h.Port,
 		"transport":    h.Transport,
+		"os":           runtime.GOOS,
 	}
 }
 

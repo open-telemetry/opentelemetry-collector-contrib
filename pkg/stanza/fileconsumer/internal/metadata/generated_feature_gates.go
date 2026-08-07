@@ -22,15 +22,6 @@ var FilelogAllowHeaderMetadataParsingFeatureGate = featuregate.GlobalRegistry().
 	featuregate.WithRegisterFromVersion("v0.73.0"),
 )
 
-var FilelogDecompressFingerprintFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"filelog.decompressFingerprint",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("Computes fingerprint for compressed files by decompressing its data."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40256"),
-	featuregate.WithRegisterFromVersion("v0.128.0"),
-	featuregate.WithRegisterToVersion("v0.142.0"),
-)
-
 var FilelogMtimeSortTypeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filelog.mtimeSortType",
 	featuregate.StageAlpha,
@@ -41,7 +32,7 @@ var FilelogMtimeSortTypeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 
 var FilelogProtobufCheckpointEncodingFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filelog.protobufCheckpointEncoding",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Use protobuf encoding for checkpoint storage instead of JSON."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266"),
 	featuregate.WithRegisterFromVersion("v0.148.0"),

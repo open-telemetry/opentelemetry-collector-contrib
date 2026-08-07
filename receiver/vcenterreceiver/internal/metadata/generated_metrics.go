@@ -428,7 +428,8 @@ var MetricsInfo = metricsInfo{
 		Name: "vcenter.cluster.cpu.limit",
 	},
 	VcenterClusterHostCount: metricInfo{
-		Name: "vcenter.cluster.host.count",
+		Name:       "vcenter.cluster.host.count",
+		Attributes: []string{"host_effective"},
 	},
 	VcenterClusterMemoryEffective: metricInfo{
 		Name: "vcenter.cluster.memory.effective",
@@ -437,7 +438,8 @@ var MetricsInfo = metricsInfo{
 		Name: "vcenter.cluster.memory.limit",
 	},
 	VcenterClusterVMCount: metricInfo{
-		Name: "vcenter.cluster.vm.count",
+		Name:       "vcenter.cluster.vm.count",
+		Attributes: []string{"vm_count_power_state"},
 	},
 	VcenterClusterVMTemplateCount: metricInfo{
 		Name: "vcenter.cluster.vm_template.count",
@@ -446,16 +448,20 @@ var MetricsInfo = metricsInfo{
 		Name: "vcenter.cluster.vsan.congestions",
 	},
 	VcenterClusterVsanLatencyAvg: metricInfo{
-		Name: "vcenter.cluster.vsan.latency.avg",
+		Name:       "vcenter.cluster.vsan.latency.avg",
+		Attributes: []string{"vsan_latency_type"},
 	},
 	VcenterClusterVsanOperations: metricInfo{
-		Name: "vcenter.cluster.vsan.operations",
+		Name:       "vcenter.cluster.vsan.operations",
+		Attributes: []string{"vsan_operation_type"},
 	},
 	VcenterClusterVsanThroughput: metricInfo{
-		Name: "vcenter.cluster.vsan.throughput",
+		Name:       "vcenter.cluster.vsan.throughput",
+		Attributes: []string{"vsan_throughput_direction"},
 	},
 	VcenterDatacenterClusterCount: metricInfo{
-		Name: "vcenter.datacenter.cluster.count",
+		Name:       "vcenter.datacenter.cluster.count",
+		Attributes: []string{"entity_status"},
 	},
 	VcenterDatacenterCPULimit: metricInfo{
 		Name: "vcenter.datacenter.cpu.limit",
@@ -464,19 +470,23 @@ var MetricsInfo = metricsInfo{
 		Name: "vcenter.datacenter.datastore.count",
 	},
 	VcenterDatacenterDiskSpace: metricInfo{
-		Name: "vcenter.datacenter.disk.space",
+		Name:       "vcenter.datacenter.disk.space",
+		Attributes: []string{"disk_state"},
 	},
 	VcenterDatacenterHostCount: metricInfo{
-		Name: "vcenter.datacenter.host.count",
+		Name:       "vcenter.datacenter.host.count",
+		Attributes: []string{"entity_status", "host_power_state"},
 	},
 	VcenterDatacenterMemoryLimit: metricInfo{
 		Name: "vcenter.datacenter.memory.limit",
 	},
 	VcenterDatacenterVMCount: metricInfo{
-		Name: "vcenter.datacenter.vm.count",
+		Name:       "vcenter.datacenter.vm.count",
+		Attributes: []string{"entity_status", "vm_count_power_state"},
 	},
 	VcenterDatastoreDiskUsage: metricInfo{
-		Name: "vcenter.datastore.disk.usage",
+		Name:       "vcenter.datastore.disk.usage",
+		Attributes: []string{"disk_state"},
 	},
 	VcenterDatastoreDiskUtilization: metricInfo{
 		Name: "vcenter.datastore.disk.utilization",
@@ -485,7 +495,8 @@ var MetricsInfo = metricsInfo{
 		Name: "vcenter.host.cpu.capacity",
 	},
 	VcenterHostCPUReserved: metricInfo{
-		Name: "vcenter.host.cpu.reserved",
+		Name:       "vcenter.host.cpu.reserved",
+		Attributes: []string{"cpu_reservation_type"},
 	},
 	VcenterHostCPUUsage: metricInfo{
 		Name: "vcenter.host.cpu.usage",
@@ -494,13 +505,16 @@ var MetricsInfo = metricsInfo{
 		Name: "vcenter.host.cpu.utilization",
 	},
 	VcenterHostDiskLatencyAvg: metricInfo{
-		Name: "vcenter.host.disk.latency.avg",
+		Name:       "vcenter.host.disk.latency.avg",
+		Attributes: []string{"disk_direction", "object_name"},
 	},
 	VcenterHostDiskLatencyMax: metricInfo{
-		Name: "vcenter.host.disk.latency.max",
+		Name:       "vcenter.host.disk.latency.max",
+		Attributes: []string{"object_name"},
 	},
 	VcenterHostDiskThroughput: metricInfo{
-		Name: "vcenter.host.disk.throughput",
+		Name:       "vcenter.host.disk.throughput",
+		Attributes: []string{"disk_direction", "object_name"},
 	},
 	VcenterHostMemoryCapacity: metricInfo{
 		Name: "vcenter.host.memory.capacity",
@@ -512,19 +526,24 @@ var MetricsInfo = metricsInfo{
 		Name: "vcenter.host.memory.utilization",
 	},
 	VcenterHostNetworkPacketDropRate: metricInfo{
-		Name: "vcenter.host.network.packet.drop.rate",
+		Name:       "vcenter.host.network.packet.drop.rate",
+		Attributes: []string{"throughput_direction", "object_name"},
 	},
 	VcenterHostNetworkPacketErrorRate: metricInfo{
-		Name: "vcenter.host.network.packet.error.rate",
+		Name:       "vcenter.host.network.packet.error.rate",
+		Attributes: []string{"throughput_direction", "object_name"},
 	},
 	VcenterHostNetworkPacketRate: metricInfo{
-		Name: "vcenter.host.network.packet.rate",
+		Name:       "vcenter.host.network.packet.rate",
+		Attributes: []string{"throughput_direction", "object_name"},
 	},
 	VcenterHostNetworkThroughput: metricInfo{
-		Name: "vcenter.host.network.throughput",
+		Name:       "vcenter.host.network.throughput",
+		Attributes: []string{"throughput_direction", "object_name"},
 	},
 	VcenterHostNetworkUsage: metricInfo{
-		Name: "vcenter.host.network.usage",
+		Name:       "vcenter.host.network.usage",
+		Attributes: []string{"object_name"},
 	},
 	VcenterHostVsanCacheHitRate: metricInfo{
 		Name: "vcenter.host.vsan.cache.hit_rate",
@@ -533,13 +552,16 @@ var MetricsInfo = metricsInfo{
 		Name: "vcenter.host.vsan.congestions",
 	},
 	VcenterHostVsanLatencyAvg: metricInfo{
-		Name: "vcenter.host.vsan.latency.avg",
+		Name:       "vcenter.host.vsan.latency.avg",
+		Attributes: []string{"vsan_latency_type"},
 	},
 	VcenterHostVsanOperations: metricInfo{
-		Name: "vcenter.host.vsan.operations",
+		Name:       "vcenter.host.vsan.operations",
+		Attributes: []string{"vsan_operation_type"},
 	},
 	VcenterHostVsanThroughput: metricInfo{
-		Name: "vcenter.host.vsan.throughput",
+		Name:       "vcenter.host.vsan.throughput",
+		Attributes: []string{"vsan_throughput_direction"},
 	},
 	VcenterResourcePoolCPUShares: metricInfo{
 		Name: "vcenter.resource_pool.cpu.shares",
@@ -551,7 +573,8 @@ var MetricsInfo = metricsInfo{
 		Name: "vcenter.resource_pool.memory.ballooned",
 	},
 	VcenterResourcePoolMemoryGranted: metricInfo{
-		Name: "vcenter.resource_pool.memory.granted",
+		Name:       "vcenter.resource_pool.memory.granted",
+		Attributes: []string{"memory_granted_type"},
 	},
 	VcenterResourcePoolMemoryShares: metricInfo{
 		Name: "vcenter.resource_pool.memory.shares",
@@ -560,13 +583,15 @@ var MetricsInfo = metricsInfo{
 		Name: "vcenter.resource_pool.memory.swapped",
 	},
 	VcenterResourcePoolMemoryUsage: metricInfo{
-		Name: "vcenter.resource_pool.memory.usage",
+		Name:       "vcenter.resource_pool.memory.usage",
+		Attributes: []string{"memory_usage_type"},
 	},
 	VcenterVMCPUReadiness: metricInfo{
 		Name: "vcenter.vm.cpu.readiness",
 	},
 	VcenterVMCPUTime: metricInfo{
-		Name: "vcenter.vm.cpu.time",
+		Name:       "vcenter.vm.cpu.time",
+		Attributes: []string{"cpu_state", "object_name"},
 	},
 	VcenterVMCPUUsage: metricInfo{
 		Name: "vcenter.vm.cpu.usage",
@@ -575,16 +600,20 @@ var MetricsInfo = metricsInfo{
 		Name: "vcenter.vm.cpu.utilization",
 	},
 	VcenterVMDiskLatencyAvg: metricInfo{
-		Name: "vcenter.vm.disk.latency.avg",
+		Name:       "vcenter.vm.disk.latency.avg",
+		Attributes: []string{"disk_direction", "disk_type", "object_name"},
 	},
 	VcenterVMDiskLatencyMax: metricInfo{
-		Name: "vcenter.vm.disk.latency.max",
+		Name:       "vcenter.vm.disk.latency.max",
+		Attributes: []string{"object_name"},
 	},
 	VcenterVMDiskThroughput: metricInfo{
-		Name: "vcenter.vm.disk.throughput",
+		Name:       "vcenter.vm.disk.throughput",
+		Attributes: []string{"disk_direction", "object_name"},
 	},
 	VcenterVMDiskUsage: metricInfo{
-		Name: "vcenter.vm.disk.usage",
+		Name:       "vcenter.vm.disk.usage",
+		Attributes: []string{"disk_state"},
 	},
 	VcenterVMDiskUtilization: metricInfo{
 		Name: "vcenter.vm.disk.utilization",
@@ -608,31 +637,40 @@ var MetricsInfo = metricsInfo{
 		Name: "vcenter.vm.memory.utilization",
 	},
 	VcenterVMNetworkBroadcastPacketRate: metricInfo{
-		Name: "vcenter.vm.network.broadcast.packet.rate",
+		Name:       "vcenter.vm.network.broadcast.packet.rate",
+		Attributes: []string{"throughput_direction", "object_name"},
 	},
 	VcenterVMNetworkMulticastPacketRate: metricInfo{
-		Name: "vcenter.vm.network.multicast.packet.rate",
+		Name:       "vcenter.vm.network.multicast.packet.rate",
+		Attributes: []string{"throughput_direction", "object_name"},
 	},
 	VcenterVMNetworkPacketDropRate: metricInfo{
-		Name: "vcenter.vm.network.packet.drop.rate",
+		Name:       "vcenter.vm.network.packet.drop.rate",
+		Attributes: []string{"throughput_direction", "object_name"},
 	},
 	VcenterVMNetworkPacketRate: metricInfo{
-		Name: "vcenter.vm.network.packet.rate",
+		Name:       "vcenter.vm.network.packet.rate",
+		Attributes: []string{"throughput_direction", "object_name"},
 	},
 	VcenterVMNetworkThroughput: metricInfo{
-		Name: "vcenter.vm.network.throughput",
+		Name:       "vcenter.vm.network.throughput",
+		Attributes: []string{"throughput_direction", "object_name"},
 	},
 	VcenterVMNetworkUsage: metricInfo{
-		Name: "vcenter.vm.network.usage",
+		Name:       "vcenter.vm.network.usage",
+		Attributes: []string{"object_name"},
 	},
 	VcenterVMVsanLatencyAvg: metricInfo{
-		Name: "vcenter.vm.vsan.latency.avg",
+		Name:       "vcenter.vm.vsan.latency.avg",
+		Attributes: []string{"vsan_latency_type"},
 	},
 	VcenterVMVsanOperations: metricInfo{
-		Name: "vcenter.vm.vsan.operations",
+		Name:       "vcenter.vm.vsan.operations",
+		Attributes: []string{"vsan_operation_type"},
 	},
 	VcenterVMVsanThroughput: metricInfo{
-		Name: "vcenter.vm.vsan.throughput",
+		Name:       "vcenter.vm.vsan.throughput",
+		Attributes: []string{"vsan_throughput_direction"},
 	},
 }
 
@@ -711,7 +749,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricVcenterClusterCPUEffective struct {

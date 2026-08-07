@@ -13,10 +13,11 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -172,6 +173,135 @@ func TestAzureScraperScrape(t *testing.T) {
 	}
 }
 
+func TestAzureScraperScrape_ChronologicalAndNoDuplicate(t *testing.T) {
+	fakeSubID := "subscriptionId1"
+	resourceID := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1"
+	metricName := "metric1"
+	var unit armmonitor.MetricUnit = "unit1"
+	value1 := 10.0
+	value2 := 12.0
+
+	t1 := time.Now().Add(-2 * time.Minute).Truncate(time.Minute)
+	t2 := time.Now().Add(-1 * time.Minute).Truncate(time.Minute)
+
+	mockMetricsValues1 := map[string]map[string]armmonitor.MetricsClientListResponse{
+		resourceID: {
+			metricName: armmonitor.MetricsClientListResponse{
+				Response: armmonitor.Response{
+					Value: []*armmonitor.Metric{
+						{
+							Name: &armmonitor.LocalizableString{Value: to.Ptr(metricName)},
+							Unit: &unit,
+							Timeseries: []*armmonitor.TimeSeriesElement{
+								{
+									Data: []*armmonitor.MetricValue{
+										{TimeStamp: &t1, Average: &value1},
+										{TimeStamp: &t2, Average: &value2},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	optionsResolver1 := newMockClientOptionsResolver(
+		getSubscriptionByIDMockData(),
+		getSubscriptionsMockData(),
+		getResourcesMockData(),
+		getMetricsDefinitionsMockData(),
+		mockMetricsValues1,
+		nil,
+	)
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	cfg := createDefaultTestConfig()
+	cfg.SubscriptionIDs = []string{fakeSubID}
+	cfg.Metrics = NestedListAlias{
+		"namespace1": {
+			"metric1": {"Average"},
+		},
+	}
+
+	s := &azureScraper{
+		cfg:                          cfg,
+		settings:                     settings.TelemetrySettings,
+		mb:                           metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver1,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+		subscriptions:                map[string]*azureSubscription{},
+		resources:                    map[string]map[string]*azureResource{},
+	}
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 2, metrics.DataPointCount())
+
+	rm := metrics.ResourceMetrics().At(0)
+	sm := rm.ScopeMetrics().At(0)
+	m := sm.Metrics().At(0)
+	dps := m.Gauge().DataPoints()
+
+	dp1 := dps.At(0)
+	dp2 := dps.At(1)
+	assert.Equal(t, value1, dp1.DoubleValue())
+	assert.Equal(t, pcommon.NewTimestampFromTime(t1), dp1.Timestamp())
+	assert.Equal(t, value2, dp2.DoubleValue())
+	assert.Equal(t, pcommon.NewTimestampFromTime(t2), dp2.Timestamp())
+
+	t3 := time.Now().Truncate(time.Minute)
+	value3 := 15.0
+	mockMetricsValues2 := map[string]map[string]armmonitor.MetricsClientListResponse{
+		resourceID: {
+			metricName: armmonitor.MetricsClientListResponse{
+				Response: armmonitor.Response{
+					Value: []*armmonitor.Metric{
+						{
+							Name: &armmonitor.LocalizableString{Value: to.Ptr(metricName)},
+							Unit: &unit,
+							Timeseries: []*armmonitor.TimeSeriesElement{
+								{
+									Data: []*armmonitor.MetricValue{
+										{TimeStamp: &t1, Average: &value1},
+										{TimeStamp: &t2, Average: &value2},
+										{TimeStamp: &t3, Average: &value3},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	s.clientOptionsResolver = newMockClientOptionsResolver(
+		getSubscriptionByIDMockData(),
+		getSubscriptionsMockData(),
+		getResourcesMockData(),
+		getMetricsDefinitionsMockData(),
+		mockMetricsValues2,
+		nil,
+	)
+
+	mockTime := s.time.(*timeMock)
+	mockTime.time = mockTime.time.Add(time.Minute)
+
+	s.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
+
+	metrics2, err := s.scrape(t.Context())
+	require.NoError(t, err)
+
+	require.Equal(t, 1, metrics2.DataPointCount())
+	dp3 := metrics2.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+	assert.Equal(t, value3, dp3.DoubleValue())
+	assert.Equal(t, pcommon.NewTimestampFromTime(t3), dp3.Timestamp())
+}
+
 func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 	fakeSubID := "azuremonitor-receiver"
 	metricNamespace1, metricNamespace2 := "Microsoft.ServiceA/namespace1", "Microsoft.ServiceB/namespace2"
@@ -287,6 +417,100 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 			pmetrictest.IgnoreResourceMetricsOrder(),
 		))
 	})
+}
+
+// TestAzureScraperScrapeCustomNamespaceMetrics verifies that the scraper discovers and
+// collects metrics from custom metric namespaces (e.g. "azure.vm.linux.guestmetrics"
+// published by Azure Monitor Agent / MetricsExtension). The Azure Monitor
+// MetricDefinitions API only returns such metrics when the metricnamespace query
+// parameter is explicitly provided; without it only platform metrics are returned.
+func TestAzureScraperScrapeCustomNamespaceMetrics(t *testing.T) {
+	fakeSubID := "sub-id-1"
+	vmType := "Microsoft.Compute/virtualMachines"
+	customNamespace := "azure.vm.linux.guestmetrics"
+	metricName := "disk/free_percent"
+	timeGrain := "PT1M"
+	var unit armmonitor.MetricUnit = "Percent"
+	diskFreePercent := 92.5
+
+	cfg := createDefaultTestConfig()
+	cfg.SubscriptionIDs = []string{fakeSubID}
+	cfg.Services = []string{vmType}
+	cfg.Metrics = NestedListAlias{
+		customNamespace: {
+			metricName: {"Average"},
+		},
+	}
+
+	vmName := "my-vm"
+	vmID := "/subscriptions/" + fakeSubID + "/resourceGroups/rg/providers/" + vmType + "/" + vmName
+	location := "eastus"
+
+	subscriptionsByIDMockData := newSubscriptionsByIDMockData(map[string]string{
+		fakeSubID: "My Subscription",
+	})
+	resourceMockData := newResourcesMockData(map[string][][]*armresources.GenericResourceExpanded{
+		fakeSubID: {
+			{{ID: &vmID, Location: &location, Name: &vmName, Type: &vmType}},
+		},
+	})
+
+	// The default (nil) MetricDefinitions call returns nothing for this resource.
+	// The namespace-filtered call for "azure.vm.linux.guestmetrics" returns disk/free_percent.
+	// The mock key "vmID::namespace" triggers the namespace-filtered mock path.
+	metricsDefinitionMockData := newMetricsDefinitionMockData(map[string][]metricsDefinitionMockInput{
+		vmID + "::" + customNamespace: {
+			{namespace: customNamespace, name: metricName, timeGrain: timeGrain},
+		},
+	})
+
+	metricsMockData := newMetricsClientListResponseMockData(map[string]map[string][]metricsClientListResponseMockInput{
+		vmID: {
+			metricName: {{
+				Name: metricName,
+				Unit: unit,
+				TimeSeries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
+					{Average: &diskFreePercent},
+				}}},
+			}},
+		},
+	})
+
+	optionsResolver := newMockClientOptionsResolver(
+		subscriptionsByIDMockData,
+		getSubscriptionsMockData(),
+		resourceMockData,
+		metricsDefinitionMockData,
+		metricsMockData,
+		nil,
+	)
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	s := &azureScraper{
+		cfg:                          cfg,
+		settings:                     settings.TelemetrySettings,
+		mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+		subscriptions:                map[string]*azureSubscription{},
+		resources:                    map[string]map[string]*azureResource{},
+	}
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	expectedFile := filepath.Join("testdata", "expected_metrics", "metrics_custom_namespace.yaml")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(
+		expectedMetrics,
+		metrics,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+	))
 }
 
 func getSubscriptionByIDMockData() map[string]armsubscriptions.ClientGetResponse {
@@ -540,6 +764,14 @@ func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
 			// we can travel in time by adjusting result of timeWrapper.Now
 			prevTime := mockedTime.time
 			mockedTime.time = timeNowNew
+			// Clear point-level deduplication so it doesn't interfere with the block-level guard test
+			for _, subMap := range s.resources {
+				for _, res := range subMap {
+					for _, met := range res.metricsByCompositeKey {
+						met.lastEmittedTimestamps = make(map[string]time.Time)
+					}
+				}
+			}
 
 			metrics, err := s.scrape(ctx)
 

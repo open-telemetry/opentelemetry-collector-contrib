@@ -49,7 +49,7 @@ func newApacheScraper(
 }
 
 func (r *apacheScraper) start(ctx context.Context, host component.Host) error {
-	httpClient, err := r.cfg.ToClient(ctx, host.GetExtensions(), r.settings)
+	httpClient, err := r.cfg.ClientConfig.ToClient(ctx, host.GetExtensions(), r.settings)
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,12 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			addPartialIfError(errs, r.mb.RecordApacheLoad15DataPoint(now, metricValue))
 		case "Total Duration":
 			addPartialIfError(errs, r.mb.RecordApacheRequestTimeDataPoint(now, metricValue))
+		case "ReqPerSec":
+			addPartialIfError(errs, r.mb.RecordApacheRequestRateDataPoint(now, metricValue))
+		case "BytesPerSec":
+			addPartialIfError(errs, r.mb.RecordApacheTrafficRateDataPoint(now, metricValue))
 		case "Scoreboard":
+			r.mb.RecordApacheWorkerLimitDataPoint(now, int64(len(metricValue)))
 			scoreboardMap := parseScoreboard(metricValue)
 			for state, score := range scoreboardMap {
 				r.mb.RecordApacheScoreboardDataPoint(now, score, state)
@@ -147,7 +152,7 @@ func addPartialIfError(errs *scrapererror.ScrapeErrors, err error) {
 
 // GetStats collects metric stats by making a get request at an endpoint.
 func (r *apacheScraper) GetStats() (string, error) {
-	resp, err := r.httpClient.Get(r.cfg.Endpoint)
+	resp, err := r.httpClient.Get(r.cfg.ClientConfig.Endpoint)
 	if err != nil {
 		return "", err
 	}

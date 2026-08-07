@@ -17,23 +17,23 @@ import (
 
 // Config defines configuration for Azure Data Explorer Exporter
 type Config struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	ClusterURI                string              `mapstructure:"cluster_uri"`
-	ApplicationID             string              `mapstructure:"application_id"`
-	ApplicationKey            configopaque.String `mapstructure:"application_key"`
-	TenantID                  string              `mapstructure:"tenant_id"`
-	ManagedIdentityID         string              `mapstructure:"managed_identity_id"`
-	UseAzureAuth              bool                `mapstructure:"use_azure_auth"`
-	Database                  string              `mapstructure:"db_name"`
-	MetricTable               string              `mapstructure:"metrics_table_name"`
-	LogTable                  string              `mapstructure:"logs_table_name"`
-	TraceTable                string              `mapstructure:"traces_table_name"`
-	MetricTableMapping        string              `mapstructure:"metrics_table_json_mapping"`
-	LogTableMapping           string              `mapstructure:"logs_table_json_mapping"`
-	TraceTableMapping         string              `mapstructure:"traces_table_json_mapping"`
-	IngestionType             string              `mapstructure:"ingestion_type"`
+	TimeoutSettings    exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings      configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig      configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	ClusterURI         string                                                   `mapstructure:"cluster_uri"`
+	ApplicationID      string                                                   `mapstructure:"application_id"`
+	ApplicationKey     configopaque.String                                      `mapstructure:"application_key"`
+	TenantID           string                                                   `mapstructure:"tenant_id"`
+	ManagedIdentityID  string                                                   `mapstructure:"managed_identity_id"`
+	UseAzureAuth       bool                                                     `mapstructure:"use_azure_auth"`
+	Database           string                                                   `mapstructure:"db_name"`
+	MetricTable        string                                                   `mapstructure:"metrics_table_name"`
+	LogTable           string                                                   `mapstructure:"logs_table_name"`
+	TraceTable         string                                                   `mapstructure:"traces_table_name"`
+	MetricTableMapping string                                                   `mapstructure:"metrics_table_json_mapping"`
+	LogTableMapping    string                                                   `mapstructure:"logs_table_json_mapping"`
+	TraceTableMapping  string                                                   `mapstructure:"traces_table_json_mapping"`
+	IngestionType      string                                                   `mapstructure:"ingestion_type"`
 	// IncludeExemplars controls whether OTLP metric exemplars (which carry
 	// trace_id/span_id) are written to the Exemplars column of the metrics table.
 	// Disabled by default to avoid added volume/cardinality unless explicitly opted in.

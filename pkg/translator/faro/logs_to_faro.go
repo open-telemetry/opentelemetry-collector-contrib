@@ -405,7 +405,7 @@ func extractAppFromKeyVal(kv map[string]string, rl pcommon.Resource) faroTypes.A
 		if key == string(conventions.ServiceVersionKey) {
 			app.Version = val.Str()
 		}
-		if key == string(conventionsv126.DeploymentEnvironmentKey) {
+		if key == string(conventionsv126.DeploymentEnvironmentKey) || key == string(conventions.DeploymentEnvironmentNameKey) {
 			app.Environment = val.Str()
 		}
 		// force the app name stored in resource attribute service.name

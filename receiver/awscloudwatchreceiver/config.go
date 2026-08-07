@@ -39,7 +39,7 @@ type Config struct {
 // Either Metrics (explicit list) or Discovery (ListMetrics-based) may be set, not both.
 // Collection interval and scraper behavior are controlled via the embedded ControllerConfig.
 type MetricsConfig struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 	// Period is the CloudWatch statistics aggregation window. Defaults to 5m.
 	Period time.Duration `mapstructure:"period"`
 	// Delay shifts the query window back from now to account for CloudWatch metric publication latency.
@@ -84,6 +84,7 @@ type MetricQuery struct {
 // LogsConfig is the configuration for the logs portion of this receiver
 type LogsConfig struct {
 	StartFrom           string        `mapstructure:"start_from"`
+	InitialLookback     time.Duration `mapstructure:"initial_lookback"`
 	PollInterval        time.Duration `mapstructure:"poll_interval"`
 	MaxEventsPerRequest int           `mapstructure:"max_events_per_request"`
 	Groups              GroupConfig   `mapstructure:"groups"`
@@ -127,6 +128,8 @@ var (
 	errInvalidDiscoveryLimit            = errors.New("metrics discovery limit must be greater than 0")
 	errEmptyStatName                    = errors.New("stat name must not be empty")
 	errCollectionIntervalLessThanPeriod = errors.New("metrics collection_interval must be greater than or equal to period")
+	errInitialLookbackAndStartFrom      = errors.New("both initial_lookback and start_from are configured, Only one or the other is permitted")
+	errInvalidInitialLookback           = errors.New("initial_lookback must be a positive duration (e.g. 1h)")
 )
 
 // Validate overrides the embedded ControllerConfig.Validate so that a zero CollectionInterval
@@ -159,7 +162,7 @@ func (c *Config) Validate() error {
 }
 
 func (c *Config) validateMetricsDurations() error {
-	if c.Metrics.CollectionInterval != 0 && c.Metrics.CollectionInterval < time.Second {
+	if c.Metrics.ControllerConfig.CollectionInterval != 0 && c.Metrics.ControllerConfig.CollectionInterval < time.Second {
 		return errInvalidMetricsCollectionInterval
 	}
 	if c.Metrics.Period != 0 && c.Metrics.Period < time.Second {
@@ -168,8 +171,8 @@ func (c *Config) validateMetricsDurations() error {
 	if c.Metrics.Delay != 0 && c.Metrics.Delay < time.Second {
 		return errInvalidMetricsDelay
 	}
-	if c.Metrics.CollectionInterval > 0 && c.Metrics.Period > 0 &&
-		c.Metrics.CollectionInterval < c.Metrics.Period {
+	if c.Metrics.ControllerConfig.CollectionInterval > 0 && c.Metrics.Period > 0 &&
+		c.Metrics.ControllerConfig.CollectionInterval < c.Metrics.Period {
 		return errCollectionIntervalLessThanPeriod
 	}
 	return nil
@@ -230,6 +233,14 @@ func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
 }
 
 func (c *Config) validateLogsConfig() error {
+	if c.Logs.InitialLookback != 0 && c.Logs.StartFrom != "" {
+		return errInitialLookbackAndStartFrom
+	}
+
+	if c.Logs.InitialLookback < 0 {
+		return errInvalidInitialLookback
+	}
+
 	if c.Logs.StartFrom != "" {
 		_, err := time.Parse(time.RFC3339, c.Logs.StartFrom)
 		if err != nil {

@@ -29,16 +29,21 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  testutil.EndpointForPort(defaultPort),
+	}
 	return &Config{
 		Config: healthcheck.Config{
 			LegacyConfig: healthcheck.HTTPLegacyConfig{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  testutil.EndpointForPort(defaultPort),
-					},
-				},
-				Path: "/",
+				ServerConfig: serverConfig,
+				Path:         "/",
 				CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
 					Enabled:                  false,
 					Interval:                 "5m",
@@ -55,20 +60,20 @@ func createExtension(_ context.Context, set extension.Settings, cfg component.Co
 	if metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.IsEnabled() {
 		// When feature gate is enabled, use v2 implementation directly.
 		// The feature gate controls behavior, not the presence of v2 config fields.
-		config.UseV2 = true
+		config.Config.UseV2 = true
 
 		// If no v2 config is set, create HTTP config from legacy settings for backward compatibility
-		if config.HTTPConfig == nil && config.GRPCConfig == nil {
+		if config.Config.HTTPConfig == nil && config.Config.GRPCConfig == nil {
 			set.Logger.Warn(
 				"Feature gate enabled but using legacy config format. " +
 					"Please migrate to v2 config format (http/grpc fields). " +
 					"See: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/healthcheckextension#backward-compatibility",
 			)
-			config.HTTPConfig = &healthcheck.HTTPConfig{
-				ServerConfig: config.ServerConfig,
+			config.Config.HTTPConfig = &healthcheck.HTTPConfig{
+				ServerConfig: config.Config.ServerConfig,
 				Status: healthcheck.PathConfig{
 					Enabled: true,
-					Path:    config.Path,
+					Path:    config.Config.Path,
 				},
 				Config: healthcheck.PathConfig{
 					Enabled: false,

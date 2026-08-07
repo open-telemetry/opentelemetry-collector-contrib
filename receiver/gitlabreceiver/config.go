@@ -52,7 +52,7 @@ type Config struct {
 }
 
 type WebHook struct {
-	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	Path       string `mapstructure:"path"`        // path for data collection. default is /events
 	HealthPath string `mapstructure:"health_path"` // path for health check api. default is /health_check
@@ -79,13 +79,17 @@ func createDefaultConfig() component.Config {
 	netAddr := confignet.NewDefaultAddrConfig()
 	netAddr.Transport = confignet.TransportTypeTCP
 	netAddr.Endpoint = defaultEndpoint
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = netAddr
+	serverConfig.ReadTimeout = defaultReadTimeout
+	serverConfig.WriteTimeout = defaultWriteTimeout
 	return &Config{
 		WebHook: WebHook{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr:      netAddr,
-				ReadTimeout:  defaultReadTimeout,
-				WriteTimeout: defaultWriteTimeout,
-			},
+			ServerConfig: serverConfig,
 			GitlabHeaders: GitlabHeaders{
 				Customizable: map[string]string{
 					defaultUserAgentHeader:      "",
@@ -110,11 +114,11 @@ func (cfg *Config) Validate() error {
 
 	maxReadWriteTimeout, _ := time.ParseDuration("10s")
 
-	if cfg.WebHook.ReadTimeout > maxReadWriteTimeout {
+	if cfg.WebHook.ServerConfig.ReadTimeout > maxReadWriteTimeout {
 		errs = multierr.Append(errs, errReadTimeoutExceedsMaxValue)
 	}
 
-	if cfg.WebHook.WriteTimeout > maxReadWriteTimeout {
+	if cfg.WebHook.ServerConfig.WriteTimeout > maxReadWriteTimeout {
 		errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
 	}
 

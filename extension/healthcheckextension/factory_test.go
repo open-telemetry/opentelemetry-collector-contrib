@@ -24,16 +24,21 @@ import (
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:13133",
+	}
 	expected := &Config{
 		Config: healthcheck.Config{
 			LegacyConfig: healthcheck.HTTPLegacyConfig{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "localhost:13133",
-					},
-				},
-				Path: "/",
+				ServerConfig: serverConfig,
+				Path:         "/",
 				CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
 					Enabled:                  false,
 					Interval:                 "5m",
@@ -49,7 +54,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 func TestFactory_CreateLegacyExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Config.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
@@ -58,7 +63,7 @@ func TestFactory_CreateLegacyExtension(t *testing.T) {
 
 func TestLegacyExtensionLifecycle(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Config.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	hcExt, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
@@ -70,7 +75,7 @@ func TestLegacyExtensionLifecycle(t *testing.T) {
 	runtime.Gosched()
 
 	client := &http.Client{}
-	url := "http://" + cfg.NetAddr.Endpoint + cfg.Path
+	url := "http://" + cfg.Config.ServerConfig.NetAddr.Endpoint + cfg.Config.Path
 
 	resp, err := client.Get(url)
 	require.NoError(t, err)
@@ -85,7 +90,7 @@ func TestLegacyExtensionPortAlreadyInUse(t *testing.T) {
 	defer ln.Close()
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = endpoint
+	cfg.Config.ServerConfig.NetAddr.Endpoint = endpoint
 
 	hcExt, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
@@ -101,7 +106,7 @@ func TestFactory_CreateV2Extension(t *testing.T) {
 	})
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Config.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
