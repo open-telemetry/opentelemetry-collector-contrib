@@ -66,7 +66,8 @@ func NewFactory() receiver.Factory {
 		xreceiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
 		xreceiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
 		xreceiver.WithTraces(createTracesReceiver, component.StabilityLevelDevelopment),
-		xreceiver.WithProfiles(createProfilesReceiver, component.StabilityLevelDevelopment))
+		xreceiver.WithProfiles(createProfilesReceiver, component.StabilityLevelDevelopment),
+	)
 }
 
 func (*vcrReceiver) Start(_ context.Context, _ component.Host) error {

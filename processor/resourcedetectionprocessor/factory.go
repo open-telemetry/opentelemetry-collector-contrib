@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/containerapps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
@@ -70,6 +71,7 @@ func NewFactory() processor.Factory {
 		alibabaecs.TypeStr:       alibabaecs.NewDetector,
 		aks.TypeStr:              aks.NewDetector,
 		azure.TypeStr:            azure.NewDetector,
+		containerapps.TypeStr:    containerapps.NewDetector,
 		consul.TypeStr:           consul.NewDetector,
 		digitalocean.TypeStr:     digitalocean.NewDetector,
 		docker.TypeStr:           docker.NewDetector,
@@ -110,7 +112,8 @@ func NewFactory() processor.Factory {
 		xprocessor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
 		xprocessor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
 		xprocessor.WithLogs(f.createLogsProcessor, metadata.LogsStability),
-		xprocessor.WithProfiles(f.createProfilesProcessor, metadata.ProfilesStability))
+		xprocessor.WithProfiles(f.createProfilesProcessor, metadata.ProfilesStability),
+	)
 }
 
 // Type gets the type of the Option config created by this factory.

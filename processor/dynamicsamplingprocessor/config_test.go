@@ -268,6 +268,58 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "ema_dynamic does not use update_frequency",
 		},
 		{
+			name: "eviction_evaluate_default_valid",
+			cfg: func() Config {
+				c := baseCfg(RuleConfig{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}})
+				c.Eviction = EvictionConfig{Policy: EvictionEvaluate}
+				return c
+			}(),
+		},
+		{
+			name: "eviction_probabilistic_valid",
+			cfg: func() Config {
+				c := baseCfg(RuleConfig{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}})
+				c.Eviction = EvictionConfig{Policy: EvictionProbabilistic, SamplingPercentage: 10}
+				return c
+			}(),
+		},
+		{
+			name: "eviction_probabilistic_missing_percentage",
+			cfg: func() Config {
+				c := baseCfg(RuleConfig{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}})
+				c.Eviction = EvictionConfig{Policy: EvictionProbabilistic}
+				return c
+			}(),
+			wantErr: "sampling_percentage must be in (0, 100]",
+		},
+		{
+			name: "eviction_percentage_out_of_range",
+			cfg: func() Config {
+				c := baseCfg(RuleConfig{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}})
+				c.Eviction = EvictionConfig{Policy: EvictionProbabilistic, SamplingPercentage: 150}
+				return c
+			}(),
+			wantErr: "sampling_percentage must be in (0, 100]",
+		},
+		{
+			name: "eviction_evaluate_rejects_percentage",
+			cfg: func() Config {
+				c := baseCfg(RuleConfig{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}})
+				c.Eviction = EvictionConfig{SamplingPercentage: 10}
+				return c
+			}(),
+			wantErr: "sampling_percentage is only used by the probabilistic policy",
+		},
+		{
+			name: "eviction_unknown_policy",
+			cfg: func() Config {
+				c := baseCfg(RuleConfig{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}})
+				c.Eviction = EvictionConfig{Policy: "magic"}
+				return c
+			}(),
+			wantErr: "eviction: policy must be",
+		},
+		{
 			name: "root_span_condition_valid",
 			cfg: Config{
 				TraceTimeout:      time.Second,
