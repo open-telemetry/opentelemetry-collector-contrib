@@ -583,6 +583,7 @@ Available Converters:
 - [Substring](#substring)
 - [Time](#time)
 - [ToCamelCase](#tocamelcase)
+- [ToJSON](#tojson)
 - [ToKeyValueString](#tokeyvaluestring)
 - [ToLowerCase](#tolowercase)
 - [ToSnakeCase](#tosnakecase)
@@ -2806,6 +2807,38 @@ The `ToCamelCase` Converter converts the `target` string into camel case (e.g. `
 Examples:
 
 - `ToCamelCase(metric.name)`
+
+### ToJSON
+
+`ToJSON(target)`
+
+The `ToJSON` Converter serializes any value to a compact JSON string.
+It is the inverse of [`ParseJSON`](#parsejson): where `ParseJSON` converts a JSON string into a `pcommon.Map` or `pcommon.Slice`, `ToJSON` converts any value back into its JSON string representation.
+
+`target` is a Getter that returns any value. Supported types include:
+
+- `pcommon.Map` → JSON object string
+- `pcommon.Slice` → JSON array string
+- `pcommon.Value` → JSON value string (delegates based on underlying type)
+- `map[string]any` → JSON object string
+- `[]any` → JSON array string
+- Primitives (`string`, `int64`, `float64`, `bool`) → JSON primitive string
+
+If the input is `nil` (e.g. a missing map key), `ToJSON` returns `nil`, consistent with other OTTL converters.
+An explicit `pcommon.ValueTypeEmpty` serializes as the JSON string `"null"`.
+`pcommon.ValueTypeBytes` values are serialized as base64-encoded JSON strings.
+
+Serialization is done using [goccy/go-json](https://github.com/goccy/go-json).
+
+Examples:
+
+- `ToJSON(log.body)`
+
+
+- `ToJSON(log.attributes)`
+
+
+- `ToJSON(["a","b","c"])`
 
 ### ToKeyValueString
 

@@ -115,6 +115,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewTrimFactory[K](),
 		NewTrimPrefixFactory[K](),
 		NewTrimSuffixFactory[K](),
+		NewToJSONFactory[K](),
 		NewToKeyValueStringFactory[K](),
 		NewToCamelCaseFactory[K](),
 		NewToLowerCaseFactory[K](),
