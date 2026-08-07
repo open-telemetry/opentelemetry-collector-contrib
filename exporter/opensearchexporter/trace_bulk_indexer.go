@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
 	"slices"
 	"time"
 
@@ -49,7 +50,8 @@ func (tbi *traceBulkIndexer) close(ctx context.Context) {
 
 func (tbi *traceBulkIndexer) onIndexerError(_ context.Context, indexerErr error) {
 	if indexerErr != nil {
-		tbi.appendPermanentError(consumererror.NewPermanent(indexerErr))
+		// retryable, not permanent
+		tbi.errs = append(tbi.errs, indexerErr)
 	}
 }
 
@@ -130,8 +132,15 @@ func (tbi *traceBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem,
 		// Non-recoverable OpenSearch error while indexing document
 		tbi.appendPermanentError(responseAsError(resp))
 	default:
-		// Encoding error. We didn't even attempt to send the event
-		tbi.appendPermanentError(itemErr)
+		// resp.Status == 0 + itemErr: could be encoding error OR transport error
+		var netErr *net.OpError
+		if errors.As(itemErr, &netErr) {
+			// transport error, retryable
+			tbi.appendRetryTraceError(itemErr, traces)
+		} else {
+			// encoding error, permanent
+			tbi.appendPermanentError(itemErr)
+		}
 	}
 }
 
