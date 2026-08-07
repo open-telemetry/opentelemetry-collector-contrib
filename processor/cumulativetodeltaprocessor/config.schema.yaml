@@ -17,6 +17,11 @@ type: object
 properties:
   exclude:
     $ref: match_metrics
+  histogram_fields:
+    description: 'HistogramFields specifies which histogram fields to convert to delta. Valid values: "bucket_counts", "sum", "count". When empty (default), all fields are converted (backward compatible).'
+    type: array
+    items:
+      type: string
   include:
     description: Include specifies a filter on the metrics that should be converted. Exclude specifies a filter on the metrics that should not be converted. If neither `include` nor `exclude` are set, all metrics will be converted. Cannot be used with deprecated Metrics config option.
     $ref: match_metrics
