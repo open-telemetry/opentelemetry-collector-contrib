@@ -57,10 +57,11 @@ type Observer struct {
 	pullHandler func(*unstructured.UnstructuredList)
 	interval    time.Duration
 	// watch-only
-	watchHandler func(*apiWatch.Event)
-	exclude      map[apiWatch.EventType]bool
-	cp           *checkpoint.Checkpointer
-	logger       *zap.Logger
+	watchHandler    func(*apiWatch.Event)
+	exclude         map[apiWatch.EventType]bool
+	skipInitialList bool
+	cp              *checkpoint.Checkpointer
+	logger          *zap.Logger
 }
 
 // NewPull creates a pull-mode observer.
@@ -107,19 +108,14 @@ func NewWatch(reg *FactoryRegistry, config WatchConfig, logger *zap.Logger, hand
 		stopCh:           reg.StopCh(),
 		watchHandler:     handler,
 		exclude:          config.Exclude,
+		skipInitialList:  !config.IncludeInitialState,
 		logger:           logger,
 	}
 	if config.StorageClient != nil {
 		o.cp = checkpoint.New(config.StorageClient, logger)
 	}
 	for _, nf := range factories {
-		inf := nf.factory.ForResource(config.Gvr).Informer()
-		o.infs[nf] = inf
-		handle, err := inf.AddEventHandler(o.buildEventHandler(!config.IncludeInitialState, nf.namespace))
-		if err != nil {
-			return nil, fmt.Errorf("failed to add event handler for %s: %w", config.Gvr.String(), err)
-		}
-		o.handlerRegs[nf] = handle
+		o.infs[nf] = nf.factory.ForResource(config.Gvr).Informer()
 	}
 	return o, nil
 }
@@ -163,6 +159,17 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}
 		}
 	}
 
+	if o.watchHandler != nil {
+		for nf, inf := range o.infs {
+			handle, err := inf.AddEventHandler(o.buildEventHandler(o.skipInitialList, nf.namespace))
+			if err != nil {
+				o.removeHandlers()
+				return nil, fmt.Errorf("failed to add event handler for %s: %w", o.base.Gvr.String(), err)
+			}
+			o.handlerRegs[nf] = handle
+		}
+	}
+
 	for nf := range o.infs {
 		nf.factory.Start(o.stopCh)
 	}
@@ -198,7 +205,7 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}
 	stopCh := make(chan struct{})
 
 	// Informers keep running under the registry stopCh; unsubscribe our handlers when the observer stops.
-	if len(o.handlerRegs) > 0 {
+	if o.watchHandler != nil {
 		wg.Add(1)
 		go o.runHandlerRemover(ctx, stopCh, wg)
 	}

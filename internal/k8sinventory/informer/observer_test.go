@@ -725,6 +725,74 @@ func makePodWithRV(name, rv string) *unstructured.Unstructured {
 	return u
 }
 
+func TestSharedFactoryPullStartsBeforeWatch(t *testing.T) {
+	t.Parallel()
+
+	client, _ := newFakeClient(t,
+		makePodWithRV("pod-seen", "10"), // already covered by pre-seeded checkpoint
+		makePodWithRV("pod-new", "30"),  // must still be emitted
+	)
+
+	storageClient := newTestStorageClient(t)
+	// Pre-seed checkpoint at RV 20 so pod-seen is deduped but pod-new is not.
+	chk := checkpoint.New(storageClient, zap.NewNop())
+	require.NoError(t, chk.SetCheckpoint(t.Context(), "", podsGVR.Resource, "20"))
+	require.NoError(t, chk.Flush(t.Context()))
+
+	reg := NewFactoryRegistry(client, 0)
+	t.Cleanup(reg.Shutdown)
+
+	pullObs, err := NewPull(reg, PullConfig{
+		Config:           k8sinventory.Config{Gvr: podsGVR},
+		CacheSyncTimeout: 5 * time.Second,
+		Interval:         time.Hour,
+	}, zap.NewNop(), func(*unstructured.UnstructuredList) {})
+	require.NoError(t, err)
+
+	var mu sync.Mutex
+	var events []apiWatch.Event
+	watchObs, err := NewWatch(reg, WatchConfig{
+		Config:              k8sinventory.Config{Gvr: podsGVR},
+		CacheSyncTimeout:    5 * time.Second,
+		IncludeInitialState: true,
+		StorageClient:       storageClient,
+	}, zap.NewNop(), func(ev *apiWatch.Event) {
+		mu.Lock()
+		events = append(events, *ev)
+		mu.Unlock()
+	})
+	require.NoError(t, err)
+
+	// Start pull first: this starts the shared factory before the watch
+	// observer loads its checkpoint. Handler registration in watchObs.Start
+	// must happen after Load so AlreadySeen() dedups correctly.
+	var wg sync.WaitGroup
+	pullStop, err := pullObs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+	t.Cleanup(func() { close(pullStop) })
+
+	watchStop, err := watchObs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+	t.Cleanup(func() { close(watchStop); wg.Wait() })
+
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(events) >= 1
+	}, 5*time.Second, 10*time.Millisecond, "expected pod-new ADDED event")
+
+	assert.Never(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(events) > 1
+	}, 300*time.Millisecond, 20*time.Millisecond, "pod-seen must be deduped by checkpoint")
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.Len(t, events, 1)
+	assert.Equal(t, "pod-new", events[0].Object.(*unstructured.Unstructured).GetName())
+}
+
 // TestCheckpointFlushOnCtxCancel verifies that buffered checkpoints are flushed
 // when ctx is cancelled, not only when stopCh is closed.
 func TestCheckpointFlushOnCtxCancel(t *testing.T) {
