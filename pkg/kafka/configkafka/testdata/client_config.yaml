@@ -81,6 +81,16 @@ kafka/sasl_plain_password_required:
       mechanism: PLAIN
       username: xyz
 
+kafka/invalid_metadata_retry_max:
+  metadata:
+    retry:
+      max: -1
+
+kafka/invalid_metadata_retry_backoff:
+  metadata:
+    retry:
+      backoff: -1s
+
 kafka/foo:
   brokers:
     - "foo:123"
@@ -102,3 +112,8 @@ kafka/not_use_leader_epoch:
 
 kafka/conn_idle_timeout:
   conn_idle_timeout: 5m
+
+kafka/metadata_retry_backoff:
+  metadata:
+    retry:
+      backoff: 1s

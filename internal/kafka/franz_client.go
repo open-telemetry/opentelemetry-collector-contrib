@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"hash/fnv"
+	"math/rand/v2"
 	"strings"
 	"time"
 
@@ -352,6 +353,12 @@ func commonOpts(
 	if clientCfg.Metadata.RefreshInterval > 0 {
 		opts = append(opts, kgo.MetadataMaxAge(clientCfg.Metadata.RefreshInterval))
 	}
+	// Applied unconditionally so an explicit zero disables retries.
+	opts = append(opts, kgo.RequestRetries(clientCfg.Metadata.Retry.Max))
+	// A zero backoff would busy-retry an unhealthy broker, so treat it as unset.
+	if clientCfg.Metadata.Retry.Backoff > 0 {
+		opts = append(opts, kgo.RetryBackoffFn(newRetryBackoffFn(clientCfg.Metadata.Retry.Backoff)))
+	}
 	// Configure connection idle timeout
 	if clientCfg.ConnIdleTimeout > 0 {
 		opts = append(opts, kgo.ConnIdleTimeout(clientCfg.ConnIdleTimeout))
@@ -372,6 +379,31 @@ func commonOpts(
 		opts = append(opts, kgo.MinVersions(versions), kgo.MaxVersions(versions))
 	}
 	return opts, nil
+}
+
+// retryBackoffCap is franz-go's default maximum wait between retries.
+const retryBackoffCap = 5 * time.Second
+
+// newRetryBackoffFn mirrors franz-go's default jittered exponential backoff,
+// taking the minimum from metadata::retry::backoff. At the 250ms default it is
+// equivalent to the franz-go default.
+func newRetryBackoffFn(minBackoff time.Duration) func(int) time.Duration {
+	maxBackoff := max(retryBackoffCap, minBackoff)
+	return func(fails int) time.Duration {
+		if fails <= 0 {
+			return minBackoff
+		}
+		backoff := minBackoff << (fails - 1)
+		// Overflow means the doubling is far past the cap.
+		if backoff>>(fails-1) != minBackoff {
+			return maxBackoff
+		}
+		jittered := time.Duration(float64(backoff) * (0.8 + 0.4*rand.Float64()))
+		if jittered <= 0 {
+			return maxBackoff
+		}
+		return min(jittered, maxBackoff)
+	}
 }
 
 func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt, error) {
