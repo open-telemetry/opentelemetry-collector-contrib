@@ -174,7 +174,8 @@ func (se *signalfxExporter) startDimensionClient(ctx context.Context) error {
 			Timeout:                 se.config.DimensionClient.Timeout,
 			DropTags:                se.config.DimensionClient.DropTags,
 			StripK8sLabelPrefix:     se.config.DimensionClient.StripK8sLabelPrefix,
-		})
+		},
+	)
 	dimClient.Start()
 	se.dimClient = dimClient
 	return nil
