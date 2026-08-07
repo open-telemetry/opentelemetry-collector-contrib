@@ -182,7 +182,6 @@ extension/observer/ecsobserver
 extension/observer/hostobserver
 pkg/xk8stest
 extension/observer/k8sobserver
-extension/observer/kafkatopicsobserver
 extension/oidcauthextension
 extension/opampcustommessages
 extension/opampextension
