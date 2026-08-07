@@ -21,16 +21,16 @@ status:
 
 resource_attributes:
   host.name:
-    description: The host name of SQL Server
+    description: The hostname of the machine running the collector. This identifies the Collector host, not the monitored SQL Server.
     enabled: true
     type: string
   server.address:
-    description: Name of the database host.
-    enabled: false
+    description: The address of the SQL Server host.
+    enabled: true
     type: string
   server.port:
-    description: Server port number.
-    enabled: false
+    description: The port of the SQL Server host.
+    enabled: true
     type: int
   service.instance.id:
     description: A unique identifier of the SQL Server instance in the format host:port. In Windows Performance Counter mode the host is derived from computer_name (falling back to the collector host when monitoring locally), with a default port of 1433.
@@ -1437,15 +1437,6 @@ metrics:
       value_type: double
     attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
-
-feature_gates:
-  - id: receiver.sqlserver.RemoveServerResourceAttribute
-    stage: alpha
-    description: >-
-      When enabled, the server.address and server.port resource attributes are removed from metrics.
-    from_version: v0.129.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40141      
-    skip_strict_validation: true
 
 tests:
   config:
