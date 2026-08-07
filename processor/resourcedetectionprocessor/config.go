@@ -166,7 +166,7 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		ECSConfig:                ecs.CreateDefaultConfig(),
 		EKSConfig:                eks.CreateDefaultConfig(),
 		ElasticbeanstalkConfig:   elasticbeanstalk.CreateDefaultConfig(),
-    EnvConfig:                env.CreateDefaultConfig(),
+		EnvConfig:                env.CreateDefaultConfig(),
 		LambdaConfig:             lambda.CreateDefaultConfig(),
 		AzureConfig:              azure.CreateDefaultConfig(),
 		AksConfig:                aks.CreateDefaultConfig(),
