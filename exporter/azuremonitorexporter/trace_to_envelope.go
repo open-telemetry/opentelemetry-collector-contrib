@@ -415,9 +415,14 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		attrs.URLAttributes.URLPath = prefixIfNecessary(attrs.URLAttributes.URLPath, "/")
 	}
 
-	clientPortStr := ""
-	if attrs.ClientAttributes.ClientPort != 0 {
-		clientPortStr = strconv.FormatInt(attrs.ClientAttributes.ClientPort, 10)
+	serverPortStr := ""
+	if attrs.ServerAttributes.ServerPort != 0 {
+		serverPortStr = strconv.FormatInt(attrs.ServerAttributes.ServerPort, 10)
+	}
+
+	networkPeerPortStr := serverPortStr
+	if networkPeerPortStr == "" && attrs.NetworkAttributes.NetworkPeerPort != 0 {
+		networkPeerPortStr = strconv.FormatInt(attrs.NetworkAttributes.NetworkPeerPort, 10)
 	}
 
 	switch {
@@ -426,23 +431,23 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 			data.Data = attrs.URLAttributes.URLFull
 			data.Target = u.Host
 		}
-	case attrs.URLAttributes.URLScheme != "" && attrs.ClientAttributes.ClientAddress != "" && clientPortStr == "" && attrs.URLAttributes.URLPath != "":
+	case attrs.URLAttributes.URLScheme != "" && attrs.ServerAttributes.ServerAddress != "" && serverPortStr == "" && attrs.URLAttributes.URLPath != "":
 		sb.WriteString(attrs.URLAttributes.URLScheme)
 		sb.WriteString("://")
-		sb.WriteString(attrs.ClientAttributes.ClientAddress)
+		sb.WriteString(attrs.ServerAttributes.ServerAddress)
 		sb.WriteString(attrs.URLAttributes.URLPath)
 		if attrs.URLAttributes.URLQuery != "" {
 			sb.WriteString(prefixIfNecessary(attrs.URLAttributes.URLQuery, "?"))
 		}
 		data.Data = sb.String()
-		data.Target = attrs.ClientAttributes.ClientAddress
+		data.Target = attrs.ServerAttributes.ServerAddress
 
-	case attrs.URLAttributes.URLScheme != "" && attrs.ClientAttributes.ClientAddress != "" && clientPortStr != "" && attrs.URLAttributes.URLPath != "":
+	case attrs.URLAttributes.URLScheme != "" && attrs.ServerAttributes.ServerAddress != "" && serverPortStr != "" && attrs.URLAttributes.URLPath != "":
 		sb.WriteString(attrs.URLAttributes.URLScheme)
 		sb.WriteString("://")
-		sb.WriteString(attrs.ClientAttributes.ClientAddress)
+		sb.WriteString(attrs.ServerAttributes.ServerAddress)
 		sb.WriteString(":")
-		sb.WriteString(clientPortStr)
+		sb.WriteString(serverPortStr)
 		sb.WriteString(attrs.URLAttributes.URLPath)
 		if attrs.URLAttributes.URLQuery != "" {
 			sb.WriteString(prefixIfNecessary(attrs.URLAttributes.URLQuery, "?"))
@@ -450,17 +455,17 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		data.Data = sb.String()
 
 		sb.Reset()
-		sb.WriteString(attrs.ClientAttributes.ClientAddress)
+		sb.WriteString(attrs.ServerAttributes.ServerAddress)
 		sb.WriteString(":")
-		sb.WriteString(clientPortStr)
+		sb.WriteString(serverPortStr)
 		data.Target = sb.String()
 
-	case attrs.URLAttributes.URLScheme != "" && attrs.NetworkAttributes.NetworkPeerAddress != "" && clientPortStr != "" && attrs.URLAttributes.URLPath != "":
+	case attrs.URLAttributes.URLScheme != "" && attrs.NetworkAttributes.NetworkPeerAddress != "" && networkPeerPortStr != "" && attrs.URLAttributes.URLPath != "":
 		sb.WriteString(attrs.URLAttributes.URLScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.NetworkAttributes.NetworkPeerAddress)
 		sb.WriteString(":")
-		sb.WriteString(clientPortStr)
+		sb.WriteString(networkPeerPortStr)
 		sb.WriteString(attrs.URLAttributes.URLPath)
 		if attrs.URLAttributes.URLQuery != "" {
 			sb.WriteString(prefixIfNecessary(attrs.URLAttributes.URLQuery, "?"))
@@ -470,7 +475,7 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		sb.Reset()
 		sb.WriteString(attrs.NetworkAttributes.NetworkPeerAddress)
 		sb.WriteString(":")
-		sb.WriteString(clientPortStr)
+		sb.WriteString(networkPeerPortStr)
 		data.Target = sb.String()
 	}
 }
@@ -496,7 +501,7 @@ func fillRequestDataRPC(span ptrace.Span, data *contracts.RequestData) {
 
 	sb.Reset()
 
-	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ServerAttributes.ServerAddress, attrs.ServerAttributes.ServerPort, &sb)
+	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ClientAttributes.ClientAddress, attrs.ClientAttributes.ClientPort, &sb)
 
 	data.Source = sb.String()
 }
@@ -515,7 +520,7 @@ func fillRemoteDependencyDataRPC(span ptrace.Span, data *contracts.RemoteDepende
 
 	var sb strings.Builder
 
-	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ClientAttributes.ClientAddress, attrs.ClientAttributes.ClientPort, &sb)
+	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ServerAttributes.ServerAddress, attrs.ServerAttributes.ServerPort, &sb)
 	data.Target = sb.String()
 }
 
@@ -546,7 +551,7 @@ func fillRemoteDependencyDataDatabase(span ptrace.Span, data *contracts.RemoteDe
 	}
 
 	var sb strings.Builder
-	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ClientAttributes.ClientAddress, attrs.ClientAttributes.ClientPort, &sb)
+	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ServerAttributes.ServerAddress, attrs.ServerAttributes.ServerPort, &sb)
 	data.Target = sb.String()
 }
 
@@ -557,7 +562,7 @@ func fillRequestDataMessaging(span ptrace.Span, data *contracts.RequestData) {
 
 	// TODO Understand how to map attributes to RequestData fields
 	var sb strings.Builder
-	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ServerAttributes.ServerAddress, attrs.ServerAttributes.ServerPort, &sb)
+	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ClientAttributes.ClientAddress, attrs.ClientAttributes.ClientPort, &sb)
 	data.Source = sb.String()
 }
 
@@ -570,7 +575,7 @@ func fillRemoteDependencyDataMessaging(span ptrace.Span, data *contracts.RemoteD
 	data.Type = attrs.MessagingSystem
 
 	var sb strings.Builder
-	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ClientAttributes.ClientAddress, attrs.ClientAttributes.ClientPort, &sb)
+	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ServerAttributes.ServerAddress, attrs.ServerAttributes.ServerPort, &sb)
 	data.Target = sb.String()
 }
 
