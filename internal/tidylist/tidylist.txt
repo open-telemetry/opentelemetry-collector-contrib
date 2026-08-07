@@ -240,6 +240,7 @@ processor/redactionprocessor
 processor/remotetapprocessor
 processor/resourceprocessor
 processor/schemaprocessor
+processor/signingprocessor
 processor/spanprocessor
 processor/spanpruningprocessor
 processor/sumologicprocessor
