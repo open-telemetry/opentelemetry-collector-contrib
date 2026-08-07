@@ -4,6 +4,7 @@ display_name: OpenSearch Exporter
 status:
   class: exporter
   stability:
+    development: [metrics]
     alpha: [traces, logs]
   distributions: [contrib]
   codeowners:
