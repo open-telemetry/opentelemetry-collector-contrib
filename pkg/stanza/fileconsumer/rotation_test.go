@@ -141,9 +141,6 @@ func TestMoveCreate(t *testing.T) {
 }
 
 func TestMoveFile(t *testing.T) {
-	if runtime.GOOS == windowsOS {
-		t.Skip("Moving files while open is unsupported on Windows")
-	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -169,9 +166,6 @@ func TestMoveFile(t *testing.T) {
 }
 
 func TestTrackMovedAwayFiles(t *testing.T) {
-	if runtime.GOOS == windowsOS {
-		t.Skip("Moving files while open is unsupported on Windows")
-	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -201,6 +195,9 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	movedFile, err := os.OpenFile(newFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	require.NoError(t, err)
 	filetest.WriteString(t, movedFile, "testlog2\n")
+	// Close our write handle before the poll. On Windows os.OpenFile does not set
+	// FILE_SHARE_DELETE, so leaving it open would block temp dir cleanup.
+	require.NoError(t, movedFile.Close())
 	operator.poll(t.Context())
 
 	sink.ExpectToken(t, []byte("testlog2"))
@@ -209,9 +206,6 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 // Check if we read log lines from a rotated file before lines from the newly created file
 // Note that we don't guarantee ordering based on file identity - only that we read from rotated files first
 func TestTrackRotatedFilesLogOrder(t *testing.T) {
-	if runtime.GOOS == windowsOS {
-		t.Skip("Moving files while open is unsupported on Windows")
-	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -244,6 +238,9 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	newFile, err := os.OpenFile(orginalName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	require.NoError(t, err)
 	filetest.WriteString(t, newFile, "testlog3\n")
+	// Close our write handle so it does not block temp dir cleanup on Windows,
+	// where os.OpenFile does not set FILE_SHARE_DELETE.
+	require.NoError(t, newFile.Close())
 
 	sink.ExpectTokens(t, []byte("testlog2"), []byte("testlog3"))
 
@@ -261,9 +258,6 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 // When a file it rotated out of pattern via move/create, we should
 // detect that our old handle is still valid attempt to read from it.
 func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
-	if runtime.GOOS == windowsOS {
-		t.Skip("Moving files while open is unsupported on Windows")
-	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
