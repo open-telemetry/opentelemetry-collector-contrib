@@ -46,6 +46,7 @@ Editors:
 Available Editors:
 
 - [append](#append)
+- [clear](#clear)
 - [delete_index](#delete_index)
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
@@ -74,6 +75,18 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 - `append(log.attributes["tags"], "prod")`
 - `append(log.attributes["tags"], values = ["staging", "staging:east"])`
 - `append(log.attributes["tags_copy"], log.attributes["tags"])`
+
+### clear
+
+`clear(target)`
+
+The `clear` function infers the zero-value of the `target` and passes it to the `target`'s setter. How the zero-value is handled depends entirely on the specific target's implementation. 
+
+For example, clearing a string field will set it to `""`, and clearing an integer field will set it to `0`. If the target's value is `nil` or the zero-value cannot be inferred, an error may be returned.
+
+**Examples:**
+- `clear(attributes["http.method"])`
+- `clear(resource.attributes["host.name"])`
 
 ### delete_index
 
