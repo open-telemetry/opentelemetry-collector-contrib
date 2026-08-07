@@ -19,11 +19,11 @@ require (
 	github.com/zeebo/xxh3 v1.1.0
 	go.opentelemetry.io/collector/client v1.64.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/collector/component v1.64.1-0.20260805181402-19664a7b14af
-	go.opentelemetry.io/collector/component/componenttest v0.158.0
+	go.opentelemetry.io/collector/component/componenttest v0.158.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/collector/featuregate v1.64.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/collector/pdata v1.64.1-0.20260805181402-19664a7b14af
-	go.opentelemetry.io/collector/pdata/pprofile v0.158.0
-	go.opentelemetry.io/collector/pdata/xpdata v0.158.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.158.1-0.20260805181402-19664a7b14af
+	go.opentelemetry.io/collector/pdata/xpdata v0.158.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/otel/trace v1.44.0
 	go.uber.org/goleak v1.3.0
