@@ -7,12 +7,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/goccy/go-json"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -28,33 +28,9 @@ const (
 	crioFormat          = "crio"
 	containerdFormat    = "containerd"
 	recombineInternalID = "recombine_container_internal"
-	dockerPattern       = "^\\{"
-	crioPattern         = "^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
-	containerdPattern   = "^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
-	logpathPattern      = "^.*(\\/|\\\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\\-]+)(\\/|\\\\)(?P<container_name>[^\\._]+)(\\/|\\\\)(?P<restart_count>\\d+)\\.log(\\.\\d{8}-\\d{6})?$"
 	logPathField        = attrs.LogFilePath
 	crioTimeLayout      = "2006-01-02T15:04:05.999999999Z07:00"
 	goTimeLayout        = "2006-01-02T15:04:05.999Z"
-)
-
-var (
-	dockerMatcher     = regexp.MustCompile(dockerPattern)
-	crioMatcher       = regexp.MustCompile(crioPattern)
-	containerdMatcher = regexp.MustCompile(containerdPattern)
-	pathMatcher       = regexp.MustCompile(logpathPattern)
-)
-
-var (
-	logFieldsMapping = map[string]string{
-		"stream": "log.iostream",
-	}
-	k8sMetadataMapping = map[string]string{
-		"container_name": "k8s.container.name",
-		"namespace":      "k8s.namespace.name",
-		"pod_name":       "k8s.pod.name",
-		"restart_count":  "k8s.container.restart_count",
-		"uid":            "k8s.pod.uid",
-	}
 )
 
 // Parser is an operator that parses Container logs.
@@ -67,6 +43,7 @@ type Parser struct {
 	recombineStarted        bool
 	recombineStartOnce      sync.Once
 	timeLayout              string
+	cache                   *lru.Cache[string, map[string]any]
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
@@ -89,13 +66,10 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 			continue
 		}
 
-		format := p.format
-		if format == "" {
-			format, err = p.detectFormat(ent)
-			if err != nil {
-				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, fmt.Errorf("failed to detect a valid container log format: %w", err), write))
-				continue
-			}
+		fields, format, err := p.parseEntry(ent)
+		if err != nil {
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, fmt.Errorf("failed to parse entry: %w", err), write))
+			continue
 		}
 
 		switch format {
@@ -128,23 +102,16 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 				p.recombineStarted = true
 			})
 
-			if format == containerdFormat {
-				err = p.ParseWith(ctx, ent, p.parseContainerd, write)
-				if err != nil {
-					if !errors.Is(err, helper.ErrEntryHandled) {
-						errs = append(errs, fmt.Errorf("failed to parse containerd log: %w", err))
-					}
-					continue
+			capturedFields := fields
+			if err = p.ParseWith(ctx, ent, func(_ any) (any, error) { return capturedFields, nil }, write); err != nil {
+				if !errors.Is(err, helper.ErrEntryHandled) {
+					errs = append(errs, fmt.Errorf("failed to parse cri log: %w", err))
 				}
+				continue
+			}
+			if format == containerdFormat {
 				p.timeLayout = goTimeLayout
 			} else {
-				err = p.ParseWith(ctx, ent, p.parseCRIO, write)
-				if err != nil {
-					if !errors.Is(err, helper.ErrEntryHandled) {
-						errs = append(errs, fmt.Errorf("failed to parse crio log: %w", err))
-					}
-					continue
-				}
 				p.timeLayout = crioTimeLayout
 			}
 
@@ -185,12 +152,9 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 		return p.Write(ctx, entry)
 	}
 
-	format := p.format
-	if format == "" {
-		format, err = p.detectFormat(entry)
-		if err != nil {
-			return p.HandleEntryError(ctx, entry, fmt.Errorf("failed to detect a valid container log format: %w", err))
-		}
+	fields, format, err := p.parseEntry(entry)
+	if err != nil {
+		return p.HandleEntryError(ctx, entry, fmt.Errorf("failed to parse entry: %w", err))
 	}
 
 	switch format {
@@ -215,25 +179,17 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			p.recombineStarted = true
 		})
 
-		if format == containerdFormat {
-			// parse the message
-			err = p.ParseWith(ctx, entry, p.parseContainerd, p.Write)
-			if err != nil {
-				if errors.Is(err, helper.ErrEntryHandled) {
-					return nil
-				}
-				return fmt.Errorf("failed to parse containerd log: %w", err)
+		capturedFields := fields
+		err = p.ParseWith(ctx, entry, func(_ any) (any, error) { return capturedFields, nil }, p.Write)
+		if err != nil {
+			if errors.Is(err, helper.ErrEntryHandled) {
+				return nil
 			}
+			return fmt.Errorf("failed to parse cri log: %w", err)
+		}
+		if format == containerdFormat {
 			p.timeLayout = goTimeLayout
 		} else {
-			// parse the message
-			err = p.ParseWith(ctx, entry, p.parseCRIO, p.Write)
-			if err != nil {
-				if errors.Is(err, helper.ErrEntryHandled) {
-					return nil
-				}
-				return fmt.Errorf("failed to parse crio log: %w", err)
-			}
 			p.timeLayout = crioTimeLayout
 		}
 
@@ -288,47 +244,42 @@ func (p *Parser) Stop() error {
 	return errs
 }
 
-// detectFormat will detect the container log format
-func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
+// parseEntry reads the raw value from the entry and detects its format via splitCRI.
+// If p.format is pinned in config, the detected format must match — a mismatch is an error.
+func (p *Parser) parseEntry(e *entry.Entry) (map[string]any, string, error) {
 	value, ok := e.Get(p.ParseFrom)
 	if !ok {
-		return "", errors.New("entry cannot be parsed as container logs")
+		return nil, "", errors.New("entry cannot be parsed as container logs")
 	}
 
 	raw, ok := value.(string)
 	if !ok {
-		return "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
+		return nil, "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
 	}
 
-	switch {
-	case dockerMatcher.MatchString(raw):
-		return dockerFormat, nil
-	case crioMatcher.MatchString(raw):
-		return crioFormat, nil
-	case containerdMatcher.MatchString(raw):
-		return containerdFormat, nil
-	}
-	return "", fmt.Errorf("entry cannot be parsed as container logs: %v", value)
-}
+	var detected string
+	var fields map[string]any
 
-// parseCRIO will parse a crio log value based on a fixed regexp
-func (*Parser) parseCRIO(value any) (any, error) {
-	raw, ok := value.(string)
-	if !ok {
-		return "", fmt.Errorf("type '%T' cannot be parsed as cri-o container logs", value)
-	}
-
-	return helper.MatchValues(raw, crioMatcher)
-}
-
-// parseContainerd will parse a containerd log value based on a fixed regexp
-func (*Parser) parseContainerd(value any) (any, error) {
-	raw, ok := value.(string)
-	if !ok {
-		return nil, fmt.Errorf("type '%T' cannot be parsed as containerd logs", value)
+	if raw != "" && raw[0] == '{' {
+		detected = dockerFormat
+	} else {
+		var containerd bool
+		fields, containerd, ok = splitCRI(raw)
+		if !ok {
+			return nil, "", errors.New("entry cannot be split to CRI fields")
+		}
+		if containerd {
+			detected = containerdFormat
+		} else {
+			detected = crioFormat
+		}
 	}
 
-	return helper.MatchValues(raw, containerdMatcher)
+	if p.format != "" && p.format != detected {
+		return nil, "", fmt.Errorf("entry detected as %s but format is configured as %s", detected, p.format)
+	}
+
+	return fields, detected, nil
 }
 
 // parseDocker will parse a docker log value as JSON
@@ -357,12 +308,8 @@ func (p *Parser) handleTimeAndAttributeMappings(e *entry.Entry) error {
 	if err != nil {
 		return err
 	}
-	err = p.extractk8sMetaFromFilePath(e)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return p.extractk8sMetaFromFilePath(e)
 }
 
 // handleMoveAttributes moves fields to final attributes
@@ -373,14 +320,8 @@ func (*Parser) handleMoveAttributes(e *entry.Entry) error {
 	if err != nil {
 		return err
 	}
-	// then move the rest of the fields
-	for originalKey, mappedKey := range logFieldsMapping {
-		err = moveField(e, originalKey, mappedKey)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+
+	return moveField(e, "stream", "log.iostream")
 }
 
 // extractk8sMetaFromFilePath extracts metadata attributes from logfilePath
@@ -403,15 +344,30 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 		return fmt.Errorf("type '%T' cannot be parsed as log path field", logPath)
 	}
 
-	parsedValues, err := helper.MatchValues(rawLogPath, pathMatcher)
-	if err != nil {
+	var parsedValues map[string]any
+	if p.cache != nil {
+		if parsedValues, ok = p.cache.Get(rawLogPath); ok {
+			return p.setK8sMetadataFromParsedValues(e, parsedValues)
+		}
+	}
+
+	parsedValues, ok = parseLogPath(rawLogPath)
+	if !ok {
 		return errors.New("failed to detect a valid log path")
 	}
 
-	for originalKey, attributeKey := range k8sMetadataMapping {
+	if p.cache != nil {
+		p.cache.Add(rawLogPath, parsedValues)
+	}
+
+	return p.setK8sMetadataFromParsedValues(e, parsedValues)
+}
+
+func (*Parser) setK8sMetadataFromParsedValues(e *entry.Entry, parsedValues map[string]any) error {
+	for attributeKey, value := range parsedValues {
 		newField := entry.NewResourceField(attributeKey)
-		if err := newField.Set(e, parsedValues[originalKey]); err != nil {
-			return fmt.Errorf("failed to set %v as metadata at %v", originalKey, attributeKey)
+		if err := newField.Set(e, value); err != nil {
+			return fmt.Errorf("failed to set %v as metadata at %v", value, attributeKey)
 		}
 	}
 	return nil
@@ -472,4 +428,217 @@ func parseTime(e *entry.Entry, layout string) error {
 	e.Delete(entry.NewAttributeField(parseFrom))
 
 	return nil
+}
+
+// splitCRI parses a raw CRI log line (containerd or crio format) without regex.
+// It returns the parsed fields as a map, whether the format is containerd (vs crio), and whether parsing succeeded.
+func splitCRI(raw string) (map[string]any, bool, bool) {
+	i := strings.IndexByte(raw, ' ')
+	if i <= 0 {
+		return nil, false, false
+	}
+	timeVal := raw[:i]
+	containerd := false
+	if raw[i-1] == 'Z' {
+		// containerd: [^ ^Z]+Z — excludes space, caret, and any Z before the trailing one
+		if strings.ContainsAny(timeVal[:len(timeVal)-1], " ^Z") {
+			return nil, false, false
+		}
+		containerd = true
+	} else if strings.IndexByte(timeVal, 'Z') >= 0 { // crio: [^ Z]+
+		return nil, false, false
+	}
+
+	rest := raw[i+1:]
+	const n = len("stdout")
+	if len(rest) < n+1 || rest[n] != ' ' {
+		return nil, false, false
+	}
+	stream := rest[:n]
+	if stream != "stdout" && stream != "stderr" {
+		return nil, false, false
+	}
+	rest = rest[n+1:]
+
+	var logtag, log string
+	if before, after, ok := strings.Cut(rest, " "); ok {
+		logtag, log = before, after
+	} else {
+		logtag = rest
+	}
+
+	return map[string]any{
+		"time":   timeVal,
+		"stream": stream,
+		"logtag": logtag,
+		"log":    log,
+	}, containerd, true
+}
+
+// stripLogSuffix validates and strips the log file suffix from a path.
+// Returns the path without the suffix and true on success, empty string and false otherwise.
+// Accepted: ".log"  or  ".log.YYYYMMDD-HHMMSS"  (mirrors \.log(\.\d{8}-\d{6})?$)
+func stripLogSuffix(raw string) (string, bool) {
+	const logExt = ".log"
+	idx := strings.LastIndex(raw, logExt)
+	if idx < 0 {
+		return "", false
+	}
+	after := raw[idx+len(logExt):]
+	switch {
+	case after == "":
+		// exactly ".log"
+		return raw[:idx], true
+	case len(after) == 16 && after[0] == '.' && after[9] == '-':
+		// ".log.YYYYMMDD-HHMMSS" — validate digits
+		rotation := after[1:] // "YYYYMMDD-HHMMSS"
+		for i, c := range rotation {
+			if i == 8 {
+				if c != '-' {
+					return "", false
+				}
+			} else if c < '0' || c > '9' {
+				return "", false
+			}
+		}
+		return raw[:idx], true
+	default:
+		return "", false
+	}
+}
+
+// parseLogPath parses a Kubernetes pod log file path without regex.
+// The expected format is: .../<namespace>_<pod_name>_<uid>/<container_name>/<restart_count>.log[.<rotation>]
+// It returns the parsed fields keyed by OTel resource attribute names, and whether parsing succeeded.
+//
+// Validation rules (mirrors the previous regex):
+//   - namespace/pod_name: any non-empty string not containing '_' (triplet is split by '_')
+//   - uid: lowercase hex and '-' (no length enforcement)
+//   - container_name: any non-empty string not containing '\\', '.', or '_'
+//   - restart_count: digits only
+//   - suffix: exactly ".log" or ".log." followed by 8 digits, a hyphen, and 6 digits
+func parseLogPath(raw string) (map[string]any, bool) {
+	// Validate and strip the suffix before touching any other path components.
+	base, ok := stripLogSuffix(raw)
+	if !ok {
+		return nil, false
+	}
+
+	sep2 := strings.LastIndexAny(base, "/\\")
+	if sep2 < 0 {
+		return nil, false
+	}
+	restartCount := base[sep2+1:]
+	if !isDigits(restartCount) {
+		return nil, false
+	}
+	base = base[:sep2]
+
+	sep1 := strings.LastIndexAny(base, "/\\")
+	if sep1 < 0 {
+		return nil, false
+	}
+	containerName := base[sep1+1:]
+	if !isContainerName(containerName) {
+		return nil, false
+	}
+	base = base[:sep1]
+
+	sep0 := strings.LastIndexAny(base, "/\\")
+	if sep0 < 0 {
+		return nil, false
+	}
+	triplet := base[sep0+1:]
+	if triplet == "" {
+		return nil, false
+	}
+
+	lastUnd := strings.LastIndex(triplet, "_")
+	if lastUnd < 0 {
+		return nil, false
+	}
+	uid := triplet[lastUnd+1:]
+	if !isUID(uid) {
+		return nil, false
+	}
+	triplet = triplet[:lastUnd]
+
+	lastUnd = strings.LastIndex(triplet, "_")
+	if lastUnd < 0 {
+		return nil, false
+	}
+	ns := triplet[:lastUnd]
+	pod := triplet[lastUnd+1:]
+
+	if !isNamespace(ns) {
+		return nil, false
+	}
+	if !isPodName(pod) {
+		return nil, false
+	}
+
+	return map[string]any{
+		"k8s.namespace.name":          ns,
+		"k8s.pod.name":                pod,
+		"k8s.pod.uid":                 uid,
+		"k8s.container.name":          containerName,
+		"k8s.container.restart_count": restartCount,
+	}, true
+}
+
+// isNamespace matches [^_]+ from the regex — any char except underscore, one or more.
+func isNamespace(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if c == '_' {
+			return false
+		}
+	}
+	return true
+}
+
+// isPodName matches [^_]+ from the regex — any char except underscore, one or more.
+func isPodName(s string) bool {
+	return isNamespace(s)
+}
+
+// isContainerName matches [^\._]+ from the regex — any char except backslash, dot, and underscore.
+func isContainerName(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if c == '\\' || c == '.' || c == '_' {
+			return false
+		}
+	}
+	return true
+}
+
+// isUID matches [a-f0-9\-]+ from the regex — lowercase hex and hyphens, one or more chars.
+func isUID(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if (c < 'a' || c > 'f') && (c < '0' || c > '9') && c != '-' {
+			return false
+		}
+	}
+	return true
+}
+
+// isDigits returns true if s is a non-empty string of ASCII digits.
+func isDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
 }
