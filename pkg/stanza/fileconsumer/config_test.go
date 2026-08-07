@@ -42,6 +42,7 @@ func TestNewConfig(t *testing.T) {
 	assert.False(t, cfg.IncludeFilePermissions)
 	assert.False(t, cfg.IncludeFileRecordNumber)
 	assert.False(t, cfg.AcquireFSLock)
+	assert.False(t, cfg.SkipUnmodifiedFiles)
 }
 
 func TestUnmarshal(t *testing.T) {
@@ -581,6 +582,16 @@ func TestBuild(t *testing.T) {
 			require.NoError,
 			func(t *testing.T, m *Manager) {
 				require.Equal(t, 6, m.maxBatches)
+			},
+		},
+		{
+			"SkipUnmodifiedFiles",
+			func(cfg *Config) {
+				cfg.SkipUnmodifiedFiles = true
+			},
+			require.NoError,
+			func(t *testing.T, m *Manager) {
+				require.True(t, m.skipUnmodifiedFiles)
 			},
 		},
 		{
