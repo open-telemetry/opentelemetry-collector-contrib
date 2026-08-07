@@ -6,10 +6,10 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
+	"go.uber.org/zap"
 )
 
 var xmlPlanObfuscationAttrs = []string{
@@ -38,7 +38,7 @@ func (o *obfuscator) obfuscateSQLString(sql string) (string, error) {
 }
 
 // obfuscateXMLPlan obfuscates SQL text & parameters from the provided SQL Server XML Plan
-func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
+func (o *obfuscator) obfuscateXMLPlan(rawPlan string, logger *zap.Logger) (string, error) {
 	decoder := xml.NewDecoder(strings.NewReader(rawPlan))
 	var buffer bytes.Buffer
 	encoder := xml.NewEncoder(&buffer)
@@ -62,8 +62,11 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 						}
 						val, err := o.obfuscateSQLString(elem.Attr[i].Value)
 						if err != nil {
-							fmt.Println("Unable to obfuscate SQL statement in query plan, skipping: " + elem.Attr[i].Value)
-							return "", nil
+							logger.Warn("Unable to obfuscate SQL statement in query plan, replacing with ?",
+								zap.String("attr", attrName),
+								zap.Error(err))
+							elem.Attr[i].Value = "?"
+							continue
 						}
 						elem.Attr[i].Value = val
 					}
