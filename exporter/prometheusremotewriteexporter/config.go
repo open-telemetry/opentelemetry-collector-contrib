@@ -7,12 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"net/textproto"
+	"slices"
 
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
@@ -35,7 +37,12 @@ type Config struct {
 	// ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"
 	ExternalLabels map[string]string `mapstructure:"external_labels"`
 
-	ClientConfig confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	// Deprecated [v0.158.0]: configure client http settings under `http` block
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
+
+	// HTTP defines the HTTP client configuration in a nested block.
+	// This field takes precedence over the squashed ClientConfig when set.
+	HTTP confighttp.ClientConfig `mapstructure:"http"`
 
 	// maximum size in bytes of time series batch sent to remote storage
 	MaxBatchSizeBytes int `mapstructure:"max_batch_size_bytes"`
@@ -141,6 +148,57 @@ var reservedRemoteWriteHeaders = map[string]struct{}{
 
 var _ component.Config = (*Config)(nil)
 
+var topLevelHTTPClientKeys = []string{
+	"endpoint",
+	"proxy_url",
+	"tls",
+	"headers",
+	"auth",
+	"compression",
+	"compression_params",
+	"read_buffer_size",
+	"write_buffer_size",
+	"max_idle_conns",
+	"max_idle_conns_per_host",
+	"max_conns_per_host",
+	"idle_conn_timeout",
+	"disable_keep_alives",
+	"http2_read_idle_timeout",
+	"http2_ping_timeout",
+	"cookies",
+	"middlewares",
+	"force_attempt_http2",
+}
+
+func hasTopLevelHTTPClientSettings(conf *confmap.Conf) bool {
+	return slices.ContainsFunc(topLevelHTTPClientKeys, func(key string) bool {
+		return conf.IsSet(key)
+	})
+}
+
+// Unmarshal unmarshals the configuration and handles HTTP config precedence.
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(cfg); err != nil {
+		return err
+	}
+
+	if !conf.IsSet("http") && !metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate.IsEnabled() {
+		cfg.HTTP = cfg.ClientConfig
+		// we explicitly set an empty struct for TestLoadConfig to work. ClientConfig is not referenced outside tests
+		cfg.ClientConfig = confighttp.ClientConfig{}
+	}
+
+	if metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate.IsEnabled() {
+		// When the remove-top-level gate is enabled, reject deprecated flat HTTP client keys.
+		if hasTopLevelHTTPClientSettings(conf) {
+			return fmt.Errorf("top-level HTTP client settings are not allowed when feature gate %s is enabled; move them under the 'http' block",
+				metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate.ID())
+		}
+	}
+
+	return nil
+}
+
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
 	if cfg.MaxBatchRequestParallelism != nil && *cfg.MaxBatchRequestParallelism < 1 {
@@ -167,7 +225,7 @@ func (cfg *Config) Validate() error {
 		cfg.MaxBatchSizeBytes = 3000000
 	}
 
-	if len(cfg.ClientConfig.Compression) > 0 && cfg.ClientConfig.Compression != "snappy" {
+	if len(cfg.HTTP.Compression) > 0 && cfg.HTTP.Compression != "snappy" {
 		return errors.New("compression type must be snappy")
 	}
 

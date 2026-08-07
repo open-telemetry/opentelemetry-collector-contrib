@@ -52,7 +52,8 @@ func Test_TrimPrefix(t *testing.T) {
 						},
 					},
 					Prefix: tt.prefix,
-				})
+				},
+			)
 			require.NoError(t, err)
 			result, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
