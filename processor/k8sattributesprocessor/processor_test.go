@@ -1112,6 +1112,143 @@ func TestAddNodeUID(t *testing.T) {
 	})
 }
 
+// TestAddClusterUID verifies that k8s.cluster.uid is attached to telemetry that has no pod association but does carry a
+// k8s.* resource attribute, such as cluster- or node-scoped metrics from the k8sclusterreceiver/kubeletstatsreceiver. The
+// cluster UID is derived from the kube-system namespace UID and identifies the cluster the telemetry originates from, so it
+// is stamped on any resource that belongs to the cluster, not only on pod-associated telemetry.
+func TestAddClusterUID(t *testing.T) {
+	clusterUID := "cluster-uid-1234"
+	m := newMultiTest(
+		t,
+		func() component.Config {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Extract.Metadata = []string{"k8s.cluster.uid"}
+			cfg.Extract.Labels = []FieldExtractConfig{}
+			return cfg
+		}(),
+		nil,
+	)
+
+	// No pod is present and no pod association matches, mimicking cluster-scoped telemetry that carries no pod
+	// identifier but does carry a k8s.* attribute (here k8s.node.name, as emitted for node-scoped metrics). The
+	// kube-system namespace is known to the client so its UID can be used as the cluster UID.
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.kc.(*fakeClient).Namespaces = map[string]*kube.Namespace{
+			"kube-system": {Name: "kube-system", NamespaceUID: clusterUID},
+		}
+	})
+
+	withNodeName := func(nodeName string) generateResourceFunc {
+		return func(res pcommon.Resource) {
+			res.Attributes().PutStr("k8s.node.name", nodeName)
+		}
+	}
+
+	m.testConsume(
+		t.Context(),
+		generateTraces(withNodeName("node-1")),
+		generateMetrics(withNodeName("node-1")),
+		generateLogs(withNodeName("node-1")),
+		generateProfiles(withNodeName("node-1")),
+		func(err error) {
+			assert.NoError(t, err)
+		})
+
+	m.assertBatchesLen(1)
+	m.assertResource(0, func(res pcommon.Resource) {
+		assertResourceHasStringAttribute(t, res, "k8s.cluster.uid", clusterUID)
+	})
+}
+
+// TestClusterUIDNotAddedToExternalTelemetry verifies that k8s.cluster.uid is not attached to telemetry that carries no
+// k8s.* resource attribute, i.e. telemetry that was not identified as belonging to the collector's cluster (for example
+// telemetry collected from outside the cluster via a cloud receiver). Stamping it with this cluster's UID would be wrong.
+func TestClusterUIDNotAddedToExternalTelemetry(t *testing.T) {
+	clusterUID := "cluster-uid-1234"
+	m := newMultiTest(
+		t,
+		func() component.Config {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Extract.Metadata = []string{"k8s.cluster.uid"}
+			cfg.Extract.Labels = []FieldExtractConfig{}
+			return cfg
+		}(),
+		nil,
+	)
+
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.kc.(*fakeClient).Namespaces = map[string]*kube.Namespace{
+			"kube-system": {Name: "kube-system", NamespaceUID: clusterUID},
+		}
+	})
+
+	// The generated telemetry carries no k8s.* attribute and no pod association matches, so the resource is not
+	// identified as belonging to this cluster.
+	m.testConsume(
+		t.Context(),
+		generateTraces(),
+		generateMetrics(),
+		generateLogs(),
+		generateProfiles(),
+		func(err error) {
+			assert.NoError(t, err)
+		})
+
+	m.assertBatchesLen(1)
+	m.assertResource(0, func(res pcommon.Resource) {
+		_, ok := res.Attributes().Get("k8s.cluster.uid")
+		assert.False(t, ok, "k8s.cluster.uid must not be added to telemetry with no k8s.* attribute")
+	})
+}
+
+// TestClusterUIDNotOverwritten verifies that a k8s.cluster.uid already present on incoming telemetry is preserved and not
+// replaced with this collector's cluster UID. This matters for gateway/central-collector setups where telemetry forwarded
+// from another cluster may already carry its own (correct) cluster UID, which must win over the local kube-system UID.
+// Note that this setup is not recommended anyway, the multi-cluster gateway should not extract k8s.cluster.uid.
+func TestClusterUIDNotOverwritten(t *testing.T) {
+	localClusterUID := "cluster-uid-1234"
+	existingClusterUID := "preexisting-cluster-uid"
+	m := newMultiTest(
+		t,
+		func() component.Config {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Extract.Metadata = []string{"k8s.cluster.uid"}
+			cfg.Extract.Labels = []FieldExtractConfig{}
+			return cfg
+		}(),
+		nil,
+	)
+
+	// The kube-system namespace is known to the client so a local cluster UID could be resolved, but the incoming
+	// telemetry already carries its own k8s.cluster.uid which must not be overwritten.
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.kc.(*fakeClient).Namespaces = map[string]*kube.Namespace{
+			"kube-system": {Name: "kube-system", NamespaceUID: localClusterUID},
+		}
+	})
+
+	withExistingClusterUID := func(uid string) generateResourceFunc {
+		return func(res pcommon.Resource) {
+			res.Attributes().PutStr("k8s.cluster.uid", uid)
+		}
+	}
+
+	m.testConsume(
+		t.Context(),
+		generateTraces(withExistingClusterUID(existingClusterUID)),
+		generateMetrics(withExistingClusterUID(existingClusterUID)),
+		generateLogs(withExistingClusterUID(existingClusterUID)),
+		generateProfiles(withExistingClusterUID(existingClusterUID)),
+		func(err error) {
+			assert.NoError(t, err)
+		})
+
+	m.assertBatchesLen(1)
+	m.assertResource(0, func(res pcommon.Resource) {
+		assertResourceHasStringAttribute(t, res, "k8s.cluster.uid", existingClusterUID)
+	})
+}
+
 func TestProcessorAddContainerAttributes(t *testing.T) {
 	tests := []struct {
 		name         string
