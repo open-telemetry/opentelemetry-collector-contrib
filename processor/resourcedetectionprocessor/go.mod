@@ -48,6 +48,7 @@ require (
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.158.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/collector/receiver/receivertest v0.158.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0
+	go.opentelemetry.io/contrib/detectors/vultr v0.17.0
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/metric v1.45.0
 	go.opentelemetry.io/otel/sdk v1.45.0
