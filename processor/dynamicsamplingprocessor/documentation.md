@@ -16,7 +16,7 @@ Distribution of effective sample rates produced per rule. Useful for detecting a
 
 ### otelcol_processor_dynamic_sampling_decision_triggers
 
-Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction).
+Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown).
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
