@@ -62,6 +62,7 @@ type opampAgent struct {
 	resourceAttrs     map[string]string
 
 	instanceUID uuid.UUID
+	extensionID component.ID
 
 	eclk            sync.RWMutex
 	effectiveConfig *confmap.Conf
@@ -106,8 +107,15 @@ var (
 )
 
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
+	selfInstanceID := componentstatus.NewInstanceID(o.extensionID, component.KindExtension)
 	o.reportFunc = func(event *componentstatus.Event) {
-		componentstatus.ReportStatus(host, event)
+		// The service starts extensions with the bare graph.Host, which does not
+		// implement componentstatus.Reporter (only pipeline components are handed
+		// a Reporter-capable host wrapper). componentstatus.ReportStatus would
+		// therefore silently no-op, so route self-reported events -- such as the
+		// fatal error monitorPPID emits when the parent process disappears --
+		// straight to this extension's own status aggregator.
+		o.ComponentStatusChanged(selfInstanceID, event)
 	}
 
 	header := http.Header{}
@@ -332,6 +340,7 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		serviceVersion:           serviceVersion,
 		serviceInstanceID:        serviceInstanceID,
 		instanceUID:              uid,
+		extensionID:              set.ID,
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
 		resourceAttrs:            resourceAttrs,

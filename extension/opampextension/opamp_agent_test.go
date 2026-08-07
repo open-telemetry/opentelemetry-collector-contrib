@@ -267,6 +267,44 @@ func TestStartAvailableComponents(t *testing.T) {
 	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
+// TestReportFuncReachesStatusAggregatorRegardlessOfHostReporter verifies that a
+// status reported through o.reportFunc (e.g. the fatal error monitorPPID emits when
+// the parent process disappears) always reaches the status aggregator, even when the
+// component.Host passed to Start does not implement componentstatus.Reporter. Without
+// this, PPID-orphan detection silently fails to mark the collector unhealthy.
+func TestReportFuncReachesStatusAggregatorRegardlessOfHostReporter(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
+
+	sa := &mockStatusAggregator{mtx: &sync.RWMutex{}}
+
+	o := newTestOpampAgent(cfg, set, &mockOpAMPClient{
+		setHealthFunc: func(_ *protobufs.ComponentHealth) error { return nil },
+	}, sa)
+
+	o.initHealthReporting()
+
+	// componenttest.NewNopHost() intentionally does not implement componentstatus.Reporter.
+	require.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, o.Ready())
+
+	fatalErr := errors.New("collector was orphaned")
+	o.reportFunc(componentstatus.NewFatalErrorEvent(fatalErr))
+
+	require.Eventually(t, func() bool {
+		sa.mtx.RLock()
+		defer sa.mtx.RUnlock()
+		return len(sa.receivedEvents) == 1
+	}, 5*time.Second, 100*time.Millisecond)
+
+	sa.mtx.RLock()
+	defer sa.mtx.RUnlock()
+	require.Equal(t, componentstatus.StatusFatalError, sa.receivedEvents[0].event.Status())
+	require.Equal(t, fatalErr, sa.receivedEvents[0].event.Err())
+
+	require.NoError(t, o.Shutdown(t.Context()))
+}
+
 // availableComponentsHost mocks a receiver.ReceiverHost for test purposes.
 type availableComponentsHost struct {
 	t *testing.T
