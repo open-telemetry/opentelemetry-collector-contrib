@@ -104,6 +104,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerCPUUtilization: ContainerCPUUtilizationMetricConfig{
 						Enabled: true,
 					},
+					ContainerHealthStatus: ContainerHealthStatusMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerHealthStatusMetricAttributeKey{ContainerHealthStatusMetricAttributeKeyContainerHealthStatus},
+					},
 					ContainerMemoryActiveAnon: ContainerMemoryActiveAnonMetricConfig{
 						Enabled: true,
 					},
@@ -367,6 +372,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerCPUUtilization: ContainerCPUUtilizationMetricConfig{
 						Enabled: false,
 					},
+					ContainerHealthStatus: ContainerHealthStatusMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerHealthStatusMetricAttributeKey{ContainerHealthStatusMetricAttributeKeyContainerHealthStatus},
+					},
 					ContainerMemoryActiveAnon: ContainerMemoryActiveAnonMetricConfig{
 						Enabled: false,
 					},
@@ -552,7 +562,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerBlockioIoMergedRecursiveMetricConfig{}, ContainerBlockioIoQueuedRecursiveMetricConfig{}, ContainerBlockioIoServiceBytesRecursiveMetricConfig{}, ContainerBlockioIoServiceTimeRecursiveMetricConfig{}, ContainerBlockioIoServicedRecursiveMetricConfig{}, ContainerBlockioIoTimeRecursiveMetricConfig{}, ContainerBlockioIoWaitTimeRecursiveMetricConfig{}, ContainerBlockioSectorsRecursiveMetricConfig{}, ContainerCPULimitMetricConfig{}, ContainerCPULogicalCountMetricConfig{}, ContainerCPUSharesMetricConfig{}, ContainerCPUThrottlingDataPeriodsMetricConfig{}, ContainerCPUThrottlingDataThrottledPeriodsMetricConfig{}, ContainerCPUThrottlingDataThrottledTimeMetricConfig{}, ContainerCPUUsageKernelmodeMetricConfig{}, ContainerCPUUsagePercpuMetricConfig{}, ContainerCPUUsageSystemMetricConfig{}, ContainerCPUUsageTotalMetricConfig{}, ContainerCPUUsageUsermodeMetricConfig{}, ContainerCPUUtilizationMetricConfig{}, ContainerMemoryActiveAnonMetricConfig{}, ContainerMemoryActiveFileMetricConfig{}, ContainerMemoryAnonMetricConfig{}, ContainerMemoryCacheMetricConfig{}, ContainerMemoryDirtyMetricConfig{}, ContainerMemoryFailsMetricConfig{}, ContainerMemoryFileMetricConfig{}, ContainerMemoryHierarchicalMemoryLimitMetricConfig{}, ContainerMemoryHierarchicalMemswLimitMetricConfig{}, ContainerMemoryInactiveAnonMetricConfig{}, ContainerMemoryInactiveFileMetricConfig{}, ContainerMemoryMappedFileMetricConfig{}, ContainerMemoryPercentMetricConfig{}, ContainerMemoryPgfaultMetricConfig{}, ContainerMemoryPgmajfaultMetricConfig{}, ContainerMemoryPgpginMetricConfig{}, ContainerMemoryPgpgoutMetricConfig{}, ContainerMemoryRssMetricConfig{}, ContainerMemoryRssHugeMetricConfig{}, ContainerMemoryTotalActiveAnonMetricConfig{}, ContainerMemoryTotalActiveFileMetricConfig{}, ContainerMemoryTotalCacheMetricConfig{}, ContainerMemoryTotalDirtyMetricConfig{}, ContainerMemoryTotalInactiveAnonMetricConfig{}, ContainerMemoryTotalInactiveFileMetricConfig{}, ContainerMemoryTotalMappedFileMetricConfig{}, ContainerMemoryTotalPgfaultMetricConfig{}, ContainerMemoryTotalPgmajfaultMetricConfig{}, ContainerMemoryTotalPgpginMetricConfig{}, ContainerMemoryTotalPgpgoutMetricConfig{}, ContainerMemoryTotalRssMetricConfig{}, ContainerMemoryTotalRssHugeMetricConfig{}, ContainerMemoryTotalUnevictableMetricConfig{}, ContainerMemoryTotalWritebackMetricConfig{}, ContainerMemoryUnevictableMetricConfig{}, ContainerMemoryUsageLimitMetricConfig{}, ContainerMemoryUsageMaxMetricConfig{}, ContainerMemoryUsageTotalMetricConfig{}, ContainerMemoryWritebackMetricConfig{}, ContainerNetworkIoUsageRxBytesMetricConfig{}, ContainerNetworkIoUsageRxDroppedMetricConfig{}, ContainerNetworkIoUsageRxErrorsMetricConfig{}, ContainerNetworkIoUsageRxPacketsMetricConfig{}, ContainerNetworkIoUsageTxBytesMetricConfig{}, ContainerNetworkIoUsageTxDroppedMetricConfig{}, ContainerNetworkIoUsageTxErrorsMetricConfig{}, ContainerNetworkIoUsageTxPacketsMetricConfig{}, ContainerPidsCountMetricConfig{}, ContainerPidsLimitMetricConfig{}, ContainerRestartsMetricConfig{}, ContainerUptimeMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerBlockioIoMergedRecursiveMetricConfig{}, ContainerBlockioIoQueuedRecursiveMetricConfig{}, ContainerBlockioIoServiceBytesRecursiveMetricConfig{}, ContainerBlockioIoServiceTimeRecursiveMetricConfig{}, ContainerBlockioIoServicedRecursiveMetricConfig{}, ContainerBlockioIoTimeRecursiveMetricConfig{}, ContainerBlockioIoWaitTimeRecursiveMetricConfig{}, ContainerBlockioSectorsRecursiveMetricConfig{}, ContainerCPULimitMetricConfig{}, ContainerCPULogicalCountMetricConfig{}, ContainerCPUSharesMetricConfig{}, ContainerCPUThrottlingDataPeriodsMetricConfig{}, ContainerCPUThrottlingDataThrottledPeriodsMetricConfig{}, ContainerCPUThrottlingDataThrottledTimeMetricConfig{}, ContainerCPUUsageKernelmodeMetricConfig{}, ContainerCPUUsagePercpuMetricConfig{}, ContainerCPUUsageSystemMetricConfig{}, ContainerCPUUsageTotalMetricConfig{}, ContainerCPUUsageUsermodeMetricConfig{}, ContainerCPUUtilizationMetricConfig{}, ContainerHealthStatusMetricConfig{}, ContainerMemoryActiveAnonMetricConfig{}, ContainerMemoryActiveFileMetricConfig{}, ContainerMemoryAnonMetricConfig{}, ContainerMemoryCacheMetricConfig{}, ContainerMemoryDirtyMetricConfig{}, ContainerMemoryFailsMetricConfig{}, ContainerMemoryFileMetricConfig{}, ContainerMemoryHierarchicalMemoryLimitMetricConfig{}, ContainerMemoryHierarchicalMemswLimitMetricConfig{}, ContainerMemoryInactiveAnonMetricConfig{}, ContainerMemoryInactiveFileMetricConfig{}, ContainerMemoryMappedFileMetricConfig{}, ContainerMemoryPercentMetricConfig{}, ContainerMemoryPgfaultMetricConfig{}, ContainerMemoryPgmajfaultMetricConfig{}, ContainerMemoryPgpginMetricConfig{}, ContainerMemoryPgpgoutMetricConfig{}, ContainerMemoryRssMetricConfig{}, ContainerMemoryRssHugeMetricConfig{}, ContainerMemoryTotalActiveAnonMetricConfig{}, ContainerMemoryTotalActiveFileMetricConfig{}, ContainerMemoryTotalCacheMetricConfig{}, ContainerMemoryTotalDirtyMetricConfig{}, ContainerMemoryTotalInactiveAnonMetricConfig{}, ContainerMemoryTotalInactiveFileMetricConfig{}, ContainerMemoryTotalMappedFileMetricConfig{}, ContainerMemoryTotalPgfaultMetricConfig{}, ContainerMemoryTotalPgmajfaultMetricConfig{}, ContainerMemoryTotalPgpginMetricConfig{}, ContainerMemoryTotalPgpgoutMetricConfig{}, ContainerMemoryTotalRssMetricConfig{}, ContainerMemoryTotalRssHugeMetricConfig{}, ContainerMemoryTotalUnevictableMetricConfig{}, ContainerMemoryTotalWritebackMetricConfig{}, ContainerMemoryUnevictableMetricConfig{}, ContainerMemoryUsageLimitMetricConfig{}, ContainerMemoryUsageMaxMetricConfig{}, ContainerMemoryUsageTotalMetricConfig{}, ContainerMemoryWritebackMetricConfig{}, ContainerNetworkIoUsageRxBytesMetricConfig{}, ContainerNetworkIoUsageRxDroppedMetricConfig{}, ContainerNetworkIoUsageRxErrorsMetricConfig{}, ContainerNetworkIoUsageRxPacketsMetricConfig{}, ContainerNetworkIoUsageTxBytesMetricConfig{}, ContainerNetworkIoUsageTxDroppedMetricConfig{}, ContainerNetworkIoUsageTxErrorsMetricConfig{}, ContainerNetworkIoUsageTxPacketsMetricConfig{}, ContainerPidsCountMetricConfig{}, ContainerPidsLimitMetricConfig{}, ContainerRestartsMetricConfig{}, ContainerUptimeMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -661,6 +671,18 @@ func TestContainerCPUUsagePercpuMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric container.cpu.usage.percpu doesn't have an attribute invalid, valid attributes: [core]")
 
 	cfg = DefaultMetricsConfig().ContainerCPUUsagePercpu
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerHealthStatusMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerHealthStatus
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerHealthStatusMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.health.status doesn't have an attribute invalid, valid attributes: [container.health.status]")
+
+	cfg = DefaultMetricsConfig().ContainerHealthStatus
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }

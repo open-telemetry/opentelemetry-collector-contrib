@@ -3,15 +3,14 @@
 package metadata
 
 import (
-	"slices"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	"slices"
+	"time"
 )
 
 const (
@@ -20,6 +19,36 @@ const (
 	AggregationStrategyMin = "min"
 	AggregationStrategyMax = "max"
 )
+
+// AttributeContainerHealthStatus specifies the value container.health.status attribute.
+type AttributeContainerHealthStatus int
+
+const (
+	_ AttributeContainerHealthStatus = iota
+	AttributeContainerHealthStatusStarting
+	AttributeContainerHealthStatusHealthy
+	AttributeContainerHealthStatusUnhealthy
+)
+
+// String returns the string representation of the AttributeContainerHealthStatus.
+func (av AttributeContainerHealthStatus) String() string {
+	switch av {
+	case AttributeContainerHealthStatusStarting:
+		return "starting"
+	case AttributeContainerHealthStatusHealthy:
+		return "healthy"
+	case AttributeContainerHealthStatusUnhealthy:
+		return "unhealthy"
+	}
+	return ""
+}
+
+// MapAttributeContainerHealthStatus is a helper map of string to AttributeContainerHealthStatus attribute value.
+var MapAttributeContainerHealthStatus = map[string]AttributeContainerHealthStatus{
+	"starting":  AttributeContainerHealthStatusStarting,
+	"healthy":   AttributeContainerHealthStatusHealthy,
+	"unhealthy": AttributeContainerHealthStatusUnhealthy,
+}
 
 var MetricsInfo = metricsInfo{
 	ContainerBlockioIoMergedRecursive: metricInfo{
@@ -90,6 +119,10 @@ var MetricsInfo = metricsInfo{
 	},
 	ContainerCPUUtilization: metricInfo{
 		Name: "container.cpu.utilization",
+	},
+	ContainerHealthStatus: metricInfo{
+		Name:       "container.health.status",
+		Attributes: []string{"container.health.status"},
 	},
 	ContainerMemoryActiveAnon: metricInfo{
 		Name: "container.memory.active_anon",
@@ -275,6 +308,7 @@ type metricsInfo struct {
 	ContainerCPUUsageTotal                     metricInfo
 	ContainerCPUUsageUsermode                  metricInfo
 	ContainerCPUUtilization                    metricInfo
+	ContainerHealthStatus                      metricInfo
 	ContainerMemoryActiveAnon                  metricInfo
 	ContainerMemoryActiveFile                  metricInfo
 	ContainerMemoryAnon                        metricInfo
@@ -1756,6 +1790,97 @@ func (m *metricContainerCPUUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUUtilization(cfg ContainerCPUUtilizationMetricConfig) metricContainerCPUUtilization {
 	m := metricContainerCPUUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricContainerHealthStatus struct {
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        ContainerHealthStatusMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+}
+
+// init fills container.health.status metric with initial data.
+func (m *metricContainerHealthStatus) init() {
+	m.data.SetName("container.health.status")
+	m.data.SetDescription("Describes the number of containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.")
+	m.data.SetUnit("{container}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricContainerHealthStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, containerHealthStatusAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerHealthStatusMetricAttributeKeyContainerHealthStatus) {
+		dp.Attributes().PutStr("container.health.status", containerHealthStatusAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerHealthStatus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerHealthStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerHealthStatus(cfg ContainerHealthStatusMetricConfig) metricContainerHealthStatus {
+	m := metricContainerHealthStatus{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4754,6 +4879,7 @@ type MetricsBuilder struct {
 	metricContainerCPUUsageTotal                     metricContainerCPUUsageTotal
 	metricContainerCPUUsageUsermode                  metricContainerCPUUsageUsermode
 	metricContainerCPUUtilization                    metricContainerCPUUtilization
+	metricContainerHealthStatus                      metricContainerHealthStatus
 	metricContainerMemoryActiveAnon                  metricContainerMemoryActiveAnon
 	metricContainerMemoryActiveFile                  metricContainerMemoryActiveFile
 	metricContainerMemoryAnon                        metricContainerMemoryAnon
@@ -4850,6 +4976,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricContainerCPUUsageTotal:                     newMetricContainerCPUUsageTotal(mbc.Metrics.ContainerCPUUsageTotal),
 		metricContainerCPUUsageUsermode:                  newMetricContainerCPUUsageUsermode(mbc.Metrics.ContainerCPUUsageUsermode),
 		metricContainerCPUUtilization:                    newMetricContainerCPUUtilization(mbc.Metrics.ContainerCPUUtilization),
+		metricContainerHealthStatus:                      newMetricContainerHealthStatus(mbc.Metrics.ContainerHealthStatus),
 		metricContainerMemoryActiveAnon:                  newMetricContainerMemoryActiveAnon(mbc.Metrics.ContainerMemoryActiveAnon),
 		metricContainerMemoryActiveFile:                  newMetricContainerMemoryActiveFile(mbc.Metrics.ContainerMemoryActiveFile),
 		metricContainerMemoryAnon:                        newMetricContainerMemoryAnon(mbc.Metrics.ContainerMemoryAnon),
@@ -5036,6 +5163,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricContainerCPUUsageTotal.emit(ils.Metrics())
 	mb.metricContainerCPUUsageUsermode.emit(ils.Metrics())
 	mb.metricContainerCPUUtilization.emit(ils.Metrics())
+	mb.metricContainerHealthStatus.emit(ils.Metrics())
 	mb.metricContainerMemoryActiveAnon.emit(ils.Metrics())
 	mb.metricContainerMemoryActiveFile.emit(ils.Metrics())
 	mb.metricContainerMemoryAnon.emit(ils.Metrics())
@@ -5216,6 +5344,11 @@ func (mb *MetricsBuilder) RecordContainerCPUUsageUsermodeDataPoint(ts pcommon.Ti
 // RecordContainerCPUUtilizationDataPoint adds a data point to container.cpu.utilization metric.
 func (mb *MetricsBuilder) RecordContainerCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricContainerCPUUtilization.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordContainerHealthStatusDataPoint adds a data point to container.health.status metric.
+func (mb *MetricsBuilder) RecordContainerHealthStatusDataPoint(ts pcommon.Timestamp, val int64, containerHealthStatusAttributeValue AttributeContainerHealthStatus) {
+	mb.metricContainerHealthStatus.recordDataPoint(mb.startTime, ts, val, containerHealthStatusAttributeValue.String())
 }
 
 // RecordContainerMemoryActiveAnonDataPoint adds a data point to container.memory.active_anon metric.
