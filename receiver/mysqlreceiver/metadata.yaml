@@ -74,7 +74,7 @@ attributes:
   command:
     description: The command types.
     type: string
-    enum: [delete, delete_multi, insert, select, update, update_multi]
+    enum: [alter_table, create_index, create_table, delete, delete_multi, insert, optimize, select, update, update_multi]
     requirement_level: recommended
   connection_error:
     name_override: error

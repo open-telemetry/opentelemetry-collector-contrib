@@ -163,9 +163,13 @@ type AttributeCommand int
 
 const (
 	_ AttributeCommand = iota
+	AttributeCommandAlterTable
+	AttributeCommandCreateIndex
+	AttributeCommandCreateTable
 	AttributeCommandDelete
 	AttributeCommandDeleteMulti
 	AttributeCommandInsert
+	AttributeCommandOptimize
 	AttributeCommandSelect
 	AttributeCommandUpdate
 	AttributeCommandUpdateMulti
@@ -174,12 +178,20 @@ const (
 // String returns the string representation of the AttributeCommand.
 func (av AttributeCommand) String() string {
 	switch av {
+	case AttributeCommandAlterTable:
+		return "alter_table"
+	case AttributeCommandCreateIndex:
+		return "create_index"
+	case AttributeCommandCreateTable:
+		return "create_table"
 	case AttributeCommandDelete:
 		return "delete"
 	case AttributeCommandDeleteMulti:
 		return "delete_multi"
 	case AttributeCommandInsert:
 		return "insert"
+	case AttributeCommandOptimize:
+		return "optimize"
 	case AttributeCommandSelect:
 		return "select"
 	case AttributeCommandUpdate:
@@ -192,9 +204,13 @@ func (av AttributeCommand) String() string {
 
 // MapAttributeCommand is a helper map of string to AttributeCommand attribute value.
 var MapAttributeCommand = map[string]AttributeCommand{
+	"alter_table":  AttributeCommandAlterTable,
+	"create_index": AttributeCommandCreateIndex,
+	"create_table": AttributeCommandCreateTable,
 	"delete":       AttributeCommandDelete,
 	"delete_multi": AttributeCommandDeleteMulti,
 	"insert":       AttributeCommandInsert,
+	"optimize":     AttributeCommandOptimize,
 	"select":       AttributeCommandSelect,
 	"update":       AttributeCommandUpdate,
 	"update_multi": AttributeCommandUpdateMulti,
