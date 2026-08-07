@@ -33,14 +33,16 @@ type Consumer struct {
 	seenHosts    map[string]struct{}
 	seenTags     map[string]struct{}
 	gatewayUsage *attributes.GatewayUsage
+	noFallback   bool
 }
 
 // NewConsumer creates a new Datadog consumer. It implements metrics.Consumer.
-func NewConsumer(gatewayUsage *attributes.GatewayUsage) *Consumer {
+func NewConsumer(gatewayUsage *attributes.GatewayUsage, disableFallbackHostname bool) *Consumer {
 	return &Consumer{
 		seenHosts:    make(map[string]struct{}),
 		seenTags:     make(map[string]struct{}),
 		gatewayUsage: gatewayUsage,
+		noFallback:   disableFallbackHostname,
 	}
 }
 
@@ -119,12 +121,14 @@ func (c *Consumer) ConsumeTimeSeries(
 ) {
 	dt := c.toDataType(typ)
 	met := NewMetric(dims.Name(), dt, timestamp, interval, value, dims.Tags())
-	met.SetResources([]datadogV2.MetricResource{
-		{
-			Name: datadog.PtrString(dims.Host()),
-			Type: datadog.PtrString("host"),
-		},
-	})
+	if dims.Host() != "" || !c.noFallback {
+		met.SetResources([]datadogV2.MetricResource{
+			{
+				Name: datadog.PtrString(dims.Host()),
+				Type: datadog.PtrString("host"),
+			},
+		})
+	}
 	if unit := dims.Unit(); unit != "" {
 		met.SetUnit(unit)
 	}
