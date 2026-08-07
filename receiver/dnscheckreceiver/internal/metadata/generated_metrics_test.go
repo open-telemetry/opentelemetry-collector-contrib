@@ -48,6 +48,15 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetNone,
 			expectEmpty: true,
 		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -58,7 +67,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["dnscheck.duration"] = mb.metricDnscheckDuration.config.AggregationStrategy
 			aggMap["dnscheck.error"] = mb.metricDnscheckError.config.AggregationStrategy
 			aggMap["dnscheck.status"] = mb.metricDnscheckStatus.config.AggregationStrategy
 
@@ -71,27 +79,27 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordDnscheckDurationDataPoint(ts, 1, "dns.domain-val", "dns.record.type-val", "dns.server-val")
-			if tt.name == "reaggregate_set" {
-				mb.RecordDnscheckDurationDataPoint(ts, 3, "dns.domain-val-2", "dns.record.type-val-2", "dns.server-val-2")
-			}
+			mb.RecordDnscheckDurationDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordDnscheckErrorDataPoint(ts, 1, "dns.domain-val", "dns.record.type-val", "dns.server-val", "error.message-val")
+			mb.RecordDnscheckErrorDataPoint(ts, 1, "error.message-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordDnscheckErrorDataPoint(ts, 3, "dns.domain-val-2", "dns.record.type-val-2", "dns.server-val-2", "error.message-val-2")
+				mb.RecordDnscheckErrorDataPoint(ts, 3, "error.message-val-2")
 			}
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordDnscheckStatusDataPoint(ts, 1, "dns.domain-val", 9, "dns.record.type-val", "dns.resolved.all.ips-val", "dns.resolved.ip-val", "dns.server-val")
+			mb.RecordDnscheckStatusDataPoint(ts, 1, 9, "dns.resolved.all.ips-val", "dns.resolved.ip-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordDnscheckStatusDataPoint(ts, 3, "dns.domain-val-2", 10, "dns.record.type-val-2", "dns.resolved.all.ips-val-2", "dns.resolved.ip-val-2", "dns.server-val-2")
+				mb.RecordDnscheckStatusDataPoint(ts, 3, 10, "dns.resolved.all.ips-val-2", "dns.resolved.ip-val-2")
 			}
 
-			res := pcommon.NewResource()
+			rb := mb.NewResourceBuilder()
+			rb.SetDNSDomain("dns.domain-val")
+			rb.SetDNSRecordType("dns.record.type-val")
+			rb.SetDNSServer("dns.server-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
-				assert.Empty(t, mb.metricDnscheckDuration.aggDataPoints)
 				assert.Empty(t, mb.metricDnscheckError.aggDataPoints)
 				assert.Empty(t, mb.metricDnscheckStatus.aggDataPoints)
 			}
@@ -122,55 +130,17 @@ func TestMetricsBuilder(t *testing.T) {
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
 				case "dnscheck.duration":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["dnscheck.duration"], "Found a duplicate in the metrics slice: dnscheck.duration")
-						validatedMetrics["dnscheck.duration"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Round-trip duration of the DNS query.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						dnsDomainAttrVal, ok := dp.Attributes().Get("dns.domain")
-						assert.True(t, ok)
-						assert.Equal(t, "dns.domain-val", dnsDomainAttrVal.Str())
-						dnsRecordTypeAttrVal, ok := dp.Attributes().Get("dns.record.type")
-						assert.True(t, ok)
-						assert.Equal(t, "dns.record.type-val", dnsRecordTypeAttrVal.Str())
-						dnsServerAttrVal, ok := dp.Attributes().Get("dns.server")
-						assert.True(t, ok)
-						assert.Equal(t, "dns.server-val", dnsServerAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["dnscheck.duration"], "Found a duplicate in the metrics slice: dnscheck.duration")
-						validatedMetrics["dnscheck.duration"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Round-trip duration of the DNS query.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["dnscheck.duration"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("dns.domain")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("dns.record.type")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("dns.server")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["dnscheck.duration"], "Found a duplicate in the metrics slice: dnscheck.duration")
+					validatedMetrics["dnscheck.duration"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Round-trip duration of the DNS query.", mi.Description())
+					assert.Equal(t, "ms", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "dnscheck.error":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["dnscheck.error"], "Found a duplicate in the metrics slice: dnscheck.error")
@@ -186,15 +156,6 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						dnsDomainAttrVal, ok := dp.Attributes().Get("dns.domain")
-						assert.True(t, ok)
-						assert.Equal(t, "dns.domain-val", dnsDomainAttrVal.Str())
-						dnsRecordTypeAttrVal, ok := dp.Attributes().Get("dns.record.type")
-						assert.True(t, ok)
-						assert.Equal(t, "dns.record.type-val", dnsRecordTypeAttrVal.Str())
-						dnsServerAttrVal, ok := dp.Attributes().Get("dns.server")
-						assert.True(t, ok)
-						assert.Equal(t, "dns.server-val", dnsServerAttrVal.Str())
 						errorMessageAttrVal, ok := dp.Attributes().Get("error.message")
 						assert.True(t, ok)
 						assert.Equal(t, "error.message-val", errorMessageAttrVal.Str())
@@ -221,13 +182,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("dns.domain")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("dns.record.type")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("dns.server")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("error.message")
+						_, ok := dp.Attributes().Get("error.message")
 						assert.False(t, ok)
 					}
 				case "dnscheck.status":
@@ -236,7 +191,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["dnscheck.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "1 if the DNS query returned successfully, 0 otherwise. The dns.resolved.ip and dns.resolved.all.ips attributes are only present when the value is 1. The dns.rcode attribute is present whenever a response was received from the server, including non-success responses such as NXDOMAIN, SERVFAIL, or REFUSED; it is absent only when no response was received at all (e.g. timeout or network unreachable).", mi.Description())
+						assert.Equal(t, "1 if the DNS query returned successfully, 0 otherwise. The dns.resolved.ip and dns.resolved.all.ips attributes are only present when the value is 1 and the record type is A or AAAA.  The dns.rcode attribute is present whenever a response was received  from the server, including non-success responses such as NXDOMAIN,  SERVFAIL, or REFUSED; it is absent only when no response was received  at all (e.g. timeout or network unreachable).", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -245,30 +200,21 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						dnsDomainAttrVal, ok := dp.Attributes().Get("dns.domain")
-						assert.True(t, ok)
-						assert.Equal(t, "dns.domain-val", dnsDomainAttrVal.Str())
 						dnsRcodeAttrVal, ok := dp.Attributes().Get("dns.rcode")
 						assert.True(t, ok)
 						assert.EqualValues(t, 9, dnsRcodeAttrVal.Int())
-						dnsRecordTypeAttrVal, ok := dp.Attributes().Get("dns.record.type")
-						assert.True(t, ok)
-						assert.Equal(t, "dns.record.type-val", dnsRecordTypeAttrVal.Str())
 						dnsResolvedAllIpsAttrVal, ok := dp.Attributes().Get("dns.resolved.all.ips")
 						assert.True(t, ok)
 						assert.Equal(t, "dns.resolved.all.ips-val", dnsResolvedAllIpsAttrVal.Str())
 						dnsResolvedIPAttrVal, ok := dp.Attributes().Get("dns.resolved.ip")
 						assert.True(t, ok)
 						assert.Equal(t, "dns.resolved.ip-val", dnsResolvedIPAttrVal.Str())
-						dnsServerAttrVal, ok := dp.Attributes().Get("dns.server")
-						assert.True(t, ok)
-						assert.Equal(t, "dns.server-val", dnsServerAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["dnscheck.status"], "Found a duplicate in the metrics slice: dnscheck.status")
 						validatedMetrics["dnscheck.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "1 if the DNS query returned successfully, 0 otherwise. The dns.resolved.ip and dns.resolved.all.ips attributes are only present when the value is 1. The dns.rcode attribute is present whenever a response was received from the server, including non-success responses such as NXDOMAIN, SERVFAIL, or REFUSED; it is absent only when no response was received at all (e.g. timeout or network unreachable).", mi.Description())
+						assert.Equal(t, "1 if the DNS query returned successfully, 0 otherwise. The dns.resolved.ip and dns.resolved.all.ips attributes are only present when the value is 1 and the record type is A or AAAA.  The dns.rcode attribute is present whenever a response was received  from the server, including non-success responses such as NXDOMAIN,  SERVFAIL, or REFUSED; it is absent only when no response was received  at all (e.g. timeout or network unreachable).", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -286,17 +232,11 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("dns.domain")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("dns.rcode")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("dns.record.type")
+						_, ok := dp.Attributes().Get("dns.rcode")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("dns.resolved.all.ips")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("dns.resolved.ip")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("dns.server")
 						assert.False(t, ok)
 					}
 				}
