@@ -132,20 +132,30 @@ func integrationTest(
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", pgVersion),
+				// 03-prepared-lock.sql needs prepared transactions, which are off by default.
+				Cmd: []string{"-c", "max_prepared_transactions=10"},
 				Env: map[string]string{
 					"POSTGRES_USER":     "root",
 					"POSTGRES_PASSWORD": "otel",
 					"POSTGRES_DB":       "otel",
 				},
-				Files: []testcontainers.ContainerFile{{
-					HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
-					ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
-					FileMode:          700,
-				}},
+				Files: []testcontainers.ContainerFile{
+					{
+						HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+						FileMode:          700,
+					},
+					{
+						HostFilePath:      filepath.Join("testdata", "integration", "03-prepared-lock.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/03-prepared-lock.sql",
+						FileMode:          700,
+					},
+				},
 				ExposedPorts: []string{postgresqlPort},
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
@@ -154,21 +164,22 @@ func integrationTest(
 				rCfg.Databases = databases
 				rCfg.Username = "otelu"
 				rCfg.Password = "otelp"
-				rCfg.Insecure = true
-				rCfg.Metrics.PostgresqlWalDelay.Enabled = true
-				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
-				rCfg.Metrics.PostgresqlTempIo.Enabled = true
-				rCfg.Metrics.PostgresqlTempFiles.Enabled = true
-				rCfg.Metrics.PostgresqlTupUpdated.Enabled = true
-				rCfg.Metrics.PostgresqlTupReturned.Enabled = true
-				rCfg.Metrics.PostgresqlTupFetched.Enabled = true
-				rCfg.Metrics.PostgresqlTupInserted.Enabled = true
-				rCfg.Metrics.PostgresqlTupDeleted.Enabled = true
-				rCfg.Metrics.PostgresqlBlksHit.Enabled = true
-				rCfg.Metrics.PostgresqlBlksRead.Enabled = true
-				rCfg.Metrics.PostgresqlSequentialScans.Enabled = true
-				rCfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
-			}),
+				rCfg.ClientConfig.Insecure = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupUpdated.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupReturned.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupFetched.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupInserted.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlTupDeleted.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlBlksHit.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled = true
+			},
+		),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(compareOptions...),
 	).Run
@@ -199,7 +210,8 @@ func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
 			},
-		})
+		},
+	)
 	require.NoError(t, err)
 
 	err = ci.Start(t.Context())
@@ -222,7 +234,7 @@ func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
 	_, err = tx.Exec("LOCK TABLE table1 IN ACCESS EXCLUSIVE MODE")
 	require.NoError(t, err)
 
-	clientDB, err := getDB(postgreSQLConfig{
+	clientDB, err := getDB(t.Context(), postgreSQLConfig{
 		username: "otelu",
 		password: "otelp",
 		address: confignet.AddrConfig{
@@ -269,7 +281,8 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
 			},
-		})
+		},
+	)
 	require.NoError(t, err)
 
 	err = ci.Start(t.Context())
@@ -292,7 +305,7 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 	_, err = tx.Exec("REINDEX INDEX table1_pkey")
 	require.NoError(t, err)
 
-	clientDB, err := getDB(postgreSQLConfig{
+	clientDB, err := getDB(t.Context(), postgreSQLConfig{
 		username: "otelu",
 		password: "otelp",
 		address: confignet.AddrConfig{
@@ -351,7 +364,8 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 					AsRegexp().
 					WithOccurrence(1),
 			},
-		})
+		},
+	)
 	assert.NoError(t, err)
 
 	err = ci.Start(t.Context())
