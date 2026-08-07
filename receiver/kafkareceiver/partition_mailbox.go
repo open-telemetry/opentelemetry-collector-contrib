@@ -10,29 +10,17 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-// partitionBatch keeps the Kafka fetch and the partition generation together.
-// The generation prevents records fetched before a rewind from being queued
-// after the worker has reset that partition.
-type partitionBatch struct {
-	fetch      kgo.FetchTopicPartition
-	generation uint64
-}
-
 // partitionMailbox stores fetched batches waiting for one partition worker.
-// It also coordinates rewinds so batches fetched before a rewind are rejected.
+// It also coordinates rewinds so fetched batches are not skipped.
 type partitionMailbox struct {
 	ctx context.Context
 
 	mu sync.Mutex
 	// batches is the bounded FIFO queue of batches waiting for the worker.
-	batches []partitionBatch
+	batches []kgo.FetchTopicPartition
 	// notify wakes the worker when work or a rewind is available. Its single
 	// buffered signal represents the state change, not each individual batch.
 	notify chan struct{}
-	// generation identifies the current fetch sequence. It increments after a
-	// rewind so batches returned by a poll started before that rewind can be
-	// recognized as stale and rejected.
-	generation uint64
 	// pendingRewind is the earliest record that the poll loop must fetch again.
 	pendingRewind *kgo.Record
 	// rewindInFlight prevents more than one control request for the same pending
@@ -44,16 +32,9 @@ type partitionMailbox struct {
 func newPartitionMailbox(ctx context.Context, capacity int) *partitionMailbox {
 	return &partitionMailbox{
 		ctx:     ctx,
-		batches: make([]partitionBatch, 0, capacity),
+		batches: make([]kgo.FetchTopicPartition, 0, capacity),
 		notify:  make(chan struct{}, 1),
 	}
-}
-
-// generationSnapshot returns the generation to attach to a poll started now.
-func (m *partitionMailbox) generationSnapshot() uint64 {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return m.generation
 }
 
 // notifications returns the channel used to wake the partition worker.
@@ -61,8 +42,8 @@ func (m *partitionMailbox) notifications() <-chan struct{} {
 	return m.notify
 }
 
-// enqueue adds a batch when it belongs to the active fetch generation.
-func (m *partitionMailbox) enqueue(batch partitionBatch, pause func(partitionPauseReason)) bool {
+// enqueue adds a batch when the mailbox can accept it.
+func (m *partitionMailbox) enqueue(batch kgo.FetchTopicPartition, pause func(partitionPauseReason)) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -73,11 +54,10 @@ func (m *partitionMailbox) enqueue(batch partitionBatch, pause func(partitionPau
 	default:
 	}
 
-	// PollRecords may return work from an older generation or after the mailbox
-	// reaches capacity. Remember the earliest rejected record so it is fetched
-	// again instead of being skipped.
-	if batch.generation != m.generation || m.pendingRewind != nil || len(m.batches) == cap(m.batches) {
-		m.requestRewindLocked(batch.fetch.Records[0], false)
+	// PollRecords may return work while a rewind is pending or after the mailbox
+	// reaches capacity. Remember the earliest rejected record so it is fetched again.
+	if m.pendingRewind != nil || len(m.batches) == cap(m.batches) {
+		m.requestRewindLocked(batch.Records[0], false)
 		pause(partitionPauseRewind)
 		return false
 	}
@@ -93,17 +73,17 @@ func (m *partitionMailbox) enqueue(batch partitionBatch, pause func(partitionPau
 }
 
 // dequeue removes and returns the oldest waiting batch.
-func (m *partitionMailbox) dequeue(resume func()) (partitionBatch, bool) {
+func (m *partitionMailbox) dequeue(resume func()) (kgo.FetchTopicPartition, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if len(m.batches) == 0 {
-		return partitionBatch{}, false
+		return kgo.FetchTopicPartition{}, false
 	}
 
 	batch := m.batches[0]
 	copy(m.batches, m.batches[1:])
-	m.batches[len(m.batches)-1] = partitionBatch{}
+	m.batches[len(m.batches)-1] = kgo.FetchTopicPartition{}
 	m.batches = m.batches[:len(m.batches)-1]
 	// A pending rewind must move the fetch position before fetching resumes.
 	// Calling resume under the lock also prevents it from overtaking an older
@@ -152,7 +132,7 @@ func (m *partitionMailbox) claimRewind() bool {
 	return true
 }
 
-// applyRewind applies the pending offset change and starts a new generation.
+// applyRewind applies the pending offset change.
 func (m *partitionMailbox) applyRewind(apply func(*kgo.Record)) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -165,7 +145,6 @@ func (m *partitionMailbox) applyRewind(apply func(*kgo.Record)) {
 	apply(m.pendingRewind)
 	m.pendingRewind = nil
 	m.rewindInFlight = false
-	m.generation++
 }
 
 // notifyLocked wakes the worker without blocking while the caller holds m.mu.

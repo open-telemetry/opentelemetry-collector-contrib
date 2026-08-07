@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
@@ -80,82 +79,42 @@ func TestPartitionProcessingBlockedPartition(t *testing.T) {
 	}, 500*time.Millisecond, 10*time.Millisecond)
 }
 
-type blockingFetchController struct {
-	pauseStarted chan struct{}
-	releasePause chan struct{}
-	resumed      chan struct{}
-}
-
-func (c *blockingFetchController) PauseFetchPartitions(map[string][]int32) map[string][]int32 {
-	close(c.pauseStarted)
-	<-c.releasePause
-	return nil
-}
-
-func (c *blockingFetchController) ResumeFetchPartitions(map[string][]int32) {
-	close(c.resumed)
-}
-
-// TestDispatchSerializesPauseBeforeResume protects pause/resume ordering.
-func TestDispatchSerializesPauseBeforeResume(t *testing.T) {
-	const topic = "test"
-	ctx, cancel := context.WithCancelCause(t.Context())
-	defer cancel(nil)
-
-	controller := &blockingFetchController{
-		pauseStarted: make(chan struct{}),
-		releasePause: make(chan struct{}),
-		resumed:      make(chan struct{}),
-	}
-	partitionConsumer := &pc{
-		ctx:     ctx,
-		logger:  zap.NewNop(),
-		mailbox: newPartitionMailbox(ctx, 1),
-	}
-	tp := topicPartition{topic: topic, partition: 0}
-	consumer := franzConsumer{
-		fetchController: controller,
+func TestClearPauseReasons(t *testing.T) {
+	cases := []struct {
+		name          string
+		current       partitionPauseReason
+		clear         partitionPauseReason
+		wantResume    bool
+		wantRemaining partitionPauseReason
+	}{
+		{
+			name:  "does not resume without matching reason",
+			clear: partitionPauseBackpressure,
+		},
+		{
+			name:          "resumes after final reason clears",
+			current:       partitionPauseBackpressure,
+			clear:         partitionPauseBackpressure,
+			wantResume:    true,
+			wantRemaining: 0,
+		},
+		{
+			name:          "does not resume while another reason remains",
+			current:       partitionPauseBackpressure | partitionPauseRewind,
+			clear:         partitionPauseBackpressure,
+			wantRemaining: partitionPauseRewind,
+		},
 	}
 
-	dispatchDone := make(chan struct{})
-	go func() {
-		consumer.dispatchPartitionBatches(
-			kgo.Fetches{newTestFetch(topic, 0, 1)},
-			map[topicPartition]*pc{tp: partitionConsumer},
-			map[topicPartition]partitionSnapshot{tp: {
-				pc:         partitionConsumer,
-				generation: partitionConsumer.mailbox.generationSnapshot(),
-			}},
-		)
-		close(dispatchDone)
-	}()
-	<-controller.pauseStarted
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			partitionConsumer := &pc{}
+			partitionConsumer.pauseReasons.Store(uint32(tc.current))
 
-	dequeueStarted := make(chan struct{})
-	go func() {
-		close(dequeueStarted)
-		_, _ = partitionConsumer.mailbox.dequeue(func() {
-			partitionConsumer.pauseState.resume(
-				controller,
-				map[string][]int32{topic: {0}},
-				partitionPauseBackpressure,
-			)
+			require.Equal(t, tc.wantResume, partitionConsumer.clearPauseReasons(tc.clear))
+			require.Equal(t, uint32(tc.wantRemaining), partitionConsumer.pauseReasons.Load())
 		})
-	}()
-	<-dequeueStarted
-
-	require.Never(t, func() bool {
-		select {
-		case <-controller.resumed:
-			return true
-		default:
-			return false
-		}
-	}, 100*time.Millisecond, 10*time.Millisecond)
-
-	close(controller.releasePause)
-	<-dispatchDone
-	<-controller.resumed
+	}
 }
 
 func TestPartitionProcessingFullMailbox(t *testing.T) {
@@ -412,22 +371,6 @@ func waitAtomic(t *testing.T, got *atomic.Int64, want int64) {
 	require.Eventually(t, func() bool {
 		return got.Load() == want
 	}, 5*time.Second, 10*time.Millisecond)
-}
-
-func newTestFetch(topic string, partition int32, offset int64) kgo.Fetch {
-	return kgo.Fetch{
-		Topics: []kgo.FetchTopic{{
-			Topic: topic,
-			Partitions: []kgo.FetchPartition{{
-				Partition: partition,
-				Records: []*kgo.Record{{
-					Topic:     topic,
-					Partition: partition,
-					Offset:    offset,
-				}},
-			}},
-		}},
-	}
 }
 
 func TestConsumerShutdownConsuming(t *testing.T) {

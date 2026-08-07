@@ -32,303 +32,131 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, "logs"),
-			expected: &Config{
-				ClientConfig: func() configkafka.ClientConfig {
-					config := configkafka.NewDefaultClientConfig()
-					config.Brokers = []string{"coffee:123", "foobar:456"}
-					config.Metadata.Retry.Max = 10
-					config.Metadata.Retry.Backoff = 5 * time.Second
-					config.Authentication.SASL = &configkafka.SASLConfig{
-						Mechanism: "PLAIN",
-						Username:  "user",
-						Password:  "password",
-					}
-					config.TLS = &configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile:   "ca.pem",
-							CertFile: "cert.pem",
-							KeyFile:  "key.pem",
-						},
-					}
-					return config
-				}(),
-				ConsumerConfig: func() configkafka.ConsumerConfig {
-					config := configkafka.NewDefaultConsumerConfig()
-					config.InitialOffset = configkafka.EarliestOffset
-					config.SessionTimeout = 45 * time.Second
-					config.HeartbeatInterval = 15 * time.Second
-					return config
-				}(),
-				Logs: TopicEncodingConfig{
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.ClientConfig.Brokers = []string{"coffee:123", "foobar:456"}
+				cfg.ClientConfig.Metadata.Retry.Max = 10
+				cfg.ClientConfig.Metadata.Retry.Backoff = 5 * time.Second
+				cfg.ClientConfig.Authentication.SASL = &configkafka.SASLConfig{
+					Mechanism: "PLAIN",
+					Username:  "user",
+					Password:  "password",
+				}
+				cfg.ClientConfig.TLS = &configtls.ClientConfig{
+					Config: configtls.Config{
+						CAFile:   "ca.pem",
+						CertFile: "cert.pem",
+						KeyFile:  "key.pem",
+					},
+				}
+				cfg.ConsumerConfig.InitialOffset = configkafka.EarliestOffset
+				cfg.ConsumerConfig.SessionTimeout = 45 * time.Second
+				cfg.ConsumerConfig.HeartbeatInterval = 15 * time.Second
+				cfg.Logs = TopicEncodingConfig{
 					Topics:   []string{"logs"},
 					Encoding: "direct",
-				},
-				Metrics: TopicEncodingConfig{
-					Topics:   []string{"otlp_metrics"},
-					Encoding: "otlp_proto",
-				},
-				Traces: TopicEncodingConfig{
-					Topics:   []string{"otlp_spans"},
-					Encoding: "otlp_proto",
-				},
-				Profiles: TopicEncodingConfig{
-					Topics:   []string{"otlp_profiles"},
-					Encoding: "otlp_proto",
-				},
-				ErrorBackOff: configretry.BackOffConfig{
+				}
+				cfg.ErrorBackOff = configretry.BackOffConfig{
 					Enabled:         true,
 					InitialInterval: 1 * time.Second,
 					MaxInterval:     10 * time.Second,
 					MaxElapsedTime:  1 * time.Minute,
 					Multiplier:      1.5,
-				},
-			},
+				}
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "rebalance_strategy"),
-			expected: &Config{
-				ClientConfig: configkafka.NewDefaultClientConfig(),
-				ConsumerConfig: func() configkafka.ConsumerConfig {
-					config := configkafka.NewDefaultConsumerConfig()
-					config.GroupRebalanceStrategy = "sticky"
-					config.GroupInstanceID = "test-instance"
-					return config
-				}(),
-				Logs: TopicEncodingConfig{
-					Topics:   []string{"otlp_logs"},
-					Encoding: "otlp_proto",
-				},
-				Metrics: TopicEncodingConfig{
-					Topics:   []string{"otlp_metrics"},
-					Encoding: "otlp_proto",
-				},
-				Traces: TopicEncodingConfig{
-					Topics:   []string{"otlp_spans"},
-					Encoding: "otlp_proto",
-				},
-				Profiles: TopicEncodingConfig{
-					Topics:   []string{"otlp_profiles"},
-					Encoding: "otlp_proto",
-				},
-				ErrorBackOff: configretry.BackOffConfig{
-					Enabled: false,
-				},
-			},
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.ConsumerConfig.GroupRebalanceStrategy = "sticky"
+				cfg.ConsumerConfig.GroupInstanceID = "test-instance"
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "rebalance_strategies"),
-			expected: &Config{
-				ClientConfig: configkafka.NewDefaultClientConfig(),
-				ConsumerConfig: func() configkafka.ConsumerConfig {
-					config := configkafka.NewDefaultConsumerConfig()
-					config.GroupRebalanceStrategies = []configkafka.GroupRebalanceStrategy{
-						configkafka.CooperativeStickyBalanceStrategy,
-						"my_balancer",
-					}
-					return config
-				}(),
-				Logs: TopicEncodingConfig{
-					Topics:   []string{"otlp_logs"},
-					Encoding: "otlp_proto",
-				},
-				Metrics: TopicEncodingConfig{
-					Topics:   []string{"otlp_metrics"},
-					Encoding: "otlp_proto",
-				},
-				Traces: TopicEncodingConfig{
-					Topics:   []string{"otlp_spans"},
-					Encoding: "otlp_proto",
-				},
-				Profiles: TopicEncodingConfig{
-					Topics:   []string{"otlp_profiles"},
-					Encoding: "otlp_proto",
-				},
-				ErrorBackOff: configretry.BackOffConfig{
-					Enabled: false,
-				},
-			},
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.ConsumerConfig.GroupRebalanceStrategies = []configkafka.GroupRebalanceStrategy{
+					configkafka.CooperativeStickyBalanceStrategy,
+					"my_balancer",
+				}
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "message_marking"),
-			expected: &Config{
-				ClientConfig:   configkafka.NewDefaultClientConfig(),
-				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
-				Logs: TopicEncodingConfig{
-					Topics:   []string{"otlp_logs"},
-					Encoding: "otlp_proto",
-				},
-				Metrics: TopicEncodingConfig{
-					Topics:   []string{"otlp_metrics"},
-					Encoding: "otlp_proto",
-				},
-				Traces: TopicEncodingConfig{
-					Topics:   []string{"otlp_spans"},
-					Encoding: "otlp_proto",
-				},
-				Profiles: TopicEncodingConfig{
-					Topics:   []string{"otlp_profiles"},
-					Encoding: "otlp_proto",
-				},
-				MessageMarking: MessageMarking{
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MessageMarking = MessageMarking{
 					After:            true,
 					OnError:          true,
 					OnPermanentError: false,
-				},
-				ErrorBackOff: configretry.BackOffConfig{
-					Enabled: false,
-				},
-			},
+				}
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "message_marking_not_specified"),
-			expected: &Config{
-				ClientConfig:   configkafka.NewDefaultClientConfig(),
-				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
-				Logs: TopicEncodingConfig{
-					Topics:   []string{"otlp_logs"},
-					Encoding: "otlp_proto",
-				},
-				Metrics: TopicEncodingConfig{
-					Topics:   []string{"otlp_metrics"},
-					Encoding: "otlp_proto",
-				},
-				Traces: TopicEncodingConfig{
-					Topics:   []string{"otlp_spans"},
-					Encoding: "otlp_proto",
-				},
-				Profiles: TopicEncodingConfig{
-					Topics:   []string{"otlp_profiles"},
-					Encoding: "otlp_proto",
-				},
-				MessageMarking: MessageMarking{
-					After:            false,
-					OnError:          false,
-					OnPermanentError: false,
-				},
-				ErrorBackOff: configretry.BackOffConfig{
-					Enabled: false,
-				},
-			},
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "message_marking_on_permanent_error_inherited"),
-			expected: &Config{
-				ClientConfig:   configkafka.NewDefaultClientConfig(),
-				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
-				Logs: TopicEncodingConfig{
-					Topics:   []string{"otlp_logs"},
-					Encoding: "otlp_proto",
-				},
-				Metrics: TopicEncodingConfig{
-					Topics:   []string{"otlp_metrics"},
-					Encoding: "otlp_proto",
-				},
-				Traces: TopicEncodingConfig{
-					Topics:   []string{"otlp_spans"},
-					Encoding: "otlp_proto",
-				},
-				Profiles: TopicEncodingConfig{
-					Topics:   []string{"otlp_profiles"},
-					Encoding: "otlp_proto",
-				},
-				MessageMarking: MessageMarking{
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MessageMarking = MessageMarking{
 					After:            true,
 					OnError:          true,
 					OnPermanentError: true,
-				},
-				ErrorBackOff: configretry.BackOffConfig{
-					Enabled: false,
-				},
-			},
+				}
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "regex_topic_with_exclusion"),
-			expected: &Config{
-				ClientConfig:   configkafka.NewDefaultClientConfig(),
-				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
-				Logs: TopicEncodingConfig{
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.Logs = TopicEncodingConfig{
 					Topics:        []string{"^logs-.*"},
 					ExcludeTopics: []string{"^logs-(test|dev)$"},
 					Encoding:      "otlp_proto",
-				},
-				Metrics: TopicEncodingConfig{
+				}
+				cfg.Metrics = TopicEncodingConfig{
 					Topics:        []string{"^metrics-.*"},
 					ExcludeTopics: []string{"^metrics-internal-.*$"},
 					Encoding:      "otlp_proto",
-				},
-				Traces: TopicEncodingConfig{
+				}
+				cfg.Traces = TopicEncodingConfig{
 					Topics:        []string{"^traces-.*"},
 					ExcludeTopics: []string{"^traces-debug-.*$"},
 					Encoding:      "otlp_proto",
-				},
-				Profiles: TopicEncodingConfig{
-					Topics:   []string{"otlp_profiles"},
-					Encoding: "otlp_proto",
-				},
-				ErrorBackOff: configretry.BackOffConfig{
-					Enabled: false,
-				},
-			},
+				}
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "conn_idle_timeout"),
-			expected: &Config{
-				ClientConfig: func() configkafka.ClientConfig {
-					config := configkafka.NewDefaultClientConfig()
-					config.ConnIdleTimeout = 5 * time.Minute
-					return config
-				}(),
-				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
-				Logs: TopicEncodingConfig{
-					Topics:   []string{"otlp_logs"},
-					Encoding: "otlp_proto",
-				},
-				Metrics: TopicEncodingConfig{
-					Topics:   []string{"otlp_metrics"},
-					Encoding: "otlp_proto",
-				},
-				Traces: TopicEncodingConfig{
-					Topics:   []string{"otlp_spans"},
-					Encoding: "otlp_proto",
-				},
-				Profiles: TopicEncodingConfig{
-					Topics:   []string{"otlp_profiles"},
-					Encoding: "otlp_proto",
-				},
-				ErrorBackOff: configretry.BackOffConfig{
-					Enabled: false,
-				},
-			},
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.ClientConfig.ConnIdleTimeout = 5 * time.Minute
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "partition_processing"),
-			expected: &Config{
-				ClientConfig:   configkafka.NewDefaultClientConfig(),
-				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
-				Logs: TopicEncodingConfig{
-					Topics:   []string{"otlp_logs"},
-					Encoding: "otlp_proto",
-				},
-				Metrics: TopicEncodingConfig{
-					Topics:   []string{"otlp_metrics"},
-					Encoding: "otlp_proto",
-				},
-				Traces: TopicEncodingConfig{
-					Topics:   []string{"otlp_spans"},
-					Encoding: "otlp_proto",
-				},
-				Profiles: TopicEncodingConfig{
-					Topics:   []string{"otlp_profiles"},
-					Encoding: "otlp_proto",
-				},
-				PartitionProcessing: PartitionProcessing{
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.PartitionProcessing = PartitionProcessing{
 					Independent:        true,
 					MaxBufferedBatches: 2,
-				},
-				ErrorBackOff: configretry.BackOffConfig{
-					Enabled: false,
-				},
-			},
+				}
+				return cfg
+			}(),
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "invalid_exclude_topics_logs_non_regex"),
@@ -388,12 +216,6 @@ func TestLoadConfig(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			expected := tt.expected.(*Config)
-			if expected.PartitionProcessing.MaxBufferedBatches == 0 {
-				expected.PartitionProcessing = PartitionProcessing{
-					MaxBufferedBatches: 1,
-				}
-			}
 			require.Equal(t, tt.expected, cfg)
 		})
 	}

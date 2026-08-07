@@ -6,6 +6,7 @@ package kafkareceiver
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -15,28 +16,25 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 	cases := []struct {
 		name              string
 		capacity          int
-		generation        uint64
 		initialOffset     *int64
 		pendingRewind     *int64
 		cancel            bool
-		batch             partitionBatch
+		batch             kgo.FetchTopicPartition
 		wantAccepted      bool
 		wantPauseCalls    int
 		wantPauseReason   partitionPauseReason
 		wantPendingOffset *int64
 	}{
 		{
-			name:         "accepts current generation",
+			name:         "accepts batch",
 			capacity:     2,
-			generation:   1,
-			batch:        mailboxBatch(10, 1),
+			batch:        mailboxBatch(10),
 			wantAccepted: true,
 		},
 		{
 			name:            "pauses when accepted batch fills mailbox",
 			capacity:        1,
-			generation:      1,
-			batch:           mailboxBatch(10, 1),
+			batch:           mailboxBatch(10),
 			wantAccepted:    true,
 			wantPauseCalls:  1,
 			wantPauseReason: partitionPauseBackpressure,
@@ -44,18 +42,8 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 		{
 			name:              "rejects full mailbox",
 			capacity:          1,
-			generation:        1,
 			initialOffset:     int64Ptr(5),
-			batch:             mailboxBatch(10, 1),
-			wantPauseCalls:    1,
-			wantPauseReason:   partitionPauseRewind,
-			wantPendingOffset: int64Ptr(10),
-		},
-		{
-			name:              "rejects stale generation",
-			capacity:          1,
-			generation:        2,
-			batch:             mailboxBatch(10, 1),
+			batch:             mailboxBatch(10),
 			wantPauseCalls:    1,
 			wantPauseReason:   partitionPauseRewind,
 			wantPendingOffset: int64Ptr(10),
@@ -63,9 +51,8 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 		{
 			name:              "rejects while rewind pending",
 			capacity:          2,
-			generation:        1,
 			pendingRewind:     int64Ptr(5),
-			batch:             mailboxBatch(10, 1),
+			batch:             mailboxBatch(10),
 			wantPauseCalls:    1,
 			wantPauseReason:   partitionPauseRewind,
 			wantPendingOffset: int64Ptr(5),
@@ -73,9 +60,8 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 		{
 			name:         "rejects after cancellation",
 			capacity:     1,
-			generation:   1,
 			cancel:       true,
-			batch:        mailboxBatch(10, 1),
+			batch:        mailboxBatch(10),
 			wantAccepted: false,
 		},
 	}
@@ -84,9 +70,8 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())
 			mailbox := newPartitionMailbox(ctx, tc.capacity)
-			mailbox.generation = tc.generation
 			if tc.initialOffset != nil {
-				require.True(t, mailbox.enqueue(mailboxBatch(*tc.initialOffset, tc.generation), func(partitionPauseReason) {}))
+				require.True(t, mailbox.enqueue(mailboxBatch(*tc.initialOffset), func(partitionPauseReason) {}))
 			}
 			if tc.pendingRewind != nil {
 				mailbox.requestRewind(recordAtOffset(*tc.pendingRewind), false, func() {})
@@ -154,7 +139,7 @@ func TestPartitionMailboxDequeue(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mailbox := newPartitionMailbox(t.Context(), tc.capacity)
 			for _, offset := range tc.offsets {
-				require.True(t, mailbox.enqueue(mailboxBatch(offset, 0), func(partitionPauseReason) {}))
+				require.True(t, mailbox.enqueue(mailboxBatch(offset), func(partitionPauseReason) {}))
 			}
 			if tc.pendingRewind {
 				mailbox.requestRewind(recordAtOffset(20), false, func() {})
@@ -168,10 +153,46 @@ func TestPartitionMailboxDequeue(t *testing.T) {
 			require.Equal(t, tc.wantOK, ok)
 			require.Equal(t, tc.wantResumeCalls, resumeCalls)
 			if tc.wantOK {
-				require.Equal(t, tc.wantOffset, batch.fetch.Records[0].Offset)
+				require.Equal(t, tc.wantOffset, batch.Records[0].Offset)
 			}
 		})
 	}
+}
+
+func TestPartitionMailboxSerializesPauseBeforeResume(t *testing.T) {
+	mailbox := newPartitionMailbox(t.Context(), 1)
+	pauseStarted := make(chan struct{})
+	releasePause := make(chan struct{})
+	resumed := make(chan struct{})
+
+	enqueueDone := make(chan struct{})
+	go func() {
+		defer close(enqueueDone)
+		mailbox.enqueue(mailboxBatch(1), func(partitionPauseReason) {
+			close(pauseStarted)
+			<-releasePause
+		})
+	}()
+	<-pauseStarted
+
+	go func() {
+		_, _ = mailbox.dequeue(func() {
+			close(resumed)
+		})
+	}()
+
+	require.Never(t, func() bool {
+		select {
+		case <-resumed:
+			return true
+		default:
+			return false
+		}
+	}, 100*time.Millisecond, 10*time.Millisecond)
+
+	close(releasePause)
+	<-enqueueDone
+	<-resumed
 }
 
 func TestPartitionMailboxRequestRewind(t *testing.T) {
@@ -209,7 +230,7 @@ func TestPartitionMailboxRequestRewind(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			mailbox := newPartitionMailbox(t.Context(), 2)
-			require.True(t, mailbox.enqueue(mailboxBatch(1, 0), func(partitionPauseReason) {}))
+			require.True(t, mailbox.enqueue(mailboxBatch(1), func(partitionPauseReason) {}))
 			if tc.existing != nil {
 				mailbox.requestRewind(recordAtOffset(*tc.existing), false, func() {})
 			}
@@ -253,7 +274,6 @@ func TestPartitionMailboxApplyRewind(t *testing.T) {
 	})
 
 	require.Equal(t, 1, applyCalls)
-	require.Equal(t, uint64(1), mailbox.generationSnapshot())
 	require.False(t, mailbox.claimRewind())
 	mailbox.applyRewind(func(*kgo.Record) {
 		applyCalls++
@@ -261,14 +281,11 @@ func TestPartitionMailboxApplyRewind(t *testing.T) {
 	require.Equal(t, 1, applyCalls)
 }
 
-func mailboxBatch(offset int64, generation uint64) partitionBatch {
-	return partitionBatch{
-		fetch: kgo.FetchTopicPartition{
-			FetchPartition: kgo.FetchPartition{
-				Records: []*kgo.Record{recordAtOffset(offset)},
-			},
+func mailboxBatch(offset int64) kgo.FetchTopicPartition {
+	return kgo.FetchTopicPartition{
+		FetchPartition: kgo.FetchPartition{
+			Records: []*kgo.Record{recordAtOffset(offset)},
 		},
-		generation: generation,
 	}
 }
 

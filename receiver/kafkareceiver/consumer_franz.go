@@ -31,13 +31,6 @@ type topicPartition struct {
 	partition int32
 }
 
-// partitionSnapshot identifies the exact assignment and generation that were
-// current before PollRecords. Both may change while PollRecords is blocked.
-type partitionSnapshot struct {
-	pc         *pc
-	generation uint64
-}
-
 // partitionControl transfers offset operations from one partition worker to
 // the poll loop and lets the worker wait until the operation is complete.
 type partitionControl struct {
@@ -46,14 +39,6 @@ type partitionControl struct {
 	commitRecord *kgo.Record
 	rewind       bool
 	done         chan struct{}
-}
-
-// partitionFetchController is the partition-scoped subset of kgo.Client used
-// by independent workers. Keeping this boundary narrow makes pause/resume
-// ordering testable without a Kafka client.
-type partitionFetchController interface {
-	PauseFetchPartitions(map[string][]int32) map[string][]int32
-	ResumeFetchPartitions(map[string][]int32)
 }
 
 // brokerReadKey is the cache key for OnBrokerRead/OnBrokerWrite metric options.
@@ -77,10 +62,9 @@ type franzConsumer struct {
 	consumerClosed chan struct{}
 	closing        chan struct{}
 
-	client          *kgo.Client
-	fetchController partitionFetchController
-	obsrecv         *receiverhelper.ObsReport
-	assignments     map[topicPartition]*pc
+	client      *kgo.Client
+	obsrecv     *receiverhelper.ObsReport
+	assignments map[topicPartition]*pc
 	// controls serializes SetOffsets and synchronous commits between
 	// PollRecords calls.
 	controls chan partitionControl
@@ -212,7 +196,6 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 	c.client = client
-	c.fetchController = client
 
 	cm, err := c.newConsumeFn(host, c.obsrecv, c.telemetryBuilder)
 	if err != nil {
@@ -244,7 +227,7 @@ func (c *franzConsumer) consumeLoop(ctx context.Context) {
 // consume consumes a batch of messages from the Kafka topic. This is meant to
 // be called in a loop until consume returns false.
 func (c *franzConsumer) consume(ctx context.Context, size int) bool {
-	var snapshots map[topicPartition]partitionSnapshot
+	var snapshots map[topicPartition]*pc
 	var fetch kgo.Fetches
 	var controlInterrupted bool
 	if c.config.PartitionProcessing.Independent {
@@ -373,29 +356,13 @@ func (c *franzConsumer) pollRecords(ctx context.Context, size int) (kgo.Fetches,
 	return fetch, interrupted
 }
 
-// interruptPoll cancels only the current PollRecords call. It does not stop the
-// client or partition workers.
-func (c *franzConsumer) interruptPoll() {
-	c.pollMu.Lock()
-	defer c.pollMu.Unlock()
-	if c.pollCancel != nil {
-		c.pollInterrupted = true
-		c.pollCancel()
-	}
-}
-
-// snapshotPartitions captures assignment identity and generation before
-// polling, allowing dispatch to reject records from a changed assignment.
-func (c *franzConsumer) snapshotPartitions() map[topicPartition]partitionSnapshot {
+// snapshotPartitions captures assignment identity before polling, allowing
+// dispatch to reject records from a changed assignment.
+func (c *franzConsumer) snapshotPartitions() map[topicPartition]*pc {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	snapshots := make(map[topicPartition]partitionSnapshot, len(c.assignments))
-	for tp, partitionConsumer := range c.assignments {
-		snapshots[tp] = partitionSnapshot{
-			pc:         partitionConsumer,
-			generation: partitionConsumer.mailbox.generationSnapshot(),
-		}
-	}
+	snapshots := make(map[topicPartition]*pc, len(c.assignments))
+	maps.Copy(snapshots, c.assignments)
 	return snapshots
 }
 
@@ -406,7 +373,12 @@ func (c *franzConsumer) sendControl(control partitionControl) bool {
 	case c.controls <- control:
 		// PollRecords may otherwise wait indefinitely while this worker needs
 		// the poll loop to apply a commit or rewind.
-		c.interruptPoll()
+		c.pollMu.Lock()
+		if c.pollCancel != nil {
+			c.pollInterrupted = true
+			c.pollCancel()
+		}
+		c.pollMu.Unlock()
 	case <-control.pc.ctx.Done():
 		return false
 	case <-c.closing:
@@ -474,7 +446,7 @@ func (c *franzConsumer) processControl(control partitionControl) {
 func (c *franzConsumer) dispatchPartitionBatches(
 	fetch kgo.Fetches,
 	assignments map[topicPartition]*pc,
-	snapshots map[topicPartition]partitionSnapshot,
+	snapshots map[topicPartition]*pc,
 ) {
 	fetch.EachPartition(func(p kgo.FetchTopicPartition) {
 		if len(p.Records) == 0 {
@@ -492,18 +464,17 @@ func (c *franzConsumer) dispatchPartitionBatches(
 			return
 		}
 		snapshot, snapshotted := snapshots[tp]
-		if !snapshotted || snapshot.pc != assign {
+		if !snapshotted || snapshot != assign {
 			assign.mailbox.requestRewind(p.Records[0], true, func() {
-				assign.pauseState.pause(c.fetchController, partition, partitionPauseRewind)
+				assign.addPauseReason(partitionPauseRewind)
+				c.client.PauseFetchPartitions(partition)
 			})
 			return
 		}
 
-		enqueued := assign.mailbox.enqueue(partitionBatch{
-			fetch:      p,
-			generation: snapshot.generation,
-		}, func(reason partitionPauseReason) {
-			assign.pauseState.pause(c.fetchController, partition, reason)
+		enqueued := assign.mailbox.enqueue(p, func(reason partitionPauseReason) {
+			assign.addPauseReason(reason)
+			c.client.PauseFetchPartitions(partition)
 		})
 		if !enqueued {
 			assign.logger.Debug("discarding fetched records until partition rewind",
