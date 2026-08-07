@@ -8,12 +8,19 @@ import (
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
-func buildSupervisorResourceConfig(cfg *otelconftelemetry.ResourceConfig) (*telemetryconfig.Resource, error) {
+// newExperimentalSDK is xotelconf.NewSDK. Do not set OTEL_EXPERIMENTAL_CONFIG_FILE
+// on the Supervisor process: that env var supersedes WithOpenTelemetryConfiguration
+// and can override the Supervisor's configured resource detection. See README.md.
+var newExperimentalSDK = xotelconf.NewSDK
+
+func buildSupervisorResourceConfig(ctx context.Context, cfg *config.ResourceConfig) (*telemetryconfig.Resource, error) {
 	instanceUUID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
@@ -63,7 +70,32 @@ func buildSupervisorResourceConfig(cfg *otelconftelemetry.ResourceConfig) (*tele
 		resourceCfg.SchemaUrl = &schemaURL
 	}
 
+	if cfg.DetectionDevelopment != nil {
+		detectionSDK, err := newDetectionResourceSDK(ctx, cfg.DetectionDevelopment)
+		if err != nil {
+			return nil, err
+		}
+		attrs := detectionSDK.Resource().Attributes()
+		detectedAttrs := make([]telemetryconfig.AttributeNameValue, 0, len(attrs))
+		for _, attr := range attrs {
+			detectedAttrs = append(detectedAttrs, telemetryconfig.AttributeNameValue{
+				Name:  string(attr.Key),
+				Value: attr.Value.AsInterface(),
+			})
+		}
+		resourceCfg.Attributes = append(detectedAttrs, resourceCfg.Attributes...)
+	}
+
 	return &resourceCfg, nil
+}
+
+func newDetectionResourceSDK(ctx context.Context, detection *xotelconf.ExperimentalResourceDetection) (xotelconf.SDK, error) {
+	return newExperimentalSDK(
+		xotelconf.WithContext(ctx),
+		xotelconf.WithOpenTelemetryConfiguration(xotelconf.OpenTelemetryConfiguration{
+			Resource: &xotelconf.Resource{DetectionDevelopment: detection},
+		}),
+	)
 }
 
 func resourceConfigToPcommon(ctx context.Context, resourceCfg *telemetryconfig.Resource) (pcommon.Resource, error) {
