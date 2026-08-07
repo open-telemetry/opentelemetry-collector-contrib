@@ -13,8 +13,6 @@ import (
 	"runtime"
 	"testing"
 
-	ctypes "github.com/moby/moby/api/types/container"
-	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -42,13 +40,10 @@ func newPostgresTestExtension() (storage.Extension, testcontainers.Container, er
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "postgres:14",
-			HostConfigModifier: func(config *ctypes.HostConfig) {
-				ports := network.PortMap{}
-				ports[network.MustParsePort("5432")] = []network.PortBinding{
-					{HostPort: "5432"},
-				}
-				config.PortBindings = ports
-			},
+			// Expose the Postgres port and let Docker assign a free host port
+			// (retrieved below via MappedPort). Binding to a fixed host port
+			// makes the test fail when 5432 is already in use on the host.
+			ExposedPorts: []string{"5432"},
 			Env: map[string]string{
 				"POSTGRES_PASSWORD": "passwd",
 				"POSTGRES_USER":     "root",
