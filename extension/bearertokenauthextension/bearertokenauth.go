@@ -53,17 +53,17 @@ type bearerTokenAuth struct {
 	scheme                    string
 	authorizationValuesAtomic atomic.Value
 
-	tokenResolver credentialsfile.ValueResolver
-	fileRetry     FileRetryConfig
-	logger        *zap.Logger
+	tokenResolver  credentialsfile.ValueResolver
+	retryOnFailure RetryOnFailureConfig
+	logger         *zap.Logger
 }
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
 	a := &bearerTokenAuth{
-		header:    cfg.Header,
-		scheme:    cfg.Scheme,
-		fileRetry: cfg.FileRetry,
-		logger:    logger,
+		header:         cfg.Header,
+		scheme:         cfg.Scheme,
+		retryOnFailure: cfg.RetryOnFailure,
+		logger:         logger,
 	}
 
 	var inlineToken string
@@ -113,8 +113,8 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
 // the token to be transferred.
 func (b *bearerTokenAuth) Start(ctx context.Context, _ component.Host) error {
 	if b.tokenResolver != nil {
-		if b.fileRetry.Enabled {
-			return b.tokenResolver.StartWithRetry(ctx, b.fileRetry.MaxRetries, b.fileRetry.RetryInterval)
+		if b.retryOnFailure.Enabled {
+			return b.tokenResolver.Start(ctx, credentialsfile.WithRetry(b.retryOnFailure.MaxRetries, b.retryOnFailure.InitialInterval, b.retryOnFailure.Offset))
 		}
 		return b.tokenResolver.Start(ctx)
 	}

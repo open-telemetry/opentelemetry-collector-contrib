@@ -28,35 +28,37 @@ type Config struct {
 	// Filename points to a file that contains the bearer token(s) to use for every RPC.
 	Filename string `mapstructure:"filename,omitempty"`
 
-	// FileRetry configures startup retry behavior when the file referenced by
+	// RetryOnFailure configures startup retry behavior when the file referenced by
 	// Filename is not yet available. Disabled by default.
-	FileRetry FileRetryConfig `mapstructure:"file_retry,omitempty"`
+	RetryOnFailure RetryOnFailureConfig `mapstructure:"retry_on_failure,omitempty"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
-// FileRetryConfig configures retry-on-missing-file behavior for the file watcher.
-type FileRetryConfig struct {
+// RetryOnFailureConfig configures retry-on-missing-file behavior for the file watcher.
+type RetryOnFailureConfig struct {
 	// Enabled, when true, makes startup retry reading the file referenced by
 	// Filename instead of failing immediately when it is missing. Defaults to false.
 	Enabled bool `mapstructure:"enabled,omitempty"`
 
-	// MaxRetries is the maximum number of times to retry reading the file when
-	// Enabled is true.
+	// InitialInterval is the time to wait before the first retry.
+	InitialInterval time.Duration `mapstructure:"initial_interval,omitempty"`
+
+	// MaxRetries is the maximum number of times to retry reading the file.
 	MaxRetries int `mapstructure:"max_retries,omitempty"`
 
-	// RetryInterval is the interval between retries when Enabled is true.
-	RetryInterval time.Duration `mapstructure:"retry_interval,omitempty"`
+	// Offset is the interval between retries after the first.
+	Offset time.Duration `mapstructure:"offset,omitempty"`
 }
 
 var (
-	_                             component.Config = (*Config)(nil)
-	errNoTokenProvided                             = errors.New("no bearer token provided")
-	errTokensAndTokenProvided                      = errors.New("either tokens or token should be provided, not both")
-	errFileRetryNoFile                             = errors.New("file_retry.enabled requires filename to be set")
-	errFileRetryInvalidMaxRetries                  = errors.New("file_retry.max_retries must be greater than 0 when file_retry.enabled is true")
-	errFileRetryInvalidInterval                    = errors.New("file_retry.retry_interval must be greater than 0 when file_retry.enabled is true")
+	_                                  component.Config = (*Config)(nil)
+	errNoTokenProvided                                  = errors.New("no bearer token provided")
+	errTokensAndTokenProvided                           = errors.New("either tokens or token should be provided, not both")
+	errRetryOnFailureNoFile                             = errors.New("retry_on_failure.enabled requires filename to be set")
+	errRetryOnFailureInvalidMaxRetries                  = errors.New("retry_on_failure.max_retries must be greater than 0 when retry_on_failure.enabled is true")
+	errRetryOnFailureInvalidOffset                      = errors.New("retry_on_failure.offset must be greater than 0 when retry_on_failure.enabled is true")
 )
 
 // Validate checks if the extension configuration is valid
@@ -67,15 +69,15 @@ func (cfg *Config) Validate() error {
 	if cfg.BearerToken != "" && len(cfg.Tokens) > 0 {
 		return errTokensAndTokenProvided
 	}
-	if cfg.FileRetry.Enabled {
+	if cfg.RetryOnFailure.Enabled {
 		if cfg.Filename == "" {
-			return errFileRetryNoFile
+			return errRetryOnFailureNoFile
 		}
-		if cfg.FileRetry.MaxRetries <= 0 {
-			return errFileRetryInvalidMaxRetries
+		if cfg.RetryOnFailure.MaxRetries <= 0 {
+			return errRetryOnFailureInvalidMaxRetries
 		}
-		if cfg.FileRetry.RetryInterval <= 0 {
-			return errFileRetryInvalidInterval
+		if cfg.RetryOnFailure.Offset <= 0 {
+			return errRetryOnFailureInvalidOffset
 		}
 	}
 	return nil

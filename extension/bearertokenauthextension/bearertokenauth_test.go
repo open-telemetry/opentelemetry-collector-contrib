@@ -540,16 +540,17 @@ func TestBearerTokenFileWithComments(t *testing.T) {
 	assert.NoError(t, bauth.Shutdown(t.Context()))
 }
 
-func TestBearerStartWithFileRetry(t *testing.T) {
+func TestBearerStartWithRetryOnFailure(t *testing.T) {
 	dir := t.TempDir()
 	tokenPath := filepath.Join(dir, "delayed.token")
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Filename = tokenPath
-	cfg.FileRetry = FileRetryConfig{
-		Enabled:       true,
-		MaxRetries:    20,
-		RetryInterval: 100 * time.Millisecond,
+	cfg.RetryOnFailure = RetryOnFailureConfig{
+		Enabled:         true,
+		MaxRetries:      20,
+		InitialInterval: 100 * time.Millisecond,
+		Offset:          100 * time.Millisecond,
 	}
 
 	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
@@ -574,13 +575,14 @@ func TestBearerStartWithFileRetry(t *testing.T) {
 	assert.NoError(t, bauth.Shutdown(t.Context()))
 }
 
-func TestBearerStartWithFileRetryGivesUp(t *testing.T) {
+func TestBearerStartWithRetryOnFailureGivesUp(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Filename = filepath.Join(t.TempDir(), "never-appears.token")
-	cfg.FileRetry = FileRetryConfig{
-		Enabled:       true,
-		MaxRetries:    2,
-		RetryInterval: 50 * time.Millisecond,
+	cfg.RetryOnFailure = RetryOnFailureConfig{
+		Enabled:         true,
+		MaxRetries:      2,
+		InitialInterval: 50 * time.Millisecond,
+		Offset:          50 * time.Millisecond,
 	}
 
 	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))

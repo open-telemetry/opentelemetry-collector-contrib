@@ -99,15 +99,16 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "withfileretry"),
+			id: component.NewIDWithName(metadata.Type, "withretryonfailure"),
 			expected: &Config{
 				Header:   defaultHeader,
 				Scheme:   "Bearer",
 				Filename: "file-containing.token",
-				FileRetry: FileRetryConfig{
-					Enabled:       true,
-					MaxRetries:    5,
-					RetryInterval: 2 * time.Second,
+				RetryOnFailure: RetryOnFailureConfig{
+					Enabled:         true,
+					MaxRetries:      5,
+					InitialInterval: 15 * time.Second,
+					Offset:          2 * time.Second,
 				},
 			},
 		},
@@ -132,7 +133,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
-func TestValidate_FileRetry(t *testing.T) {
+func TestValidate_RetryOnFailure(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -144,44 +145,44 @@ func TestValidate_FileRetry(t *testing.T) {
 			name: "enabled without filename",
 			cfg: &Config{
 				BearerToken: "tok",
-				FileRetry: FileRetryConfig{
-					Enabled:       true,
-					MaxRetries:    1,
-					RetryInterval: time.Second,
+				RetryOnFailure: RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: 1,
+					Offset:     time.Second,
 				},
 			},
-			wantErr: errFileRetryNoFile,
+			wantErr: errRetryOnFailureNoFile,
 		},
 		{
 			name: "enabled with zero max_retries",
 			cfg: &Config{
 				Filename: "file.token",
-				FileRetry: FileRetryConfig{
-					Enabled:       true,
-					RetryInterval: time.Second,
+				RetryOnFailure: RetryOnFailureConfig{
+					Enabled: true,
+					Offset:  time.Second,
 				},
 			},
-			wantErr: errFileRetryInvalidMaxRetries,
+			wantErr: errRetryOnFailureInvalidMaxRetries,
 		},
 		{
-			name: "enabled with zero retry_interval",
+			name: "enabled with zero offset",
 			cfg: &Config{
 				Filename: "file.token",
-				FileRetry: FileRetryConfig{
+				RetryOnFailure: RetryOnFailureConfig{
 					Enabled:    true,
 					MaxRetries: 1,
 				},
 			},
-			wantErr: errFileRetryInvalidInterval,
+			wantErr: errRetryOnFailureInvalidOffset,
 		},
 		{
 			name: "enabled with valid values",
 			cfg: &Config{
 				Filename: "file.token",
-				FileRetry: FileRetryConfig{
-					Enabled:       true,
-					MaxRetries:    3,
-					RetryInterval: time.Second,
+				RetryOnFailure: RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: 3,
+					Offset:     time.Second,
 				},
 			},
 		},
@@ -189,9 +190,9 @@ func TestValidate_FileRetry(t *testing.T) {
 			name: "disabled ignores other fields",
 			cfg: &Config{
 				Filename: "file.token",
-				FileRetry: FileRetryConfig{
-					MaxRetries:    0,
-					RetryInterval: 0,
+				RetryOnFailure: RetryOnFailureConfig{
+					MaxRetries: 0,
+					Offset:     0,
 				},
 			},
 		},

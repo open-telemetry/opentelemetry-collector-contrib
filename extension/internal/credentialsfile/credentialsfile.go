@@ -21,10 +21,9 @@ type ValueResolver interface {
 	// Value returns the current secret value.
 	Value() string
 	// Start begins any background operations (e.g., file watching).
-	Start(ctx context.Context) error
-	// StartWithRetry begins any background operations (e.g., file watching)
-	// and continuously retries startup until all prerequisites are available.
-	StartWithRetry(ctx context.Context, maxRetries int, retryInterval time.Duration) error
+	// When retry options are supplied (see WithRetry), startup is retried
+	// continuously until all prerequisites are available.
+	Start(ctx context.Context, opts ...Option) error
 	// Shutdown stops any background operations.
 	Shutdown() error
 }
@@ -33,13 +32,29 @@ type ValueResolver interface {
 type Option func(*options)
 
 type options struct {
-	onChange func(string)
+	onChange        func(string)
+	retryEnabled    bool
+	maxRetries      int
+	initialInterval time.Duration
+	retryInterval   time.Duration
 }
 
 // WithOnChange registers a callback invoked with the new value after each
 // successful file reload. Not called for static values.
 func WithOnChange(fn func(string)) Option {
 	return func(o *options) { o.onChange = fn }
+}
+
+// WithRetry enables retrying startup until all prerequisites are available.
+// The first retry is attempted after initialInterval; subsequent retries are
+// spaced retryInterval apart. Startup gives up after maxRetries attempts.
+func WithRetry(maxRetries int, initialInterval, retryInterval time.Duration) Option {
+	return func(o *options) {
+		o.retryEnabled = true
+		o.maxRetries = maxRetries
+		o.initialInterval = initialInterval
+		o.retryInterval = retryInterval
+	}
 }
 
 // NewValueResolver returns a ValueResolver appropriate for the given inputs.
@@ -63,7 +78,6 @@ func NewValueResolver(inlineValue, filePath string, logger *zap.Logger, opts ...
 // staticValue is a ValueResolver that returns a fixed string.
 type staticValue string
 
-func (s staticValue) Value() string                                          { return string(s) }
-func (staticValue) Start(context.Context) error                              { return nil }
-func (staticValue) StartWithRetry(context.Context, int, time.Duration) error { return nil }
-func (staticValue) Shutdown() error                                          { return nil }
+func (s staticValue) Value() string                        { return string(s) }
+func (staticValue) Start(context.Context, ...Option) error { return nil }
+func (staticValue) Shutdown() error                        { return nil }

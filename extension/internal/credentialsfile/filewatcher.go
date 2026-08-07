@@ -42,7 +42,18 @@ func (w *fileWatcher) Value() string {
 	return ""
 }
 
-func (w *fileWatcher) Start(ctx context.Context) error {
+func (w *fileWatcher) Start(ctx context.Context, opts ...Option) error {
+	var o options
+	for _, opt := range opts {
+		opt(&o)
+	}
+	if o.retryEnabled {
+		return w.retryStart(ctx, o.maxRetries, o.initialInterval, o.retryInterval)
+	}
+	return w.start(ctx)
+}
+
+func (w *fileWatcher) start(ctx context.Context) error {
 	if w.shutdownCH != nil {
 		return errors.New("file watcher already started")
 	}
@@ -66,9 +77,11 @@ func (w *fileWatcher) Start(ctx context.Context) error {
 	return watcher.Add(w.path)
 }
 
-func (w *fileWatcher) StartWithRetry(ctx context.Context, maxRetries int, retryInterval time.Duration) error {
-	ticker := time.NewTicker(retryInterval)
-	defer ticker.Stop()
+func (w *fileWatcher) retryStart(ctx context.Context, maxRetries int, initialInterval, retryInterval time.Duration) error {
+	// Wait initialInterval before the first retry, then retryInterval between
+	// each subsequent attempt.
+	timer := time.NewTimer(initialInterval)
+	defer timer.Stop()
 	counter := 0
 	for {
 		if counter > maxRetries {
@@ -78,11 +91,12 @@ func (w *fileWatcher) StartWithRetry(ctx context.Context, maxRetries int, retryI
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("failed to read credentials file %q after %d retry", w.path, counter)
-		case <-ticker.C:
+		case <-timer.C:
 			if _, err := os.Stat(w.path); err == nil {
-				return w.Start(ctx)
+				return w.start(ctx)
 			}
 			counter++
+			timer.Reset(retryInterval)
 		}
 	}
 }
