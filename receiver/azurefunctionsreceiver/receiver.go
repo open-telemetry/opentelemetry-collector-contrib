@@ -19,19 +19,19 @@ import (
 )
 
 type functionsReceiver struct {
-	cfg      *Config
-	settings receiver.Settings
-	nextLogs consumer.Logs
+	cfg         *Config
+	settings    receiver.Settings
+	nextLogs    consumer.Logs
+	nextMetrics consumer.Metrics
 
 	server     *http.Server
 	shutdownWG sync.WaitGroup
 }
 
-func newFunctionsReceiver(cfg *Config, settings receiver.Settings, nextLogs consumer.Logs) receiver.Logs {
+func newFunctionsReceiver(cfg *Config, settings receiver.Settings) *functionsReceiver {
 	return &functionsReceiver{
 		cfg:      cfg,
 		settings: settings,
-		nextLogs: nextLogs,
 	}
 }
 
@@ -73,15 +73,13 @@ func (r *functionsReceiver) registerTriggerRoutes(mux *http.ServeMux, host compo
 
 func (r *functionsReceiver) registerEventHubRoutes(mux *http.ServeMux, host component.Host) error {
 	t := r.cfg.Triggers
-	if t == nil || t.EventHub == nil || len(t.EventHub.Logs) == 0 {
+	if t == nil || t.EventHub == nil {
+		return nil
+	}
+	if len(t.EventHub.Logs) == 0 && len(t.EventHub.Metrics) == 0 {
 		return nil
 	}
 	eh := t.EventHub
-
-	unmarshalers, err := loadLogsUnmarshalers(host, eh.Logs)
-	if err != nil {
-		return err
-	}
 
 	decoder := transport.NewBinaryDecoder()
 	var extractor MetadataExtractor
@@ -89,14 +87,34 @@ func (r *functionsReceiver) registerEventHubRoutes(mux *http.ServeMux, host comp
 		extractor = eventhub.ExtractMetadata
 	}
 
-	for _, b := range eh.Logs {
-		u := unmarshalers[b.Name]
-		protocol := newInvokeProtocol(decoder, r.settings.Logger, extractor)
-		consumer := eventhub.NewLogsConsumer(u, r.nextLogs)
-		prof := newProfile(b.Name, protocol, consumer)
-		path := "/" + b.Name
-		mux.Handle(path, createHandler(prof))
+	if r.nextLogs != nil && len(eh.Logs) > 0 {
+		unmarshalers, err := loadLogsUnmarshalers(host, eh.Logs)
+		if err != nil {
+			return err
+		}
+		for _, b := range eh.Logs {
+			u := unmarshalers[b.Name]
+			protocol := newInvokeProtocol(decoder, r.settings.Logger, extractor)
+			cons := eventhub.NewLogsConsumer(u, r.nextLogs)
+			prof := newProfile(b.Name, protocol, cons)
+			mux.Handle("/"+b.Name, createHandler(prof))
+		}
 	}
+
+	if r.nextMetrics != nil && len(eh.Metrics) > 0 {
+		unmarshalers, err := loadMetricsUnmarshalers(host, eh.Metrics)
+		if err != nil {
+			return err
+		}
+		for _, b := range eh.Metrics {
+			u := unmarshalers[b.Name]
+			protocol := newInvokeProtocol(decoder, r.settings.Logger, extractor)
+			cons := eventhub.NewMetricsConsumer(u, r.nextMetrics)
+			prof := newProfile(b.Name, protocol, cons)
+			mux.Handle("/"+b.Name, createHandler(prof))
+		}
+	}
+
 	return nil
 }
 
