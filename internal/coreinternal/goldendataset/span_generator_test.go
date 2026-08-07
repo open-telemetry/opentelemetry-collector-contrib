@@ -193,3 +193,109 @@ func TestGenerateMessagingProducerSpanFeatureGates(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateNetworkConventionsFeatureGates(t *testing.T) {
+	// This exercises a database SQL client span. On a client span both net.peer.name
+	// and net.peer.port map to server.*; net.host.port has no server.* role here, so
+	// server.port must carry the peer port (3306, the MySQL server port) rather than
+	// the local host port (51306).
+	testCases := []struct {
+		name           string
+		dontEmitV0     bool
+		emitV1         bool
+		expectedKeys   []string
+		absentKeys     []string
+		expectedValues map[string]any
+	}{
+		{
+			name:         "default_v0_only",
+			dontEmitV0:   false,
+			emitV1:       false,
+			expectedKeys: []string{"net.host.ip", "net.host.port", "net.peer.name", "net.peer.ip", "net.peer.port", "net.transport"},
+			absentKeys:   []string{"network.local.address", "server.address", "network.peer.address", "server.port", "network.transport"},
+			expectedValues: map[string]any{
+				"net.host.port": int64(51306),
+				"net.peer.name": "shopdb.example.com",
+				"net.peer.port": int64(3306),
+				"net.transport": "IP.TCP",
+			},
+		},
+		{
+			name:         "double_publish",
+			dontEmitV0:   false,
+			emitV1:       true,
+			expectedKeys: []string{"net.host.ip", "net.host.port", "net.peer.name", "net.peer.ip", "net.peer.port", "net.transport", "network.local.address", "server.address", "network.peer.address", "server.port", "network.transport"},
+			absentKeys:   []string{},
+			expectedValues: map[string]any{
+				"net.host.port":     int64(51306),
+				"net.peer.port":     int64(3306),
+				"server.address":    "shopdb.example.com",
+				"server.port":       int64(3306),
+				"network.transport": "tcp",
+			},
+		},
+		{
+			name:         "v1_only",
+			dontEmitV0:   true,
+			emitV1:       true,
+			expectedKeys: []string{"network.local.address", "server.address", "network.peer.address", "server.port", "network.transport"},
+			absentKeys:   []string{"net.host.ip", "net.host.port", "net.peer.name", "net.peer.ip", "net.peer.port", "net.transport"},
+			expectedValues: map[string]any{
+				"server.address":    "shopdb.example.com",
+				"server.port":       int64(3306),
+				"network.transport": "tcp",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.ID(), tc.dontEmitV0))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.ID(), tc.emitV1))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkV125ConventionsFeatureGate.ID(), tc.dontEmitV0))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1NetworkV125ConventionsFeatureGate.ID(), tc.emitV1))
+
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkV125ConventionsFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1NetworkV125ConventionsFeatureGate.ID(), false))
+			})
+
+			random := rand.Reader
+			traceID := generateTraceID(random)
+			spanInputs := &PICTSpanInputs{
+				Parent:     SpanParentRoot,
+				Tracestate: TraceStateEmpty,
+				Kind:       SpanKindClient,
+				Attributes: SpanAttrDatabaseSQL,
+				Events:     SpanChildCountEmpty,
+				Links:      SpanChildCountEmpty,
+				Status:     SpanStatusOk,
+			}
+			span := ptrace.NewSpan()
+			fillSpan(traceID, pcommon.SpanID([8]byte{}), "/gotest-parent", spanInputs, random, span)
+
+			attrs := span.Attributes()
+			for _, k := range tc.expectedKeys {
+				_, ok := attrs.Get(k)
+				assert.True(t, ok, "Expected attribute %s to be present", k)
+			}
+			for _, k := range tc.absentKeys {
+				_, ok := attrs.Get(k)
+				assert.False(t, ok, "Expected attribute %s to be absent", k)
+			}
+			for k, want := range tc.expectedValues {
+				v, ok := attrs.Get(k)
+				if assert.True(t, ok, "Expected attribute %s to be present", k) {
+					switch expected := want.(type) {
+					case int64:
+						assert.Equal(t, expected, v.Int(), "Unexpected value for attribute %s", k)
+					case string:
+						assert.Equal(t, expected, v.Str(), "Unexpected value for attribute %s", k)
+					}
+				}
+			}
+		})
+	}
+}
