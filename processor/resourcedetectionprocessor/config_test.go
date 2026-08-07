@@ -333,6 +333,7 @@ func TestGetConfigFromType_AllDetectors(t *testing.T) {
 		{"Consul", "consul"},
 		{"DigitalOcean", "digitalocean"},
 		{"Docker", "docker"},
+		{"Env", "env"},
 		{"GCP", "gcp"},
 		{"Hetzner", "hetzner"},
 		{"OpenShift", "openshift"},
@@ -372,6 +373,7 @@ func TestDetectorCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config.ConsulConfig)
 	assert.NotNil(t, config.DigitalOceanConfig)
 	assert.NotNil(t, config.DockerConfig)
+	assert.NotNil(t, config.EnvConfig)
 	assert.NotNil(t, config.GcpConfig)
 	assert.NotNil(t, config.HerokuConfig)
 	assert.NotNil(t, config.HetznerConfig)
