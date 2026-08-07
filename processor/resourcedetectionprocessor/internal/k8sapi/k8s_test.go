@@ -50,12 +50,12 @@ func TestDetect(t *testing.T) {
 	md.On("ClusterUID").Return("a7b3c1d2-e4f5-6789-abcd-ef0123456789", nil)
 	cfg := CreateDefaultConfig()
 	// set k8s cluster env variables and auth type to create a dummy API client
-	cfg.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(t.Context())
@@ -79,13 +79,13 @@ func TestDetectClusterUIDSkipsOnForbidden(t *testing.T) {
 	forbiddenErr := k8serrors.NewForbidden(schema.GroupResource{Resource: "namespaces"}, "kube-system", errors.New("forbidden"))
 	md.On("ClusterUID").Return("", forbiddenErr)
 	cfg := CreateDefaultConfig()
-	cfg.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
 
 	core, logs := observer.New(zapcore.WarnLevel)
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	k8sDetector.(*detector).logger = zap.New(core)
@@ -104,12 +104,12 @@ func TestDetectClusterUIDErrorsOnTransientFailure(t *testing.T) {
 	md.On("NodeName").Return("mainNode", nil)
 	md.On("ClusterUID").Return("", errors.New("connection refused"))
 	cfg := CreateDefaultConfig()
-	cfg.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	_, _, err = k8sDetector.Detect(t.Context())
@@ -125,12 +125,12 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	cfg.ResourceAttributes.K8sNodeName.Enabled = false
 	cfg.ResourceAttributes.K8sClusterUID.Enabled = false
 	// set k8s cluster env variables and auth type to create a dummy API client
-	cfg.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(t.Context())

@@ -28,7 +28,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -74,7 +75,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
-	serverName, port, err := parseResourceAttributes(cfg.Endpoint)
+	serverName, port, err := parseResourceAttributes(cfg.ClientConfig.Endpoint)
 	if err != nil {
 		return nil, err
 	}

@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -30,7 +29,7 @@ type DeviceConfig struct {
 
 // Config defines configuration for Cisco OS receiver.
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	// Devices is the list of Cisco devices to monitor.
 	Devices []DeviceConfig `mapstructure:"devices"`
@@ -39,7 +38,7 @@ type Config struct {
 }
 
 var (
-	_ xconfmap.Validator  = (*Config)(nil)
+	_ confmap.Validator   = (*Config)(nil)
 	_ confmap.Unmarshaler = (*Config)(nil)
 )
 

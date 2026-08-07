@@ -72,7 +72,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	exp, err := factory.CreateMetrics(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -83,14 +84,16 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	exp, err = factory.CreateMetrics(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
 	logExp, err := factory.CreateLogs(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, logExp)
 
@@ -99,16 +102,20 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 }
 
 func TestCreateMetrics_CustomConfig(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Timeout = 2 * time.Second
+	clientConfig.Headers = configopaque.MapList{
+		{Name: "added-entry", Value: "added value"},
+		{Name: "dot.test", Value: "test"},
+	}
 	config := &Config{
-		AccessToken: "testToken",
-		Realm:       "us1",
-		ClientConfig: confighttp.ClientConfig{
-			Timeout: 2 * time.Second,
-			Headers: configopaque.MapList{
-				{Name: "added-entry", Value: "added value"},
-				{Name: "dot.test", Value: "test"},
-			},
-		},
+		AccessToken:  "testToken",
+		Realm:        "us1",
+		ClientConfig: clientConfig,
 	}
 
 	te, err := createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
@@ -566,6 +573,7 @@ func TestDefaultCPUTranslations(t *testing.T) {
 
 	cpuNumProcessors := m["cpu.num_processors"]
 	require.Len(t, cpuNumProcessors, 1)
+	require.Equal(t, 8, int(*cpuNumProcessors[0].Value.IntValue))
 
 	cpuIdle := m["cpu.idle"]
 	require.Len(t, cpuIdle, 1)
@@ -661,7 +669,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 54, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 46, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 	require.Empty(t, dps)
 }

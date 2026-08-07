@@ -60,7 +60,8 @@ func (b builder) setAttrs(attrs pcommon.Map, attrValues []string) {
 			fmt.Sprintf(
 				"not enough attributes, expected %d attributes but got %s",
 				len(b.attrs),
-				attrValues),
+				attrValues,
+			),
 		)
 	}
 	for i, a := range b.attrs {
@@ -183,6 +184,19 @@ func buildExpHistogramBucket(m map[int]uint64) []uint64 {
 	}
 
 	return result
+}
+
+func (b builder) addSummaryDatapoint(start, ts pcommon.Timestamp, count uint64, sum float64, attrValues ...string) builder {
+	if b.metric.Type() != pmetric.MetricTypeSummary {
+		panic(b.metric.Type().String())
+	}
+	dp := b.metric.Summary().DataPoints().AppendEmpty()
+	b.setAttrs(dp.Attributes(), attrValues)
+	dp.SetCount(count)
+	dp.SetSum(sum)
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	return b
 }
 
 // setUnit sets the unit of this metric
