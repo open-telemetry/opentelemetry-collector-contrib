@@ -16,6 +16,8 @@ $defs:
 description: Config defines configuration for Azure Monitor
 type: object
 properties:
+  align_http_server_request_success_with_otel_spec:
+    type: boolean
   connection_string:
     $ref: go.opentelemetry.io/collector/config/configopaque.string
   custom_events_enabled:
@@ -29,6 +31,10 @@ properties:
     format: duration
   maxbatchsize:
     type: integer
+  non_error_http_status_codes:
+    type: array
+    items:
+      type: integer
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
