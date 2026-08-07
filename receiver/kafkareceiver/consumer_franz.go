@@ -257,9 +257,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		)
 		// Report recoverable error while consuming.
 		c.reportRecoverable(err)
-		if !hasError {
-			hasError = true
-		}
+		hasError = true
 	})
 	if hasError || fetch.Empty() {
 		if c.config.PartitionProcessing.Independent {
@@ -272,8 +270,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 	// and the assignments map is not modified while consuming. Copy the map
 	// to avoid locking for the duration of the consume loop.
 	c.mu.RLock()
-	assignments := make(map[topicPartition]*pc, len(c.assignments))
-	maps.Copy(assignments, c.assignments)
+	assignments := maps.Clone(c.assignments)
 	c.mu.RUnlock()
 
 	if c.config.PartitionProcessing.Independent {
@@ -361,14 +358,13 @@ func (c *franzConsumer) pollRecords(ctx context.Context, size int) (kgo.Fetches,
 func (c *franzConsumer) snapshotPartitions() map[topicPartition]*pc {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	snapshots := make(map[topicPartition]*pc, len(c.assignments))
-	maps.Copy(snapshots, c.assignments)
-	return snapshots
+	return maps.Clone(c.assignments)
 }
 
 // sendControl hands an offset operation to the poll loop and waits for it to
 // complete, unless this partition or the receiver is stopping.
 func (c *franzConsumer) sendControl(control partitionControl) bool {
+	control.done = make(chan struct{})
 	select {
 	case c.controls <- control:
 		// PollRecords may otherwise wait indefinitely while this worker needs
@@ -415,9 +411,9 @@ func (c *franzConsumer) processControl(control partitionControl) {
 	defer c.opsMu.Unlock()
 
 	c.mu.RLock()
-	current, assigned := c.assignments[control.tp]
+	current := c.assignments[control.tp]
 	c.mu.RUnlock()
-	if !assigned || current != control.pc {
+	if current != control.pc {
 		return
 	}
 
@@ -453,7 +449,6 @@ func (c *franzConsumer) dispatchPartitionBatches(
 			return
 		}
 		tp := topicPartition{topic: p.Topic, partition: p.Partition}
-		partition := map[string][]int32{p.Topic: {p.Partition}}
 		assign, ok := assignments[tp]
 		if !ok {
 			c.settings.Logger.Warn(
@@ -463,8 +458,8 @@ func (c *franzConsumer) dispatchPartitionBatches(
 			)
 			return
 		}
-		snapshot, snapshotted := snapshots[tp]
-		if !snapshotted || snapshot != assign {
+		partition := map[string][]int32{p.Topic: {p.Partition}}
+		if snapshots[tp] != assign {
 			assign.mailbox.requestRewind(p.Records[0], true, func() {
 				assign.addPauseReason(partitionPauseRewind)
 				c.client.PauseFetchPartitions(partition)
@@ -597,7 +592,6 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 	defer c.opsMu.Unlock()
 
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	var wg sync.WaitGroup
 	for topic, partitions := range lost {
 		for _, partition := range partitions {
@@ -624,6 +618,7 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 			}
 		}
 	}
+	c.mu.Unlock()
 	if fatal {
 		return
 	}

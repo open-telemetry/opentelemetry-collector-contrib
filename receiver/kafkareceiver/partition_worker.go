@@ -46,7 +46,8 @@ type pc struct {
 	// pauseReasons stores a bitmask of partitionPauseReason values.
 	pauseReasons atomic.Uint32
 
-	mu sync.RWMutex // protects the fields below
+	// mu prevents cancellation from racing a new wg.Add.
+	mu sync.RWMutex
 	// wg tracks the number of in-flight message processing goroutines for this
 	// partition. New goroutines must call add() so none are added after the
 	// partition consumer starts stopping.
@@ -121,7 +122,6 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 					tp:     tp,
 					pc:     pc,
 					rewind: true,
-					done:   make(chan struct{}),
 				}) {
 					return
 				}
@@ -142,7 +142,6 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 					pc:           pc,
 					commitRecord: result.commitRecord,
 					rewind:       true,
-					done:         make(chan struct{}),
 				}) {
 					return
 				}
@@ -155,7 +154,6 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 				tp:           tp,
 				pc:           pc,
 				commitRecord: result.commitRecord,
-				done:         make(chan struct{}),
 			}) {
 				return
 			}
