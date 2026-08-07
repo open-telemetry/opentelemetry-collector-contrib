@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 const (
@@ -78,6 +79,8 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 	case attrRoutingStr:
 		traceExporter.routingKey = attrRouting
 		traceExporter.routingAttrs = cfg.(*Config).RoutingAttributes
+	case randomnessRoutingStr:
+		traceExporter.routingKey = randomnessRouting
 	case traceIDRoutingStr, "":
 	default:
 		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
@@ -101,10 +104,16 @@ func (e *traceExporterImp) Shutdown(ctx context.Context) error {
 }
 
 func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	// traceID routing (the default) can route spans directly into per-backend traces in a
-	// single pass, avoiding the SplitTraces + mergeTraces round-trip.
-	if e.routingKey == traceIDRouting {
-		return e.consumeTracesByID(ctx, td)
+	// traceID and randomness routing compute their key per span, so they can route spans
+	// directly into per-backend traces in a single pass, avoiding the SplitTraces +
+	// mergeTraces round-trip.
+	switch e.routingKey {
+	case traceIDRouting:
+		return e.consumeTracesPerSpan(ctx, td, spanTraceIDIdentifier)
+	case randomnessRouting:
+		return e.consumeTracesPerSpan(ctx, td, func(span ptrace.Span) []byte {
+			return e.randomnessIdentifier(ctx, span)
+		})
 	}
 
 	batches := batchpersignal.SplitTraces(td)
@@ -148,10 +157,41 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 	return errs
 }
 
-// consumeTracesByID routes each span to the backend for its trace ID, accumulating spans
+// spanTraceIDIdentifier is the identifierFor function for traceID routing.
+func spanTraceIDIdentifier(span ptrace.Span) []byte {
+	tid := span.TraceID()
+	return tid[:]
+}
+
+// randomnessIdentifier is the identifierFor function for randomness routing: the explicit
+// randomness value (the 14-hex-digit tracestate ot=rv) when the span carries one, otherwise
+// randomness derived from the trace ID, mirroring the W3C/OTel sampling specification. Traces
+// sharing an rv route to the same backend; traces without one keep per-trace locality.
+func (e *traceExporterImp) randomnessIdentifier(ctx context.Context, span ptrace.Span) []byte {
+	if raw := span.TraceState().AsRaw(); raw != "" {
+		w3c, err := sampling.NewW3CTraceState(raw)
+		if err != nil {
+			// Member-level parse failures accumulate without discarding the
+			// members that did parse, so a valid rv can survive alongside a
+			// malformed sibling (e.g. a bad th). Count the failure but route
+			// on whatever was recovered; fall back to trace ID randomness
+			// only when no usable rv is present.
+			e.telemetry.LoadbalancerRandomnessTracestateUnparseable.Add(ctx, 1)
+		}
+		if rnd, ok := w3c.OTelValue().RValueRandomness(); ok {
+			return []byte(rnd.RValue())
+		}
+	}
+	rnd := sampling.TraceIDToRandomness(span.TraceID())
+	return []byte(rnd.RValue())
+}
+
+// consumeTracesPerSpan routes each span to the backend for its identifier, accumulating spans
 // directly into one ptrace.Traces per backend. It copies each span once and allocates a
 // single ptrace.Traces per backend, versus one per trace on the SplitTraces path.
-func (e *traceExporterImp) consumeTracesByID(ctx context.Context, td ptrace.Traces) error {
+// identifierFor must yield the same value for every span of a trace; the backend is resolved
+// once per trace ID and reused for the trace's remaining spans in the batch.
+func (e *traceExporterImp) consumeTracesPerSpan(ctx context.Context, td ptrace.Traces, identifierFor func(ptrace.Span) []byte) error {
 	// dest holds a backend's in-progress traces and the source resource/scope indices of the
 	// ScopeSpans being appended to, so a contiguous run of the same source scope reuses it.
 	type dest struct {
@@ -180,7 +220,7 @@ func (e *traceExporterImp) consumeTracesByID(ctx context.Context, td ptrace.Trac
 				exp, ok := expByTID[tid]
 				if !ok {
 					var err error
-					exp, _, err = e.loadBalancer.exporterAndEndpoint(tid[:])
+					exp, _, err = e.loadBalancer.exporterAndEndpoint(identifierFor(span))
 					if err != nil {
 						// Release the consumeWG counts already added for backends collected so
 						// far; otherwise Shutdown's consumeWG.Wait() would hang on the skipped
