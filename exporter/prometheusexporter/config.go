@@ -65,6 +65,7 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+	//nolint:staticcheck // check deprecated fields
 	if cfg.ResourceConstantLabels.Enabled || cfg.ResourceConstantLabels.ExcludeServiceAttributes {
 		return errors.New("enabled and exclude_service_attributes are not supported under resource_constant_labels; use included and excluded instead")
 	}

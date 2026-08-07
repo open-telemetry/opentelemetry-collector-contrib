@@ -212,7 +212,8 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "resource_constant_labels"),
 			expected: func() component.Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.ClientConfig.Endpoint = "localhost:8888"
+				cfg.ClientConfig = confighttp.ClientConfig{}
+				cfg.HTTP.Endpoint = "localhost:8888"
 				cfg.ResourceConstantLabels = resourcetotelemetry.Settings{
 					Included: []string{"service*"},
 					Excluded: []string{"service.attr1"},
@@ -375,7 +376,7 @@ func TestResourceConstantLabelsValidation(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 
 	invalidCfg := createDefaultConfig().(*Config)
-	invalidCfg.ResourceConstantLabels = resourcetotelemetry.Settings{Enabled: true} //nolint:staticcheck // testing deprecated field rejection
+	invalidCfg.ResourceConstantLabels.Enabled = true //nolint:staticcheck // testing deprecated field rejection
 	assert.Error(t, invalidCfg.Validate())
 
 	cfg.ResourceToTelemetrySettings.Enabled = true //nolint:staticcheck // ignore deprecated field
