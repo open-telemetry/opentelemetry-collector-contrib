@@ -151,7 +151,8 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", testReceiverID.String()),
-							attribute.String("transport", "grpc")),
+							attribute.String("transport", "grpc"),
+						),
 						Value: int64(expectedReceivedBatches),
 					},
 				},
@@ -172,7 +173,8 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", testReceiverID.String()),
-							attribute.String("transport", "grpc")),
+							attribute.String("transport", "grpc"),
+						),
 						Value: int64(expectedIngestionBlockedRPCs),
 					},
 				},
@@ -201,7 +203,8 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		t.Context(),
 		receivertest.NewNopSettings(componentmetadata.Type),
 		cfg,
-		consumertest.NewNop())
+		consumertest.NewNop(),
+	)
 
 	require.NoError(t, err)
 	assert.NotNil(t, r)
@@ -293,7 +296,8 @@ func TestStandardShutdown(t *testing.T) {
 		t.Context(),
 		set,
 		cfg,
-		nextSink)
+		nextSink,
+	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
@@ -375,7 +379,8 @@ func TestOTelArrowShutdown(t *testing.T) {
 				ctx,
 				set,
 				cfg,
-				nextSink)
+				nextSink,
+			)
 			require.NoError(t, err)
 			require.NotNil(t, r)
 			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
@@ -914,7 +919,8 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 		ctx,
 		set,
 		cfg,
-		nextSink)
+		nextSink,
+	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))

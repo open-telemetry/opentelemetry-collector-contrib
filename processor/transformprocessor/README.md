@@ -1142,3 +1142,7 @@ The feature is currently only available for log processing.
   ```
   
   Run collector: `./otelcol --config config.yaml --feature-gates=transform.flatten.logs`
+
+### `ottl.set.allowNil`
+
+The `ottl.set.allowNil` [feature gate](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/documentation.md) changes the behavior of the OTTL `set` function when a `nil` value is evaluated. When enabled, `set` will pass the `nil` value directly to the target. Depending on the target, this may result in an error or an empty value. See the [OTTL Documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) for full details and migration instructions.

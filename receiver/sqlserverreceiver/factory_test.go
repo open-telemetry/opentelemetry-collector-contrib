@@ -154,7 +154,8 @@ func TestFactory(t *testing.T) {
 					t.Context(),
 					receivertest.NewNopSettings(metadata.Type),
 					nil,
-					consumertest.NewNop())
+					consumertest.NewNop(),
+				)
 				require.ErrorIs(t, err, errConfigNotSQLServer)
 			},
 		},

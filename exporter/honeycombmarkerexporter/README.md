@@ -18,7 +18,7 @@
 > will continue to work, but a deprecation warning will be logged at startup. Please update your
 > configuration to use `honeycomb_marker:`.
 
-This exporter allows creating [markers](https://docs.honeycomb.io/working-with-your-data/markers/), via the [Honeycomb Markers API](https://docs.honeycomb.io/api/tag/Markers#operation/createMarker), based on the look of incoming telemetry. 
+This exporter allows creating [markers](https://docs.honeycomb.io/investigate/query/customize-results/marker-cli-reference), via the [Honeycomb Markers API](https://docs.honeycomb.io/api/markers/create-a-marker), based on the look of incoming telemetry.
 
 The following configuration options are supported:
 
