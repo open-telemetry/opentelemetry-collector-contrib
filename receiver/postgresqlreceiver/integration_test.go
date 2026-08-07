@@ -120,6 +120,12 @@ func integrationTest(
 			"postgresql.wal.delay",
 			"postgresql.wal.lag",
 		),
+		// Which backend types, states and wait event types exist at scrape time depends on what
+		// the server happens to be doing, so keep a single postgresql.backends data point and
+		// don't compare the values of the attributes that distinguish them.
+		pmetrictest.IgnoreMetricAttributeValue("backend_type", "postgresql.backends"),
+		pmetrictest.IgnoreMetricAttributeValue("state", "postgresql.backends"),
+		pmetrictest.IgnoreMetricAttributeValue("wait_event_type", "postgresql.backends"),
 		pmetrictest.IgnoreSubsequentDataPoints("postgresql.backends"),
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreStartTimestamp(),

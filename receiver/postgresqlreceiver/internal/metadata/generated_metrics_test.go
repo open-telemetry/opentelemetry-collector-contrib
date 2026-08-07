@@ -115,9 +115,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlBackendsDataPoint(ts, 1, "db.namespace-val")
+			mb.RecordPostgresqlBackendsDataPoint(ts, 1, "db.namespace-val", "backend_type-val", "session_state-val", "wait_event_type-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlBackendsDataPoint(ts, 3, "db.namespace-val-2")
+				mb.RecordPostgresqlBackendsDataPoint(ts, 3, "db.namespace-val-2", "backend_type-val-2", "session_state-val-2", "wait_event_type-val-2")
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -441,7 +441,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.backends"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.", mi.Description())
+						assert.Equal(t, "The number of backend processes associated with each database, broken down by backend type, connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -453,12 +453,21 @@ func TestMetricsBuilder(t *testing.T) {
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						backendTypeAttrVal, ok := dp.Attributes().Get("backend_type")
+						assert.True(t, ok)
+						assert.Equal(t, "backend_type-val", backendTypeAttrVal.Str())
+						sessionStateAttrVal, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "session_state-val", sessionStateAttrVal.Str())
+						waitEventTypeAttrVal, ok := dp.Attributes().Get("wait_event_type")
+						assert.True(t, ok)
+						assert.Equal(t, "wait_event_type-val", waitEventTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.backends"], "Found a duplicate in the metrics slice: postgresql.backends")
 						validatedMetrics["postgresql.backends"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.", mi.Description())
+						assert.Equal(t, "The number of backend processes associated with each database, broken down by backend type, connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -477,6 +486,12 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("backend_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("state")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("wait_event_type")
 						assert.False(t, ok)
 					}
 				case "postgresql.bgwriter.buffers.allocated":
