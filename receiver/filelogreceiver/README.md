@@ -251,6 +251,19 @@ When this option is set, all files ending with that suffix are scanned using a g
 before scanning through it. Please note that if the compressed file is expected to be updated, the additional compressed logs must be appended to the
 compressed file, rather than recompressing the whole content and overwriting the previous file.
 
+## Example - Collector self-monitoring
+
+Receiver Configuration
+```yaml
+receivers:
+  file_log:
+    include: [ /var/log/otelcol/collector.log ]
+    operators:
+      - type: otelcol
+```
+
+The above configuration will read the collector's own self-log file and promote the nested `resource` field (pod name, node name, service name, etc.) onto each log record, so the logs can be correlated with the collector's own metrics and traces. It works whether the collector wrote its self-logs in `json` or `console` encoding — the operator detects which one automatically.
+
 ## Offset tracking
 
 The `storage` setting allows you to define the proper storage extension for storing file offsets.
