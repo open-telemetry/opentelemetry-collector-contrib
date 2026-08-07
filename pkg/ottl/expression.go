@@ -818,6 +818,10 @@ func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, 
 	if err != nil {
 		return nil, fmt.Errorf("error getting value in %T: %w", g, err)
 	}
+	return valueToStringLike(val)
+}
+
+func valueToStringLike(val any) (*string, error) {
 	if val == nil {
 		return nil, nil
 	}
@@ -849,6 +853,170 @@ func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, 
 		result = string(resultBytes)
 	}
 	return &result, nil
+}
+
+// StringLikeSliceGetter is a Getter that returns a []string by converting each element of the
+// underlying list value to a string if necessary.
+type StringLikeSliceGetter[K any] interface {
+	// Get retrieves a []string value.
+	// The expectation is that the underlying value is a list whose elements are converted to
+	// strings if possible, using the same coercion rules as StringLikeGetter.
+	// If the value cannot be converted to a []string, nil and an error are returned.
+	// If the value is nil, nil is returned without an error.
+	Get(ctx context.Context, tCtx K) ([]string, error)
+}
+
+// newStandardStringLikeSliceGetter creates a new StandardStringLikeSliceGetter from a Getter[K],
+// also checking if the Getter is a literalGetter.
+func newStandardStringLikeSliceGetter[K any](getter Getter[K]) (StringLikeSliceGetter[K], error) {
+	g := StandardStringLikeSliceGetter[K]{
+		Getter: getter.Get,
+	}
+	if isLiteralGetter(getter) {
+		val, err := g.Get(context.Background(), *new(K))
+		if err != nil {
+			return nil, err
+		}
+		return newLiteral[K, []string](val), nil
+	}
+	return g, nil
+}
+
+// StandardStringLikeSliceGetter is a basic implementation of StringLikeSliceGetter
+type StandardStringLikeSliceGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (any, error)
+}
+
+func (g StandardStringLikeSliceGetter[K]) Get(ctx context.Context, tCtx K) ([]string, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return nil, nil
+	}
+	switch v := val.(type) {
+	case []string:
+		return v, nil
+	case []any:
+		return elementsToStrings(v)
+	case pcommon.Slice:
+		return pSliceToStrings(v)
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeSlice {
+			return pSliceToStrings(v.Slice())
+		}
+		return nil, TypeError(fmt.Sprintf("expected a list but got %v", v.Type()))
+	default:
+		return nil, TypeError(fmt.Sprintf("unsupported type: %T", val))
+	}
+}
+
+// elementsToStrings coerces each element of a []any to a string using StringLikeGetter semantics.
+// A nil element is represented as an empty string.
+func elementsToStrings(vals []any) ([]string, error) {
+	result := make([]string, len(vals))
+	for i, val := range vals {
+		s, err := valueToStringLike(val)
+		if err != nil {
+			return nil, err
+		}
+		if s == nil {
+			result[i] = ""
+		} else {
+			result[i] = *s
+		}
+	}
+	return result, nil
+}
+
+// pSliceToStrings coerces each element of a pcommon.Slice to a string using StringLikeGetter semantics.
+func pSliceToStrings(s pcommon.Slice) ([]string, error) {
+	result := make([]string, s.Len())
+	for i := 0; i < s.Len(); i++ {
+		str, err := valueToStringLike(s.At(i))
+		if err != nil {
+			return nil, err
+		}
+		if str == nil {
+			result[i] = ""
+		} else {
+			result[i] = *str
+		}
+	}
+	return result, nil
+}
+
+// SliceGetter is a Getter that returns a []any by converting the underlying list value to a []any.
+type SliceGetter[K any] interface {
+	// Get retrieves a []any value.
+	// The expectation is that the underlying value is a list.
+	// If the value cannot be converted to a []any, nil and an error are returned.
+	// If the value is nil, nil is returned without an error.
+	Get(ctx context.Context, tCtx K) ([]any, error)
+	// Getters returns the individual element Getters when the SliceGetter is backed by a
+	// literal list (e.g. `[a, b, c]`), allowing callers to evaluate elements lazily.
+	// It returns nil when the underlying value is a single list-valued expression (such as a
+	// path or the output of a converter), since those cannot be split into element Getters.
+	Getters() []Getter[K]
+}
+
+// newStandardSliceGetter creates a new StandardSliceGetter from a Getter[K].
+// If the Getter is a literal list, its element Getters are retained so callers can evaluate
+// them lazily via StandardSliceGetter.Getters.
+func newStandardSliceGetter[K any](getter Getter[K]) (SliceGetter[K], error) {
+	g := StandardSliceGetter[K]{
+		Getter: getter.Get,
+	}
+	if lg, ok := getter.(*listGetter[K]); ok {
+		g.elementGetters = lg.slice
+	}
+	return g, nil
+}
+
+// StandardSliceGetter is a basic implementation of SliceGetter
+type StandardSliceGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (any, error)
+	// elementGetters holds the individual element Getters when this SliceGetter is backed by a
+	// literal list. It is nil otherwise.
+	elementGetters []Getter[K]
+}
+
+func (g StandardSliceGetter[K]) Getters() []Getter[K] {
+	return g.elementGetters
+}
+
+func (g StandardSliceGetter[K]) Get(ctx context.Context, tCtx K) ([]any, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return nil, nil
+	}
+	switch v := val.(type) {
+	case []any:
+		return v, nil
+	case pcommon.Slice:
+		return v.AsRaw(), nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeSlice {
+			return v.Slice().AsRaw(), nil
+		}
+		return nil, TypeError(fmt.Sprintf("expected a list but got %v", v.Type()))
+	default:
+		// Support any other Go slice type (e.g. []string, []int64) by converting it to a []any.
+		// A []byte is intentionally excluded, as it is treated as a scalar elsewhere.
+		rv := reflect.ValueOf(val)
+		if rv.Kind() == reflect.Slice && rv.Type() != reflect.TypeFor[[]byte]() {
+			result := make([]any, rv.Len())
+			for i := 0; i < rv.Len(); i++ {
+				result[i] = rv.Index(i).Interface()
+			}
+			return result, nil
+		}
+		return nil, TypeError(fmt.Sprintf("unsupported type: %T", val))
+	}
 }
 
 // FloatLikeGetter is a Getter that returns a float64 by converting the underlying value to a float64 if necessary.

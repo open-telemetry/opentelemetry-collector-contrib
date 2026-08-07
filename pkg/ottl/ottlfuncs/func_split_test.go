@@ -32,7 +32,7 @@ func Test_split(t *testing.T) {
 					return "|", nil
 				},
 			},
-			expected: []string{"A", "B", "C"},
+			expected: []any{"A", "B", "C"},
 		},
 		{
 			name: "split empty string",
@@ -46,7 +46,7 @@ func Test_split(t *testing.T) {
 					return "|", nil
 				},
 			},
-			expected: []string{""},
+			expected: []any{""},
 		},
 		{
 			name: "split empty delimiter",
@@ -60,7 +60,7 @@ func Test_split(t *testing.T) {
 					return "", nil
 				},
 			},
-			expected: []string{"A", "|", "B", "|", "C"},
+			expected: []any{"A", "|", "B", "|", "C"},
 		},
 		{
 			name: "split empty string and empty delimiter",
@@ -74,7 +74,7 @@ func Test_split(t *testing.T) {
 					return "", nil
 				},
 			},
-			expected: []string{},
+			expected: []any{},
 		},
 	}
 	for _, tt := range tests {

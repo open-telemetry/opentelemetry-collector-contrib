@@ -14,7 +14,7 @@ import (
 
 type KeepKeysArguments[K any] struct {
 	Target ottl.PMapGetSetter[K]
-	Keys   []ottl.StringGetter[K]
+	Keys   ottl.StringLikeSliceGetter[K]
 }
 
 func NewKeepKeysFactory[K any]() ottl.Factory[K] {
@@ -31,16 +31,11 @@ func createKeepKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 	return keepKeys(args.Target, args.Keys), nil
 }
 
-func keepKeys[K any](target ottl.PMapGetSetter[K], keys []ottl.StringGetter[K]) ottl.ExprFunc[K] {
-	// Check if all keys are literals and pre-build the key set if so
-	literalKeySet := make(map[string]struct{}, len(keys))
-	for _, key := range keys {
-		k, isLiteral := ottl.GetLiteralValue(key)
-		if !isLiteral {
-			literalKeySet = nil
-			break
-		}
-		literalKeySet[k] = struct{}{}
+func keepKeys[K any](target ottl.PMapGetSetter[K], keys ottl.StringLikeSliceGetter[K]) ottl.ExprFunc[K] {
+	// Check if the keys are literals and pre-build the key set if so
+	var literalKeySet map[string]struct{}
+	if keyValues, isLiteral := ottl.GetLiteralValue[K, []string](keys); isLiteral {
+		literalKeySet = keySetFrom(keyValues)
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -49,20 +44,14 @@ func keepKeys[K any](target ottl.PMapGetSetter[K], keys []ottl.StringGetter[K]) 
 			return nil, err
 		}
 
-		var keySet map[string]struct{}
-		if literalKeySet != nil {
-			// Use pre-built key set for literal keys
-			keySet = literalKeySet
-		} else {
+		keySet := literalKeySet
+		if keySet == nil {
 			// Build key set at runtime for dynamic keys
-			keySet = make(map[string]struct{}, len(keys))
-			for _, key := range keys {
-				k, err := key.Get(ctx, tCtx)
-				if err != nil {
-					return nil, err
-				}
-				keySet[k] = struct{}{}
+			keyValues, err := keys.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
 			}
+			keySet = keySetFrom(keyValues)
 		}
 
 		val.RemoveIf(func(key string, _ pcommon.Value) bool {
@@ -74,4 +63,12 @@ func keepKeys[K any](target ottl.PMapGetSetter[K], keys []ottl.StringGetter[K]) 
 		}
 		return nil, target.Set(ctx, tCtx, val)
 	}
+}
+
+func keySetFrom(keys []string) map[string]struct{} {
+	keySet := make(map[string]struct{}, len(keys))
+	for _, k := range keys {
+		keySet[k] = struct{}{}
+	}
+	return keySet
 }

@@ -14,53 +14,41 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type getterFunc[K any] func(ctx context.Context, tCtx K) (any, error)
-
-func (g getterFunc[K]) Get(ctx context.Context, tCtx K) (any, error) {
-	return g(ctx, tCtx)
-}
-
 func Test_Format(t *testing.T) {
 	tests := []struct {
 		name         string
 		formatString string
-		formatArgs   []ottl.Getter[any]
+		formatArgs   []any
 		expected     string
 	}{
 		{
 			name:         "non formatting string",
 			formatString: "test",
-			formatArgs:   []ottl.Getter[any]{},
+			formatArgs:   []any{},
 			expected:     "test",
 		},
 		{
 			name:         "padded int",
 			formatString: "test-%04d",
-			formatArgs: []ottl.Getter[any]{
-				getterFunc[any](func(context.Context, any) (any, error) {
-					return 2, nil
-				}),
-			},
-			expected: "test-0002",
+			formatArgs:   []any{2},
+			expected:     "test-0002",
 		},
 		{
 			name:         "multiple-args",
 			formatString: "test-%04d-%4s",
-			formatArgs: []ottl.Getter[any]{
-				getterFunc[any](func(context.Context, any) (any, error) {
-					return 2, nil
-				}),
-				getterFunc[any](func(context.Context, any) (any, error) {
-					return "te", nil
-				}),
-			},
-			expected: "test-0002-  te",
+			formatArgs:   []any{2, "te"},
+			expected:     "test-0002-  te",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := format(tt.formatString, tt.formatArgs)
+			formatArgs := tt.formatArgs
+			exprFunc := format[any](tt.formatString, ottl.StandardSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return formatArgs, nil
+				},
+			})
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -69,11 +57,11 @@ func Test_Format(t *testing.T) {
 }
 
 func TestFormat_error(t *testing.T) {
-	target := getterFunc[any](func(context.Context, any) (any, error) {
-		return nil, errors.New("failed to get")
+	exprFunc := format[any]("test-%d", ottl.StandardSliceGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return nil, errors.New("failed to get")
+		},
 	})
-
-	exprFunc := format[any]("test-%d", []ottl.Getter[any]{target})
 	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }

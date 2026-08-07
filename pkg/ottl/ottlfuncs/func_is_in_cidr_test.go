@@ -16,18 +16,15 @@ func Test_isInCIDR(t *testing.T) {
 	tests := []struct {
 		name     string
 		target   any
-		networks []ottl.StringGetter[any]
+		networks ottl.StringLikeSliceGetter[any]
 		result   any
 	}{
 		{
 			name:   "an included IP string",
 			target: "192.0.2.1",
-			networks: []ottl.StringGetter[any]{
-				ottl.StandardStringGetter[any]{
-					Getter: func(context.Context, any) (any, error) { return "192.0.24.0/24", nil },
-				},
-				ottl.StandardStringGetter[any]{
-					Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
+			networks: ottl.StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []string{"192.0.24.0/24", "192.0.2.0/24"}, nil
 				},
 			},
 			result: true,
@@ -35,9 +32,9 @@ func Test_isInCIDR(t *testing.T) {
 		{
 			name:   "a not included IP string",
 			target: "195.0.2.1",
-			networks: []ottl.StringGetter[any]{
-				ottl.StandardStringGetter[any]{
-					Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
+			networks: ottl.StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []string{"192.0.2.0/24"}, nil
 				},
 			},
 			result: false,
@@ -45,9 +42,9 @@ func Test_isInCIDR(t *testing.T) {
 		{
 			name:   "non IP string",
 			target: "hello world",
-			networks: []ottl.StringGetter[any]{
-				ottl.StandardStringGetter[any]{
-					Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
+			networks: ottl.StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []string{"192.0.2.0/24"}, nil
 				},
 			},
 			result: false,
@@ -55,9 +52,9 @@ func Test_isInCIDR(t *testing.T) {
 		{
 			name:   "empty string",
 			target: "",
-			networks: []ottl.StringGetter[any]{
-				ottl.StandardStringGetter[any]{
-					Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
+			networks: ottl.StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []string{"192.0.2.0/24"}, nil
 				},
 			},
 			result: false,
@@ -80,7 +77,7 @@ func Test_isInCIDR_Error(t *testing.T) {
 	tests := []struct {
 		name          string
 		target        any
-		networks      []ottl.StringGetter[any]
+		networks      ottl.StringLikeSliceGetter[any]
 		result        any
 		err           bool
 		expectedError string
@@ -88,9 +85,9 @@ func Test_isInCIDR_Error(t *testing.T) {
 		{
 			name:   "non-string",
 			target: 10,
-			networks: []ottl.StringGetter[any]{
-				ottl.StandardStringGetter[any]{
-					Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
+			networks: ottl.StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []string{"192.0.2.0/24"}, nil
 				},
 			},
 			expectedError: "expected string but got int",
@@ -98,9 +95,9 @@ func Test_isInCIDR_Error(t *testing.T) {
 		{
 			name:   "dynamic network is not a valid CIDR",
 			target: "192.0.0.1",
-			networks: []ottl.StringGetter[any]{
-				ottl.StandardStringGetter[any]{
-					Getter: func(context.Context, any) (any, error) { return "192.0.2/24", nil },
+			networks: ottl.StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []string{"192.0.2/24"}, nil
 				},
 			},
 			expectedError: "invalid CIDR address: 192.0.2/24",
@@ -108,9 +105,9 @@ func Test_isInCIDR_Error(t *testing.T) {
 		{
 			name:   "nil",
 			target: nil,
-			networks: []ottl.StringGetter[any]{
-				ottl.StandardStringGetter[any]{
-					Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
+			networks: ottl.StandardStringLikeSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []string{"192.0.2.0/24"}, nil
 				},
 			},
 			expectedError: "expected string but got nil",
@@ -129,19 +126,18 @@ func Test_isInCIDR_Error(t *testing.T) {
 }
 
 func Test_isInCIDR_literalNetworks(t *testing.T) {
-	literalOne, err := ottl.NewTestingLiteralGetter(true, ottl.StandardStringGetter[any]{
-		Getter: func(context.Context, any) (any, error) { return "10.0.0.0/8", nil },
-	})
-	require.NoError(t, err)
-	literalTwo, err := ottl.NewTestingLiteralGetter(true, ottl.StandardStringGetter[any]{
-		Getter: func(context.Context, any) (any, error) { return "192.168.0.0/16", nil },
-	})
-	require.NoError(t, err)
+	literalNetworks := func(networks ...string) ottl.StringLikeSliceGetter[any] {
+		g, err := ottl.NewTestingLiteralGetter[any, []string](true, ottl.StandardStringLikeSliceGetter[any]{
+			Getter: func(context.Context, any) (any, error) { return networks, nil },
+		})
+		require.NoError(t, err)
+		return g
+	}
 
 	t.Run("single literal network", func(t *testing.T) {
 		exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) { return "10.1.2.3", nil },
-		}, []ottl.StringGetter[any]{literalOne})
+		}, literalNetworks("10.0.0.0/8"))
 		require.NoError(t, err)
 		result, err := exprFunc(nil, nil)
 		require.NoError(t, err)
@@ -151,7 +147,7 @@ func Test_isInCIDR_literalNetworks(t *testing.T) {
 	t.Run("multiple literals networks", func(t *testing.T) {
 		exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) { return "192.168.0.1", nil },
-		}, []ottl.StringGetter[any]{literalOne, literalTwo})
+		}, literalNetworks("10.0.0.0/8", "192.168.0.0/16"))
 		require.NoError(t, err)
 		result, err := exprFunc(nil, nil)
 		require.NoError(t, err)
@@ -159,14 +155,9 @@ func Test_isInCIDR_literalNetworks(t *testing.T) {
 	})
 
 	t.Run("invalid literal network", func(t *testing.T) {
-		invalidLiteral, err := ottl.NewTestingLiteralGetter(true, ottl.StandardStringGetter[any]{
-			Getter: func(context.Context, any) (any, error) { return "192.0.2/24", nil },
-		})
-		require.NoError(t, err)
-
-		_, err = isInCIDR[any](ottl.StandardStringGetter[any]{
+		_, err := isInCIDR[any](ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) { return "192.0.0.1", nil },
-		}, []ottl.StringGetter[any]{invalidLiteral})
+		}, literalNetworks("192.0.2/24"))
 		assert.ErrorContains(t, err, "invalid CIDR address")
 	})
 }
