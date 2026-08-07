@@ -100,6 +100,12 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 // received at all, so that removeAbsentDNSAttributes can strip the attribute.
 const noRcode = -1
 
+var (
+	dnsRcodeAttr          = string(metadata.DnscheckStatusMetricAttributeKeyDNSRcode)
+	dnsResolvedIPAttr     = string(metadata.DnscheckStatusMetricAttributeKeyDNSResolvedIP)
+	dnsResolvedAllIPsAttr = string(metadata.DnscheckStatusMetricAttributeKeyDNSResolvedAllIps)
+)
+
 // removeAbsentDNSAttributes strips dnscheck.status attributes that mdatagen
 // always writes, for the cases where they should be absent per the metric's
 // documented semantics: dns.rcode when no response was received, and
@@ -113,20 +119,20 @@ func removeAbsentDNSAttributes(metrics pmetric.Metrics) {
 			ms := sms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
-				if m.Name() != "dnscheck.status" || m.Type() != pmetric.MetricTypeSum {
+				if m.Name() != metadata.MetricsInfo.DnscheckStatus.Name || m.Type() != pmetric.MetricTypeSum {
 					continue
 				}
 				dps := m.Sum().DataPoints()
 				for l := 0; l < dps.Len(); l++ {
 					dp := dps.At(l)
-					if rcode, ok := dp.Attributes().Get("dns.rcode"); ok && rcode.Int() == noRcode {
-						dp.Attributes().Remove("dns.rcode")
+					if rcode, ok := dp.Attributes().Get(dnsRcodeAttr); ok && rcode.Int() == noRcode {
+						dp.Attributes().Remove(dnsRcodeAttr)
 					}
-					if ip, ok := dp.Attributes().Get("dns.resolved.ip"); ok && ip.Str() == "" {
-						dp.Attributes().Remove("dns.resolved.ip")
+					if ip, ok := dp.Attributes().Get(dnsResolvedIPAttr); ok && ip.Str() == "" {
+						dp.Attributes().Remove(dnsResolvedIPAttr)
 					}
-					if ips, ok := dp.Attributes().Get("dns.resolved.all.ips"); ok && ips.Str() == "" {
-						dp.Attributes().Remove("dns.resolved.all.ips")
+					if ips, ok := dp.Attributes().Get(dnsResolvedAllIPsAttr); ok && ips.Str() == "" {
+						dp.Attributes().Remove(dnsResolvedAllIPsAttr)
 					}
 				}
 			}

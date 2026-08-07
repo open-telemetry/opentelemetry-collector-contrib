@@ -158,7 +158,7 @@ func TestScrapeNoResponse(t *testing.T) {
 		DNSServers:           []DNSServerConfig{{Endpoint: "127.0.0.1:1", Timeout: 200 * time.Millisecond}},
 		Hostnames:            []HostnameConfig{{Name: "example.com", RecordType: "A"}},
 	}
-	cfg.Metrics.DnscheckError.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.DnscheckError.Enabled = true
 	settings := receivertest.NewNopSettings(metadata.Type)
 	s := newScraper(cfg, settings)
 

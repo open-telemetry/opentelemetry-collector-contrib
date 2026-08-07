@@ -35,8 +35,8 @@ var (
 
 // Config defines the configuration for the DNS check receiver.
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 
 	// DNSServers is the list of DNS servers to query.
 	DNSServers []DNSServerConfig `mapstructure:"dns_servers"`
