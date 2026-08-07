@@ -56,7 +56,7 @@ feature_gates:
     description: >-
       When enabled, goldendataset no longer generates spans with deprecated
       semconv v1.25.0 attributes (net.host.port, net.peer.name, net.peer.port, net.transport).
-    from_version: v0.158.0
+    from_version: v0.159.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45297
     skip_strict_validation: true
   - id: internal.coreinternal.goldendataset.DontEmitV0RPCConventions
@@ -119,7 +119,7 @@ feature_gates:
       When enabled, goldendataset generates spans with network.transport, server.address, server.port,
       and client.port instead of the deprecated net.transport, net.peer.name,
       net.host.port, and net.peer.port (semconv v1.25.0).
-    from_version: v0.158.0
+    from_version: v0.159.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45297
     skip_strict_validation: true
   - id: internal.coreinternal.goldendataset.EmitV1RPCConventions
