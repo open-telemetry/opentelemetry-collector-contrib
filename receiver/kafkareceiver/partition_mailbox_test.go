@@ -193,6 +193,40 @@ func TestPartitionMailboxSerializesPauseBeforeResume(t *testing.T) {
 	<-resumed
 }
 
+func TestPartitionMailboxSerializesPauseBeforeRewindResume(t *testing.T) {
+	mailbox := newPartitionMailbox(t.Context(), 1)
+	pauseStarted := make(chan struct{})
+	releasePause := make(chan struct{})
+	resumed := make(chan struct{})
+
+	enqueueDone := make(chan struct{})
+	go func() {
+		defer close(enqueueDone)
+		mailbox.enqueue(mailboxBatch(1), func(partitionPauseReason) {
+			close(pauseStarted)
+			<-releasePause
+		})
+	}()
+	<-pauseStarted
+
+	go mailbox.resumeAfterRewind(func() {
+		close(resumed)
+	})
+
+	require.Never(t, func() bool {
+		select {
+		case <-resumed:
+			return true
+		default:
+			return false
+		}
+	}, 100*time.Millisecond, 10*time.Millisecond)
+
+	close(releasePause)
+	<-enqueueDone
+	<-resumed
+}
+
 func TestPartitionMailboxRequestRewind(t *testing.T) {
 	cases := []struct {
 		name          string

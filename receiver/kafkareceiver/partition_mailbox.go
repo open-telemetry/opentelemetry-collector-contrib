@@ -126,6 +126,23 @@ func (m *partitionMailbox) takeRewind() *kgo.Record {
 	return record
 }
 
+// resumeAfterRewind serializes a rewind resume with mailbox pause callbacks.
+func (m *partitionMailbox) resumeAfterRewind(resume func()) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	resume()
+}
+
+// discard releases all queued and pending work.
+func (m *partitionMailbox) discard() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	clear(m.batches)
+	m.batches = m.batches[:0]
+	m.pendingRewind = nil
+}
+
 // notifyLocked wakes the worker without blocking while the caller holds m.mu.
 func (m *partitionMailbox) notifyLocked() {
 	select {

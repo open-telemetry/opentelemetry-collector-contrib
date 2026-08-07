@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -31,14 +32,12 @@ type topicPartition struct {
 	partition int32
 }
 
-// partitionControl transfers offset operations from one partition worker to
-// the poll loop and lets the worker wait until the operation is complete.
+// partitionControl transfers a rewind request from one partition worker to the
+// poll loop and lets the worker wait until it is complete.
 type partitionControl struct {
-	tp           topicPartition
-	pc           *pc
-	commitRecord *kgo.Record
-	rewind       bool
-	done         chan struct{}
+	tp   topicPartition
+	pc   *pc
+	done chan struct{}
 }
 
 // brokerReadKey is the cache key for OnBrokerRead/OnBrokerWrite metric options.
@@ -65,12 +64,10 @@ type franzConsumer struct {
 	client      *kgo.Client
 	obsrecv     *receiverhelper.ObsReport
 	assignments map[topicPartition]*pc
-	// controls serializes SetOffsets and synchronous commits between
-	// PollRecords calls.
+	// controls serializes SetOffsets between PollRecords calls.
 	controls chan partitionControl
 
-	// opsMu prevents assignment callbacks from racing offset mutation or
-	// synchronous commits.
+	// opsMu prevents assignment callbacks and rewinds from racing commits.
 	opsMu sync.Mutex
 
 	pollMu          sync.Mutex
@@ -336,7 +333,8 @@ func (c *franzConsumer) pollRecords(ctx context.Context, size int) (kgo.Fetches,
 	c.pollMu.Lock()
 	c.pollCancel = cancel
 	c.pollInterrupted = false
-	if len(c.controls) > 0 {
+	if len(c.controls) > 0 && c.opsMu.TryLock() {
+		c.opsMu.Unlock()
 		c.pollInterrupted = true
 		cancel()
 	}
@@ -368,13 +366,8 @@ func (c *franzConsumer) sendControl(control partitionControl) bool {
 	select {
 	case c.controls <- control:
 		// PollRecords may otherwise wait indefinitely while this worker needs
-		// the poll loop to apply a commit or rewind.
-		c.pollMu.Lock()
-		if c.pollCancel != nil {
-			c.pollInterrupted = true
-			c.pollCancel()
-		}
-		c.pollMu.Unlock()
+		// the poll loop to apply a rewind.
+		c.interruptPoll()
 	case <-control.pc.ctx.Done():
 		return false
 	case <-c.closing:
@@ -390,40 +383,55 @@ func (c *franzConsumer) sendControl(control partitionControl) bool {
 	}
 }
 
-// processControls drains all offset operations before the next PollRecords
-// call so workers for different partitions cannot mutate offsets concurrently.
+func (c *franzConsumer) interruptPoll() {
+	c.pollMu.Lock()
+	defer c.pollMu.Unlock()
+	if c.pollCancel != nil {
+		c.pollInterrupted = true
+		c.pollCancel()
+	}
+}
+
+// unlockOpsAndWakePoll wakes the poll loop if an offset operation arrived
+// while another commit, rewind, or assignment callback held opsMu.
+func (c *franzConsumer) unlockOpsAndWakePoll() {
+	c.opsMu.Unlock()
+	if len(c.controls) > 0 {
+		c.interruptPoll()
+	}
+}
+
+// processControls drains all rewind requests before the next PollRecords call.
 func (c *franzConsumer) processControls() {
+	if !c.opsMu.TryLock() {
+		return
+	}
+	defer c.unlockOpsAndWakePoll()
+
 	for {
 		select {
 		case control := <-c.controls:
-			c.processControl(control)
+			c.processControlLocked(control)
 		default:
 			return
 		}
 	}
 }
 
-// processControl applies an operation only if the worker still owns the same
-// assignment. A stale worker must never commit or rewind a new owner.
+// processControl applies a rewind only if the worker still owns the same
+// assignment.
 func (c *franzConsumer) processControl(control partitionControl) {
-	defer close(control.done)
 	c.opsMu.Lock()
-	defer c.opsMu.Unlock()
+	defer c.unlockOpsAndWakePoll()
+	c.processControlLocked(control)
+}
 
+func (c *franzConsumer) processControlLocked(control partitionControl) {
+	defer close(control.done)
 	c.mu.RLock()
 	current := c.assignments[control.tp]
 	c.mu.RUnlock()
 	if current != control.pc {
-		return
-	}
-
-	if control.commitRecord != nil {
-		if err := c.client.CommitRecords(control.pc.ctx, control.commitRecord); err != nil && control.pc.ctx.Err() == nil {
-			c.settings.Logger.Error("failed to commit partition offset", zap.Error(err))
-			c.reportRecoverable(err)
-		}
-	}
-	if !control.rewind {
 		return
 	}
 
@@ -459,8 +467,8 @@ func (c *franzConsumer) dispatchPartitionBatches(
 			return
 		}
 		partition := map[string][]int32{p.Topic: {p.Partition}}
-		if snapshots[tp] != assign {
-			assign.mailbox.requestRewind(p.Records[0], true, func() {
+		if snapshot, snapshotted := snapshots[tp]; snapshotted && snapshot != assign {
+			assign.mailbox.requestRewind(c.assignmentStartRecord(tp), true, func() {
 				assign.addPauseReason(partitionPauseRewind)
 				c.client.PauseFetchPartitions(partition)
 			})
@@ -483,6 +491,22 @@ func (c *franzConsumer) dispatchPartitionBatches(
 			zap.Int64("end_offset", p.Records[len(p.Records)-1].Offset),
 		)
 	})
+}
+
+func (c *franzConsumer) assignmentStartRecord(tp topicPartition) *kgo.Record {
+	record := &kgo.Record{
+		Topic:       tp.topic,
+		Partition:   tp.partition,
+		LeaderEpoch: -1,
+		Offset:      -1,
+	}
+	if offset, ok := c.client.CommittedOffsets()[tp.topic][tp.partition]; ok && offset.Offset >= 0 {
+		record.LeaderEpoch = offset.Epoch
+		record.Offset = offset.Offset
+	} else if c.config.ConsumerConfig.InitialOffset == configkafka.EarliestOffset {
+		record.Offset = -2
+	}
+	return record
 }
 
 func (c *franzConsumer) Shutdown(ctx context.Context) error {
@@ -537,7 +561,7 @@ func (c *franzConsumer) triggerShutdown() bool {
 // assigned partitions to this consumer process received records.
 func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned map[string][]int32) {
 	c.opsMu.Lock()
-	defer c.opsMu.Unlock()
+	defer c.unlockOpsAndWakePoll()
 
 	// Report OK on each successful assignment so we can recover status after transient errors.
 	c.reportStatus(componentstatus.StatusOK)
@@ -588,11 +612,8 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 	lost map[string][]int32, fatal bool,
 ) {
-	c.opsMu.Lock()
-	defer c.opsMu.Unlock()
-
 	c.mu.Lock()
-	var wg sync.WaitGroup
+	stopping := make(map[topicPartition]*pc)
 	for topic, partitions := range lost {
 		for _, partition := range partitions {
 			tp := topicPartition{topic: topic, partition: partition}
@@ -604,26 +625,38 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 			// - OnPartitionRevoked can be called multiple times for cooperative
 			// balancer on topic lost/deleted.
 			if pc, ok := c.assignments[tp]; ok {
-				delete(c.assignments, tp)
 				// Cancel also locks the partition consumer. This ensures that
 				// the partition consumer stops processing messages when the
 				// partition is lost or reassigned.
 				pc.cancelContext(errors.New(
 					"stopping processing: partition reassigned or lost",
 				))
-				wg.Go(func() {
-					pc.wg.Wait()
-				})
+				stopping[tp] = pc
 				c.telemetryBuilder.KafkaReceiverPartitionClose.Add(context.Background(), 1)
 			}
+		}
+	}
+	c.mu.Unlock()
+
+	for _, pc := range stopping {
+		pc.wg.Wait()
+	}
+
+	// Block assignment and rewind operations until the old workers are removed
+	// and their marked progress is committed.
+	c.opsMu.Lock()
+	defer c.unlockOpsAndWakePoll()
+	c.mu.Lock()
+	for tp, pc := range stopping {
+		if c.assignments[tp] == pc {
+			delete(c.assignments, tp)
 		}
 	}
 	c.mu.Unlock()
 	if fatal {
 		return
 	}
-	// Wait for all partition consumers to exit before committing marked offsets.
-	wg.Wait()
+
 	// Commit synchronously here (rather than relying on autocommit) so progress
 	// is persisted before the partition is reassigned to another consumer,
 	// avoiding duplicate processing by the next owner.

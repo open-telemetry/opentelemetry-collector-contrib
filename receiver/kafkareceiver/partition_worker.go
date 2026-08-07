@@ -23,9 +23,8 @@ const (
 	partitionPauseRewind
 )
 
-// partitionBatchResult returns offset operations to the poll loop. franz-go
-// offset mutation and synchronous commits are serialized there instead of
-// racing PollRecords from partition workers.
+// partitionBatchResult describes the commit and rewind work produced while
+// processing one fetched partition batch.
 type partitionBatchResult struct {
 	rewindRecord *kgo.Record
 	commitRecord *kgo.Record
@@ -119,15 +118,16 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 					break
 				}
 				if !c.sendControl(partitionControl{
-					tp:     tp,
-					pc:     pc,
-					rewind: true,
+					tp: tp,
+					pc: pc,
 				}) {
 					return
 				}
-				if pc.clearPauseReasons(partitionPauseRewind | partitionPauseBackpressure) {
-					c.client.ResumeFetchPartitions(partition)
-				}
+				pc.mailbox.resumeAfterRewind(func() {
+					if pc.clearPauseReasons(partitionPauseRewind | partitionPauseBackpressure) {
+						c.client.ResumeFetchPartitions(partition)
+					}
+				})
 				break
 			}
 
@@ -137,27 +137,35 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 					pc.addPauseReason(partitionPauseRewind)
 					c.client.PauseFetchPartitions(partition)
 				})
+			}
+			if result.commitRecord != nil {
+				// Keep a marked fallback so revocation can preserve progress if
+				// cancellation interrupts the synchronous partition commit.
+				c.client.MarkCommitRecords(result.commitRecord)
+				c.opsMu.Lock()
+				err := c.client.CommitRecords(pc.ctx, result.commitRecord)
+				c.unlockOpsAndWakePoll()
+				if err != nil && pc.ctx.Err() == nil {
+					pc.logger.Error("failed to commit partition offset", zap.Error(err))
+					c.reportRecoverable(err)
+				}
+			}
+			if result.rewindRecord != nil {
 				if !c.sendControl(partitionControl{
-					tp:           tp,
-					pc:           pc,
-					commitRecord: result.commitRecord,
-					rewind:       true,
+					tp: tp,
+					pc: pc,
 				}) {
 					return
 				}
-				if pc.clearPauseReasons(partitionPauseRewind | partitionPauseBackpressure) {
-					c.client.ResumeFetchPartitions(partition)
-				}
+				pc.mailbox.resumeAfterRewind(func() {
+					if pc.clearPauseReasons(partitionPauseRewind | partitionPauseBackpressure) {
+						c.client.ResumeFetchPartitions(partition)
+					}
+				})
 				break
 			}
-			if result.commitRecord != nil && !c.sendControl(partitionControl{
-				tp:           tp,
-				pc:           pc,
-				commitRecord: result.commitRecord,
-			}) {
-				return
-			}
 			if result.terminal {
+				pc.mailbox.discard()
 				return
 			}
 		}

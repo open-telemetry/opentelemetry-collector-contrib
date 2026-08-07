@@ -15,8 +15,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -27,6 +29,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
@@ -72,11 +75,326 @@ func TestPartitionProcessingBlockedPartition(t *testing.T) {
 
 	h.produce(1, "healthy")
 	waitSignal(t, partitionOneProcessed, "partition 1 was blocked by partition 0")
+	require.Eventually(t, func() bool {
+		offset, ok := h.committedOffset(1)
+		return ok && offset == 1
+	}, 5*time.Second, 10*time.Millisecond)
 
 	require.Never(t, func() bool {
 		offset, ok := h.committedOffset(0)
 		return ok && offset > 0
 	}, 500*time.Millisecond, 10*time.Millisecond)
+}
+
+func TestPartitionProcessingCommitDoesNotBlockPolling(t *testing.T) {
+	h := newPartitionProcessingHarness(t, 2, func(cfg *Config) {
+		cfg.ConsumerConfig.AutoCommit.Enable = false
+	})
+
+	processed := [2]chan struct{}{make(chan struct{}), make(chan struct{})}
+	var processedOnce [2]sync.Once
+	h.start(func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
+		processedOnce[record.Partition].Do(func() {
+			close(processed[record.Partition])
+		})
+		return nil
+	})
+	defer h.shutdown(t.Context())
+	h.waitAssignments(2)
+
+	var rejectCommits atomic.Bool
+	rejectCommits.Store(true)
+	commitStarted := make(chan struct{})
+	var commitOnce sync.Once
+	h.cluster.ControlKey(int16(kmsg.OffsetCommit), func(request kmsg.Request) (kmsg.Response, error, bool) {
+		h.cluster.KeepControl()
+		if !rejectCommits.Load() {
+			return nil, nil, false
+		}
+		commitOnce.Do(func() { close(commitStarted) })
+		return retryOffsetCommitResponse(request.(*kmsg.OffsetCommitRequest)), nil, true
+	})
+	defer rejectCommits.Store(false)
+
+	h.produce(0, "first")
+	waitSignal(t, processed[0], "partition 0 was not processed")
+	waitSignal(t, commitStarted, "partition 0 did not attempt an offset commit")
+
+	h.produce(1, "second")
+	waitSignal(t, processed[1], "partition 1 was blocked by partition 0's offset commit")
+}
+
+func TestPartitionProcessingPendingRewindDoesNotBlockPolling(t *testing.T) {
+	h := newPartitionProcessingHarness(t, 3, func(cfg *Config) {
+		cfg.ConsumerConfig.AutoCommit.Enable = false
+		cfg.MessageMarking.After = true
+		cfg.ErrorBackOff = configretry.BackOffConfig{
+			Enabled:             true,
+			InitialInterval:     time.Millisecond,
+			MaxInterval:         time.Millisecond,
+			MaxElapsedTime:      2 * time.Millisecond,
+			RandomizationFactor: 0,
+			Multiplier:          1,
+		}
+	})
+
+	healthyProcessed := make(chan struct{})
+	var healthyOnce sync.Once
+	h.start(func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
+		switch record.Partition {
+		case 1:
+			return errors.New("trigger rewind")
+		case 2:
+			healthyOnce.Do(func() { close(healthyProcessed) })
+		}
+		return nil
+	})
+	defer h.shutdown(t.Context())
+	h.waitAssignments(3)
+
+	var rejectCommits atomic.Bool
+	rejectCommits.Store(true)
+	defer rejectCommits.Store(false)
+	commitStarted := make(chan struct{})
+	var commitOnce sync.Once
+	h.cluster.ControlKey(int16(kmsg.OffsetCommit), func(request kmsg.Request) (kmsg.Response, error, bool) {
+		h.cluster.KeepControl()
+		if !rejectCommits.Load() {
+			return nil, nil, false
+		}
+		commitOnce.Do(func() { close(commitStarted) })
+		return retryOffsetCommitResponse(request.(*kmsg.OffsetCommitRequest)), nil, true
+	})
+
+	h.produce(0, "blocked commit")
+	waitSignal(t, commitStarted, "partition 0 did not attempt an offset commit")
+	h.produce(1, "rewind")
+	require.Eventually(t, func() bool {
+		return len(h.consumer.controls) == 1
+	}, 5*time.Second, 10*time.Millisecond)
+
+	h.produce(2, "healthy")
+	waitSignal(t, healthyProcessed, "pending rewind blocked polling healthy partition")
+}
+
+func TestPartitionProcessingCommitSerializesRewind(t *testing.T) {
+	h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
+		cfg.ConsumerConfig.AutoCommit.Enable = false
+	})
+	h.start(func(context.Context, *kgo.Record, attribute.Set) error {
+		return nil
+	})
+	defer h.shutdown(t.Context())
+	h.waitAssignments(1)
+
+	var rejectCommits atomic.Bool
+	rejectCommits.Store(true)
+	defer rejectCommits.Store(false)
+	commitStarted := make(chan struct{})
+	var commitOnce sync.Once
+	h.cluster.ControlKey(int16(kmsg.OffsetCommit), func(request kmsg.Request) (kmsg.Response, error, bool) {
+		h.cluster.KeepControl()
+		if !rejectCommits.Load() {
+			return nil, nil, false
+		}
+		commitOnce.Do(func() { close(commitStarted) })
+		return retryOffsetCommitResponse(request.(*kmsg.OffsetCommitRequest)), nil, true
+	})
+
+	h.produce(0, "record")
+	waitSignal(t, commitStarted, "partition did not attempt an offset commit")
+
+	tp := topicPartition{topic: h.topic, partition: 0}
+	h.consumer.mu.RLock()
+	partitionConsumer := h.consumer.assignments[tp]
+	h.consumer.mu.RUnlock()
+	require.NotNil(t, partitionConsumer)
+
+	partitionConsumer.mailbox.requestRewind(&kgo.Record{
+		Topic:       h.topic,
+		Partition:   0,
+		Offset:      1,
+		LeaderEpoch: 0,
+	}, true, func() {})
+	done := make(chan struct{})
+	go h.consumer.processControl(partitionControl{
+		tp:   tp,
+		pc:   partitionConsumer,
+		done: done,
+	})
+
+	require.Never(t, func() bool {
+		select {
+		case <-done:
+			return true
+		default:
+			return false
+		}
+	}, 200*time.Millisecond, 10*time.Millisecond)
+
+	rejectCommits.Store(false)
+	waitSignal(t, done, "rewind remained blocked after the commit completed")
+}
+
+func TestPartitionProcessingRevocationCommitsMarkedProgress(t *testing.T) {
+	h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
+		cfg.ConsumerConfig.AutoCommit.Enable = false
+	})
+	h.start(func(context.Context, *kgo.Record, attribute.Set) error {
+		return nil
+	})
+	defer h.shutdown(t.Context())
+	h.waitAssignments(1)
+
+	tp := topicPartition{topic: h.topic, partition: 0}
+	h.consumer.mu.RLock()
+	partitionConsumer := h.consumer.assignments[tp]
+	h.consumer.mu.RUnlock()
+	require.NotNil(t, partitionConsumer)
+
+	var rejectCommits atomic.Bool
+	rejectCommits.Store(true)
+	defer rejectCommits.Store(false)
+	commitStarted := make(chan struct{})
+	var commitOnce sync.Once
+	h.cluster.ControlKey(int16(kmsg.OffsetCommit), func(request kmsg.Request) (kmsg.Response, error, bool) {
+		h.cluster.KeepControl()
+		if !rejectCommits.Load() {
+			return nil, nil, false
+		}
+		commitOnce.Do(func() { close(commitStarted) })
+		return retryOffsetCommitResponse(request.(*kmsg.OffsetCommitRequest)), nil, true
+	})
+
+	h.produce(0, "record")
+	waitSignal(t, commitStarted, "partition did not attempt an offset commit")
+
+	partitionConsumer.cancelContext(errors.New("test revocation"))
+	partitionConsumer.wg.Wait()
+
+	h.consumer.opsMu.Lock()
+	lostDone := make(chan struct{})
+	go func() {
+		defer close(lostDone)
+		h.consumer.lost(t.Context(), nil, map[string][]int32{h.topic: {0}}, false)
+	}()
+	rejectCommits.Store(false)
+	h.consumer.opsMu.Unlock()
+	waitSignal(t, lostDone, "partition revocation did not finish")
+
+	require.Eventually(t, func() bool {
+		offset, ok := h.committedOffset(0)
+		return ok && offset == 1
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
+func TestPartitionProcessingBeforeMarkingCommitsFailedRecord(t *testing.T) {
+	h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
+		cfg.ConsumerConfig.AutoCommit.Enable = false
+		cfg.MessageMarking.After = false
+	})
+	h.start(func(context.Context, *kgo.Record, attribute.Set) error {
+		return errors.New("processing failed")
+	})
+	defer h.shutdown(t.Context())
+
+	h.produce(0, "failed")
+
+	require.EventuallyWithT(t, func(collect *assert.CollectT) {
+		offset, ok := h.committedOffset(0)
+		assert.True(collect, ok)
+		assert.Equal(collect, int64(1), offset)
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
+func retryOffsetCommitResponse(request *kmsg.OffsetCommitRequest) *kmsg.OffsetCommitResponse {
+	response := &kmsg.OffsetCommitResponse{
+		Version: request.Version,
+		Topics:  make([]kmsg.OffsetCommitResponseTopic, 0, len(request.Topics)),
+	}
+	for _, topic := range request.Topics {
+		responseTopic := kmsg.OffsetCommitResponseTopic{
+			Topic:      topic.Topic,
+			Partitions: make([]kmsg.OffsetCommitResponseTopicPartition, 0, len(topic.Partitions)),
+		}
+		for _, partition := range topic.Partitions {
+			responseTopic.Partitions = append(responseTopic.Partitions, kmsg.OffsetCommitResponseTopicPartition{
+				Partition: partition.Partition,
+				ErrorCode: kerr.CoordinatorLoadInProgress.Code,
+			})
+		}
+		response.Topics = append(response.Topics, responseTopic)
+	}
+	return response
+}
+
+func TestDispatchPartitionBatchesAssignmentSnapshot(t *testing.T) {
+	const topic = "test"
+	cases := []struct {
+		name             string
+		snapshot         bool
+		wantQueued       bool
+		wantRewindOffset *int64
+	}{
+		{
+			name:       "accepts newly assigned partition",
+			wantQueued: true,
+		},
+		{
+			name:             "resets replaced assignment to initial offset",
+			snapshot:         true,
+			wantRewindOffset: int64Ptr(-2),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			client, _ := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
+			settings, _, _ := mustNewSettings(t)
+			current := &pc{
+				logger:  settings.Logger,
+				mailbox: newPartitionMailbox(t.Context(), 1),
+			}
+			tp := topicPartition{topic: topic, partition: 0}
+			snapshots := make(map[topicPartition]*pc)
+			if tc.snapshot {
+				snapshots[tp] = &pc{}
+			}
+			consumer := franzConsumer{
+				config:   createDefaultConfig().(*Config),
+				client:   client,
+				settings: settings,
+			}
+			consumer.config.ConsumerConfig.InitialOffset = configkafka.EarliestOffset
+
+			consumer.dispatchPartitionBatches(
+				kgo.Fetches{{
+					Topics: []kgo.FetchTopic{{
+						Topic: topic,
+						Partitions: []kgo.FetchPartition{{
+							Partition: 0,
+							Records: []*kgo.Record{{
+								Topic:     topic,
+								Partition: 0,
+								Offset:    1,
+							}},
+						}},
+					}},
+				}},
+				map[topicPartition]*pc{tp: current},
+				snapshots,
+			)
+
+			_, queued := current.mailbox.dequeue(func() {})
+			require.Equal(t, tc.wantQueued, queued)
+			rewind := current.mailbox.takeRewind()
+			if tc.wantRewindOffset == nil {
+				require.Nil(t, rewind)
+			} else {
+				require.Equal(t, *tc.wantRewindOffset, rewind.Offset)
+			}
+		})
+	}
 }
 
 func TestPartitionProcessingFullMailbox(t *testing.T) {
@@ -196,6 +514,64 @@ func TestPartitionProcessingPermanentError(t *testing.T) {
 	}, 500*time.Millisecond, 10*time.Millisecond)
 }
 
+func TestPartitionProcessingTerminalErrorClearsMailbox(t *testing.T) {
+	h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
+		cfg.ConsumerConfig.MaxFetchSize = 1
+		cfg.PartitionProcessing.MaxBufferedBatches = 3
+		cfg.MessageMarking = MessageMarking{
+			After:            true,
+			OnPermanentError: false,
+		}
+	})
+
+	started := make(chan struct{})
+	release := make(chan struct{})
+	var once sync.Once
+	h.start(func(ctx context.Context, _ *kgo.Record, _ attribute.Set) error {
+		once.Do(func() { close(started) })
+		select {
+		case <-release:
+			return consumererror.NewPermanent(errors.New("permanent failure"))
+		case <-ctx.Done():
+			return context.Cause(ctx)
+		}
+	})
+	defer func() {
+		select {
+		case <-release:
+		default:
+			close(release)
+		}
+		h.shutdown(t.Context())
+	}()
+	h.waitAssignments(1)
+
+	h.consumer.mu.RLock()
+	partitionConsumer := h.consumer.assignments[topicPartition{topic: h.topic, partition: 0}]
+	h.consumer.mu.RUnlock()
+	require.NotNil(t, partitionConsumer)
+
+	h.produce(0, "first")
+	waitSignal(t, started, "first record did not start")
+	h.produceRecords(
+		&kgo.Record{Partition: 0, Value: []byte("second")},
+		&kgo.Record{Partition: 0, Value: []byte("third")},
+	)
+	require.Eventually(t, func() bool {
+		partitionConsumer.mailbox.mu.Lock()
+		defer partitionConsumer.mailbox.mu.Unlock()
+		return len(partitionConsumer.mailbox.batches) > 0
+	}, 5*time.Second, 10*time.Millisecond)
+
+	close(release)
+	h.waitPaused(1)
+	require.Eventually(t, func() bool {
+		partitionConsumer.mailbox.mu.Lock()
+		defer partitionConsumer.mailbox.mu.Unlock()
+		return len(partitionConsumer.mailbox.batches) == 0
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
 func TestPartitionProcessingMailboxCapacity(t *testing.T) {
 	h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
 		cfg.PartitionProcessing.MaxBufferedBatches = 3
@@ -217,6 +593,7 @@ func TestPartitionProcessingMailboxCapacity(t *testing.T) {
 type partitionProcessingHarness struct {
 	t           *testing.T
 	topic       string
+	cluster     *kfake.Cluster
 	kafkaClient *kgo.Client
 	producer    *kgo.Client
 	cfg         *Config
@@ -227,7 +604,14 @@ func newPartitionProcessingHarness(t *testing.T, partitions int, configure func(
 	t.Helper()
 
 	const topic = "otlp_spans"
-	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(int32(partitions), topic))
+	cluster, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(int32(partitions), topic))
+	kafkaClient := mustNewClient(t, cluster)
+	t.Cleanup(func() { deleteConsumerGroups(t, kafkaClient) })
+	cfg := createDefaultConfig().(*Config)
+	cfg.ClientConfig = clientConfig
+	cfg.ConsumerConfig.InitialOffset = "earliest"
+	cfg.ConsumerConfig.MaxFetchWait = 10 * time.Millisecond
+	cfg.Telemetry.Metrics.KafkaReceiverRecordsDelay.Enabled = true
 	cfg.ConsumerConfig.GroupID = t.Name()
 	cfg.PartitionProcessing = PartitionProcessing{
 		Independent:        true,
@@ -247,6 +631,7 @@ func newPartitionProcessingHarness(t *testing.T, partitions int, configure func(
 	return &partitionProcessingHarness{
 		t:           t,
 		topic:       topic,
+		cluster:     cluster,
 		kafkaClient: kafkaClient,
 		producer:    producer,
 		cfg:         cfg,
