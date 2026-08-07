@@ -420,3 +420,188 @@ func appendDatapointWithKindAndID(dps pmetric.NumberDataPointSlice, id, kind str
 	dp.Attributes().PutStr("kind", kind)
 	dp.SetIntValue(1)
 }
+
+func TestAssertMetrics_NumericValueModifiers(t *testing.T) {
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+
+	// The sample metric sum "svc.requests" has values 42 for GET and POST.
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                  value/gt: 40
+                  value/lt: 50
+                - attributes:
+                    method: POST
+                  value/gte: 42
+                  value/lte: 42
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+
+	// Update values to violate conditions
+	rm := m.ResourceMetrics().At(0)
+	dps := rm.ScopeMetrics().At(0).Metrics().At(1).Sum().DataPoints()
+	dps.At(0).SetIntValue(39) // GET < 40 (fails gt: 40)
+
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `value 39 is not > 40`)
+}
+
+func TestAssertMetrics_UnknownDatapointOperator(t *testing.T) {
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                  value/gtee: 40
+                - attributes:
+                    method: POST
+                  value/regex: "4."
+`), 0o600))
+
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `unsupported datapoint assertion key "value/gtee"`)
+	require.Contains(t, err.Error(), `unsupported datapoint assertion key "value/regex"`)
+}
+
+func TestAssertMetrics_UnknownScalarFieldOperator(t *testing.T) {
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+
+	// Operator suffixes are not supported on scalar fields such as scope
+	// name; strict decoding must reject them instead of silently dropping
+	// the assertion.
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name/regex: ".*/receiver"
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+`), 0o600))
+
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "name/regex not found")
+}
+
+func TestAssertMetrics_UnknownAttributeOperatorFailsLoudly(t *testing.T) {
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+
+	// A mistyped operator on an attribute key falls back to exact matching
+	// on the literal key (attribute keys may legitimately contain '/'), so
+	// the assertion must fail rather than silently pass.
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                    method/gtee: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `missing datapoint with attributes`)
+}
+
+func TestAssertMetrics_NumericAttributeModifiers(t *testing.T) {
+	m := buildSampleMetrics()
+	rm := m.ResourceMetrics().At(0)
+	rm.Resource().Attributes().PutInt("queue.depth", 10)
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+        queue.depth/gte: 5
+        queue.depth/lt: 20
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+
+	// Update attribute to violate condition
+	rm.Resource().Attributes().PutInt("queue.depth", 30) // >= 5, but not < 20
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `missing expected resource:`)
+}
