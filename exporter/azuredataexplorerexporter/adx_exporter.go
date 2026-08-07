@@ -22,9 +22,10 @@ import (
 
 // adxDataProducer uses the ADX client to perform ingestion
 type adxDataProducer struct {
-	ingestor      azkustoingest.Ingestor     // ingestion for logs, traces and metrics
-	ingestOptions []azkustoingest.FileOption // options for the ingestion
-	logger        *zap.Logger                // logger for tracing the flow
+	ingestor         azkustoingest.Ingestor     // ingestion for logs, traces and metrics
+	ingestOptions    []azkustoingest.FileOption // options for the ingestion
+	includeExemplars bool                       // whether to write metric exemplars to ADX
+	logger           *zap.Logger                // logger for tracing the flow
 }
 
 const nextline = "\n"
@@ -38,7 +39,7 @@ const (
 
 // given the full metrics, extract each metric, resource attributes and scope attributes. Individual metric mapping is sent on to metricdata mapping
 func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric.Metrics) error {
-	transformedAdxMetrics := rawMetricsToAdxMetrics(ctx, metrics, e.logger)
+	transformedAdxMetrics := rawMetricsToAdxMetrics(ctx, metrics, e.includeExemplars, e.logger)
 	metricsBuffer := make([]string, len(transformedAdxMetrics))
 	// since the transform succeeded, using the option for ingestion ingest the data into ADX
 	for idx, tm := range transformedAdxMetrics {
@@ -168,9 +169,10 @@ func newExporter(config *Config, logger *zap.Logger, telemetryDataType int, vers
 		ingestor = qi
 	}
 	return &adxDataProducer{
-		ingestOptions: ingestOptions,
-		ingestor:      ingestor,
-		logger:        logger,
+		ingestOptions:    ingestOptions,
+		ingestor:         ingestor,
+		includeExemplars: config.IncludeExemplars,
+		logger:           logger,
 	}, nil
 }
 
