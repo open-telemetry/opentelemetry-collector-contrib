@@ -7,6 +7,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -174,4 +175,39 @@ func TestURLParser(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_URLFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewURLFactory[any]()
+		assert.Equal(t, "URL", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewURLFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &URLArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewURLFactory[any]()
+		args := factory.CreateDefaultArguments()
+		urlArgs, ok := args.(*URLArguments[any])
+		require.True(t, ok)
+		urlArgs.URI = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "https://example.com", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createURIFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "URLFactory args must be of type *URLArguments[K]")
+	})
 }

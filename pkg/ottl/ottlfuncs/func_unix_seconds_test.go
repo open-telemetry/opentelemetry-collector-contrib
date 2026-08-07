@@ -68,3 +68,38 @@ func Test_TimeUnixSeconds(t *testing.T) {
 		})
 	}
 }
+
+func Test_UnixSecondsFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewUnixSecondsFactory[any]()
+		assert.Equal(t, "UnixSeconds", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewUnixSecondsFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &UnixSecondsArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewUnixSecondsFactory[any]()
+		args := factory.CreateDefaultArguments()
+		timeArgs, ok := args.(*UnixSecondsArguments[any])
+		require.True(t, ok)
+		timeArgs.Time = &ottl.StandardTimeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return time.Now(), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createUnixSecondsFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "UnixSecondsFactory args must be of type *UnixSecondsArguments[K]")
+	})
+}

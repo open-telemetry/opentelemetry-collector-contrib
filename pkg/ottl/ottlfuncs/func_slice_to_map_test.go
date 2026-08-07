@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -430,4 +431,39 @@ func Test_SliceToMap(t *testing.T) {
 			require.Equal(t, tt.want(), result.(pcommon.Map))
 		})
 	}
+}
+
+func Test_SliceToMapFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewSliceToMapFactory[any]()
+		assert.Equal(t, "SliceToMap", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewSliceToMapFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &SliceToMapArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewSliceToMapFactory[any]()
+		args := factory.CreateDefaultArguments()
+		sliceToMapArgs, ok := args.(*SliceToMapArguments[any])
+		require.True(t, ok)
+		sliceToMapArgs.Target = &ottl.StandardPSliceGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return pcommon.NewSlice(), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := sliceToMapFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "SliceToMapFactory args must be of type *SliceToMapArguments[K")
+	})
 }

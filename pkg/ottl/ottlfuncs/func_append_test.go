@@ -696,3 +696,46 @@ func Test_ArgumentsArePresent(t *testing.T) {
 		})
 	}
 }
+
+func Test_AppendFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewAppendFactory[any]()
+		assert.Equal(t, "append", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewAppendFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &AppendArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewAppendFactory[any]()
+		args := factory.CreateDefaultArguments()
+		appendArgs, ok := args.(*AppendArguments[any])
+		require.True(t, ok)
+		appendArgs.Target = &ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return nil, nil
+			},
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+		appendArgs.Value = ottl.NewTestingOptional[ottl.Getter[any]](&ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "value", nil
+			},
+		})
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createAppendFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "AppendFactory args must be of type *Appendrguments[K]")
+	})
+}

@@ -108,3 +108,38 @@ func Test_toSnakeCaseRuntimeError(t *testing.T) {
 		})
 	}
 }
+
+func Test_ToSnakeCaseFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewToSnakeCaseFactory[any]()
+		assert.Equal(t, "ToSnakeCase", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewToSnakeCaseFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ToSnakeCaseArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewToSnakeCaseFactory[any]()
+		args := factory.CreateDefaultArguments()
+		createToSnakeCaseArgs, ok := args.(*ToSnakeCaseArguments[any])
+		require.True(t, ok)
+		createToSnakeCaseArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello world", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createToSnakeCaseFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ToSnakeCaseFactory args must be of type *ToSnakeCaseArguments[K]")
+	})
+}

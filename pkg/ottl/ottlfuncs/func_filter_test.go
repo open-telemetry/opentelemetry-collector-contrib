@@ -180,28 +180,40 @@ func Test_filter_error(t *testing.T) {
 	})
 }
 
-func Test_createFilterFunction(t *testing.T) {
-	fCtx := ottl.FunctionContext{}
-	predicate := ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
-		return true, nil
+func Test_FilterFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewFilterFactory[any]()
+		assert.Equal(t, "Filter", factory.Name())
 	})
-	source := ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return pcommon.NewMap(), nil
-		},
-	}
 
-	t.Run("valid args", func(t *testing.T) {
-		fn, err := createFilterFunction[any](fCtx, &FilterArguments[any]{
-			Source:    source,
-			Predicate: predicate,
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewFilterFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &FilterArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewFilterFactory[any]()
+		args := factory.CreateDefaultArguments()
+		filterArgs, ok := args.(*FilterArguments[any])
+		require.True(t, ok)
+		filterArgs.Source = ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+		filterArgs.Predicate = ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			return true, nil
 		})
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
 		require.NoError(t, err)
-		require.NotNil(t, fn)
+		assert.NotNil(t, fn)
 	})
 
-	t.Run("invalid args type", func(t *testing.T) {
-		_, err := createFilterFunction[any](fCtx, &struct{}{})
-		assert.EqualError(t, err, "FilterFactory args must be of type *FilterArguments[K]")
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createFilterFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "FilterFactory args must be of type *FilterArguments[K]")
 	})
 }

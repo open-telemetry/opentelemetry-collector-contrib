@@ -124,3 +124,43 @@ func Test_TruncateTimeError(t *testing.T) {
 		})
 	}
 }
+
+func Test_TruncateTimeFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewTruncateTimeFactory[any]()
+		assert.Equal(t, "TruncateTime", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewTruncateTimeFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &TruncateTimeArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewTruncateTimeFactory[any]()
+		args := factory.CreateDefaultArguments()
+		truncateTimeArgs, ok := args.(*TruncateTimeArguments[any])
+		require.True(t, ok)
+		truncateTimeArgs.Time = &ottl.StandardTimeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return time.Now(), nil
+			},
+		}
+		truncateTimeArgs.Duration = &ottl.StandardDurationGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return time.Hour, nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createTruncateTimeFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "TimeFactory args must be of type *TruncateTimeArguments[K]")
+	})
+}

@@ -81,3 +81,38 @@ func Test_FNVError(t *testing.T) {
 		})
 	}
 }
+
+func Test_FnvFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewFnvFactory[any]()
+		assert.Equal(t, "FNV", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewFnvFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &FnvArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewFnvFactory[any]()
+		args := factory.CreateDefaultArguments()
+		fnvArgs, ok := args.(*FnvArguments[any])
+		require.True(t, ok)
+		fnvArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "value", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createFnvFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "FNVFactory args must be of type *FnvArguments[K]")
+	})
+}

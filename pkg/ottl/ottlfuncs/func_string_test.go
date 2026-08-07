@@ -98,3 +98,38 @@ func Test_String(t *testing.T) {
 		})
 	}
 }
+
+func Test_StringFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewStringFactory[any]()
+		assert.Equal(t, "String", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewStringFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &StringArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewStringFactory[any]()
+		args := factory.CreateDefaultArguments()
+		stringArgs, ok := args.(*StringArguments[any])
+		require.True(t, ok)
+		stringArgs.Target = &ottl.StandardStringLikeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createStringFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "StringFactory args must be of type *StringArguments[K]")
+	})
+}

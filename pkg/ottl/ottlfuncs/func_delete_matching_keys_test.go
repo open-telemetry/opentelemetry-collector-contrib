@@ -148,3 +148,46 @@ func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
 	_, err = exprFunc(nil, nil)
 	assert.ErrorContains(t, err, "error parsing regexp:")
 }
+
+func Test_DeleteMatchingKeysFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewDeleteMatchingKeysFactory[any]()
+		assert.Equal(t, "delete_matching_keys", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewDeleteMatchingKeysFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &DeleteMatchingKeysArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewDeleteMatchingKeysFactory[any]()
+		args := factory.CreateDefaultArguments()
+		deleteMatchingKeysArgs, ok := args.(*DeleteMatchingKeysArguments[any])
+		require.True(t, ok)
+		deleteMatchingKeysArgs.Target = &ottl.StandardPMapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.NewMap(), nil
+			},
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+		deleteMatchingKeysArgs.Pattern = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "test.*", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createDeleteMatchingKeysFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "DeleteMatchingKeysFactory args must be of type *DeleteMatchingKeysArguments[K]")
+	})
+}

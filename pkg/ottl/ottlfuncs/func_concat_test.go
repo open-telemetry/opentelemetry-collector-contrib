@@ -259,3 +259,45 @@ func Test_concat_error_delimiter(t *testing.T) {
 	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
+
+func Test_ConcatFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewConcatFactory[any]()
+		assert.Equal(t, "Concat", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewConcatFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ConcatArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewConcatFactory[any]()
+		args := factory.CreateDefaultArguments()
+		concatArgs, ok := args.(*ConcatArguments[any])
+		require.True(t, ok)
+		concatArgs.Vals = []ottl.StringLikeGetter[any]{
+			&ottl.StandardStringLikeGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "hello", nil
+				},
+			},
+		}
+		concatArgs.Delimiter = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "-", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createConcatFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ConcatFactory args must be of type *ConcatArguments[K]")
+	})
+}

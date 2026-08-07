@@ -143,3 +143,45 @@ func Test_keepKeys_get_nil(t *testing.T) {
 	_, err := exprFunc(nil, nil)
 	assert.Error(t, err)
 }
+
+func Test_KeepKeysFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewKeepKeysFactory[any]()
+		assert.Equal(t, "keep_keys", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewKeepKeysFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &KeepKeysArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewKeepKeysFactory[any]()
+		args := factory.CreateDefaultArguments()
+		keepKeysArgs, ok := args.(*KeepKeysArguments[any])
+		require.True(t, ok)
+		keepKeysArgs.Target = &ottl.StandardPMapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+		keepKeysArgs.Keys = []ottl.StringGetter[any]{
+			ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "key", nil
+				},
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createKeepKeysFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "KeepKeysFactory args must be of type *KeepKeysArguments[K]")
+	})
+}

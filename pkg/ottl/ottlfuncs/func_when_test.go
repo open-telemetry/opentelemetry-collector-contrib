@@ -142,30 +142,41 @@ func Test_when_error(t *testing.T) {
 	})
 }
 
-func Test_createWhenFunction(t *testing.T) {
-	fCtx := ottl.FunctionContext{}
-	condition := ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
-		return true, nil
+func Test_WhenFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewWhenFactory[any]()
+		assert.Equal(t, "When", factory.Name())
 	})
-	trueValue := &ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
-		return "true", nil
-	}}
-	falseValue := &ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
-		return "false", nil
-	}}
 
-	t.Run("valid args", func(t *testing.T) {
-		fn, err := createWhenFunction[any](fCtx, &WhenArguments[any]{
-			Condition:  condition,
-			TrueValue:  trueValue,
-			FalseValue: falseValue,
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewWhenFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &WhenArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewWhenFactory[any]()
+		args := factory.CreateDefaultArguments()
+		whenArgs, ok := args.(*WhenArguments[any])
+		require.True(t, ok)
+		whenArgs.Condition = ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			return true, nil
 		})
+		whenArgs.TrueValue = &ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
+			return "true", nil
+		}}
+		whenArgs.FalseValue = &ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
+			return "false", nil
+		}}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
 		require.NoError(t, err)
-		require.NotNil(t, fn)
+		assert.NotNil(t, fn)
 	})
 
-	t.Run("invalid args type", func(t *testing.T) {
-		_, err := createWhenFunction[any](fCtx, &struct{}{})
-		assert.EqualError(t, err, "WhenFactory args must be of type *WhenArguments[K]")
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createWhenFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "WhenFactory args must be of type *WhenArguments[K]")
 	})
 }

@@ -93,3 +93,43 @@ func Test_TrimSuffix_Error_prefix(t *testing.T) {
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
+
+func Test_TrimSuffixFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewTrimSuffixFactory[any]()
+		assert.Equal(t, "TrimSuffix", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewTrimSuffixFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &TrimSuffixArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewTrimSuffixFactory[any]()
+		args := factory.CreateDefaultArguments()
+		trimSuffixArgs, ok := args.(*TrimSuffixArguments[any])
+		require.True(t, ok)
+		trimSuffixArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello-suffix", nil
+			},
+		}
+		trimSuffixArgs.Suffix = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "-suffix", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createTrimSuffixFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "TrimFactory args must be of type *TrimSuffixArguments[K]")
+	})
+}

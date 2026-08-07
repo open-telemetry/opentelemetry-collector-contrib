@@ -158,3 +158,38 @@ func TestUserAgentParser(t *testing.T) {
 		})
 	}
 }
+
+func Test_UserAgentFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewUserAgentFactory[any]()
+		assert.Equal(t, "UserAgent", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewUserAgentFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &UserAgentArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewUserAgentFactory[any]()
+		args := factory.CreateDefaultArguments()
+		userAgentArgs, ok := args.(*UserAgentArguments[any])
+		require.True(t, ok)
+		userAgentArgs.UserAgent = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "Mozilla/5.0", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createUserAgentFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "URLFactory args must be of type *URLArguments[K]")
+	})
+}

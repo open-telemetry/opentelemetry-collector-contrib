@@ -107,3 +107,38 @@ func Test_Log(t *testing.T) {
 		})
 	}
 }
+
+func Test_LogFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewLogFactory[any]()
+		assert.Equal(t, "Log", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewLogFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &LogArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewLogFactory[any]()
+		args := factory.CreateDefaultArguments()
+		logArgs, ok := args.(*LogArguments[any])
+		require.True(t, ok)
+		logArgs.Target = ottl.StandardFloatLikeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return float64(10), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createLogFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "LogFactory args must be of type *LogArguments[K]")
+	})
+}

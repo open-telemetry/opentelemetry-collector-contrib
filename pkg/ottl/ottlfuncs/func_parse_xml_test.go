@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -318,4 +319,39 @@ func Test_ParseXML(t *testing.T) {
 			require.Equal(t, tt.want, resultMap.AsRaw())
 		})
 	}
+}
+
+func Test_ParseXMLFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewParseXMLFactory[any]()
+		assert.Equal(t, "ParseXML", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewParseXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ParseXMLArguments[any]{}, args)
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewParseXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+		xmlArgs, ok := args.(*ParseXMLArguments[any])
+		require.True(t, ok)
+		xmlArgs.Target = ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "<a>b</a>", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createParseXMLFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ParseXMLFactory args must be of type *ParseXMLArguments[K]")
+	})
 }
