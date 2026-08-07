@@ -124,11 +124,16 @@ type tracestateScan struct {
 	// information (rv and/or th). When false, the sampler falls
 	// back to the legacy FNV trace ID hash.
 	hasSamplingInfo bool
+	// threshold is the first explicit `th` found across any span's
+	// tracestate "ot" section, describing the probability the trace
+	// has already been sampled at upstream.
+	threshold    sampling.Threshold
+	hasThreshold bool
 }
 
-// scanOTelTracestate finds the first OTel `rv` across the trace and
-// notes whether any span carries OTel sampling info at all (rv or
-// th). It short-circuits as soon as both are known.
+// scanOTelTracestate finds the first OTel `rv` and `th` across the trace
+// and notes whether any span carries OTel sampling info at all. It
+// short-circuits as soon as both are known.
 func scanOTelTracestate(td ptrace.Traces) tracestateScan {
 	var result tracestateScan
 	for _, rs := range td.ResourceSpans().All() {
@@ -146,12 +151,14 @@ func scanOTelTracestate(td ptrace.Traces) tracestateScan {
 						result.hasSamplingInfo = true
 					}
 				}
-				if !result.hasSamplingInfo {
-					if _, ok := otts.TValueThreshold(); ok {
+				if !result.hasThreshold {
+					if th, ok := otts.TValueThreshold(); ok {
+						result.threshold = th
+						result.hasThreshold = true
 						result.hasSamplingInfo = true
 					}
 				}
-				if result.hasRandomness {
+				if result.hasRandomness && result.hasThreshold {
 					return result
 				}
 			}
