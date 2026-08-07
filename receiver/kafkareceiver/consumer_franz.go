@@ -31,6 +31,31 @@ type topicPartition struct {
 	partition int32
 }
 
+// partitionSnapshot identifies the exact assignment and generation that were
+// current before PollRecords. Both may change while PollRecords is blocked.
+type partitionSnapshot struct {
+	pc         *pc
+	generation uint64
+}
+
+// partitionControl transfers offset operations from one partition worker to
+// the poll loop and lets the worker wait until the operation is complete.
+type partitionControl struct {
+	tp           topicPartition
+	pc           *pc
+	commitRecord *kgo.Record
+	rewind       bool
+	done         chan struct{}
+}
+
+// partitionFetchController is the partition-scoped subset of kgo.Client used
+// by independent workers. Keeping this boundary narrow makes pause/resume
+// ordering testable without a Kafka client.
+type partitionFetchController interface {
+	PauseFetchPartitions(map[string][]int32) map[string][]int32
+	ResumeFetchPartitions(map[string][]int32)
+}
+
 // brokerReadKey is the cache key for OnBrokerRead/OnBrokerWrite metric options.
 type brokerReadKey struct {
 	nodeID  int32
@@ -52,9 +77,21 @@ type franzConsumer struct {
 	consumerClosed chan struct{}
 	closing        chan struct{}
 
-	client      *kgo.Client
-	obsrecv     *receiverhelper.ObsReport
-	assignments map[topicPartition]*pc
+	client          *kgo.Client
+	fetchController partitionFetchController
+	obsrecv         *receiverhelper.ObsReport
+	assignments     map[topicPartition]*pc
+	// controls serializes SetOffsets and synchronous commits between
+	// PollRecords calls.
+	controls chan partitionControl
+
+	// opsMu prevents assignment callbacks from racing offset mutation or
+	// synchronous commits.
+	opsMu sync.Mutex
+
+	pollMu          sync.Mutex
+	pollCancel      context.CancelFunc
+	pollInterrupted bool
 
 	// brokerReadOpts caches MeasurementOptions for OnBrokerRead, which fires on
 	// every fetch request. Entries are evicted in OnBrokerDisconnect; growth is
@@ -67,53 +104,6 @@ type franzConsumer struct {
 	stoppingOnce sync.Once
 	stoppedOnce  sync.Once
 }
-
-// pc represents the partition consumer shared information.
-type pc struct {
-	logger *zap.Logger
-	attrs  attribute.Set
-
-	ctx    context.Context
-	cancel context.CancelCauseFunc
-	// Not safe for concurrent use, this field is never accessed concurrently.
-	backOff *backoff.ExponentialBackOff
-
-	mu sync.RWMutex // protects the fields below
-	// wg tracks the number of in-flight message processing goroutines for this
-	// partition. The wg must not be used directly; instead, the helper methods
-	// add() and done() should be called to safely mutate it. These methods ensure
-	// that no new goroutines are added once the partition consumer is stopping
-	// (i.e. after the partition is lost / revoked).
-	wg sync.WaitGroup
-}
-
-// add increments the wait group counter if the partition consumer is not
-// stopping. It returns true if the counter was incremented, false otherwise.
-func (p *pc) add(delta int) bool {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	select {
-	case <-p.ctx.Done():
-		return false
-	default:
-	}
-	p.wg.Add(delta)
-	return true
-}
-
-// cancelContext cancels the partition consumer context while holding the write
-// lock.
-func (p *pc) cancelContext(err error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.cancel(err)
-}
-
-// done decrements the wait group counter.
-func (p *pc) done() { p.wg.Done() }
-
-// wait waits for all in-flight goroutines to finish.
-func (p *pc) wait() { p.wg.Wait() }
 
 // newFranzKafkaConsumer creates a new franz-go based Kafka consumer
 func newFranzKafkaConsumer(
@@ -139,6 +129,7 @@ func newFranzKafkaConsumer(
 		consumerClosed:   make(chan struct{}),
 		closing:          make(chan struct{}),
 		assignments:      make(map[topicPartition]*pc),
+		controls:         make(chan partitionControl, 1),
 		brokerReadOpts:   make(map[brokerReadKey]metric.MeasurementOption),
 	}, nil
 }
@@ -221,6 +212,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 	c.client = client
+	c.fetchController = client
 
 	cm, err := c.newConsumeFn(host, c.obsrecv, c.telemetryBuilder)
 	if err != nil {
@@ -252,7 +244,17 @@ func (c *franzConsumer) consumeLoop(ctx context.Context) {
 // consume consumes a batch of messages from the Kafka topic. This is meant to
 // be called in a loop until consume returns false.
 func (c *franzConsumer) consume(ctx context.Context, size int) bool {
-	fetch := c.client.PollRecords(ctx, size)
+	var snapshots map[topicPartition]partitionSnapshot
+	var fetch kgo.Fetches
+	var controlInterrupted bool
+	if c.config.PartitionProcessing.Independent {
+		c.processControls()
+		snapshots = c.snapshotPartitions()
+		fetch, controlInterrupted = c.pollRecords(ctx, size)
+	} else {
+		// Poll interruption is only required by independent partition workers.
+		fetch = c.client.PollRecords(ctx, size)
+	}
 
 	if err := fetch.Err0(); fetch.IsClientClosed() {
 		c.settings.Logger.Info("consumer stopped", zap.Error(err))
@@ -263,6 +265,9 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 	// simply be logged and keep fetching.
 	var hasError bool
 	fetch.EachError(func(topic string, partition int32, err error) {
+		if controlInterrupted && errors.Is(err, context.Canceled) {
+			return
+		}
 		c.settings.Logger.Error("consumer fetch error", zap.Error(err),
 			zap.String("topic", topic),
 			zap.Int64("partition", int64(partition)),
@@ -274,6 +279,9 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		}
 	})
 	if hasError || fetch.Empty() {
+		if c.config.PartitionProcessing.Independent {
+			c.processControls()
+		}
 		return true // Return right away after errors or empty fetch.
 	}
 
@@ -284,6 +292,12 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 	assignments := make(map[topicPartition]*pc, len(c.assignments))
 	maps.Copy(assignments, c.assignments)
 	c.mu.RUnlock()
+
+	if c.config.PartitionProcessing.Independent {
+		c.dispatchPartitionBatches(fetch, assignments, snapshots)
+		c.processControls()
+		return true
+	}
 
 	var wg sync.WaitGroup
 	// Process messages on a per partition basis, wait for them to finish and
@@ -317,105 +331,11 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 			zap.Int64("start_offset", p.Records[0].Offset),
 			zap.Int64("end_offset", p.Records[count-1].Offset),
 		)
-		go func(pc *pc, msgs []*kgo.Record) {
+		go func(pc *pc, partition kgo.FetchTopicPartition) {
 			defer wg.Done()
 			defer pc.done()
-			var fatalRecord *kgo.Record
-			fatalIsPermanent := false
-			var lastProcessed *kgo.Record
-			for _, msg := range msgs {
-				if !c.config.MessageMarking.After {
-					c.client.MarkCommitRecords(msg)
-				}
-				c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, msg.Offset, metric.WithAttributeSet(pc.attrs))
-				if err := c.handleMessage(pc, msg); err != nil {
-					// Log at DEBUG level for shutdown/rebalance interruptions
-					// (context cancellation), ERROR for real processing failures.
-					if pc.ctx.Err() != nil {
-						pc.logger.Debug("message processing interrupted",
-							zap.Error(err),
-							zap.Int64("offset", msg.Offset),
-						)
-					} else {
-						pc.logger.Error("unable to process message",
-							zap.Error(err),
-							zap.Int64("offset", msg.Offset),
-						)
-					}
-					// Pause consumption for partitions that have fatal errors.
-					// handleMessage only returns an error when After=true and
-					// the message should not be marked, so checking !shouldMark
-					// here is consistent with that contract.
-					isPermanent := consumererror.IsPermanent(err)
-					shouldMark := (!isPermanent && c.config.MessageMarking.OnError) || (isPermanent && c.config.MessageMarking.OnPermanentError)
-
-					if !shouldMark {
-						fatalRecord = msg
-						fatalIsPermanent = isPermanent
-						break // Stop processing messages.
-					}
-				}
-				lastProcessed = msg // Store so we can commit later.
-			}
-			// Handle fatal processing errors. For non-permanent errors
-			// with backoff enabled, rewind the fetch cursor via SetOffsets
-			// so the failed record is retried on the next PollRecords call,
-			// consistent with how a rebalance restarts from the last
-			// committed offset. No pause/resume is needed because
-			// PollRecords is blocked on wg.Wait() until this goroutine
-			// finishes.
-			// Permanent errors and partitions without backoff configured
-			// are paused until a rebalance triggers assigned(), which
-			// calls ResumeFetchPartitions.
-			if fatalRecord != nil {
-				switch {
-				case c.config.ErrorBackOff.Enabled && !fatalIsPermanent:
-					// Skip rewind if the consumer is shutting down or the
-					// partition was lost. In these cases the error is from
-					// context cancellation, not a real processing failure,
-					// and calling SetOffsets could interfere with the final
-					// offset commit.
-					select {
-					case <-pc.ctx.Done():
-					case <-c.closing:
-					default:
-						c.client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
-							p.Topic: {p.Partition: {
-								Epoch:  fatalRecord.LeaderEpoch,
-								Offset: fatalRecord.Offset,
-							}},
-						})
-						pc.logger.Info("rewinding partition to retry failed record on next poll",
-							zap.Int64("offset", fatalRecord.Offset),
-						)
-					}
-				case fatalIsPermanent:
-					tp := map[string][]int32{p.Topic: {p.Partition}}
-					c.client.PauseFetchPartitions(tp)
-					pc.logger.Error("pausing partition due to permanent processing error, partition will remain paused until rebalance",
-						zap.Int64("offset", fatalRecord.Offset),
-					)
-				default:
-					tp := map[string][]int32{p.Topic: {p.Partition}}
-					c.client.PauseFetchPartitions(tp)
-					pc.logger.Error("pausing partition due to processing error (no backoff configured), partition will remain paused until rebalance",
-						zap.Int64("offset", fatalRecord.Offset),
-					)
-				}
-			}
-			if lastProcessed == nil {
-				return // No metrics nor marks to update.
-			}
-			// Otherwise, publish consumer lag.
-			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(
-				context.Background(),
-				(p.HighWatermark-1)-lastProcessed.Offset,
-				metric.WithAttributeSet(pc.attrs),
-			)
-			if c.config.MessageMarking.After {
-				c.client.MarkCommitRecords(lastProcessed)
-			}
-		}(assign, p.Records)
+			c.processPartitionBatch(ctx, pc, partition)
+		}(assign, p)
 	})
 	// Wait for all records to be processed and commit if autocommit=false.
 	wg.Wait()
@@ -427,6 +347,176 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		}
 	}
 	return true
+}
+
+// pollRecords records the active poll cancellation function so a worker can
+// wake the poll loop when an offset operation must run.
+func (c *franzConsumer) pollRecords(ctx context.Context, size int) (kgo.Fetches, bool) {
+	pollCtx, cancel := context.WithCancel(ctx)
+	c.pollMu.Lock()
+	c.pollCancel = cancel
+	c.pollInterrupted = false
+	if len(c.controls) > 0 {
+		c.pollInterrupted = true
+		cancel()
+	}
+	c.pollMu.Unlock()
+
+	fetch := c.client.PollRecords(pollCtx, size)
+
+	c.pollMu.Lock()
+	interrupted := c.pollInterrupted
+	c.pollCancel = nil
+	c.pollInterrupted = false
+	c.pollMu.Unlock()
+	cancel()
+	return fetch, interrupted
+}
+
+// interruptPoll cancels only the current PollRecords call. It does not stop the
+// client or partition workers.
+func (c *franzConsumer) interruptPoll() {
+	c.pollMu.Lock()
+	defer c.pollMu.Unlock()
+	if c.pollCancel != nil {
+		c.pollInterrupted = true
+		c.pollCancel()
+	}
+}
+
+// snapshotPartitions captures assignment identity and generation before
+// polling, allowing dispatch to reject records from a changed assignment.
+func (c *franzConsumer) snapshotPartitions() map[topicPartition]partitionSnapshot {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	snapshots := make(map[topicPartition]partitionSnapshot, len(c.assignments))
+	for tp, partitionConsumer := range c.assignments {
+		snapshots[tp] = partitionSnapshot{
+			pc:         partitionConsumer,
+			generation: partitionConsumer.mailbox.generationSnapshot(),
+		}
+	}
+	return snapshots
+}
+
+// sendControl hands an offset operation to the poll loop and waits for it to
+// complete, unless this partition or the receiver is stopping.
+func (c *franzConsumer) sendControl(control partitionControl) bool {
+	select {
+	case c.controls <- control:
+		// PollRecords may otherwise wait indefinitely while this worker needs
+		// the poll loop to apply a commit or rewind.
+		c.interruptPoll()
+	case <-control.pc.ctx.Done():
+		return false
+	case <-c.closing:
+		return false
+	}
+	select {
+	case <-control.done:
+		return true
+	case <-control.pc.ctx.Done():
+		return false
+	case <-c.closing:
+		return false
+	}
+}
+
+// processControls drains all offset operations before the next PollRecords
+// call so workers for different partitions cannot mutate offsets concurrently.
+func (c *franzConsumer) processControls() {
+	for {
+		select {
+		case control := <-c.controls:
+			c.processControl(control)
+		default:
+			return
+		}
+	}
+}
+
+// processControl applies an operation only if the worker still owns the same
+// assignment. A stale worker must never commit or rewind a new owner.
+func (c *franzConsumer) processControl(control partitionControl) {
+	defer close(control.done)
+	c.opsMu.Lock()
+	defer c.opsMu.Unlock()
+
+	c.mu.RLock()
+	current, assigned := c.assignments[control.tp]
+	c.mu.RUnlock()
+	if !assigned || current != control.pc {
+		return
+	}
+
+	if control.commitRecord != nil {
+		if err := c.client.CommitRecords(control.pc.ctx, control.commitRecord); err != nil && control.pc.ctx.Err() == nil {
+			c.settings.Logger.Error("failed to commit partition offset", zap.Error(err))
+			c.reportRecoverable(err)
+		}
+	}
+	if !control.rewind {
+		return
+	}
+
+	control.pc.mailbox.applyRewind(func(record *kgo.Record) {
+		c.client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
+			control.tp.topic: {control.tp.partition: {
+				Epoch:  record.LeaderEpoch,
+				Offset: record.Offset,
+			}},
+		})
+	})
+}
+
+// dispatchPartitionBatches routes each fetched topic-partition to its ordered
+// worker without waiting for unrelated partition workers to finish.
+func (c *franzConsumer) dispatchPartitionBatches(
+	fetch kgo.Fetches,
+	assignments map[topicPartition]*pc,
+	snapshots map[topicPartition]partitionSnapshot,
+) {
+	fetch.EachPartition(func(p kgo.FetchTopicPartition) {
+		if len(p.Records) == 0 {
+			return
+		}
+		tp := topicPartition{topic: p.Topic, partition: p.Partition}
+		partition := map[string][]int32{p.Topic: {p.Partition}}
+		assign, ok := assignments[tp]
+		if !ok {
+			c.settings.Logger.Warn(
+				"attempted to process records for a partition not assigned to this consumer",
+				zap.String("topic", tp.topic),
+				zap.Int64("partition", int64(tp.partition)),
+			)
+			return
+		}
+		snapshot, snapshotted := snapshots[tp]
+		if !snapshotted || snapshot.pc != assign {
+			assign.mailbox.requestRewind(p.Records[0], true, func() {
+				assign.pauseState.pause(c.fetchController, partition, partitionPauseRewind)
+			})
+			return
+		}
+
+		enqueued := assign.mailbox.enqueue(partitionBatch{
+			fetch:      p,
+			generation: snapshot.generation,
+		}, func(reason partitionPauseReason) {
+			assign.pauseState.pause(c.fetchController, partition, reason)
+		})
+		if !enqueued {
+			assign.logger.Debug("discarding fetched records until partition rewind",
+				zap.Int64("offset", p.Records[0].Offset),
+			)
+			return
+		}
+		assign.logger.Debug("queued fetched records",
+			zap.Int("count", len(p.Records)),
+			zap.Int64("start_offset", p.Records[0].Offset),
+			zap.Int64("end_offset", p.Records[len(p.Records)-1].Offset),
+		)
+	})
 }
 
 func (c *franzConsumer) Shutdown(ctx context.Context) error {
@@ -480,6 +570,9 @@ func (c *franzConsumer) triggerShutdown() bool {
 // assigned must be set as kgo.OnPartitionsAssigned callback. Ensuring all
 // assigned partitions to this consumer process received records.
 func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned map[string][]int32) {
+	c.opsMu.Lock()
+	defer c.opsMu.Unlock()
+
 	// Report OK on each successful assignment so we can recover status after transient errors.
 	c.reportStatus(componentstatus.StatusOK)
 
@@ -506,7 +599,17 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 				),
 			}
 			partitionConsumer.ctx, partitionConsumer.cancel = context.WithCancelCause(ctx)
-			c.assignments[topicPartition{topic: topic, partition: partition}] = &partitionConsumer
+			tp := topicPartition{topic: topic, partition: partition}
+			c.assignments[tp] = &partitionConsumer
+			if c.config.PartitionProcessing.Independent {
+				partitionConsumer.mailbox = newPartitionMailbox(
+					partitionConsumer.ctx,
+					c.config.PartitionProcessing.MaxBufferedBatches,
+				)
+				if partitionConsumer.add(1) {
+					go c.runPartitionWorker(&partitionConsumer, tp)
+				}
+			}
 		}
 	}
 }
@@ -519,6 +622,9 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 	lost map[string][]int32, fatal bool,
 ) {
+	c.opsMu.Lock()
+	defer c.opsMu.Unlock()
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	var wg sync.WaitGroup

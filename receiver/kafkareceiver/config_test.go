@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -29,7 +28,7 @@ func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		id          component.ID
 		expected    component.Config
-		expectedErr error
+		expectedErr string
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, "logs"),
@@ -301,6 +300,76 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "partition_processing"),
+			expected: &Config{
+				ClientConfig:   configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
+				Logs: TopicEncodingConfig{
+					Topics:   []string{"otlp_logs"},
+					Encoding: "otlp_proto",
+				},
+				Metrics: TopicEncodingConfig{
+					Topics:   []string{"otlp_metrics"},
+					Encoding: "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topics:   []string{"otlp_spans"},
+					Encoding: "otlp_proto",
+				},
+				Profiles: TopicEncodingConfig{
+					Topics:   []string{"otlp_profiles"},
+					Encoding: "otlp_proto",
+				},
+				PartitionProcessing: PartitionProcessing{
+					Independent:        true,
+					MaxBufferedBatches: 2,
+				},
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_exclude_topics_logs_non_regex"),
+			expectedErr: "logs.exclude_topics is configured but none of the configured logs.topics use regex pattern (must start with '^')",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_exclude_topics_metrics_non_regex"),
+			expectedErr: "metrics.exclude_topics is configured but none of the configured metrics.topics use regex pattern (must start with '^')",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_exclude_topics_traces_non_regex"),
+			expectedErr: "traces.exclude_topics is configured but none of the configured traces.topics use regex pattern (must start with '^')",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_exclude_topics_profiles_non_regex"),
+			expectedErr: "profiles.exclude_topics is configured but none of the configured profiles.topics use regex pattern (must start with '^')",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_exclude_topics_regex"),
+			expectedErr: "logs.exclude_topic contains invalid regex pattern",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_exclude_topics_logs_empty"),
+			expectedErr: "logs.exclude_topics contains empty string",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_exclude_topics_metrics_empty"),
+			expectedErr: "metrics.exclude_topics contains empty string",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_exclude_topics_traces_empty"),
+			expectedErr: "traces.exclude_topics contains empty string",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_exclude_topics_profiles_empty"),
+			expectedErr: "profiles.exclude_topics contains empty string",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_partition_processing_zero_buffered_batches"),
+			expectedErr: "partition_processing.max_buffered_batches must be greater than zero",
+		},
 	}
 
 	for _, tt := range tests {
@@ -312,149 +381,20 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, confmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
-		})
-	}
-}
-
-func TestConfigValidate(t *testing.T) {
-	tests := []struct {
-		name        string
-		config      *Config
-		expectedErr string
-	}{
-		{
-			name: "valid config with regex and exclude_topic",
-			config: &Config{
-				Logs: TopicEncodingConfig{
-					Topics:        []string{"^logs-.*"},
-					ExcludeTopics: []string{"^logs-test$"},
-					Encoding:      "otlp_proto",
-				},
-			},
-			expectedErr: "",
-		},
-		{
-			name: "invalid config with non-regex topic and exclude_topic for logs",
-			config: &Config{
-				Logs: TopicEncodingConfig{
-					Topics:        []string{"logs"},
-					ExcludeTopics: []string{"^logs-test$"},
-					Encoding:      "otlp_proto",
-				},
-			},
-			expectedErr: "logs.exclude_topics is configured but none of the configured logs.topics use regex pattern (must start with '^')",
-		},
-		{
-			name: "invalid config with non-regex topic and exclude_topic for metrics",
-			config: &Config{
-				Metrics: TopicEncodingConfig{
-					Topics:        []string{"metrics"},
-					ExcludeTopics: []string{"^metrics-test$"},
-					Encoding:      "otlp_proto",
-				},
-			},
-			expectedErr: "metrics.exclude_topics is configured but none of the configured metrics.topics use regex pattern (must start with '^')",
-		},
-		{
-			name: "invalid config with non-regex topic and exclude_topic for traces",
-			config: &Config{
-				Traces: TopicEncodingConfig{
-					Topics:        []string{"traces"},
-					ExcludeTopics: []string{"^traces-test$"},
-					Encoding:      "otlp_proto",
-				},
-			},
-			expectedErr: "traces.exclude_topics is configured but none of the configured traces.topics use regex pattern (must start with '^')",
-		},
-		{
-			name: "invalid config with non-regex topic and exclude_topic for profiles",
-			config: &Config{
-				Profiles: TopicEncodingConfig{
-					Topics:        []string{"profiles"},
-					ExcludeTopics: []string{"^profiles-test$"},
-					Encoding:      "otlp_proto",
-				},
-			},
-			expectedErr: "profiles.exclude_topics is configured but none of the configured profiles.topics use regex pattern (must start with '^')",
-		},
-		{
-			name: "valid config without exclude_topic",
-			config: &Config{
-				Logs: TopicEncodingConfig{
-					Topics:   []string{"logs"},
-					Encoding: "otlp_proto",
-				},
-			},
-			expectedErr: "",
-		},
-		{
-			name: "invalid config with invalid regex in exclude_topic",
-			config: &Config{
-				Logs: TopicEncodingConfig{
-					Topics:        []string{"^logs-.*"},
-					ExcludeTopics: []string{"^logs-[invalid(regex"},
-					Encoding:      "otlp_proto",
-				},
-			},
-			expectedErr: "logs.exclude_topic contains invalid regex pattern",
-		},
-		{
-			name: "invalid config with empty string in exclude_topics for logs",
-			config: &Config{
-				Logs: TopicEncodingConfig{
-					Topics:        []string{"^logs-.*"},
-					ExcludeTopics: []string{""},
-					Encoding:      "otlp_proto",
-				},
-			},
-			expectedErr: "logs.exclude_topics contains empty string",
-		},
-		{
-			name: "invalid config with empty string in exclude_topics for metrics",
-			config: &Config{
-				Metrics: TopicEncodingConfig{
-					Topics:        []string{"^metrics-.*"},
-					ExcludeTopics: []string{"", "^metrics-test$"},
-					Encoding:      "otlp_proto",
-				},
-			},
-			expectedErr: "metrics.exclude_topics contains empty string",
-		},
-		{
-			name: "invalid config with empty string in exclude_topics for traces",
-			config: &Config{
-				Traces: TopicEncodingConfig{
-					Topics:        []string{"^traces-.*"},
-					ExcludeTopics: []string{"^traces-test$", ""},
-					Encoding:      "otlp_proto",
-				},
-			},
-			expectedErr: "traces.exclude_topics contains empty string",
-		},
-		{
-			name: "invalid config with empty string in exclude_topics for profiles",
-			config: &Config{
-				Profiles: TopicEncodingConfig{
-					Topics:        []string{"^profiles-.*"},
-					ExcludeTopics: []string{""},
-					Encoding:      "otlp_proto",
-				},
-			},
-			expectedErr: "profiles.exclude_topics contains empty string",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.config.Validate()
-			if tt.expectedErr == "" {
-				require.NoError(t, err)
-			} else {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tt.expectedErr)
+			err = confmap.Validate(cfg)
+			if tt.expectedErr != "" {
+				require.ErrorContains(t, err, tt.expectedErr)
+				return
 			}
+
+			require.NoError(t, err)
+			expected := tt.expected.(*Config)
+			if expected.PartitionProcessing.MaxBufferedBatches == 0 {
+				expected.PartitionProcessing = PartitionProcessing{
+					MaxBufferedBatches: 1,
+				}
+			}
+			require.Equal(t, tt.expected, cfg)
 		})
 	}
 }

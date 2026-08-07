@@ -26,10 +26,409 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
+
+// TestPartitionProcessingBlockedPartition verifies that a blocked partition
+// does not stop another partition or commit the blocked record.
+func TestPartitionProcessingBlockedPartition(t *testing.T) {
+	h := newPartitionProcessingHarness(t, 2, func(cfg *Config) {
+		cfg.ConsumerConfig.AutoCommit.Enable = false
+		cfg.MessageMarking.After = false
+	})
+
+	blocked := make(chan struct{})
+	partitionZeroStarted := make(chan struct{})
+	partitionOneProcessed := make(chan struct{})
+	var (
+		partitionZeroOnce sync.Once
+		partitionOneOnce  sync.Once
+	)
+	h.start(func(ctx context.Context, record *kgo.Record, _ attribute.Set) error {
+		switch record.Partition {
+		case 0:
+			partitionZeroOnce.Do(func() { close(partitionZeroStarted) })
+			select {
+			case <-blocked:
+				return nil
+			case <-ctx.Done():
+				return context.Cause(ctx)
+			}
+		case 1:
+			partitionOneOnce.Do(func() { close(partitionOneProcessed) })
+		}
+		return nil
+	})
+	defer func() {
+		close(blocked)
+		h.shutdown(t.Context())
+	}()
+	h.waitAssignments(2)
+
+	h.produce(0, "blocked")
+	waitSignal(t, partitionZeroStarted, "partition 0 did not start")
+
+	h.produce(1, "healthy")
+	waitSignal(t, partitionOneProcessed, "partition 1 was blocked by partition 0")
+
+	require.Never(t, func() bool {
+		offset, ok := h.committedOffset(0)
+		return ok && offset > 0
+	}, 500*time.Millisecond, 10*time.Millisecond)
+}
+
+type blockingFetchController struct {
+	pauseStarted chan struct{}
+	releasePause chan struct{}
+	resumed      chan struct{}
+}
+
+func (c *blockingFetchController) PauseFetchPartitions(map[string][]int32) map[string][]int32 {
+	close(c.pauseStarted)
+	<-c.releasePause
+	return nil
+}
+
+func (c *blockingFetchController) ResumeFetchPartitions(map[string][]int32) {
+	close(c.resumed)
+}
+
+// TestDispatchSerializesPauseBeforeResume protects pause/resume ordering.
+func TestDispatchSerializesPauseBeforeResume(t *testing.T) {
+	const topic = "test"
+	ctx, cancel := context.WithCancelCause(t.Context())
+	defer cancel(nil)
+
+	controller := &blockingFetchController{
+		pauseStarted: make(chan struct{}),
+		releasePause: make(chan struct{}),
+		resumed:      make(chan struct{}),
+	}
+	partitionConsumer := &pc{
+		ctx:     ctx,
+		logger:  zap.NewNop(),
+		mailbox: newPartitionMailbox(ctx, 1),
+	}
+	tp := topicPartition{topic: topic, partition: 0}
+	consumer := franzConsumer{
+		fetchController: controller,
+	}
+
+	dispatchDone := make(chan struct{})
+	go func() {
+		consumer.dispatchPartitionBatches(
+			kgo.Fetches{newTestFetch(topic, 0, 1)},
+			map[topicPartition]*pc{tp: partitionConsumer},
+			map[topicPartition]partitionSnapshot{tp: {
+				pc:         partitionConsumer,
+				generation: partitionConsumer.mailbox.generationSnapshot(),
+			}},
+		)
+		close(dispatchDone)
+	}()
+	<-controller.pauseStarted
+
+	dequeueStarted := make(chan struct{})
+	go func() {
+		close(dequeueStarted)
+		_, _ = partitionConsumer.mailbox.dequeue(func() {
+			partitionConsumer.pauseState.resume(
+				controller,
+				map[string][]int32{topic: {0}},
+				partitionPauseBackpressure,
+			)
+		})
+	}()
+	<-dequeueStarted
+
+	require.Never(t, func() bool {
+		select {
+		case <-controller.resumed:
+			return true
+		default:
+			return false
+		}
+	}, 100*time.Millisecond, 10*time.Millisecond)
+
+	close(controller.releasePause)
+	<-dispatchDone
+	<-controller.resumed
+}
+
+func TestPartitionProcessingFullMailbox(t *testing.T) {
+	h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
+		cfg.ConsumerConfig.MaxFetchSize = 1
+	})
+
+	release := make(chan struct{})
+	firstStarted := make(chan struct{})
+	var (
+		processed atomic.Int64
+		once      sync.Once
+	)
+	h.start(func(ctx context.Context, _ *kgo.Record, _ attribute.Set) error {
+		once.Do(func() {
+			close(firstStarted)
+			select {
+			case <-release:
+			case <-ctx.Done():
+			}
+		})
+		processed.Add(1)
+		return nil
+	})
+	defer func() {
+		select {
+		case <-release:
+		default:
+			close(release)
+		}
+		h.shutdown(t.Context())
+	}()
+	h.waitAssignments(1)
+
+	records := make([]*kgo.Record, 10)
+	for i := range records {
+		records[i] = &kgo.Record{
+			Topic:     h.topic,
+			Partition: 0,
+			Value:     []byte{byte(i)},
+		}
+	}
+	h.produceRecords(records[0])
+	waitSignal(t, firstStarted, "first record did not start")
+	h.produceRecords(records[1:]...)
+	h.waitPaused(1)
+
+	close(release)
+	waitAtomic(t, &processed, int64(len(records)))
+	h.waitPaused(0)
+
+	// A drained mailbox must not remain paused after a previous pause decision.
+	h.produce(0, "after-resume")
+	waitAtomic(t, &processed, int64(len(records)+1))
+}
+
+func TestPartitionProcessingTransientRetry(t *testing.T) {
+	h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
+		cfg.MessageMarking = MessageMarking{
+			After:   true,
+			OnError: false,
+		}
+		cfg.ErrorBackOff = configretry.BackOffConfig{
+			Enabled:             true,
+			InitialInterval:     10 * time.Millisecond,
+			MaxInterval:         20 * time.Millisecond,
+			MaxElapsedTime:      50 * time.Millisecond,
+			RandomizationFactor: 0,
+			Multiplier:          1,
+		}
+	})
+
+	var (
+		fail      atomic.Bool
+		attempts  atomic.Int64
+		processed atomic.Int64
+	)
+	fail.Store(true)
+	h.start(func(context.Context, *kgo.Record, attribute.Set) error {
+		attempts.Add(1)
+		if fail.Load() {
+			return errors.New("transient failure")
+		}
+		processed.Add(1)
+		return nil
+	})
+	defer h.shutdown(t.Context())
+	h.produce(0, "retry")
+	require.Eventually(t, func() bool {
+		return attempts.Load() >= 4
+	}, 5*time.Second, 10*time.Millisecond)
+
+	fail.Store(false)
+	waitAtomic(t, &processed, 1)
+}
+
+func TestPartitionProcessingPermanentError(t *testing.T) {
+	h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
+		cfg.MessageMarking = MessageMarking{
+			After:            true,
+			OnPermanentError: false,
+		}
+	})
+
+	var attempts atomic.Int64
+	h.start(func(context.Context, *kgo.Record, attribute.Set) error {
+		attempts.Add(1)
+		return consumererror.NewPermanent(errors.New("permanent failure"))
+	})
+	defer h.shutdown(t.Context())
+	h.produce(0, "permanent")
+	h.waitPaused(1)
+
+	h.produce(0, "still paused")
+	require.Never(t, func() bool {
+		return attempts.Load() > 1
+	}, 500*time.Millisecond, 10*time.Millisecond)
+}
+
+func TestPartitionProcessingMailboxCapacity(t *testing.T) {
+	h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
+		cfg.PartitionProcessing.MaxBufferedBatches = 3
+	})
+	h.start(func(context.Context, *kgo.Record, attribute.Set) error {
+		return nil
+	})
+	defer h.shutdown(t.Context())
+	h.waitAssignments(1)
+
+	h.consumer.mu.RLock()
+	defer h.consumer.mu.RUnlock()
+	for _, partitionConsumer := range h.consumer.assignments {
+		require.NotNil(t, partitionConsumer.mailbox)
+		require.Equal(t, 3, cap(partitionConsumer.mailbox.batches))
+	}
+}
+
+type partitionProcessingHarness struct {
+	t           *testing.T
+	topic       string
+	kafkaClient *kgo.Client
+	producer    *kgo.Client
+	cfg         *Config
+	consumer    *franzConsumer
+}
+
+func newPartitionProcessingHarness(t *testing.T, partitions int, configure func(*Config)) *partitionProcessingHarness {
+	t.Helper()
+
+	const topic = "otlp_spans"
+	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(int32(partitions), topic))
+	cfg.ConsumerConfig.GroupID = t.Name()
+	cfg.PartitionProcessing = PartitionProcessing{
+		Independent:        true,
+		MaxBufferedBatches: 1,
+	}
+	if configure != nil {
+		configure(cfg)
+	}
+
+	producer, err := kgo.NewClient(
+		kgo.SeedBrokers(cfg.ClientConfig.Brokers...),
+		kgo.RecordPartitioner(kgo.ManualPartitioner()),
+	)
+	require.NoError(t, err)
+	t.Cleanup(producer.Close)
+
+	return &partitionProcessingHarness{
+		t:           t,
+		topic:       topic,
+		kafkaClient: kafkaClient,
+		producer:    producer,
+		cfg:         cfg,
+	}
+}
+
+func (h *partitionProcessingHarness) start(consume func(context.Context, *kgo.Record, attribute.Set) error) {
+	h.t.Helper()
+
+	settings, _, _ := mustNewSettings(h.t)
+	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+		return consumeMessageFunc(consume), nil
+	}
+	consumer, err := newFranzKafkaConsumer(h.cfg, settings, []string{h.topic}, nil, consumeFn)
+	require.NoError(h.t, err)
+	require.NoError(h.t, consumer.Start(h.t.Context(), componenttest.NewNopHost()))
+	h.consumer = consumer
+}
+
+func (h *partitionProcessingHarness) shutdown(ctx context.Context) {
+	h.t.Helper()
+	require.NoError(h.t, h.consumer.Shutdown(ctx))
+}
+
+func (h *partitionProcessingHarness) produce(partition int32, value string) {
+	h.t.Helper()
+	h.produceRecords(&kgo.Record{
+		Topic:     h.topic,
+		Partition: partition,
+		Value:     []byte(value),
+	})
+}
+
+func (h *partitionProcessingHarness) produceRecords(records ...*kgo.Record) {
+	h.t.Helper()
+	for _, record := range records {
+		if record.Topic == "" {
+			record.Topic = h.topic
+		}
+	}
+	require.NoError(h.t, h.producer.ProduceSync(h.t.Context(), records...).FirstErr())
+}
+
+func (h *partitionProcessingHarness) waitAssignments(want int) {
+	h.t.Helper()
+	require.Eventually(h.t, func() bool {
+		h.consumer.mu.RLock()
+		defer h.consumer.mu.RUnlock()
+		return len(h.consumer.assignments) == want
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
+func (h *partitionProcessingHarness) waitPaused(want int) {
+	h.t.Helper()
+	require.Eventually(h.t, func() bool {
+		paused := h.consumer.client.PauseFetchPartitions(nil)
+		return len(paused[h.topic]) == want
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
+func (h *partitionProcessingHarness) committedOffset(partition int32) (int64, bool) {
+	offsets, err := kadm.NewClient(h.kafkaClient).FetchOffsets(h.t.Context(), h.cfg.ConsumerConfig.GroupID)
+	if err != nil {
+		return 0, false
+	}
+	offset, ok := offsets.Lookup(h.topic, partition)
+	return offset.At, ok
+}
+
+func waitSignal(t *testing.T, ch <-chan struct{}, msg string) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		select {
+		case <-ch:
+			return true
+		default:
+			return false
+		}
+	}, 5*time.Second, 10*time.Millisecond, msg)
+}
+
+func waitAtomic(t *testing.T, got *atomic.Int64, want int64) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		return got.Load() == want
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
+func newTestFetch(topic string, partition int32, offset int64) kgo.Fetch {
+	return kgo.Fetch{
+		Topics: []kgo.FetchTopic{{
+			Topic: topic,
+			Partitions: []kgo.FetchPartition{{
+				Partition: partition,
+				Records: []*kgo.Record{{
+					Topic:     topic,
+					Partition: partition,
+					Offset:    offset,
+				}},
+			}},
+		}},
+	}
+}
 
 func TestConsumerShutdownConsuming(t *testing.T) {
 	type tCfg struct {
