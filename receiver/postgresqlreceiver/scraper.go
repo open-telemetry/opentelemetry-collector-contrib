@@ -257,7 +257,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectWalAge(ctx, now, listClient, &errs)
 	p.collectReplicationStats(ctx, now, listClient, &errs)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
-	p.collectSharedRelationLocks(ctx, now, listClient, &errs)
+	p.collectServerScopedLocks(ctx, now, listClient, &errs)
 
 	if p.useOTelSemconv {
 		rb := p.setupSemconvResourceBuilder(p.mb.NewResourceBuilder())
@@ -867,7 +867,7 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	p.mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(now, bgStats.maxWritten)
 }
 
-// collectDatabaseLocks collects the locks on relations local to the connected database
+// collectDatabaseLocks collects the locks whose target belongs to the connected database
 func (p *postgreSQLScraper) collectDatabaseLocks(
 	ctx context.Context,
 	now pcommon.Timestamp,
@@ -886,20 +886,22 @@ func (p *postgreSQLScraper) collectDatabaseLocks(
 	}
 }
 
-func (p *postgreSQLScraper) collectSharedRelationLocks(
+// collectServerScopedLocks collects the locks that belong to no single database:
+// locks on shared catalogs and locks whose target is a transaction ID.
+func (p *postgreSQLScraper) collectServerScopedLocks(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
 	errs *errsMux,
 ) {
-	sharedLocks, err := client.getSharedRelationLocks(ctx)
+	serverLocks, err := client.getServerScopedLocks(ctx)
 	if err != nil {
-		p.logger.Error("Errors encountered while fetching shared relation locks", zap.Error(err))
+		p.logger.Error("Errors encountered while fetching server-scoped locks", zap.Error(err))
 		errs.addPartial(err)
 		return
 	}
-	// Shared relations (pg_locks.database = 0) are server-scoped, so db.namespace is empty.
-	for _, dbLock := range sharedLocks {
+	// These locks are not attributable to a database, so db.namespace is empty.
+	for _, dbLock := range serverLocks {
 		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType, "")
 	}
 }
