@@ -1215,8 +1215,8 @@ func TestScrapeTopQueries(t *testing.T) {
 
 	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 	require.NoError(t, scraperErr)
-	scraper.cache.Add(queryid+totalExecTimeColumnName, 10)
-	scraper.cache.Add(queryid+totalPlanTimeColumnName, 11)
+	scraper.cache.Add(queryid+totalExecTimeColumnName, 10000)
+	scraper.cache.Add(queryid+totalPlanTimeColumnName, 11000)
 	scraper.cache.Add(queryid+callsColumnName, 120)
 	scraper.cache.Add(queryid+rowsColumnName, 20)
 
@@ -1245,10 +1245,10 @@ func TestScrapeTopQueries(t *testing.T) {
 	assert.Equal(t, float64(123), calls)
 	execTime, execTimeExists := scraper.cache.Get(queryid + totalExecTimeColumnName)
 	assert.True(t, execTimeExists)
-	assert.Equal(t, float64(11), execTime)
+	assert.Equal(t, float64(11000), execTime)
 	planTime, planTimeExists := scraper.cache.Get(queryid + totalPlanTimeColumnName)
 	assert.True(t, planTimeExists)
-	assert.Equal(t, float64(12), planTime)
+	assert.Equal(t, float64(12000), planTime)
 }
 
 func TestIsExplainableQuery(t *testing.T) {
