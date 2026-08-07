@@ -38,6 +38,14 @@ var FilelogProtobufCheckpointEncodingFeatureGate = featuregate.GlobalRegistry().
 	featuregate.WithRegisterFromVersion("v0.148.0"),
 )
 
+var FilelogRequireExplicitTopNFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"filelog.requireExplicitTopN",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, requires `ordering_criteria.top_n` to be set explicitly when `ordering_criteria.sort_by` is configured. When disabled, an unset `top_n` falls back to the legacy default of 1."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47444"),
+	featuregate.WithRegisterFromVersion("v0.156.0"),
+)
+
 var FilelogWindowsCaseInsensitiveFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filelog.windows.caseInsensitive",
 	featuregate.StageAlpha,
