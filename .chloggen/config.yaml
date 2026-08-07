@@ -332,7 +332,7 @@ components:
     - receiver/solace
     - receiver/splunk_enterprise
     - receiver/splunk_hec
-    - receiver/sqlquery
+    - receiver/sql_query
     - receiver/sqlserver
     - receiver/ssh_check
     - receiver/statsd

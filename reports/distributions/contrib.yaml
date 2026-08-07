@@ -223,7 +223,7 @@ components:
         - solace
         - splunk_enterprise
         - splunk_hec
-        - sqlquery
+        - sql_query
         - sqlserver
         - ssh_check
         - statsd
