@@ -58,12 +58,11 @@ type WatchClient struct {
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
-	Pods                      map[PodIdentifier]*Pod
-	Rules                     ExtractionRules
-	Filters                   Filters
-	Associations              []Association
-	hasContainerIDAssociation bool
-	Exclude                   Excludes
+	Pods         map[PodIdentifier]*Pod
+	Rules        ExtractionRules
+	Filters      Filters
+	Associations []Association
+	Exclude      Excludes
 
 	// A map containing Namespace related data, used to associate them with resources.
 	// Key is namespace name
@@ -145,19 +144,18 @@ func New(
 	}
 
 	c := &WatchClient{
-		logger:                    set.Logger,
-		Rules:                     rules,
-		Filters:                   filters,
-		Associations:              associations,
-		hasContainerIDAssociation: hasContainerIDAssociation(associations),
-		Exclude:                   exclude,
-		cronJobRegex:              cronJobRegex,
-		stopCh:                    make(chan struct{}),
-		telemetryBuilder:          telemetryBuilder,
-		waitForMetadata:           waitForMetadata,
-		waitForMetadataTimeout:    waitForMetadataTimeout,
-		watchSyncPeriod:           watchSyncPeriod,
-		podDeleteGracePeriod:      podDeleteGracePeriod,
+		logger:                 set.Logger,
+		Rules:                  rules,
+		Filters:                filters,
+		Associations:           associations,
+		Exclude:                exclude,
+		cronJobRegex:           cronJobRegex,
+		stopCh:                 make(chan struct{}),
+		telemetryBuilder:       telemetryBuilder,
+		waitForMetadata:        waitForMetadata,
+		waitForMetadataTimeout: waitForMetadataTimeout,
+		watchSyncPeriod:        watchSyncPeriod,
+		podDeleteGracePeriod:   podDeleteGracePeriod,
 	}
 
 	c.Pods = map[PodIdentifier]*Pod{}
@@ -1614,8 +1612,9 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 
 func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	newPod := c.podFromAPI(pod)
-	identifiers := c.getIdentifiersFromAssoc(newPod)
-	var staleContainerIDRequests []deleteRequest
+	newIdentifiers := c.getIdentifiersFromAssoc(newPod)
+	var staleRequests []deleteRequest
+	var reactivatedIDs []PodIdentifier
 
 	c.m.Lock()
 	var oldPod *Pod
@@ -1624,8 +1623,8 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 			oldPod = op
 		}
 	}
-	for i := range identifiers {
-		id := identifiers[i]
+	for i := range newIdentifiers {
+		id := newIdentifiers[i]
 		// compare initial scheduled timestamp for existing pod and new pod with same identifier
 		// and only replace old pod if scheduled time of new pod is newer or equal.
 		// This should fix the case where scheduler has assigned the same attributes (like IP address)
@@ -1636,22 +1635,24 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 			}
 		}
 		c.Pods[id] = newPod
+		reactivatedIDs = append(reactivatedIDs, id)
 	}
-	if c.hasContainerIDAssociation && oldPod != nil &&
-		c.Pods[podUIDIdentifier(newPod.PodUID)] == newPod {
-		// Run stale container.id cleanup only when this watch actually replaced the pod under
-		// k8s.pod.uid. The loop skips c.Pods[uid]=newPod when pod.Status.StartTime is older than
-		// the StartTime already stored for that key, so a stale watch leaves the UID entry
-		// pointing at the previous *Pod.
-		//
-		// Only container.id-based identifiers are handled here.
-		// Other identifiers can disappear and later reappear, so they need separate handling to preserve the grace period.
-		// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48588
-		staleContainerIDRequests = c.staleContainerIDDeleteRequestsLocked(oldPod, newPod)
+	if oldPod != nil && c.Pods[podUIDIdentifier(newPod.PodUID)] == newPod {
+		// Clean up identifiers that were present in oldPod but are no longer in newPod.
+		// This handles memory leaks for all identifier types (container.id, labels, annotations, etc.).
+		// Run only when this watch actually replaced the pod under k8s.pod.uid.
+		staleRequests = c.staleIdentifierDeleteRequestsLocked(oldPod, newPod)
 	}
 	c.m.Unlock()
 
-	c.appendDeleteRequests(staleContainerIDRequests)
+	// Cancel any pending deletes for identifiers that are now active again.
+	// This fixes the active->stale->active case where an identifier temporarily disappears
+	// and reappears before the grace period expires, preventing incorrect removal.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48588
+	if newPod.PodUID != "" {
+		c.cancelDeleteRequests(reactivatedIDs, newPod.PodUID)
+	}
+	c.appendDeleteRequests(staleRequests)
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
@@ -1686,17 +1687,27 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 	}
 }
 
-func (c *WatchClient) staleContainerIDDeleteRequestsLocked(oldPod, newPod *Pod) []deleteRequest {
-	staleContainerIDs := staleContainerIDs(oldPod, newPod)
-	if len(staleContainerIDs) == 0 {
+// staleIdentifierDeleteRequestsLocked returns delete requests for all identifiers
+// that were present in oldPod but are no longer present in newPod.
+// This covers memory leaks for all identifier types including container.id,
+// custom labels, annotations, and any other association source.
+// Must be called with c.m held.
+func (c *WatchClient) staleIdentifierDeleteRequestsLocked(oldPod, newPod *Pod) []deleteRequest {
+	if oldPod == nil || newPod == nil || oldPod.PodUID == "" || oldPod.PodUID != newPod.PodUID {
 		return nil
 	}
 
-	identifiers := c.getIdentifiersFromAssoc(oldPod)
-	requests := make([]deleteRequest, 0, len(staleContainerIDs))
-	for i := range identifiers {
-		id := identifiers[i]
-		if !podIdentifierHasContainerID(id, staleContainerIDs) {
+	newIdentifiers := c.getIdentifiersFromAssoc(newPod)
+	newIDSet := make(map[PodIdentifier]struct{}, len(newIdentifiers))
+	for i := range newIdentifiers {
+		newIDSet[newIdentifiers[i]] = struct{}{}
+	}
+
+	oldIdentifiers := c.getIdentifiersFromAssoc(oldPod)
+	var requests []deleteRequest
+	for i := range oldIdentifiers {
+		id := oldIdentifiers[i]
+		if _, isActive := newIDSet[id]; isActive {
 			continue
 		}
 		if p, ok := c.Pods[id]; ok && p.PodUID == oldPod.PodUID {
@@ -1704,46 +1715,6 @@ func (c *WatchClient) staleContainerIDDeleteRequestsLocked(oldPod, newPod *Pod) 
 		}
 	}
 	return requests
-}
-
-func staleContainerIDs(oldPod, newPod *Pod) map[string]struct{} {
-	if oldPod == nil || newPod == nil || oldPod.PodUID == "" || oldPod.PodUID != newPod.PodUID {
-		return nil
-	}
-
-	staleContainerIDs := map[string]struct{}{}
-	for containerID := range oldPod.Containers.ByID {
-		if containerID == "" {
-			continue
-		}
-		if _, ok := newPod.Containers.ByID[containerID]; !ok {
-			staleContainerIDs[containerID] = struct{}{}
-		}
-	}
-	return staleContainerIDs
-}
-
-func podIdentifierHasContainerID(id PodIdentifier, containerIDs map[string]struct{}) bool {
-	for i := range id {
-		attr := id[i]
-		if attr.Source.From == ResourceSource && attr.Source.Name == string(conventions.ContainerIDKey) {
-			if _, ok := containerIDs[attr.Value]; ok {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func hasContainerIDAssociation(associations []Association) bool {
-	for _, assoc := range associations {
-		for _, source := range assoc.Sources {
-			if source.From == ResourceSource && source.Name == string(conventions.ContainerIDKey) {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func podUIDIdentifier(podUID string) PodIdentifier {
@@ -1756,6 +1727,38 @@ func (c *WatchClient) appendDeleteRequests(requests []deleteRequest) {
 	for i := range requests {
 		c.appendDeleteQueue(requests[i].id, requests[i].podUID)
 	}
+}
+
+// cancelDeleteRequests removes any pending delete requests that match the given identifiers and podUID.
+// This prevents stale deletes from removing an identifier that has since been re-added to the cache.
+func (c *WatchClient) cancelDeleteRequests(ids []PodIdentifier, podUID string) {
+	if len(ids) == 0 {
+		return
+	}
+
+	c.deleteMut.Lock()
+	if len(c.deleteQueue) == 0 {
+		c.deleteMut.Unlock()
+		return
+	}
+
+	idSet := make(map[PodIdentifier]struct{}, len(ids))
+	for i := range ids {
+		idSet[ids[i]] = struct{}{}
+	}
+
+	newQueue := c.deleteQueue[:0]
+	for i := range c.deleteQueue {
+		d := c.deleteQueue[i]
+		if d.podUID == podUID {
+			if _, ok := idSet[d.id]; ok {
+				continue // Cancel this delete request
+			}
+		}
+		newQueue = append(newQueue, d)
+	}
+	c.deleteQueue = newQueue
+	c.deleteMut.Unlock()
 }
 
 func (c *WatchClient) appendDeleteQueue(podID PodIdentifier, podUID string) {

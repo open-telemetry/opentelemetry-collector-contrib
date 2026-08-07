@@ -447,7 +447,6 @@ func TestPodUpdateQueuesStaleContainerIDAssociation(t *testing.T) {
 			Name: "container.id",
 		}},
 	}}
-	c.hasContainerIDAssociation = hasContainerIDAssociation(c.Associations)
 
 	oldID := newPodIdentifier(ResourceSource, "container.id", "old-container-id")
 	newID := newPodIdentifier(ResourceSource, "container.id", "new-container-id")
@@ -473,6 +472,108 @@ func TestPodUpdateQueuesStaleContainerIDAssociation(t *testing.T) {
 	c.deleteLoopProcessing(0)
 	assert.NotContains(t, c.Pods, oldID)
 	assert.Contains(t, c.Pods, newID)
+}
+
+// podWithLabel builds a minimal pod with a single label, used for association tests.
+func podWithLabel(uid, labelKey, labelValue string) *api_v1.Pod {
+	startTime := meta_v1.NewTime(time.Unix(1, 0))
+	return &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:   "pod-a",
+			UID:    types.UID(uid),
+			Labels: map[string]string{labelKey: labelValue},
+		},
+		Status: api_v1.PodStatus{
+			StartTime: &startTime,
+		},
+	}
+}
+
+// podWithoutLabel builds the same pod but without the label.
+func podWithoutLabel(uid string) *api_v1.Pod {
+	startTime := meta_v1.NewTime(time.Unix(1, 0))
+	return &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: "pod-a",
+			UID:  types.UID(uid),
+		},
+		Status: api_v1.PodStatus{
+			StartTime: &startTime,
+		},
+	}
+}
+
+// TestPodUpdateQueuesStaleCustomLabelAssociation verifies that when a pod update removes
+// a label used as a custom association source, the stale identifier is queued for deletion
+// (fix for the memory leak described in issue #48588).
+func TestPodUpdateQueuesStaleCustomLabelAssociation(t *testing.T) {
+	c, _ := newTestClient(t)
+	c.Rules = ExtractionRules{
+		Labels: []FieldExtractionRule{{Name: "my-label", Key: "my-label", From: MetadataFromPod}},
+	}
+	c.Associations = []Association{{
+		Sources: []AssociationSource{{
+			From: ResourceSource,
+			Name: "my-label",
+		}},
+	}}
+
+	labelID := newPodIdentifier(ResourceSource, "my-label", "my-value")
+	uidID := newPodIdentifier(ResourceSource, "k8s.pod.uid", "pod-uid")
+	pod := podWithLabel("pod-uid", "my-label", "my-value")
+
+	c.handlePodAdd(pod)
+	require.Contains(t, c.Pods, labelID)
+	require.Contains(t, c.Pods, uidID)
+
+	// Update the pod without the label — the stale identifier should be queued for deletion.
+	updatedPod := podWithoutLabel("pod-uid")
+	c.handlePodUpdate(pod, updatedPod)
+
+	require.Contains(t, c.Pods, labelID, "stale label identifier should still be in cache during grace period")
+	// The deleteQueue should contain the stale label identifier.
+	require.Len(t, c.deleteQueue, 1)
+	assert.Equal(t, labelID, c.deleteQueue[0].id)
+	assert.Equal(t, "pod-uid", c.deleteQueue[0].podUID)
+}
+
+// TestPodUpdateCancelsPendingDeleteOnReactivation verifies that when an identifier goes
+// through active->stale->active transitions, the pending delete is cancelled so the
+// re-activated identifier is not incorrectly removed after the grace period expires
+// (fix for the active->stale->active bug described in issue #48588).
+func TestPodUpdateCancelsPendingDeleteOnReactivation(t *testing.T) {
+	c, _ := newTestClient(t)
+	c.Rules = ExtractionRules{
+		Labels: []FieldExtractionRule{{Name: "my-label", Key: "my-label", From: MetadataFromPod}},
+	}
+	c.Associations = []Association{{
+		Sources: []AssociationSource{{
+			From: ResourceSource,
+			Name: "my-label",
+		}},
+	}}
+
+	labelID := newPodIdentifier(ResourceSource, "my-label", "my-value")
+	pod := podWithLabel("pod-uid", "my-label", "my-value")
+
+	// Step 1: add pod with the label.
+	c.handlePodAdd(pod)
+	require.Contains(t, c.Pods, labelID)
+	require.Empty(t, c.deleteQueue)
+
+	// Step 2: update removes the label — stale delete is queued.
+	podWithoutLbl := podWithoutLabel("pod-uid")
+	c.handlePodUpdate(pod, podWithoutLbl)
+	require.Len(t, c.deleteQueue, 1)
+	assert.Equal(t, labelID, c.deleteQueue[0].id)
+
+	// Step 3: update restores the label — pending delete should be cancelled.
+	c.handlePodUpdate(podWithoutLbl, pod)
+	assert.Empty(t, c.deleteQueue, "pending delete should be cancelled when identifier is re-activated")
+
+	// Step 4: even after running the delete loop with no grace period, the identifier must survive.
+	c.deleteLoopProcessing(0)
+	assert.Contains(t, c.Pods, labelID, "re-activated identifier must not be deleted")
 }
 
 func TestNamespaceUpdate(t *testing.T) {
