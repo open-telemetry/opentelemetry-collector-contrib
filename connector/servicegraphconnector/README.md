@@ -140,7 +140,7 @@ The following settings can be optionally configured:
 - `store_expiration_loop`: the time to expire old entries from the store periodically.
   - Default: `2s`
 - `virtual_node_peer_attributes`: the list of attributes, ordered by priority, whose presence in a client span will result in the creation of a virtual server node. An empty list disables virtual node creation.
-  - Default: `[peer.service, db.name, db.system]`
+  - Default: `[peer.service, db.name, db.namespace, db.system, db.system.name]`
 - `virtual_node_extra_label`: adds an extra label `virtual_node` with an optional value of `client` or `server`, indicating which node is the uninstrumented one.
   - Default: `false`
 - `metrics_flush_interval`: the interval at which metrics are flushed to the exporter.
@@ -148,7 +148,7 @@ The following settings can be optionally configured:
 - `metrics_timestamp_offset`: the offset to subtract from metric timestamps. If set to a positive duration, metric timestamps will be set to (current time - offset), effectively shifting metrics to appear as if they were generated in the past.
   - Default: `0`
 - `database_name_attributes`: the list of attribute names used to identify the database name from span attributes. The attributes are tried in order, selecting the first match.
-  - Default: `[db.name]`
+  - Default: `[db.name, db.namespace]`
 
 ## Example configurations
 

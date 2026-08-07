@@ -20,9 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
-	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
-	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
@@ -47,11 +45,21 @@ var (
 		0.002, 0.004, 0.006, 0.008, 0.01, 0.05, 0.1, 0.2, 0.4, 0.8, 1, 1.4, 2, 5, 10, 15,
 	}
 
+	// defaultPeerAttributes lists the span attributes used to identify a peer,
+	// in priority order (higher = higher priority). It supports both the current
+	// semantic conventions and their legacy predecessors so spans emitted with
+	// either convention are matched:
+	//   - "peer.service": legacy key (PeerServiceKey), removed from semconv with
+	//     no direct replacement, kept as a string literal.
+	//   - "db.name" (legacy) / db.namespace (DBNamespaceKey, current).
+	//   - "db.system" (legacy) / db.system.name (DBSystemNameKey, current).
 	defaultPeerAttributes = []string{
-		string(conventionsv138.PeerServiceKey), string(conventionsv125.DBNameKey), string(conventionsv128.DBSystemKey),
+		"peer.service",
+		"db.name", string(conventions.DBNamespaceKey),
+		"db.system", string(conventions.DBSystemNameKey),
 	}
 
-	defaultDatabaseNameAttributes = []string{string(conventionsv125.DBNameKey)}
+	defaultDatabaseNameAttributes = []string{"db.name", string(conventions.DBNamespaceKey)}
 
 	defaultMetricsFlushInterval = 60 * time.Second // 1 DPM
 )
