@@ -527,6 +527,116 @@ func TestScopeAttributeConflictsDropped(t *testing.T) {
 	}, labels)
 }
 
+// TestTranslationStrategyWithoutSuffixesSuppressesSuffixes is a regression test
+// for https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49451.
+//
+// When suffixes are disabled (translation_strategy: UnderscoreEscapingWithoutSuffixes,
+// which maps to otlptranslator.MetricNamer{WithMetricSuffixes: false}), neither type
+// suffixes (_total for monotonic counters, _ratio for unit-"1" gauges) nor unit
+// suffixes (_milliseconds, _bytes, _seconds) may be appended to the exported metric
+// name. A past prometheus/common bump applied unit suffixes through a path that was
+// not gated by WithMetricSuffixes; the dependency has since been fixed, so this test
+// guards against any future re-introduction.
+func TestTranslationStrategyWithoutSuffixesSuppressesSuffixes(t *testing.T) {
+	tests := []struct {
+		name        string
+		metricName  string
+		unit        string
+		gauge       bool     // unit-"1" gauges exercise the _ratio path; otherwise a monotonic sum exercises _total
+		badSuffixes []string // suffixes that must NOT appear in the exported name
+	}{
+		{
+			name:        "milliseconds unit suffix suppressed",
+			metricName:  "http_request_duration",
+			unit:        "ms",
+			badSuffixes: []string{"_milliseconds", "_total"},
+		},
+		{
+			name:        "bytes unit suffix suppressed",
+			metricName:  "process_memory",
+			unit:        "By",
+			badSuffixes: []string{"_bytes", "_total"},
+		},
+		{
+			name:        "seconds unit suffix suppressed",
+			metricName:  "cache_ttl",
+			unit:        "s",
+			badSuffixes: []string{"_seconds", "_total"},
+		},
+		{
+			name:        "total type suffix suppressed for monotonic counter",
+			metricName:  "requests",
+			unit:        "",
+			badSuffixes: []string{"_total"},
+		},
+		{
+			name:        "ratio type suffix suppressed for unit-1 gauge",
+			metricName:  "memory_utilization",
+			unit:        "1",
+			gauge:       true,
+			badSuffixes: []string{"_ratio"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := pmetric.NewMetric()
+			metric.SetName(tt.metricName)
+			metric.SetUnit(tt.unit)
+
+			if tt.gauge {
+				// A gauge with unit "1" would receive a _ratio suffix when
+				// suffixes are enabled.
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(0.5)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			} else {
+				// A monotonic sum would receive both a _total suffix and a unit
+				// suffix when suffixes are enabled.
+				sum := metric.SetEmptySum()
+				sum.SetIsMonotonic(true)
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(42.0)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			}
+
+			c := newCollector(&Config{
+				TranslationStrategy: underscoreEscapingWithoutSuffixes,
+			}, zap.NewNop())
+			c.accumulator = &mockAccumulator{
+				[]pmetric.Metric{metric},
+				pcommon.NewMap(),
+				[]string{""},
+				[]string{""},
+				[]string{""},
+				[]pcommon.Map{pcommon.NewMap()},
+			}
+
+			ch := make(chan prometheus.Metric, 2)
+			go func() {
+				c.Collect(ch)
+				close(ch)
+			}()
+
+			collected := 0
+			for m := range ch {
+				collected++
+				desc := m.Desc().String()
+				for _, bad := range tt.badSuffixes {
+					require.NotContains(t, desc, bad,
+						"translation_strategy without suffixes must suppress %q suffix; got desc: %s", bad, desc)
+				}
+				require.Contains(t, desc, tt.metricName,
+					"base metric name must still appear in desc")
+			}
+			// Guard against a vacuous pass: if Collect emitted nothing, the loop
+			// above would run zero assertions and hide a regression.
+			require.Equal(t, 1, collected, "expected exactly one collected metric")
+		})
+	}
+}
+
 func TestCollectMetrics(t *testing.T) {
 	tests := []struct {
 		name       string
