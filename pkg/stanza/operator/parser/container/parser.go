@@ -244,9 +244,8 @@ func (p *Parser) Stop() error {
 	return errs
 }
 
-// parseEntry reads the raw value from the entry, detects the format via splitCRI,
-// and returns the parsed CRI fields (or nil for docker) alongside the detected format.
-// When p.format is pinned in config, the format return value is ignored by the caller.
+// parseEntry reads the raw value from the entry and detects its format via splitCRI.
+// If p.format is pinned in config, the detected format must match — a mismatch is an error.
 func (p *Parser) parseEntry(e *entry.Entry) (map[string]any, string, error) {
 	value, ok := e.Get(p.ParseFrom)
 	if !ok {
@@ -258,19 +257,29 @@ func (p *Parser) parseEntry(e *entry.Entry) (map[string]any, string, error) {
 		return nil, "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
 	}
 
+	var detected string
+	var fields map[string]any
+
 	if raw != "" && raw[0] == '{' {
-		return nil, dockerFormat, nil
+		detected = dockerFormat
+	} else {
+		var containerd bool
+		fields, containerd, ok = splitCRI(raw)
+		if !ok {
+			return nil, "", errors.New("entry cannot be split to CRI fields")
+		}
+		if containerd {
+			detected = containerdFormat
+		} else {
+			detected = crioFormat
+		}
 	}
 
-	fields, containerd, ok := splitCRI(raw)
-	if !ok {
-		return nil, "", errors.New("entry cannot be split to CRI fields")
+	if p.format != "" && p.format != detected {
+		return nil, "", fmt.Errorf("entry detected as %s but format is configured as %s", detected, p.format)
 	}
 
-	if containerd {
-		return fields, containerdFormat, nil
-	}
-	return fields, crioFormat, nil
+	return fields, detected, nil
 }
 
 // parseDocker will parse a docker log value as JSON
@@ -420,7 +429,8 @@ func splitCRI(raw string) (map[string]any, bool, bool) {
 	timeVal := raw[:i]
 	containerd := false
 	if raw[i-1] == 'Z' {
-		if strings.IndexByte(timeVal, '^') >= 0 { // [^ ^Z] excludes '^'
+		// containerd: [^ ^Z]+Z — excludes space, caret, and any Z before the trailing one
+		if strings.ContainsAny(timeVal[:len(timeVal)-1], " ^Z") {
 			return nil, false, false
 		}
 		containerd = true
@@ -454,28 +464,54 @@ func splitCRI(raw string) (map[string]any, bool, bool) {
 	}, containerd, true
 }
 
+// stripLogSuffix validates and strips the log file suffix from a path.
+// Returns the path without the suffix and true on success, empty string and false otherwise.
+// Accepted: ".log"  or  ".log.YYYYMMDD-HHMMSS"  (mirrors \.log(\.\d{8}-\d{6})?$)
+func stripLogSuffix(raw string) (string, bool) {
+	const logExt = ".log"
+	idx := strings.LastIndex(raw, logExt)
+	if idx < 0 {
+		return "", false
+	}
+	after := raw[idx+len(logExt):]
+	switch {
+	case after == "":
+		// exactly ".log"
+		return raw[:idx], true
+	case len(after) == 16 && after[0] == '.' && after[9] == '-':
+		// ".log.YYYYMMDD-HHMMSS" — validate digits
+		rotation := after[1:] // "YYYYMMDD-HHMMSS"
+		for i, c := range rotation {
+			if i == 8 {
+				if c != '-' {
+					return "", false
+				}
+			} else if c < '0' || c > '9' {
+				return "", false
+			}
+		}
+		return raw[:idx], true
+	default:
+		return "", false
+	}
+}
+
 // splitLogPath parses a Kubernetes pod log file path without regex.
 // The expected format is: .../<namespace>_<pod_name>_<uid>/<container_name>/<restart_count>.log[.<rotation>]
 // It returns the parsed fields keyed by OTel resource attribute names, and whether parsing succeeded.
 //
-// Naming standards enforced:
-//   - namespace:      RFC 1123 label — [a-z0-9] and hyphens, must start/end with alphanum
-//   - pod_name:       RFC 1123 subdomain — [a-z0-9] with hyphens and dots
-//   - uid:            UUID — [a-f0-9] and hyphens, exactly 36 chars (8-4-4-4-12)
-//   - container_name: RFC 1123 label — same rules as namespace
-//   - restart_count:  digits only
+// Validation rules (mirrors the previous regex):
+//   - namespace/pod_name: any non-empty string not containing '_' (triplet is split by '_')
+//   - uid: lowercase hex and '-' (no length enforcement)
+//   - container_name: any non-empty string not containing '\\', '.', or '_'
+//   - restart_count: digits only
+//   - suffix: exactly ".log" or ".log." followed by 8 digits, a hyphen, and 6 digits
 func splitLogPath(raw string) (map[string]any, bool) {
-	sep := strings.LastIndexAny(raw, "/\\")
-	if sep < 0 {
+	// Validate and strip the suffix before touching any other path components.
+	base, ok := stripLogSuffix(raw)
+	if !ok {
 		return nil, false
 	}
-
-	logIdx := strings.LastIndex(raw, ".log")
-	if logIdx < 0 {
-		return nil, false
-	}
-
-	base := raw[:logIdx]
 
 	sep2 := strings.LastIndexAny(base, "/\\")
 	if sep2 < 0 {
@@ -498,10 +534,10 @@ func splitLogPath(raw string) (map[string]any, bool) {
 	base = base[:sep1]
 
 	sep0 := strings.LastIndexAny(base, "/\\")
-	triplet := base
-	if sep0 >= 0 {
-		triplet = base[sep0+1:]
+	if sep0 < 0 {
+		return nil, false
 	}
+	triplet := base[sep0+1:]
 	if triplet == "" {
 		return nil, false
 	}
