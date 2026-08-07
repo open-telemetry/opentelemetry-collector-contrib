@@ -129,6 +129,24 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"metadata_retry_backoff": {
+			// Only backoff is configured, so the retry defaults must match the
+			// franz-go defaults these fields were unwired to.
+			expected: ClientConfig{
+				Brokers:  []string{"localhost:9092"},
+				ClientID: "otel-collector",
+				Metadata: MetadataConfig{
+					Full:            true,
+					RefreshInterval: 10 * time.Minute,
+					Retry: MetadataRetryConfig{
+						Max:     20,
+						Backoff: time.Second,
+					},
+				},
+				UseLeaderEpoch:  true,
+				ConnIdleTimeout: 9 * time.Minute,
+			},
+		},
 
 		// Invalid configurations
 		"brokers_required": {
@@ -148,6 +166,12 @@ func TestClientConfig(t *testing.T) {
 		},
 		"sasl_plain_password_required": {
 			expectedErr: "auth::sasl: password is required",
+		},
+		"invalid_metadata_retry_max": {
+			expectedErr: "metadata::retry::max (-1) must be non-negative",
+		},
+		"invalid_metadata_retry_backoff": {
+			expectedErr: "metadata::retry::backoff (-1s) must be non-negative",
 		},
 	})
 }

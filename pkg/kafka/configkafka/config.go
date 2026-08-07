@@ -108,6 +108,12 @@ func (c ClientConfig) Validate() error {
 	if c.ConnIdleTimeout <= 0 {
 		return fmt.Errorf("conn_idle_timeout (%s) must be positive", c.ConnIdleTimeout)
 	}
+	if c.Metadata.Retry.Max < 0 {
+		return fmt.Errorf("metadata::retry::max (%d) must be non-negative", c.Metadata.Retry.Max)
+	}
+	if c.Metadata.Retry.Backoff < 0 {
+		return fmt.Errorf("metadata::retry::backoff (%s) must be non-negative", c.Metadata.Retry.Backoff)
+	}
 	return nil
 }
 
@@ -424,17 +430,18 @@ func (r RequiredAcks) Validate() error {
 }
 
 type MetadataConfig struct {
-	// Whether to maintain a full set of metadata for all topics, or just
-	// the minimal set that has been necessary so far. The full set is simpler
-	// and usually more convenient, but can take up a substantial amount of
-	// memory if you have many topics and partitions. Defaults to true.
+	// Full is ignored, and exists for backwards compatibility in config parsing.
+	//
+	// Deprecated [v0.159.0]: this field is a no-op since the migration to franz-go,
+	// which only fetches metadata for the topics the client produces to or consumes
+	// from. This config will be removed in a future release.
 	Full bool `mapstructure:"full"`
 
 	// RefreshInterval controls the frequency at which cluster metadata is
 	// refreshed. Defaults to 10 minutes.
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
 
-	// Retry configuration for metadata.
+	// Retry configuration for retriable Kafka requests.
 	// This configuration is useful to avoid race conditions when broker
 	// is starting at the same time as collector.
 	Retry MetadataRetryConfig `mapstructure:"retry"`
@@ -442,11 +449,14 @@ type MetadataConfig struct {
 
 // MetadataRetryConfig defines retry configuration for Metadata.
 type MetadataRetryConfig struct {
-	// The total number of times to retry a metadata request when the
-	// cluster is in the middle of a leader election or at startup (default 3).
+	// The total number of times to retry a retriable request, such as when the
+	// cluster is in the middle of a leader election or at startup (default 20).
+	// Applies to metadata, fetch, offset commit, group and admin requests, but
+	// not to produce requests.
 	Max int `mapstructure:"max"`
-	// How long to wait for leader election to occur before retrying
-	// (default 250ms). Similar to the JVM's `retry.backoff.ms`.
+	// The minimum time to wait before retrying a request (default 250ms).
+	// Similar to the JVM's `retry.backoff.ms`: each successive retry doubles
+	// the wait, with jitter applied, capped at max(5s, backoff).
 	Backoff time.Duration `mapstructure:"backoff"`
 }
 
@@ -455,7 +465,8 @@ func NewDefaultMetadataConfig() MetadataConfig {
 		Full:            true,
 		RefreshInterval: 10 * time.Minute,
 		Retry: MetadataRetryConfig{
-			Max:     3,
+			// Matches the franz-go default this field was silently unwired to.
+			Max:     20,
 			Backoff: time.Millisecond * 250,
 		},
 	}
