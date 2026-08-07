@@ -90,29 +90,42 @@ func getRuntimeSliceLiterals[K, V any](slice *runtimeSliceSource[K]) ([]V, bool)
 	return result, complete
 }
 
-func getSliceElementLiteralValue[K, R, V any](value V) (R, bool) {
-	if getter, ok := any(value).(typedGetter[K, R]); ok {
-		return GetLiteralValue(getter)
-	}
-	if typedVal, ok := any(value).(R); ok {
-		return typedVal, true
-	}
-	return *new(R), false
-}
-
-// GetSliceLiteralValues retrieves the literal values from the given slice getter.
-// If the getter is not a literal getter, or if the value it's currently holding is not a
-// literal value, it returns the zero value of R and false.
-// [G] is the type of the slice elements, which can be a typed Getter.
-// [R] is the expected type of the slice values. If [G] is a getter, the resulting value
-// must be coercible to R.
+// GetScalarLiteralValues retrieves the literal values from the given slice of scalars.
+// If the values cannot be retrieved, it returns the zero value of []V and false.
+// [V] must be a scalar type supported by OTTL slice arguments.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func GetSliceLiteralValues[K, R, G any](slice *SliceGetter[K, G]) ([]R, bool) {
-	var result []R
+func GetScalarLiteralValues[
+	K any,
+	V ~uint8 | ~int64 | ~float64 | ~string, // same as buildSliceArg
+](slice *SliceGetter[K, V]) ([]V, bool) {
+	var result []V
+	err := slice.Range(
+		context.Background(),
+		*new(K),
+		func(value V) bool {
+			result = append(result, value)
+			return true
+		},
+	)
+	if err != nil {
+		return nil, false
+	}
+	return result, true
+}
+
+// GetLiteralValues retrieves the literal values from the given slice of getters.
+// If the getter or the value it's currently holding is not a literal value, it
+// returns the zero value of []V and false.
+// [G] is the type of the slice elements, which must be typed Getter.
+// [V] is the expected type of the slice values.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
+func GetLiteralValues[K, V any, G typedGetter[K, V]](slice *SliceGetter[K, G]) ([]V, bool) {
+	var result []V
 	allLiterals := true
 	err := slice.Range(context.Background(), *new(K), func(value G) bool {
-		val, ok := getSliceElementLiteralValue[K, R, G](value)
+		val, ok := GetLiteralValue(value)
 		if !ok {
 			allLiterals = false
 			return false
@@ -135,14 +148,12 @@ func GetSliceLiteralValues[K, R, G any](slice *SliceGetter[K, G]) ([]R, bool) {
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func (s *SliceGetter[K, V]) Range(ctx context.Context, tCtx K, yield func(value V) bool) error {
 	if s.typedValues != nil {
-		for _, v := range s.typedValues {
-			if !yield(v) {
-				return nil
-			}
-		}
-		return nil
+		return rangeTypedSlice(s.typedValues, yield)
 	}
+	return s.rangeRuntimeSlice(ctx, tCtx, yield)
+}
 
+func (s *SliceGetter[K, V]) rangeRuntimeSlice(ctx context.Context, tCtx K, yield func(value V) bool) error {
 	values, err := s.runtimeSlice.Get(ctx, tCtx)
 	if err != nil {
 		return err
@@ -152,12 +163,7 @@ func (s *SliceGetter[K, V]) Range(ctx context.Context, tCtx K, yield func(value 
 	}
 
 	if typedValues, ok := values.([]V); ok {
-		for _, v := range typedValues {
-			if !yield(v) {
-				return nil
-			}
-		}
-		return nil
+		return rangeTypedSlice(typedValues, yield)
 	}
 
 	var rangeErr error
@@ -173,6 +179,15 @@ func (s *SliceGetter[K, V]) Range(ctx context.Context, tCtx K, yield func(value 
 	}
 
 	return rangeErr
+}
+
+func rangeTypedSlice[V any](typedValues []V, yield func(value V) bool) error {
+	for _, v := range typedValues {
+		if !yield(v) {
+			return nil
+		}
+	}
+	return nil
 }
 
 // Len returns the length of the slice when it can be determined without evaluation.
@@ -362,18 +377,15 @@ func (c *sliceElementCoercer[K]) rangeSlice(slice any, yield func(val any) bool)
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func NewTestingSliceGetter[K, T any](literal bool, values []T) *SliceGetter[K, T] {
-	var ge Getter[K]
 	if literal {
-		ge, _ = NewTestingLiteralGetter[K, any](literal, newLiteral[K, any](values))
-	} else {
-		ge = newLiteral[K, any](values)
+		return &SliceGetter[K, T]{typedValues: values}
 	}
 
 	pc := parseContext[K]{}
 	sliceItemType := reflect.TypeFor[T]()
 	return &SliceGetter[K, T]{
 		runtimeSlice: &runtimeSliceSource[K]{
-			Getter:              ge,
+			Getter:              newLiteral[K, any](values),
 			sliceElementCoercer: newSliceElementCoercer[K](sliceItemType, pc.buildStandardGetSetter),
 		},
 	}

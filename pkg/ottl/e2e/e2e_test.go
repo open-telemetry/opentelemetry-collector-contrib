@@ -2077,6 +2077,14 @@ func Test_e2e_ottl_features(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], SliceGetter([], ["scalar","values"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				sl := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				sl.AppendEmpty().SetStr("scalar")
+				sl.AppendEmpty().SetStr("values")
+			},
+		},
+		{
 			statement: `set(attributes["test"], SliceGetter([attributes["int_value"], 1, "two"]))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				sl := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
@@ -3101,7 +3109,8 @@ func createLambdaEvalFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 }
 
 type sliceGetterArguments[K any] struct {
-	Values ottl.SliceGetter[K, ottl.StringLikeGetter[K]]
+	Values       ottl.SliceGetter[K, ottl.StringLikeGetter[K]]
+	ScalarValues ottl.Optional[ottl.SliceGetter[K, string]]
 }
 
 func newSliceGetterFactory[K any]() ottl.Factory[K] {
@@ -3135,6 +3144,19 @@ func createSliceGetterFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 			}
 		}
 
+		if !args.ScalarValues.IsEmpty() {
+			s := args.ScalarValues.Get()
+			scalars, err := s.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			for _, v := range scalars {
+				err := sl.AppendEmpty().FromRaw(v)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
 		return sl, nil
 	}, nil
 }

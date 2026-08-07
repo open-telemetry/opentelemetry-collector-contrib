@@ -137,21 +137,53 @@ func Test_buildSliceGetterValue(t *testing.T) {
 	})
 }
 
-func TestGetSliceLiteralValues(t *testing.T) {
+func TestGetScalarLiteralValues(t *testing.T) {
 	t.Run("empty literal slice", func(t *testing.T) {
 		sg := SliceGetter[any, string]{typedValues: []string{}}
-		vals, ok := GetSliceLiteralValues[any, string, string](&sg)
+		vals, ok := GetScalarLiteralValues(&sg)
 		require.True(t, ok)
 		require.Empty(t, vals)
 	})
 
-	t.Run("static scalar literals", func(t *testing.T) {
+	t.Run("string literals", func(t *testing.T) {
 		sg := SliceGetter[any, string]{typedValues: []string{"a", "b"}}
-		vals, ok := GetSliceLiteralValues[any, string, string](&sg)
+		vals, ok := GetScalarLiteralValues(&sg)
 		require.True(t, ok)
 		require.Equal(t, []string{"a", "b"}, vals)
 	})
 
+	t.Run("byte literals", func(t *testing.T) {
+		sg := SliceGetter[any, byte]{typedValues: []byte{1, 2}}
+		vals, ok := GetScalarLiteralValues(&sg)
+		require.True(t, ok)
+		require.Equal(t, []byte{1, 2}, vals)
+	})
+
+	t.Run("int64 literals", func(t *testing.T) {
+		sg := SliceGetter[any, int64]{typedValues: []int64{-1, 2}}
+		vals, ok := GetScalarLiteralValues(&sg)
+		require.True(t, ok)
+		require.Equal(t, []int64{-1, 2}, vals)
+	})
+
+	t.Run("float64 literals", func(t *testing.T) {
+		sg := SliceGetter[any, float64]{typedValues: []float64{1.5, 2.5}}
+		vals, ok := GetScalarLiteralValues(&sg)
+		require.True(t, ok)
+		require.Equal(t, []float64{1.5, 2.5}, vals)
+	})
+
+	t.Run("range error returns false", func(t *testing.T) {
+		sg := newTestSliceGetterWithRuntimeSource[any, string](
+			newTestRuntimeSliceSource[any, string](errSliceGetter{err: errors.New("range failed")}),
+		)
+		vals, ok := GetScalarLiteralValues(&sg)
+		require.False(t, ok)
+		require.Nil(t, vals)
+	})
+}
+
+func TestGetLiteralValues(t *testing.T) {
 	t.Run("static typed getter literals", func(t *testing.T) {
 		sg := SliceGetter[any, StringGetter[any]]{
 			typedValues: []StringGetter[any]{
@@ -159,7 +191,7 @@ func TestGetSliceLiteralValues(t *testing.T) {
 				newLiteral[any, string]("two"),
 			},
 		}
-		vals, ok := GetSliceLiteralValues[any, string, StringGetter[any]](&sg)
+		vals, ok := GetLiteralValues[any, string, StringGetter[any]](&sg)
 		require.True(t, ok)
 		require.Equal(t, []string{"one", "two"}, vals)
 	})
@@ -169,7 +201,7 @@ func TestGetSliceLiteralValues(t *testing.T) {
 			newLiteral[any, string]("10.0.0.0/8"),
 			newLiteral[any, string]("172.16.0.0/12"),
 		})
-		vals, ok := GetSliceLiteralValues[any, string, StringGetter[any]](sg)
+		vals, ok := GetLiteralValues[any, string, StringGetter[any]](sg)
 		require.True(t, ok)
 		require.Equal(t, []string{"10.0.0.0/8", "172.16.0.0/12"}, vals)
 	})
@@ -179,7 +211,7 @@ func TestGetSliceLiteralValues(t *testing.T) {
 			newLiteral[any, any]("first"),
 			newLiteral[any, any]("second"),
 		})
-		vals, ok := GetSliceLiteralValues[any, any, Getter[any]](sg)
+		vals, ok := GetLiteralValues[any, any, Getter[any]](sg)
 		require.True(t, ok)
 		require.Equal(t, []any{"first", "second"}, vals)
 	})
@@ -188,7 +220,7 @@ func TestGetSliceLiteralValues(t *testing.T) {
 		sg := NewTestingSliceGetter[any, StringGetter[any]](false, []StringGetter[any]{
 			nonLiteralStringGetter[any]{v: "dynamic"},
 		})
-		vals, ok := GetSliceLiteralValues[any, string, StringGetter[any]](sg)
+		vals, ok := GetLiteralValues[any, string, StringGetter[any]](sg)
 		require.False(t, ok)
 		require.Nil(t, vals)
 	})
@@ -200,7 +232,7 @@ func TestGetSliceLiteralValues(t *testing.T) {
 				nonLiteralStringGetter[any]{v: "dynamic"},
 			},
 		}
-		vals, ok := GetSliceLiteralValues[any, string, StringGetter[any]](&sg)
+		vals, ok := GetLiteralValues[any, string, StringGetter[any]](&sg)
 		require.False(t, ok)
 		require.Nil(t, vals)
 	})
@@ -209,7 +241,7 @@ func TestGetSliceLiteralValues(t *testing.T) {
 		sg := newTestSliceGetterWithRuntimeSource[any, StringGetter[any]](
 			newTestRuntimeSliceSource[any, StringGetter[any]](errSliceGetter{err: errors.New("range failed")}),
 		)
-		vals, ok := GetSliceLiteralValues[any, string, StringGetter[any]](&sg)
+		vals, ok := GetLiteralValues[any, string, StringGetter[any]](&sg)
 		require.False(t, ok)
 		require.Nil(t, vals)
 	})
@@ -413,6 +445,149 @@ func TestSliceGetter_Range(t *testing.T) {
 		err := sg.Range(t.Context(), nil, func(_ string) bool { return true })
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "expected a slice")
+	})
+}
+
+func BenchmarkSliceGetter(b *testing.B) {
+	strings := []string{"one", "two", "three"}
+	stringGetters := make([]StringGetter[any], 0, len(strings))
+	for _, val := range strings {
+		getter, err := NewTestingLiteralGetter[any, string](true, StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return val, nil
+			},
+		})
+		if err != nil {
+			b.Fatal(err)
+		}
+		stringGetters = append(stringGetters, getter)
+	}
+
+	literalScalarSliceGetter := NewTestingSliceGetter[any, string](true, strings)
+	runtimeScalarSliceGetter := NewTestingSliceGetter[any, string](false, strings)
+	literalGetterSliceGetter := NewTestingSliceGetter[any, StringGetter[any]](true, stringGetters)
+	runtimeGetterSliceGetter := NewTestingSliceGetter[any, StringGetter[any]](false, stringGetters)
+
+	b.Run("string/bare", func(b *testing.B) {
+		b.ReportAllocs()
+		total := 0
+		for b.Loop() {
+			for _, val := range strings {
+				total += len(val)
+			}
+		}
+	})
+
+	benchmarkScalarGet := func(b *testing.B, sliceGetter *SliceGetter[any, string]) {
+		ctx := b.Context()
+		b.ReportAllocs()
+		total := 0
+		for b.Loop() {
+			vals, err := sliceGetter.Get(ctx, nil)
+			if err != nil {
+				b.Fatal(err)
+			}
+			for _, val := range vals {
+				total += len(val)
+			}
+		}
+	}
+	b.Run("string/get/literal", func(b *testing.B) {
+		benchmarkScalarGet(b, literalScalarSliceGetter)
+	})
+	b.Run("string/get/runtime", func(b *testing.B) {
+		benchmarkScalarGet(b, runtimeScalarSliceGetter)
+	})
+
+	benchmarkScalarRange := func(b *testing.B, sliceGetter *SliceGetter[any, string]) {
+		ctx := b.Context()
+		b.ReportAllocs()
+		total := 0
+		for b.Loop() {
+			err := sliceGetter.Range(ctx, nil, func(val string) bool {
+				total += len(val)
+				return true
+			})
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	}
+	b.Run("string/range/literal", func(b *testing.B) {
+		benchmarkScalarRange(b, literalScalarSliceGetter)
+	})
+	b.Run("string/range/runtime", func(b *testing.B) {
+		benchmarkScalarRange(b, runtimeScalarSliceGetter)
+	})
+
+	b.Run("StringGetter/bare", func(b *testing.B) {
+		ctx := b.Context()
+		b.ReportAllocs()
+		total := 0
+		for b.Loop() {
+			for _, getter := range stringGetters {
+				val, err := getter.Get(ctx, nil)
+				if err != nil {
+					b.Fatal(err)
+				}
+				total += len(val)
+			}
+		}
+	})
+
+	benchmarkGetterGet := func(b *testing.B, sliceGetter *SliceGetter[any, StringGetter[any]]) {
+		ctx := b.Context()
+		b.ReportAllocs()
+		total := 0
+		for b.Loop() {
+			getters, err := sliceGetter.Get(ctx, nil)
+			if err != nil {
+				b.Fatal(err)
+			}
+			for _, getter := range getters {
+				val, err := getter.Get(ctx, nil)
+				if err != nil {
+					b.Fatal(err)
+				}
+				total += len(val)
+			}
+		}
+	}
+	b.Run("StringGetter/get/literal", func(b *testing.B) {
+		benchmarkGetterGet(b, literalGetterSliceGetter)
+	})
+	b.Run("StringGetter/get/runtime", func(b *testing.B) {
+		benchmarkGetterGet(b, runtimeGetterSliceGetter)
+	})
+
+	benchmarkGetterRange := func(b *testing.B, sliceGetter *SliceGetter[any, StringGetter[any]]) {
+		ctx := b.Context()
+		b.ReportAllocs()
+		total := 0
+		for b.Loop() {
+			var getErr error
+			err := sliceGetter.Range(ctx, nil, func(getter StringGetter[any]) bool {
+				val, err := getter.Get(ctx, nil)
+				if err != nil {
+					getErr = err
+					return false
+				}
+				total += len(val)
+				return true
+			})
+			if err != nil {
+				b.Fatal(err)
+			}
+			if getErr != nil {
+				b.Fatal(getErr)
+			}
+		}
+	}
+	b.Run("StringGetter/range/literal", func(b *testing.B) {
+		benchmarkGetterRange(b, literalGetterSliceGetter)
+	})
+	b.Run("StringGetter/range/runtime", func(b *testing.B) {
+		benchmarkGetterRange(b, runtimeGetterSliceGetter)
 	})
 }
 
@@ -666,32 +841,6 @@ func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
 		err := coercer.rangeSlice(123, func(_ any) bool { return true })
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "expected a slice")
-	})
-}
-
-func Test_getSliceElementLiteralValue(t *testing.T) {
-	t.Run("typed literal getter", func(t *testing.T) {
-		val, ok := getSliceElementLiteralValue[any, string, StringGetter[any]](newLiteral[any, string]("lit"))
-		require.True(t, ok)
-		require.Equal(t, "lit", val)
-	})
-
-	t.Run("non-literal typed getter", func(t *testing.T) {
-		val, ok := getSliceElementLiteralValue[any, string, StringGetter[any]](nonLiteralStringGetter[any]{v: "dyn"})
-		require.False(t, ok)
-		require.Empty(t, val)
-	})
-
-	t.Run("bare scalar value", func(t *testing.T) {
-		val, ok := getSliceElementLiteralValue[any, string, string]("scalar")
-		require.True(t, ok)
-		require.Equal(t, "scalar", val)
-	})
-
-	t.Run("unsupported value type", func(t *testing.T) {
-		val, ok := getSliceElementLiteralValue[any, string, struct{}](struct{}{})
-		require.False(t, ok)
-		require.Empty(t, val)
 	})
 }
 
