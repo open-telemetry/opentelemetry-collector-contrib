@@ -678,6 +678,27 @@
                     </id>
                     <value>782</value>
                 </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>29</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>4194304</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>33</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>2097152</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>90</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>1048576</value>
+                </value>
             </returnval>
             <returnval xsi:type="PerfEntityMetric">
                 <entity type="HostSystem">host-1003</entity>
@@ -1349,6 +1370,27 @@
                         <instance>4000</instance>
                     </id>
                     <value>782</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>29</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>4194304</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>33</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>2097152</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>90</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>1048576</value>
                 </value>
             </returnval>
         </QueryPerfResponse>
