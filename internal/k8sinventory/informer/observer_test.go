@@ -724,3 +724,39 @@ func makePodWithRV(name, rv string) *unstructured.Unstructured {
 	u.SetResourceVersion(rv)
 	return u
 }
+
+// TestCheckpointFlushOnCtxCancel verifies that buffered checkpoints are flushed
+// when ctx is cancelled, not only when stopCh is closed.
+func TestCheckpointFlushOnCtxCancel(t *testing.T) {
+	t.Parallel()
+
+	client, _ := newFakeClient(t, makePodWithRV("pod1", "42"))
+	storageClient := newTestStorageClient(t)
+	reg := NewFactoryRegistry(client, 0)
+	t.Cleanup(reg.Shutdown)
+
+	obs, err := NewWatch(reg, WatchConfig{
+		Config:              k8sinventory.Config{Gvr: podsGVR},
+		CacheSyncTimeout:    5 * time.Second,
+		IncludeInitialState: true,
+		StorageClient:       storageClient,
+	}, zap.NewNop(), func(*apiWatch.Event) {})
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	var wg sync.WaitGroup
+	stopCh, err := obs.Start(ctx, &wg)
+	require.NoError(t, err)
+
+	// Buffer a RV in memory without flushing, then cancel ctx to trigger
+	// shutdown down the ctx.Done() path in runCheckpointFlusher.
+	require.NoError(t, obs.cp.SetCheckpoint(t.Context(), "", podsGVR.Resource, "100"))
+	cancel()
+	close(stopCh)
+	wg.Wait()
+
+	verifier := checkpoint.New(storageClient, zap.NewNop())
+	rv, err := verifier.GetCheckpoint(t.Context(), "", podsGVR.Resource)
+	require.NoError(t, err)
+	assert.Equal(t, "100", rv, "buffered checkpoint must be flushed on ctx cancel")
+}

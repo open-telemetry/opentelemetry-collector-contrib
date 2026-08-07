@@ -352,6 +352,9 @@ func (o *Observer) runCheckpointFlusher(ctx context.Context, stopCh <-chan struc
 			}
 			return
 		case <-ctx.Done():
+			if err := o.cp.Flush(context.Background()); err != nil {
+				o.logger.Error("failed to flush final checkpoints", zap.Error(err))
+			}
 			return
 		}
 	}
