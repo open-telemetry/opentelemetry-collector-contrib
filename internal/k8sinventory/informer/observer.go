@@ -225,31 +225,34 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}
 	return stopCh, nil
 }
 
-// waitForCacheSync waits for every informer to sync, collecting all errors.
+// waitForCacheSync waits for every informer (or handler, for watch observers) to sync.
 func (o *Observer) waitForCacheSync(ctx context.Context) error {
 	syncCtx, syncCancel := context.WithTimeout(ctx, o.cacheSyncTimeout)
 	defer syncCancel()
 
-	errCh := make(chan error, len(o.infs))
-	for nf := range o.infs {
-		go func() {
-			var errs []error
-			for gvr, synced := range nf.factory.WaitForCacheSync(syncCtx.Done()) {
-				if !synced {
-					if ctx.Err() != nil {
-						errs = append(errs, fmt.Errorf("informer cache sync aborted for %s: %w", gvr, ctx.Err()))
-					} else {
-						errs = append(errs, fmt.Errorf("timed out waiting for informer cache to sync for %s", gvr))
-					}
-				}
-			}
-			errCh <- errors.Join(errs...)
-		}()
+	type namedSync struct {
+		namespace string
+		hasSynced func() bool
 	}
+	syncs := make([]namedSync, 0, len(o.infs))
+	if o.watchHandler != nil {
+		for nf, handle := range o.handlerRegs {
+			syncs = append(syncs, namedSync{namespace: nf.namespace, hasSynced: handle.HasSynced})
+		}
+	} else {
+		for nf, inf := range o.infs {
+			syncs = append(syncs, namedSync{namespace: nf.namespace, hasSynced: inf.HasSynced})
+		}
+	}
+
 	var errs []error
-	for range o.infs {
-		if err := <-errCh; err != nil {
-			errs = append(errs, err)
+	for _, s := range syncs {
+		if !cache.WaitForCacheSync(syncCtx.Done(), s.hasSynced) {
+			if ctx.Err() != nil {
+				errs = append(errs, fmt.Errorf("informer cache sync aborted for %s (namespace=%q): %w", o.base.Gvr, s.namespace, ctx.Err()))
+			} else {
+				errs = append(errs, fmt.Errorf("timed out waiting for informer cache to sync for %s (namespace=%q)", o.base.Gvr, s.namespace))
+			}
 		}
 	}
 	return errors.Join(errs...)
@@ -330,6 +333,8 @@ func (o *Observer) handleWatchEvent(eventType apiWatch.EventType, obj any, names
 			zap.String("gvr", o.base.Gvr.String()))
 		return
 	}
+	// Deliver first, then checkpoint: a crash between the two replays rather than skips.
+	o.watchHandler(&apiWatch.Event{Type: eventType, Object: u})
 	if o.cp != nil {
 		if rv := u.GetResourceVersion(); rv != "" {
 			if err := o.cp.SetCheckpoint(context.Background(), namespace, o.base.Gvr.Resource, rv); err != nil {
@@ -340,7 +345,6 @@ func (o *Observer) handleWatchEvent(eventType apiWatch.EventType, obj any, names
 			}
 		}
 	}
-	o.watchHandler(&apiWatch.Event{Type: eventType, Object: u})
 }
 
 func (o *Observer) runCheckpointFlusher(ctx context.Context, stopCh <-chan struct{}, wg *sync.WaitGroup) {

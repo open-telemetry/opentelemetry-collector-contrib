@@ -725,6 +725,69 @@ func makePodWithRV(name, rv string) *unstructured.Unstructured {
 	return u
 }
 
+// Checkpoint must be buffered only after watchHandler returns so a crash
+// mid-processing replays the event instead of skipping it.
+func TestCheckpointAdvancesAfterHandler(t *testing.T) {
+	t.Parallel()
+
+	client, addObj := newFakeClient(t)
+	storageClient := newTestStorageClient(t)
+	reg := NewFactoryRegistry(client, 0)
+	t.Cleanup(reg.Shutdown)
+
+	// Handler blocks on `release` and signals `entered` when it is invoked.
+	release := make(chan struct{})
+	entered := make(chan struct{}, 1)
+	var releaseOnce sync.Once
+	releaseHandler := func() { releaseOnce.Do(func() { close(release) }) }
+
+	obs, err := NewWatch(reg, WatchConfig{
+		Config:              k8sinventory.Config{Gvr: podsGVR},
+		CacheSyncTimeout:    5 * time.Second,
+		IncludeInitialState: false,
+		StorageClient:       storageClient,
+	}, zap.NewNop(), func(*apiWatch.Event) {
+		select {
+		case entered <- struct{}{}:
+		default:
+		}
+		<-release
+	})
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	stopCh, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+	t.Cleanup(func() { releaseHandler(); close(stopCh); wg.Wait() })
+
+	addObj(makePodWithRV("pod1", "77"))
+
+	// Wait until the handler is blocked mid-callback.
+	select {
+	case <-entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("watchHandler was not called")
+	}
+
+	// While the handler is blocked, storage must not have RV 77 yet.
+	require.NoError(t, obs.cp.Flush(t.Context()))
+	verifier := checkpoint.New(storageClient, zap.NewNop())
+	rv, err := verifier.GetCheckpoint(t.Context(), "", podsGVR.Resource)
+	require.NoError(t, err)
+	assert.Empty(t, rv, "checkpoint must not advance before handler returns")
+
+	// Unblock the handler; RV 77 should now flow into storage.
+	releaseHandler()
+
+	require.Eventually(t, func() bool {
+		if err := obs.cp.Flush(t.Context()); err != nil {
+			return false
+		}
+		rv, err := verifier.GetCheckpoint(t.Context(), "", podsGVR.Resource)
+		return err == nil && rv == "77"
+	}, 5*time.Second, 10*time.Millisecond, "checkpoint must advance after handler returns")
+}
+
 func TestSharedFactoryPullStartsBeforeWatch(t *testing.T) {
 	t.Parallel()
 
