@@ -225,7 +225,7 @@ func TestExportWithWALEnabled(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
-	cfg.ClientConfig = clientConfig
+	cfg.HTTP = clientConfig
 
 	// Pickup any defaults applied during validation
 	require.NoError(t, cfg.Validate())
@@ -283,7 +283,7 @@ func TestWALWrite_Telemetry(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
-	cfg.ClientConfig = clientConfig
+	cfg.HTTP = clientConfig
 
 	prw, err := newPRWExporter(cfg, set)
 	require.NotNil(t, prw)
@@ -355,7 +355,7 @@ func TestWALRead_Telemetry(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
-	cfg.ClientConfig = clientConfig
+	cfg.HTTP = clientConfig
 
 	prw, err := newPRWExporter(cfg, set)
 	require.NotNil(t, prw)
@@ -433,7 +433,7 @@ func TestWALLag_Telemetry(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
-	cfg.ClientConfig = clientConfig
+	cfg.HTTP = clientConfig
 
 	prw, err := newPRWExporter(cfg, set)
 	require.NotNil(t, prw)
