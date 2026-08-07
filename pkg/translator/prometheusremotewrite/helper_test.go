@@ -1164,6 +1164,40 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 	}
 }
 
+func TestPrometheusConverter_AddHistogramDataPointsNormalizedLeLabels(t *testing.T) {
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	metric := pmetric.NewMetric()
+	metric.SetName("test_hist")
+	metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+	pt := metric.Histogram().DataPoints().AppendEmpty()
+	pt.SetTimestamp(ts)
+	pt.ExplicitBounds().FromRaw([]float64{0.5, 10, 250})
+	pt.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+
+	converter := newPrometheusConverter(Settings{})
+	err := converter.addHistogramDataPoints(
+		metric.Histogram().DataPoints(),
+		pcommon.NewResource(),
+		pcommon.NewInstrumentationScope(),
+		Settings{},
+		metric.Name(),
+	)
+	require.NoError(t, err)
+
+	var leValues []string
+	for _, series := range converter.unique {
+		for _, label := range series.Labels {
+			if label.Name == model.BucketLabel {
+				leValues = append(leValues, label.Value)
+			}
+		}
+	}
+	// Bucket bounds must be normalized to always contain a decimal point,
+	// e.g. a bound of 10 must be rendered as "10.0".
+	assert.ElementsMatch(t, []string{"0.5", "10.0", "250.0", "+Inf"}, leValues)
+	assert.Empty(t, converter.conflicts)
+}
 // findSeriesTS returns the unique RW1 time series whose __name__ label equals name, or nil.
 func findSeriesTS(c *prometheusConverter, name string) *prompb.TimeSeries {
 	for _, ts := range c.unique {
