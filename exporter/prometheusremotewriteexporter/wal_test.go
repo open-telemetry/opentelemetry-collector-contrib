@@ -504,7 +504,7 @@ func TestWAL_IdleFlush(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
-	cfg.ClientConfig = clientConfig
+	cfg.HTTP = clientConfig
 	require.NoError(t, cfg.Validate())
 
 	set := exportertest.NewNopSettings(metadata.Type)
