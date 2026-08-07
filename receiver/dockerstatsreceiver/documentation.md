@@ -346,6 +346,28 @@ Aggregate time the container was throttled.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ns | Sum | Int | Cumulative | true | Development |
 
+### container.cpu.time
+
+Total CPU time consumed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cpu.mode | The CPU mode for this data point. | Any Str | Conditionally Required | - |
+
+### container.cpu.usage
+
+Container’s CPU usage, measured in cpus. Range from 0 to the number of allocatable CPUs.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cpu} | Gauge | Double | Development |
+
 ### container.cpu.usage.percpu
 
 Per-core CPU usage by the container (Only available with cgroups v1).
@@ -370,6 +392,21 @@ Note this is the usage for the system, not the container.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ns | Sum | Int | Cumulative | true | Development |
 
+### container.disk.io
+
+Disk bytes for the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| system.device | The disk device identifier (major:minor). | Any Str | Recommended | - |
+| disk.io.direction | The disk IO operation direction. | Any Str | Recommended | - |
+
 ### container.memory.active_anon
 
 The amount of anonymous memory that has been identified as active by the kernel.
@@ -393,6 +430,14 @@ Cache memory that has been identified as active by the kernel.
 Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_ANONYMOUS) (Only available with cgroups v2).
 
 [More docs](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### container.memory.available
+
+Container memory available. Not supported on Windows.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -463,6 +508,14 @@ Indicates the amount of memory mapped by the processes in the control group (Onl
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
+
+### container.memory.paging.faults
+
+Container memory paging faults. (Only available with cgroups v1).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {faults} | Sum | Int | Cumulative | true | Development |
 
 ### container.memory.pgfault
 
@@ -640,9 +693,25 @@ The amount of memory that cannot be reclaimed.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
+### container.memory.usage
+
+Memory usage of the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
 ### container.memory.usage.max
 
 Maximum memory usage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### container.memory.working_set
+
+Container memory working set.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -655,6 +724,21 @@ Number of bytes of file/anon cache that are queued for syncing to disk in this c
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
+
+### container.network.io
+
+Network bytes for the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| network.io.direction | The network IO operation direction. | Any Str | Recommended | - |
+| network.interface.name | The network interface name. | Any Str | Recommended | - |
 
 ### container.network.io.usage.rx_errors
 
@@ -759,3 +843,13 @@ Time elapsed since container start time.
 | container.image.name | The name of the docker image in use by the container. | Any Str | true | - | - |
 | container.name | The name of the container. | Any Str | true | - | - |
 | container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | Any Str | true | - | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.dockerstatsreceiver.enableSemConvMetrics` | alpha | Enable new container metrics that align with new container semantic convention | v0.152.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

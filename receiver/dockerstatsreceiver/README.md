@@ -171,3 +171,9 @@ There are some breaking changes from ScraperV1 to ScraperV2. The work done for t
 | BlockIO metrics names changed. The type of operation is no longer in the metric name suffix, and is now in an attribute. For example `container.blockio.io_merged_recursive.read` becomes `container.blockio.io_merged_recursive` with an `operation:read` attribute. | Be aware of the metric name changes and make any adjustments to what your downstream expects from BlockIO metrics. |
 | Memory metrics measured in Bytes are now [non-monotonic sums](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#opentelemetry-protocol-data-model-consumer-recommendations) instead of gauges. | Most likely there is no action. The aggregation type is different but the values are the same. Be aware of how your downstream handles gauges vs non-monotonic sums. |
 | Config option `provide_per_core_cpu_metrics` has been removed. | Enable the `container.cpu.usage.percpu` metric as per [documentation.md](./documentation.md). |
+
+### `receiver.dockerstatsreceiver.enableSemConvMetrics` feature gate
+
+- alpha: when enabled, the `container.cpu.time` and `container.memory.usage` metrics will be enabled by default, and the `container.cpu.usage.total`, `container.cpu.usage.system`, `container.cpu.usage.kernelmode`, `container.cpu.usage.usermode`, and `container.memory.usage.total` metrics will be disabled. 
+
+More information regarding this change can be found at https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649.

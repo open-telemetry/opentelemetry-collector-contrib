@@ -529,6 +529,46 @@ func (ms *ContainerCPUThrottlingDataThrottledTimeMetricConfig) Unmarshal(parser 
 	return nil
 }
 
+// ContainerCPUTimeMetricConfig provides config for the container.cpu.time metric.
+type ContainerCPUTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerCPUUsageMetricConfig provides config for the container.cpu.usage metric.
+type ContainerCPUUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerCPUUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ContainerCPUUsageKernelmodeMetricConfig provides config for the container.cpu.usage.kernelmode metric.
 type ContainerCPUUsageKernelmodeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -677,6 +717,55 @@ func (ms *ContainerCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
+// ContainerDiskIoMetricAttributeKey specifies the key of an attribute for the container.disk.io metric.
+type ContainerDiskIoMetricAttributeKey string
+
+const (
+	ContainerDiskIoMetricAttributeKeySystemDevice    ContainerDiskIoMetricAttributeKey = "system.device"
+	ContainerDiskIoMetricAttributeKeyDiskIoDirection ContainerDiskIoMetricAttributeKey = "disk.io.direction"
+)
+
+// ContainerDiskIoMetricConfig provides config for the container.disk.io metric.
+type ContainerDiskIoMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerDiskIoMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ContainerDiskIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ContainerDiskIoMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ContainerDiskIoMetricAttributeKeySystemDevice, ContainerDiskIoMetricAttributeKeyDiskIoDirection:
+		default:
+			return fmt.Errorf("metric container.disk.io doesn't have an attribute %v, valid attributes: [system.device, disk.io.direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // ContainerMemoryActiveAnonMetricConfig provides config for the container.memory.active_anon metric.
 type ContainerMemoryActiveAnonMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -724,6 +813,26 @@ type ContainerMemoryAnonMetricConfig struct {
 }
 
 func (ms *ContainerMemoryAnonMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerMemoryAvailableMetricConfig provides config for the container.memory.available metric.
+type ContainerMemoryAvailableMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerMemoryAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -904,6 +1013,26 @@ type ContainerMemoryMappedFileMetricConfig struct {
 }
 
 func (ms *ContainerMemoryMappedFileMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerMemoryPagingFaultsMetricConfig provides config for the container.memory.paging.faults metric.
+type ContainerMemoryPagingFaultsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerMemoryPagingFaultsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1377,6 +1506,26 @@ func (ms *ContainerMemoryUnevictableMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
+// ContainerMemoryUsageMetricConfig provides config for the container.memory.usage metric.
+type ContainerMemoryUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ContainerMemoryUsageLimitMetricConfig provides config for the container.memory.usage.limit metric.
 type ContainerMemoryUsageLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1437,6 +1586,26 @@ func (ms *ContainerMemoryUsageTotalMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
+// ContainerMemoryWorkingSetMetricConfig provides config for the container.memory.working_set metric.
+type ContainerMemoryWorkingSetMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerMemoryWorkingSetMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ContainerMemoryWritebackMetricConfig provides config for the container.memory.writeback metric.
 type ContainerMemoryWritebackMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1454,6 +1623,55 @@ func (ms *ContainerMemoryWritebackMetricConfig) Unmarshal(parser *confmap.Conf) 
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerNetworkIoMetricAttributeKey specifies the key of an attribute for the container.network.io metric.
+type ContainerNetworkIoMetricAttributeKey string
+
+const (
+	ContainerNetworkIoMetricAttributeKeyNetworkIoDirection   ContainerNetworkIoMetricAttributeKey = "network.io.direction"
+	ContainerNetworkIoMetricAttributeKeyNetworkInterfaceName ContainerNetworkIoMetricAttributeKey = "network.interface.name"
+)
+
+// ContainerNetworkIoMetricConfig provides config for the container.network.io metric.
+type ContainerNetworkIoMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerNetworkIoMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ContainerNetworkIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ContainerNetworkIoMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ContainerNetworkIoMetricAttributeKeyNetworkIoDirection, ContainerNetworkIoMetricAttributeKeyNetworkInterfaceName:
+		default:
+			return fmt.Errorf("metric container.network.io doesn't have an attribute %v, valid attributes: [network.io.direction, network.interface.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -1937,15 +2155,19 @@ type MetricsConfig struct {
 	ContainerCPUThrottlingDataPeriods          ContainerCPUThrottlingDataPeriodsMetricConfig          `mapstructure:"container.cpu.throttling_data.periods"`
 	ContainerCPUThrottlingDataThrottledPeriods ContainerCPUThrottlingDataThrottledPeriodsMetricConfig `mapstructure:"container.cpu.throttling_data.throttled_periods"`
 	ContainerCPUThrottlingDataThrottledTime    ContainerCPUThrottlingDataThrottledTimeMetricConfig    `mapstructure:"container.cpu.throttling_data.throttled_time"`
+	ContainerCPUTime                           ContainerCPUTimeMetricConfig                           `mapstructure:"container.cpu.time"`
+	ContainerCPUUsage                          ContainerCPUUsageMetricConfig                          `mapstructure:"container.cpu.usage"`
 	ContainerCPUUsageKernelmode                ContainerCPUUsageKernelmodeMetricConfig                `mapstructure:"container.cpu.usage.kernelmode"`
 	ContainerCPUUsagePercpu                    ContainerCPUUsagePercpuMetricConfig                    `mapstructure:"container.cpu.usage.percpu"`
 	ContainerCPUUsageSystem                    ContainerCPUUsageSystemMetricConfig                    `mapstructure:"container.cpu.usage.system"`
 	ContainerCPUUsageTotal                     ContainerCPUUsageTotalMetricConfig                     `mapstructure:"container.cpu.usage.total"`
 	ContainerCPUUsageUsermode                  ContainerCPUUsageUsermodeMetricConfig                  `mapstructure:"container.cpu.usage.usermode"`
 	ContainerCPUUtilization                    ContainerCPUUtilizationMetricConfig                    `mapstructure:"container.cpu.utilization"`
+	ContainerDiskIo                            ContainerDiskIoMetricConfig                            `mapstructure:"container.disk.io"`
 	ContainerMemoryActiveAnon                  ContainerMemoryActiveAnonMetricConfig                  `mapstructure:"container.memory.active_anon"`
 	ContainerMemoryActiveFile                  ContainerMemoryActiveFileMetricConfig                  `mapstructure:"container.memory.active_file"`
 	ContainerMemoryAnon                        ContainerMemoryAnonMetricConfig                        `mapstructure:"container.memory.anon"`
+	ContainerMemoryAvailable                   ContainerMemoryAvailableMetricConfig                   `mapstructure:"container.memory.available"`
 	ContainerMemoryCache                       ContainerMemoryCacheMetricConfig                       `mapstructure:"container.memory.cache"`
 	ContainerMemoryDirty                       ContainerMemoryDirtyMetricConfig                       `mapstructure:"container.memory.dirty"`
 	ContainerMemoryFails                       ContainerMemoryFailsMetricConfig                       `mapstructure:"container.memory.fails"`
@@ -1955,6 +2177,7 @@ type MetricsConfig struct {
 	ContainerMemoryInactiveAnon                ContainerMemoryInactiveAnonMetricConfig                `mapstructure:"container.memory.inactive_anon"`
 	ContainerMemoryInactiveFile                ContainerMemoryInactiveFileMetricConfig                `mapstructure:"container.memory.inactive_file"`
 	ContainerMemoryMappedFile                  ContainerMemoryMappedFileMetricConfig                  `mapstructure:"container.memory.mapped_file"`
+	ContainerMemoryPagingFaults                ContainerMemoryPagingFaultsMetricConfig                `mapstructure:"container.memory.paging.faults"`
 	ContainerMemoryPercent                     ContainerMemoryPercentMetricConfig                     `mapstructure:"container.memory.percent"`
 	ContainerMemoryPgfault                     ContainerMemoryPgfaultMetricConfig                     `mapstructure:"container.memory.pgfault"`
 	ContainerMemoryPgmajfault                  ContainerMemoryPgmajfaultMetricConfig                  `mapstructure:"container.memory.pgmajfault"`
@@ -1978,10 +2201,13 @@ type MetricsConfig struct {
 	ContainerMemoryTotalUnevictable            ContainerMemoryTotalUnevictableMetricConfig            `mapstructure:"container.memory.total_unevictable"`
 	ContainerMemoryTotalWriteback              ContainerMemoryTotalWritebackMetricConfig              `mapstructure:"container.memory.total_writeback"`
 	ContainerMemoryUnevictable                 ContainerMemoryUnevictableMetricConfig                 `mapstructure:"container.memory.unevictable"`
+	ContainerMemoryUsage                       ContainerMemoryUsageMetricConfig                       `mapstructure:"container.memory.usage"`
 	ContainerMemoryUsageLimit                  ContainerMemoryUsageLimitMetricConfig                  `mapstructure:"container.memory.usage.limit"`
 	ContainerMemoryUsageMax                    ContainerMemoryUsageMaxMetricConfig                    `mapstructure:"container.memory.usage.max"`
 	ContainerMemoryUsageTotal                  ContainerMemoryUsageTotalMetricConfig                  `mapstructure:"container.memory.usage.total"`
+	ContainerMemoryWorkingSet                  ContainerMemoryWorkingSetMetricConfig                  `mapstructure:"container.memory.working_set"`
 	ContainerMemoryWriteback                   ContainerMemoryWritebackMetricConfig                   `mapstructure:"container.memory.writeback"`
+	ContainerNetworkIo                         ContainerNetworkIoMetricConfig                         `mapstructure:"container.network.io"`
 	ContainerNetworkIoUsageRxBytes             ContainerNetworkIoUsageRxBytesMetricConfig             `mapstructure:"container.network.io.usage.rx_bytes"`
 	ContainerNetworkIoUsageRxDropped           ContainerNetworkIoUsageRxDroppedMetricConfig           `mapstructure:"container.network.io.usage.rx_dropped"`
 	ContainerNetworkIoUsageRxErrors            ContainerNetworkIoUsageRxErrorsMetricConfig            `mapstructure:"container.network.io.usage.rx_errors"`
@@ -2056,6 +2282,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerCPUThrottlingDataThrottledTime: ContainerCPUThrottlingDataThrottledTimeMetricConfig{
 			Enabled: false,
 		},
+		ContainerCPUTime: ContainerCPUTimeMetricConfig{
+			Enabled: false,
+		},
+		ContainerCPUUsage: ContainerCPUUsageMetricConfig{
+			Enabled: false,
+		},
 		ContainerCPUUsageKernelmode: ContainerCPUUsageKernelmodeMetricConfig{
 			Enabled: true,
 		},
@@ -2076,6 +2308,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerCPUUtilization: ContainerCPUUtilizationMetricConfig{
 			Enabled: true,
 		},
+		ContainerDiskIo: ContainerDiskIoMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ContainerDiskIoMetricAttributeKey{ContainerDiskIoMetricAttributeKeySystemDevice, ContainerDiskIoMetricAttributeKeyDiskIoDirection},
+		},
 		ContainerMemoryActiveAnon: ContainerMemoryActiveAnonMetricConfig{
 			Enabled: false,
 		},
@@ -2083,6 +2320,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerMemoryAnon: ContainerMemoryAnonMetricConfig{
+			Enabled: false,
+		},
+		ContainerMemoryAvailable: ContainerMemoryAvailableMetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryCache: ContainerMemoryCacheMetricConfig{
@@ -2110,6 +2350,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerMemoryMappedFile: ContainerMemoryMappedFileMetricConfig{
+			Enabled: false,
+		},
+		ContainerMemoryPagingFaults: ContainerMemoryPagingFaultsMetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryPercent: ContainerMemoryPercentMetricConfig{
@@ -2181,6 +2424,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerMemoryUnevictable: ContainerMemoryUnevictableMetricConfig{
 			Enabled: false,
 		},
+		ContainerMemoryUsage: ContainerMemoryUsageMetricConfig{
+			Enabled: false,
+		},
 		ContainerMemoryUsageLimit: ContainerMemoryUsageLimitMetricConfig{
 			Enabled: true,
 		},
@@ -2190,8 +2436,16 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerMemoryUsageTotal: ContainerMemoryUsageTotalMetricConfig{
 			Enabled: true,
 		},
+		ContainerMemoryWorkingSet: ContainerMemoryWorkingSetMetricConfig{
+			Enabled: false,
+		},
 		ContainerMemoryWriteback: ContainerMemoryWritebackMetricConfig{
 			Enabled: false,
+		},
+		ContainerNetworkIo: ContainerNetworkIoMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ContainerNetworkIoMetricAttributeKey{ContainerNetworkIoMetricAttributeKeyNetworkIoDirection, ContainerNetworkIoMetricAttributeKeyNetworkInterfaceName},
 		},
 		ContainerNetworkIoUsageRxBytes: ContainerNetworkIoUsageRxBytesMetricConfig{
 			Enabled:             true,

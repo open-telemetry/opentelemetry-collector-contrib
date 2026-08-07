@@ -63,6 +63,10 @@ attributes:
     description: "The CPU core number when utilising per-CPU metrics."
     type: string
     requirement_level: recommended
+  cpu.mode:
+    description: "The CPU mode for this data point."
+    type: string
+    requirement_level: conditionally_required
   device_major:
     description: "Device major number for block IO operations."
     type: string
@@ -71,12 +75,28 @@ attributes:
     description: "Device minor number for block IO operations."
     type: string
     requirement_level: recommended
+  disk.io.direction:
+    description: "The disk IO operation direction."
+    type: string
+    requirement_level: recommended
   interface:
     description: "Network interface."
     type: string
     requirement_level: recommended
+  network.interface.name:
+    description: "The network interface name."
+    type: string
+    requirement_level: recommended
+  network.io.direction:
+    description: "The network IO operation direction."
+    type: string
+    requirement_level: recommended
   operation:
     description: "Type of BlockIO operation."
+    type: string
+    requirement_level: recommended
+  system.device:
+    description: "The disk device identifier (major:minor)."
     type: string
     requirement_level: recommended
 
@@ -249,6 +269,24 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+  container.cpu.time:
+    enabled: false
+    stability: development
+    description: "Total CPU time consumed."
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes:
+      - cpu.mode
+  container.cpu.usage:
+    enabled: false
+    stability: development
+    description: "Container’s CPU usage, measured in cpus. Range from 0 to the number of allocatable CPUs."
+    unit: "{cpu}"
+    gauge:
+      value_type: double
   container.cpu.usage.kernelmode:
     enabled: true
     stability: development
@@ -306,6 +344,18 @@ metrics:
     unit: "1"
     gauge:
       value_type: double
+  container.disk.io:
+    enabled: false
+    stability: development
+    description: "Disk bytes for the container."
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes:
+      - system.device
+      - disk.io.direction
   container.memory.active_anon:
     enabled: false
     stability: development
@@ -330,6 +380,15 @@ metrics:
     stability: development
     description: "Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_ANONYMOUS) (Only available with cgroups v2)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)"
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.available:
+    enabled: false
+    stability: development
+    description: "Container memory available. Not supported on Windows."
     unit: By
     sum:
       value_type: int
@@ -421,6 +480,15 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+  container.memory.paging.faults:
+    enabled: false
+    stability: development
+    description: "Container memory paging faults. (Only available with cgroups v1)."
+    unit: "{faults}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
   container.memory.percent:
     enabled: true
     stability: development
@@ -630,6 +698,15 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+  container.memory.usage:
+    enabled: false
+    stability: development
+    description: "Memory usage of the container."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
   container.memory.usage.limit:
     enabled: true
     stability: development
@@ -657,6 +734,15 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+  container.memory.working_set:
+    enabled: false
+    stability: development
+    description: "Container memory working set."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
   container.memory.writeback:
     enabled: false
     stability: development
@@ -666,6 +752,18 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+  container.network.io:
+    enabled: false
+    stability: development
+    description: "Network bytes for the container."
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes:
+      - network.io.direction
+      - network.interface.name
   container.network.io.usage.rx_bytes:
     enabled: true
     stability: development
@@ -797,3 +895,13 @@ metrics:
     unit: s
     gauge:
       value_type: double
+
+feature_gates:
+  # TODO: switch the ID to the "receiver.docker_stats." prefix and drop
+  # skip_strict_validation once https://github.com/open-telemetry/opentelemetry-collector/issues/15592 is fixed
+  - id: receiver.dockerstatsreceiver.enableSemConvMetrics
+    skip_strict_validation: true
+    description: 'Enable new container metrics that align with new container semantic convention'
+    stage: alpha
+    from_version: 'v0.152.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649'
