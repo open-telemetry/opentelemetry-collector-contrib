@@ -99,6 +99,7 @@ Instead of listing metrics manually, the receiver can call [ListMetrics](https:/
 | `filters.metric_name`  | String          | —       | Restrict discovery to metrics with this name. |
 | `limit`                | Integer         | 100     | Maximum number of metrics to discover and scrape per collection cycle. |
 | `stats`                | List of strings | —       | Statistics to fetch for every discovered metric. Same values as in `queries`. |
+| `recently_active`      | Boolean         | —       | Overrides the automatic `RecentlyActive=PT3H` discovery filter. When unset, the receiver applies the filter automatically only when the scrape window starts within the last three hours. Set to `true` to always restrict discovery to metrics active in the past three hours, or `false` to always disable the filter (returning every metric that reported data in the past two weeks). |
 
 #### Statistics
 
