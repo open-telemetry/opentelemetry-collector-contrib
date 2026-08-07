@@ -502,18 +502,20 @@ func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
 }
 
 func getOSDescription(logger *zap.Logger) string {
-	info, err := host.Info()
+	// Use PlatformInformation instead of host.Info so Windows containers without
+	// MachineGuid can still report os.description.
+	platform, _, version, err := host.PlatformInformation()
 	if err != nil {
-		logger.Error("failed getting host info", zap.Error(err))
+		logger.Error("failed getting platform information", zap.Error(err))
 		return runtime.GOOS
 	}
 	switch runtime.GOOS {
 	case "darwin":
-		return "macOS " + info.PlatformVersion
+		return "macOS " + version
 	case "linux":
-		return cases.Title(language.English).String(info.Platform) + " " + info.PlatformVersion
+		return cases.Title(language.English).String(platform) + " " + version
 	case "windows":
-		return info.Platform + " " + info.PlatformVersion
+		return platform + " " + version
 	default:
 		return runtime.GOOS
 	}
