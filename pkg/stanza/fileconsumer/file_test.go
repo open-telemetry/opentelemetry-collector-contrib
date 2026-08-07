@@ -1220,11 +1220,6 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.DeleteAfterRead = true
-	// Use a small emit buffer so the long file's reader experiences backpressure
-	// and blocks well before reaching EOF. Sizing the buffer to hold the entire
-	// file lets the reader race ahead, reach EOF, and delete the long file before
-	// the test cancels the poll, making the "partial read" assertion below flaky.
-	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49075
 	sink := emittest.NewSink(emittest.WithCallBuffer(10))
 	operator := testManagerWithSink(t, cfg, sink)
 	operator.persister = testutil.NewUnscopedMockPersister()
