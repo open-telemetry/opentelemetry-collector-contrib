@@ -26,10 +26,7 @@ func createMetricsReceiver(
 		return nil, errConfigNotSQLServer
 	}
 
-	opts, err := setupScrapers(params, cfg)
-	if err != nil {
-		return nil, err
-	}
+	opts := setupScrapers(params, cfg)
 
 	return scraperhelper.NewMetricsController(
 		&cfg.ControllerConfig,

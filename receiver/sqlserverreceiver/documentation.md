@@ -36,6 +36,22 @@ Number of SQL recompilations needed.
 | ---- | ----------- | ---------- | --------- |
 | {compilations}/s | Gauge | Double | Development |
 
+### sqlserver.health
+
+The connection health of the SQL Server target, reported per check as 1 (healthy) or 0 (unhealthy).
+
+Emitted every collection interval so an unreachable or unauthenticated SQL Server surfaces as data rather than as an absence of data. The `check` attribute distinguishes `reachable` (transport-level, pre-auth) from `queryable` (authenticated end-to-end). `queryable=1` implies `reachable=1`. This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| check | The connection health check being reported. `reachable` is a transport-level (pre-auth) check that the SQL Server endpoint accepts a TCP connection; `queryable` is an end-to-end check that the receiver can authenticate and execute a trivial query. | Str: ``reachable``, ``queryable`` | Required | - |
+
 ### sqlserver.lock.wait.rate
 
 Number of lock requests resulting in a wait.

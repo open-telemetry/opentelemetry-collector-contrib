@@ -220,23 +220,44 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 // Note: This method will fail silently if there is no work to do. This is an acceptable use case
 // as this receiver can still get information on Windows from performance counters without a direct
 // connection. Messages will be logged at the INFO level in such cases.
-func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.ControllerOption, error) {
-	sqlServerScrapers := setupSQLServerScrapers(params, cfg)
-
-	var opts []scraperhelper.ControllerOption
-	for _, sqlScraper := range sqlServerScrapers {
-		s, err := scraper.NewMetrics(sqlScraper.ScrapeMetrics,
-			scraper.WithStart(sqlScraper.Start),
-			scraper.WithShutdown(sqlScraper.Shutdown))
-		if err != nil {
-			return nil, err
-		}
-
-		opt := scraperhelper.AddMetricsScraper(metadata.Type, s)
-		opts = append(opts, opt)
+func setupScrapers(params receiver.Settings, cfg *Config) []scraperhelper.ControllerOption {
+	// Every scraper this receiver runs already implements scraper.Metrics, so
+	// they can be handed to AddMetricsScraper directly.
+	var scrapers []scraper.Metrics
+	for _, sqlScraper := range setupSQLServerScrapers(params, cfg) {
+		scrapers = append(scrapers, sqlScraper)
+	}
+	if healthScraper := setupConnectionHealthScraper(params, cfg); healthScraper != nil {
+		scrapers = append(scrapers, healthScraper)
 	}
 
-	return opts, nil
+	var opts []scraperhelper.ControllerOption
+	for _, s := range scrapers {
+		opts = append(opts, scraperhelper.AddMetricsScraper(metadata.Type, s))
+	}
+
+	return opts
+}
+
+// setupConnectionHealthScraper creates the scraper backing the sqlserver.health
+// metric. It requires a direct DB connection (server/port/credentials or a
+// datasource); it returns nil when the receiver runs in performance-counter-only
+// mode or when the health metric is disabled.
+func setupConnectionHealthScraper(params receiver.Settings, cfg *Config) *connectionHealthScraper {
+	if !cfg.isDirectDBConnectionEnabled {
+		return nil
+	}
+
+	if !cfg.MetricsBuilderConfig.Metrics.SqlserverHealth.Enabled {
+		return nil
+	}
+
+	dbProviderFunc := func() (*sql.DB, error) {
+		return sql.Open("sqlserver", getDBConnectionString(cfg))
+	}
+
+	id := component.NewIDWithName(metadata.Type, "connection-health")
+	return newConnectionHealthScraper(id, sqlquery.TelemetryConfig{}, dbProviderFunc, sqlquery.NewDbClient, params, cfg)
 }
 
 // Note: This method will fail silently if there is no work to do. This is an acceptable use case

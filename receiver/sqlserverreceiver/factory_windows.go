@@ -37,11 +37,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	var opts []scraperhelper.ControllerOption
-	opts, err = setupScrapers(params, cfg)
-	if err != nil {
-		return nil, err
-	}
+	opts := setupScrapers(params, cfg)
 	opts = append(opts, scraperhelper.AddMetricsScraper(metadata.Type, scraper))
 
 	return scraperhelper.NewMetricsController(
