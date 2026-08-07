@@ -78,7 +78,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		ParserOperator:          parserOperator,
 		format:                  c.Format,
 		addMetadataFromFilepath: c.AddMetadataFromFilePath,
-		cache:                   newCache(defaultPathCacheSize),
+		cache:                   newCacheOrNil(defaultPathCacheSize, c.AddMetadataFromFilePath),
 	}
 	var cLogEmitter helper.LogEmitter
 	if metadata.StanzaSynchronousLogEmitterFeatureGate.IsEnabled() {
@@ -137,10 +137,14 @@ func createRecombineConfig(c Config) *recombine.Config {
 	return recombineParserCfg
 }
 
-// Always creates a cache, if size is invalid it creates a minimal cache
-func newCache(size int) *lru.Cache[string, map[string]any] {
+// creates cache with given size or returns nil depending on the boolean argument
+func newCacheOrNil(size int, shouldCreate bool) *lru.Cache[string, map[string]any] {
+	if !shouldCreate {
+		return nil
+	}
+
 	if size <= 0 {
-		size = 1
+		size = defaultPathCacheSize
 	}
 	// lru will only return error when the size is less than 0
 	cache, _ := lru.New[string, map[string]any](size)
