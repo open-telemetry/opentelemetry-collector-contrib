@@ -1,4 +1,4 @@
-ARG MONGO_VERSION=7.0
+ARG MONGO_VERSION=8.3
 FROM mongo:${MONGO_VERSION}
 
 COPY scripts/setup_top_query.sh /setup_top_query.sh
