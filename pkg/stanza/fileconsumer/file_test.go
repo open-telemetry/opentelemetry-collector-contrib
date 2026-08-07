@@ -1220,7 +1220,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.DeleteAfterRead = true
-	sink := emittest.NewSink(emittest.WithCallBuffer(longFileLines + 1))
+	sink := emittest.NewSink(emittest.WithCallBuffer(10))
 	operator := testManagerWithSink(t, cfg, sink)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
