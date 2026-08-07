@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"go.uber.org/zap"
@@ -41,7 +42,18 @@ func (w *fileWatcher) Value() string {
 	return ""
 }
 
-func (w *fileWatcher) Start(ctx context.Context) error {
+func (w *fileWatcher) Start(ctx context.Context, opts ...Option) error {
+	var o options
+	for _, opt := range opts {
+		opt(&o)
+	}
+	if o.retryEnabled {
+		return w.retryStart(ctx, o.maxRetries, o.initialInterval, o.retryInterval)
+	}
+	return w.start(ctx)
+}
+
+func (w *fileWatcher) start(ctx context.Context) error {
 	if w.shutdownCH != nil {
 		return errors.New("file watcher already started")
 	}
@@ -63,6 +75,30 @@ func (w *fileWatcher) Start(ctx context.Context) error {
 	// fsnotify follows the symlink and watches the underlying inode. On Remove/Chmod
 	// events the watcher is re-added to follow the new symlink target.
 	return watcher.Add(w.path)
+}
+
+func (w *fileWatcher) retryStart(ctx context.Context, maxRetries int, initialInterval, retryInterval time.Duration) error {
+	// Wait initialInterval before the first retry, then retryInterval between
+	// each subsequent attempt.
+	timer := time.NewTimer(initialInterval)
+	defer timer.Stop()
+	counter := 0
+	for {
+		if counter > maxRetries {
+			return fmt.Errorf("failed to read credentials file %q after reaching out max number of retries", w.path)
+		}
+
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("failed to read credentials file %q after %d retry", w.path, counter)
+		case <-timer.C:
+			if _, err := os.Stat(w.path); err == nil {
+				return w.start(ctx)
+			}
+			counter++
+			timer.Reset(retryInterval)
+		}
+	}
 }
 
 func (w *fileWatcher) Shutdown() error {

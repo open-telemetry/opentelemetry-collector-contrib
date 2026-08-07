@@ -6,6 +6,7 @@ package bearertokenauthextension
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -97,6 +98,20 @@ func TestLoadConfig(t *testing.T) {
 				BearerToken: "my-token",
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "withretryonfailure"),
+			expected: &Config{
+				Header:   defaultHeader,
+				Scheme:   "Bearer",
+				Filename: "file-containing.token",
+				RetryOnFailure: RetryOnFailureConfig{
+					Enabled:         true,
+					MaxRetries:      5,
+					InitialInterval: 15 * time.Second,
+					Offset:          2 * time.Second,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -114,6 +129,83 @@ func TestLoadConfig(t *testing.T) {
 			}
 			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestValidate_RetryOnFailure(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		cfg     *Config
+		wantErr error
+	}{
+		{
+			name: "enabled without filename",
+			cfg: &Config{
+				BearerToken: "tok",
+				RetryOnFailure: RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: 1,
+					Offset:     time.Second,
+				},
+			},
+			wantErr: errRetryOnFailureNoFile,
+		},
+		{
+			name: "enabled with zero max_retries",
+			cfg: &Config{
+				Filename: "file.token",
+				RetryOnFailure: RetryOnFailureConfig{
+					Enabled: true,
+					Offset:  time.Second,
+				},
+			},
+			wantErr: errRetryOnFailureInvalidMaxRetries,
+		},
+		{
+			name: "enabled with zero offset",
+			cfg: &Config{
+				Filename: "file.token",
+				RetryOnFailure: RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: 1,
+				},
+			},
+			wantErr: errRetryOnFailureInvalidOffset,
+		},
+		{
+			name: "enabled with valid values",
+			cfg: &Config{
+				Filename: "file.token",
+				RetryOnFailure: RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: 3,
+					Offset:     time.Second,
+				},
+			},
+		},
+		{
+			name: "disabled ignores other fields",
+			cfg: &Config{
+				Filename: "file.token",
+				RetryOnFailure: RetryOnFailureConfig{
+					MaxRetries: 0,
+					Offset:     0,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }
