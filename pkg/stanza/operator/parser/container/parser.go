@@ -344,15 +344,26 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 		return fmt.Errorf("type '%T' cannot be parsed as log path field", logPath)
 	}
 
-	parsedValues, ok := p.cache.Get(rawLogPath)
-	if !ok {
-		parsedValues, ok = splitLogPath(rawLogPath)
-		if !ok {
-			return errors.New("failed to detect a valid log path")
+	var parsedValues map[string]any
+	if p.cache != nil {
+		if parsedValues, ok = p.cache.Get(rawLogPath); ok {
+			return p.setK8sMetadataFromParsedValues(e, parsedValues)
 		}
+	}
+
+	parsedValues, ok = parseLogPath(rawLogPath)
+	if !ok {
+		return errors.New("failed to detect a valid log path")
+	}
+
+	if p.cache != nil {
 		p.cache.Add(rawLogPath, parsedValues)
 	}
 
+	return p.setK8sMetadataFromParsedValues(e, parsedValues)
+}
+
+func (*Parser) setK8sMetadataFromParsedValues(e *entry.Entry, parsedValues map[string]any) error {
 	for attributeKey, value := range parsedValues {
 		newField := entry.NewResourceField(attributeKey)
 		if err := newField.Set(e, value); err != nil {
@@ -496,7 +507,7 @@ func stripLogSuffix(raw string) (string, bool) {
 	}
 }
 
-// splitLogPath parses a Kubernetes pod log file path without regex.
+// parseLogPath parses a Kubernetes pod log file path without regex.
 // The expected format is: .../<namespace>_<pod_name>_<uid>/<container_name>/<restart_count>.log[.<rotation>]
 // It returns the parsed fields keyed by OTel resource attribute names, and whether parsing succeeded.
 //
@@ -506,7 +517,7 @@ func stripLogSuffix(raw string) (string, bool) {
 //   - container_name: any non-empty string not containing '\\', '.', or '_'
 //   - restart_count: digits only
 //   - suffix: exactly ".log" or ".log." followed by 8 digits, a hyphen, and 6 digits
-func splitLogPath(raw string) (map[string]any, bool) {
+func parseLogPath(raw string) (map[string]any, bool) {
 	// Validate and strip the suffix before touching any other path components.
 	base, ok := stripLogSuffix(raw)
 	if !ok {

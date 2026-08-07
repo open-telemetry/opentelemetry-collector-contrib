@@ -1594,20 +1594,19 @@ func TestFilepathCacheDisabledWhenMetadataOff(t *testing.T) {
 	err = p.extractk8sMetaFromFilePath(e)
 	require.NoError(t, err)
 
-	_, ok := p.cache.Get(testLogPath)
-	require.False(t, ok, "cache should not be populated when add_metadata_from_filepath is false")
+	require.Nil(t, p.cache, "cache should be nil when add_metadata_from_filepath is false")
 }
 
 func TestSplitCRI(t *testing.T) {
 	cases := []struct {
-		name          string
-		input         string
-		wantOK        bool
+		name           string
+		input          string
+		wantOK         bool
 		wantContainerd bool
-		wantTime      string
-		wantStream    string
-		wantLogtag    string
-		wantLog       string
+		wantTime       string
+		wantStream     string
+		wantLogtag     string
+		wantLog        string
 	}{
 		{
 			name:           "containerd full line",
@@ -1717,8 +1716,8 @@ func TestSplitCRI(t *testing.T) {
 
 func TestStripLogSuffix(t *testing.T) {
 	cases := []struct {
-		input   string
-		wantOK  bool
+		input    string
+		wantOK   bool
 		wantBase string
 	}{
 		{
@@ -1732,28 +1731,28 @@ func TestStripLogSuffix(t *testing.T) {
 			wantBase: "/var/log/pods/ns_pod_uid/container/0",
 		},
 		{
-			input:   "/var/log/pods/ns_pod_uid/container/0.log.backup",
-			wantOK:  false,
+			input:  "/var/log/pods/ns_pod_uid/container/0.log.backup",
+			wantOK: false,
 		},
 		{
-			input:   "/var/log/pods/ns_pod_uid/container/0.log.20240115",
-			wantOK:  false,
+			input:  "/var/log/pods/ns_pod_uid/container/0.log.20240115",
+			wantOK: false,
 		},
 		{
-			input:   "/var/log/pods/ns_pod_uid/container/0.log.20240115-10300",
-			wantOK:  false,
+			input:  "/var/log/pods/ns_pod_uid/container/0.log.20240115-10300",
+			wantOK: false,
 		},
 		{
-			input:   "/var/log/pods/ns_pod_uid/container/0.log2",
-			wantOK:  false,
+			input:  "/var/log/pods/ns_pod_uid/container/0.log2",
+			wantOK: false,
 		},
 		{
-			input:   "/var/log/pods/ns_pod_uid/container/0.txt",
-			wantOK:  false,
+			input:  "/var/log/pods/ns_pod_uid/container/0.txt",
+			wantOK: false,
 		},
 		{
-			input:   "",
-			wantOK:  false,
+			input:  "",
+			wantOK: false,
 		},
 	}
 
@@ -1770,13 +1769,13 @@ func TestStripLogSuffix(t *testing.T) {
 
 func TestSplitLogPath(t *testing.T) {
 	cases := []struct {
-		name      string
-		input     string
-		wantOK    bool
-		wantNS    string
-		wantPod   string
-		wantUID   string
-		wantCtr   string
+		name        string
+		input       string
+		wantOK      bool
+		wantNS      string
+		wantPod     string
+		wantUID     string
+		wantCtr     string
 		wantRestart string
 	}{
 		{
@@ -1816,7 +1815,7 @@ func TestSplitLogPath(t *testing.T) {
 			wantRestart: "0",
 		},
 		{
-			name:   "unrecognised suffix rejected",
+			name:   "unrecognized suffix rejected",
 			input:  "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log.backup",
 			wantOK: false,
 		},
@@ -1849,7 +1848,7 @@ func TestSplitLogPath(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, ok := splitLogPath(tc.input)
+			result, ok := parseLogPath(tc.input)
 			require.Equal(t, tc.wantOK, ok)
 			if !ok {
 				return
@@ -1875,10 +1874,10 @@ func TestSplitLogPath(t *testing.T) {
 
 func TestPinnedFormatMismatch(t *testing.T) {
 	cases := []struct {
-		name        string
+		name         string
 		pinnedFormat string
-		body        string
-		wantErrMsg  string
+		body         string
+		wantErrMsg   string
 	}{
 		{
 			name:         "cri line rejected when docker pinned",
