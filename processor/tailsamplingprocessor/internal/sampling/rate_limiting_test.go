@@ -4,6 +4,7 @@
 package sampling
 
 import (
+	"encoding/binary"
 	"testing"
 	"time"
 
@@ -11,7 +12,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
@@ -81,4 +84,285 @@ func TestRateLimiterTokenRefill(t *testing.T) {
 	decision, err = rateLimiter.Evaluate(t.Context(), pcommon.TraceID([16]byte{3}), trace)
 	require.NoError(t, err)
 	assert.Equal(t, samplingpolicy.Sampled, decision)
+}
+
+func mustRandomness(t *testing.T, u uint64) sampling.Randomness {
+	t.Helper()
+	r, err := sampling.UnsignedToRandomness(u)
+	require.NoError(t, err)
+	return r
+}
+
+// rlTrace builds a single-span trace whose trace ID encodes the given
+// randomness in its low 7 bytes (the bytes TraceIDToRandomness reads) and a
+// unique tag in its first byte, so traces with equal randomness still have
+// distinct IDs.
+func rlTrace(tag byte, randomness uint64, spanCount int64) *samplingpolicy.TraceData {
+	var id [16]byte
+	id[0] = tag
+	binary.BigEndian.PutUint64(id[8:], randomness)
+	traces := ptrace.NewTraces()
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID(pcommon.TraceID(id))
+	return &samplingpolicy.TraceData{SpanCount: spanCount, ReceivedBatches: traces}
+}
+
+// TestRateLimiterBatchThreshold verifies that, with the tracestate gate
+// on, EvaluateBatch spends the span budget on the highest-randomness
+// traces first and reports a threshold at the boundary such that every
+// kept trace satisfies threshold.ShouldSample(randomness) and every
+// dropped trace does not.
+func TestRateLimiterBatchThreshold(t *testing.T) {
+	enableTracestateFeatureGate(t)
+
+	// Burst 5 => starting budget of 5 spans. Three traces of 2 spans
+	// each (total 6) exceed the budget by one trace.
+	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 5, 5).(*budgetLimiter)
+
+	a := rlTrace(1, 100, 2)
+	b := rlTrace(2, 50, 2)
+	c := rlTrace(3, 10, 2)
+	rl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{a, b, c})
+
+	wantThreshold, err := sampling.UnsignedToThreshold(50)
+	require.NoError(t, err)
+
+	// Highest two randomness values are kept; the threshold equals the
+	// smallest kept randomness (50).
+	for _, tc := range []struct {
+		name       string
+		td         *samplingpolicy.TraceData
+		randomness uint64
+		want       samplingpolicy.Decision
+	}{
+		{"a", a, 100, samplingpolicy.Sampled},
+		{"b", b, 50, samplingpolicy.Sampled},
+		{"c", c, 10, samplingpolicy.NotSampled},
+	} {
+		decision, th, err := rl.EvaluateWithThreshold(t.Context(), tc.td.TraceID(), tc.td)
+		require.NoError(t, err)
+		assert.Equal(t, tc.want, decision, tc.name)
+		if tc.want == samplingpolicy.Sampled {
+			assert.Equal(t, wantThreshold, th, tc.name)
+			// Consistency: the reported threshold must sample the
+			// trace's own randomness.
+			assert.True(t, th.ShouldSample(mustRandomness(t, tc.randomness)), tc.name)
+		}
+	}
+}
+
+// TestRateLimiterBatchWholeBatchFits verifies that when the entire batch
+// fits within the budget nothing is limited and the reported threshold is
+// AlwaysSample (adjusted count 1), matching how always-sample policies
+// behave today.
+func TestRateLimiterBatchWholeBatchFits(t *testing.T) {
+	enableTracestateFeatureGate(t)
+
+	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 10, 10).(*budgetLimiter)
+
+	traces := []*samplingpolicy.TraceData{rlTrace(1, 100, 2), rlTrace(2, 50, 2)}
+	rl.EvaluateBatch(t.Context(), traces)
+
+	for _, td := range traces {
+		decision, th, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+		require.NoError(t, err)
+		assert.Equal(t, samplingpolicy.Sampled, decision)
+		assert.Equal(t, sampling.AlwaysSampleThreshold, th)
+	}
+}
+
+// TestLimitingPolicyImplementationSelection verifies the constructors pick the
+// implementation by feature gate: the original per-trace token bucket with the
+// gate off, the batch-aware budgetLimiter with it on. With the gate off no
+// batch code runs at all, so existing deployments keep the token bucket
+// behavior covered by TestRateLimiterTokenBucket and
+// TestBytesLimitingTokenBucket.
+func TestLimitingPolicyImplementationSelection(t *testing.T) {
+	settings := componenttest.NewNopTelemetrySettings()
+
+	t.Run("gate off keeps the token bucket", func(t *testing.T) {
+		assert.IsType(t, &rateLimiting{}, NewRateLimitingWithBurstCapacity(settings, 10, 20))
+		assert.IsType(t, &bytesLimiting{}, NewBytesLimitingWithBurstCapacity(settings, 10, 20))
+
+		// The token bucket neither reports a threshold nor participates in the
+		// processor's batch pre-pass, exactly as today.
+		rl := NewRateLimitingWithBurstCapacity(settings, 10, 20)
+		_, isThresholdEvaluator := rl.(samplingpolicy.ThresholdEvaluator)
+		assert.False(t, isThresholdEvaluator)
+		_, isBatchEvaluator := rl.(samplingpolicy.BatchEvaluator)
+		assert.False(t, isBatchEvaluator)
+	})
+
+	t.Run("gate on selects the batch limiter", func(t *testing.T) {
+		enableTracestateFeatureGate(t)
+		assert.IsType(t, &budgetLimiter{}, NewRateLimitingWithBurstCapacity(settings, 10, 20))
+		assert.IsType(t, &budgetLimiter{}, NewBytesLimitingWithBurstCapacity(settings, 10, 20))
+		assert.IsType(t, &budgetLimiter{}, NewRateLimiting(settings, 10))
+		assert.IsType(t, &budgetLimiter{}, NewBytesLimiting(settings, 10))
+	})
+}
+
+// TestRateLimiterBatchLargeTraceDropped verifies that a single trace whose
+// span count exceeds the budget is dropped and no trace is kept.
+func TestRateLimiterBatchLargeTraceDropped(t *testing.T) {
+	enableTracestateFeatureGate(t)
+
+	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 2, 2).(*budgetLimiter)
+
+	td := rlTrace(1, 100, 5) // 5 spans > budget of 2
+	rl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{td})
+
+	decision, _, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+	require.NoError(t, err)
+	assert.Equal(t, samplingpolicy.NotSampled, decision)
+}
+
+// TestRateLimiterBatchNonUniformSpanCounts verifies the span budget is
+// tracked across traces with differing span counts, not just trace counts.
+func TestRateLimiterBatchNonUniformSpanCounts(t *testing.T) {
+	enableTracestateFeatureGate(t)
+
+	// Budget 3 spans. Sorted by randomness: A(2 spans), B(1 span) fill the
+	// budget exactly (3 spans); C(2 spans) overflows and is dropped.
+	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 3, 3).(*budgetLimiter)
+	a := rlTrace(1, 100, 2)
+	b := rlTrace(2, 50, 1)
+	c := rlTrace(3, 10, 2)
+	rl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{a, b, c})
+
+	wantThreshold, err := sampling.UnsignedToThreshold(50)
+	require.NoError(t, err)
+
+	for _, tc := range []struct {
+		name string
+		td   *samplingpolicy.TraceData
+		want samplingpolicy.Decision
+	}{
+		{"a", a, samplingpolicy.Sampled},
+		{"b", b, samplingpolicy.Sampled},
+		{"c", c, samplingpolicy.NotSampled},
+	} {
+		decision, th, err := rl.EvaluateWithThreshold(t.Context(), tc.td.TraceID(), tc.td)
+		require.NoError(t, err)
+		assert.Equal(t, tc.want, decision, tc.name)
+		if tc.want == samplingpolicy.Sampled {
+			assert.Equal(t, wantThreshold, th, tc.name)
+		}
+	}
+}
+
+// TestRateLimiterBatchBoundaryTie verifies that traces sharing the same
+// randomness at the kept/dropped boundary are dropped together, so the
+// reported threshold cleanly separates kept (th <= R) from dropped (th > R).
+func TestRateLimiterBatchBoundaryTie(t *testing.T) {
+	enableTracestateFeatureGate(t)
+
+	// Budget 2 spans, single-span traces. Sorted: A(100), B(50), C(50),
+	// D(10). The budget prefix would keep A and B, but B ties C at the
+	// boundary, so the tied group (B, C) is dropped and only A is kept.
+	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 2, 2).(*budgetLimiter)
+	a := rlTrace(1, 100, 1)
+	b := rlTrace(2, 50, 1)
+	c := rlTrace(3, 50, 1)
+	d := rlTrace(4, 10, 1)
+	rl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{a, b, c, d})
+
+	wantThreshold, err := sampling.UnsignedToThreshold(100)
+	require.NoError(t, err)
+
+	for _, tc := range []struct {
+		name       string
+		td         *samplingpolicy.TraceData
+		randomness uint64
+		want       samplingpolicy.Decision
+	}{
+		{"a", a, 100, samplingpolicy.Sampled},
+		{"b", b, 50, samplingpolicy.NotSampled},
+		{"c", c, 50, samplingpolicy.NotSampled},
+		{"d", d, 10, samplingpolicy.NotSampled},
+	} {
+		decision, th, err := rl.EvaluateWithThreshold(t.Context(), tc.td.TraceID(), tc.td)
+		require.NoError(t, err)
+		assert.Equal(t, tc.want, decision, tc.name)
+		if tc.want == samplingpolicy.Sampled {
+			assert.Equal(t, wantThreshold, th, tc.name)
+			// Kept traces must pass their own threshold; dropped traces
+			// (including the tied ones) must not, so the partition is exact.
+			assert.True(t, th.ShouldSample(mustRandomness(t, tc.randomness)))
+		} else {
+			assert.False(t, wantThreshold.ShouldSample(mustRandomness(t, tc.randomness)), "dropped %s must fail the reported threshold", tc.name)
+		}
+	}
+}
+
+// TestRateLimiterBatchCrossTick verifies the span budget carries across
+// batches: spans kept in one batch are deducted from the token bucket so a
+// following batch sees a smaller budget.
+func TestRateLimiterBatchCrossTick(t *testing.T) {
+	enableTracestateFeatureGate(t)
+
+	// Rate 1/s (negligible refill during the test), burst 4 => budget 4.
+	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 1, 4).(*budgetLimiter)
+
+	// First batch keeps both single-span traces, consuming 2 of 4 tokens.
+	first := []*samplingpolicy.TraceData{rlTrace(1, 100, 1), rlTrace(2, 90, 1)}
+	rl.EvaluateBatch(t.Context(), first)
+	for _, td := range first {
+		decision, _, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+		require.NoError(t, err)
+		assert.Equal(t, samplingpolicy.Sampled, decision)
+	}
+
+	// Second batch sees ~2 remaining tokens, so only the two highest of
+	// three single-span traces are kept.
+	high := rlTrace(3, 100, 1)
+	mid := rlTrace(4, 50, 1)
+	low := rlTrace(5, 10, 1)
+	rl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{high, mid, low})
+	assertDecision := func(td *samplingpolicy.TraceData, want samplingpolicy.Decision, msg string) {
+		decision, _, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+		require.NoError(t, err)
+		assert.Equal(t, want, decision, msg)
+	}
+	assertDecision(high, samplingpolicy.Sampled, "high")
+	assertDecision(mid, samplingpolicy.Sampled, "mid")
+	assertDecision(low, samplingpolicy.NotSampled, "budget carried over should drop the lowest-randomness trace")
+}
+
+// TestRateLimiterBatchEmpty verifies EvaluateBatch handles an empty batch
+// without panicking. Once the batch has run, a trace that was not part of
+// it is treated as NotSampled rather than falling back to per-trace
+// admission (which would let an excluded trace spend budget).
+func TestRateLimiterBatchEmpty(t *testing.T) {
+	enableTracestateFeatureGate(t)
+
+	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 2, 2).(*budgetLimiter)
+	rl.EvaluateBatch(t.Context(), nil)
+	assert.Empty(t, rl.batchDecisions)
+
+	td := rlTrace(1, 100, 1)
+	decision, _, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+	require.NoError(t, err)
+	assert.Equal(t, samplingpolicy.NotSampled, decision)
+}
+
+// TestResolveRandomness verifies the shared randomness resolution used to
+// build batch items: an explicit rv in tracestate wins, otherwise the value
+// is derived from the trace ID.
+func TestResolveRandomness(t *testing.T) {
+	traceID := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0xaa, 0, 0, 0, 0, 0, 0})
+
+	// No tracestate: derived from the trace ID.
+	td := ptrace.NewTraces()
+	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
+	assert.Equal(t, sampling.TraceIDToRandomness(traceID), ResolveRandomness(traceID, td))
+
+	// Explicit rv in tracestate takes precedence over the trace ID.
+	tdRV := ptrace.NewTraces()
+	span := tdRV.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID(traceID)
+	span.TraceState().FromRaw("ot=rv:ffffffffffffff")
+	want, err := sampling.RValueToRandomness("ffffffffffffff")
+	require.NoError(t, err)
+	assert.Equal(t, want, ResolveRandomness(traceID, tdRV))
 }

@@ -22,6 +22,22 @@ type TraceData struct {
 	ReceivedBatches ptrace.Traces
 }
 
+// TraceID returns the trace ID carried by the trace's spans, or the zero
+// ID if the trace has no spans. All spans in a trace share the same trace
+// ID, so the first span found is authoritative.
+func (td *TraceData) TraceID() pcommon.TraceID {
+	rss := td.ReceivedBatches.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		sss := rss.At(i).ScopeSpans()
+		for j := 0; j < sss.Len(); j++ {
+			if spans := sss.At(j).Spans(); spans.Len() > 0 {
+				return spans.At(0).TraceID()
+			}
+		}
+	}
+	return pcommon.TraceID{}
+}
+
 // Decision gives the status of sampling decision.
 type Decision int32
 
@@ -98,6 +114,24 @@ type ThresholdEvaluator interface {
 	// the effective Threshold. The Threshold is only meaningful when
 	// Decision is Sampled.
 	EvaluateWithThreshold(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, sampling.Threshold, error)
+}
+
+// BatchEvaluator is implemented by policies whose decision depends on
+// the whole group of traces eligible for a decision at once, rather
+// than on a single trace in isolation. The rate_limiting policy is the
+// canonical example: to report a consistent sampling threshold it must
+// sort the group by randomness and pick a threshold at the point where
+// the span budget runs out.
+type BatchEvaluator interface {
+	ThresholdEvaluator
+	// EvaluateBatch is called once per decision tick with every trace
+	// eligible for a decision, before any EvaluateWithThreshold call for
+	// those traces in the same tick. The policy precomputes and caches a
+	// decision for each trace (keyed by TraceData.TraceID()); the
+	// subsequent EvaluateWithThreshold call for a given trace ID returns
+	// the cached result. Traces that were not part of the batch fall back
+	// to per-trace evaluation.
+	EvaluateBatch(ctx context.Context, batch []*TraceData)
 }
 
 type Extension interface {

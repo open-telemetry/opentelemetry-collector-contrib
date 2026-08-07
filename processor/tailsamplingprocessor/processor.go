@@ -680,6 +680,76 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 	}
 }
 
+// evaluateBatchPolicies runs any BatchEvaluator policies (e.g.
+// rate_limiting) over the whole batch before per-trace evaluation, so
+// they can make a consistent decision across the group. It takes each
+// trace's spans from storage once and returns them in a held map so the
+// per-trace loop can reuse them instead of taking again. Returns nil when
+// no batch policies are configured.
+func (tsp *tailSamplingSpanProcessor) evaluateBatchPolicies(ctx context.Context, batch idbatcher.Batch) map[pcommon.TraceID]ptrace.Traces {
+	var batchPolicies []samplingpolicy.BatchEvaluator
+	for _, p := range tsp.policies {
+		if be, ok := p.evaluator.(samplingpolicy.BatchEvaluator); ok {
+			batchPolicies = append(batchPolicies, be)
+		}
+	}
+	if len(batchPolicies) == 0 {
+		return nil
+	}
+
+	held := make(map[pcommon.TraceID]ptrace.Traces, len(batch))
+	items := make([]*samplingpolicy.TraceData, 0, len(batch))
+	for id := range batch {
+		trace, ok := tsp.idToTrace[id]
+		if !ok || trace.FinalDecision != samplingpolicy.Unspecified {
+			continue
+		}
+		allSpans, err := tsp.tailStorage.Take(id)
+		if err != nil {
+			tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
+			continue
+		}
+		if allSpans.ResourceSpans().Len() == 0 {
+			continue
+		}
+		held[id] = allSpans
+		td := &samplingpolicy.TraceData{
+			SpanCount:       trace.SpanCount,
+			SizeBytes:       trace.SizeBytes,
+			ReceivedBatches: allSpans,
+		}
+		// Drop policies take precedence and are evaluated before all others
+		// in makeDecision, so a dropped trace must not spend batch budget
+		// (e.g. rate-limiting tokens). Exclude such traces from the batch;
+		// they stay in held so the per-trace loop still drops them.
+		if tsp.droppedByPolicy(ctx, id, td) {
+			continue
+		}
+		items = append(items, td)
+	}
+
+	for _, be := range batchPolicies {
+		be.EvaluateBatch(ctx, items)
+	}
+	return held
+}
+
+// droppedByPolicy reports whether any drop policy would drop this trace.
+// It mirrors the precedence in makeDecision, where drop policies run first
+// and a Dropped decision wins, so batch policies should not consider a
+// trace a drop policy will remove.
+func (tsp *tailSamplingSpanProcessor) droppedByPolicy(ctx context.Context, id pcommon.TraceID, td *samplingpolicy.TraceData) bool {
+	for _, p := range tsp.policies {
+		if !p.isDrop {
+			continue
+		}
+		if decision, err := p.evaluator.Evaluate(ctx, id, td); err == nil && decision == samplingpolicy.Dropped {
+			return true
+		}
+	}
+	return false
+}
+
 // samplingPolicyOnTick takes the next batch and process all traces in that batch. Returns if there are more batches in the batcher.
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	tsp.logger.Debug("Sampling Policy Evaluation ticked")
@@ -695,6 +765,14 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	if batchLen > 0 {
 		ctx, span = tsp.tracer.Start(ctx, "tailsampling.samplingPolicyOnTick")
 		defer span.End()
+	}
+
+	// Batch-aware policies decide across the whole group at once. Run them
+	// first; heldSpans holds the spans taken from storage so the per-trace
+	// loop below reuses them rather than taking a second time.
+	var heldSpans map[pcommon.TraceID]ptrace.Traces
+	if tsp.useTracestate && tsp.cfg.SamplingStrategy != samplingStrategySpanIngest {
+		heldSpans = tsp.evaluateBatchPolicies(ctx, batch)
 	}
 
 	for id := range batch {
@@ -729,10 +807,19 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 			continue
 		}
 
-		allSpans, err := tsp.tailStorage.Take(id)
-		if err != nil {
-			tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
-			continue
+		allSpans, ok := heldSpans[id]
+		if ok {
+			// Release the held reference as we consume it so span data is
+			// reclaimable during the loop rather than pinned until the tick
+			// completes.
+			delete(heldSpans, id)
+		} else {
+			var err error
+			allSpans, err = tsp.tailStorage.Take(id)
+			if err != nil {
+				tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
+				continue
+			}
 		}
 		if allSpans.ResourceSpans().Len() == 0 {
 			metrics.idNotFoundOnMapCount++
