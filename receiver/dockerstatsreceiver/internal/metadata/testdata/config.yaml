@@ -52,6 +52,7 @@ all_set:
       enabled: true
     container.health.status:
       enabled: true
+      attributes: ["container.health.status"]
     container.memory.active_anon:
       enabled: true
     container.memory.active_file:
@@ -230,6 +231,7 @@ reaggregate_set:
       enabled: true
     container.health.status:
       enabled: true
+      attributes: []
     container.memory.active_anon:
       enabled: true
     container.memory.active_file:
@@ -408,6 +410,7 @@ none_set:
       enabled: false
     container.health.status:
       enabled: false
+      attributes: ["container.health.status"]
     container.memory.active_anon:
       enabled: false
     container.memory.active_file:

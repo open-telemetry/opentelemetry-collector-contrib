@@ -173,13 +173,23 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 		errs = multierr.Append(errs, err)
 	}
 	r.mb.RecordContainerRestartsDataPoint(now, int64(container.RestartCount))
-	if container.State.Health != nil {
-		healthMap := map[string]int64{
-			"starting":  0,
-			"healthy":   1,
-			"unhealthy": 2,
+
+	// Record container health status metrics
+	if container.State != nil && container.State.Health != nil {
+		switch container.State.Health.Status {
+		case "starting":
+			r.mb.RecordContainerHealthStatusDataPoint(now, 1, metadata.AttributeContainerHealthStatusStarting)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStatusHealthy)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStatusUnhealthy)
+		case "healthy":
+			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStatusStarting)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 1, metadata.AttributeContainerHealthStatusHealthy)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStatusUnhealthy)
+		case "unhealthy":
+			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStatusStarting)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStatusHealthy)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 1, metadata.AttributeContainerHealthStatusUnhealthy)
 		}
-		r.mb.RecordContainerHealthStatusDataPoint(now, healthMap[string(container.State.Health.Status)])
 	}
 
 	// Always-present resource attrs + the user-configured resource attrs

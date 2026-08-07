@@ -677,10 +677,20 @@ func (ms *ContainerCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
+// ContainerHealthStatusMetricAttributeKey specifies the key of an attribute for the container.health.status metric.
+type ContainerHealthStatusMetricAttributeKey string
+
+const (
+	ContainerHealthStatusMetricAttributeKeyContainerHealthStatus ContainerHealthStatusMetricAttributeKey = "container.health.status"
+)
+
 // ContainerHealthStatusMetricConfig provides config for the container.health.status metric.
 type ContainerHealthStatusMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerHealthStatusMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *ContainerHealthStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -694,6 +704,24 @@ func (ms *ContainerHealthStatusMetricConfig) Unmarshal(parser *confmap.Conf) err
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ContainerHealthStatusMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ContainerHealthStatusMetricAttributeKeyContainerHealthStatus:
+		default:
+			return fmt.Errorf("metric container.health.status doesn't have an attribute %v, valid attributes: [container.health.status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -2098,7 +2126,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ContainerHealthStatus: ContainerHealthStatusMetricConfig{
-			Enabled: true,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ContainerHealthStatusMetricAttributeKey{ContainerHealthStatusMetricAttributeKeyContainerHealthStatus},
 		},
 		ContainerMemoryActiveAnon: ContainerMemoryActiveAnonMetricConfig{
 			Enabled: false,

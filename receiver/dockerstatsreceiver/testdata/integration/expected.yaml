@@ -3,10 +3,10 @@ resourceMetrics:
       attributes:
         - key: container.hostname
           value:
-            stringValue: 945d6961c1fd
+            stringValue: 2927e7cf3d9f
         - key: container.id
           value:
-            stringValue: 945d6961c1fd6a4055b7683138c94306c966171737da7dbd570e44f2d09a53e0
+            stringValue: 2927e7cf3d9fdabd0d0397a456800809b8c030ecec88ec43a013059cec7ea719
         - key: container.image.name
           value:
             stringValue: docker.io/library/nginx:1.17
@@ -24,7 +24,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "6336000"
+                - asInt: "7013000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -34,7 +34,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "25345000"
+                - asInt: "27052000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -44,7 +44,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "19008000"
+                - asInt: "20038000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -52,18 +52,38 @@ resourceMetrics:
           - description: Percent of CPU used by the container.
             gauge:
               dataPoints:
-                - asDouble: 7.090644000852164e-05
+                - asDouble: 2.4408115382571404e-05
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.cpu.utilization
             unit: "1"
-          - description: The health status of the container.
-            gauge:
+          - description: Describes the number of containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
+            name: container.health.status
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
+                  attributes:
+                    - key: container.health.status
+                      value:
+                        stringValue: healthy
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: container.health.status
+                - asInt: "1"
+                  attributes:
+                    - key: container.health.status
+                      value:
+                        stringValue: starting
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: container.health.status
+                      value:
+                        stringValue: unhealthy
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{container}'
           - description: Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2).
             name: container.memory.file
             sum:
@@ -76,7 +96,7 @@ resourceMetrics:
           - description: Percentage of memory used. Not supported on Windows.
             gauge:
               dataPoints:
-                - asDouble: 0.004607556098422618
+                - asDouble: 0.0041101031391238925
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.memory.percent
@@ -95,7 +115,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2314240"
+                - asInt: "2064384"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -104,7 +124,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "752"
+                - asInt: "776"
                   attributes:
                     - key: interface
                       value:

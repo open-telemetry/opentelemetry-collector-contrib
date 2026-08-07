@@ -105,7 +105,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					ContainerHealthStatus: ContainerHealthStatusMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerHealthStatusMetricAttributeKey{ContainerHealthStatusMetricAttributeKeyContainerHealthStatus},
 					},
 					ContainerMemoryActiveAnon: ContainerMemoryActiveAnonMetricConfig{
 						Enabled: true,
@@ -371,7 +373,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					ContainerHealthStatus: ContainerHealthStatusMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerHealthStatusMetricAttributeKey{ContainerHealthStatusMetricAttributeKeyContainerHealthStatus},
 					},
 					ContainerMemoryActiveAnon: ContainerMemoryActiveAnonMetricConfig{
 						Enabled: false,
@@ -667,6 +671,18 @@ func TestContainerCPUUsagePercpuMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric container.cpu.usage.percpu doesn't have an attribute invalid, valid attributes: [core]")
 
 	cfg = DefaultMetricsConfig().ContainerCPUUsagePercpu
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerHealthStatusMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerHealthStatus
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerHealthStatusMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.health.status doesn't have an attribute invalid, valid attributes: [container.health.status]")
+
+	cfg = DefaultMetricsConfig().ContainerHealthStatus
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }

@@ -93,6 +93,7 @@ func TestLoadConfig(t *testing.T) {
 					m := metadata.NewDefaultMetricsBuilderConfig()
 					m.Metrics.ContainerCPUUsageSystem.Enabled = false
 					m.Metrics.ContainerMemoryTotalRss.Enabled = true
+					m.Metrics.ContainerHealthStatus.Enabled = true
 					return m
 				}(),
 			},

@@ -50,6 +50,7 @@ func TestIntegration(t *testing.T) {
 				rCfg := cfg.(*Config)
 				rCfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
 				rCfg.MetricsBuilderConfig.ResourceAttributes.ContainerName.MetricsInclude = []filter.Config{{Strict: "dockerstatsreceiver-test"}}
+				rCfg.MetricsBuilderConfig.Metrics.ContainerHealthStatus.Enabled = true
 			},
 		),
 		scraperinttest.WithCompareOptions(
