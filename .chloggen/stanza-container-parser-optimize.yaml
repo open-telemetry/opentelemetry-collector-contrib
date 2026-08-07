@@ -7,8 +7,8 @@ note: Optimize container parser operator by replacing CRI line regexes with a ha
 issues: [41672]
 
 subtext: |
-  The `containerdPattern` and `crioPattern` regexes are replaced by a zero-allocation string scanner (`splitCRI`) that is byte-for-byte equivalent.
-  The `logpathPattern` regex on `extractk8sMetaFromFilePath` is replaced by a custom string parser (`splitLogPath`) backed by a configurable LRU cache (new `filepath_cache_size` config option, default 1000).
+  The `containerdPattern` and `crioPattern` regexes are replaced by a string scanner (`splitCRI`) that is byte-for-byte equivalent.
+  The `logpathPattern` regex on `extractk8sMetaFromFilePath` is replaced by a custom string parser (`splitLogPath`) backed by a configurable LRU cache with size - 1024.
   End-to-end pprof profiles confirm regexp functions are fully absent from the hot path after this change.
 
 change_logs: [user]
