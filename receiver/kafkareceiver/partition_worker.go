@@ -107,7 +107,7 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 		select {
 		case <-pc.ctx.Done():
 			return
-		case <-pc.mailbox.notifications():
+		case <-pc.mailbox.notify:
 		}
 
 		for {
@@ -122,7 +122,7 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 				}
 			})
 			if !ok {
-				if pc.mailbox.claimRewind() {
+				if pc.mailbox.hasPendingRewind() {
 					if !c.sendControl(partitionControl{
 						tp:     tp,
 						pc:     pc,
@@ -145,7 +145,7 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 					pc.addPauseReason(partitionPauseRewind)
 					c.client.PauseFetchPartitions(partition)
 				})
-				if !pc.mailbox.claimRewind() {
+				if !pc.mailbox.hasPendingRewind() {
 					break
 				}
 				if !c.sendControl(partitionControl{

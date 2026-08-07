@@ -93,10 +93,8 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 			require.Equal(t, tc.wantPauseCalls, pauseCalls)
 			require.Equal(t, tc.wantPauseReason, pauseReason)
 			var pendingOffset *int64
-			if mailbox.claimRewind() {
-				mailbox.applyRewind(func(record *kgo.Record) {
-					pendingOffset = int64Ptr(record.Offset)
-				})
+			if mailbox.hasPendingRewind() {
+				pendingOffset = int64Ptr(mailbox.takeRewind().Offset)
 			}
 			require.Equal(t, tc.wantPendingOffset, pendingOffset)
 		})
@@ -241,12 +239,8 @@ func TestPartitionMailboxRequestRewind(t *testing.T) {
 			})
 
 			require.Equal(t, 1, pauseCalls)
-			require.True(t, mailbox.claimRewind())
-			var appliedOffset int64
-			mailbox.applyRewind(func(record *kgo.Record) {
-				appliedOffset = record.Offset
-			})
-			require.Equal(t, tc.wantOffset, appliedOffset)
+			require.True(t, mailbox.hasPendingRewind())
+			require.Equal(t, tc.wantOffset, mailbox.takeRewind().Offset)
 			queueSize := 0
 			for {
 				_, ok := mailbox.dequeue(func() {})
@@ -260,25 +254,14 @@ func TestPartitionMailboxRequestRewind(t *testing.T) {
 	}
 }
 
-func TestPartitionMailboxApplyRewind(t *testing.T) {
+func TestPartitionMailboxTakeRewind(t *testing.T) {
 	mailbox := newPartitionMailbox(t.Context(), 1)
 	mailbox.requestRewind(recordAtOffset(5), false, func() {})
 
-	require.True(t, mailbox.claimRewind())
-	require.False(t, mailbox.claimRewind())
-
-	applyCalls := 0
-	mailbox.applyRewind(func(record *kgo.Record) {
-		applyCalls++
-		require.Equal(t, int64(5), record.Offset)
-	})
-
-	require.Equal(t, 1, applyCalls)
-	require.False(t, mailbox.claimRewind())
-	mailbox.applyRewind(func(*kgo.Record) {
-		applyCalls++
-	})
-	require.Equal(t, 1, applyCalls)
+	require.True(t, mailbox.hasPendingRewind())
+	require.Equal(t, int64(5), mailbox.takeRewind().Offset)
+	require.False(t, mailbox.hasPendingRewind())
+	require.Nil(t, mailbox.takeRewind())
 }
 
 func mailboxBatch(offset int64) kgo.FetchTopicPartition {

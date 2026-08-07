@@ -5,6 +5,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"slices"
 	"sync"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -23,9 +24,6 @@ type partitionMailbox struct {
 	notify chan struct{}
 	// pendingRewind is the earliest record that the poll loop must fetch again.
 	pendingRewind *kgo.Record
-	// rewindInFlight prevents more than one control request for the same pending
-	// rewind from being sent to the poll loop.
-	rewindInFlight bool
 }
 
 // newPartitionMailbox creates a mailbox with capacity waiting batch slots.
@@ -37,22 +35,17 @@ func newPartitionMailbox(ctx context.Context, capacity int) *partitionMailbox {
 	}
 }
 
-// notifications returns the channel used to wake the partition worker.
-func (m *partitionMailbox) notifications() <-chan struct{} {
-	return m.notify
-}
-
 // enqueue adds a batch when the mailbox can accept it.
 func (m *partitionMailbox) enqueue(batch kgo.FetchTopicPartition, pause func(partitionPauseReason)) bool {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	select {
 	case <-m.ctx.Done():
 		// The next partition owner will fetch again from the committed offset.
 		return false
 	default:
 	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	// PollRecords may return work while a rewind is pending or after the mailbox
 	// reaches capacity. Remember the earliest rejected record so it is fetched again.
@@ -82,13 +75,11 @@ func (m *partitionMailbox) dequeue(resume func()) (kgo.FetchTopicPartition, bool
 	}
 
 	batch := m.batches[0]
-	copy(m.batches, m.batches[1:])
-	m.batches[len(m.batches)-1] = kgo.FetchTopicPartition{}
-	m.batches = m.batches[:len(m.batches)-1]
+	m.batches = slices.Delete(m.batches, 0, 1)
 	// A pending rewind must move the fetch position before fetching resumes.
 	// Calling resume under the lock also prevents it from overtaking an older
 	// pause operation.
-	if len(m.batches) < cap(m.batches) && m.pendingRewind == nil {
+	if m.pendingRewind == nil {
 		resume()
 	}
 	return batch, true
@@ -118,33 +109,21 @@ func (m *partitionMailbox) requestRewindLocked(record *kgo.Record, clearQueue bo
 	m.notifyLocked()
 }
 
-// claimRewind marks the pending rewind as handed to the poll loop.
-func (m *partitionMailbox) claimRewind() bool {
+// hasPendingRewind reports whether the fetch position must be rewound.
+func (m *partitionMailbox) hasPendingRewind() bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-
-	// A notification does not reserve the rewind, so repeated worker wakeups
-	// may reach this state. Only the first claim may send a control request.
-	if m.pendingRewind == nil || m.rewindInFlight {
-		return false
-	}
-	m.rewindInFlight = true
-	return true
+	return m.pendingRewind != nil
 }
 
-// applyRewind applies the pending offset change.
-func (m *partitionMailbox) applyRewind(apply func(*kgo.Record)) {
+// takeRewind returns and clears the pending rewind record.
+func (m *partitionMailbox) takeRewind() *kgo.Record {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Treat an obsolete control as complete without changing the generation.
-	if m.pendingRewind == nil {
-		m.rewindInFlight = false
-		return
-	}
-	apply(m.pendingRewind)
+	record := m.pendingRewind
 	m.pendingRewind = nil
-	m.rewindInFlight = false
+	return record
 }
 
 // notifyLocked wakes the worker without blocking while the caller holds m.mu.

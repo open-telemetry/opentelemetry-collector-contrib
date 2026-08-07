@@ -431,14 +431,14 @@ func (c *franzConsumer) processControl(control partitionControl) {
 		return
 	}
 
-	control.pc.mailbox.applyRewind(func(record *kgo.Record) {
+	if record := control.pc.mailbox.takeRewind(); record != nil {
 		c.client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
 			control.tp.topic: {control.tp.partition: {
 				Epoch:  record.LeaderEpoch,
 				Offset: record.Offset,
 			}},
 		})
-	})
+	}
 }
 
 // dispatchPartitionBatches routes each fetched topic-partition to its ordered
