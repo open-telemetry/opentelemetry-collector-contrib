@@ -208,6 +208,19 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "resource_constant_labels"),
+			expected: func() component.Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ClientConfig = confighttp.ClientConfig{}
+				cfg.HTTP.Endpoint = "localhost:8888"
+				cfg.ResourceConstantLabels = resourcetotelemetry.Settings{
+					Included: []string{"service*"},
+					Excluded: []string{"service.attr1"},
+				}
+				return cfg
+			}(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -353,6 +366,26 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestResourceConstantLabelsValidation(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ResourceConstantLabels = resourcetotelemetry.Settings{
+		Included: []string{"service*"},
+	}
+	assert.NoError(t, cfg.Validate())
+
+	invalidCfg := createDefaultConfig().(*Config)
+	invalidCfg.ResourceConstantLabels.Enabled = true //nolint:staticcheck // testing deprecated field rejection
+	assert.Error(t, invalidCfg.Validate())
+
+	cfg.ResourceToTelemetrySettings.Enabled = true //nolint:staticcheck // ignore deprecated field
+	assert.Error(t, cfg.Validate())
+
+	oldState := metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate.IsEnabled()
+	testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate, true)
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate, oldState)
+	assert.NoError(t, cfg.Validate())
 }
 
 func toPtr[T any](val T) *T {

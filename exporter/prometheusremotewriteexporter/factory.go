@@ -79,7 +79,15 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 	if err != nil {
 		return nil, err
 	}
-	return resourcetotelemetry.WrapMetricsExporter(prwCfg.ResourceToTelemetrySettings, exporter), nil
+	settings := prwCfg.ResourceConstantLabels
+	if settings.IsEmpty() && !metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate.IsEnabled() {
+		settings = prwCfg.ResourceToTelemetrySettings
+	}
+	if metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate.IsEnabled() {
+		settings.Enabled = false                  //nolint:staticcheck // ignore deprecated field
+		settings.ExcludeServiceAttributes = false //nolint:staticcheck // ignore deprecated field
+	}
+	return resourcetotelemetry.WrapMetricsExporter(settings, exporter), nil
 }
 
 func createDefaultConfig() component.Config {
