@@ -1,6 +1,8 @@
 default:
 all_set:
   resource_attributes:
+    azure.resource_group.name:
+      enabled: true
     azure.resourcegroup.name:
       enabled: true
     azure.vm.name:
@@ -25,6 +27,8 @@ all_set:
       enabled: true
 none_set:
   resource_attributes:
+    azure.resource_group.name:
+      enabled: false
     azure.resourcegroup.name:
       enabled: false
     azure.vm.name:

@@ -9,8 +9,12 @@ status:
     active: [Aneurysm9, dashpole, paulojmdias]
 
 resource_attributes:
+  azure.resource_group.name:
+    description: The azure.resource_group.name. Only emitted when the processor.resourcedetection.azure.RenameResourceGroupAttribute feature gate is enabled.
+    enabled: true
+    type: string
   azure.resourcegroup.name:
-    description: The azure.resourcegroup.name
+    description: The azure.resourcegroup.name. Deprecated, use azure.resource_group.name instead by enabling the processor.resourcedetection.azure.RenameResourceGroupAttribute feature gate.
     enabled: true
     type: string
   azure.vm.name:
@@ -53,6 +57,16 @@ resource_attributes:
     description: The hostname
     type: string
     enabled: true
+
+feature_gates:
+  - id: processor.resourcedetection.azure.RenameResourceGroupAttribute
+    stage: alpha
+    description: >-
+      When enabled, the azure detector emits the azure.resource_group.name resource attribute
+      instead of azure.resourcegroup.name, aligning with semantic convention naming.
+    from_version: v0.158.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49079
+    skip_strict_validation: true
 
 tests:
   skip_lifecycle: true
