@@ -66,7 +66,7 @@ To avoid the data loss, choose move/create rotation method and set `max_concurre
 
 ### Supported encodings
 
-| Key        | Description
+| Key        | Description |
 | ---        | ---                                                              |
 | `nop`      | No encoding validation. Treats the file as a stream of raw bytes |
 | `utf-8`    | UTF-8 encoding                                                   |

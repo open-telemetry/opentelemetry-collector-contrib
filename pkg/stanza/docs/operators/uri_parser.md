@@ -39,9 +39,7 @@ The following fields are returned. Empty fields are not returned.
 | path   | `string`              | `"/v1/app"`                  | URI request [path](https://tools.ietf.org/html/rfc3986#section-3.3). |
 | query  | `map[string][]string` | `"query":{"user":["admin"]}` | Parsed URI [query string](https://tools.ietf.org/html/rfc3986#section-3.4). |
 
-
 ### Example Configurations
-
 
 #### Parse the field `body.message` as absolute URI
 

@@ -126,7 +126,6 @@ scrapers:
 
 ## Branch Data Limitations
 
-
 Due to the limitations of the GitHub GraphQL and REST APIs, some data retrieved
 may not be as expected. Notably there are spots in the code which link to this
 section that make decisions based on these limitations.

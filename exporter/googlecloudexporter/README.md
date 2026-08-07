@@ -72,7 +72,6 @@ docker run \
 
 Using [`gcloud auth application-default login`](https://cloud.google.com/docs/authentication/application-default-credentials) to authenticate is not recommended for production use. Instead, it’s best to use a GCP service account through one of the methods listed above. The `gcloud auth` command can be useful for development and testing on a user account, and authenticating with it follows the same approach as the service account key method above.
 
-
 These instructions are to get you up and running quickly with the GCP exporter in a local development environment. We'll also point out alternatives that may be more suitable for CI or production.
 
 1.  **Obtain a Collector binary.** Pull a binary or Docker image for the
@@ -137,7 +136,6 @@ These instructions are to get you up and running quickly with the GCP exporter i
 
     4.  Obtain credentials using one of the methods in the [Authenticating
         section](#prerequisite-authenticating) above.
-
 
 4.  **Run the collector.** The following runs the collector in the foreground, so please execute it in a separate terminal.
 

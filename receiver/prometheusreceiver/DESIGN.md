@@ -29,7 +29,6 @@ service. We shall be able to retain parity from the following two setups:
 1. app -> prometheus -> metric-endpoint
 2. app -> otelcol-with-prometheus-receiver -> otelcol-prometheus-exporter-metrics-endpoint
 
-
 ## Prometheus Text Format Overview
 
 Prometheus text format is a line orient format. Each non-empty line, which
@@ -152,7 +151,7 @@ type Appender interface {
 }
 
 type ExemplarAppender interface {
-	AppendExemplar(ref uint64, l labels.Labels, e exemplar.Exemplar) (uint64, error)
+ AppendExemplar(ref uint64, l labels.Labels, e exemplar.Exemplar) (uint64, error)
 }
 ```
 
@@ -354,7 +353,6 @@ metrics := []*metricspb.Metric{
 ```
 
 *Note: `startTimestamp` is the timestamp cached from the first scrape, `currentTimestamp` is the timestamp of the current scrape*
-
 
 ### Gauge
 Gauge, as described in the [Prometheus Metric Types Document](https://prometheus.io/docs/concepts/metric_types/#gauge),
@@ -608,8 +606,8 @@ metrics := []*metricspb.Metric{
         Points: []*metricspb.Point{
           {Timestamp: startTimestamp, Value: &metricspb.Point_SummaryValue{
             SummaryValue: &metricspb.SummaryValue{
-			  Sum:   &wrappers.DoubleValue{Value: 17.391350544},
-			  Count: &wrappers.Int64Value{Value: 52489},
+     Sum:   &wrappers.DoubleValue{Value: 17.391350544},
+     Count: &wrappers.Int64Value{Value: 52489},
               Snapshot: &metricspb.SummaryValue_Snapshot{
                 PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
                   {Percentile: 0.0,   Value: 0.0001271},
@@ -655,8 +653,8 @@ metrics := []*metricspb.Metric{
         Points: []*metricspb.Point{
           {Timestamp: currentTimestamp, Value: &metricspb.Point_SummaryValue{
             SummaryValue: &metricspb.SummaryValue{
-			  Sum:   &wrappers.DoubleValue{Value: 17.491350544},
-			  Count: &wrappers.Int64Value{Value: 52490},
+     Sum:   &wrappers.DoubleValue{Value: 17.491350544},
+     Count: &wrappers.Int64Value{Value: 52490},
               Snapshot: &metricspb.SummaryValue_Snapshot{
                 PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
                   {Percentile: 0.0,   Value: 0.0001271},

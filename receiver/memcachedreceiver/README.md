@@ -69,4 +69,3 @@ with detailed sample configurations in [testdata/config.yaml](./testdata/config.
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
-

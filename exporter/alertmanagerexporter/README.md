@@ -22,7 +22,6 @@ The following settings are required:
 - `endpoint`: Alertmanager endpoint to send events
 - `severity`: Default severity for Alerts
 
-
 The following settings are optional:
 
 - `timeout` `sending_queue` and `retry_on_failure` settings as provided by [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration).

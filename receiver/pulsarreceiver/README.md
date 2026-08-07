@@ -55,7 +55,6 @@ The following settings can be optionally configured:
   only be used if `insecure` is set to true.
 - `tls_allow_insecure_connection`: configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
 
-
 Example configuration:
 ```yaml
 receivers:
@@ -72,4 +71,3 @@ receivers:
     tls_allow_insecure_connection: false
     tls_trust_certs_file_path: ca.pem
 ```
-

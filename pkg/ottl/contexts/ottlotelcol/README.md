@@ -18,7 +18,6 @@ The following paths are supported.
 | otelcol.grpc.metadata              | incoming gRPC metadata from the context                                                                                   | pcommon.Map                                                             |
 | otelcol.grpc.metadata[""]          | values slice for a specific incoming gRPC metadata key                                                                    | string or nil                                                           |
 
-
 > [!NOTE]
 This context is read-only; any attempt to set these paths returns an error.
 
@@ -89,7 +88,6 @@ HTTP header names are often normalized to lowercase; consider that when allowlis
 | Use `otelcol` paths in conditions for routing/filtering | Copy `authorization`, `cookie`, or API key headers into attributes/body/resource |
 | Allowlist and validate keys when copying to telemetry   | Copy `otelcol.client.auth.attributes` or full metadata maps into exported data   |
 | Document and review OTTL that uses `otelcol` context    | Assume all client/metadata values are safe to store in telemetry                 |
-
 
 ## Feature gate
 

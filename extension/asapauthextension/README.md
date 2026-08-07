@@ -47,4 +47,3 @@ exporters:
     auth:
       authenticator: asapclient    
 ```
-

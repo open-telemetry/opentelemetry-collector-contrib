@@ -33,7 +33,6 @@ The configuration fields are as follows:
 * `service`: **Optional**. The AWS service for AWS Sigv4
     * Note for supported services an attempt will be made to obtain a valid service from the endpoint of the service you are exporting to. Supported services include - workspaces, es, logs and traces.
 
-
 ## Assume Role
 
 ### Example Configuration:
@@ -68,7 +67,6 @@ service:
 ## Notes
 
 * The collector must have valid AWS credentials as used by the [AWS SDK for Go](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-gosdk.html#specifying-credentials)
-
 
 ## Assume Role with Web Identity
 

@@ -85,7 +85,6 @@ By default, the receiver understands the following encodings:
 
 The `encodings` options allows you to specify Encoding Extensions to use to decode keys with matching suffixes.
 
-
 ### Example Configuration
 
 ```yaml

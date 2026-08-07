@@ -21,7 +21,6 @@ This package implements everything necessary to use OTTL in a Collector componen
 - [Troubleshooting](#troubleshooting)
 - [Resources](#resources)
 
-
 ## Getting Started
 
 An OTTL statement is made up of 2 parts:

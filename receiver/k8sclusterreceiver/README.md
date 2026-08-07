@@ -128,7 +128,6 @@ k8s_cluster:
 ...
 ```
 
-
 ### metadata_exporters
 
 A list of metadata exporters to which metadata being collected by this receiver
@@ -488,4 +487,3 @@ Add the following rules to your ClusterRole:
   - list
   - watch
 ```
-

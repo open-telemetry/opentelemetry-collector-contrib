@@ -20,9 +20,7 @@ The `json_parser` operator parses the string-type field selected by `parse_from`
 
 The `json_parser` can be configured to embed certain operations such as timestamp and severity parsing. For more information, see [complex parsers](../types/parsers.md#complex-parsers).
 
-
 ### Example Configurations
-
 
 #### Parse the field `message` as JSON
 

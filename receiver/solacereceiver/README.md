@@ -101,4 +101,3 @@ service:
     traces/solace:
       receivers: [solace/primary,solace/backup]
 ```
-

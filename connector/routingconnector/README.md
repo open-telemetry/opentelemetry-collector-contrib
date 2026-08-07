@@ -105,7 +105,6 @@ The full list of settings exposed for this connector are documented in [config.g
 
 ### Route logs based on tenant
 
-
 ```yaml
 receivers:
     otlp:
