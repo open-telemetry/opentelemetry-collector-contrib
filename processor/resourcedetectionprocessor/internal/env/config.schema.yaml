@@ -1,0 +1,8 @@
+description: Config holds user-specified configuration for the env detector.
+type: object
+properties:
+  allow_list:
+    description: Allowlist restricts which attribute keys from the environment variable are emitted. If unset, all keys are emitted; otherwise only the listed keys.
+    type: array
+    items:
+      type: string

@@ -1,0 +1,5 @@
+type: resourcedetectionprocessor/env
+
+parent: resourcedetection
+
+resource_attributes:

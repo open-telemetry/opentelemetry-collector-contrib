@@ -51,6 +51,36 @@ func TestDetectDeprecatedEnv(t *testing.T) {
 	assert.Equal(t, map[string]any{"key": "value"}, res.Attributes().AsRaw())
 }
 
+func TestDetectAllowlist(t *testing.T) {
+	t.Setenv(envVar, "keep=1,drop=2,also_keep=3")
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), Config{Allowlist: []string{"keep", "also_keep"}}, false)
+	require.NoError(t, err)
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"keep": "1", "also_keep": "3"}, res.Attributes().AsRaw())
+}
+
+func TestDetectAllowlistUnsetAllowsAll(t *testing.T) {
+	t.Setenv(envVar, "a=1,b=2")
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"a": "1", "b": "2"}, res.Attributes().AsRaw())
+}
+
+func TestDetectAllowlistExplicitEmptyFiltersAll(t *testing.T) {
+	t.Setenv(envVar, "a=1,b=2")
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), Config{Allowlist: []string{}}, false)
+	require.NoError(t, err)
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Empty(t, res.Attributes().AsRaw())
+}
+
 func TestDetectError(t *testing.T) {
 	t.Setenv(envVar, "key=value,key")
 

@@ -41,6 +41,20 @@ processors:
     override: false
 ```
 
+Use `allow_list` to restrict which keys from `OTEL_RESOURCE_ATTRIBUTES` are
+emitted. If unset, all keys are emitted; otherwise only the listed keys.
+
+For example, inject `deployment.environment.name` and `k8s.cluster.name` via
+`OTEL_RESOURCE_ATTRIBUTES` and allow-list only these, so other env vars on
+the collector itself (e.g. its own pod name) don't leak into the telemetry.
+
+```yaml
+processors:
+  resource_detection/env:
+    detectors: [env]
+    env:
+      allow_list: [deployment.environment.name, k8s.cluster.name]
+```
 
 > [!NOTE]
 > The deprecated coponent type `resourcedetection` (without the underscore) can still be used as an alias and will log a deprecation warning.

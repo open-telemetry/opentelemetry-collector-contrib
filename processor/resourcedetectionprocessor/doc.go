@@ -13,6 +13,7 @@
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/consul/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/digitalocean/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/docker/metadata.yaml
+//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/env/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/gcp/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/heroku/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/hetzner/metadata.yaml
