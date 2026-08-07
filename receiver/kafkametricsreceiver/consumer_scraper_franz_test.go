@@ -44,7 +44,7 @@ func TestConsumerScraperFranz_CreateStartScrapeShutdown(t *testing.T) {
 	var s scraper.Metrics
 	var err error
 
-	s, err = createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err = createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -64,7 +64,7 @@ func TestConsumerScraperFranz_InvalidTopicRegex(t *testing.T) {
 	cfg := franzConsumerTestConfig(t)
 	cfg.TopicMatch = "[" // invalid regex
 
-	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.Error(t, err)
 	require.Nil(t, s)
 }
@@ -73,7 +73,7 @@ func TestConsumerScraperFranz_InvalidGroupRegex(t *testing.T) {
 	cfg := franzConsumerTestConfig(t)
 	cfg.GroupMatch = "[" // invalid regex
 
-	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.Error(t, err)
 	require.Nil(t, s)
 }
@@ -81,7 +81,7 @@ func TestConsumerScraperFranz_InvalidGroupRegex(t *testing.T) {
 func TestConsumerScraperFranz_ShutdownWithoutStart_OK(t *testing.T) {
 	cfg := franzConsumerTestConfig(t)
 
-	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -93,7 +93,7 @@ func TestConsumerScraperFranz_EmptyClusterAlias(t *testing.T) {
 	cfg := franzConsumerTestConfig(t)
 	cfg.ClusterAlias = ""
 
-	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -145,7 +145,7 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
 	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterID.Enabled = true
 
-	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
@@ -254,7 +254,7 @@ func TestConsumerScraperFranz_EmptyClusterID(t *testing.T) {
 	}
 	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterID.Enabled = true
 
-	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
@@ -305,7 +305,7 @@ func TestConsumerScraperFranz_ScrapeNoEmittedDataPointsForUncommitted(t *testing
 	}
 	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
 
-	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
@@ -368,7 +368,7 @@ func TestConsumerScraperFranz_ScrapeUnreachable(t *testing.T) {
 		GroupMatch:           ".*",
 	}
 
-	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
