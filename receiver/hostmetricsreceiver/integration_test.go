@@ -44,7 +44,8 @@ func Test_ProcessScrape(t *testing.T) {
 				rCfg.Scrapers = map[component.Type]component.Config{
 					f.Type(): pCfg,
 				}
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreResourceAttributeValue("process.owner"),
@@ -75,7 +76,8 @@ func Test_ProcessScrapeWithCustomRootPath(t *testing.T) {
 				rCfg.Scrapers = map[component.Type]component.Config{
 					f.Type(): pCfg,
 				}
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreResourceMetricsOrder(),
@@ -105,7 +107,8 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 				rCfg.Scrapers = map[component.Type]component.Config{
 					f.Type(): pCfg,
 				}
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreResourceMetricsOrder(),

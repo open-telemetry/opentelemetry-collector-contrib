@@ -111,7 +111,8 @@ func Test_RemoveXML(t *testing.T) {
 						},
 					},
 					XPath: tt.xPath,
-				})
+				},
+			)
 			require.NoError(t, err)
 
 			result, err := exprFunc(t.Context(), nil)
@@ -134,7 +135,8 @@ func TestCreateRemoveXMLFunc(t *testing.T) {
 	exprFunc, err = factory.CreateFunction(
 		fCtx, &RemoveXMLArguments[any]{
 			XPath: "!",
-		})
+		},
+	)
 	assert.Error(t, err)
 	assert.Nil(t, exprFunc)
 
@@ -143,7 +145,8 @@ func TestCreateRemoveXMLFunc(t *testing.T) {
 		fCtx, &RemoveXMLArguments[any]{
 			Target: invalidXMLGetter(),
 			XPath:  "/",
-		})
+		},
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 	_, err = exprFunc(t.Context(), nil)

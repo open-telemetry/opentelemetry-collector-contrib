@@ -590,7 +590,8 @@ include:
 						"operators":         []any{map[string]any{"id": "container-parser", "type": "container"}},
 					},
 				},
-				logger)
+				logger,
+			)
 			env, err := test.inputEndpoint.Env()
 			require.NoError(t, err)
 			subreceiverTemplate, err := builder.createReceiverTemplateFromHints(env)
@@ -687,7 +688,8 @@ nested_example:
 				assert.Equal(
 					t,
 					test.expectedConf,
-					conf)
+					conf,
+				)
 			}
 		})
 	}
@@ -758,7 +760,8 @@ operators:
 					userConfigMap{
 						"include_file_path": true,
 					},
-					zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))),
+					zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)),
+				),
 			)
 		})
 	}

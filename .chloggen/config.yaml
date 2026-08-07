@@ -37,8 +37,8 @@ components:
     - exporter/awss3
     - exporter/awsxray
     - exporter/azure_blob
+    - exporter/azure_monitor
     - exporter/azuredataexplorer
-    - exporter/azuremonitor
     - exporter/bmc_helix
     - exporter/cassandra
     - exporter/clickhouse
@@ -108,7 +108,6 @@ components:
     - extension/json_log_encoding
     - extension/k8s_leader_elector
     - extension/k8s_observer
-    - extension/kafkatopics_observer
     - extension/mcp
     - extension/oauth2client
     - extension/observer

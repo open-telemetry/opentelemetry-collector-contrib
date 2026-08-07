@@ -107,5 +107,6 @@ func createTracesProcessor(
 		nextConsumer,
 		p.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(p.shutdown))
+		processorhelper.WithShutdown(p.shutdown),
+	)
 }
