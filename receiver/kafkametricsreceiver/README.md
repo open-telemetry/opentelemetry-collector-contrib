@@ -85,7 +85,9 @@ Optional Settings (with defaults):
     the topics the client scrapes.
   - `retry`
     - `max` (default = 20): The number of times to retry a retriable request.
-      Applies to metadata, fetch, offset commit, group and admin requests.
+      Applies to the admin and offset fetch requests issued by the scrapers. It
+      does not apply to the client's internal metadata refresh, which caps
+      itself at 3 retries.
     - `backoff` (default = 250ms): The minimum time to wait before retrying a
       request. Each successive retry doubles the wait, with jitter applied,
       capped at `max(5s, backoff)`.

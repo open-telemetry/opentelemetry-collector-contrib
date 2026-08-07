@@ -124,10 +124,13 @@ The following settings can be optionally configured:
   - `refresh_interval` (default = 10m): The refreshInterval controls the frequency at which cluster metadata is refreshed in the background.
   - `retry`
     - `max` (default = 20): The number of times to retry a retriable request.
-      Applies to metadata, fetch, offset commit, group and admin requests.
+      Applies to consumer group and offset commit/fetch requests. It does not
+      apply to fetch requests, nor to the client's internal metadata refresh,
+      which caps itself at 3 retries.
     - `backoff` (default = 250ms): The minimum time to wait before retrying a
       request. Each successive retry doubles the wait, with jitter applied,
-      capped at `max(5s, backoff)`.
+      capped at `max(5s, backoff)`. Unlike `max`, this applies to every retry
+      path, including fetches.
 - `autocommit`
   - `enable`: (default = true) Whether or not to auto-commit updated offsets back to the broker
   - `interval`: (default = 1s) How frequently to commit updated offsets. Ineffective unless auto-commit is enabled

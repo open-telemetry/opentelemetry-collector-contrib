@@ -91,12 +91,10 @@ The following settings can be optionally configured:
 - `metadata`
   - `refresh_interval` (default = 10m): The refreshInterval controls the frequency at which cluster metadata is refreshed in the background.
   - `retry`
-    - `max` (default = 20): The number of times to retry a retriable request.
-      Applies to metadata and admin requests. It does **not** apply to produce
-      requests, whose retries are governed by `retry_on_failure` and `timeout`.
     - `backoff` (default = 250ms): The minimum time to wait before retrying a
-      request. Each successive retry doubles the wait, with jitter applied,
-      capped at `max(5s, backoff)`.
+      produce request. Each successive retry doubles the wait, with jitter
+      applied, capped at `max(5s, backoff)`. The number of produce retries is
+      governed by `retry_on_failure` and `timeout`, not by `metadata::retry::max`.
 - `timeout` (default = 5s): Time to wait per individual attempt to produce data to Kafka.
 - `retry_on_failure`
   - `enabled` (default = true)

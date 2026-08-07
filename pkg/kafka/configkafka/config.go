@@ -447,16 +447,18 @@ type MetadataConfig struct {
 	Retry MetadataRetryConfig `mapstructure:"retry"`
 }
 
-// MetadataRetryConfig defines retry configuration for Metadata.
+// MetadataRetryConfig defines retry configuration for retriable Kafka requests.
 type MetadataRetryConfig struct {
 	// The total number of times to retry a retriable request, such as when the
 	// cluster is in the middle of a leader election or at startup (default 20).
-	// Applies to metadata, fetch, offset commit, group and admin requests, but
-	// not to produce requests.
+	// Applies to consumer group, offset commit/fetch and admin requests. It does
+	// not apply to produce or fetch requests, nor to franz-go's internal
+	// metadata refresh, which caps itself at 3 retries.
 	Max int `mapstructure:"max"`
 	// The minimum time to wait before retrying a request (default 250ms).
 	// Similar to the JVM's `retry.backoff.ms`: each successive retry doubles
-	// the wait, with jitter applied, capped at max(5s, backoff).
+	// the wait, with jitter applied, capped at max(5s, backoff). Unlike Max,
+	// this applies to every retry path, including produce and fetch.
 	Backoff time.Duration `mapstructure:"backoff"`
 }
 

@@ -7,7 +7,7 @@ change_type: bug_fix
 component: exporter/kafka
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Apply `metadata::retry::max` and `metadata::retry::backoff`, which were silently ignored since the migration to franz-go.
+note: Apply `metadata::retry::backoff`, which was silently ignored since the migration to franz-go.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50116]
@@ -16,11 +16,9 @@ issues: [50116]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  `metadata::retry::max` governs retries for retriable metadata and admin requests. It does not
-  apply to produce requests, whose retries are governed by `retry_on_failure` and `timeout`.
-
-  `metadata::retry::backoff` is the minimum wait between retries. Each successive retry doubles
-  the wait, with jitter applied, capped at `max(5s, backoff)`.
+  `metadata::retry::backoff` is the minimum wait between retries; each successive retry doubles
+  the wait, with jitter applied, capped at `max(5s, backoff)`. On the exporter this paces produce
+  retries. Produce retry counts remain governed by `retry_on_failure` and `timeout`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

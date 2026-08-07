@@ -764,6 +764,18 @@ func TestNewRetryBackoffFn(t *testing.T) {
 		}
 	})
 
+	t.Run("extreme_backoff_does_not_overflow", func(t *testing.T) {
+		// 100000h parses and passes validation, but doubling it overflows
+		// time.Duration; a negative result would remove the backoff entirely.
+		minBackoff := 100000 * time.Hour
+		fn := newRetryBackoffFn(minBackoff)
+		for fails := range 100 {
+			got := fn(fails)
+			assert.Positive(t, got)
+			assert.LessOrEqual(t, got, minBackoff)
+		}
+	})
+
 	t.Run("cap_raised_to_backoff", func(t *testing.T) {
 		// A minimum above the 5s default cap raises the cap rather than
 		// being truncated down to it.

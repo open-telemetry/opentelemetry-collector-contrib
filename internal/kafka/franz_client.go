@@ -398,8 +398,14 @@ func newRetryBackoffFn(minBackoff time.Duration) func(int) time.Duration {
 			return maxBackoff
 		}
 		backoff := minBackoff * time.Duration(1<<(fails-1))
-		jitter := 0.8 + 0.4*rand.Float64()
-		return min(time.Duration(float64(backoff)*jitter), maxBackoff)
+		jittered := time.Duration(float64(backoff) * (0.8 + 0.4*rand.Float64()))
+		// An extreme configured backoff overflows time.Duration. That can only
+		// happen far beyond the cap, so fall back to it rather than returning a
+		// negative duration, which would remove the backoff entirely.
+		if backoff <= 0 || jittered <= 0 {
+			return maxBackoff
+		}
+		return min(jittered, maxBackoff)
 	}
 }
 
