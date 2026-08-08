@@ -149,7 +149,7 @@ func TestStoreConcurrency(t *testing.T) {
 		key := NewKey(pcommon.TraceID([16]byte{byte(rand.IntN(32))}), pcommon.SpanID([8]byte{1, 2, 3}))
 
 		_, err := s.UpsertEdge(key, func(e *Edge) {
-			e.ClientService = hex.EncodeToString(key.tid[:])
+			e.ClientService = hex.EncodeToString(key.traceID[:])
 		})
 		assert.NoError(t, err)
 	})
@@ -168,4 +168,23 @@ func countingCallback(counter *int) func(*Edge) {
 	return func(*Edge) {
 		*counter++
 	}
+}
+
+func TestStore_ErrTooManyItems_NoPendingLeak(t *testing.T) {
+	s := NewStore(time.Minute, 1, func(*Edge) {}, func(*Edge) {})
+
+	dummyKey := NewKey(pcommon.TraceID([16]byte{1}), pcommon.SpanID([8]byte{1}))
+	_, err := s.UpsertEdge(dummyKey, func(_ *Edge) {})
+	require.NoError(t, err)
+	assert.Equal(t, 1, s.Len())
+
+	consumerKey := NewKey(pcommon.TraceID([16]byte{2}), pcommon.SpanID([8]byte{2}))
+	producerKey := NewKey(pcommon.TraceID([16]byte{2}), pcommon.SpanID([8]byte{3}))
+
+	_, err = s.UpsertEdge(consumerKey, func(e *Edge) {
+		e.ProducerKey = producerKey
+	})
+
+	assert.ErrorIs(t, err, ErrTooManyItems)
+	assert.Empty(t, s.pending, "Pending map should be empty if UpsertEdge returns ErrTooManyItems")
 }
