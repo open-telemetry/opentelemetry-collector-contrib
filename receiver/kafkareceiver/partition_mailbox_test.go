@@ -18,7 +18,6 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 		capacity          int
 		initialOffset     *int64
 		pendingRewind     *int64
-		assignmentReset   *int64
 		cancel            bool
 		batch             kgo.FetchTopicPartition
 		wantAccepted      bool
@@ -59,15 +58,6 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 			wantPendingOffset: int64Ptr(5),
 		},
 		{
-			name:              "rejects while assignment reset pending",
-			capacity:          2,
-			assignmentReset:   int64Ptr(-2),
-			batch:             mailboxBatch(10),
-			wantPauseCalls:    1,
-			wantPauseReason:   partitionPauseRewind,
-			wantPendingOffset: int64Ptr(-2),
-		},
-		{
 			name:         "rejects after cancellation",
 			capacity:     1,
 			cancel:       true,
@@ -85,12 +75,6 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 			}
 			if tc.pendingRewind != nil {
 				mailbox.requestRewind(recordAtOffset(*tc.pendingRewind), false, func() {})
-			}
-			if tc.assignmentReset != nil {
-				mailbox.requestAssignmentReset(kgo.EpochOffset{
-					Epoch:  -1,
-					Offset: *tc.assignmentReset,
-				}, func() {})
 			}
 			if tc.cancel {
 				cancel()
@@ -300,49 +284,6 @@ func TestPartitionMailboxRequestRewind(t *testing.T) {
 				queueSize++
 			}
 			require.Equal(t, tc.wantQueueSize, queueSize)
-		})
-	}
-}
-
-func TestPartitionMailboxAssignmentResetPriority(t *testing.T) {
-	cases := []struct {
-		name         string
-		rewindBefore bool
-		rewindAfter  bool
-	}{
-		{
-			name:         "reset replaces existing rewind",
-			rewindBefore: true,
-		},
-		{
-			name:        "rewind does not replace reset",
-			rewindAfter: true,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			mailbox := newPartitionMailbox(t.Context(), 1)
-			require.True(t, mailbox.enqueue(mailboxBatch(1), func(partitionPauseReason) {}))
-			if tc.rewindBefore {
-				mailbox.requestRewind(recordAtOffset(5), false, func() {})
-			}
-
-			mailbox.requestAssignmentReset(kgo.EpochOffset{
-				Epoch:  -1,
-				Offset: -2,
-			}, func() {})
-			if tc.rewindAfter {
-				mailbox.requestRewind(recordAtOffset(5), false, func() {})
-			}
-
-			require.Equal(t, kgo.EpochOffset{
-				Epoch:  -1,
-				Offset: -2,
-			}, *mailbox.takeOffsetChange())
-			require.Nil(t, mailbox.takeOffsetChange())
-			_, queued := mailbox.dequeue(func() {})
-			require.False(t, queued)
 		})
 	}
 }

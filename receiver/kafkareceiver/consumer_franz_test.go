@@ -177,6 +177,44 @@ func TestPartitionProcessingPendingRewindDoesNotBlockPolling(t *testing.T) {
 	waitSignal(t, healthyProcessed, "pending rewind blocked polling healthy partition")
 }
 
+func TestPartitionProcessingRebalance(t *testing.T) {
+	const recordCount = 100
+	h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
+		cfg.ConsumerConfig.GroupRebalanceStrategies = []configkafka.GroupRebalanceStrategy{
+			configkafka.RangeBalanceStrategy,
+		}
+	})
+
+	var (
+		mu   sync.Mutex
+		seen = make(map[int64]struct{}, recordCount)
+	)
+	h.start(func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
+		mu.Lock()
+		seen[record.Offset] = struct{}{}
+		mu.Unlock()
+		return nil
+	})
+	defer h.shutdown(t.Context())
+	h.waitAssignments(1)
+
+	records := make([]*kgo.Record, 0, recordCount)
+	for range recordCount {
+		records = append(records, &kgo.Record{Partition: 0})
+	}
+	h.produceRecords(records...)
+	for range 10 {
+		h.consumer.client.ForceRebalance()
+		runtime.Gosched()
+	}
+
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(seen) == recordCount
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
 func TestPartitionProcessingCommitSerializesRewind(t *testing.T) {
 	h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
 		cfg.ConsumerConfig.AutoCommit.Enable = false
@@ -236,51 +274,83 @@ func TestPartitionProcessingCommitSerializesRewind(t *testing.T) {
 	waitSignal(t, done, "rewind remained blocked after the commit completed")
 }
 
-func TestPartitionProcessingRevocationCommitsMarkedProgress(t *testing.T) {
+func TestPartitionProcessingIgnoresControlAfterCancellation(t *testing.T) {
+	client, _ := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
+	ctx, cancel := context.WithCancel(t.Context())
+	partitionConsumer := &pc{
+		ctx:     ctx,
+		mailbox: newPartitionMailbox(ctx, 1),
+	}
+	partitionConsumer.mailbox.requestRewind(&kgo.Record{
+		Topic:     "test",
+		Partition: 0,
+		Offset:    1,
+	}, true, func() {})
+	cancel()
+
+	tp := topicPartition{topic: "test", partition: 0}
+	consumer := franzConsumer{
+		client:      client,
+		assignments: map[topicPartition]*pc{tp: partitionConsumer},
+	}
+	consumer.processControl(partitionControl{
+		tp:   tp,
+		pc:   partitionConsumer,
+		done: make(chan struct{}),
+	})
+
+	require.NotNil(t, partitionConsumer.mailbox.takeOffsetChange())
+}
+
+func TestPartitionProcessingRevocationCommitsProgressAfterRewind(t *testing.T) {
 	h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
 		cfg.ConsumerConfig.AutoCommit.Enable = false
+		cfg.MessageMarking.After = true
+		cfg.ErrorBackOff = configretry.BackOffConfig{
+			Enabled:             true,
+			InitialInterval:     time.Millisecond,
+			MaxInterval:         time.Millisecond,
+			MaxElapsedTime:      time.Nanosecond,
+			RandomizationFactor: 0,
+			Multiplier:          1,
+		}
 	})
-	h.start(func(context.Context, *kgo.Record, attribute.Set) error {
-		return nil
+	retried := make(chan struct{})
+	var attempts atomic.Int64
+	h.start(func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
+		if record.Offset == 0 {
+			return nil
+		}
+		if attempts.Add(1) == 2 {
+			close(retried)
+		}
+		return errors.New("trigger rewind")
 	})
 	defer h.shutdown(t.Context())
 	h.waitAssignments(1)
 
-	tp := topicPartition{topic: h.topic, partition: 0}
-	h.consumer.mu.RLock()
-	partitionConsumer := h.consumer.assignments[tp]
-	h.consumer.mu.RUnlock()
-	require.NotNil(t, partitionConsumer)
-
-	var rejectCommits atomic.Bool
-	rejectCommits.Store(true)
-	defer rejectCommits.Store(false)
-	commitStarted := make(chan struct{})
-	var commitOnce sync.Once
+	var rejectFirstCommit atomic.Bool
+	rejectFirstCommit.Store(true)
 	h.cluster.ControlKey(int16(kmsg.OffsetCommit), func(request kmsg.Request) (kmsg.Response, error, bool) {
 		h.cluster.KeepControl()
-		if !rejectCommits.Load() {
+		if !rejectFirstCommit.Swap(false) {
 			return nil, nil, false
 		}
-		commitOnce.Do(func() { close(commitStarted) })
-		return retryOffsetCommitResponse(request.(*kmsg.OffsetCommitRequest)), nil, true
+		response := retryOffsetCommitResponse(request.(*kmsg.OffsetCommitRequest))
+		for i := range response.Topics {
+			for j := range response.Topics[i].Partitions {
+				response.Topics[i].Partitions[j].ErrorCode = kerr.GroupAuthorizationFailed.Code
+			}
+		}
+		return response, nil, true
 	})
 
-	h.produce(0, "record")
-	waitSignal(t, commitStarted, "partition did not attempt an offset commit")
-
-	partitionConsumer.cancelContext(errors.New("test revocation"))
-	partitionConsumer.wg.Wait()
-
-	h.consumer.opsMu.Lock()
-	lostDone := make(chan struct{})
-	go func() {
-		defer close(lostDone)
-		h.consumer.lost(t.Context(), nil, map[string][]int32{h.topic: {0}}, false)
-	}()
-	rejectCommits.Store(false)
-	h.consumer.opsMu.Unlock()
-	waitSignal(t, lostDone, "partition revocation did not finish")
+	h.produceRecords(
+		&kgo.Record{Partition: 0, Value: []byte("accepted")},
+		&kgo.Record{Partition: 0, Value: []byte("rewound")},
+	)
+	waitSignal(t, retried, "failed record was not fetched again")
+	h.consumer.lost(t.Context(), nil, map[string][]int32{h.topic: {0}}, false)
 
 	require.Eventually(t, func() bool {
 		offset, ok := h.committedOffset(0)
@@ -307,6 +377,36 @@ func TestPartitionProcessingBeforeMarkingCommitsFailedRecord(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 }
 
+func TestPartitionProcessingBeforeMarkingCommitsInterruptedRecord(t *testing.T) {
+	h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
+		cfg.ConsumerConfig.AutoCommit.Enable = false
+		cfg.MessageMarking.After = false
+		cfg.ErrorBackOff = configretry.BackOffConfig{
+			Enabled:         true,
+			InitialInterval: time.Hour,
+			MaxInterval:     time.Hour,
+			MaxElapsedTime:  2 * time.Hour,
+		}
+	})
+	processing := make(chan struct{})
+	var once sync.Once
+	h.start(func(context.Context, *kgo.Record, attribute.Set) error {
+		once.Do(func() { close(processing) })
+		return errors.New("trigger backoff")
+	})
+	defer h.shutdown(t.Context())
+	h.waitAssignments(1)
+
+	h.produce(0, "interrupted")
+	waitSignal(t, processing, "record did not start processing")
+	h.consumer.lost(t.Context(), nil, map[string][]int32{h.topic: {0}}, false)
+
+	require.Eventually(t, func() bool {
+		offset, ok := h.committedOffset(0)
+		return ok && offset == 1
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
 func retryOffsetCommitResponse(request *kmsg.OffsetCommitRequest) *kmsg.OffsetCommitResponse {
 	response := &kmsg.OffsetCommitResponse{
 		Version: request.Version,
@@ -326,84 +426,6 @@ func retryOffsetCommitResponse(request *kmsg.OffsetCommitRequest) *kmsg.OffsetCo
 		response.Topics = append(response.Topics, responseTopic)
 	}
 	return response
-}
-
-func TestDispatchPartitionBatchesAssignmentSnapshot(t *testing.T) {
-	const topic = "test"
-	cases := []struct {
-		name             string
-		snapshot         bool
-		initialOffset    string
-		wantQueued       bool
-		wantRewindOffset *int64
-	}{
-		{
-			name:          "accepts newly assigned partition",
-			initialOffset: configkafka.EarliestOffset,
-			wantQueued:    true,
-		},
-		{
-			name:             "resets replaced assignment to earliest",
-			snapshot:         true,
-			initialOffset:    configkafka.EarliestOffset,
-			wantRewindOffset: int64Ptr(-2),
-		},
-		{
-			name:             "resets replaced assignment to fetched offset instead of latest",
-			snapshot:         true,
-			initialOffset:    configkafka.LatestOffset,
-			wantRewindOffset: int64Ptr(1),
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			client, _ := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
-			settings, _, _ := mustNewSettings(t)
-			current := &pc{
-				logger:  settings.Logger,
-				mailbox: newPartitionMailbox(t.Context(), 1),
-			}
-			tp := topicPartition{topic: topic, partition: 0}
-			snapshots := make(map[topicPartition]*pc)
-			if tc.snapshot {
-				snapshots[tp] = &pc{}
-			}
-			consumer := franzConsumer{
-				config:   createDefaultConfig().(*Config),
-				client:   client,
-				settings: settings,
-			}
-			consumer.config.ConsumerConfig.InitialOffset = tc.initialOffset
-
-			consumer.dispatchPartitionBatches(
-				kgo.Fetches{{
-					Topics: []kgo.FetchTopic{{
-						Topic: topic,
-						Partitions: []kgo.FetchPartition{{
-							Partition: 0,
-							Records: []*kgo.Record{{
-								Topic:     topic,
-								Partition: 0,
-								Offset:    1,
-							}},
-						}},
-					}},
-				}},
-				map[topicPartition]*pc{tp: current},
-				snapshots,
-			)
-
-			_, queued := current.mailbox.dequeue(func() {})
-			require.Equal(t, tc.wantQueued, queued)
-			rewind := current.mailbox.takeOffsetChange()
-			if tc.wantRewindOffset == nil {
-				require.Nil(t, rewind)
-			} else {
-				require.Equal(t, *tc.wantRewindOffset, rewind.Offset)
-			}
-		})
-	}
 }
 
 func TestPartitionProcessingFullMailbox(t *testing.T) {
@@ -1028,6 +1050,63 @@ func TestLost(t *testing.T) {
 
 	// Call lost for a topic and partition that was not assigned
 	c.lost(t.Context(), nil, map[string][]int32{"404": {0}}, true)
+}
+
+func TestLostFatalWaitsOnlyForIndependentProcessing(t *testing.T) {
+	cases := []struct {
+		name        string
+		independent bool
+		wantWait    bool
+	}{
+		{
+			name: "legacy returns immediately",
+		},
+		{
+			name:        "independent waits for worker",
+			independent: true,
+			wantWait:    true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
+			cfg.PartitionProcessing.Independent = tc.independent
+			settings, _, _ := mustNewSettings(t)
+			c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil, nil)
+			require.NoError(t, err)
+
+			ctx, cancel := context.WithCancelCause(t.Context())
+			partitionConsumer := &pc{
+				ctx:    ctx,
+				cancel: cancel,
+			}
+			partitionConsumer.wg.Add(1)
+			c.assignments[topicPartition{topic: "test", partition: 0}] = partitionConsumer
+
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				c.lost(t.Context(), nil, map[string][]int32{"test": {0}}, true)
+			}()
+
+			if tc.wantWait {
+				require.Never(t, func() bool {
+					select {
+					case <-done:
+						return true
+					default:
+						return false
+					}
+				}, 200*time.Millisecond, 10*time.Millisecond)
+			} else {
+				waitSignal(t, done, "fatal partition loss waited for legacy processing")
+			}
+
+			partitionConsumer.wg.Done()
+			waitSignal(t, done, "fatal partition loss did not finish")
+		})
+	}
 }
 
 // TestResumePartitionsAfterRebalance verifies that partitions paused due to

@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -173,6 +172,9 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		}),
 		kgo.WithHooks(hooks),
 	}
+	if c.config.PartitionProcessing.Independent {
+		opts = append(opts, kgo.BlockRebalanceOnPoll())
+	}
 
 	if !c.config.ClientConfig.UseLeaderEpoch {
 		opts = append(opts, kgo.AdjustFetchOffsetsFn(makeClearLeaderEpochAdjuster()))
@@ -224,13 +226,12 @@ func (c *franzConsumer) consumeLoop(ctx context.Context) {
 // consume consumes a batch of messages from the Kafka topic. This is meant to
 // be called in a loop until consume returns false.
 func (c *franzConsumer) consume(ctx context.Context, size int) bool {
-	var snapshots map[topicPartition]*pc
 	var fetch kgo.Fetches
 	var controlInterrupted bool
 	if c.config.PartitionProcessing.Independent {
 		c.processControls()
-		snapshots = c.snapshotPartitions()
 		fetch, controlInterrupted = c.pollRecords(ctx, size)
+		defer c.client.AllowRebalance()
 	} else {
 		// Poll interruption is only required by independent partition workers.
 		fetch = c.client.PollRecords(ctx, size)
@@ -271,7 +272,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 	c.mu.RUnlock()
 
 	if c.config.PartitionProcessing.Independent {
-		c.dispatchPartitionBatches(fetch, assignments, snapshots)
+		c.dispatchPartitionBatches(fetch, assignments)
 		c.processControls()
 		return true
 	}
@@ -351,14 +352,6 @@ func (c *franzConsumer) pollRecords(ctx context.Context, size int) (kgo.Fetches,
 	return fetch, interrupted
 }
 
-// snapshotPartitions captures assignment identity before polling, allowing
-// dispatch to reject records from a changed assignment.
-func (c *franzConsumer) snapshotPartitions() map[topicPartition]*pc {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return maps.Clone(c.assignments)
-}
-
 // sendControl hands an offset operation to the poll loop and waits for it to
 // complete, unless this partition or the receiver is stopping.
 func (c *franzConsumer) sendControl(control partitionControl) bool {
@@ -431,7 +424,7 @@ func (c *franzConsumer) processControlLocked(control partitionControl) {
 	c.mu.RLock()
 	current := c.assignments[control.tp]
 	c.mu.RUnlock()
-	if current != control.pc {
+	if current != control.pc || control.pc.ctx.Err() != nil {
 		return
 	}
 
@@ -447,7 +440,6 @@ func (c *franzConsumer) processControlLocked(control partitionControl) {
 func (c *franzConsumer) dispatchPartitionBatches(
 	fetch kgo.Fetches,
 	assignments map[topicPartition]*pc,
-	snapshots map[topicPartition]*pc,
 ) {
 	fetch.EachPartition(func(p kgo.FetchTopicPartition) {
 		if len(p.Records) == 0 {
@@ -464,21 +456,6 @@ func (c *franzConsumer) dispatchPartitionBatches(
 			return
 		}
 		partition := map[string][]int32{p.Topic: {p.Partition}}
-		if snapshot, snapshotted := snapshots[tp]; snapshotted && snapshot != assign {
-			offset := c.assignmentStartOffset(tp)
-			if offset.Offset == -1 {
-				offset = kgo.EpochOffset{
-					Epoch:  p.Records[0].LeaderEpoch,
-					Offset: p.Records[0].Offset,
-				}
-			}
-			assign.mailbox.requestAssignmentReset(offset, func() {
-				assign.addPauseReason(partitionPauseRewind)
-				c.client.PauseFetchPartitions(partition)
-			})
-			return
-		}
-
 		enqueued := assign.mailbox.enqueue(p, func(reason partitionPauseReason) {
 			assign.addPauseReason(reason)
 			c.client.PauseFetchPartitions(partition)
@@ -495,19 +472,6 @@ func (c *franzConsumer) dispatchPartitionBatches(
 			zap.Int64("end_offset", p.Records[len(p.Records)-1].Offset),
 		)
 	})
-}
-
-func (c *franzConsumer) assignmentStartOffset(tp topicPartition) kgo.EpochOffset {
-	offset := kgo.EpochOffset{
-		Epoch:  -1,
-		Offset: -1,
-	}
-	if committed, ok := c.client.CommittedOffsets()[tp.topic][tp.partition]; ok && committed.Offset >= 0 {
-		offset = committed
-	} else if c.config.ConsumerConfig.InitialOffset == configkafka.EarliestOffset {
-		offset.Offset = -2
-	}
-	return offset
 }
 
 func (c *franzConsumer) Shutdown(ctx context.Context) error {
@@ -633,14 +597,32 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 					"stopping processing: partition reassigned or lost",
 				))
 				stopping[tp] = pc
+				if fatal && !c.config.PartitionProcessing.Independent {
+					delete(c.assignments, tp)
+				}
 				c.telemetryBuilder.KafkaReceiverPartitionClose.Add(context.Background(), 1)
 			}
 		}
 	}
 	c.mu.Unlock()
 
+	if fatal && !c.config.PartitionProcessing.Independent {
+		return
+	}
+
 	for _, pc := range stopping {
 		pc.wg.Wait()
+	}
+
+	if fatal {
+		c.mu.Lock()
+		for tp, pc := range stopping {
+			if c.assignments[tp] == pc {
+				delete(c.assignments, tp)
+			}
+		}
+		c.mu.Unlock()
+		return
 	}
 
 	// Block assignment and rewind operations until the old workers are removed
@@ -654,15 +636,24 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 		}
 	}
 	c.mu.Unlock()
-	if fatal {
-		return
-	}
 
 	// Commit synchronously here (rather than relying on autocommit) so progress
 	// is persisted before the partition is reassigned to another consumer,
 	// avoiding duplicate processing by the next owner.
-	if err := c.client.CommitMarkedOffsets(ctx); err != nil {
-		c.settings.Logger.Error("failed to commit marked offsets", zap.Error(err))
+	var err error
+	if c.config.PartitionProcessing.Independent && !c.config.ConsumerConfig.AutoCommit.Enable {
+		records := make([]*kgo.Record, 0, len(stopping))
+		for _, pc := range stopping {
+			if pc.pendingCommit != nil {
+				records = append(records, pc.pendingCommit)
+			}
+		}
+		err = c.client.CommitRecords(ctx, records...)
+	} else {
+		err = c.client.CommitMarkedOffsets(ctx)
+	}
+	if err != nil {
+		c.settings.Logger.Error("failed to commit offsets", zap.Error(err))
 		// Report recoverable error on commit errors.
 		c.reportRecoverable(err)
 	}
