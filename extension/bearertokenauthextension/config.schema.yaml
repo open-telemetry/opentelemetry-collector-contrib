@@ -9,16 +9,13 @@ properties:
     type: object
     properties:
       enabled:
-        description: Enabled, when true, makes startup retry reading the file referenced by Filename instead of failing immediately when it is missing. Defaults to false.
+        description: Enabled defines if any retry logic should be done on a missing file. Defaults to false.
         type: boolean
-      initial_interval:
-        description: InitialInterval is the time to wait before the first retry.
-        $ref: time.duration
       max_retries:
-        description: MaxRetries is the maximum number of times to retry reading the file when Enabled is true.
+        description: MaxRetries is the maximum number of times to retry reading the file.
         type: integer
       offset:
-        description: Offset is the interval between retries after the first when Enabled is true.
+        description: Offset is the interval between retries.
         $ref: time.duration
   header:
     description: Header specifies the auth-header for the token. Defaults to "Authorization"

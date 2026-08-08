@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
 )
 
 func TestPerRPCAuth(t *testing.T) {
@@ -546,11 +548,10 @@ func TestBearerStartWithRetryOnFailure(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Filename = tokenPath
-	cfg.RetryOnFailure = RetryOnFailureConfig{
-		Enabled:         true,
-		MaxRetries:      20,
-		InitialInterval: 100 * time.Millisecond,
-		Offset:          100 * time.Millisecond,
+	cfg.RetryOnFailure = credentialsfile.RetryOnFailureConfig{
+		Enabled:    true,
+		MaxRetries: 20,
+		Offset:     100 * time.Millisecond,
 	}
 
 	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
@@ -578,11 +579,10 @@ func TestBearerStartWithRetryOnFailure(t *testing.T) {
 func TestBearerStartWithRetryOnFailureGivesUp(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Filename = filepath.Join(t.TempDir(), "never-appears.token")
-	cfg.RetryOnFailure = RetryOnFailureConfig{
-		Enabled:         true,
-		MaxRetries:      2,
-		InitialInterval: 50 * time.Millisecond,
-		Offset:          50 * time.Millisecond,
+	cfg.RetryOnFailure = credentialsfile.RetryOnFailureConfig{
+		Enabled:    true,
+		MaxRetries: 2,
+		Offset:     50 * time.Millisecond,
 	}
 
 	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))

@@ -53,17 +53,15 @@ type bearerTokenAuth struct {
 	scheme                    string
 	authorizationValuesAtomic atomic.Value
 
-	tokenResolver  credentialsfile.ValueResolver
-	retryOnFailure RetryOnFailureConfig
-	logger         *zap.Logger
+	tokenResolver credentialsfile.ValueResolver
+	logger        *zap.Logger
 }
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
 	a := &bearerTokenAuth{
-		header:         cfg.Header,
-		scheme:         cfg.Scheme,
-		retryOnFailure: cfg.RetryOnFailure,
-		logger:         logger,
+		header: cfg.Header,
+		scheme: cfg.Scheme,
+		logger: logger,
 	}
 
 	var inlineToken string
@@ -95,6 +93,7 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
 				}
 				a.updateAuthorizationValues()
 			}),
+			credentialsfile.WithRetry(cfg.RetryOnFailure),
 		)
 		if err != nil {
 			logger.Error("failed to create token resolver", zap.Error(err))
@@ -113,9 +112,6 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
 // the token to be transferred.
 func (b *bearerTokenAuth) Start(ctx context.Context, _ component.Host) error {
 	if b.tokenResolver != nil {
-		if b.retryOnFailure.Enabled {
-			return b.tokenResolver.Start(ctx, credentialsfile.WithRetry(b.retryOnFailure.MaxRetries, b.retryOnFailure.InitialInterval, b.retryOnFailure.Offset))
-		}
 		return b.tokenResolver.Start(ctx)
 	}
 	return nil

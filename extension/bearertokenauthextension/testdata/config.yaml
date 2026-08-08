@@ -37,6 +37,5 @@ bearertokenauth/withretryonfailure:
   filename: "file-containing.token"
   retry_on_failure:
     enabled: true
-    initial_interval: 15s
     max_retries: 5
     offset: 2s

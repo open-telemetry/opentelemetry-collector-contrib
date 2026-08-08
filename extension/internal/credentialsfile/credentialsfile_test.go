@@ -60,9 +60,10 @@ func TestFileWatcher_StartFailsMissingFile(t *testing.T) {
 
 func TestFileWatcher_StartWithRetryOptionToleratesMissingFile(t *testing.T) {
 	t.Parallel()
-	r, err := NewValueResolver("", "/nonexistent/path/secret", zaptest.NewLogger(t))
+	r, err := NewValueResolver("", "/nonexistent/path/secret", zaptest.NewLogger(t),
+		WithRetry(RetryOnFailureConfig{Enabled: true, MaxRetries: 1, Offset: time.Second}))
 	require.NoError(t, err)
-	require.Error(t, r.Start(t.Context(), WithRetry(1, time.Second, time.Second)))
+	require.Error(t, r.Start(t.Context()))
 }
 
 func TestFileWatcher_PicksUpFileAfterItAppears(t *testing.T) {
@@ -71,7 +72,8 @@ func TestFileWatcher_PicksUpFileAfterItAppears(t *testing.T) {
 	dir := t.TempDir()
 	f := filepath.Join(dir, "secret")
 
-	r, err := NewValueResolver("", f, zaptest.NewLogger(t))
+	r, err := NewValueResolver("", f, zaptest.NewLogger(t),
+		WithRetry(RetryOnFailureConfig{Enabled: true, MaxRetries: 5, Offset: 100 * time.Millisecond}))
 	require.NoError(t, err)
 	defer func() { require.NoError(t, r.Shutdown()) }()
 
@@ -81,7 +83,7 @@ func TestFileWatcher_PicksUpFileAfterItAppears(t *testing.T) {
 	errCh := make(chan error, 1)
 
 	go func() {
-		errCh <- r.Start(ctx, WithRetry(5, 100*time.Millisecond, 100*time.Millisecond))
+		errCh <- r.Start(ctx)
 	}()
 
 	// Simulate the file appearing later

@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -104,11 +105,10 @@ func TestLoadConfig(t *testing.T) {
 				Header:   defaultHeader,
 				Scheme:   "Bearer",
 				Filename: "file-containing.token",
-				RetryOnFailure: RetryOnFailureConfig{
-					Enabled:         true,
-					MaxRetries:      5,
-					InitialInterval: 15 * time.Second,
-					Offset:          2 * time.Second,
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: 5,
+					Offset:     2 * time.Second,
 				},
 			},
 		},
@@ -137,15 +137,16 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name    string
-		cfg     *Config
-		wantErr error
+		name            string
+		cfg             *Config
+		wantErr         error
+		wantErrContains string
 	}{
 		{
 			name: "enabled without filename",
 			cfg: &Config{
 				BearerToken: "tok",
-				RetryOnFailure: RetryOnFailureConfig{
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					Enabled:    true,
 					MaxRetries: 1,
 					Offset:     time.Second,
@@ -157,29 +158,29 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 			name: "enabled with zero max_retries",
 			cfg: &Config{
 				Filename: "file.token",
-				RetryOnFailure: RetryOnFailureConfig{
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					Enabled: true,
 					Offset:  time.Second,
 				},
 			},
-			wantErr: errRetryOnFailureInvalidMaxRetries,
+			wantErrContains: "retry_on_failure.max_retries must be greater than 0",
 		},
 		{
 			name: "enabled with zero offset",
 			cfg: &Config{
 				Filename: "file.token",
-				RetryOnFailure: RetryOnFailureConfig{
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					Enabled:    true,
 					MaxRetries: 1,
 				},
 			},
-			wantErr: errRetryOnFailureInvalidOffset,
+			wantErrContains: "retry_on_failure.offset must be greater than 0",
 		},
 		{
 			name: "enabled with valid values",
 			cfg: &Config{
 				Filename: "file.token",
-				RetryOnFailure: RetryOnFailureConfig{
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					Enabled:    true,
 					MaxRetries: 3,
 					Offset:     time.Second,
@@ -190,7 +191,7 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 			name: "disabled ignores other fields",
 			cfg: &Config{
 				Filename: "file.token",
-				RetryOnFailure: RetryOnFailureConfig{
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					MaxRetries: 0,
 					Offset:     0,
 				},
@@ -203,6 +204,10 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 			err := tt.cfg.Validate()
 			if tt.wantErr != nil {
 				require.ErrorIs(t, err, tt.wantErr)
+				return
+			}
+			if tt.wantErrContains != "" {
+				require.ErrorContains(t, err, tt.wantErrContains)
 				return
 			}
 			require.NoError(t, err)

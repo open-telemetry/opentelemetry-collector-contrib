@@ -13,7 +13,11 @@ import (
 	"go.uber.org/zap"
 )
 
-var errNoValueProvided = errors.New("no value or file path provided")
+var (
+	errNoValueProvided                 = errors.New("no value or file path provided")
+	errRetryOnFailureInvalidMaxRetries = errors.New("retry_on_failure.max_retries must be greater than 0 when retry_on_failure.enabled is true")
+	errRetryOnFailureInvalidOffset     = errors.New("retry_on_failure.offset must be greater than 0 when retry_on_failure.enabled is true")
+)
 
 // ValueResolver provides access to a secret value that may come from
 // an inline config string or a watched file.
@@ -21,22 +25,42 @@ type ValueResolver interface {
 	// Value returns the current secret value.
 	Value() string
 	// Start begins any background operations (e.g., file watching).
-	// When retry options are supplied (see WithRetry), startup is retried
-	// continuously until all prerequisites are available.
-	Start(ctx context.Context, opts ...Option) error
+	Start(ctx context.Context) error
 	// Shutdown stops any background operations.
 	Shutdown() error
+}
+
+// RetryOnFailureConfig configures retry on missing credentials file.
+type RetryOnFailureConfig struct {
+	// Enabled defines if any retry logic should be done on a missing file.
+	// Defaults to false.
+	Enabled bool `mapstructure:"enabled,omitempty"`
+
+	// MaxRetries is the maximum number of times to retry reading the file.
+	MaxRetries int `mapstructure:"max_retries,omitempty"`
+
+	// Offset is the interval between retries.
+	Offset time.Duration `mapstructure:"offset,omitempty"`
+}
+
+func (rfg *RetryOnFailureConfig) Validate() error {
+	if rfg.Enabled {
+		if rfg.MaxRetries <= 0 {
+			return errRetryOnFailureInvalidMaxRetries
+		}
+		if rfg.Offset <= 0 {
+			return errRetryOnFailureInvalidOffset
+		}
+	}
+	return nil
 }
 
 // Option configures a ValueResolver.
 type Option func(*options)
 
 type options struct {
-	onChange        func(string)
-	retryEnabled    bool
-	maxRetries      int
-	initialInterval time.Duration
-	retryInterval   time.Duration
+	onChange func(string)
+	retryCfg RetryOnFailureConfig
 }
 
 // WithOnChange registers a callback invoked with the new value after each
@@ -45,15 +69,10 @@ func WithOnChange(fn func(string)) Option {
 	return func(o *options) { o.onChange = fn }
 }
 
-// WithRetry enables retrying startup until all prerequisites are available.
-// The first retry is attempted after initialInterval; subsequent retries are
-// spaced retryInterval apart. Startup gives up after maxRetries attempts.
-func WithRetry(maxRetries int, initialInterval, retryInterval time.Duration) Option {
+// WithRetry enables retrying to read a credentials file.
+func WithRetry(rfc RetryOnFailureConfig) Option {
 	return func(o *options) {
-		o.retryEnabled = true
-		o.maxRetries = maxRetries
-		o.initialInterval = initialInterval
-		o.retryInterval = retryInterval
+		o.retryCfg = rfc
 	}
 }
 
@@ -67,7 +86,7 @@ func NewValueResolver(inlineValue, filePath string, logger *zap.Logger, opts ...
 		opt(&o)
 	}
 	if filePath != "" {
-		return newFileWatcher(filePath, logger, o.onChange), nil
+		return newFileWatcher(filePath, logger, o.onChange, o.retryCfg), nil
 	}
 	if inlineValue == "" {
 		return nil, errNoValueProvided
@@ -78,6 +97,6 @@ func NewValueResolver(inlineValue, filePath string, logger *zap.Logger, opts ...
 // staticValue is a ValueResolver that returns a fixed string.
 type staticValue string
 
-func (s staticValue) Value() string                        { return string(s) }
-func (staticValue) Start(context.Context, ...Option) error { return nil }
-func (staticValue) Shutdown() error                        { return nil }
+func (s staticValue) Value() string             { return string(s) }
+func (staticValue) Start(context.Context) error { return nil }
+func (staticValue) Shutdown() error             { return nil }
