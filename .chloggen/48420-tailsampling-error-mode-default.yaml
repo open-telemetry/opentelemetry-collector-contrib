@@ -1,0 +1,10 @@
+change_type: enhancement
+component: processor/tail_sampling
+note: Add `processor.tailsamplingprocessor.defaultErrorModeIgnore` feature gate to change the default `error_mode` of the `ottl_condition` sampling policy from `propagate` to `ignore`.
+issues: [48420]
+subtext: |
+  Previously, an unset `error_mode` on the `ottl_condition` policy was not explicitly
+  defaulted and could flow through as an empty string rather than a valid OTTL error
+  mode. This change makes the default explicit (`propagate`, matching prior behavior)
+  and introduces a feature gate to opt into the recommended `ignore` default.
+change_logs: [user]
