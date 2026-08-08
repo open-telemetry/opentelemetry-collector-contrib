@@ -409,7 +409,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 			// Otherwise, publish consumer lag.
 			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(
 				context.Background(),
-				(p.HighWatermark-1)-(lastProcessed.Offset),
+				(p.HighWatermark-1)-lastProcessed.Offset,
 				metric.WithAttributeSet(pc.attrs),
 			)
 			if c.config.MessageMarking.After {

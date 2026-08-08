@@ -1411,7 +1411,8 @@ func TestConsumeMetadata(t *testing.T) {
 					MaxBuffered:             10,
 					NonAlphanumericDimChars: cfg.NonAlphanumericDimensionChars,
 					ExcludeProperties:       tt.excludeProperties,
-				})
+				},
+			)
 			dimClient.Start()
 
 			se := &signalfxExporter{
@@ -1764,7 +1765,8 @@ func TestTLSAPIConnection(t *testing.T) {
 					MaxBuffered:             10,
 					APITLSConfig:            apiTLSCfg,
 					NonAlphanumericDimChars: "",
-				})
+				},
+			)
 			dimClient.Start()
 			defer func() { dimClient.Shutdown() }()
 

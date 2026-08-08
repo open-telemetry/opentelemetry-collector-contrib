@@ -33,6 +33,10 @@ import (
 
 const querySampleTraceContextKey = "_otel_trace_context"
 
+// detachedCleanupTimeout bounds the best-effort DEALLOCATE PREPARE cleanup in
+// explainQuery so a truly unresponsive backend can't hang cleanup forever.
+const detachedCleanupTimeout = 5 * time.Second
+
 // databaseName is a name that refers to a database so that it can be uniquely referred to later
 // i.e. database1
 type databaseName string
@@ -57,6 +61,7 @@ type client interface {
 	getExecutionTimeStats(ctx context.Context, databases []string) (map[databaseName]float64, error)
 	getDatabaseConflicts(ctx context.Context, databases []string) (map[databaseName]databaseConflictStats, error)
 	getDatabaseLocks(ctx context.Context) ([]databaseLocks, error)
+	getSharedRelationLocks(ctx context.Context) ([]databaseLocks, error)
 	getBGWriterStats(ctx context.Context) (*bgStat, error)
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
@@ -73,7 +78,7 @@ type client interface {
 	getVersion(ctx context.Context) (string, error)
 	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error)
 	getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
-	explainQuery(query, queryID string, logger *zap.Logger) (string, error)
+	explainQuery(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error)
 }
 
 type postgreSQLClient struct {
@@ -134,7 +139,7 @@ func isExplainableQuery(query string) bool {
 }
 
 // explainQuery implements client.
-func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logger) (string, error) {
+func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error) {
 	// Check if the query is explainable before attempting EXPLAIN
 	if !isExplainableQuery(query) {
 		logger.Debug("skipping EXPLAIN for non-explainable query", zap.String("queryID", queryID))
@@ -153,8 +158,12 @@ func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logge
 		nulls[i] = "null"
 	}
 
+	// Deallocate the prepared statement on a context detached from ctx so the
+	// cleanup still runs even if ctx was already canceled or timed out.
 	defer func() {
-		_, _ = c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
+		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), detachedCleanupTimeout)
+		defer cancel()
+		_, _ = c.client.ExecContext(cleanupCtx, fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
 	}()
 
 	// if there is no parameter needed, we can not put an empty bracket
@@ -169,7 +178,7 @@ func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logge
 
 	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, setPlanCacheMode+prepareStatement+explainStatement, logger, sqlquery.TelemetryConfig{})
 
-	result, err := wrappedDb.QueryRows(context.Background())
+	result, err := wrappedDb.QueryRows(ctx)
 	if err != nil {
 		logger.Error("failed to explain statement", zap.Error(err))
 		return "", err
@@ -450,11 +459,27 @@ type databaseLocks struct {
 }
 
 func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
-	query := `SELECT relname AS relation, mode, locktype,COUNT(pid)
+	// Scope to the connected database: shared catalogs (database = 0) are
+	// collected once via getSharedRelationLocks, and relation OIDs from other
+	// databases must not resolve against this database's pg_class.
+	return c.queryDatabaseLocks(ctx, `SELECT relname AS relation, mode, locktype,COUNT(*)
 	AS locks FROM pg_locks
 	JOIN pg_class ON pg_locks.relation = pg_class.oid
-	GROUP BY relname, mode, locktype;`
+	WHERE pg_locks.database = (SELECT oid FROM pg_database WHERE datname = current_database())
+	GROUP BY relname, mode, locktype;`)
+}
 
+func (c *postgreSQLClient) getSharedRelationLocks(ctx context.Context) ([]databaseLocks, error) {
+	// Shared relations (pg_database, pg_authid, ...) carry database = 0 and
+	// exist in every database's pg_class, so any connection can resolve them.
+	return c.queryDatabaseLocks(ctx, `SELECT relname AS relation, mode, locktype,COUNT(*)
+	AS locks FROM pg_locks
+	JOIN pg_class ON pg_locks.relation = pg_class.oid
+	WHERE pg_locks.database = 0 AND pg_class.relisshared
+	GROUP BY relname, mode, locktype;`)
+}
+
+func (c *postgreSQLClient) queryDatabaseLocks(ctx context.Context, query string) ([]databaseLocks, error) {
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("unable to query pg_locks and pg_locks.relation: %w", err)
@@ -480,7 +505,10 @@ func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLock
 	return dl, multierr.Combine(errs...)
 }
 
-// getBackends returns a map of database names to the number of active connections
+// getBackends returns the number of backend processes for each database, counted from pg_stat_activity
+// across all connection states (active, idle, idle-in-transaction) and all backend types, including
+// non-client backends such as autovacuum and parallel workers. Backends with no associated database
+// (NULL datname, e.g. the background writer and WAL writer) are not attributed to any database.
 func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error) {
 	query := filterQueryByDatabases("SELECT datname, count(*) as count from pg_stat_activity", databases, true)
 	rows, err := c.client.QueryContext(ctx, query)

@@ -81,11 +81,11 @@ func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupReturned.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupUpdated.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeySource}, legacyConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlDatabaseLocksMetricAttributeKey{metadata.PostgresqlDatabaseLocksMetricAttributeKeyRelation, metadata.PostgresqlDatabaseLocksMetricAttributeKeyMode, metadata.PostgresqlDatabaseLocksMetricAttributeKeyLockType}, legacyConfig.Metrics.PostgresqlDatabaseLocks.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlFunctionCallsMetricAttributeKey{metadata.PostgresqlFunctionCallsMetricAttributeKeyFunction}, legacyConfig.Metrics.PostgresqlFunctionCalls.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlOperationsMetricAttributeKey{metadata.PostgresqlOperationsMetricAttributeKeyOperation}, legacyConfig.Metrics.PostgresqlOperations.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlQueryConflictsMetricAttributeKey{metadata.PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType}, legacyConfig.Metrics.PostgresqlQueryConflicts.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlRowsMetricAttributeKey{metadata.PostgresqlRowsMetricAttributeKeyState}, legacyConfig.Metrics.PostgresqlRows.EnabledAttributes)
-	assert.Equal(t, cfg.Metrics.PostgresqlDatabaseLocks.EnabledAttributes, legacyConfig.Metrics.PostgresqlDatabaseLocks.EnabledAttributes)
 	assert.Equal(t, cfg.Metrics.PostgresqlReplicationDataDelay.EnabledAttributes, legacyConfig.Metrics.PostgresqlReplicationDataDelay.EnabledAttributes)
 	assert.Equal(t, cfg.Metrics.PostgresqlWalDelay.EnabledAttributes, legacyConfig.Metrics.PostgresqlWalDelay.EnabledAttributes)
 	assert.Equal(t, cfg.Metrics.PostgresqlWalLag.EnabledAttributes, legacyConfig.Metrics.PostgresqlWalLag.EnabledAttributes)
@@ -1431,11 +1431,71 @@ func TestExplainQuery(t *testing.T) {
 				sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(tc.mockPlanResult),
 			)
 
-			plan, err := client.explainQuery(tc.query, tc.queryID, logger)
+			// The prepared statement must always be deallocated afterwards,
+			// otherwise it leaks server-side state on pooled connections.
+			normalizedQueryID := strings.ReplaceAll(tc.queryID, "-", "_")
+			mock.ExpectExec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID)).
+				WillReturnResult(sqlmock.NewResult(0, 0))
+
+			plan, err := client.explainQuery(t.Context(), tc.query, tc.queryID, logger)
 			require.NoError(t, err)
 			assert.Equal(t, tc.mockPlanResult, plan)
+			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func TestExplainQueryErrorStillCleansUp(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	logger := zap.NewNop()
+	client := &postgreSQLClient{
+		client:  db,
+		closeFn: func() error { return nil },
+	}
+
+	expectedSQL := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_12345 AS SELECT * FROM users;EXPLAIN(FORMAT JSON) EXECUTE otel_12345;"
+	mock.ExpectQuery(expectedSQL).WillReturnError(errors.New("syntax error"))
+
+	// Even though the EXPLAIN itself failed, PREPARE may have already
+	// registered the statement server-side, so cleanup must still run.
+	mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_12345").
+		WillReturnResult(sqlmock.NewResult(0, 0))
+
+	_, err = client.explainQuery(t.Context(), "SELECT * FROM users", "12345", logger)
+	require.Error(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestExplainQueryUsesContext(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	logger := zap.NewNop()
+	client := &postgreSQLClient{
+		client:  db,
+		closeFn: func() error { return nil },
+	}
+
+	expectedSQL := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_12345 AS SELECT * FROM users;EXPLAIN(FORMAT JSON) EXECUTE otel_12345;"
+	mock.ExpectQuery(expectedSQL).
+		WillDelayFor(200 * time.Millisecond).
+		WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan","Relation Name":"users"}}]`))
+
+	// Cleanup (DEALLOCATE PREPARE) must still run even though ctx expires
+	// mid-query, otherwise the prepared statement leaks on pooled connections.
+	mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_12345").
+		WillReturnResult(sqlmock.NewResult(0, 0))
+
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
+	defer cancel()
+
+	_, err = client.explainQuery(ctx, "SELECT * FROM users", "12345", logger)
+	require.Error(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
 }
 
 type (
@@ -1447,7 +1507,7 @@ type (
 )
 
 // explainQuery implements client.
-func (*mockClient) explainQuery(string, string, *zap.Logger) (string, error) {
+func (*mockClient) explainQuery(context.Context, string, string, *zap.Logger) (string, error) {
 	panic("unimplemented")
 }
 
@@ -1500,6 +1560,11 @@ func (m *mockClient) getExecutionTimeStats(_ context.Context, databases []string
 }
 
 func (m *mockClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]databaseLocks), args.Error(1)
+}
+
+func (m *mockClient) getSharedRelationLocks(ctx context.Context) ([]databaseLocks, error) {
 	args := m.Called(ctx)
 	return args.Get(0).([]databaseLocks), args.Error(1)
 }
@@ -1656,34 +1721,14 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		}, nil)
 		m.On("getMaxConnections", mock.Anything).Return(int64(100), nil)
 		m.On("getLatestWalAgeSeconds", mock.Anything).Return(int64(3600), nil)
-		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
+		m.On("getSharedRelationLocks", mock.Anything).Return([]databaseLocks{
 			{
-				relation: "pg_locks",
+				relation: "pg_database",
 				mode:     "AccessShareLock",
 				lockType: "relation",
-				locks:    3600,
-			},
-			{
-				relation: "pg_class",
-				mode:     "AccessShareLock",
-				lockType: "relation",
-				locks:    5600,
+				locks:    2,
 			},
 		}, nil)
-		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
-			{
-				relation: "abd_table",
-				mode:     "ExplicitLock",
-				lockType: "relation",
-				locks:    1600,
-			},
-			{
-				relation: "pg_class",
-				mode:     "AccessShareLock",
-				lockType: "relation",
-				locks:    5600,
-			},
-		}, errors.New("some error"))
 		m.On("getReplicationStats", mock.Anything).Return([]replicationStats{
 			{
 				clientAddr:   "unix",
@@ -1812,6 +1857,21 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		}
 		m.On("getFunctionStats", mock.Anything, database).Return(functionStats, nil)
 
+		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
+			{
+				relation: "pg_locks",
+				mode:     "AccessShareLock",
+				lockType: "relation",
+				locks:    int64(index + 3600),
+			},
+			{
+				relation: "pg_class",
+				mode:     "AccessShareLock",
+				lockType: "relation",
+				locks:    int64(index + 5600),
+			},
+		}, nil)
+
 		vectorSearchStats := []vectorSearchStat{
 			{
 				distanceFunction: "cosine",
@@ -1836,6 +1896,30 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		}
 		m.On("getVectorInsertStats", mock.Anything).Return(vectorInsertStats, nil)
 	}
+}
+
+func TestCollectDatabaseLocksError(t *testing.T) {
+	c := new(mockClient)
+	c.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks(nil), errors.New("some error"))
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+	var errs errsMux
+	scraper.collectDatabaseLocks(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, "otel", &errs)
+	require.Error(t, errs.combine())
+}
+
+func TestCollectSharedRelationLocksError(t *testing.T) {
+	c := new(mockClient)
+	c.On("getSharedRelationLocks", mock.Anything).Return([]databaseLocks(nil), errors.New("some error"))
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+	var errs errsMux
+	scraper.collectSharedRelationLocks(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, &errs)
+	require.Error(t, errs.combine())
 }
 
 func TestGetInstanceId(t *testing.T) {

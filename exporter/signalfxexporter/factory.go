@@ -109,7 +109,8 @@ func createTracesExporter(
 		cfg,
 		tracker.ProcessTraces,
 		exporterhelper.WithStart(tracker.Start),
-		exporterhelper.WithShutdown(tracker.Shutdown))
+		exporterhelper.WithShutdown(tracker.Shutdown),
+	)
 }
 
 func createMetricsExporter(
@@ -134,7 +135,8 @@ func createMetricsExporter(
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.shutdown))
+		exporterhelper.WithShutdown(exp.shutdown),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +178,8 @@ func createLogsExporter(
 		exporterhelper.WithRetry(expCfg.BackOffConfig),
 		exporterhelper.WithQueue(expCfg.QueueSettings),
 		exporterhelper.WithStart(exp.startLogs),
-		exporterhelper.WithShutdown(exp.shutdown))
+		exporterhelper.WithShutdown(exp.shutdown),
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -36,7 +36,7 @@ func (dr *OtelarrowDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _
 	var err error
 	f := otelarrowreceiver.NewFactory()
 	config := f.CreateDefaultConfig()
-	config.(*otelarrowreceiver.Config).GRPC.NetAddr.Endpoint = fmt.Sprintf("127.0.0.1:%d", dr.Port)
+	config.(*otelarrowreceiver.Config).Protocols.GRPC.NetAddr.Endpoint = fmt.Sprintf("127.0.0.1:%d", dr.Port)
 
 	dr.receiver, err = f.CreateMetrics(context.Background(), receivertest.NewNopSettings(f.Type()), config, mc)
 	if err != nil {
