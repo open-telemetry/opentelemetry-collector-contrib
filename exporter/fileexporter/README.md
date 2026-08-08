@@ -106,6 +106,12 @@ Telemetry data is compressed according to the `compression` setting.
 > An alpha feature gate `exporter.file.nativeCompression` is available that switches from
 > per-message compression to native file-level compression, producing standard `.zst` files
 > compatible with tools like `zstd -d`. See [Feature Gates](documentation.md) for details.
+>
+> With this gate enabled, JSON output and encodings that report line-delimited output are
+> written newline-delimited, so the decompressed file is clean text usable with `zstdcat`,
+> `grep` and similar tooling. `text_encoding` reports line-delimited output when its
+> `marshaling_separator` is left at the default newline. Every other encoding, and `proto`
+> format, keeps the length-prefix framing described under [File Format](#file-format).
 
 Currently, `fileexporter` support the `zstd` compression algorithm, and we will support more compression algorithms in the future.
 
