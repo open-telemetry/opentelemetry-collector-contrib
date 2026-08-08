@@ -1,1728 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1786112430389,
+  "lastUpdate": 1786178565296,
   "repoUrl": "https://github.com/open-telemetry/opentelemetry-collector-contrib",
   "entries": {
     "Benchmark": [
-      {
-        "commit": {
-          "author": {
-            "name": "renovate[bot]",
-            "username": "renovate[bot]",
-            "email": "29139614+renovate[bot]@users.noreply.github.com"
-          },
-          "committer": {
-            "name": "GitHub",
-            "username": "web-flow",
-            "email": "noreply@github.com"
-          },
-          "id": "80519fa06e2ead5c382b29a056b9b208c4d154e1",
-          "message": "Update All github.com/aws packages (#48845)\n\n> ℹ️ **Note**\n> \n> This PR body was truncated due to platform limits.\n\nThis PR contains the following updates:\n\n| Package | Change |\n[Age](https://docs.renovatebot.com/merge-confidence/) |\n[Confidence](https://docs.renovatebot.com/merge-confidence/) |\n|---|---|---|---|\n|\n[github.com/aws/aws-sdk-go-v2](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.41.9` → `v1.41.10` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2/v1.41.10?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2/v1.41.9/v1.41.10?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/config](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.32.20` → `v1.32.21` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2fconfig/v1.32.21?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2fconfig/v1.32.20/v1.32.21?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/credentials](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.19.19` → `v1.19.20` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2fcredentials/v1.19.20?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2fcredentials/v1.19.19/v1.19.20?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.20.42` → `v1.20.43` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2ffeature%2fdynamodb%2fattributevalue/v1.20.43?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2ffeature%2fdynamodb%2fattributevalue/v1.20.42/v1.20.43?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/feature/ec2/imds](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.18.25` → `v1.18.26` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2ffeature%2fec2%2fimds/v1.18.26?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2ffeature%2fec2%2fimds/v1.18.25/v1.18.26?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v0.2.3` → `v0.2.4` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2ffeature%2fs3%2ftransfermanager/v0.2.4?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2ffeature%2fs3%2ftransfermanager/v0.2.3/v0.2.4?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/service/cloudwatch](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.57.2` → `v1.58.0` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fcloudwatch/v1.58.0?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fcloudwatch/v1.57.2/v1.58.0?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.74.2` → `v1.74.3` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fcloudwatchlogs/v1.74.3?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fcloudwatchlogs/v1.74.2/v1.74.3?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/service/dynamodb](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.57.6` → `v1.57.7` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fdynamodb/v1.57.7?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fdynamodb/v1.57.6/v1.57.7?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/service/ec2](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.304.2` → `v1.305.0` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fec2/v1.305.0?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fec2/v1.304.2/v1.305.0?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/service/ecs](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.82.0` → `v1.82.1` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fecs/v1.82.1?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fecs/v1.82.0/v1.82.1?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/service/kinesis](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.43.9` → `v1.43.10` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fkinesis/v1.43.10?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fkinesis/v1.43.9/v1.43.10?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/service/s3](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.102.2` → `v1.103.0` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fs3/v1.103.0?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fs3/v1.102.2/v1.103.0?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/service/secretsmanager](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.41.9` → `v1.42.0` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fsecretsmanager/v1.42.0?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fsecretsmanager/v1.41.9/v1.42.0?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/service/servicediscovery](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.40.2` → `v1.40.3` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fservicediscovery/v1.40.3?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fservicediscovery/v1.40.2/v1.40.3?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/service/sqs](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.42.29` → `v1.43.0` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fsqs/v1.43.0?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fsqs/v1.42.29/v1.43.0?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/service/sts](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.42.3` → `v1.43.0` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fsts/v1.43.0?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fsts/v1.42.3/v1.43.0?slim=true)\n|\n|\n[github.com/aws/aws-sdk-go-v2/service/xray](https://redirect.github.com/aws/aws-sdk-go-v2)\n| `v1.36.25` → `v1.37.0` |\n![age](https://developer.mend.io/api/mc/badges/age/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fxray/v1.37.0?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/go/github.com%2faws%2faws-sdk-go-v2%2fservice%2fxray/v1.36.25/v1.37.0?slim=true)\n|\n\n---\n\n> [!WARNING]\n> Some dependencies could not be looked up. Check the [Dependency\nDashboard](../issues/20907) for more information.\n\n---\n\n### Release Notes\n\n<details>\n<summary>aws/aws-sdk-go-v2 (github.com/aws/aws-sdk-go-v2)</summary>\n\n###\n[`v1.41.10`](https://redirect.github.com/aws/aws-sdk-go-v2/blob/HEAD/CHANGELOG.md#Release-2026-03-26)\n\n[Compare\nSource](https://redirect.github.com/aws/aws-sdk-go-v2/compare/v1.41.9...v1.41.10)\n\n#### General Highlights\n\n- **Dependency Update**: Updated to the latest SDK module versions\n\n#### Module Highlights\n\n- `github.com/aws/aws-sdk-go-v2`: v1.41.5\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/accessanalyzer`:\n[v1.45.12](service/accessanalyzer/CHANGELOG.md#v14512-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/account`:\n[v1.30.5](service/account/CHANGELOG.md#v1305-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/acm`:\n[v1.37.23](service/acm/CHANGELOG.md#v13723-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/acmpca`:\n[v1.46.12](service/acmpca/CHANGELOG.md#v14612-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/aiops`:\n[v1.6.21](service/aiops/CHANGELOG.md#v1621-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/amp`:\n[v1.42.9](service/amp/CHANGELOG.md#v1429-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/amplify`:\n[v1.38.14](service/amplify/CHANGELOG.md#v13814-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/amplifybackend`:\n[v1.32.20](service/amplifybackend/CHANGELOG.md#v13220-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/amplifyuibuilder`:\n[v1.28.20](service/amplifyuibuilder/CHANGELOG.md#v12820-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/apigateway`:\n[v1.39.1](service/apigateway/CHANGELOG.md#v1391-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/apigatewaymanagementapi`:\n[v1.29.14](service/apigatewaymanagementapi/CHANGELOG.md#v12914-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/apigatewayv2`:\n[v1.34.1](service/apigatewayv2/CHANGELOG.md#v1341-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/appconfig`:\n[v1.43.13](service/appconfig/CHANGELOG.md#v14313-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/appconfigdata`:\n[v1.23.22](service/appconfigdata/CHANGELOG.md#v12322-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/appfabric`:\n[v1.16.21](service/appfabric/CHANGELOG.md#v11621-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/appflow`:\n[v1.51.12](service/appflow/CHANGELOG.md#v15112-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/appintegrations`:\n[v1.37.7](service/appintegrations/CHANGELOG.md#v1377-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/applicationautoscaling`:\n[v1.41.14](service/applicationautoscaling/CHANGELOG.md#v14114-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/applicationcostprofiler`:\n[v1.27.12](service/applicationcostprofiler/CHANGELOG.md#v12712-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/applicationdiscoveryservice`:\n[v1.35.13](service/applicationdiscoveryservice/CHANGELOG.md#v13513-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/applicationinsights`:\n[v1.34.20](service/applicationinsights/CHANGELOG.md#v13420-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/applicationsignals`:\n[v1.19.1](service/applicationsignals/CHANGELOG.md#v1191-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/appmesh`:\n[v1.35.12](service/appmesh/CHANGELOG.md#v13512-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/apprunner`:\n[v1.39.14](service/apprunner/CHANGELOG.md#v13914-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/appstream`:\n[v1.54.4](service/appstream/CHANGELOG.md#v1544-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/appsync`:\n[v1.53.5](service/appsync/CHANGELOG.md#v1535-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/arcregionswitch`:\n[v1.6.3](service/arcregionswitch/CHANGELOG.md#v163-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/arczonalshift`:\n[v1.22.23](service/arczonalshift/CHANGELOG.md#v12223-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/artifact`:\n[v1.15.5](service/artifact/CHANGELOG.md#v1155-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/athena`:\n[v1.57.4](service/athena/CHANGELOG.md#v1574-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/auditmanager`:\n[v1.46.12](service/auditmanager/CHANGELOG.md#v14612-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/autoscaling`:\n[v1.64.4](service/autoscaling/CHANGELOG.md#v1644-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/autoscalingplans`:\n[v1.30.14](service/autoscalingplans/CHANGELOG.md#v13014-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/b2bi`:\n[v1.0.0-preview.100](service/b2bi/CHANGELOG.md#v100-preview100-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/backup`:\n[v1.54.11](service/backup/CHANGELOG.md#v15411-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/backupgateway`:\n[v1.26.3](service/backupgateway/CHANGELOG.md#v1263-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/backupsearch`:\n[v1.6.23](service/backupsearch/CHANGELOG.md#v1623-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/batch`:\n[v1.63.2](service/batch/CHANGELOG.md#v1632-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/bcmdashboards`:\n[v1.1.4](service/bcmdashboards/CHANGELOG.md#v114-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/bcmdataexports`:\n[v1.14.0](service/bcmdataexports/CHANGELOG.md#v1140-2026-03-26)\n- **Feature**: With this release we are providing an option to accounts\nto have their export delivered to an S3 bucket that is not owned by the\naccount.\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/bcmpricingcalculator`:\n[v1.10.9](service/bcmpricingcalculator/CHANGELOG.md#v1109-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/bcmrecommendedactions`:\n[v1.1.5](service/bcmrecommendedactions/CHANGELOG.md#v115-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/bedrock`:\n[v1.57.1](service/bedrock/CHANGELOG.md#v1571-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/bedrockagent`:\n[v1.52.7](service/bedrockagent/CHANGELOG.md#v1527-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/bedrockagentcore`:\n[v1.15.2](service/bedrockagentcore/CHANGELOG.md#v1152-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/bedrockagentcorecontrol`:\n[v1.25.1](service/bedrockagentcorecontrol/CHANGELOG.md#v1251-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/bedrockagentruntime`:\n[v1.51.8](service/bedrockagentruntime/CHANGELOG.md#v1518-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/bedrockdataautomation`:\n[v1.13.5](service/bedrockdataautomation/CHANGELOG.md#v1135-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/bedrockdataautomationruntime`:\n[v1.10.4](service/bedrockdataautomationruntime/CHANGELOG.md#v1104-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/bedrockruntime`:\n[v1.50.4](service/bedrockruntime/CHANGELOG.md#v1504-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/billing`:\n[v1.10.4](service/billing/CHANGELOG.md#v1104-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/billingconductor`:\n[v1.28.5](service/billingconductor/CHANGELOG.md#v1285-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/braket`:\n[v1.39.8](service/braket/CHANGELOG.md#v1398-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/budgets`:\n[v1.43.4](service/budgets/CHANGELOG.md#v1434-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/chatbot`:\n[v1.14.21](service/chatbot/CHANGELOG.md#v11421-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/chime`:\n[v1.41.12](service/chime/CHANGELOG.md#v14112-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/chimesdkidentity`:\n[v1.27.20](service/chimesdkidentity/CHANGELOG.md#v12720-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/chimesdkmediapipelines`:\n[v1.26.21](service/chimesdkmediapipelines/CHANGELOG.md#v12621-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/chimesdkmeetings`:\n[v1.33.15](service/chimesdkmeetings/CHANGELOG.md#v13315-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/chimesdkmessaging`:\n[v1.32.17](service/chimesdkmessaging/CHANGELOG.md#v13217-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/chimesdkvoice`:\n[v1.28.13](service/chimesdkvoice/CHANGELOG.md#v12813-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cleanrooms`:\n[v1.42.4](service/cleanrooms/CHANGELOG.md#v1424-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cleanroomsml`:\n[v1.22.5](service/cleanroomsml/CHANGELOG.md#v1225-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cloud9`:\n[v1.33.20](service/cloud9/CHANGELOG.md#v13320-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cloudcontrol`:\n[v1.29.13](service/cloudcontrol/CHANGELOG.md#v12913-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/clouddirectory`:\n[v1.30.12](service/clouddirectory/CHANGELOG.md#v13012-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cloudformation`:\n[v1.71.9](service/cloudformation/CHANGELOG.md#v1719-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cloudfront`:\n[v1.60.4](service/cloudfront/CHANGELOG.md#v1604-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cloudfrontkeyvaluestore`:\n[v1.12.24](service/cloudfrontkeyvaluestore/CHANGELOG.md#v11224-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cloudhsm`:\n[v1.29.21](service/cloudhsm/CHANGELOG.md#v12921-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cloudhsmv2`:\n[v1.34.21](service/cloudhsmv2/CHANGELOG.md#v13421-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cloudsearch`:\n[v1.32.12](service/cloudsearch/CHANGELOG.md#v13212-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cloudsearchdomain`:\n[v1.28.20](service/cloudsearchdomain/CHANGELOG.md#v12820-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cloudtrail`:\n[v1.55.9](service/cloudtrail/CHANGELOG.md#v1559-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cloudtraildata`:\n[v1.17.13](service/cloudtraildata/CHANGELOG.md#v11713-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cloudwatch`:\n[v1.55.3](service/cloudwatch/CHANGELOG.md#v1553-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cloudwatchevents`:\n[v1.32.23](service/cloudwatchevents/CHANGELOG.md#v13223-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs`:\n[v1.65.0](service/cloudwatchlogs/CHANGELOG.md#v1650-2026-03-26)\n- **Feature**: This release adds parameter support to saved queries in\nCloudWatch Logs Insights. Define reusable query templates with named\nplaceholders, invoke them using start query. Available in Console, CLI\nand SDK\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/codeartifact`:\n[v1.38.21](service/codeartifact/CHANGELOG.md#v13821-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/codebuild`:\n[v1.68.13](service/codebuild/CHANGELOG.md#v16813-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/codecatalyst`:\n[v1.21.12](service/codecatalyst/CHANGELOG.md#v12112-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/codecommit`:\n[v1.33.12](service/codecommit/CHANGELOG.md#v13312-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/codeconnections`:\n[v1.10.20](service/codeconnections/CHANGELOG.md#v11020-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/codedeploy`:\n[v1.35.13](service/codedeploy/CHANGELOG.md#v13513-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/codeguruprofiler`:\n[v1.29.20](service/codeguruprofiler/CHANGELOG.md#v12920-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/codegurureviewer`:\n[v1.34.20](service/codegurureviewer/CHANGELOG.md#v13420-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/codegurusecurity`:\n[v1.16.24](service/codegurusecurity/CHANGELOG.md#v11624-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/codepipeline`:\n[v1.46.21](service/codepipeline/CHANGELOG.md#v14621-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/codestarconnections`:\n[v1.35.13](service/codestarconnections/CHANGELOG.md#v13513-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/codestarnotifications`:\n[v1.31.21](service/codestarnotifications/CHANGELOG.md#v13121-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cognitoidentity`:\n[v1.33.22](service/cognitoidentity/CHANGELOG.md#v13322-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider`:\n[v1.59.3](service/cognitoidentityprovider/CHANGELOG.md#v1593-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/cognitosync`:\n[v1.29.12](service/cognitosync/CHANGELOG.md#v12912-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/comprehend`:\n[v1.40.21](service/comprehend/CHANGELOG.md#v14021-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/comprehendmedical`:\n[v1.31.21](service/comprehendmedical/CHANGELOG.md#v13121-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/computeoptimizer`:\n[v1.49.8](service/computeoptimizer/CHANGELOG.md#v1498-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/computeoptimizerautomation`:\n[v1.0.8](service/computeoptimizerautomation/CHANGELOG.md#v108-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/configservice`:\n[v1.62.1](service/configservice/CHANGELOG.md#v1621-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/connect`:\n[v1.166.1](service/connect/CHANGELOG.md#v11661-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/connectcampaigns`:\n[v1.20.20](service/connectcampaigns/CHANGELOG.md#v12020-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/connectcampaignsv2`:\n[v1.11.4](service/connectcampaignsv2/CHANGELOG.md#v1114-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/connectcases`:\n[v1.39.1](service/connectcases/CHANGELOG.md#v1391-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/connectcontactlens`:\n[v1.33.13](service/connectcontactlens/CHANGELOG.md#v13313-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/connecthealth`:\n[v1.0.3](service/connecthealth/CHANGELOG.md#v103-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/connectparticipant`:\n[v1.36.7](service/connectparticipant/CHANGELOG.md#v1367-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/controlcatalog`:\n[v1.14.9](service/controlcatalog/CHANGELOG.md#v1149-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/controltower`:\n[v1.28.9](service/controltower/CHANGELOG.md#v1289-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/costandusagereportservice`:\n[v1.34.13](service/costandusagereportservice/CHANGELOG.md#v13413-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/costexplorer`:\n[v1.63.6](service/costexplorer/CHANGELOG.md#v1636-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/costoptimizationhub`:\n[v1.22.8](service/costoptimizationhub/CHANGELOG.md#v1228-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/customerprofiles`:\n[v1.57.2](service/customerprofiles/CHANGELOG.md#v1572-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/databasemigrationservice`:\n[v1.61.10](service/databasemigrationservice/CHANGELOG.md#v16110-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/databrew`:\n[v1.39.14](service/databrew/CHANGELOG.md#v13914-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/dataexchange`:\n[v1.40.14](service/dataexchange/CHANGELOG.md#v14014-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/datapipeline`:\n[v1.30.20](service/datapipeline/CHANGELOG.md#v13020-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/datasync`:\n[v1.58.2](service/datasync/CHANGELOG.md#v1582-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/datazone`:\n[v1.54.2](service/datazone/CHANGELOG.md#v1542-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/dax`:\n[v1.29.16](service/dax/CHANGELOG.md#v12916-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/deadline`:\n[v1.26.2](service/deadline/CHANGELOG.md#v1262-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/detective`:\n[v1.38.13](service/detective/CHANGELOG.md#v13813-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/devicefarm`:\n[v1.38.8](service/devicefarm/CHANGELOG.md#v1388-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/devopsguru`:\n[v1.40.12](service/devopsguru/CHANGELOG.md#v14012-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/directconnect`:\n[v1.38.15](service/directconnect/CHANGELOG.md#v13815-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/directoryservice`:\n[v1.38.16](service/directoryservice/CHANGELOG.md#v13816-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/directoryservicedata`:\n[v1.7.21](service/directoryservicedata/CHANGELOG.md#v1721-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/dlm`:\n[v1.35.16](service/dlm/CHANGELOG.md#v13516-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/docdb`:\n[v1.48.13](service/docdb/CHANGELOG.md#v14813-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/docdbelastic`:\n[v1.20.13](service/docdbelastic/CHANGELOG.md#v12013-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/drs`:\n[v1.36.13](service/drs/CHANGELOG.md#v13613-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/dsql`:\n[v1.12.8](service/dsql/CHANGELOG.md#v1128-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/dynamodb`:\n[v1.57.1](service/dynamodb/CHANGELOG.md#v1571-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/dynamodbstreams`:\n[v1.32.14](service/dynamodbstreams/CHANGELOG.md#v13214-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/ebs`:\n[v1.33.14](service/ebs/CHANGELOG.md#v13314-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/ec2`:\n[v1.296.1](service/ec2/CHANGELOG.md#v12961-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/ec2instanceconnect`:\n[v1.32.20](service/ec2instanceconnect/CHANGELOG.md#v13220-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/ecr`:\n[v1.56.2](service/ecr/CHANGELOG.md#v1562-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/ecrpublic`:\n[v1.38.13](service/ecrpublic/CHANGELOG.md#v13813-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/ecs`:\n[v1.74.1](service/ecs/CHANGELOG.md#v1741-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/efs`:\n[v1.41.14](service/efs/CHANGELOG.md#v14114-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/eks`:\n[v1.81.2](service/eks/CHANGELOG.md#v1812-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/eksauth`:\n[v1.12.13](service/eksauth/CHANGELOG.md#v11213-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/elasticache`:\n[v1.51.13](service/elasticache/CHANGELOG.md#v15113-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/elasticbeanstalk`:\n[v1.34.2](service/elasticbeanstalk/CHANGELOG.md#v1342-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing`:\n[v1.33.23](service/elasticloadbalancing/CHANGELOG.md#v13323-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2`:\n[v1.54.10](service/elasticloadbalancingv2/CHANGELOG.md#v15410-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/elasticsearchservice`:\n[v1.39.2](service/elasticsearchservice/CHANGELOG.md#v1392-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/elementalinference`:\n[v1.0.3](service/elementalinference/CHANGELOG.md#v103-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/emr`:\n[v1.59.0](service/emr/CHANGELOG.md#v1590-2026-03-26)\n  - **Feature**: Add StepExecutionRoleArn to RunJobFlow API\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/emrcontainers`:\n[v1.40.17](service/emrcontainers/CHANGELOG.md#v14017-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/emrserverless`:\n[v1.39.6](service/emrserverless/CHANGELOG.md#v1396-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/entityresolution`:\n[v1.26.5](service/entityresolution/CHANGELOG.md#v1265-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/eventbridge`:\n[v1.45.23](service/eventbridge/CHANGELOG.md#v14523-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/evs`:\n[v1.6.4](service/evs/CHANGELOG.md#v164-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/finspace`:\n[v1.33.21](service/finspace/CHANGELOG.md#v13321-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/finspacedata`:\n[v1.33.21](service/finspacedata/CHANGELOG.md#v13321-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/firehose`:\n[v1.42.13](service/firehose/CHANGELOG.md#v14213-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/fis`:\n[v1.37.20](service/fis/CHANGELOG.md#v13720-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/fms`:\n[v1.44.22](service/fms/CHANGELOG.md#v14422-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/forecast`:\n[v1.41.21](service/forecast/CHANGELOG.md#v14121-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/forecastquery`:\n[v1.29.21](service/forecastquery/CHANGELOG.md#v12921-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/frauddetector`:\n[v1.41.12](service/frauddetector/CHANGELOG.md#v14112-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/freetier`:\n[v1.13.14](service/freetier/CHANGELOG.md#v11314-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/fsx`:\n[v1.65.7](service/fsx/CHANGELOG.md#v1657-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/gamelift`:\n[v1.51.3](service/gamelift/CHANGELOG.md#v1513-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/gameliftstreams`:\n[v1.11.1](service/gameliftstreams/CHANGELOG.md#v1111-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/geomaps`:\n[v1.9.4](service/geomaps/CHANGELOG.md#v194-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/geoplaces`:\n[v1.8.5](service/geoplaces/CHANGELOG.md#v185-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/georoutes`:\n[v1.7.14](service/georoutes/CHANGELOG.md#v1714-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/glacier`:\n[v1.32.6](service/glacier/CHANGELOG.md#v1326-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/globalaccelerator`:\n[v1.35.15](service/globalaccelerator/CHANGELOG.md#v13515-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/glue`:\n[v1.139.1](service/glue/CHANGELOG.md#v11391-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/grafana`:\n[v1.33.4](service/grafana/CHANGELOG.md#v1334-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/greengrass`:\n[v1.32.21](service/greengrass/CHANGELOG.md#v13221-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/greengrassv2`:\n[v1.42.12](service/greengrassv2/CHANGELOG.md#v14212-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/groundstation`:\n[v1.40.4](service/groundstation/CHANGELOG.md#v1404-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/guardduty`:\n[v1.74.2](service/guardduty/CHANGELOG.md#v1742-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/health`:\n[v1.37.4](service/health/CHANGELOG.md#v1374-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/healthlake`:\n[v1.36.13](service/healthlake/CHANGELOG.md#v13613-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/iam`:\n[v1.53.7](service/iam/CHANGELOG.md#v1537-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/identitystore`:\n[v1.36.5](service/identitystore/CHANGELOG.md#v1365-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/imagebuilder`:\n[v1.51.4](service/imagebuilder/CHANGELOG.md#v1514-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/inspector`:\n[v1.30.20](service/inspector/CHANGELOG.md#v13020-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/inspector2`:\n[v1.47.4](service/inspector2/CHANGELOG.md#v1474-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/inspectorscan`:\n[v1.13.5](service/inspectorscan/CHANGELOG.md#v1135-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/internetmonitor`:\n[v1.26.14](service/internetmonitor/CHANGELOG.md#v12614-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/invoicing`:\n[v1.9.8](service/invoicing/CHANGELOG.md#v198-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/iot`:\n[v1.72.5](service/iot/CHANGELOG.md#v1725-2026-03-26)\n- **Bug Fix**: Fix a bug where a recorded clock skew could persist on\nthe client even if the client and server clock ended up realigning.\n- `github.com/aws/aws-sdk-go-v2/service/iotdataplane`:\n[v1.32.21](service/iotdataplane/CHANGELOG.md#v13221-2026\n\n> ✂ **Note**\n> \n> PR body was truncated to here.\n\n\n</details>\n\n---\n\n### Configuration\n\n📅 **Schedule**: (UTC)\n\n- Branch creation\n  - \"on tuesday\"\n- Automerge\n  - At any time (no schedule defined)\n\n🚦 **Automerge**: Disabled by config. Please merge this manually once you\nare satisfied.\n\n♻ **Rebasing**: Whenever PR becomes conflicted, or you tick the\nrebase/retry checkbox.\n\n👻 **Immortal**: This PR will be recreated if closed unmerged. Get\n[config\nhelp](https://redirect.github.com/renovatebot/renovate/discussions) if\nthat's undesired.\n\n---\n\n- [ ] <!-- rebase-check -->If you want to rebase/retry this PR, check\nthis box\n\n---\n\nThis PR was generated by [Mend Renovate](https://mend.io/renovate/).\nView the [repository job\nlog](https://developer.mend.io/github/open-telemetry/opentelemetry-collector-contrib).\n\n<!--renovate-debug:eyJjcmVhdGVkSW5WZXIiOiI0My4yMDkuMCIsInVwZGF0ZWRJblZlciI6IjQzLjIwOS4wIiwidGFyZ2V0QnJhbmNoIjoibWFpbiIsImxhYmVscyI6WyJkZXBlbmRlbmNpZXMiLCJyZW5vdmF0ZWJvdCJdfQ==-->\n\n---------\n\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>\nCo-authored-by: otelbot <197425009+otelbot@users.noreply.github.com>\nCo-authored-by: Yang Song <songy23@users.noreply.github.com>",
-          "timestamp": "2026-06-02T21:10:39Z",
-          "url": "https://github.com/open-telemetry/opentelemetry-collector-contrib/commit/80519fa06e2ead5c382b29a056b9b208c4d154e1"
-        },
-        "date": 1780456962743,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "cpu_percentage_avg",
-            "value": 3.3264158044044994,
-            "unit": "%",
-            "extra": "IdleMode - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 3.3320354355584394,
-            "unit": "%",
-            "extra": "IdleMode - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 39,
-            "unit": "MiB",
-            "extra": "IdleMode - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 88,
-            "unit": "MiB",
-            "extra": "IdleMode - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "IdleMode - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 23.312150177703757,
-            "unit": "%",
-            "extra": "Log10kDPS/OTLP - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 26.32933939195873,
-            "unit": "%",
-            "extra": "Log10kDPS/OTLP - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 85,
-            "unit": "MiB",
-            "extra": "Log10kDPS/OTLP - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 109,
-            "unit": "MiB",
-            "extra": "Log10kDPS/OTLP - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Log10kDPS/OTLP - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 16.929898723018976,
-            "unit": "%",
-            "extra": "Log10kDPS/OTLP-HTTP - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 19.992500293334963,
-            "unit": "%",
-            "extra": "Log10kDPS/OTLP-HTTP - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 72,
-            "unit": "MiB",
-            "extra": "Log10kDPS/OTLP-HTTP - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 101,
-            "unit": "MiB",
-            "extra": "Log10kDPS/OTLP-HTTP - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Log10kDPS/OTLP-HTTP - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 18.19753020329793,
-            "unit": "%",
-            "extra": "Log10kDPS/file_log - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 20.329796599278552,
-            "unit": "%",
-            "extra": "Log10kDPS/file_log - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 76,
-            "unit": "MiB",
-            "extra": "Log10kDPS/file_log - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 108,
-            "unit": "MiB",
-            "extra": "Log10kDPS/file_log - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Log10kDPS/file_log - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 17.797307964959376,
-            "unit": "%",
-            "extra": "Log10kDPS/file_log_checkpoints - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 20.66210262170593,
-            "unit": "%",
-            "extra": "Log10kDPS/file_log_checkpoints - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 76,
-            "unit": "MiB",
-            "extra": "Log10kDPS/file_log_checkpoints - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 109,
-            "unit": "MiB",
-            "extra": "Log10kDPS/file_log_checkpoints - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Log10kDPS/file_log_checkpoints - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 36.061532874723554,
-            "unit": "%",
-            "extra": "Log10kDPS/kubernetes_containers - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 38.32322072959128,
-            "unit": "%",
-            "extra": "Log10kDPS/kubernetes_containers - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 83,
-            "unit": "MiB",
-            "extra": "Log10kDPS/kubernetes_containers - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 122,
-            "unit": "MiB",
-            "extra": "Log10kDPS/kubernetes_containers - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Log10kDPS/kubernetes_containers - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 38.5272672947208,
-            "unit": "%",
-            "extra": "Log10kDPS/kubernetes_containers_parser - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 40.659885560039214,
-            "unit": "%",
-            "extra": "Log10kDPS/kubernetes_containers_parser - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 74,
-            "unit": "MiB",
-            "extra": "Log10kDPS/kubernetes_containers_parser - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 104,
-            "unit": "MiB",
-            "extra": "Log10kDPS/kubernetes_containers_parser - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Log10kDPS/kubernetes_containers_parser - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 33.595119321222086,
-            "unit": "%",
-            "extra": "Log10kDPS/k8s_CRI-Containerd - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 36.327706038466395,
-            "unit": "%",
-            "extra": "Log10kDPS/k8s_CRI-Containerd - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 83,
-            "unit": "MiB",
-            "extra": "Log10kDPS/k8s_CRI-Containerd - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 122,
-            "unit": "MiB",
-            "extra": "Log10kDPS/k8s_CRI-Containerd - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Log10kDPS/k8s_CRI-Containerd - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 32.661682829193545,
-            "unit": "%",
-            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 34.99066305647934,
-            "unit": "%",
-            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 84,
-            "unit": "MiB",
-            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 121,
-            "unit": "MiB",
-            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 20.663790078358478,
-            "unit": "%",
-            "extra": "Log10kDPS/CRI-Containerd - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 22.66074938603682,
-            "unit": "%",
-            "extra": "Log10kDPS/CRI-Containerd - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 78,
-            "unit": "MiB",
-            "extra": "Log10kDPS/CRI-Containerd - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 112,
-            "unit": "MiB",
-            "extra": "Log10kDPS/CRI-Containerd - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Log10kDPS/CRI-Containerd - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 29.19526068467429,
-            "unit": "%",
-            "extra": "Log10kDPS/syslog-tcp-batch-1 - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 30.9957366707358,
-            "unit": "%",
-            "extra": "Log10kDPS/syslog-tcp-batch-1 - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 73,
-            "unit": "MiB",
-            "extra": "Log10kDPS/syslog-tcp-batch-1 - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 104,
-            "unit": "MiB",
-            "extra": "Log10kDPS/syslog-tcp-batch-1 - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Log10kDPS/syslog-tcp-batch-1 - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 9.46498625237642,
-            "unit": "%",
-            "extra": "Log10kDPS/syslog-tcp-batch-100 - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 12.329404334383499,
-            "unit": "%",
-            "extra": "Log10kDPS/syslog-tcp-batch-100 - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 72,
-            "unit": "MiB",
-            "extra": "Log10kDPS/syslog-tcp-batch-100 - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 105,
-            "unit": "MiB",
-            "extra": "Log10kDPS/syslog-tcp-batch-100 - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Log10kDPS/syslog-tcp-batch-100 - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 40.460842029046354,
-            "unit": "%",
-            "extra": "Log10kDPS/FluentForward-SplunkHEC - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 41.6581476032539,
-            "unit": "%",
-            "extra": "Log10kDPS/FluentForward-SplunkHEC - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 80,
-            "unit": "MiB",
-            "extra": "Log10kDPS/FluentForward-SplunkHEC - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 114,
-            "unit": "MiB",
-            "extra": "Log10kDPS/FluentForward-SplunkHEC - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Log10kDPS/FluentForward-SplunkHEC - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 29.59527228547159,
-            "unit": "%",
-            "extra": "Log10kDPS/tcp-batch-1 - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 31.983923057187848,
-            "unit": "%",
-            "extra": "Log10kDPS/tcp-batch-1 - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 73,
-            "unit": "MiB",
-            "extra": "Log10kDPS/tcp-batch-1 - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 105,
-            "unit": "MiB",
-            "extra": "Log10kDPS/tcp-batch-1 - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Log10kDPS/tcp-batch-1 - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 9.265020679535157,
-            "unit": "%",
-            "extra": "Log10kDPS/tcp-batch-100 - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 11.996828938190912,
-            "unit": "%",
-            "extra": "Log10kDPS/tcp-batch-100 - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 72,
-            "unit": "MiB",
-            "extra": "Log10kDPS/tcp-batch-100 - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 102,
-            "unit": "MiB",
-            "extra": "Log10kDPS/tcp-batch-100 - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Log10kDPS/tcp-batch-100 - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 0,
-            "unit": "%",
-            "extra": "LogLargeFiles/file_log-largefiles-2Gb-lifetime - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 0,
-            "unit": "%",
-            "extra": "LogLargeFiles/file_log-largefiles-2Gb-lifetime - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "LogLargeFiles/file_log-largefiles-2Gb-lifetime - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "LogLargeFiles/file_log-largefiles-2Gb-lifetime - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "LogLargeFiles/file_log-largefiles-2Gb-lifetime - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 0,
-            "unit": "%",
-            "extra": "LogLargeFiles/file_log-largefiles-6GB-lifetime - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 0,
-            "unit": "%",
-            "extra": "LogLargeFiles/file_log-largefiles-6GB-lifetime - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "LogLargeFiles/file_log-largefiles-6GB-lifetime - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "LogLargeFiles/file_log-largefiles-6GB-lifetime - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "LogLargeFiles/file_log-largefiles-6GB-lifetime - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 0,
-            "unit": "%",
-            "extra": "LargeFileOnce - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 0,
-            "unit": "%",
-            "extra": "LargeFileOnce - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "LargeFileOnce - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "LargeFileOnce - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 18446744073699551000,
-            "unit": "spans",
-            "extra": "LargeFileOnce - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 0,
-            "unit": "%",
-            "extra": "MemoryLimiterHit/otlp - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 0,
-            "unit": "%",
-            "extra": "MemoryLimiterHit/otlp - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "MemoryLimiterHit/otlp - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "MemoryLimiterHit/otlp - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "MemoryLimiterHit/otlp - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 0,
-            "unit": "%",
-            "extra": "MemoryLimiterHit/file_log - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 0,
-            "unit": "%",
-            "extra": "MemoryLimiterHit/file_log - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "MemoryLimiterHit/file_log - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "MemoryLimiterHit/file_log - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "MemoryLimiterHit/file_log - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 58.062091492480675,
-            "unit": "%",
-            "extra": "Metric10kDPS/OTLP - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 58.32457041657567,
-            "unit": "%",
-            "extra": "Metric10kDPS/OTLP - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 54,
-            "unit": "MiB",
-            "extra": "Metric10kDPS/OTLP - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 106,
-            "unit": "MiB",
-            "extra": "Metric10kDPS/OTLP - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 700,
-            "unit": "spans",
-            "extra": "Metric10kDPS/OTLP - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 47.19045537804439,
-            "unit": "%",
-            "extra": "Metric10kDPS/OTLP-HTTP - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 49.64852550918333,
-            "unit": "%",
-            "extra": "Metric10kDPS/OTLP-HTTP - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 71,
-            "unit": "MiB",
-            "extra": "Metric10kDPS/OTLP-HTTP - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 100,
-            "unit": "MiB",
-            "extra": "Metric10kDPS/OTLP-HTTP - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Metric10kDPS/OTLP-HTTP - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 115.24231074976996,
-            "unit": "%",
-            "extra": "Metric10kDPS/SignalFx - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 117.33110838352508,
-            "unit": "%",
-            "extra": "Metric10kDPS/SignalFx - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 75,
-            "unit": "MiB",
-            "extra": "Metric10kDPS/SignalFx - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 106,
-            "unit": "MiB",
-            "extra": "Metric10kDPS/SignalFx - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Metric10kDPS/SignalFx - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 25.795653583705647,
-            "unit": "%",
-            "extra": "Metric10kDPS/STEF - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 27.657856459315834,
-            "unit": "%",
-            "extra": "Metric10kDPS/STEF - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 87,
-            "unit": "MiB",
-            "extra": "Metric10kDPS/STEF - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 132,
-            "unit": "MiB",
-            "extra": "Metric10kDPS/STEF - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Metric10kDPS/STEF - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 125.54330078888667,
-            "unit": "%",
-            "extra": "Metric10kDPS/OtelArrow - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 125.61964907443964,
-            "unit": "%",
-            "extra": "Metric10kDPS/OtelArrow - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 164,
-            "unit": "MiB",
-            "extra": "Metric10kDPS/OtelArrow - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 488,
-            "unit": "MiB",
-            "extra": "Metric10kDPS/OtelArrow - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 11200,
-            "unit": "spans",
-            "extra": "Metric10kDPS/OtelArrow - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 0.9325085236382881,
-            "unit": "%",
-            "extra": "MetricK8sAttributesProcessor/110_workload_cluster - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 4.664864142947421,
-            "unit": "%",
-            "extra": "MetricK8sAttributesProcessor/110_workload_cluster - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 77,
-            "unit": "MiB",
-            "extra": "MetricK8sAttributesProcessor/110_workload_cluster - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 96,
-            "unit": "MiB",
-            "extra": "MetricK8sAttributesProcessor/110_workload_cluster - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "MetricK8sAttributesProcessor/110_workload_cluster - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 1.5553496340902588,
-            "unit": "%",
-            "extra": "MetricK8sAttributesProcessor/1K_workload_cluster - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 8.663702152830918,
-            "unit": "%",
-            "extra": "MetricK8sAttributesProcessor/1K_workload_cluster - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 83,
-            "unit": "MiB",
-            "extra": "MetricK8sAttributesProcessor/1K_workload_cluster - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 112,
-            "unit": "MiB",
-            "extra": "MetricK8sAttributesProcessor/1K_workload_cluster - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "MetricK8sAttributesProcessor/1K_workload_cluster - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 3.23774824044485,
-            "unit": "%",
-            "extra": "MetricK8sAttributesProcessor/5K_workload_cluster - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 19.988511509730063,
-            "unit": "%",
-            "extra": "MetricK8sAttributesProcessor/5K_workload_cluster - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 130,
-            "unit": "MiB",
-            "extra": "MetricK8sAttributesProcessor/5K_workload_cluster - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 167,
-            "unit": "MiB",
-            "extra": "MetricK8sAttributesProcessor/5K_workload_cluster - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "MetricK8sAttributesProcessor/5K_workload_cluster - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 2.277394818782889,
-            "unit": "%",
-            "extra": "MetricK8sAttributesProcessorExtended/110_workload_cluster_extended - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 12.329128775753745,
-            "unit": "%",
-            "extra": "MetricK8sAttributesProcessorExtended/110_workload_cluster_extended - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 83,
-            "unit": "MiB",
-            "extra": "MetricK8sAttributesProcessorExtended/110_workload_cluster_extended - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 111,
-            "unit": "MiB",
-            "extra": "MetricK8sAttributesProcessorExtended/110_workload_cluster_extended - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "MetricK8sAttributesProcessorExtended/110_workload_cluster_extended - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 6.237201826948729,
-            "unit": "%",
-            "extra": "MetricK8sAttributesProcessorExtended/1K_workload_cluster_extended - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 41.65609648772437,
-            "unit": "%",
-            "extra": "MetricK8sAttributesProcessorExtended/1K_workload_cluster_extended - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 140,
-            "unit": "MiB",
-            "extra": "MetricK8sAttributesProcessorExtended/1K_workload_cluster_extended - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 181,
-            "unit": "MiB",
-            "extra": "MetricK8sAttributesProcessorExtended/1K_workload_cluster_extended - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "MetricK8sAttributesProcessorExtended/1K_workload_cluster_extended - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 42.816487820345934,
-            "unit": "%",
-            "extra": "MetricK8sAttributesProcessorExtended/5K_workload_cluster_extended - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 110.95672218118143,
-            "unit": "%",
-            "extra": "MetricK8sAttributesProcessorExtended/5K_workload_cluster_extended - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 364,
-            "unit": "MiB",
-            "extra": "MetricK8sAttributesProcessorExtended/5K_workload_cluster_extended - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 502,
-            "unit": "MiB",
-            "extra": "MetricK8sAttributesProcessorExtended/5K_workload_cluster_extended - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "MetricK8sAttributesProcessorExtended/5K_workload_cluster_extended - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 0,
-            "unit": "%",
-            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 0,
-            "unit": "%",
-            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 0,
-            "unit": "%",
-            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 0,
-            "unit": "%",
-            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 88.37878400580276,
-            "unit": "%",
-            "extra": "MetricsFromFile - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 91.32439772807908,
-            "unit": "%",
-            "extra": "MetricsFromFile - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 83,
-            "unit": "MiB",
-            "extra": "MetricsFromFile - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 105,
-            "unit": "MiB",
-            "extra": "MetricsFromFile - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "MetricsFromFile - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 16.711885955901597,
-            "unit": "%",
-            "extra": "PrometheusReceiver/Baseline/1k - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 23.337875280606823,
-            "unit": "%",
-            "extra": "PrometheusReceiver/Baseline/1k - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_limit",
-            "value": 200,
-            "unit": "%",
-            "extra": "PrometheusReceiver/Baseline/1k - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 84,
-            "unit": "MiB",
-            "extra": "PrometheusReceiver/Baseline/1k - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 112,
-            "unit": "MiB",
-            "extra": "PrometheusReceiver/Baseline/1k - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_limit",
-            "value": 300,
-            "unit": "MiB",
-            "extra": "PrometheusReceiver/Baseline/1k - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "PrometheusReceiver/Baseline/1k - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 49.944902124252025,
-            "unit": "%",
-            "extra": "PrometheusReceiver/Baseline/10k - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 68.99800080592598,
-            "unit": "%",
-            "extra": "PrometheusReceiver/Baseline/10k - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_limit",
-            "value": 200,
-            "unit": "%",
-            "extra": "PrometheusReceiver/Baseline/10k - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 109,
-            "unit": "MiB",
-            "extra": "PrometheusReceiver/Baseline/10k - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 154,
-            "unit": "MiB",
-            "extra": "PrometheusReceiver/Baseline/10k - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_limit",
-            "value": 400,
-            "unit": "MiB",
-            "extra": "PrometheusReceiver/Baseline/10k - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "PrometheusReceiver/Baseline/10k - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 50.89737922536316,
-            "unit": "%",
-            "extra": "PrometheusReceiver/WithTargetInfo/10k - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 70.65065821662397,
-            "unit": "%",
-            "extra": "PrometheusReceiver/WithTargetInfo/10k - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_limit",
-            "value": 200,
-            "unit": "%",
-            "extra": "PrometheusReceiver/WithTargetInfo/10k - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 109,
-            "unit": "MiB",
-            "extra": "PrometheusReceiver/WithTargetInfo/10k - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 158,
-            "unit": "MiB",
-            "extra": "PrometheusReceiver/WithTargetInfo/10k - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_limit",
-            "value": 400,
-            "unit": "MiB",
-            "extra": "PrometheusReceiver/WithTargetInfo/10k - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "PrometheusReceiver/WithTargetInfo/10k - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 43.08888677280927,
-            "unit": "%",
-            "extra": "PrometheusReceiver/NativeHistogram/10k - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 64.33710488165002,
-            "unit": "%",
-            "extra": "PrometheusReceiver/NativeHistogram/10k - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_limit",
-            "value": 200,
-            "unit": "%",
-            "extra": "PrometheusReceiver/NativeHistogram/10k - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 105,
-            "unit": "MiB",
-            "extra": "PrometheusReceiver/NativeHistogram/10k - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 152,
-            "unit": "MiB",
-            "extra": "PrometheusReceiver/NativeHistogram/10k - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_limit",
-            "value": 500,
-            "unit": "MiB",
-            "extra": "PrometheusReceiver/NativeHistogram/10k - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "PrometheusReceiver/NativeHistogram/10k - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 24.22438198707728,
-            "unit": "%",
-            "extra": "Trace10kSPS/OTLP-gRPC - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 24.329049887822933,
-            "unit": "%",
-            "extra": "Trace10kSPS/OTLP-gRPC - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 54,
-            "unit": "MiB",
-            "extra": "Trace10kSPS/OTLP-gRPC - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 103,
-            "unit": "MiB",
-            "extra": "Trace10kSPS/OTLP-gRPC - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 400,
-            "unit": "spans",
-            "extra": "Trace10kSPS/OTLP-gRPC - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 31.974814206245277,
-            "unit": "%",
-            "extra": "Trace10kSPS/OTLP-gRPC-gzip - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 31.99373152150588,
-            "unit": "%",
-            "extra": "Trace10kSPS/OTLP-gRPC-gzip - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 35,
-            "unit": "MiB",
-            "extra": "Trace10kSPS/OTLP-gRPC-gzip - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 103,
-            "unit": "MiB",
-            "extra": "Trace10kSPS/OTLP-gRPC-gzip - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 400,
-            "unit": "spans",
-            "extra": "Trace10kSPS/OTLP-gRPC-gzip - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 14.327328862037994,
-            "unit": "%",
-            "extra": "Trace10kSPS/OTLP-HTTP - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 16.329128620814775,
-            "unit": "%",
-            "extra": "Trace10kSPS/OTLP-HTTP - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 51,
-            "unit": "MiB",
-            "extra": "Trace10kSPS/OTLP-HTTP - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 101,
-            "unit": "MiB",
-            "extra": "Trace10kSPS/OTLP-HTTP - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 200,
-            "unit": "spans",
-            "extra": "Trace10kSPS/OTLP-HTTP - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 27.313665018081352,
-            "unit": "%",
-            "extra": "Trace10kSPS/OTLP-HTTP-gzip - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 27.32925013383909,
-            "unit": "%",
-            "extra": "Trace10kSPS/OTLP-HTTP-gzip - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 34,
-            "unit": "MiB",
-            "extra": "Trace10kSPS/OTLP-HTTP-gzip - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 100,
-            "unit": "MiB",
-            "extra": "Trace10kSPS/OTLP-HTTP-gzip - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 300,
-            "unit": "spans",
-            "extra": "Trace10kSPS/OTLP-HTTP-gzip - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 14.59645904986458,
-            "unit": "%",
-            "extra": "Trace10kSPS/OTLP-HTTP-zstd - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 18.66254059045091,
-            "unit": "%",
-            "extra": "Trace10kSPS/OTLP-HTTP-zstd - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 88,
-            "unit": "MiB",
-            "extra": "Trace10kSPS/OTLP-HTTP-zstd - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 124,
-            "unit": "MiB",
-            "extra": "Trace10kSPS/OTLP-HTTP-zstd - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Trace10kSPS/OTLP-HTTP-zstd - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 69.98861131318989,
-            "unit": "%",
-            "extra": "Trace10kSPS/Zipkin - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 72.07223930275346,
-            "unit": "%",
-            "extra": "Trace10kSPS/Zipkin - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 77,
-            "unit": "MiB",
-            "extra": "Trace10kSPS/Zipkin - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 111,
-            "unit": "MiB",
-            "extra": "Trace10kSPS/Zipkin - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Trace10kSPS/Zipkin - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 33.30617799596289,
-            "unit": "%",
-            "extra": "Trace10kSPSJaegerGRPC - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 33.327529888352935,
-            "unit": "%",
-            "extra": "Trace10kSPSJaegerGRPC - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 36,
-            "unit": "MiB",
-            "extra": "Trace10kSPSJaegerGRPC - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 104,
-            "unit": "MiB",
-            "extra": "Trace10kSPSJaegerGRPC - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 400,
-            "unit": "spans",
-            "extra": "Trace10kSPSJaegerGRPC - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 32.27169015602945,
-            "unit": "%",
-            "extra": "Trace10kSPSJaegerGRPC - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 32.32675849090414,
-            "unit": "%",
-            "extra": "Trace10kSPSJaegerGRPC - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 44,
-            "unit": "MiB",
-            "extra": "Trace10kSPSJaegerGRPC - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 105,
-            "unit": "MiB",
-            "extra": "Trace10kSPSJaegerGRPC - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 400,
-            "unit": "spans",
-            "extra": "Trace10kSPSJaegerGRPC - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 117.230025070278,
-            "unit": "%",
-            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 119.91499170277858,
-            "unit": "%",
-            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 75,
-            "unit": "MiB",
-            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 106,
-            "unit": "MiB",
-            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 101.25081528452931,
-            "unit": "%",
-            "extra": "TraceNoBackend10kSPS/MemoryLimit - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 103.33317206469616,
-            "unit": "%",
-            "extra": "TraceNoBackend10kSPS/MemoryLimit - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 73,
-            "unit": "MiB",
-            "extra": "TraceNoBackend10kSPS/MemoryLimit - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 102,
-            "unit": "MiB",
-            "extra": "TraceNoBackend10kSPS/MemoryLimit - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "TraceNoBackend10kSPS/MemoryLimit - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 19.980431373309465,
-            "unit": "%",
-            "extra": "Trace1kSPSWithAttrs/0*0bytes - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 22.656329912498947,
-            "unit": "%",
-            "extra": "Trace1kSPSWithAttrs/0*0bytes - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 79,
-            "unit": "MiB",
-            "extra": "Trace1kSPSWithAttrs/0*0bytes - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 99,
-            "unit": "MiB",
-            "extra": "Trace1kSPSWithAttrs/0*0bytes - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Trace1kSPSWithAttrs/0*0bytes - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 56.259047485112745,
-            "unit": "%",
-            "extra": "Trace1kSPSWithAttrs/100*50bytes - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 58.602980678321906,
-            "unit": "%",
-            "extra": "Trace1kSPSWithAttrs/100*50bytes - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 76,
-            "unit": "MiB",
-            "extra": "Trace1kSPSWithAttrs/100*50bytes - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 107,
-            "unit": "MiB",
-            "extra": "Trace1kSPSWithAttrs/100*50bytes - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Trace1kSPSWithAttrs/100*50bytes - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 37.46097756789937,
-            "unit": "%",
-            "extra": "Trace1kSPSWithAttrs/10*1000bytes - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 39.993502948796625,
-            "unit": "%",
-            "extra": "Trace1kSPSWithAttrs/10*1000bytes - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 75,
-            "unit": "MiB",
-            "extra": "Trace1kSPSWithAttrs/10*1000bytes - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 107,
-            "unit": "MiB",
-            "extra": "Trace1kSPSWithAttrs/10*1000bytes - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Trace1kSPSWithAttrs/10*1000bytes - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 52.456968289478326,
-            "unit": "%",
-            "extra": "Trace1kSPSWithAttrs/20*5000bytes - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 53.99105773106329,
-            "unit": "%",
-            "extra": "Trace1kSPSWithAttrs/20*5000bytes - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 88,
-            "unit": "MiB",
-            "extra": "Trace1kSPSWithAttrs/20*5000bytes - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 126,
-            "unit": "MiB",
-            "extra": "Trace1kSPSWithAttrs/20*5000bytes - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "Trace1kSPSWithAttrs/20*5000bytes - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 0,
-            "unit": "%",
-            "extra": "TraceAttributesProcessor/OTLP - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 0,
-            "unit": "%",
-            "extra": "TraceAttributesProcessor/OTLP - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "TraceAttributesProcessor/OTLP - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "TraceAttributesProcessor/OTLP - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "TraceAttributesProcessor/OTLP - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 0,
-            "unit": "%",
-            "extra": "TraceAttributesProcessorJaegerGRPC - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 0,
-            "unit": "%",
-            "extra": "TraceAttributesProcessorJaegerGRPC - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "TraceAttributesProcessorJaegerGRPC - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "TraceAttributesProcessorJaegerGRPC - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "TraceAttributesProcessorJaegerGRPC - Dropped Span Count"
-          },
-          {
-            "name": "cpu_percentage_avg",
-            "value": 0,
-            "unit": "%",
-            "extra": "TraceAttributesProcessorJaegerGRPC - Cpu Percentage"
-          },
-          {
-            "name": "cpu_percentage_max",
-            "value": 0,
-            "unit": "%",
-            "extra": "TraceAttributesProcessorJaegerGRPC - Cpu Percentage"
-          },
-          {
-            "name": "ram_mib_avg",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "TraceAttributesProcessorJaegerGRPC - RAM (MiB)"
-          },
-          {
-            "name": "ram_mib_max",
-            "value": 0,
-            "unit": "MiB",
-            "extra": "TraceAttributesProcessorJaegerGRPC - RAM (MiB)"
-          },
-          {
-            "name": "dropped_span_count",
-            "value": 0,
-            "unit": "spans",
-            "extra": "TraceAttributesProcessorJaegerGRPC - Dropped Span Count"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -171910,6 +170190,1726 @@ window.BENCHMARK_DATA = {
           {
             "name": "ram_mib_max",
             "value": 124,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/20*5000bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace1kSPSWithAttrs/20*5000bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0,
+            "unit": "%",
+            "extra": "TraceAttributesProcessor/OTLP - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 0,
+            "unit": "%",
+            "extra": "TraceAttributesProcessor/OTLP - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "TraceAttributesProcessor/OTLP - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "TraceAttributesProcessor/OTLP - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceAttributesProcessor/OTLP - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0,
+            "unit": "%",
+            "extra": "TraceAttributesProcessorJaegerGRPC - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 0,
+            "unit": "%",
+            "extra": "TraceAttributesProcessorJaegerGRPC - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "TraceAttributesProcessorJaegerGRPC - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "TraceAttributesProcessorJaegerGRPC - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceAttributesProcessorJaegerGRPC - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0,
+            "unit": "%",
+            "extra": "TraceAttributesProcessorJaegerGRPC - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 0,
+            "unit": "%",
+            "extra": "TraceAttributesProcessorJaegerGRPC - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "TraceAttributesProcessorJaegerGRPC - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "TraceAttributesProcessorJaegerGRPC - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceAttributesProcessorJaegerGRPC - Dropped Span Count"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Tyler Helmuth",
+            "username": "TylerHelmuth",
+            "email": "12352919+TylerHelmuth@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "d7ce072a36b90f491fabf8dbc2f2d271556e2a6b",
+          "message": "[pkg/ottl]: add unit tests for config unmarshal functions (#50095)",
+          "timestamp": "2026-08-07T19:07:46Z",
+          "url": "https://github.com/open-telemetry/opentelemetry-collector-contrib/commit/d7ce072a36b90f491fabf8dbc2f2d271556e2a6b"
+        },
+        "date": 1786178504408,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "cpu_percentage_avg",
+            "value": 3.3168081031421,
+            "unit": "%",
+            "extra": "IdleMode - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 3.33209062791226,
+            "unit": "%",
+            "extra": "IdleMode - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 48,
+            "unit": "MiB",
+            "extra": "IdleMode - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 85,
+            "unit": "MiB",
+            "extra": "IdleMode - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "IdleMode - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 23.30786775681137,
+            "unit": "%",
+            "extra": "Log10kDPS/OTLP - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 26.3276404374345,
+            "unit": "%",
+            "extra": "Log10kDPS/OTLP - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 83,
+            "unit": "MiB",
+            "extra": "Log10kDPS/OTLP - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 105,
+            "unit": "MiB",
+            "extra": "Log10kDPS/OTLP - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/OTLP - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 17.530711669164056,
+            "unit": "%",
+            "extra": "Log10kDPS/OTLP-HTTP - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 19.99694188100943,
+            "unit": "%",
+            "extra": "Log10kDPS/OTLP-HTTP - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 69,
+            "unit": "MiB",
+            "extra": "Log10kDPS/OTLP-HTTP - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 97,
+            "unit": "MiB",
+            "extra": "Log10kDPS/OTLP-HTTP - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/OTLP-HTTP - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 18.46404228247872,
+            "unit": "%",
+            "extra": "Log10kDPS/file_log - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 20.65767482151393,
+            "unit": "%",
+            "extra": "Log10kDPS/file_log - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 73,
+            "unit": "MiB",
+            "extra": "Log10kDPS/file_log - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 104,
+            "unit": "MiB",
+            "extra": "Log10kDPS/file_log - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/file_log - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 18.46397030045874,
+            "unit": "%",
+            "extra": "Log10kDPS/file_log_checkpoints - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 21.663021502248554,
+            "unit": "%",
+            "extra": "Log10kDPS/file_log_checkpoints - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 73,
+            "unit": "MiB",
+            "extra": "Log10kDPS/file_log_checkpoints - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 104,
+            "unit": "MiB",
+            "extra": "Log10kDPS/file_log_checkpoints - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/file_log_checkpoints - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 38.39368364009974,
+            "unit": "%",
+            "extra": "Log10kDPS/kubernetes_containers - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 41.32737746588141,
+            "unit": "%",
+            "extra": "Log10kDPS/kubernetes_containers - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 82,
+            "unit": "MiB",
+            "extra": "Log10kDPS/kubernetes_containers - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 118,
+            "unit": "MiB",
+            "extra": "Log10kDPS/kubernetes_containers - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/kubernetes_containers - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 38.527662097431744,
+            "unit": "%",
+            "extra": "Log10kDPS/kubernetes_containers_parser - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 39.66000694508045,
+            "unit": "%",
+            "extra": "Log10kDPS/kubernetes_containers_parser - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 73,
+            "unit": "MiB",
+            "extra": "Log10kDPS/kubernetes_containers_parser - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 104,
+            "unit": "MiB",
+            "extra": "Log10kDPS/kubernetes_containers_parser - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/kubernetes_containers_parser - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 33.727689213655104,
+            "unit": "%",
+            "extra": "Log10kDPS/k8s_CRI-Containerd - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 35.324919373212644,
+            "unit": "%",
+            "extra": "Log10kDPS/k8s_CRI-Containerd - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 82,
+            "unit": "MiB",
+            "extra": "Log10kDPS/k8s_CRI-Containerd - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 120,
+            "unit": "MiB",
+            "extra": "Log10kDPS/k8s_CRI-Containerd - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/k8s_CRI-Containerd - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 33.861968751935535,
+            "unit": "%",
+            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 35.00374253014383,
+            "unit": "%",
+            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 79,
+            "unit": "MiB",
+            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 113,
+            "unit": "MiB",
+            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 20.86390194094711,
+            "unit": "%",
+            "extra": "Log10kDPS/CRI-Containerd - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 22.996123535790197,
+            "unit": "%",
+            "extra": "Log10kDPS/CRI-Containerd - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 75,
+            "unit": "MiB",
+            "extra": "Log10kDPS/CRI-Containerd - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 109,
+            "unit": "MiB",
+            "extra": "Log10kDPS/CRI-Containerd - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/CRI-Containerd - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 30.06187892965919,
+            "unit": "%",
+            "extra": "Log10kDPS/syslog-tcp-batch-1 - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 30.99010146202205,
+            "unit": "%",
+            "extra": "Log10kDPS/syslog-tcp-batch-1 - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 70,
+            "unit": "MiB",
+            "extra": "Log10kDPS/syslog-tcp-batch-1 - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 100,
+            "unit": "MiB",
+            "extra": "Log10kDPS/syslog-tcp-batch-1 - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/syslog-tcp-batch-1 - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 9.598322790995168,
+            "unit": "%",
+            "extra": "Log10kDPS/syslog-tcp-batch-100 - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 12.661904144660737,
+            "unit": "%",
+            "extra": "Log10kDPS/syslog-tcp-batch-100 - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 70,
+            "unit": "MiB",
+            "extra": "Log10kDPS/syslog-tcp-batch-100 - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 101,
+            "unit": "MiB",
+            "extra": "Log10kDPS/syslog-tcp-batch-100 - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/syslog-tcp-batch-100 - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 40.99103797360189,
+            "unit": "%",
+            "extra": "Log10kDPS/FluentForward-SplunkHEC - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 42.32830549255032,
+            "unit": "%",
+            "extra": "Log10kDPS/FluentForward-SplunkHEC - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 75,
+            "unit": "MiB",
+            "extra": "Log10kDPS/FluentForward-SplunkHEC - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 106,
+            "unit": "MiB",
+            "extra": "Log10kDPS/FluentForward-SplunkHEC - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/FluentForward-SplunkHEC - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 28.46091349602463,
+            "unit": "%",
+            "extra": "Log10kDPS/tcp-batch-1 - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 29.991398866690353,
+            "unit": "%",
+            "extra": "Log10kDPS/tcp-batch-1 - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 69,
+            "unit": "MiB",
+            "extra": "Log10kDPS/tcp-batch-1 - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 98,
+            "unit": "MiB",
+            "extra": "Log10kDPS/tcp-batch-1 - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/tcp-batch-1 - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 9.53198516557306,
+            "unit": "%",
+            "extra": "Log10kDPS/tcp-batch-100 - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 12.662056694610092,
+            "unit": "%",
+            "extra": "Log10kDPS/tcp-batch-100 - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 70,
+            "unit": "MiB",
+            "extra": "Log10kDPS/tcp-batch-100 - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 98,
+            "unit": "MiB",
+            "extra": "Log10kDPS/tcp-batch-100 - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/tcp-batch-100 - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0,
+            "unit": "%",
+            "extra": "LogLargeFiles/file_log-largefiles-2Gb-lifetime - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 0,
+            "unit": "%",
+            "extra": "LogLargeFiles/file_log-largefiles-2Gb-lifetime - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "LogLargeFiles/file_log-largefiles-2Gb-lifetime - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "LogLargeFiles/file_log-largefiles-2Gb-lifetime - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "LogLargeFiles/file_log-largefiles-2Gb-lifetime - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0,
+            "unit": "%",
+            "extra": "LogLargeFiles/file_log-largefiles-6GB-lifetime - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 0,
+            "unit": "%",
+            "extra": "LogLargeFiles/file_log-largefiles-6GB-lifetime - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "LogLargeFiles/file_log-largefiles-6GB-lifetime - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "LogLargeFiles/file_log-largefiles-6GB-lifetime - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "LogLargeFiles/file_log-largefiles-6GB-lifetime - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0,
+            "unit": "%",
+            "extra": "LargeFileOnce - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 0,
+            "unit": "%",
+            "extra": "LargeFileOnce - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "LargeFileOnce - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "LargeFileOnce - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 18446744073699551000,
+            "unit": "spans",
+            "extra": "LargeFileOnce - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0,
+            "unit": "%",
+            "extra": "MemoryLimiterHit/otlp - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 0,
+            "unit": "%",
+            "extra": "MemoryLimiterHit/otlp - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "MemoryLimiterHit/otlp - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "MemoryLimiterHit/otlp - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "MemoryLimiterHit/otlp - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0,
+            "unit": "%",
+            "extra": "MemoryLimiterHit/file_log - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 0,
+            "unit": "%",
+            "extra": "MemoryLimiterHit/file_log - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "MemoryLimiterHit/file_log - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "MemoryLimiterHit/file_log - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "MemoryLimiterHit/file_log - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 56.278387243110885,
+            "unit": "%",
+            "extra": "Metric10kDPS/OTLP - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 60.307401512527356,
+            "unit": "%",
+            "extra": "Metric10kDPS/OTLP - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 83,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/OTLP - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 105,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/OTLP - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Metric10kDPS/OTLP - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 47.92506230147618,
+            "unit": "%",
+            "extra": "Metric10kDPS/OTLP-HTTP - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 49.983769620215305,
+            "unit": "%",
+            "extra": "Metric10kDPS/OTLP-HTTP - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 67,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/OTLP-HTTP - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 95,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/OTLP-HTTP - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Metric10kDPS/OTLP-HTTP - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 115.11480756200795,
+            "unit": "%",
+            "extra": "Metric10kDPS/SignalFx - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 116.30087825517961,
+            "unit": "%",
+            "extra": "Metric10kDPS/SignalFx - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 72,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/SignalFx - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 101,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/SignalFx - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Metric10kDPS/SignalFx - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 26.06197041774499,
+            "unit": "%",
+            "extra": "Metric10kDPS/STEF - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 28.329757249189264,
+            "unit": "%",
+            "extra": "Metric10kDPS/STEF - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 86,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/STEF - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 133,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/STEF - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Metric10kDPS/STEF - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 119.91203636730611,
+            "unit": "%",
+            "extra": "Metric10kDPS/OtelArrow - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 119.98417132816589,
+            "unit": "%",
+            "extra": "Metric10kDPS/OtelArrow - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 169,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/OtelArrow - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 503,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/OtelArrow - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 11200,
+            "unit": "spans",
+            "extra": "Metric10kDPS/OtelArrow - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0.9990843992929288,
+            "unit": "%",
+            "extra": "MetricK8sAttributesProcessor/110_workload_cluster - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 4.99916580419975,
+            "unit": "%",
+            "extra": "MetricK8sAttributesProcessor/110_workload_cluster - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 74,
+            "unit": "MiB",
+            "extra": "MetricK8sAttributesProcessor/110_workload_cluster - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 92,
+            "unit": "MiB",
+            "extra": "MetricK8sAttributesProcessor/110_workload_cluster - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "MetricK8sAttributesProcessor/110_workload_cluster - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 1.9441201997572617,
+            "unit": "%",
+            "extra": "MetricK8sAttributesProcessor/1K_workload_cluster - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 10.663847287628448,
+            "unit": "%",
+            "extra": "MetricK8sAttributesProcessor/1K_workload_cluster - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 78,
+            "unit": "MiB",
+            "extra": "MetricK8sAttributesProcessor/1K_workload_cluster - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 106,
+            "unit": "MiB",
+            "extra": "MetricK8sAttributesProcessor/1K_workload_cluster - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "MetricK8sAttributesProcessor/1K_workload_cluster - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 4.237550423098136,
+            "unit": "%",
+            "extra": "MetricK8sAttributesProcessor/5K_workload_cluster - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 29.325869322848575,
+            "unit": "%",
+            "extra": "MetricK8sAttributesProcessor/5K_workload_cluster - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 101,
+            "unit": "MiB",
+            "extra": "MetricK8sAttributesProcessor/5K_workload_cluster - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 132,
+            "unit": "MiB",
+            "extra": "MetricK8sAttributesProcessor/5K_workload_cluster - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "MetricK8sAttributesProcessor/5K_workload_cluster - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 1.888597506202956,
+            "unit": "%",
+            "extra": "MetricK8sAttributesProcessorExtended/110_workload_cluster_extended - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 9.665745840057722,
+            "unit": "%",
+            "extra": "MetricK8sAttributesProcessorExtended/110_workload_cluster_extended - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 75,
+            "unit": "MiB",
+            "extra": "MetricK8sAttributesProcessorExtended/110_workload_cluster_extended - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 101,
+            "unit": "MiB",
+            "extra": "MetricK8sAttributesProcessorExtended/110_workload_cluster_extended - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "MetricK8sAttributesProcessorExtended/110_workload_cluster_extended - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 8.284560283944504,
+            "unit": "%",
+            "extra": "MetricK8sAttributesProcessorExtended/1K_workload_cluster_extended - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 54.99013442161391,
+            "unit": "%",
+            "extra": "MetricK8sAttributesProcessorExtended/1K_workload_cluster_extended - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 110,
+            "unit": "MiB",
+            "extra": "MetricK8sAttributesProcessorExtended/1K_workload_cluster_extended - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 143,
+            "unit": "MiB",
+            "extra": "MetricK8sAttributesProcessorExtended/1K_workload_cluster_extended - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "MetricK8sAttributesProcessorExtended/1K_workload_cluster_extended - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 50.021852211510684,
+            "unit": "%",
+            "extra": "MetricK8sAttributesProcessorExtended/5K_workload_cluster_extended - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 147.91469877653316,
+            "unit": "%",
+            "extra": "MetricK8sAttributesProcessorExtended/5K_workload_cluster_extended - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 294,
+            "unit": "MiB",
+            "extra": "MetricK8sAttributesProcessorExtended/5K_workload_cluster_extended - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 346,
+            "unit": "MiB",
+            "extra": "MetricK8sAttributesProcessorExtended/5K_workload_cluster_extended - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "MetricK8sAttributesProcessorExtended/5K_workload_cluster_extended - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0,
+            "unit": "%",
+            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 0,
+            "unit": "%",
+            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0,
+            "unit": "%",
+            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 0,
+            "unit": "%",
+            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 86.05581772364584,
+            "unit": "%",
+            "extra": "MetricsFromFile - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 89.98846356895892,
+            "unit": "%",
+            "extra": "MetricsFromFile - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 79,
+            "unit": "MiB",
+            "extra": "MetricsFromFile - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 101,
+            "unit": "MiB",
+            "extra": "MetricsFromFile - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "MetricsFromFile - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 17.092707472688332,
+            "unit": "%",
+            "extra": "PrometheusReceiver/Baseline/1k - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 22.669807969060724,
+            "unit": "%",
+            "extra": "PrometheusReceiver/Baseline/1k - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_limit",
+            "value": 200,
+            "unit": "%",
+            "extra": "PrometheusReceiver/Baseline/1k - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 79,
+            "unit": "MiB",
+            "extra": "PrometheusReceiver/Baseline/1k - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 106,
+            "unit": "MiB",
+            "extra": "PrometheusReceiver/Baseline/1k - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_limit",
+            "value": 300,
+            "unit": "MiB",
+            "extra": "PrometheusReceiver/Baseline/1k - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "PrometheusReceiver/Baseline/1k - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 52.32899483604574,
+            "unit": "%",
+            "extra": "PrometheusReceiver/Baseline/10k - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 71.00380194591106,
+            "unit": "%",
+            "extra": "PrometheusReceiver/Baseline/10k - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_limit",
+            "value": 200,
+            "unit": "%",
+            "extra": "PrometheusReceiver/Baseline/10k - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 106,
+            "unit": "MiB",
+            "extra": "PrometheusReceiver/Baseline/10k - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 150,
+            "unit": "MiB",
+            "extra": "PrometheusReceiver/Baseline/10k - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_limit",
+            "value": 400,
+            "unit": "MiB",
+            "extra": "PrometheusReceiver/Baseline/10k - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "PrometheusReceiver/Baseline/10k - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 52.47130778862781,
+            "unit": "%",
+            "extra": "PrometheusReceiver/WithTargetInfo/10k - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 71.99252571198308,
+            "unit": "%",
+            "extra": "PrometheusReceiver/WithTargetInfo/10k - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_limit",
+            "value": 200,
+            "unit": "%",
+            "extra": "PrometheusReceiver/WithTargetInfo/10k - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 102,
+            "unit": "MiB",
+            "extra": "PrometheusReceiver/WithTargetInfo/10k - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 147,
+            "unit": "MiB",
+            "extra": "PrometheusReceiver/WithTargetInfo/10k - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_limit",
+            "value": 400,
+            "unit": "MiB",
+            "extra": "PrometheusReceiver/WithTargetInfo/10k - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "PrometheusReceiver/WithTargetInfo/10k - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 47.898456123192624,
+            "unit": "%",
+            "extra": "PrometheusReceiver/NativeHistogram/10k - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 71.33231763246259,
+            "unit": "%",
+            "extra": "PrometheusReceiver/NativeHistogram/10k - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_limit",
+            "value": 200,
+            "unit": "%",
+            "extra": "PrometheusReceiver/NativeHistogram/10k - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 103,
+            "unit": "MiB",
+            "extra": "PrometheusReceiver/NativeHistogram/10k - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 148,
+            "unit": "MiB",
+            "extra": "PrometheusReceiver/NativeHistogram/10k - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_limit",
+            "value": 500,
+            "unit": "MiB",
+            "extra": "PrometheusReceiver/NativeHistogram/10k - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "PrometheusReceiver/NativeHistogram/10k - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 24.88556662519017,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-gRPC - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 24.99609583479547,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-gRPC - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 52,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-gRPC - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 98,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-gRPC - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 100,
+            "unit": "spans",
+            "extra": "Trace10kSPS/OTLP-gRPC - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 31.973076144013724,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-gRPC-gzip - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 31.99272019515471,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-gRPC-gzip - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 34,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-gRPC-gzip - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 99,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-gRPC-gzip - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 100,
+            "unit": "spans",
+            "extra": "Trace10kSPS/OTLP-gRPC-gzip - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 13.264515631795042,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-HTTP - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 16.996105359452987,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-HTTP - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 69,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-HTTP - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 97,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-HTTP - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace10kSPS/OTLP-HTTP - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 26.64237422089838,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-HTTP-gzip - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 26.658232463991087,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-HTTP-gzip - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 34,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-HTTP-gzip - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 98,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-HTTP-gzip - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 200,
+            "unit": "spans",
+            "extra": "Trace10kSPS/OTLP-HTTP-gzip - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 14.397982254288635,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-HTTP-zstd - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 18.992907446917254,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-HTTP-zstd - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 81,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-HTTP-zstd - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 115,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-HTTP-zstd - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace10kSPS/OTLP-HTTP-zstd - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 74.58815786194073,
+            "unit": "%",
+            "extra": "Trace10kSPS/Zipkin - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 76.3397856229074,
+            "unit": "%",
+            "extra": "Trace10kSPS/Zipkin - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 74,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/Zipkin - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 106,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/Zipkin - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace10kSPS/Zipkin - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 33.63759779467965,
+            "unit": "%",
+            "extra": "Trace10kSPSJaegerGRPC - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 33.65342650003904,
+            "unit": "%",
+            "extra": "Trace10kSPSJaegerGRPC - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 35,
+            "unit": "MiB",
+            "extra": "Trace10kSPSJaegerGRPC - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 103,
+            "unit": "MiB",
+            "extra": "Trace10kSPSJaegerGRPC - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 100,
+            "unit": "spans",
+            "extra": "Trace10kSPSJaegerGRPC - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 31.91491457179397,
+            "unit": "%",
+            "extra": "Trace10kSPSJaegerGRPC - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 33.32308391915073,
+            "unit": "%",
+            "extra": "Trace10kSPSJaegerGRPC - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 66,
+            "unit": "MiB",
+            "extra": "Trace10kSPSJaegerGRPC - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 102,
+            "unit": "MiB",
+            "extra": "Trace10kSPSJaegerGRPC - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 500,
+            "unit": "spans",
+            "extra": "Trace10kSPSJaegerGRPC - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 119.04908545804318,
+            "unit": "%",
+            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 120.33545685302857,
+            "unit": "%",
+            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 71,
+            "unit": "MiB",
+            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 100,
+            "unit": "MiB",
+            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 101.78549627249393,
+            "unit": "%",
+            "extra": "TraceNoBackend10kSPS/MemoryLimit - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 102.645756049612,
+            "unit": "%",
+            "extra": "TraceNoBackend10kSPS/MemoryLimit - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 70,
+            "unit": "MiB",
+            "extra": "TraceNoBackend10kSPS/MemoryLimit - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 98,
+            "unit": "MiB",
+            "extra": "TraceNoBackend10kSPS/MemoryLimit - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceNoBackend10kSPS/MemoryLimit - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 19.788403706517286,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/0*0bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 22.32177961740633,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/0*0bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 71,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/0*0bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 95,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/0*0bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace1kSPSWithAttrs/0*0bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 57.45820374360095,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/100*50bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 59.66679158903933,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/100*50bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 73,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/100*50bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 104,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/100*50bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace1kSPSWithAttrs/100*50bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 41.5268928721486,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/10*1000bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 44.32614084074209,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/10*1000bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 72,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/10*1000bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 102,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/10*1000bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace1kSPSWithAttrs/10*1000bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 53.455352812734326,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/20*5000bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 54.64795737376419,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/20*5000bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 87,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/20*5000bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 127,
             "unit": "MiB",
             "extra": "Trace1kSPSWithAttrs/20*5000bytes - RAM (MiB)"
           },
