@@ -4,6 +4,7 @@
 | ------------- |-----------|
 | Stability     | [beta]: traces   |
 | Distributions | [contrib], [k8s] |
+| Warnings      | [Statefulness](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftailsampling%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftailsampling) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftailsampling%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftailsampling) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_tailsampling)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_tailsampling&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@jmacd](https://www.github.com/jmacd), [@csmarchbanks](https://www.github.com/csmarchbanks), [@carsonip](https://www.github.com/carsonip) \| Seeking more code owners! |
@@ -18,6 +19,10 @@ The tail sampling processor samples traces based on a set of defined policies. A
 Before performing sampling, spans will be grouped by `trace_id`. Therefore, the tail sampling processor can be used directly without the need for the [`groupbytraceprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbytraceprocessor).
 
 This processor must be placed in pipelines after any processors that rely on context, e.g. `k8sattributes`. It reassembles spans into new batches, causing them to lose their original context.
+
+## Warnings
+
+- [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The processor keeps spans in memory while it waits to make a sampling decision. All spans for a given trace must be sent to the same Collector instance. See [Scaling collectors with the tail sampling processor](#scaling-collectors-with-the-tail-sampling-processor) for deployment guidance.
 
 Please refer to [config.go](./config.go) for the config spec.
 
