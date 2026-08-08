@@ -1,0 +1,286 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
+
+import (
+	"context"
+	"errors"
+	"sync"
+	"sync/atomic"
+
+	"github.com/cenkalti/backoff/v4"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.uber.org/zap"
+)
+
+type partitionPauseReason uint32
+
+const (
+	partitionPauseBackpressure partitionPauseReason = 1 << iota
+	partitionPauseRewind
+)
+
+// partitionBatchResult describes the commit and rewind work produced while
+// processing one fetched partition batch.
+type partitionBatchResult struct {
+	rewindRecord *kgo.Record
+	commitRecord *kgo.Record
+	terminal     bool
+}
+
+// pc represents the partition consumer shared information.
+type pc struct {
+	logger *zap.Logger
+	attrs  attribute.Set
+
+	ctx    context.Context
+	cancel context.CancelCauseFunc
+	// Not safe for concurrent use, this field is never accessed concurrently.
+	backOff *backoff.ExponentialBackOff
+
+	mailbox *partitionMailbox
+	// pauseReasons stores a bitmask of partitionPauseReason values.
+	pauseReasons atomic.Uint32
+
+	// mu prevents cancellation from racing a new wg.Add.
+	mu sync.RWMutex
+	// wg tracks the number of in-flight message processing goroutines for this
+	// partition. New goroutines must call add() so none are added after the
+	// partition consumer starts stopping.
+	wg sync.WaitGroup
+}
+
+// add increments the wait group counter if the partition consumer is not
+// stopping. It returns true if the counter was incremented, false otherwise.
+func (p *pc) add() bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	select {
+	case <-p.ctx.Done():
+		return false
+	default:
+	}
+	p.wg.Add(1)
+	return true
+}
+
+// cancelContext cancels the partition consumer context while holding the write
+// lock.
+func (p *pc) cancelContext(err error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.cancel(err)
+}
+
+// addPauseReason records why fetching must remain paused.
+func (p *pc) addPauseReason(reason partitionPauseReason) {
+	p.pauseReasons.Or(uint32(reason))
+}
+
+// clearPauseReasons reports whether the cleared reasons were the final active
+// reasons, in which case the caller must resume fetching.
+func (p *pc) clearPauseReasons(reasons partitionPauseReason) bool {
+	mask := uint32(reasons)
+	previous := p.pauseReasons.And(^mask)
+	remaining := previous &^ mask
+	return previous&mask != 0 && remaining == 0
+}
+
+// runPartitionWorker processes exactly one partition in offset order. Workers
+// are independent, so downstream backpressure on one partition does not stop
+// the shared poll loop or workers for other partitions.
+func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
+	defer pc.wg.Done()
+	partition := map[string][]int32{tp.topic: {tp.partition}}
+	for {
+		select {
+		case <-pc.ctx.Done():
+			return
+		case <-pc.mailbox.notify:
+		}
+
+		for {
+			select {
+			case <-pc.ctx.Done():
+				return
+			default:
+			}
+			batch, ok := pc.mailbox.dequeue(func() {
+				if pc.clearPauseReasons(partitionPauseBackpressure) {
+					c.client.ResumeFetchPartitions(partition)
+				}
+			})
+			if !ok {
+				if !pc.mailbox.hasPendingOffsetChange() {
+					break
+				}
+				if !c.sendControl(partitionControl{
+					tp: tp,
+					pc: pc,
+				}) {
+					return
+				}
+				pc.mailbox.resumeAfterOffsetChange(func() {
+					if pc.clearPauseReasons(partitionPauseRewind | partitionPauseBackpressure) {
+						c.client.ResumeFetchPartitions(partition)
+					}
+				})
+				break
+			}
+
+			result := c.processPartitionBatch(pc.ctx, pc, batch)
+			if result.rewindRecord != nil {
+				pc.mailbox.requestRewind(result.rewindRecord, true, func() {
+					pc.addPauseReason(partitionPauseRewind)
+					c.client.PauseFetchPartitions(partition)
+				})
+			}
+			if result.commitRecord != nil {
+				// Keep a marked fallback so revocation can preserve progress if
+				// cancellation interrupts the synchronous partition commit.
+				c.client.MarkCommitRecords(result.commitRecord)
+				c.opsMu.Lock()
+				err := c.client.CommitRecords(pc.ctx, result.commitRecord)
+				c.unlockOpsAndWakePoll()
+				if err != nil && pc.ctx.Err() == nil {
+					pc.logger.Error("failed to commit partition offset", zap.Error(err))
+					c.reportRecoverable(err)
+				}
+			}
+			if result.rewindRecord != nil {
+				if !c.sendControl(partitionControl{
+					tp: tp,
+					pc: pc,
+				}) {
+					return
+				}
+				pc.mailbox.resumeAfterOffsetChange(func() {
+					if pc.clearPauseReasons(partitionPauseRewind | partitionPauseBackpressure) {
+						c.client.ResumeFetchPartitions(partition)
+					}
+				})
+				break
+			}
+			if result.terminal {
+				pc.cancelContext(errors.New("stopping processing: terminal partition error"))
+				pc.mailbox.discard()
+				return
+			}
+		}
+	}
+}
+
+// processPartitionBatch processes one partition batch in both legacy and
+// independent modes.
+//
+// Marking and committing depend on the processing mode:
+//   - Legacy with autocommit enabled marks before or after processing according
+//     to MessageMarking.After. franz-go commits the marks periodically.
+//   - Independent with autocommit enabled behaves the same after a worker
+//     dequeues the batch. Records still waiting in the mailbox are not marked.
+//   - Legacy with autocommit disabled marks records here. consume commits all
+//     marked partitions after the fetched batch finishes.
+//   - Independent with autocommit disabled does not mark records here. It
+//     returns the last accepted record, then the worker marks it as a revocation
+//     fallback and commits that partition synchronously.
+func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo.FetchTopicPartition) partitionBatchResult {
+	// Only independent mode with autocommit disabled commits per partition.
+	partitionScopedCommit := c.config.PartitionProcessing.Independent && !c.config.ConsumerConfig.AutoCommit.Enable
+	var fatalRecord *kgo.Record
+	fatalIsPermanent := false
+	var lastProcessed *kgo.Record
+	for _, msg := range p.Records {
+		// In every mode except independent mode with autocommit disabled,
+		// After=false marks each record before processing.
+		if !c.config.MessageMarking.After && !partitionScopedCommit {
+			c.client.MarkCommitRecords(msg)
+		}
+		c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, msg.Offset, metric.WithAttributeSet(pc.attrs))
+		if err := c.handleMessage(pc, msg); err != nil {
+			if pc.ctx.Err() != nil {
+				pc.logger.Debug("message processing interrupted",
+					zap.Error(err),
+					zap.Int64("offset", msg.Offset),
+				)
+			} else {
+				pc.logger.Error("unable to process message",
+					zap.Error(err),
+					zap.Int64("offset", msg.Offset),
+				)
+			}
+			isPermanent := consumererror.IsPermanent(err)
+			// Error marking determines whether this failed record counts as
+			// progress or stops the batch for a retry or rebalance.
+			shouldMark := (!isPermanent && c.config.MessageMarking.OnError) || (isPermanent && c.config.MessageMarking.OnPermanentError)
+			if !shouldMark {
+				fatalRecord = msg
+				fatalIsPermanent = isPermanent
+				break
+			}
+		}
+		lastProcessed = msg
+	}
+
+	result := partitionBatchResult{}
+	if fatalRecord != nil {
+		switch {
+		case c.config.ErrorBackOff.Enabled && !fatalIsPermanent:
+			select {
+			case <-pc.ctx.Done():
+				result.terminal = true
+			case <-c.closing:
+				result.terminal = true
+			default:
+				if c.config.PartitionProcessing.Independent {
+					result.rewindRecord = fatalRecord
+				} else {
+					c.client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
+						p.Topic: {p.Partition: {
+							Epoch:  fatalRecord.LeaderEpoch,
+							Offset: fatalRecord.Offset,
+						}},
+					})
+				}
+				pc.logger.Info("rewinding partition to retry failed record on next poll",
+					zap.Int64("offset", fatalRecord.Offset),
+				)
+			}
+		default:
+			// No pause reason is needed because this worker exits permanently.
+			// On reassignment, a new partition consumer resumes fetching with
+			// no pause reasons.
+			c.client.PauseFetchPartitions(map[string][]int32{p.Topic: {p.Partition}})
+			reason := "processing error with no backoff configured"
+			if fatalIsPermanent {
+				reason = "permanent processing error"
+			}
+			pc.logger.Error("pausing partition until rebalance",
+				zap.String("reason", reason),
+				zap.Int64("offset", fatalRecord.Offset),
+			)
+			result.terminal = true
+		}
+	}
+	if lastProcessed == nil {
+		return result
+	}
+	c.telemetryBuilder.KafkaReceiverOffsetLag.Record(
+		ctx,
+		(p.HighWatermark-1)-lastProcessed.Offset,
+		metric.WithAttributeSet(pc.attrs),
+	)
+	if partitionScopedCommit {
+		// The independent worker commits this record after this function
+		// returns.
+		result.commitRecord = lastProcessed
+	} else if c.config.MessageMarking.After {
+		// In all other modes, After=true marks the latest accepted record after
+		// processing. This also covers every earlier record in the batch.
+		c.client.MarkCommitRecords(lastProcessed)
+	}
+	return result
+}
