@@ -6,9 +6,10 @@ package bearertokenauthextension // import "github.com/open-telemetry/openteleme
 import (
 	"errors"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
 )
 
 // Config specifies how the Per-RPC bearer token based authentication data should be obtained.
