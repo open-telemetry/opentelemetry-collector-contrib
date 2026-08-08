@@ -333,17 +333,26 @@ func TestDispatchPartitionBatchesAssignmentSnapshot(t *testing.T) {
 	cases := []struct {
 		name             string
 		snapshot         bool
+		initialOffset    string
 		wantQueued       bool
 		wantRewindOffset *int64
 	}{
 		{
-			name:       "accepts newly assigned partition",
-			wantQueued: true,
+			name:          "accepts newly assigned partition",
+			initialOffset: configkafka.EarliestOffset,
+			wantQueued:    true,
 		},
 		{
-			name:             "resets replaced assignment to initial offset",
+			name:             "resets replaced assignment to earliest",
 			snapshot:         true,
+			initialOffset:    configkafka.EarliestOffset,
 			wantRewindOffset: int64Ptr(-2),
+		},
+		{
+			name:             "resets replaced assignment to fetched offset instead of latest",
+			snapshot:         true,
+			initialOffset:    configkafka.LatestOffset,
+			wantRewindOffset: int64Ptr(1),
 		},
 	}
 
@@ -365,7 +374,7 @@ func TestDispatchPartitionBatchesAssignmentSnapshot(t *testing.T) {
 				client:   client,
 				settings: settings,
 			}
-			consumer.config.ConsumerConfig.InitialOffset = configkafka.EarliestOffset
+			consumer.config.ConsumerConfig.InitialOffset = tc.initialOffset
 
 			consumer.dispatchPartitionBatches(
 				kgo.Fetches{{
@@ -387,7 +396,7 @@ func TestDispatchPartitionBatchesAssignmentSnapshot(t *testing.T) {
 
 			_, queued := current.mailbox.dequeue(func() {})
 			require.Equal(t, tc.wantQueued, queued)
-			rewind := current.mailbox.takeRewind()
+			rewind := current.mailbox.takeOffsetChange()
 			if tc.wantRewindOffset == nil {
 				require.Nil(t, rewind)
 			} else {
@@ -569,6 +578,9 @@ func TestPartitionProcessingTerminalErrorClearsMailbox(t *testing.T) {
 		partitionConsumer.mailbox.mu.Lock()
 		defer partitionConsumer.mailbox.mu.Unlock()
 		return len(partitionConsumer.mailbox.batches) == 0
+	}, 5*time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool {
+		return partitionConsumer.ctx.Err() != nil
 	}, 5*time.Second, 10*time.Millisecond)
 }
 

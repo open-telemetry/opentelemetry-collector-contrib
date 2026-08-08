@@ -435,12 +435,9 @@ func (c *franzConsumer) processControlLocked(control partitionControl) {
 		return
 	}
 
-	if record := control.pc.mailbox.takeRewind(); record != nil {
+	if offset := control.pc.mailbox.takeOffsetChange(); offset != nil {
 		c.client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
-			control.tp.topic: {control.tp.partition: {
-				Epoch:  record.LeaderEpoch,
-				Offset: record.Offset,
-			}},
+			control.tp.topic: {control.tp.partition: *offset},
 		})
 	}
 }
@@ -468,7 +465,14 @@ func (c *franzConsumer) dispatchPartitionBatches(
 		}
 		partition := map[string][]int32{p.Topic: {p.Partition}}
 		if snapshot, snapshotted := snapshots[tp]; snapshotted && snapshot != assign {
-			assign.mailbox.requestRewind(c.assignmentStartRecord(tp), true, func() {
+			offset := c.assignmentStartOffset(tp)
+			if offset.Offset == -1 {
+				offset = kgo.EpochOffset{
+					Epoch:  p.Records[0].LeaderEpoch,
+					Offset: p.Records[0].Offset,
+				}
+			}
+			assign.mailbox.requestAssignmentReset(offset, func() {
 				assign.addPauseReason(partitionPauseRewind)
 				c.client.PauseFetchPartitions(partition)
 			})
@@ -493,20 +497,17 @@ func (c *franzConsumer) dispatchPartitionBatches(
 	})
 }
 
-func (c *franzConsumer) assignmentStartRecord(tp topicPartition) *kgo.Record {
-	record := &kgo.Record{
-		Topic:       tp.topic,
-		Partition:   tp.partition,
-		LeaderEpoch: -1,
-		Offset:      -1,
+func (c *franzConsumer) assignmentStartOffset(tp topicPartition) kgo.EpochOffset {
+	offset := kgo.EpochOffset{
+		Epoch:  -1,
+		Offset: -1,
 	}
-	if offset, ok := c.client.CommittedOffsets()[tp.topic][tp.partition]; ok && offset.Offset >= 0 {
-		record.LeaderEpoch = offset.Epoch
-		record.Offset = offset.Offset
+	if committed, ok := c.client.CommittedOffsets()[tp.topic][tp.partition]; ok && committed.Offset >= 0 {
+		offset = committed
 	} else if c.config.ConsumerConfig.InitialOffset == configkafka.EarliestOffset {
-		record.Offset = -2
+		offset.Offset = -2
 	}
-	return record
+	return offset
 }
 
 func (c *franzConsumer) Shutdown(ctx context.Context) error {

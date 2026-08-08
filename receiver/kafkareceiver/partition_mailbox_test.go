@@ -18,6 +18,7 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 		capacity          int
 		initialOffset     *int64
 		pendingRewind     *int64
+		assignmentReset   *int64
 		cancel            bool
 		batch             kgo.FetchTopicPartition
 		wantAccepted      bool
@@ -58,6 +59,15 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 			wantPendingOffset: int64Ptr(5),
 		},
 		{
+			name:              "rejects while assignment reset pending",
+			capacity:          2,
+			assignmentReset:   int64Ptr(-2),
+			batch:             mailboxBatch(10),
+			wantPauseCalls:    1,
+			wantPauseReason:   partitionPauseRewind,
+			wantPendingOffset: int64Ptr(-2),
+		},
+		{
 			name:         "rejects after cancellation",
 			capacity:     1,
 			cancel:       true,
@@ -76,6 +86,12 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 			if tc.pendingRewind != nil {
 				mailbox.requestRewind(recordAtOffset(*tc.pendingRewind), false, func() {})
 			}
+			if tc.assignmentReset != nil {
+				mailbox.requestAssignmentReset(kgo.EpochOffset{
+					Epoch:  -1,
+					Offset: *tc.assignmentReset,
+				}, func() {})
+			}
 			if tc.cancel {
 				cancel()
 			} else {
@@ -93,8 +109,8 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 			require.Equal(t, tc.wantPauseCalls, pauseCalls)
 			require.Equal(t, tc.wantPauseReason, pauseReason)
 			var pendingOffset *int64
-			if mailbox.hasPendingRewind() {
-				pendingOffset = int64Ptr(mailbox.takeRewind().Offset)
+			if mailbox.hasPendingOffsetChange() {
+				pendingOffset = int64Ptr(mailbox.takeOffsetChange().Offset)
 			}
 			require.Equal(t, tc.wantPendingOffset, pendingOffset)
 		})
@@ -209,7 +225,7 @@ func TestPartitionMailboxSerializesPauseBeforeRewindResume(t *testing.T) {
 	}()
 	<-pauseStarted
 
-	go mailbox.resumeAfterRewind(func() {
+	go mailbox.resumeAfterOffsetChange(func() {
 		close(resumed)
 	})
 
@@ -273,8 +289,8 @@ func TestPartitionMailboxRequestRewind(t *testing.T) {
 			})
 
 			require.Equal(t, 1, pauseCalls)
-			require.True(t, mailbox.hasPendingRewind())
-			require.Equal(t, tc.wantOffset, mailbox.takeRewind().Offset)
+			require.True(t, mailbox.hasPendingOffsetChange())
+			require.Equal(t, tc.wantOffset, mailbox.takeOffsetChange().Offset)
 			queueSize := 0
 			for {
 				_, ok := mailbox.dequeue(func() {})
@@ -288,14 +304,47 @@ func TestPartitionMailboxRequestRewind(t *testing.T) {
 	}
 }
 
-func TestPartitionMailboxTakeRewind(t *testing.T) {
-	mailbox := newPartitionMailbox(t.Context(), 1)
-	mailbox.requestRewind(recordAtOffset(5), false, func() {})
+func TestPartitionMailboxAssignmentResetPriority(t *testing.T) {
+	cases := []struct {
+		name         string
+		rewindBefore bool
+		rewindAfter  bool
+	}{
+		{
+			name:         "reset replaces existing rewind",
+			rewindBefore: true,
+		},
+		{
+			name:        "rewind does not replace reset",
+			rewindAfter: true,
+		},
+	}
 
-	require.True(t, mailbox.hasPendingRewind())
-	require.Equal(t, int64(5), mailbox.takeRewind().Offset)
-	require.False(t, mailbox.hasPendingRewind())
-	require.Nil(t, mailbox.takeRewind())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			mailbox := newPartitionMailbox(t.Context(), 1)
+			require.True(t, mailbox.enqueue(mailboxBatch(1), func(partitionPauseReason) {}))
+			if tc.rewindBefore {
+				mailbox.requestRewind(recordAtOffset(5), false, func() {})
+			}
+
+			mailbox.requestAssignmentReset(kgo.EpochOffset{
+				Epoch:  -1,
+				Offset: -2,
+			}, func() {})
+			if tc.rewindAfter {
+				mailbox.requestRewind(recordAtOffset(5), false, func() {})
+			}
+
+			require.Equal(t, kgo.EpochOffset{
+				Epoch:  -1,
+				Offset: -2,
+			}, *mailbox.takeOffsetChange())
+			require.Nil(t, mailbox.takeOffsetChange())
+			_, queued := mailbox.dequeue(func() {})
+			require.False(t, queued)
+		})
+	}
 }
 
 func mailboxBatch(offset int64) kgo.FetchTopicPartition {

@@ -22,8 +22,12 @@ type partitionMailbox struct {
 	// notify wakes the worker when work or a rewind is available. Its single
 	// buffered signal represents the state change, not each individual batch.
 	notify chan struct{}
-	// pendingRewind is the earliest record that the poll loop must fetch again.
-	pendingRewind *kgo.Record
+	// pendingRewind is the earliest offset that the poll loop must fetch again.
+	pendingRewind *kgo.EpochOffset
+	// pendingAssignmentReset is the offset where a replacement assignment must
+	// start. It takes priority over rewinds requested by the previous
+	// assignment.
+	pendingAssignmentReset *kgo.EpochOffset
 }
 
 // newPartitionMailbox creates a mailbox with capacity waiting batch slots.
@@ -49,7 +53,7 @@ func (m *partitionMailbox) enqueue(batch kgo.FetchTopicPartition, pause func(par
 
 	// PollRecords may return work while a rewind is pending or after the mailbox
 	// reaches capacity. Remember the earliest rejected record so it is fetched again.
-	if m.pendingRewind != nil || len(m.batches) == cap(m.batches) {
+	if m.pendingAssignmentReset != nil || m.pendingRewind != nil || len(m.batches) == cap(m.batches) {
 		m.requestRewindLocked(batch.Records[0], false)
 		pause(partitionPauseRewind)
 		return false
@@ -79,7 +83,7 @@ func (m *partitionMailbox) dequeue(resume func()) (kgo.FetchTopicPartition, bool
 	// A pending rewind must move the fetch position before fetching resumes.
 	// Calling resume under the lock also prevents it from overtaking an older
 	// pause operation.
-	if m.pendingRewind == nil {
+	if m.pendingAssignmentReset == nil && m.pendingRewind == nil {
 		resume()
 	}
 	return batch, true
@@ -101,33 +105,62 @@ func (m *partitionMailbox) requestRewindLocked(record *kgo.Record, clearQueue bo
 		clear(m.batches)
 		m.batches = m.batches[:0]
 	}
+	if m.pendingAssignmentReset != nil {
+		return
+	}
 	// Multiple rejected fetches may arrive before the poll loop applies the
 	// rewind. Keep the earliest offset so no rejected record is skipped.
 	if m.pendingRewind == nil || record.Offset < m.pendingRewind.Offset {
-		m.pendingRewind = record
+		m.pendingRewind = &kgo.EpochOffset{
+			Epoch:  record.LeaderEpoch,
+			Offset: record.Offset,
+		}
 	}
 	m.notifyLocked()
 }
 
-// hasPendingRewind reports whether the fetch position must be rewound.
-func (m *partitionMailbox) hasPendingRewind() bool {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return m.pendingRewind != nil
-}
-
-// takeRewind returns and clears the pending rewind record.
-func (m *partitionMailbox) takeRewind() *kgo.Record {
+// requestAssignmentReset discards queued work and records where a replacement
+// assignment must start. This reset takes priority over record rewinds.
+func (m *partitionMailbox) requestAssignmentReset(offset kgo.EpochOffset, pause func()) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	record := m.pendingRewind
+	clear(m.batches)
+	m.batches = m.batches[:0]
 	m.pendingRewind = nil
-	return record
+	m.pendingAssignmentReset = &offset
+	m.notifyLocked()
+	pause()
 }
 
-// resumeAfterRewind serializes a rewind resume with mailbox pause callbacks.
-func (m *partitionMailbox) resumeAfterRewind(resume func()) {
+// hasPendingOffsetChange reports whether the fetch position must change.
+func (m *partitionMailbox) hasPendingOffsetChange() bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.pendingAssignmentReset != nil || m.pendingRewind != nil
+}
+
+// takeOffsetChange returns and clears the next assignment reset or rewind.
+func (m *partitionMailbox) takeOffsetChange() *kgo.EpochOffset {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.pendingAssignmentReset != nil {
+		offset := m.pendingAssignmentReset
+		m.pendingAssignmentReset = nil
+		m.pendingRewind = nil
+		return offset
+	}
+	if m.pendingRewind == nil {
+		return nil
+	}
+	offset := m.pendingRewind
+	m.pendingRewind = nil
+	return offset
+}
+
+// resumeAfterOffsetChange serializes a resume with mailbox pause callbacks.
+func (m *partitionMailbox) resumeAfterOffsetChange(resume func()) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	resume()
@@ -141,6 +174,7 @@ func (m *partitionMailbox) discard() {
 	clear(m.batches)
 	m.batches = m.batches[:0]
 	m.pendingRewind = nil
+	m.pendingAssignmentReset = nil
 }
 
 // notifyLocked wakes the worker without blocking while the caller holds m.mu.
