@@ -4,22 +4,12 @@ properties:
   filename:
     description: Filename points to a file that contains the bearer token(s) to use for every RPC.
     type: string
-  retry_on_failure:
-    description: RetryOnFailure configures startup retry behaviour when the file referenced by Filename is not yet available. Disabled by default.
-    type: object
-    properties:
-      enabled:
-        description: Enabled defines if any retry logic should be done on a missing file. Defaults to false.
-        type: boolean
-      max_retries:
-        description: MaxRetries is the maximum number of times to retry reading the file.
-        type: integer
-      offset:
-        description: Offset is the interval between retries.
-        $ref: time.duration
   header:
     description: Header specifies the auth-header for the token. Defaults to "Authorization"
     type: string
+  retry_on_failure:
+    description: RetryOnFailure configures startup retry behavior when the file referenced by Filename is not yet available. Disabled by default.
+    $ref: /extension/internal/credentialsfile.retry_on_failure_config
   scheme:
     description: Scheme specifies the auth-scheme for the token. Defaults to "Bearer"
     type: string
