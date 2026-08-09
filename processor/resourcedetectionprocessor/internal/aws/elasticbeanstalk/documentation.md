@@ -22,7 +22,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `processor.resourcedetection.elasticbeanstalk.DontEmitV0DeploymentConventions` | alpha | When enabled, the detector no longer emits the deprecated deployment.environment and service.instance.id resource attributes. Requires processor.resourcedetection.elasticbeanstalk.EmitV1DeploymentConventions to also be enabled. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48159) |
-| `processor.resourcedetection.elasticbeanstalk.EmitV1DeploymentConventions` | alpha | When enabled, the detector emits deployment.environment.name and deployment.id instead of the deprecated deployment.environment and service.instance.id. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48159) |
+| `processor.resourcedetection.elasticbeanstalk.DontEmitV0DeploymentConventions` | alpha | When enabled, the detector no longer emits the deprecated deployment.environment and service.instance.id resource attributes. Requires processor.resourcedetection.elasticbeanstalk.EmitV1DeploymentConventions to also be enabled. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50130) |
+| `processor.resourcedetection.elasticbeanstalk.EmitV1DeploymentConventions` | alpha | When enabled, the detector emits deployment.environment.name and deployment.id instead of the deprecated deployment.environment and service.instance.id. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50130) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

@@ -10,7 +10,7 @@ var ProcessorResourcedetectionElasticbeanstalkDontEmitV0DeploymentConventionsFea
 	"processor.resourcedetection.elasticbeanstalk.DontEmitV0DeploymentConventions",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the detector no longer emits the deprecated deployment.environment and service.instance.id resource attributes. Requires processor.resourcedetection.elasticbeanstalk.EmitV1DeploymentConventions to also be enabled."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48159"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50130"),
 	featuregate.WithRegisterFromVersion("v0.159.0"),
 )
 
@@ -18,6 +18,6 @@ var ProcessorResourcedetectionElasticbeanstalkEmitV1DeploymentConventionsFeature
 	"processor.resourcedetection.elasticbeanstalk.EmitV1DeploymentConventions",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the detector emits deployment.environment.name and deployment.id instead of the deprecated deployment.environment and service.instance.id."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48159"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50130"),
 	featuregate.WithRegisterFromVersion("v0.159.0"),
 )
