@@ -120,7 +120,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{databases}'
-          - description: The number of database locks.
+          - description: The number of database locks, including those held by the receiver's own connections.
             gauge:
               dataPoints:
                 - asInt: "2"
@@ -271,7 +271,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
-          - description: The number of database locks.
+          - description: The number of database locks, including those held by the receiver's own connections.
             gauge:
               dataPoints:
                 - asInt: "7601"
@@ -475,7 +475,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
-          - description: The number of database locks.
+          - description: The number of database locks, including those held by the receiver's own connections.
             gauge:
               dataPoints:
                 - asInt: "7600"
@@ -679,7 +679,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
-          - description: The number of database locks.
+          - description: The number of database locks, including those held by the receiver's own connections.
             gauge:
               dataPoints:
                 - asInt: "7602"

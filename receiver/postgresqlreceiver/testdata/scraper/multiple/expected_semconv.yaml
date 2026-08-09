@@ -868,7 +868,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{databases}'
-          - description: The number of database locks.
+          - description: The number of database locks, including those held by the receiver's own connections.
             gauge:
               dataPoints:
                 - asInt: "2"

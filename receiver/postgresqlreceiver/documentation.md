@@ -347,7 +347,7 @@ Number of disk blocks read in this database.
 
 ### postgresql.database.locks
 
-The number of database locks.
+The number of database locks, including those held by the receiver's own connections.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

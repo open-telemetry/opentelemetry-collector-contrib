@@ -455,7 +455,7 @@ metrics:
     unit: "{databases}"
   postgresql.database.locks:
     enabled: false
-    description: The number of database locks.
+    description: The number of database locks, including those held by the receiver's own connections.
     stability: development
     unit: "{lock}"
     gauge:
