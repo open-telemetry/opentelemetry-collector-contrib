@@ -76,7 +76,7 @@ func newConnectionHealthScraper(
 	serviceInstanceID, err := computeServiceInstanceID(cfg)
 	if err != nil {
 		params.Logger.Warn("Failed to compute service.instance.id", zap.Error(err))
-		serviceInstanceID = defaultServiceInstanceID
+		serviceInstanceID = defaultServiceName
 	}
 
 	return &connectionHealthScraper{
@@ -200,12 +200,6 @@ func (s *connectionHealthScraper) setupResourceBuilder(rb *metadata.ResourceBuil
 	rb.SetServiceInstanceID(s.serviceInstanceID)
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
-
-	// SetServerAddress / SetServerPort are already gated on the server.address /
-	// server.port resource-attribute config (disabled by default), so they are
-	// called unconditionally here. The receiver.sqlserver.RemoveServerResourceAttribute
-	// feature gate is being removed (see #49886); not referencing it keeps this
-	// mergeable once that gate is deleted.
 	rb.SetServerAddress(hostName)
 	rb.SetServerPort(int64(port))
 }

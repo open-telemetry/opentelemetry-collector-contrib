@@ -15,12 +15,6 @@ import (
 
 const defaultSQLServerPort = 1433
 
-// defaultServiceInstanceID is the service.instance.id used when the target
-// host:port cannot be resolved from the configuration. It has the same
-// host:port shape as a resolved id so downstream consumers can parse it
-// uniformly.
-const defaultServiceInstanceID = "unknown:1433"
-
 // isLocalhost checks if the given host is a local address
 func isLocalhost(host string) bool {
 	return strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback()
