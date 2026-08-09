@@ -25,11 +25,8 @@ const (
 	versionLabel    = "env-version-1234"
 )
 
-// ---- test stubs + hooks ----
-
-// fakeDetector stands in for the upstream SDK detector. Its configuration file
-// path is not injectable, so the adapter is exercised against canned SDK results
-// instead of a fake filesystem.
+// fakeDetector stands in for the upstream SDK detector, whose configuration file
+// path is not injectable.
 type fakeDetector struct {
 	res *sdkresource.Resource
 	err error
@@ -49,7 +46,6 @@ func withFakeDetector(t *testing.T, res *sdkresource.Resource, err error) {
 	t.Cleanup(func() { newResourceDetector = orig })
 }
 
-// setGate forces the state of a feature gate for the duration of a test.
 func setGate(t *testing.T, gate *featuregate.Gate, enabled bool) {
 	t.Helper()
 
@@ -70,8 +66,6 @@ func setDontEmitV0(t *testing.T, enabled bool) {
 	setGate(t, metadata.ProcessorResourcedetectionElasticbeanstalkDontEmitV0DeploymentConventionsFeatureGate, enabled)
 }
 
-// fullResource mirrors what the SDK detector reports on an Elastic Beanstalk
-// instance with X-Ray enabled.
 func fullResource() *sdkresource.Resource {
 	return sdkresource.NewSchemaless(
 		attribute.String("cloud.provider", "aws"),
@@ -90,11 +84,7 @@ func newTestDetector(t *testing.T, failOnMissingMetadata bool) internal.Detector
 	return d
 }
 
-// ---- tests ----
-
-// TestDetect_DefaultGates is the regression guard for delegating to the SDK
-// detector: with both gates at their default state the detector must report
-// exactly the attributes and schema URL it reported before.
+// Default gates must report what the detector reported before delegating to the SDK.
 func TestDetect_DefaultGates(t *testing.T) {
 	withFakeDetector(t, fullResource(), nil)
 
@@ -112,8 +102,6 @@ func TestDetect_DefaultGates(t *testing.T) {
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.40.0", schemaURL)
 }
 
-// TestDetect_EmitV1Only covers the transition window: both the deprecated and
-// the current attributes are reported.
 func TestDetect_EmitV1Only(t *testing.T) {
 	withFakeDetector(t, fullResource(), nil)
 	setEmitV1(t, true)
@@ -133,8 +121,6 @@ func TestDetect_EmitV1Only(t *testing.T) {
 	}, res.Attributes().AsRaw())
 }
 
-// TestDetect_BothGates covers the end state of the migration: only the current
-// attributes are reported.
 func TestDetect_BothGates(t *testing.T) {
 	withFakeDetector(t, fullResource(), nil)
 	setEmitV1(t, true)
@@ -181,8 +167,6 @@ func TestDetect_ResourceAttributesDisabled(t *testing.T) {
 	}, res.Attributes().AsRaw())
 }
 
-// TestDetect_NotOnElasticBeanstalk covers an absent configuration file, which the
-// SDK detector reports as an empty resource without an error.
 func TestDetect_NotOnElasticBeanstalk(t *testing.T) {
 	withFakeDetector(t, sdkresource.Empty(), nil)
 
@@ -204,8 +188,6 @@ func TestDetect_NotOnElasticBeanstalkFailOnMissingMetadata(t *testing.T) {
 	assert.Equal(t, 0, res.Attributes().Len())
 }
 
-// TestDetect_Error covers an unreadable or malformed configuration file, which is
-// reported regardless of fail_on_missing_metadata.
 func TestDetect_Error(t *testing.T) {
 	detectErr := errors.New("elasticbeanstalk: invalid character 's'")
 	withFakeDetector(t, sdkresource.Empty(), detectErr)
@@ -217,7 +199,6 @@ func TestDetect_Error(t *testing.T) {
 	assert.Equal(t, 0, res.Attributes().Len())
 }
 
-// TestDetect_PartialResource covers a partial result, which is still usable.
 func TestDetect_PartialResource(t *testing.T) {
 	partial := sdkresource.NewSchemaless(
 		attribute.String("cloud.provider", "aws"),
