@@ -9,10 +9,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap/zaptest"
@@ -115,7 +119,8 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.NotNil(t, bauth)
 
 	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
-	assert.Error(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
+	// Start is idempotent: a repeat call is a no-op.
+	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
 
 	credential, err := bauth.PerRPCCredentials()
 	assert.NoError(t, err)
@@ -125,19 +130,23 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.NoError(t, err)
 
 	tokenStr := fmt.Sprintf("Bearer %s", token)
-	md, err := credential.GetRequestMetadata(t.Context())
 	expectedMd := map[string]string{
 		"authorization": tokenStr,
 	}
-	assert.Equal(t, expectedMd, md)
-	assert.NoError(t, err)
+
+	// Start loads the token asynchronously, so wait until it is available.
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		md, mdErr := credential.GetRequestMetadata(t.Context())
+		assert.NoError(c, mdErr)
+		assert.Equal(c, expectedMd, md)
+	}, 5*time.Second, 50*time.Millisecond)
 	assert.True(t, credential.RequireTransportSecurity())
 
 	// change file content once
 	assert.NoError(t, os.WriteFile(cfg.Filename, fmt.Appendf(nil, "%stest", token), 0o600))
 	time.Sleep(5 * time.Second)
 	credential, _ = bauth.PerRPCCredentials()
-	md, err = credential.GetRequestMetadata(t.Context())
+	md, err := credential.GetRequestMetadata(t.Context())
 	expectedMd["authorization"] = tokenStr + "test"
 	assert.Equal(t, expectedMd, md)
 	assert.NoError(t, err)
@@ -165,7 +174,8 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	assert.NotNil(t, bauth)
 
 	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
-	assert.Error(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
+	// Start is idempotent: a repeat call is a no-op.
+	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() { assert.NoError(t, bauth.Shutdown(t.Context())) }()
 
 	token, err := os.ReadFile(cfg.Filename)
@@ -177,10 +187,12 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	assert.NotNil(t, rt)
 
 	request := &http.Request{Method: http.MethodGet}
-	resp, err := rt.RoundTrip(request)
-	assert.NoError(t, err)
-	authHeaderValue := resp.Header.Get("Authorization")
-	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(token)))
+	// Start loads the token asynchronously, so wait until it is applied.
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		resp, rtErr := rt.RoundTrip(request)
+		assert.NoError(c, rtErr)
+		assert.Equal(c, fmt.Sprintf("%s %s", scheme, string(token)), resp.Header.Get("Authorization"))
+	}, 5*time.Second, 50*time.Millisecond)
 
 	// change file content once
 	assert.NoError(t, os.WriteFile(cfg.Filename, fmt.Appendf(nil, "%stest", token), 0o600))
@@ -191,9 +203,9 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 
 	// check if request is updated with the new token
 	request = &http.Request{Method: http.MethodGet}
-	resp, err = rt.RoundTrip(request)
+	resp, err := rt.RoundTrip(request)
 	assert.NoError(t, err)
-	authHeaderValue = resp.Header.Get("Authorization")
+	authHeaderValue := resp.Header.Get("Authorization")
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(tokenNew)))
 
 	// change file content back
@@ -313,12 +325,15 @@ func TestBearerTokenMultipleTokens(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, credential)
 
-			md, err := credential.GetRequestMetadata(t.Context())
 			expectedMd := map[string]string{
 				"authorization": "Bearer token1",
 			}
-			assert.Equal(t, expectedMd, md)
-			assert.NoError(t, err)
+			// Start loads the tokens asynchronously, so wait until they are available.
+			assert.EventuallyWithT(t, func(c *assert.CollectT) {
+				md, mdErr := credential.GetRequestMetadata(t.Context())
+				assert.NoError(c, mdErr)
+				assert.Equal(c, expectedMd, md)
+			}, 5*time.Second, 50*time.Millisecond)
 			assert.True(t, credential.RequireTransportSecurity())
 
 			// Test Authenticate with multiple tokens
@@ -371,12 +386,15 @@ func TestBearerTokenMultipleTokensInFile(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, credential)
 
-			md, err := credential.GetRequestMetadata(t.Context())
 			expectedMd := map[string]string{
 				"authorization": "Bearer token1",
 			}
-			assert.Equal(t, expectedMd, md)
-			assert.NoError(t, err)
+			// Start loads the tokens asynchronously, so wait until they are available.
+			assert.EventuallyWithT(t, func(c *assert.CollectT) {
+				md, mdErr := credential.GetRequestMetadata(t.Context())
+				assert.NoError(c, mdErr)
+				assert.Equal(c, expectedMd, md)
+			}, 5*time.Second, 50*time.Millisecond)
 			assert.True(t, credential.RequireTransportSecurity())
 
 			// Test Authenticate with multiple tokens
@@ -531,13 +549,16 @@ func TestBearerTokenFileWithComments(t *testing.T) {
 
 	ctx := t.Context()
 
-	// Verification
+	// Verification. Start loads the tokens asynchronously, so wait until they
+	// are available before authenticating.
 	tokens := []string{"token1", "token2", "token3", "token4"}
-	for _, token := range tokens {
-		headers := map[string][]string{"authorization": {"Bearer " + token}}
-		_, err = bauth.Authenticate(ctx, headers)
-		assert.NoError(t, err, "Failed to authenticate with token: %s", token)
-	}
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		for _, token := range tokens {
+			headers := map[string][]string{"authorization": {"Bearer " + token}}
+			_, authErr := bauth.Authenticate(ctx, headers)
+			assert.NoError(c, authErr, "Failed to authenticate with token: %s", token)
+		}
+	}, 5*time.Second, 50*time.Millisecond)
 
 	assert.NoError(t, bauth.Shutdown(t.Context()))
 }
@@ -557,21 +578,18 @@ func TestBearerStartWithRetryOnFailure(t *testing.T) {
 	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
 	assert.NotNil(t, bauth)
 
-	startErr := make(chan error, 1)
-	go func() {
-		startErr <- bauth.Start(t.Context(), componenttest.NewNopHost())
-	}()
+	// Start must not block on the retry loop: it returns immediately while the
+	// resolver retries reading the file in the background.
+	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
 
 	// Create the file after a delay so the watcher has to retry.
 	time.Sleep(250 * time.Millisecond)
-	assert.NoError(t, os.WriteFile(tokenPath, []byte("delayed-token"), 0o600))
+	require.NoError(t, os.WriteFile(tokenPath, []byte("delayed-token"), 0o600))
 
-	select {
-	case err := <-startErr:
-		assert.NoError(t, err)
-	case <-time.After(5 * time.Second):
-		t.Fatal("timed out waiting for Start with retry to succeed")
-	}
+	// The token becomes available once the retry loop picks up the new file.
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, "Bearer delayed-token", bauth.authorizationValue())
+	}, 5*time.Second, 50*time.Millisecond)
 
 	assert.NoError(t, bauth.Shutdown(t.Context()))
 }
@@ -588,6 +606,47 @@ func TestBearerStartWithRetryOnFailureGivesUp(t *testing.T) {
 	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
 	assert.NotNil(t, bauth)
 
-	assert.Error(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
+	host := newStatusRecordingHost()
+
+	// Start returns nil even though the file never appears; the failure is
+	// reported asynchronously as a component status event.
+	assert.NoError(t, bauth.Start(t.Context(), host))
+
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ev := host.lastEvent()
+		if assert.NotNil(c, ev) {
+			assert.Equal(c, componentstatus.StatusFatalError, ev.Status())
+			assert.Error(c, ev.Err())
+		}
+	}, 5*time.Second, 50*time.Millisecond)
+
 	assert.NoError(t, bauth.Shutdown(t.Context()))
+}
+
+// statusRecordingHost is a component.Host that records the last reported
+// component status event, implementing the componentstatus.Reporter interface.
+type statusRecordingHost struct {
+	component.Host
+
+	mu     sync.Mutex
+	events []*componentstatus.Event
+}
+
+func newStatusRecordingHost() *statusRecordingHost {
+	return &statusRecordingHost{Host: componenttest.NewNopHost()}
+}
+
+func (h *statusRecordingHost) Report(e *componentstatus.Event) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.events = append(h.events, e)
+}
+
+func (h *statusRecordingHost) lastEvent() *componentstatus.Event {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if len(h.events) == 0 {
+		return nil
+	}
+	return h.events[len(h.events)-1]
 }

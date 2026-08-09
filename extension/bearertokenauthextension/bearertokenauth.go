@@ -12,9 +12,11 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
@@ -55,6 +57,12 @@ type bearerTokenAuth struct {
 
 	tokenResolver credentialsfile.ValueResolver
 	logger        *zap.Logger
+
+	// startOnce guards Start so the resolver is started at most once.
+	startOnce sync.Once
+	// startWG tracks the background resolver Start goroutine. Shutdown waits on
+	// it so it does not race the resolver's own start-up.
+	startWG sync.WaitGroup
 }
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
@@ -110,10 +118,20 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
 // Start of BearerTokenAuth does nothing and returns nil if no filename
 // is specified. Otherwise a routine is started to monitor the file containing
 // the token to be transferred.
-func (b *bearerTokenAuth) Start(ctx context.Context, _ component.Host) error {
-	if b.tokenResolver != nil {
-		return b.tokenResolver.Start(ctx)
+func (b *bearerTokenAuth) Start(ctx context.Context, host component.Host) error {
+	if b.tokenResolver == nil {
+		return nil
 	}
+
+	b.startOnce.Do(func() {
+		b.startWG.Go(func() {
+			if err := b.tokenResolver.Start(ctx); err != nil {
+				b.logger.Error("failed to start token resolver", zap.Error(err))
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+			}
+		})
+	})
+
 	return nil
 }
 
@@ -170,6 +188,9 @@ func (b *bearerTokenAuth) authorizationValue() string {
 
 // Shutdown of BearerTokenAuth does nothing and returns nil
 func (b *bearerTokenAuth) Shutdown(_ context.Context) error {
+	// Wait for the background Start goroutine to finish so we don't race the
+	// resolver's own start-up when tearing it down.
+	b.startWG.Wait()
 	if b.tokenResolver != nil {
 		return b.tokenResolver.Shutdown()
 	}
