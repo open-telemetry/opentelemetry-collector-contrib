@@ -354,6 +354,30 @@ processors:
 
 > **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the Elastic Beanstalk configuration file is not found, instead of silently returning an empty resource.
 
+#### Migrating to the current deployment semantic conventions
+
+By default this detector reports `deployment.environment`, which is deprecated in the semantic
+conventions, and reports the deployment ID as `service.instance.id`. Two feature gates move it to
+`deployment.environment.name` and `deployment.id`:
+
+| Feature gate | Effect |
+| ------------ | ------ |
+| `processor.resourcedetection.elasticbeanstalk.EmitV1DeploymentConventions` | Emit `deployment.environment.name` and `deployment.id`. |
+| `processor.resourcedetection.elasticbeanstalk.DontEmitV0DeploymentConventions` | Stop emitting `deployment.environment` and `service.instance.id`. Requires the gate above. |
+
+Enabling only `EmitV1DeploymentConventions` reports both sets of attributes, which lets you migrate
+dashboards and alerts before dropping the deprecated ones:
+
+```shell
+otelcol --feature-gates=processor.resourcedetection.elasticbeanstalk.EmitV1DeploymentConventions
+```
+
+Once nothing depends on the deprecated attributes, enable both gates:
+
+```shell
+otelcol --feature-gates=processor.resourcedetection.elasticbeanstalk.EmitV1DeploymentConventions,processor.resourcedetection.elasticbeanstalk.DontEmitV0DeploymentConventions
+```
+
 ### Amazon EKS
 
 This detector reads resource information from the [EC2 instance metadata service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) to retrieve related resource attributes.
