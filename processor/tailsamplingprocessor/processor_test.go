@@ -1824,6 +1824,54 @@ func TestSpanIngestPendingStorageDeletedOnNumTracesOverflow(t *testing.T) {
 	}
 }
 
+func TestTailStorageTakeErrorDropsTraceState(t *testing.T) {
+	enableTailStorageFeatureGateForTest(t)
+
+	for _, tc := range []struct {
+		name     string
+		strategy samplingStrategy
+		waitTick bool
+	}{
+		{name: "trace complete", strategy: samplingStrategyTraceComplete, waitTick: true},
+		{name: "span ingest", strategy: samplingStrategySpanIngest},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			controller := newTestTSPController()
+			sink := new(consumertest.TracesSink)
+
+			cfg := Config{
+				DecisionWait:     defaultTestDecisionWait,
+				NumTraces:        defaultNumTraces,
+				SamplingStrategy: tc.strategy,
+				PolicyCfgs:       testPolicy,
+				TailStorageID:    &testExtensionID,
+				Options:          []Option{withTestController(controller)},
+			}
+
+			host := &extensionHost{
+				extension: &extension{takeErr: errors.New("boom")},
+			}
+			p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), sink, cfg)
+			require.NoError(t, err)
+			require.NoError(t, p.Start(t.Context(), host))
+
+			require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
+			if tc.waitTick {
+				controller.waitForTick()
+				controller.waitForTick()
+			}
+
+			require.NoError(t, p.Shutdown(t.Context()))
+
+			tsp := p.(*tailSamplingSpanProcessor)
+			assert.Empty(t, sink.AllTraces(), "trace must not be forwarded when tail storage Take fails")
+			assert.Empty(t, tsp.idToTrace, "trace state must be dropped after Take failure")
+			assert.Zero(t, tsp.deleteTraceQueue.Len(), "delete queue must be cleaned after Take failure")
+			assert.Positive(t, host.extension.takeCount, "tail storage Take must be exercised")
+		})
+	}
+}
+
 func TestTailStorageExtensionNotConfigured(t *testing.T) {
 	controller := newTestTSPController()
 	msp := new(consumertest.TracesSink)
@@ -1908,6 +1956,7 @@ type extension struct {
 	policyName string
 	cfg        map[string]any
 	storage    tailstorageextension.TailStorage
+	takeErr    error
 	appendCount,
 	takeCount,
 	deleteCount int
@@ -1940,6 +1989,9 @@ func (e *extension) Append(traceID pcommon.TraceID, td ptrace.Traces) error {
 func (e *extension) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 	e.ensureStorage()
 	e.takeCount++
+	if e.takeErr != nil {
+		return ptrace.NewTraces(), e.takeErr
+	}
 	return e.storage.Take(traceID)
 }
 
