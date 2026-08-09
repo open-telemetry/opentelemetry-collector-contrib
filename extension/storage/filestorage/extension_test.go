@@ -69,7 +69,7 @@ func TestExtensionIntegrity(t *testing.T) {
 		}
 
 		// Repeatedly thrash client
-		for i := range 100 {
+		for range 100 {
 			// Make sure my values are still mine
 			for i := range keys {
 				v, err := c.Get(ctx, keys[i])
