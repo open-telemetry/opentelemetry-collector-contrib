@@ -72,50 +72,16 @@ To prevent this, enable this feature gate to make LogEmitter synchronous, elimin
 
 Note that enabling this feature gate may have negative performance impact in some situations, see below.
 
-The performance impact does not occur when using receivers based on Stanza inputs that support batching. Currently these are: File Log receiver. See caveat below.
+The performance impact does not occur when using receivers based on Stanza inputs that support batching. Currently these are: File Log receiver.
 
 The performance impact may be observed when using receivers based on Stanza inputs that do not support batching. Currently these are: Journald receiver, Named Pipe receiver, Syslog receiver, TCP Log receiver, UDP Log receiver, Windows EventLog receiver.
-
-The caveat is that even when using a receiver that supports batching (like the File Log receiver), the performance impact may still be observed when additional operators are configured (see `operators` configuration option).
-This is because Stanza transform operators currently don't support processing logs in batches, so even if the File Log receiver's File input operator creates a batch of logs,
-the next operator in Stanza pipeline will split every batch into single entries.
 
 The planned schedule for this feature gate is the following:
 
 - Introduce as `Alpha` (disabled by default) in v0.122.0
-- Move to `Beta` (enabled by default) after transform operators support batching and after all receivers that are selected to support batching support it
+- Move to `Beta` (enabled by default) after all receivers that are selected to support batching support it
 
-Here's the summary of current support for batching in Stanza operators:
-
-Operators that support batching:
-
-- `add`
-- `assign_keys`
-- `container`
-- `copy`
-- `filter`
-- `flatten`
-- `json_array_parser`
-- `json_parser`
-- `key_value_parser`
-- `move`
-- `recombine`
-- `regex_parser`
-- `regex_replace`
-- `remove`
-- `retain`
-- `router`
-- `scope_name`
-- `severity`
-- `syslog`
-- `timestamp`
-- `trace_parser`
-- `unquote`
-- `uri_parser`
-
-Operators that do not support batching:
-
-- `csv_parser`
+All Stanza operators now support processing entries in batches.
 
 ### FAQ
 

@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	pkgsampling "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
@@ -1115,7 +1116,10 @@ type mockPolicyEvaluator struct {
 	evaluationCount int
 }
 
-var _ samplingpolicy.Evaluator = (*mockPolicyEvaluator)(nil)
+var (
+	_ samplingpolicy.Evaluator          = (*mockPolicyEvaluator)(nil)
+	_ samplingpolicy.ThresholdEvaluator = (*mockPolicyEvaluator)(nil)
+)
 
 func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	m.mu.Lock()
@@ -1123,6 +1127,11 @@ func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *sampli
 
 	m.evaluationCount++
 	return m.nextDecision, m.nextError
+}
+
+func (m *mockPolicyEvaluator) EvaluateWithThreshold(ctx context.Context, traceID pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, pkgsampling.Threshold, error) {
+	d, err := m.Evaluate(ctx, traceID, trace)
+	return d, pkgsampling.AlwaysSampleThreshold, err
 }
 
 func (*mockPolicyEvaluator) IsStateful() bool {
@@ -1458,6 +1467,61 @@ func TestDropLargeTraces(t *testing.T) {
 	}, 2*time.Second, 100*time.Millisecond)
 }
 
+// TestSetMaxTraceSizeDrainedBeforeEvaluation is a regression test for the fix
+// that drains pending configuration updates (SetMaximumTraceSizeBytes) before
+// processing incoming trace batches in the iter loop. Without the drain, Go's
+// non-deterministic select could pick the workChan case before the config
+// update channel, causing traces to be incorrectly dropped as too large even
+// though SetMaximumTraceSizeBytes had already been called to raise the limit.
+func TestSetMaxTraceSizeDrainedBeforeEvaluation(t *testing.T) {
+	controller := newTestTSPController()
+
+	largeValue := strings.Repeat("x", 2048) // clearly > 1024 bytes
+
+	cfg := Config{
+		SamplingStrategy:        samplingStrategyTraceComplete,
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(10),
+		ExpectedNewTracesPerSec: 64,
+		MaximumTraceSizeBytes:   1024, // Start with a small limit.
+		PolicyCfgs:              testPolicy,
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+	nextConsumer := new(consumertest.TracesSink)
+	processor, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+
+	err = processor.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = processor.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
+
+	// Raise the limit so the large trace should be accepted.
+	processor.(*tailSamplingSpanProcessor).SetMaximumTraceSizeBytes(1 << 20) // 1 MB
+
+	// Send a large trace that exceeds the original 1024-byte limit but is
+	// well within the new 1 MB limit. Because the drain logic in iter
+	// applies config updates before evaluating the batch, this trace must
+	// not be dropped.
+	largeTrace := ptrace.NewTraces()
+	rs := largeTrace.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+	sp := ss.Spans().AppendEmpty()
+	sp.SetTraceID(pcommon.TraceID([16]byte{9, 9, 9, 9}))
+	sp.Attributes().PutStr("payload", largeValue)
+
+	require.NoError(t, processor.ConsumeTraces(t.Context(), largeTrace))
+	controller.waitForTick() // First tick closes current batch.
+	controller.waitForTick() // Second tick evaluates it.
+
+	allSampledTraces := nextConsumer.AllTraces()
+	assert.Len(t, allSampledTraces, 1, "large trace should be sampled after SetMaximumTraceSizeBytes raised the limit")
+}
+
 // TestDeleteQueueCleared verifies that all in memory traces are removed from
 // both the idToTrace map as well as the deleteTraceQueue.
 func TestDeleteQueueCleared(t *testing.T) {
@@ -1760,6 +1824,54 @@ func TestSpanIngestPendingStorageDeletedOnNumTracesOverflow(t *testing.T) {
 	}
 }
 
+func TestTailStorageTakeErrorDropsTraceState(t *testing.T) {
+	enableTailStorageFeatureGateForTest(t)
+
+	for _, tc := range []struct {
+		name     string
+		strategy samplingStrategy
+		waitTick bool
+	}{
+		{name: "trace complete", strategy: samplingStrategyTraceComplete, waitTick: true},
+		{name: "span ingest", strategy: samplingStrategySpanIngest},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			controller := newTestTSPController()
+			sink := new(consumertest.TracesSink)
+
+			cfg := Config{
+				DecisionWait:     defaultTestDecisionWait,
+				NumTraces:        defaultNumTraces,
+				SamplingStrategy: tc.strategy,
+				PolicyCfgs:       testPolicy,
+				TailStorageID:    &testExtensionID,
+				Options:          []Option{withTestController(controller)},
+			}
+
+			host := &extensionHost{
+				extension: &extension{takeErr: errors.New("boom")},
+			}
+			p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), sink, cfg)
+			require.NoError(t, err)
+			require.NoError(t, p.Start(t.Context(), host))
+
+			require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
+			if tc.waitTick {
+				controller.waitForTick()
+				controller.waitForTick()
+			}
+
+			require.NoError(t, p.Shutdown(t.Context()))
+
+			tsp := p.(*tailSamplingSpanProcessor)
+			assert.Empty(t, sink.AllTraces(), "trace must not be forwarded when tail storage Take fails")
+			assert.Empty(t, tsp.idToTrace, "trace state must be dropped after Take failure")
+			assert.Zero(t, tsp.deleteTraceQueue.Len(), "delete queue must be cleaned after Take failure")
+			assert.Positive(t, host.extension.takeCount, "tail storage Take must be exercised")
+		})
+	}
+}
+
 func TestTailStorageExtensionNotConfigured(t *testing.T) {
 	controller := newTestTSPController()
 	msp := new(consumertest.TracesSink)
@@ -1844,6 +1956,7 @@ type extension struct {
 	policyName string
 	cfg        map[string]any
 	storage    tailstorageextension.TailStorage
+	takeErr    error
 	appendCount,
 	takeCount,
 	deleteCount int
@@ -1876,6 +1989,9 @@ func (e *extension) Append(traceID pcommon.TraceID, td ptrace.Traces) error {
 func (e *extension) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 	e.ensureStorage()
 	e.takeCount++
+	if e.takeErr != nil {
+		return ptrace.NewTraces(), e.takeErr
+	}
 	return e.storage.Take(traceID)
 }
 

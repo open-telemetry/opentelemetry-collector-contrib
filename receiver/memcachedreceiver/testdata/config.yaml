@@ -1,3 +1,9 @@
 memcached:
   endpoint: "localhost:11211"
   collection_interval: 10s
+memcached/tls:
+  endpoint: "localhost:11211"
+  collection_interval: 10s
+  tls:
+    insecure: false
+    ca_file: /etc/ssl/certs/ca.crt

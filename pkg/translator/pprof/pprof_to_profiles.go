@@ -127,7 +127,6 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 
 	sp := rp.ScopeProfiles().AppendEmpty()
 	sp.SetSchemaUrl(semconv.SchemaURL)
-
 	// Use a dedicated pprofile.Profile for each sample type.
 	// By convention, pprof uses the last sample type as default, while OTel Profiles
 	// uses the first profile as default. Therefore, swap first and last.
@@ -163,30 +162,25 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 			// pprof.Sample.label - this field is split into string and numeric labels.
 			for lk, lv := range sample.Label {
 				if len(lv) != 1 {
-					return nil, fmt.Errorf("labels with multiple values (%d) are not supported: %w",
-						len(lv), errPprofInvalid)
+					return nil, fmt.Errorf("labels with multiple values (%d) are not supported", len(lv))
 				}
-				var idx int32
-				lu, exist := sample.NumUnit[lk]
-				if !exist {
-					idx = lts.getIdxForAttribute(lk, lv)
-				} else {
-					idx = lts.getIdxForAttributeWithUnit(lk, lu[0], lv)
-				}
+				idx := lts.getIdxForAttribute(lk, lv[0])
 				s.AttributeIndices().Append(idx)
 			}
 
 			for lk, lv := range sample.NumLabel {
 				if len(lv) != 1 {
-					return nil, fmt.Errorf("invalid length of numeric label value %d: %w",
-						len(lv), errPprofInvalid)
+					return nil, fmt.Errorf("numeric labels with multiple values (%d) are not supported", len(lv))
 				}
 				var idx int32
 				lu, exist := sample.NumUnit[lk]
 				if !exist {
-					idx = lts.getIdxForAttribute(lk, lv)
+					idx = lts.getIdxForAttribute(lk, lv[0])
 				} else {
-					idx = lts.getIdxForAttributeWithUnit(lk, lu[0], lv)
+					if len(lu) != 1 {
+						return nil, fmt.Errorf("numeric units with multiple values (%d) are not supported", len(lu))
+					}
+					idx = lts.getIdxForAttributeWithUnit(lk, lu[0], lv[0])
 				}
 				s.AttributeIndices().Append(idx)
 			}
@@ -234,7 +228,8 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 			// Append a index to the attribute key, so that
 			// later src.Comments can be reconstructed correctly.
 			p.AttributeIndices().Append(lts.getIdxForAttribute(
-				string(semconv.PprofProfileCommentKey)+fmt.Sprintf(".%d", ci), c))
+				string(semconv.PprofProfileCommentKey)+fmt.Sprintf(".%d", ci), c,
+			))
 		}
 
 		// pprof.Profile.default_sample_type
@@ -382,7 +377,8 @@ func (lts *lookupTables) getIdxForMMAttributes(m *profile.Mapping) []int32 {
 	// pprof.Mapping.build_id
 	// Assume all build_ids are GNU build IDs
 	buildIDIdx := lts.getIdxForAttribute(
-		string(semconv.ProcessExecutableBuildIDGNUKey), m.BuildID)
+		string(semconv.ProcessExecutableBuildIDGNUKey), m.BuildID,
+	)
 	ids = append(ids, buildIDIdx)
 
 	// pprof.Mapping.has_*
@@ -690,7 +686,8 @@ func (lts *lookupTables) linesToString(lines []profile.Line) string {
 				line.Function.Name,
 				line.Function.SystemName,
 				line.Function.Filename,
-				line.Function.StartLine)
+				line.Function.StartLine,
+			)
 		}
 		parts = append(parts, fmt.Sprintf("%d:%d:%d", funcID, line.Line, line.Column))
 	}

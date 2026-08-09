@@ -21,6 +21,7 @@ body:
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
+      - config/configdbauth
       - confmap/provider/aesprovider
       - confmap/provider/googlesecretmanagerprovider
       - confmap/provider/s3provider
@@ -94,6 +95,8 @@ body:
       - extension/bearertokenauth
       - extension/cgroupruntime
       - extension/datadog
+      - extension/dbauth
+      - extension/dbauth/awsiamdbauth
       - extension/encoding
       - extension/encoding/avrologencoding
       - extension/encoding/awscloudwatchmetricstreamsencoding
@@ -121,7 +124,6 @@ body:
       - extension/observer/ecsobserver
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
-      - extension/observer/kafkatopicsobserver
       - extension/oidcauth
       - extension/opamp
       - extension/opampcustommessages
@@ -176,6 +178,7 @@ body:
       - pkg/stanza
       - pkg/stanza/fileconsumer
       - pkg/stanza/operator/input/journald
+      - pkg/stanza/operator/input/tcp
       - pkg/status
       - pkg/translator/azure
       - pkg/translator/azurelogs
@@ -200,6 +203,7 @@ body:
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/drain
+      - processor/dynamicsampling
       - processor/filter
       - processor/genainormalizer
       - processor/geoip
@@ -267,6 +271,7 @@ body:
       - receiver/collectd
       - receiver/couchdb
       - receiver/datadog
+      - receiver/dnscheck
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/envoyals
@@ -301,7 +306,6 @@ body:
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
-      - receiver/jmx
       - receiver/journald
       - receiver/k8scluster
       - receiver/k8sevents

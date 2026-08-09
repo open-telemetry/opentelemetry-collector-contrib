@@ -25,17 +25,16 @@ func (t testProvider) Source(context.Context) (source.Source, error) {
 	return source.Source{Kind: source.HostnameKind, Identifier: string(t)}, nil
 }
 
-func newTranslator(t *testing.T, logger *zap.Logger) metrics.Provider {
+func newTranslator(t *testing.T, logger *zap.Logger, opts ...metrics.TranslatorOption) metrics.Provider {
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = logger
 	attributesTranslator, err := attributes.NewTranslator(set)
 	require.NoError(t, err)
-	tr, err := metrics.NewDefaultTranslator(set,
-		attributesTranslator,
+	tr, err := metrics.NewDefaultTranslator(set, attributesTranslator, append([]metrics.TranslatorOption{
 		metrics.WithHistogramMode(metrics.HistogramModeDistributions),
 		metrics.WithNumberMode(metrics.NumberModeCumulativeToDelta),
 		metrics.WithFallbackSourceProvider(testProvider("fallbackHostname")),
-	)
+	}, opts...)...)
 	require.NoError(t, err)
 	return tr
 }
@@ -137,4 +136,57 @@ func TestTagsMetrics(t *testing.T) {
 	assert.ElementsMatch(t, runningHostnames, []string{"", "", ""})
 	assert.Len(t, runningMetrics, 3)
 	assert.ElementsMatch(t, runningTags, []string{"task_arn:task-arn-1", "task_arn:task-arn-2", "task_arn:task-arn-3"})
+
+	var runningMetricNames []string
+	for _, metric := range runningMetrics {
+		runningMetricNames = append(runningMetricNames, metric.Metric)
+	}
+	assert.ElementsMatch(t,
+		runningMetricNames,
+		[]string{
+			"otel.datadog_exporter.metrics.running.fargate",
+			"otel.datadog_exporter.metrics.running.fargate",
+			"otel.datadog_exporter.metrics.running.fargate",
+		},
+	)
+}
+
+func addTestMetricWithUnit(_ *testing.T, rm pmetric.ResourceMetrics, name, unit string) {
+	met := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	met.SetEmptyGauge()
+	met.SetName(name)
+	met.SetUnit(unit)
+	met.Gauge().DataPoints().AppendEmpty().SetDoubleValue(1.0)
+}
+
+func TestConsumeTimeSeriesUnits(t *testing.T) {
+	ms := pmetric.NewMetrics()
+	rm := ms.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr(attributes.AttributeDatadogHostname, "test-host")
+	addTestMetricWithUnit(t, rm, "bytes.metric", "By")
+	addTestMetricWithUnit(t, rm, "rate.metric", "By/s")
+	addTestMetricWithUnit(t, rm, "dimensionless.metric", "1")
+	addTestMetricWithUnit(t, rm, "unmappable.metric", "not-a-ucum-unit")
+
+	// With units enabled
+	tr := newTranslator(t, zap.NewNop(), metrics.WithUnits())
+	consumer := NewConsumer(nil)
+	_, err := tr.MapMetrics(t.Context(), ms, consumer, nil)
+	require.NoError(t, err)
+
+	require.Len(t, consumer.ms, 4)
+	assert.Equal(t, "byte", *consumer.ms[0].Unit)
+	assert.Equal(t, "byte/second", *consumer.ms[1].Unit)
+	assert.Nil(t, consumer.ms[2].Unit)
+	assert.Nil(t, consumer.ms[3].Unit)
+
+	// With units disabled
+	tr = newTranslator(t, zap.NewNop())
+	consumer = NewConsumer(nil)
+	_, err = tr.MapMetrics(t.Context(), ms, consumer, nil)
+	require.NoError(t, err)
+	require.Len(t, consumer.ms, 4)
+	for _, m := range consumer.ms {
+		assert.Nil(t, m.Unit)
+	}
 }

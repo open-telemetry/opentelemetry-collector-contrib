@@ -43,17 +43,21 @@ func TestLoadConfig(t *testing.T) {
 		githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
 	}
 
+	defaultServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	defaultServerConfig.ReadHeaderTimeout = 0
+	defaultServerConfig.IdleTimeout = 0
+	defaultServerConfig.KeepAlivesEnabled = false
+	defaultServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
+	defaultServerConfig.ReadTimeout = 500 * time.Millisecond
+	defaultServerConfig.WriteTimeout = 500 * time.Millisecond
 	defaultConfigGitHubReceiver.(*Config).WebHook = WebHook{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: confignet.TransportTypeTCP,
-				Endpoint:  "localhost:8080",
-			},
-			ReadTimeout:  500 * time.Millisecond,
-			WriteTimeout: 500 * time.Millisecond,
-		},
-		Path:       "some/path",
-		HealthPath: "health/path",
+		ServerConfig: defaultServerConfig,
+		Path:         "some/path",
+		HealthPath:   "health/path",
 		RequiredHeaders: map[string]configopaque.String{
 			"key": "value-present",
 		},
@@ -73,6 +77,17 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, defaultConfigGitHubReceiver, r0)
 
 	r1 := cfg.Receivers[component.NewIDWithName(metadata.Type, "customname")].(*Config)
+	expectedServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	expectedServerConfig.ReadHeaderTimeout = 0
+	expectedServerConfig.IdleTimeout = 0
+	expectedServerConfig.KeepAlivesEnabled = false
+	expectedServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
+	expectedServerConfig.ReadTimeout = 500 * time.Millisecond
+	expectedServerConfig.WriteTimeout = 500 * time.Millisecond
 	expectedConfig := &Config{
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 30 * time.Second,
@@ -83,16 +98,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		WebHook: WebHook{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-					Endpoint:  "localhost:8080",
-				},
-				ReadTimeout:  500 * time.Millisecond,
-				WriteTimeout: 500 * time.Millisecond,
-			},
-			Path:       "some/path",
-			HealthPath: "health/path",
+			ServerConfig: expectedServerConfig,
+			Path:         "some/path",
+			HealthPath:   "health/path",
 			RequiredHeaders: map[string]configopaque.String{
 				"key": "value-present",
 			},

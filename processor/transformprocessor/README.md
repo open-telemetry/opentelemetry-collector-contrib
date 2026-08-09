@@ -275,7 +275,9 @@ In addition to the common OTTL functions, the processor defines its own function
 
 **Logs only functions**
 
+- [ParseCEF](#parsecef)
 - [ParseCLF](#parseclf)
+- [ParseELF](#parseelf)
 - [ParseLEEF](#parseleef)
 
 **Traces only functions**
@@ -711,6 +713,32 @@ Examples:
 # counts: [84, 126, 5, 50, 1]
 ```
 
+### ParseCEF
+
+`ParseCEF(target)`
+
+The `ParseCEF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Common Event Format (CEF)](https://www.microfocus.com/documentation/arcsight/arcsight-smartconnectors-8.4/cef-implementation-standard/Content/CEF/Chapter%201%20What%20is%20CEF.htm) message.
+
+`target` is a Getter that returns a string. If the returned string is empty, or cannot be parsed as CEF, an error will be returned.
+
+`ParseCEF` is tolerant of an optional syslog header preceding the `CEF:` token; parsing begins at the first occurrence of `CEF:` in the input.
+
+The returned map has the following top-level fields:
+
+- `cef.version` — the CEF version (the integer following `CEF:`).
+- `cef.device_vendor`, `cef.device_product`, `cef.device_version`, `cef.device_event_class_id`, `cef.name`, `cef.severity` — the six CEF header fields.
+- `cef.extensions` — a map of the parsed key/value extension pairs.
+
+Within the header fields, the escape sequences `\|` (pipe) and `\\` (backslash) are unescaped. Within extension values, the escape sequences `\\` (backslash), `\=` (equals), `\n` (newline), and `\r` (carriage return) are unescaped.
+
+Extension parsing uses the position of the next `key=` token as the end of the current value, so values may contain spaces. All extension values are returned as strings.
+
+Examples:
+
+- `ParseCEF(body)`
+
+- `ParseCEF("CEF:0|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 spt=1232")`
+
 ### ParseCLF
 
 `ParseCLF(target, Optional[format])`
@@ -752,6 +780,35 @@ Examples:
 - `ParseCLF(body)`
 - `ParseCLF("127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] \"GET /apache_pb.gif HTTP/1.0\" 200 2326")`
 - `ParseCLF(body, "combined")`
+
+### ParseELF
+
+`ParseELF(target)`
+
+The `ParseELF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [W3C Extended Log Format (ELF)](https://www.w3.org/TR/WD-logfile.html) log block.
+
+`target` is a Getter that returns a string containing a complete ELF log block (one or more directive lines followed by data lines). If the string is empty or does not contain a valid `#Version` directive, an error is returned.
+
+**Intended usage:** `ParseELF` is designed for pipelines where the full ELF block — header directives (`#Version`, `#Fields`, etc.) and data lines — is available as a single string. This is the case when using the [filelog receiver](../../receiver/filelogreceiver/README.md) with a multiline configuration that groups an entire ELF file (or rotated segment) into one log record body, or when the entire log content is read from a single field. In a line-by-line streaming pipeline where `#Fields` arrives only once at file open, each individual data line does not carry its own header; for that pattern you would need to prepend the known header directives to each data line before passing the string to `ParseELF`.
+
+The returned map contains the following keys:
+
+* `elf.version` — value of the `#Version` directive (required).
+* `elf.software` — value of `#Software` (omitted if not present).
+* `elf.date` — value of `#Date` (omitted if not present).
+* `elf.start_date` — value of `#Start-Date` (omitted if not present).
+* `elf.end_date` — value of `#End-Date` (omitted if not present).
+* `elf.remark` — value of `#Remark` (omitted if not present).
+* `elf.fields` — string slice of field names from the last `#Fields` directive.
+* `elf.entries` — slice of maps, one per data line, keyed by field name. Missing values are represented as `"-"`.
+
+Multiple `#Fields` directives within a single block are supported; each directive applies to subsequent data lines until the next `#Fields` directive is encountered. Double-quoted field values (as produced by Microsoft IIS) are handled correctly.
+
+Examples:
+
+- `ParseELF(body)`
+
+- `ParseELF("#Version: 1.0\n#Fields: time cs-method cs-uri\n00:34:23 GET /foo/bar.html")`
 
 ### ParseLEEF
 
@@ -1085,3 +1142,7 @@ The feature is currently only available for log processing.
   ```
   
   Run collector: `./otelcol --config config.yaml --feature-gates=transform.flatten.logs`
+
+### `ottl.set.allowNil`
+
+The `ottl.set.allowNil` [feature gate](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/documentation.md) changes the behavior of the OTTL `set` function when a `nil` value is evaluated. When enabled, `set` will pass the `nil` value directly to the target. Depending on the target, this may result in an error or an empty value. See the [OTTL Documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) for full details and migration instructions.

@@ -52,7 +52,8 @@ func Test_HasSuffix(t *testing.T) {
 						},
 					},
 					Suffix: tt.suffix,
-				})
+				},
+			)
 			require.NoError(t, err)
 			result, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
