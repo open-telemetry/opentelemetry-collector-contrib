@@ -23,6 +23,44 @@ override the resource value in telemetry data with this information.
 >
 > If a configured resource detector fails, the error will propagate and stop the collector from starting.
 
+## Retry configuration
+
+By default, every detector retries failed `Detect` calls with exponential
+backoff. The `retry` block uses the standard
+[`configretry.BackOffConfig`](https://pkg.go.dev/go.opentelemetry.io/collector/config/configretry)
+and applies to every detection attempt (including periodic refreshes when
+`refresh_interval > 0`).
+
+| Field | Default | Notes |
+|-------|---------|-------|
+| `retry.enabled` | `true` | Set to `false` to perform a single attempt per detector with no retries. |
+| `retry.initial_interval` | `1s` | Delay before the first retry. |
+| `retry.randomization_factor` | `0.5` | Jitter applied to each interval. |
+| `retry.multiplier` | `2` | Each interval is multiplied by this factor up to `max_interval`. |
+| `retry.max_interval` | `30s` | Upper bound on the backoff interval. |
+| `retry.max_elapsed_time` | `0` | Total retry budget. `0` means no explicit cap — the session is bounded by `timeout` (the HTTP client timeout) instead. Set to a positive duration to retry past `timeout`. |
+
+When `retry.max_elapsed_time` is `0`, the whole detection session is bounded by
+`timeout`. When it is greater than zero, `timeout` only bounds each individual
+attempt, and `max_elapsed_time` bounds the total. The processor rejects
+configurations with `retry.enabled: true`, `timeout: 0`, and
+`retry.max_elapsed_time: 0` — at least one of the two must be set so a hung
+detector cannot block startup indefinitely.
+
+Example: wait up to two minutes for a slow metadata server to come up.
+
+```yaml
+processors:
+  resource_detection/wait_for_metadata:
+    detectors: [gcp]
+    timeout: 5s
+    retry:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 10s
+      max_elapsed_time: 2m
+```
+
 ## Supported detectors
 
 ### Environment Variable
