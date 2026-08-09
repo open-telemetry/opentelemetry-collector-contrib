@@ -69,7 +69,7 @@ func TestExtensionIntegrity(t *testing.T) {
 		}
 
 		// Repeatedly thrash client
-		for i := 0; i < 100; i++ {
+		for i := range 100 {
 			// Make sure my values are still mine
 			for i := range keys {
 				v, err := c.Get(ctx, keys[i])
@@ -793,7 +793,7 @@ func TestCompactionOnStartWithCorruption(t *testing.T) {
 			require.True(t, ok)
 			lfs, ok := se.(*localFileStorage)
 			require.True(t, ok)
-			
+
 			client, err = se.GetClient(ctx, component.KindReceiver, newTestEntity("my_component"), "")
 			require.NoError(t, err)
 			fileClient, ok := client.(*fileStorageClient)
