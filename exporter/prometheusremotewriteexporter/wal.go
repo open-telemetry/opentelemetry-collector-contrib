@@ -84,7 +84,9 @@ func newPRWWalTelemetry(set exporter.Settings) (prwWalTelemetry, error) {
 	}
 	return &prwWalTelemetryOTel{
 		telemetryBuilder: telemetryBuilder,
-		otelAttrs:        []attribute.KeyValue{},
+		otelAttrs: []attribute.KeyValue{
+			attribute.String("exporter", set.ID.String()),
+		},
 	}, nil
 }
 

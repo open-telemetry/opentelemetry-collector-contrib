@@ -23,6 +23,44 @@ override the resource value in telemetry data with this information.
 >
 > If a configured resource detector fails, the error will propagate and stop the collector from starting.
 
+## Retry configuration
+
+By default, every detector retries failed `Detect` calls with exponential
+backoff. The `retry` block uses the standard
+[`configretry.BackOffConfig`](https://pkg.go.dev/go.opentelemetry.io/collector/config/configretry)
+and applies to every detection attempt (including periodic refreshes when
+`refresh_interval > 0`).
+
+| Field | Default | Notes |
+|-------|---------|-------|
+| `retry.enabled` | `true` | Set to `false` to perform a single attempt per detector with no retries. |
+| `retry.initial_interval` | `1s` | Delay before the first retry. |
+| `retry.randomization_factor` | `0.5` | Jitter applied to each interval. |
+| `retry.multiplier` | `2` | Each interval is multiplied by this factor up to `max_interval`. |
+| `retry.max_interval` | `30s` | Upper bound on the backoff interval. |
+| `retry.max_elapsed_time` | `0` | Total retry budget. `0` means no explicit cap — the session is bounded by `timeout` (the HTTP client timeout) instead. Set to a positive duration to retry past `timeout`. |
+
+When `retry.max_elapsed_time` is `0`, the whole detection session is bounded by
+`timeout`. When it is greater than zero, `timeout` only bounds each individual
+attempt, and `max_elapsed_time` bounds the total. The processor rejects
+configurations with `retry.enabled: true`, `timeout: 0`, and
+`retry.max_elapsed_time: 0` — at least one of the two must be set so a hung
+detector cannot block startup indefinitely.
+
+Example: wait up to two minutes for a slow metadata server to come up.
+
+```yaml
+processors:
+  resource_detection/wait_for_metadata:
+    detectors: [gcp]
+    timeout: 5s
+    retry:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 10s
+      max_elapsed_time: 2m
+```
+
 ## Supported detectors
 
 ### Environment Variable
@@ -515,6 +553,25 @@ The cluster name is detected if it does not contain underscores and if a custom 
 
 If accurate parsing cannot be performed, the infrastructure resource group value is returned. This value can be used to uniquely identify the cluster, as Azure will not allow users to create multiple clusters with the same infrastructure resource group name.
 
+### Azure Container Apps
+
+Uses the [Azure Container Apps](https://learn.microsoft.com/en-us/azure/container-apps/) [injected environment variables](https://learn.microsoft.com/en-us/azure/container-apps/environment-variables?tabs=portal#built-in-environment-variables) to retrieve related resource attributes.
+
+Note: Azure Container Apps jobs are not supported.
+
+The list of the populated resource attributes can be found at [Azure Container Apps Detector Resource Attributes](./internal/azure/containerapps/documentation.md).
+
+Example:
+```yaml
+processors:
+  resourcedetection/azurecontainerapps:
+    detectors: [env, azurecontainerapps]
+    timeout: 2s
+    override: false
+```
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the `CONTAINER_APP_NAME` environment variable is not set (not running on Azure Container Apps), instead of silently returning an empty resource.
+
 ### Consul
 
 Queries a [consul agent](https://www.consul.io/docs/agent) and reads its [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve related resource attributes:
@@ -954,7 +1011,7 @@ processors:
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8s_api", "k8snode" (deprecated, use "k8s_api"), "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "azurecontainerapps", "heroku", "openshift", "dynatrace", "consul", "docker", "k8s_api", "k8snode" (deprecated, use "k8s_api"), "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

@@ -5,6 +5,7 @@ package dynamicsamplingprocessor
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -954,4 +955,23 @@ func TestProcessor_DecisionCacheDisabled(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return sink.SpanCount() == 2
 	}, time.Second, 10*time.Millisecond)
+}
+
+// TestSerializedEmptyTraceState_MatchesFullSerialize guards the fast path in
+// updateTraceState: for a span with no incoming tracestate, the precomputed
+// string must be byte-identical to what the parse/update/serialize round trip
+// produces.
+func TestSerializedEmptyTraceState_MatchesFullSerialize(t *testing.T) {
+	for _, prob := range []float64{1.0, 0.5, 0.1, 0.01, 1.0 / 3.0} {
+		th, err := sampling.ProbabilityToThreshold(prob)
+		require.NoError(t, err)
+
+		w3c, err := sampling.NewW3CTraceState("")
+		require.NoError(t, err)
+		require.NoError(t, w3c.OTelValue().UpdateTValueWithSampling(th))
+		var sb strings.Builder
+		require.NoError(t, w3c.Serialize(&sb))
+
+		assert.Equal(t, sb.String(), serializedEmptyTraceState(th), "prob %v", prob)
+	}
 }
