@@ -65,6 +65,7 @@ attributes:
     requirement_level: recommended
     enum: [in_use, total]
   check:
+    name_override: sqlserver.health.check.type
     description: The connection health check being reported. `reachable` is a transport-level (pre-auth) check that the SQL Server endpoint accepts a TCP connection; `queryable` is an end-to-end check that the receiver can authenticate and execute a trivial query.
     type: string
     requirement_level: required

@@ -25,10 +25,17 @@ import (
 // (dropped SYN) cannot hang the scrape past this budget.
 const dialTimeout = 5 * time.Second
 
-// reachabilityProbeQuery is the trivial statement used for the queryable check.
+// queryTimeout bounds the queryable probe (connect -> authenticate -> SELECT 1).
+// Without it a server that accepts the TCP connection but stalls during the
+// login handshake or query (an overloaded or half-broken instance) could hang
+// the scrape indefinitely. It is independent of dialTimeout so the two phases
+// are bounded separately.
+const queryTimeout = 5 * time.Second
+
+// queryableProbeQuery is the trivial statement used for the queryable check.
 // It forces the driver to establish a session, authenticate, and execute a
 // statement end-to-end without touching any DMV or user object.
-const reachabilityProbeQuery = "SELECT 1"
+const queryableProbeQuery = "SELECT 1"
 
 // connectionHealthScraper reports the connection health of the SQL Server target
 // as the sqlserver.health metric, keyed by the check attribute:
@@ -51,7 +58,6 @@ type connectionHealthScraper struct {
 	id                 component.ID
 	config             *Config
 	logger             *zap.Logger
-	telemetry          sqlquery.TelemetryConfig
 	dbProviderFunc     sqlquery.DbProviderFunc
 	clientProviderFunc sqlquery.ClientProviderFunc
 	mb                 *metadata.MetricsBuilder
@@ -62,7 +68,6 @@ var _ scraper.Metrics = (*connectionHealthScraper)(nil)
 
 func newConnectionHealthScraper(
 	id component.ID,
-	telemetry sqlquery.TelemetryConfig,
 	dbProvider sqlquery.DbProviderFunc,
 	clientProvider sqlquery.ClientProviderFunc,
 	params receiver.Settings,
@@ -71,14 +76,13 @@ func newConnectionHealthScraper(
 	serviceInstanceID, err := computeServiceInstanceID(cfg)
 	if err != nil {
 		params.Logger.Warn("Failed to compute service.instance.id", zap.Error(err))
-		serviceInstanceID = "unknown:1433"
+		serviceInstanceID = defaultServiceInstanceID
 	}
 
 	return &connectionHealthScraper{
 		id:                 id,
 		config:             cfg,
 		logger:             params.Logger,
-		telemetry:          telemetry,
 		dbProviderFunc:     dbProvider,
 		clientProviderFunc: clientProvider,
 		mb:                 metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
@@ -94,7 +98,7 @@ func (s *connectionHealthScraper) ID() component.ID {
 // long-lived connection. Each scrape's queryable probe opens and closes its own
 // connection so that it always tests a fresh authenticated session (see
 // probeQueryable).
-func (s *connectionHealthScraper) Start(context.Context, component.Host) error {
+func (*connectionHealthScraper) Start(context.Context, component.Host) error {
 	return nil
 }
 
@@ -172,8 +176,11 @@ func (s *connectionHealthScraper) probeQueryable(ctx context.Context) bool {
 		}
 	}()
 
-	client := s.clientProviderFunc(sqlquery.DbWrapper{Db: db}, reachabilityProbeQuery, s.logger, s.telemetry)
-	if _, err := client.QueryRows(ctx); err != nil {
+	queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	client := s.clientProviderFunc(sqlquery.DbWrapper{Db: db}, queryableProbeQuery, s.logger, sqlquery.TelemetryConfig{})
+	if _, err := client.QueryRows(queryCtx); err != nil {
 		s.logger.Debug("Connection health: queryable check failed", zap.Error(err))
 		return false
 	}
@@ -194,15 +201,18 @@ func (s *connectionHealthScraper) setupResourceBuilder(rb *metadata.ResourceBuil
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
 
-	if !metadata.ReceiverSqlserverRemoveServerResourceAttributeFeatureGate.IsEnabled() {
-		rb.SetServerAddress(hostName)
-		rb.SetServerPort(int64(port))
-	}
+	// SetServerAddress / SetServerPort are already gated on the server.address /
+	// server.port resource-attribute config (disabled by default), so they are
+	// called unconditionally here. The receiver.sqlserver.RemoveServerResourceAttribute
+	// feature gate is being removed (see #49886); not referencing it keeps this
+	// mergeable once that gate is deleted.
+	rb.SetServerAddress(hostName)
+	rb.SetServerPort(int64(port))
 }
 
 // Shutdown is a no-op: the queryable probe opens and closes its own connection
 // each scrape, so there is no long-lived connection to release here.
-func (s *connectionHealthScraper) Shutdown(context.Context) error {
+func (*connectionHealthScraper) Shutdown(context.Context) error {
 	return nil
 }
 

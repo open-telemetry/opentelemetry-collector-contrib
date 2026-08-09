@@ -3448,7 +3448,7 @@ func (m *metricSqlserverHealth) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("check", checkAttributeValue)
+	dp.Attributes().PutStr("sqlserver.health.check.type", checkAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

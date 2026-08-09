@@ -77,7 +77,7 @@ func newSQLServerScraper(id component.ID,
 	serviceInstanceID, err := computeServiceInstanceID(cfg)
 	if err != nil {
 		params.Logger.Warn("Failed to compute service.instance.id", zap.Error(err))
-		serviceInstanceID = "unknown:1433"
+		serviceInstanceID = defaultServiceInstanceID
 	}
 
 	return &sqlServerScraperHelper{

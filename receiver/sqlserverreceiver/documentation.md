@@ -50,7 +50,7 @@ Emitted every collection interval so an unreachable or unauthenticated SQL Serve
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| check | The connection health check being reported. `reachable` is a transport-level (pre-auth) check that the SQL Server endpoint accepts a TCP connection; `queryable` is an end-to-end check that the receiver can authenticate and execute a trivial query. | Str: ``reachable``, ``queryable`` | Required | - |
+| sqlserver.health.check.type | The connection health check being reported. `reachable` is a transport-level (pre-auth) check that the SQL Server endpoint accepts a TCP connection; `queryable` is an end-to-end check that the receiver can authenticate and execute a trivial query. | Str: ``reachable``, ``queryable`` | Required | - |
 
 ### sqlserver.lock.wait.rate
 

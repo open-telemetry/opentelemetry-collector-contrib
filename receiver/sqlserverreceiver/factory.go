@@ -257,7 +257,7 @@ func setupConnectionHealthScraper(params receiver.Settings, cfg *Config) *connec
 	}
 
 	id := component.NewIDWithName(metadata.Type, "connection-health")
-	return newConnectionHealthScraper(id, sqlquery.TelemetryConfig{}, dbProviderFunc, sqlquery.NewDbClient, params, cfg)
+	return newConnectionHealthScraper(id, dbProviderFunc, sqlquery.NewDbClient, params, cfg)
 }
 
 // Note: This method will fail silently if there is no work to do. This is an acceptable use case

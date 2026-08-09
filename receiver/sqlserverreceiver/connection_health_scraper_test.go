@@ -36,7 +36,7 @@ func newTestHealthScraper(t *testing.T, cfg *Config, client sqlquery.DbClient) *
 	clientProvider := func(sqlquery.Db, string, *zap.Logger, sqlquery.TelemetryConfig) sqlquery.DbClient {
 		return client
 	}
-	return newConnectionHealthScraper(id, sqlquery.TelemetryConfig{}, dbProvider, clientProvider, params, cfg)
+	return newConnectionHealthScraper(id, dbProvider, clientProvider, params, cfg)
 }
 
 func TestBoolToStatus(t *testing.T) {
@@ -114,7 +114,7 @@ func TestProbeQueryableOpensFreshConnectionEachScrape(t *testing.T) {
 	clientProvider := func(sqlquery.Db, string, *zap.Logger, sqlquery.TelemetryConfig) sqlquery.DbClient {
 		return client
 	}
-	s := newConnectionHealthScraper(id, sqlquery.TelemetryConfig{}, dbProvider, clientProvider, params, cfg)
+	s := newConnectionHealthScraper(id, dbProvider, clientProvider, params, cfg)
 
 	require.True(t, s.probeQueryable(t.Context()))
 	require.True(t, s.probeQueryable(t.Context()))
@@ -137,7 +137,7 @@ func TestProbeQueryableOpenFailure(t *testing.T) {
 		t.Fatal("client provider must not be called when the connection cannot be opened")
 		return nil
 	}
-	s := newConnectionHealthScraper(id, sqlquery.TelemetryConfig{}, dbProvider, clientProvider, params, cfg)
+	s := newConnectionHealthScraper(id, dbProvider, clientProvider, params, cfg)
 
 	assert.False(t, s.probeQueryable(t.Context()), "open failure => not queryable")
 }
@@ -160,7 +160,7 @@ func statusByCheck(t *testing.T, md pmetric.Metrics) map[string]int64 {
 				dps := m.Gauge().DataPoints()
 				for d := 0; d < dps.Len(); d++ {
 					dp := dps.At(d)
-					check, ok := dp.Attributes().Get("check")
+					check, ok := dp.Attributes().Get("sqlserver.health.check.type")
 					require.True(t, ok, "status datapoint missing check attribute")
 					out[check.Str()] = dp.IntValue()
 				}
@@ -290,7 +290,7 @@ func TestConnectionHealthScraperID(t *testing.T) {
 	cfg := &Config{DataSource: "server=127.0.0.1;port=1433"}
 	id := component.NewIDWithName(metadata.Type, "connection-health")
 	params := receivertest.NewNopSettings(metadata.Type)
-	s := newConnectionHealthScraper(id, sqlquery.TelemetryConfig{}, nil, sqlquery.NewDbClient, params, cfg)
+	s := newConnectionHealthScraper(id, nil, sqlquery.NewDbClient, params, cfg)
 	assert.Equal(t, id, s.ID())
 	assert.Equal(t, "connection-health", s.ID().Name())
 }

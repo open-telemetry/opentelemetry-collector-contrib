@@ -1403,7 +1403,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					checkAttrVal, ok := dp.Attributes().Get("check")
+					checkAttrVal, ok := dp.Attributes().Get("sqlserver.health.check.type")
 					assert.True(t, ok)
 					assert.Equal(t, "reachable", checkAttrVal.Str())
 				case "sqlserver.host.memory.limit":

@@ -22,6 +22,10 @@ subtext: |
   authenticate and execute a trivial query, so it tests whether a new session can be established
   rather than reusing a pooled one. A failed probe is reported as a `0` datapoint rather than an
   absence of data or a scrape error.
+  Because `queryable` establishes a new authenticated session each collection interval, enabling this
+  metric adds one login/connection per interval to the server's connection and login rate.
+  The top query event now reports the `server.address` and `server.port` resolved from the connection
+  string (the same values used for the resource attributes), instead of the raw configured `server`/`port`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
