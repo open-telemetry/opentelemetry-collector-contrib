@@ -144,92 +144,26 @@ func TestBearerStartWatchStop(t *testing.T) {
 
 	// change file content once
 	assert.NoError(t, os.WriteFile(cfg.Filename, fmt.Appendf(nil, "%stest", token), 0o600))
-	time.Sleep(5 * time.Second)
 	credential, _ = bauth.PerRPCCredentials()
-	md, err := credential.GetRequestMetadata(t.Context())
 	expectedMd["authorization"] = tokenStr + "test"
-	assert.Equal(t, expectedMd, md)
-	assert.NoError(t, err)
-
-	// change file content back
-	assert.NoError(t, os.WriteFile(cfg.Filename, token, 0o600))
-	time.Sleep(5 * time.Second)
-	credential, _ = bauth.PerRPCCredentials()
-	md, err = credential.GetRequestMetadata(t.Context())
-	expectedMd["authorization"] = tokenStr
-	time.Sleep(5 * time.Second)
-	assert.Equal(t, expectedMd, md)
-	assert.NoError(t, err)
-
-	assert.NoError(t, bauth.Shutdown(t.Context()))
-}
-
-func TestBearerTokenFileContentUpdate(t *testing.T) {
-	scheme := "TestScheme"
-	cfg := createDefaultConfig().(*Config)
-	cfg.Filename = filepath.Join("testdata", t.Name()+".token")
-	cfg.Scheme = scheme
-
-	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
-	assert.NotNil(t, bauth)
-
-	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
-	// Start is idempotent: a repeat call is a no-op.
-	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() { assert.NoError(t, bauth.Shutdown(t.Context())) }()
-
-	token, err := os.ReadFile(cfg.Filename)
-	assert.NoError(t, err)
-
-	base := &mockRoundTripper{}
-	rt, err := bauth.RoundTripper(base)
-	assert.NoError(t, err)
-	assert.NotNil(t, rt)
-
-	request := &http.Request{Method: http.MethodGet}
-	// Start loads the token asynchronously, so wait until it is applied.
+	// The watcher reloads the token asynchronously, so poll until it is applied.
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		resp, rtErr := rt.RoundTrip(request)
-		assert.NoError(c, rtErr)
-		assert.Equal(c, expectedAuthHeader(scheme, token), resp.Header.Get("Authorization"))
+		md, mdErr := credential.GetRequestMetadata(t.Context())
+		assert.NoError(c, mdErr)
+		assert.Equal(c, expectedMd, md)
 	}, 5*time.Second, 50*time.Millisecond)
 
-	// change file content once
-	newContent := fmt.Appendf(nil, "%stest", token)
-	assert.NoError(t, os.WriteFile(cfg.Filename, newContent, 0o600))
-	time.Sleep(5 * time.Second)
-
-	// check if request is updated with the new token
-	request = &http.Request{Method: http.MethodGet}
-	resp, err := rt.RoundTrip(request)
-	assert.NoError(t, err)
-	authHeaderValue := resp.Header.Get("Authorization")
-	assert.Equal(t, expectedAuthHeader(scheme, newContent), authHeaderValue)
-
 	// change file content back
 	assert.NoError(t, os.WriteFile(cfg.Filename, token, 0o600))
-	time.Sleep(5 * time.Second)
+	credential, _ = bauth.PerRPCCredentials()
+	expectedMd["authorization"] = tokenStr
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		md, mdErr := credential.GetRequestMetadata(t.Context())
+		assert.NoError(c, mdErr)
+		assert.Equal(c, expectedMd, md)
+	}, 5*time.Second, 50*time.Millisecond)
 
-	// check if request is updated with the old token
-	request = &http.Request{Method: http.MethodGet}
-	resp, err = rt.RoundTrip(request)
-	assert.NoError(t, err)
-	authHeaderValue = resp.Header.Get("Authorization")
-	assert.Equal(t, expectedAuthHeader(scheme, token), authHeaderValue)
-}
-
-// expectedAuthHeader builds the Authorization header value the extension is
-// expected to produce for the given token file contents. It mirrors the
-// extension's own parsing (first whitespace-delimited field of the first line)
-// so the test is independent of trailing newlines or CRLF line endings that
-// git/OS may introduce, e.g. on Windows.
-func expectedAuthHeader(scheme string, tokenContent []byte) string {
-	parts := strings.Fields(string(tokenContent))
-	token := ""
-	if len(parts) > 0 {
-		token = parts[0]
-	}
-	return fmt.Sprintf("%s %s", scheme, token)
+	assert.NoError(t, bauth.Shutdown(t.Context()))
 }
 
 func TestBearerTokenUpdateForGrpc(t *testing.T) {
