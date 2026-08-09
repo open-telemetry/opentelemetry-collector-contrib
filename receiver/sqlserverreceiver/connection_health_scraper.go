@@ -38,7 +38,7 @@ const queryTimeout = 5 * time.Second
 const queryableProbeQuery = "SELECT 1"
 
 // connectionHealthScraper reports the connection health of the SQL Server target
-// as the sqlserver.health metric, keyed by the check attribute:
+// as the sqlserver.health metric, keyed by the sqlserver.health.check.type attribute:
 //
 //   - reachable: a transport-level (pre-auth) check that the endpoint accepts a
 //     TCP connection, performed by parsing the connection string with the driver's
@@ -121,13 +121,13 @@ func (s *connectionHealthScraper) ScrapeMetrics(ctx context.Context) (pmetric.Me
 	// session. A failed probe is not a scrape error: a database that is down is
 	// data (a 0 datapoint), not an absence of data.
 	reachable := s.probeReachable(ctx, host, port)
-	s.mb.RecordSqlserverHealthDataPoint(now, boolToStatus(reachable), metadata.AttributeCheckReachable)
+	s.mb.RecordSqlserverHealthDataPoint(now, boolToStatus(reachable), metadata.AttributeSqlserverHealthCheckTypeReachable)
 
 	queryable := false
 	if reachable {
 		queryable = s.probeQueryable(ctx)
 	}
-	s.mb.RecordSqlserverHealthDataPoint(now, boolToStatus(queryable), metadata.AttributeCheckQueryable)
+	s.mb.RecordSqlserverHealthDataPoint(now, boolToStatus(queryable), metadata.AttributeSqlserverHealthCheckTypeQueryable)
 
 	rb := s.mb.NewResourceBuilder()
 	s.setupResourceBuilder(rb)

@@ -239,7 +239,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverGhostRecordSkippedRateDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverHealthDataPoint(ts, 1, AttributeCheckReachable)
+			mb.RecordSqlserverHealthDataPoint(ts, 1, AttributeSqlserverHealthCheckTypeReachable)
 
 			allMetricsCount++
 			mb.RecordSqlserverHostMemoryLimitDataPoint(ts, 1)
@@ -1403,9 +1403,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					checkAttrVal, ok := dp.Attributes().Get("sqlserver.health.check.type")
+					sqlserverHealthCheckTypeAttrVal, ok := dp.Attributes().Get("sqlserver.health.check.type")
 					assert.True(t, ok)
-					assert.Equal(t, "reachable", checkAttrVal.Str())
+					assert.Equal(t, "reachable", sqlserverHealthCheckTypeAttrVal.Str())
 				case "sqlserver.host.memory.limit":
 					assert.False(t, validatedMetrics["sqlserver.host.memory.limit"], "Found a duplicate in the metrics slice: sqlserver.host.memory.limit")
 					validatedMetrics["sqlserver.host.memory.limit"] = true

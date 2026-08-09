@@ -40,7 +40,7 @@ Number of SQL recompilations needed.
 
 The connection health of the SQL Server target, reported per check as 1 (healthy) or 0 (unhealthy).
 
-Emitted every collection interval so an unreachable or unauthenticated SQL Server surfaces as data rather than as an absence of data. The `check` attribute distinguishes `reachable` (transport-level, pre-auth) from `queryable` (authenticated end-to-end). `queryable=1` implies `reachable=1`. This metric is only available when the receiver is configured to directly connect to SQL Server.
+Emitted every collection interval so an unreachable or unauthenticated SQL Server surfaces as data rather than as an absence of data. The `sqlserver.health.check.type` attribute distinguishes `reachable` (transport-level, pre-auth) from `queryable` (authenticated end-to-end). `queryable=1` implies `reachable=1`. This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

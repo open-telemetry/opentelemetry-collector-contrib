@@ -48,32 +48,6 @@ var MapAttributeCacheState = map[string]AttributeCacheState{
 	"total":  AttributeCacheStateTotal,
 }
 
-// AttributeCheck specifies the value check attribute.
-type AttributeCheck int
-
-const (
-	_ AttributeCheck = iota
-	AttributeCheckReachable
-	AttributeCheckQueryable
-)
-
-// String returns the string representation of the AttributeCheck.
-func (av AttributeCheck) String() string {
-	switch av {
-	case AttributeCheckReachable:
-		return "reachable"
-	case AttributeCheckQueryable:
-		return "queryable"
-	}
-	return ""
-}
-
-// MapAttributeCheck is a helper map of string to AttributeCheck attribute value.
-var MapAttributeCheck = map[string]AttributeCheck{
-	"reachable": AttributeCheckReachable,
-	"queryable": AttributeCheckQueryable,
-}
-
 // AttributeCursorState specifies the value cursor.state attribute.
 type AttributeCursorState int
 
@@ -474,6 +448,32 @@ func (av AttributeSqlserverExtentOperationType) String() string {
 var MapAttributeSqlserverExtentOperationType = map[string]AttributeSqlserverExtentOperationType{
 	"allocated":   AttributeSqlserverExtentOperationTypeAllocated,
 	"deallocated": AttributeSqlserverExtentOperationTypeDeallocated,
+}
+
+// AttributeSqlserverHealthCheckType specifies the value sqlserver.health.check.type attribute.
+type AttributeSqlserverHealthCheckType int
+
+const (
+	_ AttributeSqlserverHealthCheckType = iota
+	AttributeSqlserverHealthCheckTypeReachable
+	AttributeSqlserverHealthCheckTypeQueryable
+)
+
+// String returns the string representation of the AttributeSqlserverHealthCheckType.
+func (av AttributeSqlserverHealthCheckType) String() string {
+	switch av {
+	case AttributeSqlserverHealthCheckTypeReachable:
+		return "reachable"
+	case AttributeSqlserverHealthCheckTypeQueryable:
+		return "queryable"
+	}
+	return ""
+}
+
+// MapAttributeSqlserverHealthCheckType is a helper map of string to AttributeSqlserverHealthCheckType attribute value.
+var MapAttributeSqlserverHealthCheckType = map[string]AttributeSqlserverHealthCheckType{
+	"reachable": AttributeSqlserverHealthCheckTypeReachable,
+	"queryable": AttributeSqlserverHealthCheckTypeQueryable,
 }
 
 // AttributeSqlserverLockBlockType specifies the value sqlserver.lock.block.type attribute.
@@ -985,7 +985,7 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverHealth: metricInfo{
 		Name:       "sqlserver.health",
-		Attributes: []string{"check"},
+		Attributes: []string{"sqlserver.health.check.type"},
 	},
 	SqlserverHostMemoryLimit: metricInfo{
 		Name: "sqlserver.host.memory.limit",
@@ -3440,7 +3440,7 @@ func (m *metricSqlserverHealth) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSqlserverHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, checkAttributeValue string) {
+func (m *metricSqlserverHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverHealthCheckTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3448,7 +3448,7 @@ func (m *metricSqlserverHealth) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("sqlserver.health.check.type", checkAttributeValue)
+	dp.Attributes().PutStr("sqlserver.health.check.type", sqlserverHealthCheckTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -8495,8 +8495,8 @@ func (mb *MetricsBuilder) RecordSqlserverGhostRecordSkippedRateDataPoint(ts pcom
 }
 
 // RecordSqlserverHealthDataPoint adds a data point to sqlserver.health metric.
-func (mb *MetricsBuilder) RecordSqlserverHealthDataPoint(ts pcommon.Timestamp, val int64, checkAttributeValue AttributeCheck) {
-	mb.metricSqlserverHealth.recordDataPoint(mb.startTime, ts, val, checkAttributeValue.String())
+func (mb *MetricsBuilder) RecordSqlserverHealthDataPoint(ts pcommon.Timestamp, val int64, sqlserverHealthCheckTypeAttributeValue AttributeSqlserverHealthCheckType) {
+	mb.metricSqlserverHealth.recordDataPoint(mb.startTime, ts, val, sqlserverHealthCheckTypeAttributeValue.String())
 }
 
 // RecordSqlserverHostMemoryLimitDataPoint adds a data point to sqlserver.host.memory.limit metric.
