@@ -1160,6 +1160,8 @@ go.opentelemetry.io/contrib/detectors/aws/ecs v1.45.0 h1:SIHXqRfox1Uz20yN0mtAidK
 go.opentelemetry.io/contrib/detectors/aws/ecs v1.45.0/go.mod h1:RkxcEsr+yajGeP6Q876PZq5ELVZxtfhbpogowN3xIuE=
 go.opentelemetry.io/contrib/detectors/aws/eks v1.45.0 h1:nsQvMufr0boocNMXihxeeTCVvztsfO7web525q6jITQ=
 go.opentelemetry.io/contrib/detectors/aws/eks v1.45.0/go.mod h1:Pu3y0mDdUbAx68Q7xrNEo8q2/1CRk4aY64YNIBEcXbU=
+go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.17.0 h1:jddCxr64BvBbJcXSRqFGDqf8On3rAcKSSWMxUsQySok=
+go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.17.0/go.mod h1:p1ynrM9EAEk72cNYQtwOLl39gVOtE5zbSy+/vnnlLm4=
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0 h1:6TvMbWB8r3b3bDnmEOINXY4LGDkS5Tb/KdMIRk1b8gQ=
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0/go.mod h1:l5PtALrPd1LdGoCatPskfemVbh1KupYQ6GyWX+JiyRY=
 go.opentelemetry.io/contrib/detectors/azure/azurevm v0.17.0 h1:ySRed/MgKSYjGWkrlR1KiSRUBpe3RovCbhk+w/RM8as=
