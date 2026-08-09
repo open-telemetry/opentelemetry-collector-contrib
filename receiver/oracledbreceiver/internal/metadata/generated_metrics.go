@@ -578,6 +578,36 @@ var MapAttributeOracledbSortType = map[string]AttributeOracledbSortType{
 	"memory": AttributeOracledbSortTypeMemory,
 }
 
+// AttributeOracledbTablespaceState specifies the value oracledb.tablespace.state attribute.
+type AttributeOracledbTablespaceState int
+
+const (
+	_ AttributeOracledbTablespaceState = iota
+	AttributeOracledbTablespaceStateOnline
+	AttributeOracledbTablespaceStateOffline
+	AttributeOracledbTablespaceStateReadOnly
+)
+
+// String returns the string representation of the AttributeOracledbTablespaceState.
+func (av AttributeOracledbTablespaceState) String() string {
+	switch av {
+	case AttributeOracledbTablespaceStateOnline:
+		return "online"
+	case AttributeOracledbTablespaceStateOffline:
+		return "offline"
+	case AttributeOracledbTablespaceStateReadOnly:
+		return "read only"
+	}
+	return ""
+}
+
+// MapAttributeOracledbTablespaceState is a helper map of string to AttributeOracledbTablespaceState attribute value.
+var MapAttributeOracledbTablespaceState = map[string]AttributeOracledbTablespaceState{
+	"online":    AttributeOracledbTablespaceStateOnline,
+	"offline":   AttributeOracledbTablespaceStateOffline,
+	"read only": AttributeOracledbTablespaceStateReadOnly,
+}
+
 // AttributeOracledbTransactionType specifies the value oracledb.transaction.type attribute.
 type AttributeOracledbTransactionType int
 
@@ -1036,6 +1066,18 @@ var MetricsInfo = metricsInfo{
 	OracledbSystemProcessCount: metricInfo{
 		Name: "oracledb.system.process.count",
 	},
+	OracledbTablespaceLimit: metricInfo{
+		Name:       "oracledb.tablespace.limit",
+		Attributes: []string{"tablespace_name", "oracle.db.pdb"},
+	},
+	OracledbTablespaceStatus: metricInfo{
+		Name:       "oracledb.tablespace.status",
+		Attributes: []string{"tablespace_name", "oracledb.tablespace.state", "oracle.db.pdb"},
+	},
+	OracledbTablespaceUtilization: metricInfo{
+		Name:       "oracledb.tablespace.utilization",
+		Attributes: []string{"tablespace_name", "oracle.db.pdb"},
+	},
 	OracledbTablespaceSizeLimit: metricInfo{
 		Name:       "oracledb.tablespace_size.limit",
 		Attributes: []string{"tablespace_name", "oracle.db.pdb"},
@@ -1191,6 +1233,9 @@ type metricsInfo struct {
 	OracledbSystemCPUCount                        metricInfo
 	OracledbSystemMemoryLimit                     metricInfo
 	OracledbSystemProcessCount                    metricInfo
+	OracledbTablespaceLimit                       metricInfo
+	OracledbTablespaceStatus                      metricInfo
+	OracledbTablespaceUtilization                 metricInfo
 	OracledbTablespaceSizeLimit                   metricInfo
 	OracledbTablespaceSizeUsage                   metricInfo
 	OracledbTransactionResponseTime               metricInfo
@@ -10289,6 +10334,287 @@ func newMetricOracledbSystemProcessCount(cfg OracledbSystemProcessCountMetricCon
 	return m
 }
 
+type metricOracledbTablespaceLimit struct {
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        OracledbTablespaceLimitMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
+}
+
+// init fills oracledb.tablespace.limit metric with initial data.
+func (m *metricOracledbTablespaceLimit) init() {
+	m.data.SetName("oracledb.tablespace.limit")
+	m.data.SetDescription("Maximum autoextend size of tablespace in bytes. Returns 0 for temporary tablespaces and tablespaces without autoextend enabled.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricOracledbTablespaceLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string, oracleDbPdbAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbTablespaceLimitMetricAttributeKeyTablespaceName) {
+		dp.Attributes().PutStr("tablespace_name", tablespaceNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, OracledbTablespaceLimitMetricAttributeKeyOracleDbPdb) {
+		dp.Attributes().PutStr("oracle.db.pdb", oracleDbPdbAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbTablespaceLimit) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbTablespaceLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbTablespaceLimit(cfg OracledbTablespaceLimitMetricConfig) metricOracledbTablespaceLimit {
+	m := metricOracledbTablespaceLimit{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbTablespaceStatus struct {
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        OracledbTablespaceStatusMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
+}
+
+// init fills oracledb.tablespace.status metric with initial data.
+func (m *metricOracledbTablespaceStatus) init() {
+	m.data.SetName("oracledb.tablespace.status")
+	m.data.SetDescription("Current status of tablespaces, broken down by state. A timeseries is produced for every possible value of oracledb.tablespace.state; the value is 1 for a tablespace's current state, and 0 for all other states.")
+	m.data.SetUnit("{tablespace}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricOracledbTablespaceStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string, oracledbTablespaceStateAttributeValue string, oracleDbPdbAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbTablespaceStatusMetricAttributeKeyTablespaceName) {
+		dp.Attributes().PutStr("tablespace_name", tablespaceNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, OracledbTablespaceStatusMetricAttributeKeyOracledbTablespaceState) {
+		dp.Attributes().PutStr("oracledb.tablespace.state", oracledbTablespaceStateAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, OracledbTablespaceStatusMetricAttributeKeyOracleDbPdb) {
+		dp.Attributes().PutStr("oracle.db.pdb", oracleDbPdbAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbTablespaceStatus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbTablespaceStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbTablespaceStatus(cfg OracledbTablespaceStatusMetricConfig) metricOracledbTablespaceStatus {
+	m := metricOracledbTablespaceStatus{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbTablespaceUtilization struct {
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        OracledbTablespaceUtilizationMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []float64                                 // slice containing number of aggregated datapoints at each index
+}
+
+// init fills oracledb.tablespace.utilization metric with initial data.
+func (m *metricOracledbTablespaceUtilization) init() {
+	m.data.SetName("oracledb.tablespace.utilization")
+	m.data.SetDescription("Fraction of tablespace currently in use, expressed as a value between 0 and 1.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricOracledbTablespaceUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, tablespaceNameAttributeValue string, oracleDbPdbAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbTablespaceUtilizationMetricAttributeKeyTablespaceName) {
+		dp.Attributes().PutStr("tablespace_name", tablespaceNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, OracledbTablespaceUtilizationMetricAttributeKeyOracleDbPdb) {
+		dp.Attributes().PutStr("oracle.db.pdb", oracleDbPdbAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbTablespaceUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbTablespaceUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbTablespaceUtilization(cfg OracledbTablespaceUtilizationMetricConfig) metricOracledbTablespaceUtilization {
+	m := metricOracledbTablespaceUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricOracledbTablespaceSizeLimit struct {
 	data          pmetric.Metric                          // data buffer for generated metric.
 	config        OracledbTablespaceSizeLimitMetricConfig // metric config provided by user.
@@ -11155,6 +11481,9 @@ type MetricsBuilder struct {
 	metricOracledbSystemCPUCount                        metricOracledbSystemCPUCount
 	metricOracledbSystemMemoryLimit                     metricOracledbSystemMemoryLimit
 	metricOracledbSystemProcessCount                    metricOracledbSystemProcessCount
+	metricOracledbTablespaceLimit                       metricOracledbTablespaceLimit
+	metricOracledbTablespaceStatus                      metricOracledbTablespaceStatus
+	metricOracledbTablespaceUtilization                 metricOracledbTablespaceUtilization
 	metricOracledbTablespaceSizeLimit                   metricOracledbTablespaceSizeLimit
 	metricOracledbTablespaceSizeUsage                   metricOracledbTablespaceSizeUsage
 	metricOracledbTransactionResponseTime               metricOracledbTransactionResponseTime
@@ -11307,6 +11636,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbSystemCPUCount:                        newMetricOracledbSystemCPUCount(mbc.Metrics.OracledbSystemCPUCount),
 		metricOracledbSystemMemoryLimit:                     newMetricOracledbSystemMemoryLimit(mbc.Metrics.OracledbSystemMemoryLimit),
 		metricOracledbSystemProcessCount:                    newMetricOracledbSystemProcessCount(mbc.Metrics.OracledbSystemProcessCount),
+		metricOracledbTablespaceLimit:                       newMetricOracledbTablespaceLimit(mbc.Metrics.OracledbTablespaceLimit),
+		metricOracledbTablespaceStatus:                      newMetricOracledbTablespaceStatus(mbc.Metrics.OracledbTablespaceStatus),
+		metricOracledbTablespaceUtilization:                 newMetricOracledbTablespaceUtilization(mbc.Metrics.OracledbTablespaceUtilization),
 		metricOracledbTablespaceSizeLimit:                   newMetricOracledbTablespaceSizeLimit(mbc.Metrics.OracledbTablespaceSizeLimit),
 		metricOracledbTablespaceSizeUsage:                   newMetricOracledbTablespaceSizeUsage(mbc.Metrics.OracledbTablespaceSizeUsage),
 		metricOracledbTransactionResponseTime:               newMetricOracledbTransactionResponseTime(mbc.Metrics.OracledbTransactionResponseTime),
@@ -11560,6 +11892,9 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbSystemCPUCount.emit(ils.Metrics())
 	mb.metricOracledbSystemMemoryLimit.emit(ils.Metrics())
 	mb.metricOracledbSystemProcessCount.emit(ils.Metrics())
+	mb.metricOracledbTablespaceLimit.emit(ils.Metrics())
+	mb.metricOracledbTablespaceStatus.emit(ils.Metrics())
+	mb.metricOracledbTablespaceUtilization.emit(ils.Metrics())
 	mb.metricOracledbTablespaceSizeLimit.emit(ils.Metrics())
 	mb.metricOracledbTablespaceSizeUsage.emit(ils.Metrics())
 	mb.metricOracledbTransactionResponseTime.emit(ils.Metrics())
@@ -12528,6 +12863,21 @@ func (mb *MetricsBuilder) RecordOracledbSystemMemoryLimitDataPoint(ts pcommon.Ti
 // RecordOracledbSystemProcessCountDataPoint adds a data point to oracledb.system.process.count metric.
 func (mb *MetricsBuilder) RecordOracledbSystemProcessCountDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricOracledbSystemProcessCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordOracledbTablespaceLimitDataPoint adds a data point to oracledb.tablespace.limit metric.
+func (mb *MetricsBuilder) RecordOracledbTablespaceLimitDataPoint(ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string, oracleDbPdbAttributeValue string) {
+	mb.metricOracledbTablespaceLimit.recordDataPoint(mb.startTime, ts, val, tablespaceNameAttributeValue, oracleDbPdbAttributeValue)
+}
+
+// RecordOracledbTablespaceStatusDataPoint adds a data point to oracledb.tablespace.status metric.
+func (mb *MetricsBuilder) RecordOracledbTablespaceStatusDataPoint(ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string, oracledbTablespaceStateAttributeValue AttributeOracledbTablespaceState, oracleDbPdbAttributeValue string) {
+	mb.metricOracledbTablespaceStatus.recordDataPoint(mb.startTime, ts, val, tablespaceNameAttributeValue, oracledbTablespaceStateAttributeValue.String(), oracleDbPdbAttributeValue)
+}
+
+// RecordOracledbTablespaceUtilizationDataPoint adds a data point to oracledb.tablespace.utilization metric.
+func (mb *MetricsBuilder) RecordOracledbTablespaceUtilizationDataPoint(ts pcommon.Timestamp, val float64, tablespaceNameAttributeValue string, oracleDbPdbAttributeValue string) {
+	mb.metricOracledbTablespaceUtilization.recordDataPoint(mb.startTime, ts, val, tablespaceNameAttributeValue, oracleDbPdbAttributeValue)
 }
 
 // RecordOracledbTablespaceSizeLimitDataPoint adds a data point to oracledb.tablespace_size.limit metric.

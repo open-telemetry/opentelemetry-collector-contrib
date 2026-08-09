@@ -4,8 +4,8 @@ go 1.25.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.158.0
-	go.opentelemetry.io/collector/component v1.64.0
-	go.opentelemetry.io/collector/pipeline v1.64.0
+	go.opentelemetry.io/collector/component v1.64.1-0.20260805181402-19664a7b14af
+	go.opentelemetry.io/collector/pipeline v1.64.1-0.20260805181402-19664a7b14af
 )
 
 require (
@@ -13,7 +13,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/go-logr/logr v1.4.3 // indirect
+	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-openapi/jsonpointer v0.23.1 // indirect
 	github.com/go-openapi/jsonreference v0.21.5 // indirect
 	github.com/go-openapi/swag v0.26.0 // indirect
@@ -43,20 +43,20 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.opentelemetry.io/collector/extension v1.64.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.64.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.158.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.64.0 // indirect
-	go.opentelemetry.io/otel v1.44.0 // indirect
-	go.opentelemetry.io/otel/metric v1.44.0 // indirect
-	go.opentelemetry.io/otel/trace v1.44.0 // indirect
+	go.opentelemetry.io/collector/extension v1.64.1-0.20260805181402-19664a7b14af // indirect
+	go.opentelemetry.io/collector/featuregate v1.64.1-0.20260805181402-19664a7b14af // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.158.1-0.20260805181402-19664a7b14af // indirect
+	go.opentelemetry.io/collector/pdata v1.64.1-0.20260805181402-19664a7b14af // indirect
+	go.opentelemetry.io/otel v1.45.0 // indirect
+	go.opentelemetry.io/otel/metric v1.45.0 // indirect
+	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	golang.org/x/time v0.15.0 // indirect

@@ -333,6 +333,11 @@ attributes:
   oracledb.status:
     description: Execution state or result of a database query or session.
     type: string
+  oracledb.tablespace.state:
+    description: Tablespace state as reported by Oracle (e.g. online, offline, read only)
+    type: string
+    enum: [online, offline, read only]
+    requirement_level: recommended
   oracledb.transaction.type:
     description: The type of user transaction.
     type: string
@@ -341,11 +346,14 @@ attributes:
     description: The total time (in seconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta).
     type: double
   oracledb.wait.count:
-    description: Total number of waits for the wait event across all sessions.
+    description: Number of times the session has waited on the wait event.
     type: int
   oracledb.wait.duration:
     description: Total time waited in seconds for the wait event.
     type: double
+  oracledb.wait.timeouts:
+    description: Number of the session's waits on the wait event that timed out.
+    type: int
   oracledb.wait_class:
     description: The category of wait events a query or session is currently experiencing in Oracle Database.
     type: string
@@ -423,6 +431,7 @@ events:
       - oracledb.event
       - oracledb.wait_class
       - oracledb.wait.count
+      - oracledb.wait.timeouts
       - oracledb.wait.duration
       - db.namespace
   db.server.top_query:
@@ -1613,6 +1622,39 @@ metrics:
     gauge:
       value_type: double
     unit: "{process}"
+  oracledb.tablespace.limit:
+    attributes:
+      - tablespace_name
+      - oracle.db.pdb
+    description: Maximum autoextend size of tablespace in bytes. Returns 0 for temporary tablespaces and tablespaces without autoextend enabled.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
+  oracledb.tablespace.status:
+    attributes:
+      - tablespace_name
+      - oracledb.tablespace.state
+      - oracle.db.pdb
+    description: Current status of tablespaces, broken down by state. A timeseries is produced for every possible value of oracledb.tablespace.state; the value is 1 for a tablespace's current state, and 0 for all other states.
+    enabled: false
+    stability: development
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    unit: "{tablespace}"
+  oracledb.tablespace.utilization:
+    attributes:
+      - tablespace_name
+      - oracle.db.pdb
+    description: Fraction of tablespace currently in use, expressed as a value between 0 and 1.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "1"
   oracledb.tablespace_size.limit:
     attributes:
       - tablespace_name

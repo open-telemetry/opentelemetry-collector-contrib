@@ -9,9 +9,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
 func Test_set(t *testing.T) {
@@ -19,7 +21,11 @@ func Test_set(t *testing.T) {
 
 	target := &ottl.StandardGetSetter[pcommon.Value]{
 		Setter: func(_ context.Context, tCtx pcommon.Value, val any) error {
-			tCtx.SetStr(val.(string))
+			if val == nil {
+				tCtx.SetStr("nil was set")
+			} else {
+				tCtx.SetStr(val.(string))
+			}
 			return nil
 		},
 	}
@@ -33,7 +39,7 @@ func Test_set(t *testing.T) {
 		{
 			name:   "set name",
 			setter: target,
-			getter: ottl.StandardGetSetter[pcommon.Value]{
+			getter: &ottl.StandardGetSetter[pcommon.Value]{
 				Getter: func(_ context.Context, _ pcommon.Value) (any, error) {
 					return "new name", nil
 				},
@@ -45,13 +51,17 @@ func Test_set(t *testing.T) {
 		{
 			name:   "set nil value",
 			setter: target,
-			getter: ottl.StandardGetSetter[pcommon.Value]{
+			getter: &ottl.StandardGetSetter[pcommon.Value]{
 				Getter: func(_ context.Context, _ pcommon.Value) (any, error) {
 					return nil, nil
 				},
 			},
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStr("original name")
+				if metadata.OttlSetAllowNilFeatureGate.IsEnabled() {
+					expectedValue.SetStr("nil was set")
+				} else {
+					expectedValue.SetStr("original name")
+				}
 			},
 		},
 	}
@@ -59,7 +69,10 @@ func Test_set(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
 
-			exprFunc := set(tt.setter, tt.getter)
+			fCtx := ottl.FunctionContext{
+				Set: componenttest.NewNopTelemetrySettings(),
+			}
+			exprFunc := set[pcommon.Value](tt.setter, tt.getter, fCtx)
 
 			result, err := exprFunc(nil, scenarioValue)
 			require.NoError(t, err)
@@ -74,22 +87,32 @@ func Test_set(t *testing.T) {
 }
 
 func Test_set_get_nil(t *testing.T) {
+	setterCalled := false
 	setter := &ottl.StandardGetSetter[any]{
-		Setter: func(context.Context, any, any) error {
-			t.Errorf("nothing should be set in this scenario")
+		Setter: func(_ context.Context, _, _ any) error {
+			setterCalled = true
 			return nil
 		},
 	}
 
 	getter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
-			return tCtx, nil
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return nil, nil
 		},
 	}
 
-	exprFunc := set[any](setter, getter)
+	fCtx := ottl.FunctionContext{
+		Set: componenttest.NewNopTelemetrySettings(),
+	}
+	exprFunc := set[any](setter, getter, fCtx)
 
 	result, err := exprFunc(nil, nil)
 	require.NoError(t, err)
 	assert.Nil(t, result)
+
+	if metadata.OttlSetAllowNilFeatureGate.IsEnabled() {
+		assert.True(t, setterCalled, "setter should have been called with nil")
+	} else {
+		assert.False(t, setterCalled, "setter should not have been called")
+	}
 }
