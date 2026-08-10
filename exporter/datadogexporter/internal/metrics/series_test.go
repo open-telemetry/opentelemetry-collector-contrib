@@ -82,7 +82,7 @@ func TestWorkloadMetrics(t *testing.T) {
 
 func TestAzureContainerAppsMetrics(t *testing.T) {
 	ts := uint64(1e9)
-	tags := []string{"version:0.1", "replica_name:replica-1", "name:my-app", "subscription_id:abc", "resource_group:my-rg"}
+	tags := []string{"version:0.1", "replica:replica-1", "name:my-app", "subscription_id:abc", "resource_group:my-rg"}
 	series := WorkloadMetrics("azurecontainerapps", ts, tags)
 	require.Len(t, series, 1)
 	assert.Equal(t, "otel.datadog_exporter.metrics.running.azurecontainerapps", series[0].Metric)
