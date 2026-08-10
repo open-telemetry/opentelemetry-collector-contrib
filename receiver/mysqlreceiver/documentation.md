@@ -416,6 +416,20 @@ Errors that occur during the client connection process.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` | Recommended | - |
 
+### mysql.data.io
+
+The total bytes read from and written to InnoDB data files.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | The disk IO operation direction. | Str: ``read``, ``write`` | Recommended | - |
+
 ### mysql.file.open
 
 The number of currently open files.
@@ -461,6 +475,20 @@ This metric is specific for MySQL working as Document Store (X-Plugin). [more do
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | kind | The worker thread count kind. | Str: ``available``, ``active`` | Recommended | - |
+
+### mysql.operations.pending
+
+The number of pending InnoDB data file operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The operation types. | Str: ``fsyncs``, ``reads``, ``writes`` | Recommended | - |
 
 ### mysql.page_size
 

@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: receiver/mysql
+
+note: Add InnoDB data I/O and pending operation metrics.
+
+issues: [0]
+
+change_logs: [user]

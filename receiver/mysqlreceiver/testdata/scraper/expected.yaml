@@ -308,6 +308,27 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
+          - description: The total bytes read from and written to InnoDB data files.
+            name: mysql.data.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "247"
+                  attributes:
+                    - key: disk.io.direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "250"
+                  attributes:
+                    - key: disk.io.direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
           - description: The number of writes to the InnoDB doublewrite buffer.
             name: mysql.double_writes
             sum:
@@ -813,6 +834,34 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
+            unit: "1"
+          - description: The number of pending InnoDB data file operations.
+            name: mysql.operations.pending
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "244"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: fsyncs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "245"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: reads
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "246"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: writes
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: false
             unit: "1"
           - description: The number of InnoDB page operations.
             name: mysql.page_operations

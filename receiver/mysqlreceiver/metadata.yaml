@@ -112,6 +112,11 @@ attributes:
     type: string
     enum: [received, sent]
     requirement_level: recommended
+  disk.io.direction:
+    description: The disk IO operation direction.
+    type: string
+    enum: [read, write]
+    requirement_level: recommended
   double_writes:
     name_override: kind
     description: The doublewrite types.
@@ -449,6 +454,17 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [connection_error]
+  mysql.data.io:
+    enabled: false
+    description: The total bytes read from and written to InnoDB data files.
+    stability: development
+    unit: By
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [disk.io.direction]
   mysql.double_writes:
     enabled: true
     description: The number of writes to the InnoDB doublewrite buffer.
@@ -587,6 +603,17 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [operations]
+  mysql.operations.pending:
+    enabled: false
+    description: The number of pending InnoDB data file operations.
+    stability: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
       aggregation_temporality: cumulative
     attributes: [operations]
   mysql.page_operations:
