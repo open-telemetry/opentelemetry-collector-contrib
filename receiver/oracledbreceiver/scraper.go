@@ -46,10 +46,10 @@ const (
 	// sysmetricComputedSQL derives Shared Pool Free % from v$sgastat for PDB connections
 	// (e.g. RDS Oracle) where v$sysmetric is empty in PDB context.
 	sysmetricComputedSQL = `SELECT 'Shared Pool Free %' AS METRIC_NAME,
-       CASE WHEN NVL(SUM(bytes),0) > 0
-            THEN NVL(SUM(CASE WHEN name = 'free memory' THEN bytes ELSE 0 END),0) / SUM(bytes) * 100
-            ELSE 0 END AS VALUE
-FROM v$sgastat WHERE pool = 'shared pool'`
+		CASE WHEN NVL(SUM(bytes),0) > 0
+		     THEN NVL(SUM(CASE WHEN name = 'free memory' THEN bytes ELSE 0 END),0) / SUM(bytes) * 100
+		     ELSE 0 END AS VALUE
+	FROM v$sgastat WHERE pool = 'shared pool'`
 
 	// containerGrantsProbeSQL detects whether the user has the grants needed
 	// for per-PDB collection. On failure the receiver falls back to the
@@ -219,7 +219,7 @@ FROM v$sgastat WHERE pool = 'shared pool'`
     RESOURCE_NAME,
     CURRENT_UTILIZATION,
     CASE
-        WHEN LIMIT_VALUE IS NULL OR TRIM(LIMIT_VALUE) IN ('UNLIMITED', '0') THEN '-1'
+        WHEN LIMIT_VALUE IS NULL OR TRIM(LIMIT_VALUE) = 'UNLIMITED' THEN '-1'
         ELSE TRIM(LIMIT_VALUE)
     END AS LIMIT_VALUE
 FROM (
