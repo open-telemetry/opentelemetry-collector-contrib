@@ -527,6 +527,10 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Sort_scan":
 			addPartialIfError(errs, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsScan))
 
+		// slow launch threads
+		case "Slow_launch_threads":
+			addPartialIfError(errs, m.mb.RecordMysqlThreadSlowLaunchDataPoint(now, v))
+
 		// threads
 		case "Threads_cached":
 			addPartialIfError(errs, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsCached))
@@ -536,6 +540,12 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsCreated))
 		case "Threads_running":
 			addPartialIfError(errs, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsRunning))
+
+		// open resources
+		case "Open_files":
+			addPartialIfError(errs, m.mb.RecordMysqlFileOpenDataPoint(now, v))
+		case "Open_tables":
+			addPartialIfError(errs, m.mb.RecordMysqlTableOpenDataPoint(now, v))
 
 		// opened resources
 		case "Opened_files":
