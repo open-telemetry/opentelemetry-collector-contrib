@@ -182,7 +182,8 @@ func TestStoreCredentials(t *testing.T) {
 				default:
 					w.WriteHeader(http.StatusInternalServerError)
 				}
-			}))
+			},
+		))
 	}
 
 	getConfig := func(url string) *Config {
@@ -317,7 +318,8 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 				default:
 					w.WriteHeader(http.StatusInternalServerError)
 				}
-			}))
+			},
+		))
 	}
 
 	getConfig := func(url string) *Config {
@@ -393,7 +395,8 @@ func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
 				default:
 					w.WriteHeader(http.StatusInternalServerError)
 				}
-			}))
+			},
+		))
 	}
 
 	getConfig := func(url string) *Config {
@@ -506,7 +509,8 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 				default:
 					w.WriteHeader(http.StatusInternalServerError)
 				}
-			}))
+			},
+		))
 	}
 
 	getConfig := func(url string) *Config {

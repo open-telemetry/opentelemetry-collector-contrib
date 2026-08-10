@@ -732,6 +732,10 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 		allSpans, err := tsp.tailStorage.Take(id)
 		if err != nil {
 			tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
+			// Take failures are terminal for this trace: storage may already have
+			// deleted or otherwise invalidated the spilled batches. Keep going
+			// without eviction would leave idToTrace / deleteTraceQueue stranded.
+			tsp.dropTrace(id, time.Now())
 			continue
 		}
 		if allSpans.ResourceSpans().Len() == 0 {
@@ -1037,11 +1041,13 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 				// Release all accumulated spans (prior pending batches + current batch)
 				// without writing the current batch to storage first.
 				merged := ptrace.NewTraces()
-				if allSpans, err := tsp.tailStorage.Take(id); err != nil {
+				allSpans, err := tsp.tailStorage.Take(id)
+				if err != nil {
 					tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
-				} else {
-					appendAllTraces(merged, allSpans)
+					tsp.dropTrace(id, time.Now())
+					return
 				}
+				appendAllTraces(merged, allSpans)
 				appendAllTraces(merged, spanIngestTraceData.ReceivedBatches)
 				actualData.ReceivedBatches = merged
 
@@ -1155,7 +1161,8 @@ func (tsp *tailSamplingSpanProcessor) forwardSpans(ctx context.Context, td ptrac
 	if err := tsp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
 		tsp.logger.Warn(
 			"Error sending spans to destination",
-			zap.Error(err))
+			zap.Error(err),
+		)
 	}
 }
 

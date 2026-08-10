@@ -151,6 +151,7 @@ extension/awsproxy
 extension/azureauthextension
 extension/cgroupruntimeextension
 extension/datadogextension
+extension/dbauth/awsiamdbauthextension
 extension/encoding/avrologencodingextension
 pkg/xstreamencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension
@@ -181,7 +182,6 @@ extension/observer/ecsobserver
 extension/observer/hostobserver
 pkg/xk8stest
 extension/observer/k8sobserver
-extension/observer/kafkatopicsobserver
 extension/oidcauthextension
 extension/opampcustommessages
 extension/opampextension
@@ -266,6 +266,7 @@ receiver/cloudflarereceiver
 receiver/cloudfoundryreceiver
 receiver/collectdreceiver
 receiver/couchdbreceiver
+receiver/dnscheckreceiver
 receiver/elasticsearchreceiver
 receiver/envoyalsreceiver
 receiver/expvarreceiver

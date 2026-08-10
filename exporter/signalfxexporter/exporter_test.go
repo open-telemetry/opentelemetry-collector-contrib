@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -209,7 +210,7 @@ func TestConsumeMetrics(t *testing.T) {
 				ClientConfig: clientConfig,
 			}
 
-			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ClientConfig.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, true)
@@ -565,11 +566,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
 			for k, v := range tt.additionalHeaders {
-				cfg.Headers.Set(k, configopaque.String(v))
+				cfg.ClientConfig.Headers.Set(k, configopaque.String(v))
 			}
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
-			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
 			sfxExp, err := NewFactory().CreateMetrics(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
@@ -687,11 +688,11 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
 			for k, v := range tt.additionalHeaders {
-				cfg.Headers.Set(k, configopaque.String(v))
+				cfg.ClientConfig.Headers.Set(k, configopaque.String(v))
 			}
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
-			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
 			cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 			sfxExp, err := NewFactory().CreateMetrics(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
@@ -789,9 +790,9 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
-			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 			sfxExp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
@@ -957,7 +958,7 @@ func TestConsumeEventData(t *testing.T) {
 				ClientConfig: clientConfig,
 			}
 
-			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ClientConfig.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			eventClient := &sfxEventClient{
@@ -1049,9 +1050,9 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
+			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
-			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(t.Context(), componenttest.NewNopHost()))
@@ -1410,7 +1411,8 @@ func TestConsumeMetadata(t *testing.T) {
 					MaxBuffered:             10,
 					NonAlphanumericDimChars: cfg.NonAlphanumericDimensionChars,
 					ExcludeProperties:       tt.excludeProperties,
-				})
+				},
+			)
 			dimClient.Start()
 
 			se := &signalfxExporter{
@@ -1763,7 +1765,8 @@ func TestTLSAPIConnection(t *testing.T) {
 					MaxBuffered:             10,
 					APITLSConfig:            apiTLSCfg,
 					NonAlphanumericDimChars: "",
-				})
+				},
+			)
 			dimClient.Start()
 			defer func() { dimClient.Shutdown() }()
 
@@ -1801,7 +1804,15 @@ func newLocalHTTPSTestServer(handler http.Handler) (*httptest.Server, error) {
 	return ts, nil
 }
 
+func BenchmarkExporterConsumeDataWithSFxHistograms(b *testing.B) {
+	benchmarkExporterConsumeDataWithHistograms(b, false, "application/x-protobuf")
+}
+
 func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
+	benchmarkExporterConsumeDataWithHistograms(b, true, otlpProtobufContentType)
+}
+
+func benchmarkExporterConsumeDataWithHistograms(b *testing.B, sendOTLPHistograms bool, expectedContentType string) {
 	batchSize := 1000
 	metrics := pmetric.NewMetrics()
 	tmd := testMetricsData(true)
@@ -1809,19 +1820,28 @@ func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
 		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	var requestCount atomic.Int64
+	var invalidContentType atomic.Bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount.Add(1)
+		if r.Header.Get("Content-Type") != expectedContentType {
+			invalidContentType.Store(true)
+		}
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
 	serverURL, err := url.Parse(server.URL)
-	assert.NoError(b, err)
+	require.NoError(b, err)
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, false)
+	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, !sendOTLPHistograms)
 	require.NoError(b, err)
 	require.NotNil(b, c)
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: serverURL,
+			headers: map[string]string{
+				contentTypeHeader: "application/x-protobuf",
+			},
 			client: &http.Client{
 				Timeout: 1 * time.Second,
 			},
@@ -1829,14 +1849,26 @@ func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
 				return gzip.NewWriter(nil)
 			}},
 		},
-		logger:    zap.NewNop(),
-		converter: c,
+		logger:             zap.NewNop(),
+		converter:          c,
+		sendOTLPHistograms: sendOTLPHistograms,
 	}
 
+	b.ReportAllocs()
 	for b.Loop() {
 		numDroppedTimeSeries, err := dpClient.pushMetricsData(b.Context(), metrics)
-		assert.NoError(b, err)
-		assert.Equal(b, 0, numDroppedTimeSeries)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if numDroppedTimeSeries != 0 {
+			b.Fatalf("dropped %d time series", numDroppedTimeSeries)
+		}
+	}
+	if invalidContentType.Load() {
+		b.Fatalf("expected Content-Type %q", expectedContentType)
+	}
+	if got := requestCount.Load(); got != int64(b.N) {
+		b.Fatalf("sent %d requests, expected %d", got, b.N)
 	}
 }
 
@@ -2045,7 +2077,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 				ClientConfig: clientConfig,
 			}
 
-			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
+			client, err := cfg.ClientConfig.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, false)
