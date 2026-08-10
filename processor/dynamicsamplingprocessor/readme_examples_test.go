@@ -32,3 +32,20 @@ func TestReadmeConditionExamples(t *testing.T) {
 		})
 	}
 }
+
+// TestReadmeRootSpanConditionExamples parses every OTTL expression shown in the
+// README's Root-span detection section, so those recipes stay compilable.
+func TestReadmeRootSpanConditionExamples(t *testing.T) {
+	examples := []string{
+		`IsRootSpan()`,
+		`IsRootSpan() or span.attributes["otelcol.dynamic_sampling.root_span"] == true`,
+		`IsRootSpan() or (span.kind == SPAN_KIND_SERVER and resource.attributes["service.name"] == "gateway")`,
+		`IsRootSpan() or (span.kind == SPAN_KIND_CONSUMER and IsMatch(span.name, "^receive "))`,
+	}
+	for _, expr := range examples {
+		t.Run(expr, func(t *testing.T) {
+			_, err := compileRootSpanCondition(expr, testSettings())
+			assert.NoError(t, err, "example failed to compile: %s", expr)
+		})
+	}
+}
