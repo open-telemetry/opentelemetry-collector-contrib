@@ -175,6 +175,14 @@ The number of idle workers currently attached to the HTTP server.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {worker} | Sum | Int | Cumulative | false | Development |
 
+### apache.worker.limit
+
+The maximum number of worker slots configured for the HTTP server, derived from the scoreboard length.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {worker} | Gauge | Int | Development |
+
 ### apache.worker.status
 
 The number of workers in each state.
@@ -204,6 +212,32 @@ The number of workers currently attached to the HTTP server.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | state | The state of workers. | Str: ``busy``, ``idle`` | Recommended | - |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### apache.request.rate
+
+Average number of requests served per second since the server was started, as reported by mod_status.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {request}/s | Gauge | Double | Development |
+
+### apache.traffic.rate
+
+Average number of bytes transmitted per second since the server was started, as reported by mod_status.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
 
 ## Resource Attributes
 

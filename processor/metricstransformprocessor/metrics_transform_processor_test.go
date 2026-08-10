@@ -35,7 +35,8 @@ func TestMetricsTransformProcessor(t *testing.T) {
 				&Config{},
 				next,
 				p.processMetrics,
-				processorhelper.WithCapabilities(consumerCapabilities))
+				processorhelper.WithCapabilities(consumerCapabilities),
+			)
 			require.NoError(t, err)
 
 			caps := mtp.Capabilities()

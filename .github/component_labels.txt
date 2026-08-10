@@ -80,6 +80,7 @@ extension/bearertokenauthextension extension/bearertokenauth
 extension/cgroupruntimeextension extension/cgroupruntime
 extension/datadogextension extension/datadog
 extension/dbauth extension/dbauth
+extension/dbauth/awsiamdbauthextension extension/dbauth/awsiamdbauth
 extension/encoding extension/encoding
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension extension/encoding/awscloudwatchmetricstreams
@@ -107,7 +108,6 @@ extension/observer/dockerobserver extension/observer/dockerobserver
 extension/observer/ecsobserver extension/observer/ecsobserver
 extension/observer/hostobserver extension/observer/hostobserver
 extension/observer/k8sobserver extension/observer/k8sobserver
-extension/observer/kafkatopicsobserver extension/observer/kafkatopicsobserver
 extension/oidcauthextension extension/oidcauth
 extension/opampcustommessages extension/opampcustommessages
 extension/opampextension extension/opamp
@@ -162,6 +162,7 @@ pkg/sampling pkg/sampling
 pkg/stanza pkg/stanza
 pkg/stanza/fileconsumer pkg/stanza/fileconsumer
 pkg/stanza/operator/input/journald pkg/stanza/operator/input/journald
+pkg/stanza/operator/input/tcp pkg/stanza/operator/input/tcp
 pkg/status pkg/status
 pkg/translator/azure pkg/translator/azure
 pkg/translator/azurelogs pkg/translator/azurelogs
@@ -254,6 +255,7 @@ receiver/cloudfoundryreceiver receiver/cloudfoundry
 receiver/collectdreceiver receiver/collectd
 receiver/couchdbreceiver receiver/couchdb
 receiver/datadogreceiver receiver/datadog
+receiver/dnscheckreceiver receiver/dnscheck
 receiver/dockerstatsreceiver receiver/dockerstats
 receiver/elasticsearchreceiver receiver/elasticsearch
 receiver/envoyalsreceiver receiver/envoyals

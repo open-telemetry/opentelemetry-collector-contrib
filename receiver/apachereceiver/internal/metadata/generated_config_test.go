@@ -62,6 +62,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheRequestCount: ApacheRequestCountMetricConfig{
 						Enabled: true,
 					},
+					ApacheRequestRate: ApacheRequestRateMetricConfig{
+						Enabled: true,
+					},
 					ApacheRequestTime: ApacheRequestTimeMetricConfig{
 						Enabled: true,
 					},
@@ -76,6 +79,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheTraffic: ApacheTrafficMetricConfig{
 						Enabled: true,
 					},
+					ApacheTrafficRate: ApacheTrafficRateMetricConfig{
+						Enabled: true,
+					},
 					ApacheUptime: ApacheUptimeMetricConfig{
 						Enabled: true,
 					},
@@ -83,6 +89,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					ApacheWorkerIdle: ApacheWorkerIdleMetricConfig{
+						Enabled: true,
+					},
+					ApacheWorkerLimit: ApacheWorkerLimitMetricConfig{
 						Enabled: true,
 					},
 					ApacheWorkerStatus: ApacheWorkerStatusMetricConfig{
@@ -142,6 +151,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheRequestCount: ApacheRequestCountMetricConfig{
 						Enabled: false,
 					},
+					ApacheRequestRate: ApacheRequestRateMetricConfig{
+						Enabled: false,
+					},
 					ApacheRequestTime: ApacheRequestTimeMetricConfig{
 						Enabled: false,
 					},
@@ -156,6 +168,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheTraffic: ApacheTrafficMetricConfig{
 						Enabled: false,
 					},
+					ApacheTrafficRate: ApacheTrafficRateMetricConfig{
+						Enabled: false,
+					},
 					ApacheUptime: ApacheUptimeMetricConfig{
 						Enabled: false,
 					},
@@ -163,6 +178,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					ApacheWorkerIdle: ApacheWorkerIdleMetricConfig{
+						Enabled: false,
+					},
+					ApacheWorkerLimit: ApacheWorkerLimitMetricConfig{
 						Enabled: false,
 					},
 					ApacheWorkerStatus: ApacheWorkerStatusMetricConfig{
@@ -186,7 +204,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ApacheConnectionActiveMetricConfig{}, ApacheConnectionStatusMetricConfig{}, ApacheConnectionsAsyncMetricConfig{}, ApacheCPULoadMetricConfig{}, ApacheCPUTimeMetricConfig{}, ApacheCurrentConnectionsMetricConfig{}, ApacheLoad1MetricConfig{}, ApacheLoad15MetricConfig{}, ApacheLoad5MetricConfig{}, ApacheRequestCountMetricConfig{}, ApacheRequestTimeMetricConfig{}, ApacheRequestsMetricConfig{}, ApacheScoreboardMetricConfig{}, ApacheTrafficMetricConfig{}, ApacheUptimeMetricConfig{}, ApacheWorkerActiveMetricConfig{}, ApacheWorkerIdleMetricConfig{}, ApacheWorkerStatusMetricConfig{}, ApacheWorkersMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ApacheConnectionActiveMetricConfig{}, ApacheConnectionStatusMetricConfig{}, ApacheConnectionsAsyncMetricConfig{}, ApacheCPULoadMetricConfig{}, ApacheCPUTimeMetricConfig{}, ApacheCurrentConnectionsMetricConfig{}, ApacheLoad1MetricConfig{}, ApacheLoad15MetricConfig{}, ApacheLoad5MetricConfig{}, ApacheRequestCountMetricConfig{}, ApacheRequestRateMetricConfig{}, ApacheRequestTimeMetricConfig{}, ApacheRequestsMetricConfig{}, ApacheScoreboardMetricConfig{}, ApacheTrafficMetricConfig{}, ApacheTrafficRateMetricConfig{}, ApacheUptimeMetricConfig{}, ApacheWorkerActiveMetricConfig{}, ApacheWorkerIdleMetricConfig{}, ApacheWorkerLimitMetricConfig{}, ApacheWorkerStatusMetricConfig{}, ApacheWorkersMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

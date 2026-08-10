@@ -294,6 +294,26 @@ func (ms *ApacheRequestCountMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
+// ApacheRequestRateMetricConfig provides config for the apache.request.rate metric.
+type ApacheRequestRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheRequestRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ApacheRequestTimeMetricConfig provides config for the apache.request.time metric.
 type ApacheRequestTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -402,6 +422,26 @@ func (ms *ApacheTrafficMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// ApacheTrafficRateMetricConfig provides config for the apache.traffic.rate metric.
+type ApacheTrafficRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheTrafficRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ApacheUptimeMetricConfig provides config for the apache.uptime metric.
 type ApacheUptimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -449,6 +489,26 @@ type ApacheWorkerIdleMetricConfig struct {
 }
 
 func (ms *ApacheWorkerIdleMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ApacheWorkerLimitMetricConfig provides config for the apache.worker.limit metric.
+type ApacheWorkerLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheWorkerLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -570,13 +630,16 @@ type MetricsConfig struct {
 	ApacheLoad15             ApacheLoad15MetricConfig             `mapstructure:"apache.load.15"`
 	ApacheLoad5              ApacheLoad5MetricConfig              `mapstructure:"apache.load.5"`
 	ApacheRequestCount       ApacheRequestCountMetricConfig       `mapstructure:"apache.request.count"`
+	ApacheRequestRate        ApacheRequestRateMetricConfig        `mapstructure:"apache.request.rate"`
 	ApacheRequestTime        ApacheRequestTimeMetricConfig        `mapstructure:"apache.request.time"`
 	ApacheRequests           ApacheRequestsMetricConfig           `mapstructure:"apache.requests"`
 	ApacheScoreboard         ApacheScoreboardMetricConfig         `mapstructure:"apache.scoreboard"`
 	ApacheTraffic            ApacheTrafficMetricConfig            `mapstructure:"apache.traffic"`
+	ApacheTrafficRate        ApacheTrafficRateMetricConfig        `mapstructure:"apache.traffic.rate"`
 	ApacheUptime             ApacheUptimeMetricConfig             `mapstructure:"apache.uptime"`
 	ApacheWorkerActive       ApacheWorkerActiveMetricConfig       `mapstructure:"apache.worker.active"`
 	ApacheWorkerIdle         ApacheWorkerIdleMetricConfig         `mapstructure:"apache.worker.idle"`
+	ApacheWorkerLimit        ApacheWorkerLimitMetricConfig        `mapstructure:"apache.worker.limit"`
 	ApacheWorkerStatus       ApacheWorkerStatusMetricConfig       `mapstructure:"apache.worker.status"`
 	ApacheWorkers            ApacheWorkersMetricConfig            `mapstructure:"apache.workers"`
 }
@@ -619,6 +682,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		ApacheRequestCount: ApacheRequestCountMetricConfig{
 			Enabled: true,
 		},
+		ApacheRequestRate: ApacheRequestRateMetricConfig{
+			Enabled: false,
+		},
 		ApacheRequestTime: ApacheRequestTimeMetricConfig{
 			Enabled: true,
 		},
@@ -633,6 +699,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		ApacheTraffic: ApacheTrafficMetricConfig{
 			Enabled: true,
 		},
+		ApacheTrafficRate: ApacheTrafficRateMetricConfig{
+			Enabled: false,
+		},
 		ApacheUptime: ApacheUptimeMetricConfig{
 			Enabled: true,
 		},
@@ -640,6 +709,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ApacheWorkerIdle: ApacheWorkerIdleMetricConfig{
+			Enabled: true,
+		},
+		ApacheWorkerLimit: ApacheWorkerLimitMetricConfig{
 			Enabled: true,
 		},
 		ApacheWorkerStatus: ApacheWorkerStatusMetricConfig{

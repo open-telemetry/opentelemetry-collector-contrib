@@ -13,7 +13,7 @@ import (
 // Config relating to FileSystem Metric Scraper.
 type Config struct {
 	// MetricsBuilderConfig allows to customize scraped metrics/attributes representation.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 
 	// IncludeVirtualFS will also capture filesystems such as tmpfs, ramfs
 	// and other filesystem types that do no have an associated physical device.
@@ -40,19 +40,19 @@ type Config struct {
 }
 
 type DeviceMatchConfig struct {
-	filterset.Config `mapstructure:",squash"`
+	Config filterset.Config `mapstructure:",squash"`
 
 	Devices []string `mapstructure:"devices"`
 }
 
 type FSTypeMatchConfig struct {
-	filterset.Config `mapstructure:",squash"`
+	Config filterset.Config `mapstructure:",squash"`
 
 	FSTypes []string `mapstructure:"fs_types"`
 }
 
 type MountPointMatchConfig struct {
-	filterset.Config `mapstructure:",squash"`
+	Config filterset.Config `mapstructure:",squash"`
 
 	MountPoints []string `mapstructure:"mount_points"`
 }

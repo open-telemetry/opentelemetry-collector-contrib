@@ -543,7 +543,8 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 			setHealthFunc: func(_ *protobufs.ComponentHealth) error {
 				return nil
 			},
-		}, sa)
+		}, sa,
+	)
 
 	o.initHealthReporting()
 
