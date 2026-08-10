@@ -411,14 +411,6 @@ func (c *franzConsumer) processControls() {
 	}
 }
 
-// processControl applies a rewind only if the worker still owns the same
-// assignment.
-func (c *franzConsumer) processControl(control partitionControl) {
-	c.opsMu.Lock()
-	defer c.unlockOpsAndWakePoll()
-	c.processControlLocked(control)
-}
-
 func (c *franzConsumer) processControlLocked(control partitionControl) {
 	defer close(control.done)
 	c.mu.RLock()

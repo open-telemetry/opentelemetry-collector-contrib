@@ -255,11 +255,15 @@ func TestPartitionProcessingCommitSerializesRewind(t *testing.T) {
 		LeaderEpoch: 0,
 	}, true, func() {})
 	done := make(chan struct{})
-	go h.consumer.processControl(partitionControl{
-		tp:   tp,
-		pc:   partitionConsumer,
-		done: done,
-	})
+	go func() {
+		h.consumer.opsMu.Lock()
+		defer h.consumer.opsMu.Unlock()
+		h.consumer.processControlLocked(partitionControl{
+			tp:   tp,
+			pc:   partitionConsumer,
+			done: done,
+		})
+	}()
 
 	require.Never(t, func() bool {
 		select {
@@ -293,11 +297,13 @@ func TestPartitionProcessingIgnoresControlAfterCancellation(t *testing.T) {
 		client:      client,
 		assignments: map[topicPartition]*pc{tp: partitionConsumer},
 	}
-	consumer.processControl(partitionControl{
+	consumer.opsMu.Lock()
+	consumer.processControlLocked(partitionControl{
 		tp:   tp,
 		pc:   partitionConsumer,
 		done: make(chan struct{}),
 	})
+	consumer.opsMu.Unlock()
 
 	require.NotNil(t, partitionConsumer.mailbox.takeOffsetChange())
 }
