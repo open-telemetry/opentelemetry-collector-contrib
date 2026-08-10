@@ -156,7 +156,7 @@ func TestTagsMetrics(t *testing.T) {
 func TestAzureContainerAppsRunningMetric(t *testing.T) {
 	consumer := NewConsumer(nil)
 	tags := []string{
-		"replica_name:replica-1",
+		"replica:replica-1",
 		"name:my-app",
 		"subscription_id:sub-123",
 		"resource_group:my-rg",
@@ -174,7 +174,7 @@ func TestAzureContainerAppsRunningMetric(t *testing.T) {
 		}
 	}
 	require.Len(t, acaSeries, 1, "expected exactly one ACA metric (dedup check)")
-	assert.Contains(t, acaSeries[0].Tags, "replica_name:replica-1")
+	assert.Contains(t, acaSeries[0].Tags, "replica:replica-1")
 	assert.Contains(t, acaSeries[0].Tags, "name:my-app")
 	assert.Contains(t, acaSeries[0].Tags, "subscription_id:sub-123")
 	assert.Contains(t, acaSeries[0].Tags, "resource_group:my-rg")
