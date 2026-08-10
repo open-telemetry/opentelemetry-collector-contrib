@@ -31,6 +31,11 @@ Replace `otel-config.yaml` with the appropriate configuration file as needed.
 
 4. Lint your changes:
 
+  - Markdown lint for entrie project.
+  ```shell
+  make markdownlint
+  ```
+
  - For the entire project:
   ```shell
   make golint
@@ -113,7 +118,9 @@ No changelog entry:
 The title for your pull-request should contain the component type and name in brackets, plus a short statement for your
 change. For instance:
 
-    [processor/tailsampling] fix AND policy
+```
+[processor/tailsampling] fix AND policy
+```
 
 Alternatively, if you have already written a changelog entry, you can set your PR title to `as per changelog` and a
 GitHub Action will automatically generate the PR title and description from your changelog entry YAML file(s). This
@@ -251,8 +258,8 @@ Following these steps for contributing additional metrics to existing receivers.
  - To generate new metrics on top of this updated YAML file.
    - Run `cd receiver/redisreceiver`
    - Run `go generate ./...`
-- Review the changed files and merge the changes into your forked repo.
-- Create PR from Github web console following the instructions above.
+ - Review the changed files and merge the changes into your forked repo.
+ - Create PR from Github web console following the instructions above.
 
 ## General Recommendations
 Below are some recommendations that apply to typical components. These are not rigid rules and there are exceptions but

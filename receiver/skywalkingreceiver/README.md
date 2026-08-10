@@ -35,7 +35,6 @@ object configuration parameter.
 
 See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
-
 Examples:
 
 ```yaml

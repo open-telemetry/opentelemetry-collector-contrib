@@ -304,7 +304,6 @@ Assuming the health check extension is configured with `http.status.endpoint` se
 `localhost:13133`, a request to
 `http://localhost:13133/status?pipeline=traces/http&verbose` will have a response body such as:
 
-
 ```json
 {
     "start_time": "2024-01-18T17:27:12.570394-08:00",

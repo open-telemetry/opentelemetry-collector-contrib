@@ -40,7 +40,6 @@ Notice that for this example, the current parser will parse every nested object 
 
 More information on json arrays can be found [here](https://json-schema.org/understanding-json-schema/reference/array)
 
-
 ### Configuration Fields
 
 | Field              | Default                                  | Description                                                                                                                                       |

@@ -25,7 +25,6 @@ The following settings are required:
   - connection_string: Connection string to the endpoint. Only needed for connection_string auth type. Once provided, it'll **override** the `url` parameter to the storage account.
   - federated_token_file: The path of the projected service account token file, only needed when type is workload_identity.
 
-
 The following settings can be optionally configured and have default values:
 
 - container: container for metrics, logs and traces. A container organizes a set of blobs, similar to a directory in a file system. More details can refer [this](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction#containers).

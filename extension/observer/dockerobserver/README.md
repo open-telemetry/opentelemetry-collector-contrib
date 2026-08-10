@@ -21,7 +21,6 @@ Requires Docker API Version 1.44+.
 The collector will need permissions to access the Docker Engine API, specifically it will need
 read access to the Docker socket (default `unix:///var/run/docker.sock` on non-Windows and `npipe:////./pipe/docker_engine` on Windows).
 
-
 ## Example Config
 
 ```yaml

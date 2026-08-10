@@ -84,7 +84,6 @@ The following settings can be optionally configured:
 - `convert_explicit_histograms_to_nhcb` (default = `false`): If `true`, OTLP explicit-bucket (classic) histograms are converted to [Native Histograms with Custom Buckets](https://prometheus.io/docs/specs/native_histograms/) (NHCB) on export, instead of being written as classic `_bucket`/`_sum`/`_count` series. The explicit bounds are carried as the histogram's custom values. Works on both the RW1 and RW2 paths.
 - `keep_classic_histograms` (default = `false`): If `true` (and `convert_explicit_histograms_to_nhcb` is enabled), the original classic `_bucket`/`_sum`/`_count` series are emitted alongside the NHCB series. This is intended for a migration window, allowing both representations to be queried in parallel before cutting over. It has no effect unless `convert_explicit_histograms_to_nhcb` is also `true`.
 
-
 Example:
 
 ```yaml

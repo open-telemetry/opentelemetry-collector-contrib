@@ -82,7 +82,6 @@ connectors:
     include_scope_info: false
 ```
 
-
 ### Example Metric Conversions
 
 For a gauge metric `cpu_usage` with value `85.2`:

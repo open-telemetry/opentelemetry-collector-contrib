@@ -125,7 +125,7 @@ func (c *myCodec) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOp
     if err != nil {
         return nil, err
     }
-	
+ 
     logs := plog.NewLogs()
 
     decodeFunc := func() (plog.Logs, error) {
@@ -160,4 +160,3 @@ func (c *myCodec) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOp
     return xstreamencoding.NewLogsDecoderAdapter(decodeFunc, offsetFunc), nil
 }
 ```
-

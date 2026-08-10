@@ -24,7 +24,6 @@ This receiver supports Apache Web Server version 2.4.13+.
 
 In order to receive server statistics, you must configure the server's `httpd.conf` file to [enable status support](https://httpd.apache.org/docs/2.4/mod/mod_status.html).
 
-
 ### Configuration
 
 The following settings are required:

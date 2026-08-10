@@ -8,7 +8,6 @@ Even though we can configure OTLP receiver with mTLS for client authentication, 
 
 In this example, we also include a test via telementrygen: a tool provided from this repository for generating synthetic telemetry data, which helps verify the security features and overall functionality of the set up. 
 
-
 ## Data Encryption via TLS
 The OpenTelemetry Collector has detailed [documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) on how to configure TLS. In this example, we enable TLS for receivers which leverages server configuration. 
 

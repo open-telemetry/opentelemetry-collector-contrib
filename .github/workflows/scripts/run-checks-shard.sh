@@ -81,6 +81,8 @@ case "${shard}" in
     ;;
   read-only-checks)
     make checkdoc
+    make markdownlint
+    make misspell
     make checkmetadata
     make checkapi
     make multimod-verify

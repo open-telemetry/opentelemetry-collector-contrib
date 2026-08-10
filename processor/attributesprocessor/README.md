@@ -90,7 +90,6 @@ For the `delete` action,
   pattern: <regular pattern>
 ```
 
-
 For the `hash` action,
  - `key` and/or `pattern` is required
  - `action: hash` is required.
@@ -101,7 +100,6 @@ For the `hash` action,
   # Rule specifies the regex pattern for attribute names to act upon.
   pattern: <regular pattern>
 ```
-
 
 For the `extract` action,
  - `key` is required
@@ -118,7 +116,6 @@ For the `extract` action,
   action: extract
 
  ```
-
 
 For the `convert` action,
  - `key` is required
@@ -221,7 +218,6 @@ or `libraries` must be specified with a non-empty value for a valid configuratio
 - For metrics, one of `metric_names` or `resources` must be specified with a valid non-empty value for
 a valid configuration. The `span_names`, `span_kinds`, `log_bodies`, `log_severity_texts`,
 `log_severity_number`, `services`, `attributes` and `libraries` fields are invalid.
-
 
 Note: If both `include` and `exclude` are specified, the `include` properties
 are checked before the `exclude` properties.
