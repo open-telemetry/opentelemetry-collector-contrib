@@ -80,6 +80,41 @@ func Test_setTimestampYear(t *testing.T) {
 		expected := time.Date(2019, 12, 31, 3, 31, 34, 525, time.UTC)
 		require.Equal(t, expected, yearAdded)
 	})
+
+	t.Run("NoDatePart", func(t *testing.T) {
+		Now = func() time.Time {
+			return time.Date(2026, 0o2, 16, 11, 48, 14, 0, time.UTC)
+		}
+
+		noDate := time.Date(0, 1, 1, 11, 31, 6, 491000000, time.UTC)
+		dateAdded := SetTimestampYear(noDate)
+		expected := time.Date(2026, 0o2, 16, 11, 31, 6, 491000000, time.UTC)
+		require.Equal(t, expected, dateAdded)
+	})
+
+	t.Run("NoDatePartYearBoundary", func(t *testing.T) {
+		Now = func() time.Time {
+			return time.Date(2026, 0o1, 0o1, 0, 0, 0, 0, time.UTC)
+		}
+
+		noDate := time.Date(0, 1, 1, 23, 59, 59, 0, time.UTC)
+		dateAdded := SetTimestampYear(noDate)
+		expected := time.Date(2026, 0o1, 0o1, 23, 59, 59, 0, time.UTC)
+		require.Equal(t, expected, dateAdded)
+	})
+
+	t.Run("PartialDatePreserved", func(t *testing.T) {
+		Now = func() time.Time {
+			return time.Date(2026, 0o2, 16, 0, 0, 0, 0, time.UTC)
+		}
+
+		// A real date (month/day) without a year must keep its month and day,
+		// e.g. rfc3164-style "Feb 15" logs. Only the year is replaced.
+		partialDate := time.Date(0, 0o2, 15, 10, 30, 0, 0, time.UTC)
+		dateAdded := SetTimestampYear(partialDate)
+		expected := time.Date(2026, 0o2, 15, 10, 30, 0, 0, time.UTC)
+		require.Equal(t, expected, dateAdded)
+	})
 }
 
 func TestValidateGotime(t *testing.T) {

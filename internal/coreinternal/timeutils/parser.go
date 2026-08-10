@@ -167,6 +167,17 @@ func SetTimestampYear(t time.Time) time.Time {
 		return t
 	}
 	n := Now()
+
+	// If the parsed time is at the Go zero date (January 1 of year 0), the input
+	// contained no date elements at all (e.g. time-only layouts such as "%H:%M:%S,%L").
+	// In that case use today's month and day instead of January 1.
+	// Per the time.Parse documentation, elements omitted from the layout are
+	// assumed to be zero or, when zero is impossible, one — so a time-only parse
+	// yields "Jan 1, year 0".
+	if t.Month() == time.January && t.Day() == 1 {
+		return time.Date(n.Year(), n.Month(), n.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
+	}
+
 	d := time.Date(n.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
 	// Assume the timestamp is from last year if its month and day are
 	// more than 7 days past the current date.
