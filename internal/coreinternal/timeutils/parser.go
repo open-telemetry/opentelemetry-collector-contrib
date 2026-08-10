@@ -123,8 +123,8 @@ func ParseGotime(layout string, value any, location *time.Location) (time.Time, 
 // omitted because "1" appears inside the hour token "15" and would misclassify
 // time-only layouts.
 var dateElements = []string{
-	"2006", // year (4-digit)
-	"06",   // year (2-digit)
+	"2006",           // year (4-digit)
+	"06",             // year (2-digit)
 	"January", "Jan", // month name
 	"01", "_1", // month number
 	"02", "_2", // day of month
