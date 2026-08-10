@@ -46,15 +46,15 @@ func Test_IsRootSpan(t *testing.T) {
 
 func Test_IsRootSpanFactory(t *testing.T) {
 	t.Run("factory creation", func(t *testing.T) {
-		assert.Equal(t, "IsRootSpan", NewIsRootSpanFactoryNew().Name())
+		assert.Equal(t, "IsRootSpan", NewIsRootSpanFactory().Name())
 	})
 
 	t.Run("default arguments", func(t *testing.T) {
-		assert.Nil(t, NewIsRootSpanFactoryNew().CreateDefaultArguments())
+		assert.Nil(t, NewIsRootSpanFactory().CreateDefaultArguments())
 	})
 
 	t.Run("function creation", func(t *testing.T) {
-		fn, err := NewIsRootSpanFactoryNew().CreateFunction(ottl.FunctionContext{}, nil)
+		fn, err := NewIsRootSpanFactory().CreateFunction(ottl.FunctionContext{}, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, fn)
 	})
