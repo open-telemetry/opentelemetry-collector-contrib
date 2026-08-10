@@ -1644,7 +1644,7 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 		// Clean up identifiers that were present in oldPod but are no longer in newPod.
 		// This handles memory leaks for all identifier types (container.id, labels, annotations, etc.).
 		// Run only when this watch actually replaced the pod under k8s.pod.uid.
-		staleRequests = c.staleIdentifierDeleteRequestsLocked(oldPod, newPod, newIdentifiers)
+		staleRequests = c.staleIdentifierDeleteRequestsLocked(oldPod, newIdentifiers)
 	}
 	c.m.Unlock()
 
@@ -1689,11 +1689,7 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 // custom labels, annotations, and any other association source.
 // newIdentifiers must be the pre-computed result of getIdentifiersFromAssoc(newPod).
 // Must be called with c.m held.
-func (c *WatchClient) staleIdentifierDeleteRequestsLocked(oldPod, newPod *Pod, newIdentifiers []PodIdentifier) []deleteRequest {
-	if oldPod == nil || newPod == nil || oldPod.PodUID == "" || oldPod.PodUID != newPod.PodUID {
-		return nil
-	}
-
+func (c *WatchClient) staleIdentifierDeleteRequestsLocked(oldPod *Pod, newIdentifiers []PodIdentifier) []deleteRequest {
 	newIDSet := make(map[PodIdentifier]struct{}, len(newIdentifiers))
 	for i := range newIdentifiers {
 		newIDSet[newIdentifiers[i]] = struct{}{}

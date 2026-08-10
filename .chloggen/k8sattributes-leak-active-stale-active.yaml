@@ -16,15 +16,6 @@ issues: [48588]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Two related bugs are fixed:
-  1. When a pod update removes a custom association source (e.g. a label or annotation), the stale
-     identifier was never evicted from the pod cache, causing unbounded memory growth. Stale
-     identifiers for all association types are now queued for grace-period deletion, consistent with
-     the existing `container.id` cleanup.
-  2. When an identifier temporarily disappears and then reappears for the same pod before the grace
-     period expires (active->stale->active), the pending delete was not cancelled, causing the
-     re-activated association to be incorrectly removed. Pending deletes are now cancelled when an
-     identifier is re-added to the cache.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

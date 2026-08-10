@@ -613,9 +613,7 @@ func TestReactivationRaceStress(t *testing.T) {
 	stop := make(chan struct{})
 
 	var deleter sync.WaitGroup
-	deleter.Add(1)
-	go func() {
-		defer deleter.Done()
+	deleter.Go(func() {
 		for {
 			select {
 			case <-stop:
@@ -624,14 +622,14 @@ func TestReactivationRaceStress(t *testing.T) {
 				c.deleteLoopProcessing(0)
 			}
 		}
-	}()
+	})
 
 	var caughtAt int
 	for i := 0; i < iterations && !wrongDelete.Load(); i++ {
 		c.handlePodUpdate(withLabel, noLabel)
 		c.handlePodUpdate(noLabel, withLabel)
 
-		for spin := 0; spin < 128; spin++ {
+		for range 128 {
 			if _, ok := c.GetPod(labelID); !ok {
 				wrongDelete.Store(true)
 				caughtAt = i
