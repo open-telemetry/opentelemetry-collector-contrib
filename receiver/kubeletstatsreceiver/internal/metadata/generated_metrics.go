@@ -178,6 +178,12 @@ var MetricsInfo = metricsInfo{
 		Name:       "k8s.node.network.io",
 		Attributes: []string{"interface", "direction"},
 	},
+	K8sNodeProcessCount: metricInfo{
+		Name: "k8s.node.process.count",
+	},
+	K8sNodeProcessLimit: metricInfo{
+		Name: "k8s.node.process.limit",
+	},
 	K8sNodeSystemContainerCPUTime: metricInfo{
 		Name: "k8s.node.system_container.cpu.time",
 	},
@@ -310,6 +316,8 @@ type metricsInfo struct {
 	K8sNodeMemoryWorkingSet                metricInfo
 	K8sNodeNetworkErrors                   metricInfo
 	K8sNodeNetworkIo                       metricInfo
+	K8sNodeProcessCount                    metricInfo
+	K8sNodeProcessLimit                    metricInfo
 	K8sNodeSystemContainerCPUTime          metricInfo
 	K8sNodeSystemContainerCPUUsage         metricInfo
 	K8sNodeSystemContainerMemoryUsage      metricInfo
@@ -2187,6 +2195,110 @@ func newMetricK8sNodeNetworkIo(cfg K8sNodeNetworkIoMetricConfig) metricK8sNodeNe
 	return m
 }
 
+type metricK8sNodeProcessCount struct {
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   K8sNodeProcessCountMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.process.count metric with initial data.
+func (m *metricK8sNodeProcessCount) init() {
+	m.data.SetName("k8s.node.process.count")
+	m.data.SetDescription("Total number of existing processes and threads on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.NumOfRunningProcesses), which reads the total count of scheduling entities (threads/processes across all states) from /proc/loadavg. Unlike system.processes.count in hostmetricsreceiver, this is an aggregate count collected via Kubelet without requiring host-level privileges.")
+	m.data.SetUnit("{process}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sNodeProcessCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeProcessCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeProcessCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeProcessCount(cfg K8sNodeProcessCountMetricConfig) metricK8sNodeProcessCount {
+	m := metricK8sNodeProcessCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeProcessLimit struct {
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   K8sNodeProcessLimitMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.process.limit metric with initial data.
+func (m *metricK8sNodeProcessLimit) init() {
+	m.data.SetName("k8s.node.process.limit")
+	m.data.SetDescription("Total number of processes/threads allowed by the operating system on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.MaxPID), representing the maximum PID limit (pid_max).")
+	m.data.SetUnit("{thread}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sNodeProcessLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeProcessLimit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeProcessLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeProcessLimit(cfg K8sNodeProcessLimitMetricConfig) metricK8sNodeProcessLimit {
+	m := metricK8sNodeProcessLimit{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sNodeSystemContainerCPUTime struct {
 	data     pmetric.Metric                            // data buffer for generated metric.
 	config   K8sNodeSystemContainerCPUTimeMetricConfig // metric config provided by user.
@@ -3879,6 +3991,8 @@ type MetricsBuilder struct {
 	metricK8sNodeMemoryWorkingSet                metricK8sNodeMemoryWorkingSet
 	metricK8sNodeNetworkErrors                   metricK8sNodeNetworkErrors
 	metricK8sNodeNetworkIo                       metricK8sNodeNetworkIo
+	metricK8sNodeProcessCount                    metricK8sNodeProcessCount
+	metricK8sNodeProcessLimit                    metricK8sNodeProcessLimit
 	metricK8sNodeSystemContainerCPUTime          metricK8sNodeSystemContainerCPUTime
 	metricK8sNodeSystemContainerCPUUsage         metricK8sNodeSystemContainerCPUUsage
 	metricK8sNodeSystemContainerMemoryUsage      metricK8sNodeSystemContainerMemoryUsage
@@ -3987,6 +4101,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sNodeMemoryWorkingSet:                newMetricK8sNodeMemoryWorkingSet(mbc.Metrics.K8sNodeMemoryWorkingSet),
 		metricK8sNodeNetworkErrors:                   newMetricK8sNodeNetworkErrors(mbc.Metrics.K8sNodeNetworkErrors),
 		metricK8sNodeNetworkIo:                       newMetricK8sNodeNetworkIo(mbc.Metrics.K8sNodeNetworkIo),
+		metricK8sNodeProcessCount:                    newMetricK8sNodeProcessCount(mbc.Metrics.K8sNodeProcessCount),
+		metricK8sNodeProcessLimit:                    newMetricK8sNodeProcessLimit(mbc.Metrics.K8sNodeProcessLimit),
 		metricK8sNodeSystemContainerCPUTime:          newMetricK8sNodeSystemContainerCPUTime(mbc.Metrics.K8sNodeSystemContainerCPUTime),
 		metricK8sNodeSystemContainerCPUUsage:         newMetricK8sNodeSystemContainerCPUUsage(mbc.Metrics.K8sNodeSystemContainerCPUUsage),
 		metricK8sNodeSystemContainerMemoryUsage:      newMetricK8sNodeSystemContainerMemoryUsage(mbc.Metrics.K8sNodeSystemContainerMemoryUsage),
@@ -4220,6 +4336,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sNodeMemoryWorkingSet.emit(ils.Metrics())
 	mb.metricK8sNodeNetworkErrors.emit(ils.Metrics())
 	mb.metricK8sNodeNetworkIo.emit(ils.Metrics())
+	mb.metricK8sNodeProcessCount.emit(ils.Metrics())
+	mb.metricK8sNodeProcessLimit.emit(ils.Metrics())
 	mb.metricK8sNodeSystemContainerCPUTime.emit(ils.Metrics())
 	mb.metricK8sNodeSystemContainerCPUUsage.emit(ils.Metrics())
 	mb.metricK8sNodeSystemContainerMemoryUsage.emit(ils.Metrics())
@@ -4450,6 +4568,16 @@ func (mb *MetricsBuilder) RecordK8sNodeNetworkErrorsDataPoint(ts pcommon.Timesta
 // RecordK8sNodeNetworkIoDataPoint adds a data point to k8s.node.network.io metric.
 func (mb *MetricsBuilder) RecordK8sNodeNetworkIoDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue AttributeDirection) {
 	mb.metricK8sNodeNetworkIo.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
+}
+
+// RecordK8sNodeProcessCountDataPoint adds a data point to k8s.node.process.count metric.
+func (mb *MetricsBuilder) RecordK8sNodeProcessCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sNodeProcessCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sNodeProcessLimitDataPoint adds a data point to k8s.node.process.limit metric.
+func (mb *MetricsBuilder) RecordK8sNodeProcessLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sNodeProcessLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sNodeSystemContainerCPUTimeDataPoint adds a data point to k8s.node.system_container.cpu.time metric.

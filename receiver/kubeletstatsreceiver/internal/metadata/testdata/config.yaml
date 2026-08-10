@@ -72,6 +72,10 @@ all_set:
     k8s.node.network.io:
       enabled: true
       attributes: ["interface","direction"]
+    k8s.node.process.count:
+      enabled: true
+    k8s.node.process.limit:
+      enabled: true
     k8s.node.system_container.cpu.time:
       enabled: true
     k8s.node.system_container.cpu.usage:
@@ -242,6 +246,10 @@ reaggregate_set:
     k8s.node.network.io:
       enabled: true
       attributes: []
+    k8s.node.process.count:
+      enabled: true
+    k8s.node.process.limit:
+      enabled: true
     k8s.node.system_container.cpu.time:
       enabled: true
     k8s.node.system_container.cpu.usage:
@@ -412,6 +420,10 @@ none_set:
     k8s.node.network.io:
       enabled: false
       attributes: ["interface","direction"]
+    k8s.node.process.count:
+      enabled: false
+    k8s.node.process.limit:
+      enabled: false
     k8s.node.system_container.cpu.time:
       enabled: false
     k8s.node.system_container.cpu.usage:
