@@ -56,33 +56,80 @@ func compareDocuments(expected, actual *document) error {
 
 func compareResource(expected, actual resourceAssertion) error {
 	var errs []error
-	expScopes := indexScopes(expected.Scopes)
-	actScopes := indexScopes(actual.Scopes)
+	matched := make([]bool, len(actual.Scopes))
 
-	for key, es := range expScopes {
-		as, ok := actScopes[key]
-		if !ok {
-			errs = append(errs, fmt.Errorf("missing expected scope name=%q version=%q", es.Name, es.Version))
+	for _, es := range expected.Scopes {
+		idx := findMatchingScope(es, matched, actual.Scopes)
+		if idx < 0 {
+			errs = append(errs, fmt.Errorf("missing expected scope %s", scopeIdentityString(es)))
 			continue
 		}
-		if err := compareScope(es, as); err != nil {
-			errs = append(errs, fmt.Errorf("scope name=%q: %w", es.Name, err))
+		matched[idx] = true
+		if err := compareScope(es, actual.Scopes[idx]); err != nil {
+			errs = append(errs, fmt.Errorf("scope %s: %w", scopeIdentityString(es), err))
 		}
 	}
-	for key, as := range actScopes {
-		if _, ok := expScopes[key]; !ok {
-			errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version))
+	for i, as := range actual.Scopes {
+		if !matched[i] {
+			errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version.value))
 		}
 	}
 	return errors.Join(errs...)
 }
 
-func indexScopes(ss []scopeAssertion) map[string]scopeAssertion {
-	out := make(map[string]scopeAssertion, len(ss))
-	for _, s := range ss {
-		out[s.Name+"|"+s.Version] = s
+// findMatchingScope returns the first unmatched index whose scope satisfies the
+// expected name and version matcher, or -1 if none do.
+func findMatchingScope(expected scopeAssertion, matched []bool, actual []scopeAssertion) int {
+	for i := range actual {
+		if matched[i] {
+			continue
+		}
+
+		if expected.Name == actual[i].Name &&
+			matchVersion(expected.Version, actual[i].Version.value) == nil {
+			return i
+		}
 	}
-	return out
+	return -1
+}
+
+func matchVersion(m versionMatcher, actual string) error {
+	switch m.op {
+	case matchExists:
+		if actual == "" {
+			return errors.New("required by /exists but not present")
+		}
+		return nil
+	case matchRegex:
+		re, err := regexp.Compile("^(?:" + m.value + ")$")
+		if err != nil {
+			return fmt.Errorf("/regex has invalid pattern %q: %w", m.value, err)
+		}
+		if !re.MatchString(actual) {
+			return fmt.Errorf("value %q does not match regex %q", actual, m.value)
+		}
+		return nil
+	default: // matchExact
+		if actual != m.value {
+			return fmt.Errorf("expected %q, got %q", m.value, actual)
+		}
+		return nil
+	}
+}
+
+func scopeIdentityString(s scopeAssertion) string {
+	return fmt.Sprintf("name=%q version=%s", s.Name, versionMatcherString(s.Version))
+}
+
+func versionMatcherString(m versionMatcher) string {
+	switch m.op {
+	case matchExists:
+		return "<exists>"
+	case matchRegex:
+		return fmt.Sprintf("/regex %q", m.value)
+	default:
+		return fmt.Sprintf("%q", m.value)
+	}
 }
 
 func compareScope(expected, actual scopeAssertion) error {
