@@ -12,7 +12,7 @@ import (
 
 type IsInCIDRArguments[K any] struct {
 	Target   ottl.StringGetter[K]
-	Networks []ottl.StringGetter[K]
+	Networks ottl.StringLikeSliceGetter[K]
 }
 
 func NewIsInCIDRFactory[K any]() ottl.Factory[K] {
@@ -28,20 +28,15 @@ func createIsInCIDRFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 	return isInCIDR(args.Target, args.Networks)
 }
 
-func isInCIDR[K any](target ottl.StringGetter[K], networks []ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
-	// Check if all networks are literals and pre-parse them if so.
-	literalNetworks := make([]*net.IPNet, 0, len(networks))
-	for _, network := range networks {
-		literal, isLiteral := ottl.GetLiteralValue[K, string](network)
-		if !isLiteral {
-			literalNetworks = nil
-			break
-		}
-		_, subnet, err := net.ParseCIDR(literal)
+func isInCIDR[K any](target ottl.StringGetter[K], networks ottl.StringLikeSliceGetter[K]) (ottl.ExprFunc[K], error) {
+	// Check if the networks are literals and pre-parse them if so.
+	var literalNetworks []*net.IPNet
+	if networkValues, isLiteral := ottl.GetLiteralValue[K, []string](networks); isLiteral {
+		parsed, err := parseNetworks(networkValues)
 		if err != nil {
 			return nil, err
 		}
-		literalNetworks = append(literalNetworks, subnet)
+		literalNetworks = parsed
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -55,31 +50,37 @@ func isInCIDR[K any](target ottl.StringGetter[K], networks []ottl.StringGetter[K
 			return false, nil
 		}
 
-		if literalNetworks != nil {
-			// Use pre-parsed networks for literal values.
-			for _, subnet := range literalNetworks {
-				if subnet.Contains(ip) {
-					return true, nil
-				}
-			}
-		} else {
+		subnets := literalNetworks
+		if subnets == nil {
 			// Parse networks at runtime for dynamic values.
-			for _, network := range networks {
-				networkValue, err := network.Get(ctx, tCtx)
-				if err != nil {
-					return nil, err
-				}
+			networkValues, err := networks.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			subnets, err = parseNetworks(networkValues)
+			if err != nil {
+				return nil, err
+			}
+		}
 
-				_, subnet, err := net.ParseCIDR(networkValue)
-				if err != nil {
-					return nil, err
-				}
-				if subnet.Contains(ip) {
-					return true, nil
-				}
+		for _, subnet := range subnets {
+			if subnet.Contains(ip) {
+				return true, nil
 			}
 		}
 
 		return false, nil
 	}, nil
+}
+
+func parseNetworks(networks []string) ([]*net.IPNet, error) {
+	subnets := make([]*net.IPNet, 0, len(networks))
+	for _, network := range networks {
+		_, subnet, err := net.ParseCIDR(network)
+		if err != nil {
+			return nil, err
+		}
+		subnets = append(subnets, subnet)
+	}
+	return subnets, nil
 }

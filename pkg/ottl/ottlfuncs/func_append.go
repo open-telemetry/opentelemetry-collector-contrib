@@ -16,7 +16,7 @@ import (
 type AppendArguments[K any] struct {
 	Target ottl.GetSetter[K]
 	Value  ottl.Optional[ottl.Getter[K]]
-	Values ottl.Optional[[]ottl.Getter[K]]
+	Values ottl.Optional[ottl.SliceGetter[K]]
 }
 
 func NewAppendFactory[K any]() ottl.Factory[K] {
@@ -32,7 +32,7 @@ func createAppendFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 	return appendTo(args.Target, args.Value, args.Values)
 }
 
-func appendTo[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K]], values ottl.Optional[[]ottl.Getter[K]]) (ottl.ExprFunc[K], error) {
+func appendTo[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K]], values ottl.Optional[ottl.SliceGetter[K]]) (ottl.ExprFunc[K], error) {
 	if value.IsEmpty() && values.IsEmpty() {
 		return nil, errors.New("at least one of the optional arguments ('value' or 'values') must be provided")
 	}
@@ -110,12 +110,11 @@ func appendTo[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K
 			}
 		}
 		if !values.IsEmpty() {
-			getters := values.Get()
-			for _, g := range getters {
-				if err := appendGetterFn(g); err != nil {
-					return nil, err
-				}
+			vs, err := values.Get().Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
 			}
+			res = append(res, vs...)
 		}
 
 		// retype []any to Slice, having []any sometimes misbehaves and nils pcommon.Value

@@ -432,6 +432,18 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			// The output of Split (a list) is passed to append's values argument and flattened.
+			statement: `append(attributes["foo"]["slice"], values=Split(attributes["flags"], "|"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				v, _ := tCtx.GetLogRecord().Attributes().Get("foo")
+				sv, _ := v.Map().Get("slice")
+				s := sv.Slice()
+				s.AppendEmpty().SetStr("A")
+				s.AppendEmpty().SetStr("B")
+				s.AppendEmpty().SetStr("C")
+			},
+		},
+		{
 			statement: `delete_index(attributes["slice2"], 0)`,
 			want: func(tCtx *ottllog.TransformContext) {
 				v, _ := tCtx.GetLogRecord().Attributes().Get("slice2")
@@ -647,6 +659,11 @@ func Test_e2e_converters(t *testing.T) {
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "fallback")
 			},
+		},
+		{
+			statement: `set(attributes["test"], Coalesce([]))`,
+			want:      func(_ *ottllog.TransformContext) {},
+			errMsg:    "Coalesce requires at least one value",
 		},
 		{
 			statement: `set(attributes["test"], Concat(["A","B"], ":"))`,
@@ -1757,6 +1774,50 @@ func Test_e2e_converters(t *testing.T) {
 				s.AppendEmpty().SetStr("val")
 				nested := renamed.PutEmptyMap(`nested:{"test":"pass"}`)
 				nested.PutStr("test", "pass")
+			},
+		},
+		{
+			// The output of Split (a list) is passed directly to Concat.
+			statement: `set(attributes["test"], Concat(Split(attributes["flags"], "|"), "-"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "A-B-C")
+			},
+		},
+		{
+			// A list-valued path is passed directly to Concat.
+			statement: `set(attributes["test"], Concat(attributes["primitiveValuesSlice"], ","))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "value1,42,true")
+			},
+		},
+		{
+			// The output of Split is passed to Format's values argument.
+			statement: `set(attributes["test"], Format("%s/%s/%s", Split(attributes["flags"], "|")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "A/B/C")
+			},
+		},
+		{
+			// The output of Split is passed to Coalesce, which returns the first non-nil element.
+			statement: `set(attributes["test"], Coalesce(Split(attributes["flags"], "|")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "A")
+			},
+		},
+		{
+			// The output of Split is passed to IsInCIDR's networks argument.
+			statement: `set(attributes["test"], IsInCIDR(attributes["server.ip"], Split("10.0.0.0/8|192.168.0.0/16", "|")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", true)
+			},
+		},
+		{
+			// The output of Split is passed to keep_keys' keys argument.
+			statement: `keep_keys(attributes["foo"], Split("bar|flags", "|"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("foo")
+				m.PutStr("bar", "pass")
+				m.PutStr("flags", "pass")
 			},
 		},
 	}
