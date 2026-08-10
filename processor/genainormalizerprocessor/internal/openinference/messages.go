@@ -66,12 +66,18 @@ type toolCallFields struct {
 	arguments string
 }
 
+type contentFields struct {
+	typ  string
+	text string
+}
+
 type messageFields struct {
 	role       string
 	content    string
 	name       string
 	toolCallID string
 	toolCalls  map[int]*toolCallFields
+	contents   map[int]*contentFields
 }
 
 // ReconstructMessages scans attrs for OpenInference flattened message attributes
@@ -106,7 +112,10 @@ func reconstructPrefix(attrs pcommon.Map, prefix, target string, isOutput, remov
 
 		mf, exists := messages[idx]
 		if !exists {
-			mf = &messageFields{toolCalls: make(map[int]*toolCallFields)}
+			mf = &messageFields{
+				toolCalls: make(map[int]*toolCallFields),
+				contents:  make(map[int]*contentFields),
+			}
 			messages[idx] = mf
 		}
 
@@ -170,7 +179,65 @@ func applyField(mf *messageFields, fieldPath string, v pcommon.Value) {
 		mf.toolCallID = v.AsString()
 	case strings.HasPrefix(fieldPath, "tool_calls."):
 		parseToolCallField(mf, fieldPath[len("tool_calls."):], v)
+	case strings.HasPrefix(fieldPath, "contents."):
+		parseContentField(mf, fieldPath[len("contents."):], v)
 	}
+}
+
+// parseContentField parses "M.message_content.field" from the indexed content
+// array into mf.contents[M].
+func parseContentField(mf *messageFields, s string, v pcommon.Value) {
+	dotIdx := strings.IndexByte(s, '.')
+	if dotIdx < 0 {
+		return
+	}
+	idx, err := strconv.Atoi(s[:dotIdx])
+	if err != nil {
+		return
+	}
+	rest := s[dotIdx+1:]
+	const mcPrefix = "message_content."
+	if !strings.HasPrefix(rest, mcPrefix) {
+		return
+	}
+	field := rest[len(mcPrefix):]
+
+	cf, exists := mf.contents[idx]
+	if !exists {
+		cf = &contentFields{}
+		mf.contents[idx] = cf
+	}
+
+	switch field {
+	case "type":
+		cf.typ = v.AsString()
+	case "text":
+		cf.text = v.AsString()
+	}
+}
+
+// textPartsFromContents builds text parts from the indexed content array,
+// preserving source order. Non-text entries (image, audio, reasoning, tool_use)
+// carry their payload in fields this function does not read and are skipped;
+// see the multimodal limitation in the README.
+func textPartsFromContents(mf *messageFields) []any {
+	indices := make([]int, 0, len(mf.contents))
+	for idx := range mf.contents {
+		indices = append(indices, idx)
+	}
+	sort.Ints(indices)
+
+	parts := make([]any, 0, len(indices))
+	for _, idx := range indices {
+		cf := mf.contents[idx]
+		// An entry with text but no declared type is still a text part
+		// (message_content.type is not set by every instrumentor).
+		if cf.text == "" || (cf.typ != "" && cf.typ != "text") {
+			continue
+		}
+		parts = append(parts, textPart{Type: "text", Content: cf.text})
+	}
+	return parts
 }
 
 func parseToolCallField(mf *messageFields, s string, v pcommon.Value) {
@@ -270,6 +337,13 @@ func buildParts(mf *messageFields) []any {
 
 	if mf.content != "" {
 		return []any{textPart{Type: "text", Content: mf.content}}
+	}
+
+	// Fall back to the indexed content array. The flat message.content string
+	// takes precedence when both are present: it is the field the GenAI schema
+	// maps onto directly, and instrumentors that set both keep them in sync.
+	if parts := textPartsFromContents(mf); len(parts) > 0 {
+		return parts
 	}
 	return []any{}
 }
