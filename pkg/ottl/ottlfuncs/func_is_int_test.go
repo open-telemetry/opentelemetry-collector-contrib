@@ -100,6 +100,7 @@ func Test_IsIntFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &IsIntArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

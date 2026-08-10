@@ -270,6 +270,7 @@ func Test_ReplaceMatchFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &ReplaceMatchArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Pattern", "Replacement", "Function", "ReplacementFormat"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

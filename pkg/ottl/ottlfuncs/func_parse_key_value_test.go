@@ -386,6 +386,7 @@ func Test_ParseKeyValueFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &ParseKeyValueArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Delimiter", "PairDelimiter"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

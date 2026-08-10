@@ -89,6 +89,7 @@ func Test_FormatFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &FormatArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Format", "Vals"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

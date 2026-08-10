@@ -188,6 +188,7 @@ func Test_URLFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &URLArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"URI"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

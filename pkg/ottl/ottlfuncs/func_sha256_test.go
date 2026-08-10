@@ -93,6 +93,7 @@ func Test_SHA256Factory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &SHA256Arguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

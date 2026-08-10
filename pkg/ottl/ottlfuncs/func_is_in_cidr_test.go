@@ -182,6 +182,7 @@ func Test_IsInCIDRFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &IsInCIDRArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Networks"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

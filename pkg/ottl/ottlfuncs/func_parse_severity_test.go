@@ -367,6 +367,7 @@ func Test_ParseSeverityFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &ParseSeverityArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Mapping"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

@@ -570,6 +570,7 @@ func Test_ParseCSVFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &ParseCSVArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Header", "Delimiter", "HeaderDelimiter", "Mode"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

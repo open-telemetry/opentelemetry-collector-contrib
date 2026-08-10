@@ -208,6 +208,7 @@ func Test_ContainsValueFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &ContainsValueArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Item"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

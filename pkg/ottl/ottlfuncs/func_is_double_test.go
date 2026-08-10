@@ -95,6 +95,7 @@ func Test_IsDoubleFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &IsDoubleArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

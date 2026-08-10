@@ -346,6 +346,7 @@ func Test_MapEachFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &MapEachArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Source", "Mapper"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

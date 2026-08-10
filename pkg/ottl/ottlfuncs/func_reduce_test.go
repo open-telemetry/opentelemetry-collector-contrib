@@ -247,6 +247,7 @@ func Test_ReduceFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &ReduceArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Source", "Seed", "Accumulator"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

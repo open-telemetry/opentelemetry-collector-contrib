@@ -91,6 +91,7 @@ func Test_TrimFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &TrimArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Replacement"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

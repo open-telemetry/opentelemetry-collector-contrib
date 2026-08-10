@@ -70,6 +70,7 @@ func Test_ProfileIDFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &ProfileIDArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

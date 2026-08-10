@@ -128,6 +128,7 @@ func Test_MapKeysFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &MapKeysArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Source", "KeyMapper"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

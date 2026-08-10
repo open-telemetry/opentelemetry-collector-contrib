@@ -336,6 +336,7 @@ func Test_DeleteIndexFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &DeleteIndexArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "StartIndex", "EndIndex"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

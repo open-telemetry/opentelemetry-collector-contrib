@@ -120,6 +120,7 @@ func Test_ToSnakeCaseFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &ToSnakeCaseArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

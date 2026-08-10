@@ -105,6 +105,7 @@ func Test_TrimPrefixFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &TrimPrefixArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Prefix"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

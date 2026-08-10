@@ -65,6 +65,7 @@ func Test_NanosecondFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &NanosecondArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

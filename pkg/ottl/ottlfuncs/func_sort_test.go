@@ -290,6 +290,7 @@ func Test_SortFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &SortArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Order"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

@@ -784,6 +784,7 @@ func Test_ReplaceAllPatternsFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &ReplaceAllPatternsArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Mode", "RegexPattern", "Replacement", "Function", "ReplacementFormat"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

@@ -155,6 +155,7 @@ func Test_KeepKeysFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &KeepKeysArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Keys"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

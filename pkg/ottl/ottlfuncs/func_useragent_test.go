@@ -170,6 +170,7 @@ func Test_UserAgentFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &UserAgentArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"UserAgent"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

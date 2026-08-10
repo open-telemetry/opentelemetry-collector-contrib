@@ -183,6 +183,7 @@ func Test_KeepMatchingKeysFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &KeepMatchingKeysArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Pattern"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

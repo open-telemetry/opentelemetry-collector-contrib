@@ -280,6 +280,7 @@ func Test_ExtractGrokPatternsFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &ExtractGrokPatternsArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Pattern", "NamedCapturesOnly", "PatternDefinitions"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

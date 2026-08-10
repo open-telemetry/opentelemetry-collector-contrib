@@ -260,6 +260,7 @@ func Test_ConvertCaseFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &ConvertCaseArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "ToCase"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

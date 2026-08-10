@@ -158,6 +158,7 @@ func Test_GetXMLFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &GetXMLArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "XPath"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

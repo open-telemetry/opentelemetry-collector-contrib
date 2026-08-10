@@ -119,6 +119,7 @@ func Test_WeekdayFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &WeekdayArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

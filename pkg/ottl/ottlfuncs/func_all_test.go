@@ -163,6 +163,7 @@ func Test_AllFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &AllArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Source", "Predicate"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

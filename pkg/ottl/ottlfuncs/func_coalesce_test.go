@@ -175,6 +175,7 @@ func Test_CoalesceFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &CoalesceArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Values"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

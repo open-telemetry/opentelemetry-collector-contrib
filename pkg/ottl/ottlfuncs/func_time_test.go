@@ -545,6 +545,7 @@ func Test_TimeFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &TimeArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Time", "Format", "Location", "Locale"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

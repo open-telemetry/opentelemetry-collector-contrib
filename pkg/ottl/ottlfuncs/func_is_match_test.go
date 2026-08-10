@@ -192,6 +192,7 @@ func Test_IsMatchFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &IsMatchArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Pattern"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

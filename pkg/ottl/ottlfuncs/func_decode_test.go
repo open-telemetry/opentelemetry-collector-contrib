@@ -301,6 +301,7 @@ func Test_DecodeFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &DecodeArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Encoding"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

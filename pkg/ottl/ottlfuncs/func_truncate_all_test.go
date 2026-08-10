@@ -355,6 +355,7 @@ func Test_TruncateAllFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &TruncateAllArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Limit", "Utf8Safe", "TruncationMarker"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

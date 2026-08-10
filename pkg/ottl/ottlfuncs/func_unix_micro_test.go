@@ -80,6 +80,7 @@ func Test_UnixMicroFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &UnixMicroArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

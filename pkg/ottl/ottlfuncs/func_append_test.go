@@ -708,6 +708,7 @@ func Test_AppendFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &AppendArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Value", "Values"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

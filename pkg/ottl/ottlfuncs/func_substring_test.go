@@ -435,6 +435,7 @@ func Test_SubstringFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &SubstringArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Start", "Length", "Utf8Safe"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

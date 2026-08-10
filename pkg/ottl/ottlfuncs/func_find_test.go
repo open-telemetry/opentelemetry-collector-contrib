@@ -334,6 +334,7 @@ func Test_FindFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &FindArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Source", "Predicate", "Mapper"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

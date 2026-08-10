@@ -206,6 +206,7 @@ func Test_LimitFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &LimitArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Limit", "PriorityKeys"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

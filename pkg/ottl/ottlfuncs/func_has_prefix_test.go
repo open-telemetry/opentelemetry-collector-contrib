@@ -105,6 +105,7 @@ func Test_HasPrefixFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &HasPrefixArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Prefix"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

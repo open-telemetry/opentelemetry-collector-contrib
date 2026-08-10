@@ -105,6 +105,7 @@ func Test_HasSuffixFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &HasSuffixArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Suffix"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

@@ -152,6 +152,7 @@ func Test_DeleteKeyFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &DeleteKeyArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Key"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

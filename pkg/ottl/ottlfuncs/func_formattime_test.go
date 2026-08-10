@@ -180,6 +180,7 @@ func Test_FormatTimeFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &FormatTimeArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Time", "Format"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

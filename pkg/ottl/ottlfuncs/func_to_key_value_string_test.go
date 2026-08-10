@@ -261,6 +261,7 @@ func Test_ToKeyValueStringFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &ToKeyValueStringArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Delimiter", "PairDelimiter", "SortOutput"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

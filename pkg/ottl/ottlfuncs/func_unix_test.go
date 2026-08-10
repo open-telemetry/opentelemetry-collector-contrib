@@ -55,6 +55,7 @@ func Test_UnixFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &UnixArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Seconds", "Nanoseconds"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

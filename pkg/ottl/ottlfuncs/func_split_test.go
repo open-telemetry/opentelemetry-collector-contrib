@@ -130,6 +130,7 @@ func Test_SplitFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &SplitArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Delimiter"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

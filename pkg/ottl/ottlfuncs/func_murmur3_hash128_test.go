@@ -95,6 +95,7 @@ func Test_Murmur3Hash128Factory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &Murmur3Hash128Arguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

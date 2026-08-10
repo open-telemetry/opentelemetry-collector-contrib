@@ -205,6 +205,7 @@ func Test_MergeMapsFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &MergeMapsArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Source", "Strategy"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

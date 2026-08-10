@@ -139,6 +139,7 @@ func Test_ConvertAttributesToElementsXMLFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &ConvertAttributesToElementsXMLArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "XPath"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

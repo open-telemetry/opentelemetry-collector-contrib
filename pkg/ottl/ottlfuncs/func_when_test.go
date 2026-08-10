@@ -153,6 +153,7 @@ func Test_WhenFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &WhenArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Condition", "TrueValue", "FalseValue"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

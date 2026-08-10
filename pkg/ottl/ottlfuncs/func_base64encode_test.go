@@ -140,6 +140,7 @@ func Test_Base64EncodeFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &Base64EncodeArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Variant"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

@@ -105,6 +105,7 @@ func Test_TrimSuffixFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &TrimSuffixArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Suffix"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

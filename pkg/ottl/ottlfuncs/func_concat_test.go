@@ -271,6 +271,7 @@ func Test_ConcatFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &ConcatArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Vals", "Delimiter"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

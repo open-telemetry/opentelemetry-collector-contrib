@@ -136,6 +136,7 @@ func Test_TruncateTimeFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &TruncateTimeArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Time", "Duration"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

@@ -93,6 +93,7 @@ func Test_MD5Factory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &MD5Arguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

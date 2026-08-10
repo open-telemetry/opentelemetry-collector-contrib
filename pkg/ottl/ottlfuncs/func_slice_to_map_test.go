@@ -444,6 +444,7 @@ func Test_SliceToMapFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &SliceToMapArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "KeyPath", "ValuePath"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

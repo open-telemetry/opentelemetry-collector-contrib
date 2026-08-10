@@ -290,6 +290,7 @@ func Test_CommunityIDFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &CommunityIDArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"SourceIP", "SourcePort", "DestinationIP", "DestinationPort", "Protocol", "Seed"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

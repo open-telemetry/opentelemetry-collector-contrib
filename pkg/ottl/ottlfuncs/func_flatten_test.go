@@ -603,6 +603,7 @@ func Test_FlattenFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &FlattenArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Prefix", "Depth", "ResolveConflicts"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
