@@ -4,6 +4,8 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
+	"encoding/xml"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -79,6 +81,20 @@ func TestObfuscateQueryPlan(t *testing.T) {
 	result, err := newObfuscator(zap.NewNop()).obfuscateXMLPlan(string(input))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedQueryPlan, result)
+
+	// The obfuscated plan must be well-formed XML with exactly one namespace
+	// declaration on the root element. This guards against the token round-trip
+	// re-declaring the default namespace on the root twice and on every
+	// descendant, which produced XML that downstream consumers could not parse.
+	assert.Equal(t, 1, strings.Count(result, "xmlns="))
+	decoder := xml.NewDecoder(strings.NewReader(result))
+	for {
+		_, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+	}
 }
 
 func TestInvalidQueryPlans(t *testing.T) {
