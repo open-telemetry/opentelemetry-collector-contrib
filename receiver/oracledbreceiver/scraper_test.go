@@ -144,8 +144,9 @@ var queryResponses = map[string][]metricRow{
 		{"RESOURCE_NAME": "processes", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "100", "LIMIT_VALUE": "100"},
 		{"RESOURCE_NAME": "locks", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "-1", "LIMIT_VALUE": "-1"},
 	},
-	tablespaceUsageSQL:  {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
-	dataDictHitRatioSQL: {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
+	tablespaceUsageSQL:        {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192", "STATUS": "ONLINE"}},
+	tablespaceUsageWithMaxSQL: {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192", "STATUS": "ONLINE", "MAX_BYTES": "1073741824"}},
+	dataDictHitRatioSQL:       {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
 	osStatSQL: {
 		{"STAT_NAME": "NUM_CPUS", "VALUE": "8"},
 		{"STAT_NAME": "LOAD", "VALUE": "1.5"},
@@ -246,10 +247,11 @@ var queryCDBResponses = map[string][]metricRow{
 		{"RESOURCE_NAME": "processes", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "100", "LIMIT_VALUE": "100"},
 		{"RESOURCE_NAME": "locks", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "-1", "LIMIT_VALUE": "-1"},
 	},
-	tablespaceUsageCDBSQL: {{"PDB_NAME": "PDB1", "TABLESPACE_NAME": "USERS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
-	dataDictHitRatioSQL:   {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
-	recycleBinSizeSQL:     {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
-	storageUsageSQL:       {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
+	tablespaceUsageCDBSQL:        {{"PDB_NAME": "PDB1", "TABLESPACE_NAME": "USERS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192", "STATUS": "ONLINE"}},
+	tablespaceUsageCDBWithMaxSQL: {{"PDB_NAME": "PDB1", "TABLESPACE_NAME": "USERS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192", "STATUS": "READ ONLY", "MAX_BYTES": "2147483648"}},
+	dataDictHitRatioSQL:          {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
+	recycleBinSizeSQL:            {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
+	storageUsageSQL:              {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
 }
 
 var cacheValue = map[string]int64{
@@ -404,6 +406,95 @@ func TestScraper_Scrape(t *testing.T) {
 	}
 }
 
+// TestScraper_ScrapeTablespaceHealthMetrics covers the 3 new opt-in tablespace metrics.
+func TestScraper_ScrapeTablespaceHealthMetrics(t *testing.T) {
+	const floatDelta = 0.0001
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbTablespaceUtilization.Enabled = true
+	cfg.Metrics.OracledbTablespaceStatus.Enabled = true
+	cfg.Metrics.OracledbTablespaceLimit.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+
+	found := map[string]bool{}
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		switch metric.Name() {
+		case "oracledb.tablespace.utilization":
+			found["utilization"] = true
+			assert.InDelta(t, 111288.0/3518587.0, metric.Gauge().DataPoints().At(0).DoubleValue(), floatDelta)
+		case "oracledb.tablespace.status":
+			found["status"] = true
+			assert.False(t, metric.Sum().IsMonotonic(), "oracledb.tablespace.status must be a non-monotonic sum (UpDownCounter)")
+			dp := metric.Sum().DataPoints().At(0)
+			assert.Equal(t, int64(1), dp.IntValue())
+			stateAttr, ok := dp.Attributes().Get("oracledb.tablespace.state")
+			require.True(t, ok)
+			assert.Equal(t, "online", stateAttr.Str())
+		case "oracledb.tablespace.limit":
+			found["limit"] = true
+			assert.Equal(t, int64(1073741824), metric.Gauge().DataPoints().At(0).IntValue())
+		}
+	}
+	assert.True(t, found["utilization"] && found["status"] && found["limit"],
+		"expected all 3 tablespace health metrics to be present, got: %v", found)
+}
+
+// TestScraper_ScrapeTablespaceHealthMetrics_BadMaxBytes verifies an unparseable MAX_BYTES produces a partial scrape error.
+func TestScraper_ScrapeTablespaceHealthMetrics_BadMaxBytes(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbTablespaceLimit.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			if s == tablespaceUsageWithMaxSQL {
+				return &fakeDbClient{Responses: [][]metricRow{
+					{
+						{"TABLESPACE_NAME": "SYS", "TABLESPACE_SIZE": "1024", "USED_SPACE": "111288", "BLOCK_SIZE": "8192", "STATUS": "ONLINE", "MAX_BYTES": "not-a-number"},
+					},
+				}}
+			}
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	_, err = scrpr.scrape(t.Context())
+	require.True(t, scrapererror.IsPartialScrapeError(err))
+	require.EqualError(t, err, `failed to parse int64 for OracledbTablespaceLimit, value was not-a-number: strconv.ParseInt: parsing "not-a-number": invalid syntax`)
+}
+
 // TestScraper_ScrapeCDBRoot verifies that when the scraper is in CDB-root mode (isCDBRoot=true)
 // it uses the CDB-aware SQL variants and propagates the oracle.db.pdb attribute on tablespace metrics.
 func TestScraper_ScrapeCDBRoot(t *testing.T) {
@@ -458,6 +549,161 @@ func TestScraper_ScrapeCDBRoot(t *testing.T) {
 			assert.Equal(t, "PDB1", pdbAttr.Str())
 		}
 	}
+}
+
+// TestScraper_ScrapeCDBRoot_TablespaceHealthMetrics verifies the 3 new metrics carry oracle.db.pdb on a CDB-root scrape.
+func TestScraper_ScrapeCDBRoot_TablespaceHealthMetrics(t *testing.T) {
+	const floatDelta = 0.0001
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbTablespaceUtilization.Enabled = true
+	cfg.Metrics.OracledbTablespaceStatus.Enabled = true
+	cfg.Metrics.OracledbTablespaceLimit.Enabled = true
+	cfg.Metrics.OracledbTablespaceUtilization.EnabledAttributes = append(
+		cfg.Metrics.OracledbTablespaceUtilization.EnabledAttributes,
+		metadata.OracledbTablespaceUtilizationMetricAttributeKeyOracleDbPdb,
+	)
+	cfg.Metrics.OracledbTablespaceStatus.EnabledAttributes = append(
+		cfg.Metrics.OracledbTablespaceStatus.EnabledAttributes,
+		metadata.OracledbTablespaceStatusMetricAttributeKeyOracleDbPdb,
+	)
+	cfg.Metrics.OracledbTablespaceLimit.EnabledAttributes = append(
+		cfg.Metrics.OracledbTablespaceLimit.EnabledAttributes,
+		metadata.OracledbTablespaceLimitMetricAttributeKeyOracleDbPdb,
+	)
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryCDBResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+		instanceInfo:         oracleInstanceInfo{isCDB: true, connectedToPDB: false},
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+	require.True(t, scrpr.isCDBRoot)
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+
+	checked := map[string]bool{}
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		switch metric.Name() {
+		case "oracledb.tablespace.utilization":
+			dp := metric.Gauge().DataPoints().At(0)
+			pdbAttr, ok := dp.Attributes().Get("oracle.db.pdb")
+			assert.True(t, ok, "expected oracle.db.pdb on oracledb.tablespace.utilization")
+			assert.Equal(t, "PDB1", pdbAttr.Str())
+			assert.InDelta(t, 111288.0/3518587.0, dp.DoubleValue(), floatDelta)
+			checked["utilization"] = true
+		case "oracledb.tablespace.status":
+			dp := metric.Sum().DataPoints().At(0)
+			pdbAttr, ok := dp.Attributes().Get("oracle.db.pdb")
+			assert.True(t, ok, "expected oracle.db.pdb on oracledb.tablespace.status")
+			assert.Equal(t, "PDB1", pdbAttr.Str())
+			stateAttr, ok := dp.Attributes().Get("oracledb.tablespace.state")
+			assert.True(t, ok)
+			assert.Equal(t, "read only", stateAttr.Str())
+			checked["status"] = true
+		case "oracledb.tablespace.limit":
+			dp := metric.Gauge().DataPoints().At(0)
+			pdbAttr, ok := dp.Attributes().Get("oracle.db.pdb")
+			assert.True(t, ok, "expected oracle.db.pdb on oracledb.tablespace.limit")
+			assert.Equal(t, "PDB1", pdbAttr.Str())
+			assert.Equal(t, int64(2147483648), dp.IntValue())
+			checked["limit"] = true
+		}
+	}
+	assert.True(t, checked["utilization"] && checked["status"] && checked["limit"],
+		"expected all 3 tablespace health metrics to be present, got: %v", checked)
+}
+
+// TestScraper_ScrapeConnectedToPDB_TablespaceHealthMetrics verifies oracle.db.pdb is set from
+// instanceInfo.pdbName when connected directly to a PDB (a third mode distinct from non-CDB and CDB-root).
+func TestScraper_ScrapeConnectedToPDB_TablespaceHealthMetrics(t *testing.T) {
+	const floatDelta = 0.0001
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbTablespaceUtilization.Enabled = true
+	cfg.Metrics.OracledbTablespaceStatus.Enabled = true
+	cfg.Metrics.OracledbTablespaceLimit.Enabled = true
+	cfg.Metrics.OracledbTablespaceUtilization.EnabledAttributes = append(
+		cfg.Metrics.OracledbTablespaceUtilization.EnabledAttributes,
+		metadata.OracledbTablespaceUtilizationMetricAttributeKeyOracleDbPdb,
+	)
+	cfg.Metrics.OracledbTablespaceStatus.EnabledAttributes = append(
+		cfg.Metrics.OracledbTablespaceStatus.EnabledAttributes,
+		metadata.OracledbTablespaceStatusMetricAttributeKeyOracleDbPdb,
+	)
+	cfg.Metrics.OracledbTablespaceLimit.EnabledAttributes = append(
+		cfg.Metrics.OracledbTablespaceLimit.EnabledAttributes,
+		metadata.OracledbTablespaceLimitMetricAttributeKeyOracleDbPdb,
+	)
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+		// Simulate a direct-PDB connection: isCDB=true, connectedToPDB=true.
+		instanceInfo: oracleInstanceInfo{isCDB: true, connectedToPDB: true, pdbName: "PDB1"},
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+	require.False(t, scrpr.isCDBRoot, "a direct-PDB connection must not use CDB-root queries")
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+
+	checked := map[string]bool{}
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		switch metric.Name() {
+		case "oracledb.tablespace.utilization":
+			dp := metric.Gauge().DataPoints().At(0)
+			pdbAttr, ok := dp.Attributes().Get("oracle.db.pdb")
+			assert.True(t, ok, "expected oracle.db.pdb on oracledb.tablespace.utilization")
+			assert.Equal(t, "PDB1", pdbAttr.Str())
+			assert.InDelta(t, 111288.0/3518587.0, dp.DoubleValue(), floatDelta)
+			checked["utilization"] = true
+		case "oracledb.tablespace.status":
+			dp := metric.Sum().DataPoints().At(0)
+			pdbAttr, ok := dp.Attributes().Get("oracle.db.pdb")
+			assert.True(t, ok, "expected oracle.db.pdb on oracledb.tablespace.status")
+			assert.Equal(t, "PDB1", pdbAttr.Str())
+			checked["status"] = true
+		case "oracledb.tablespace.limit":
+			dp := metric.Gauge().DataPoints().At(0)
+			pdbAttr, ok := dp.Attributes().Get("oracle.db.pdb")
+			assert.True(t, ok, "expected oracle.db.pdb on oracledb.tablespace.limit")
+			assert.Equal(t, "PDB1", pdbAttr.Str())
+			assert.Equal(t, int64(1073741824), dp.IntValue())
+			checked["limit"] = true
+		}
+	}
+	assert.True(t, checked["utilization"] && checked["status"] && checked["limit"],
+		"expected all 3 tablespace health metrics to be present, got: %v", checked)
 }
 
 // TestScraper_ScrapeCDBRoot_NewPdbMetrics checks the nine #49068 metrics carry oracle.db.pdb on a CDB-root scrape.

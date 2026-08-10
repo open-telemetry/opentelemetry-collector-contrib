@@ -18,6 +18,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
+func ptr[T any](v T) *T { return &v }
+
 func TestValidate(t *testing.T) {
 	testCases := []struct {
 		desc            string
@@ -120,6 +122,38 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedSuccess: false,
+		},
+		{
+			desc: "config with negative connection_pool.max_open",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				ConnectionPool:       ConnectionPool{MaxOpen: ptr(-1)},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "config with negative connection_pool.max_idle_time",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				ConnectionPool:       ConnectionPool{MaxIdleTime: ptr(-1 * time.Second)},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "config with valid connection_pool",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				ConnectionPool: ConnectionPool{
+					MaxOpen:     ptr(8),
+					MaxIdle:     ptr(4),
+					MaxLifetime: ptr(5 * time.Minute),
+					MaxIdleTime: ptr(time.Minute),
+				},
+			},
+			expectedSuccess: true,
 		},
 	}
 

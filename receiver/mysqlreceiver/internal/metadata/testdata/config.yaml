@@ -31,6 +31,8 @@ all_set:
     mysql.double_writes:
       enabled: true
       attributes: ["kind"]
+    mysql.file.open:
+      enabled: true
     mysql.handlers:
       enabled: true
       attributes: ["kind"]
@@ -117,6 +119,8 @@ all_set:
     mysql.table.lock_wait.write.time:
       enabled: true
       attributes: ["schema","table","kind"]
+    mysql.table.open:
+      enabled: true
     mysql.table.rows:
       enabled: true
       attributes: ["table","schema"]
@@ -126,6 +130,8 @@ all_set:
     mysql.table_open_cache:
       enabled: true
       attributes: ["status"]
+    mysql.thread.slow_launch:
+      enabled: true
     mysql.threads:
       enabled: true
       attributes: ["kind"]
@@ -184,6 +190,8 @@ reaggregate_set:
     mysql.double_writes:
       enabled: true
       attributes: []
+    mysql.file.open:
+      enabled: true
     mysql.handlers:
       enabled: true
       attributes: []
@@ -270,6 +278,8 @@ reaggregate_set:
     mysql.table.lock_wait.write.time:
       enabled: true
       attributes: []
+    mysql.table.open:
+      enabled: true
     mysql.table.rows:
       enabled: true
       attributes: []
@@ -279,6 +289,8 @@ reaggregate_set:
     mysql.table_open_cache:
       enabled: true
       attributes: []
+    mysql.thread.slow_launch:
+      enabled: true
     mysql.threads:
       enabled: true
       attributes: []
@@ -337,6 +349,8 @@ none_set:
     mysql.double_writes:
       enabled: false
       attributes: ["kind"]
+    mysql.file.open:
+      enabled: false
     mysql.handlers:
       enabled: false
       attributes: ["kind"]
@@ -423,6 +437,8 @@ none_set:
     mysql.table.lock_wait.write.time:
       enabled: false
       attributes: ["schema","table","kind"]
+    mysql.table.open:
+      enabled: false
     mysql.table.rows:
       enabled: false
       attributes: ["table","schema"]
@@ -432,6 +448,8 @@ none_set:
     mysql.table_open_cache:
       enabled: false
       attributes: ["status"]
+    mysql.thread.slow_launch:
+      enabled: false
     mysql.threads:
       enabled: false
       attributes: ["kind"]
