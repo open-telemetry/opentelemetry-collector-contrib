@@ -494,6 +494,39 @@ The processor honours any incoming `ot=th` (sampling threshold) and `ot=rv` (exp
 - **Population-relative rate (equalizing).** The rule's rate `N` is interpreted as the operator's target for the original population: "keep 1-in-N of all traces before any sampling." The effective absolute keep probability is `min(P_upstream, 1/N)`. This is the same composition mode as `equalizing` in [`processor/probabilisticsamplerprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor#equalizing).
 - **Threshold monotonicity.** If a span already carries an `ot=th` stricter than what this processor would emit, the incoming value is preserved. This matches the consistent probability spec: a downstream stage may raise a threshold but never lower it.
 
+### Worked example: composing with a head sampler
+
+```yaml
+processors:
+  probabilistic_sampler:
+    sampling_percentage: 50
+    mode: equalizing # writes ot=th on kept spans
+  dynamic_sampling:
+    rules:
+      - name: default
+        sampler:
+          type: ema_dynamic
+          goal_sampling_percentage: 10
+          key_attributes: ["service.name"]
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [probabilistic_sampler, dynamic_sampling]
+      exporters: [otlphttp]
+```
+
+The stricter stage wins, and the surviving `ot=th` always reflects the
+effective end-to-end probability:
+
+- With the 10% goal above, roughly 10% of the *original* traffic survives (not
+  10% of the upstream sampler's 50%), and every kept span carries the 10%
+  threshold, so adjusted counts reconstruct the original volume.
+- If the rule were looser than upstream (e.g. `always_sample`), all arriving
+  spans are kept and retain the upstream 50% threshold, so adjusted counts
+  remain honest.
+
 ### Accuracy under non-uniform upstream sampling
 
 The equalizing composition above is exact when upstream sampling is uniform across the keys the rule's adaptive sampler uses (`key_attributes`). If upstream head-samples different classes of traffic at different rates and those classes overlap with the tail sampler's keys, the adaptive samplers observe a population that under-represents heavily-downsampled keys and can misjudge their per-key rate. Improving accuracy in that case requires per-key upstream tracking in the sampler and is tracked as follow-up work in [#49517](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49517). Under uniform upstream sampling (the common case, e.g. an SDK `TraceIdRatioBased` sampler) the rates are exact.
