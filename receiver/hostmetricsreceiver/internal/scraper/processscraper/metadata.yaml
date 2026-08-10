@@ -176,7 +176,7 @@ metrics:
 
   process.cpu.time@v1:
     enabled: false
-    description: Total CPU seconds broken down by different cpu.modes.
+    description: Total CPU seconds broken down by different CPU modes.
     unit: s
     stability: beta
     sum:
@@ -205,8 +205,8 @@ metrics:
   process.cpu.utilization@v1:
     enabled: false
     description: >-
-      Percentage of total CPU time used by the process since last scrape,
-      expressed as a value between 0 and 1.
+      Difference in process.cpu.time since the last measurement, 
+      divided by the elapsed time and number of CPUs available to the process.
       On the first scrape, no data point is emitted for this metric.
     unit: "1"
     stability: beta
