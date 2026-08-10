@@ -103,8 +103,12 @@ func ResourceToHostID(res pcommon.Resource) (HostID, bool) {
 }
 
 func azureID(attrs pcommon.Map, cloudAccount string) string {
+	// The azure detector emits either attribute name depending on whether the
+	// processor.resourcedetection.azure.RenameResourceGroupAttribute feature gate is enabled.
 	var resourceGroupName string
-	if attr, ok := attrs.Get("azure.resourcegroup.name"); ok {
+	if attr, ok := attrs.Get("azure.resource_group.name"); ok {
+		resourceGroupName = attr.Str()
+	} else if attr, ok := attrs.Get("azure.resourcegroup.name"); ok {
 		resourceGroupName = attr.Str()
 	}
 	if resourceGroupName == "" {

@@ -87,7 +87,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if compute.VMScaleSetName != "" {
 		d.rb.SetAzureVMScalesetName(compute.VMScaleSetName)
 	}
-	d.rb.SetAzureResourcegroupName(compute.ResourceGroupName)
+	if metadata.ProcessorResourcedetectionAzureRenameResourceGroupAttributeFeatureGate.IsEnabled() {
+		d.rb.SetAzureResourceGroupName(compute.ResourceGroupName)
+	} else {
+		d.rb.SetAzureResourcegroupName(compute.ResourceGroupName)
+	}
 	res := d.rb.Emit()
 
 	if len(d.tagKeyRegexes) != 0 {
