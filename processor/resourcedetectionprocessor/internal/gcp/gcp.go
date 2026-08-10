@@ -35,7 +35,7 @@ const (
 // * Cloud Run.
 // * Cloud Functions.
 // * Bare Metal Solutions (BMS).
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	labelKeyRegexes, err := compileLabelRegexes(cfg)
@@ -44,20 +44,22 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	}
 
 	return &detector{
-		logger:           set.Logger,
-		detector:         gcp.NewDetector(),
-		rb:               localMetadata.NewResourceBuilder(cfg.ResourceAttributes),
-		labelKeyRegexes:  labelKeyRegexes,
-		gceClientBuilder: &instancesRESTBuilder{},
+		logger:                set.Logger,
+		detector:              gcp.NewDetector(),
+		rb:                    localMetadata.NewResourceBuilder(cfg.ResourceAttributes),
+		labelKeyRegexes:       labelKeyRegexes,
+		gceClientBuilder:      &instancesRESTBuilder{},
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 type detector struct {
-	logger           *zap.Logger
-	detector         gcpDetector
-	rb               *localMetadata.ResourceBuilder
-	labelKeyRegexes  []*regexp.Regexp
-	gceClientBuilder instancesBuilder
+	logger                *zap.Logger
+	detector              gcpDetector
+	rb                    *localMetadata.ResourceBuilder
+	labelKeyRegexes       []*regexp.Regexp
+	gceClientBuilder      instancesBuilder
+	failOnMissingMetadata bool
 }
 
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
@@ -70,7 +72,10 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.rb.SetFromCallable(d.rb.SetHostName, d.detector.BareMetalSolutionInstanceID),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.BareMetalSolutionCloudRegion),
 		)
-		return d.rb.Emit(), conventions.SchemaURL, errs
+		if errs != nil && d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errs
+		}
+		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
 	if !metadata.OnGCE() {
@@ -95,7 +100,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.logger.Info("Fallible detector failed. This attribute will not be available.",
 				zap.String("key", string(conventions.HostNameKey)), zap.Error(err))
 		}
-	case gcp.CloudRun:
+	case gcp.CloudRun, gcp.CloudRunWorkerPool:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPCloudRun.Value.AsString())
 		errs = multierr.Combine(errs,
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
@@ -150,8 +155,12 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		)
 		res := d.rb.Emit()
 
+		if errs != nil && d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errs
+		}
+
 		if len(d.labelKeyRegexes) == 0 {
-			return res, conventions.SchemaURL, errs
+			return res, conventions.SchemaURL, nil
 		}
 
 		projectID, perr := d.detector.ProjectID()
@@ -159,20 +168,20 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		name, nerr := d.detector.GCEInstanceName()
 		if perr != nil || zerr != nil || nerr != nil {
 			d.logger.Warn("failed reading GCE metadata for labels", zap.NamedError("project_id", perr), zap.NamedError("zone", zerr), zap.NamedError("instance_name", nerr))
-			return res, conventions.SchemaURL, errs
+			return res, conventions.SchemaURL, nil
 		}
 
 		instClient, cerr := d.gceClientBuilder.buildClient(ctx)
 		if cerr != nil {
 			d.logger.Warn("failed to build GCE instances client", zap.Error(cerr))
-			return res, conventions.SchemaURL, errs
+			return res, conventions.SchemaURL, nil
 		}
 		defer instClient.Close()
 
 		labels, ferr := fetchGCELabels(ctx, instClient, projectID, zone, name, d.labelKeyRegexes)
 		if ferr != nil {
 			d.logger.Warn("failed fetching GCE labels", zap.Error(ferr))
-			return res, conventions.SchemaURL, errs
+			return res, conventions.SchemaURL, nil
 		}
 
 		if len(labels) > 0 {
@@ -182,11 +191,15 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			}
 		}
 
-		return res, conventions.SchemaURL, errs
+		return res, conventions.SchemaURL, nil
 	default:
 		// We don't support this platform yet, so just return with what we have
 	}
-	return d.rb.Emit(), conventions.SchemaURL, errs
+
+	if errs != nil && d.failOnMissingMetadata {
+		return pcommon.NewResource(), "", errs
+	}
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }
 
 type instancesAPI interface {

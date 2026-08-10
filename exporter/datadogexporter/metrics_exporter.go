@@ -7,6 +7,7 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -85,6 +86,10 @@ func newMetricsExporter(
 		options = append(options, otlpmetrics.WithInferDeltaInterval())
 	}
 
+	if featuregates.AddUnitsFeatureGate.IsEnabled() {
+		options = append(options, otlpmetrics.WithUnits())
+	}
+
 	tr, err := otlpmetrics.NewDefaultTranslator(params.TelemetrySettings, attrsTranslator, options...)
 	if err != nil {
 		return nil, err
@@ -109,7 +114,8 @@ func newMetricsExporter(
 	apiClient := clientutil.CreateAPIClient(
 		params.BuildInfo,
 		cfg.Metrics.Endpoint,
-		cfg.ClientConfig)
+		cfg.ClientConfig,
+	)
 	go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 	exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	if cfg.API.FailOnInvalidKey {
@@ -127,10 +133,24 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 		return fmt.Errorf("failed to marshal sketches: %w", err)
 	}
 
+	// Compress the payload with gzip to stay consistent with the metric series
+	// path (SubmitMetrics + GZipSubmitMetricsOptionalParameters). The sketches
+	// intake accepts gzip-encoded payloads just like the series intake, so this
+	// reduces egress without any behavior change. ProtobufHeaders advertises the
+	// gzip Content-Encoding.
+	var buf bytes.Buffer
+	g := gzip.NewWriter(&buf)
+	if _, err = g.Write(payload); err != nil {
+		return fmt.Errorf("failed to compress sketches payload: %w", err)
+	}
+	if err = g.Close(); err != nil {
+		return fmt.Errorf("failed to close gzip writer for sketches payload: %w", err)
+	}
+
 	req, err := http.NewRequestWithContext(ctx,
 		http.MethodPost,
 		exp.cfg.Metrics.Endpoint+sketches.SketchSeriesEndpoint,
-		bytes.NewBuffer(payload),
+		&buf,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to build sketches HTTP request: %w", err)

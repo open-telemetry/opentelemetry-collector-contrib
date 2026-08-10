@@ -15,8 +15,6 @@ status:
     seeking_new: true
   unsupported_platforms: [darwin, linux]
 
-reaggregation_enabled: true
-
 attributes:
   bind_type:
     name_override: type

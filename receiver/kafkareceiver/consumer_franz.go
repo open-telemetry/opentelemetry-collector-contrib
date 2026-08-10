@@ -202,7 +202,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		kgo.WithHooks(hooks),
 	}
 
-	if !c.config.UseLeaderEpoch {
+	if !c.config.ClientConfig.UseLeaderEpoch {
 		opts = append(opts, kgo.AdjustFetchOffsetsFn(makeClearLeaderEpochAdjuster()))
 	}
 
@@ -241,10 +241,8 @@ func (c *franzConsumer) consumeLoop(ctx context.Context) {
 
 	for {
 		// Consume messages until the ctx is cancelled (the client is closed).
-		// NOTE(marclop) we should make the fetch size configurable. It returns
-		// all the internally buffered records. This isn't something that's
-		// configurable in Sarama, and theoretically the max records to iterate
-		// on is a factor of default / max (byte) fetch size.
+		// Passing -1 drains all records franz-go has buffered; the buffer is
+		// bounded by the byte-based fetch limits in ConsumerConfig.
 		if !c.consume(ctx, -1) {
 			return
 		}
@@ -297,8 +295,8 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		}
 		tp := topicPartition{topic: p.Topic, partition: p.Partition}
 		assign, ok := assignments[tp]
-		// NOTE(marclop): This could happen if the partition is lost between
-		// the time the assignments map is copied and the partition is accessed.
+		// The partition may have been revoked between the time the assignments
+		// map was snapshotted above and now.
 		if !ok {
 			c.settings.Logger.Warn(
 				"attempted to process records for a partition not assigned to this consumer",
@@ -411,7 +409,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 			// Otherwise, publish consumer lag.
 			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(
 				context.Background(),
-				(p.HighWatermark-1)-(lastProcessed.Offset),
+				(p.HighWatermark-1)-lastProcessed.Offset,
 				metric.WithAttributeSet(pc.attrs),
 			)
 			if c.config.MessageMarking.After {
@@ -421,7 +419,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 	})
 	// Wait for all records to be processed and commit if autocommit=false.
 	wg.Wait()
-	if !c.config.AutoCommit.Enable {
+	if !c.config.ConsumerConfig.AutoCommit.Enable {
 		if err := c.client.CommitMarkedOffsets(ctx); err != nil {
 			c.settings.Logger.Error("failed to commit offsets", zap.Error(err))
 			// Surface as recoverable error.
@@ -554,8 +552,9 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 	}
 	// Wait for all partition consumers to exit before committing marked offsets.
 	wg.Wait()
-	// NOTE(marclop) commit the marked offsets when the partition is rebalanced
-	// away from this consumer.
+	// Commit synchronously here (rather than relying on autocommit) so progress
+	// is persisted before the partition is reassigned to another consumer,
+	// avoiding duplicate processing by the next owner.
 	if err := c.client.CommitMarkedOffsets(ctx); err != nil {
 		c.settings.Logger.Error("failed to commit marked offsets", zap.Error(err))
 		// Report recoverable error on commit errors.

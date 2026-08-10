@@ -1,4 +1,4 @@
-SELECT
+/* otel-collector-ignore */ SELECT
     thread.processlist_id AS session_id,
     thread.thread_id AS internal_thread_id,
     COALESCE(thread.processlist_user, '') AS session_user,
@@ -13,6 +13,7 @@ SELECT
     COALESCE(thread.processlist_db, '') AS current_database,
     COALESCE(thread.processlist_command, '') AS session_command,
     COALESCE(thread.processlist_state, '') AS session_state,
+    COALESCE(statement.DIGEST_TEXT, statement.sql_text, COALESCE(thread.PROCESSLIST_info, '')) AS digest_text,
     COALESCE(statement.sql_text, COALESCE(thread.PROCESSLIST_info, '')) AS sql_text,
     COALESCE(statement.digest, '') AS fingerprint,
     COALESCE(wait.event_id, statement.event_id, 0) AS activity_event_id,
@@ -104,4 +105,5 @@ WHERE
           Where current_waits.thread_id = thread.thread_id
     ) OR wait.event_id is NULL)
     AND COALESCE(statement.sql_text, thread.PROCESSLIST_info) != ''
+    AND COALESCE(statement.sql_text, thread.PROCESSLIST_info) NOT LIKE '/* otel-collector-ignore */%'
 LIMIT {{ .limit }}

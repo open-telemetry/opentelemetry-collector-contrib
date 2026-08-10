@@ -7,7 +7,7 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Felasticsearch%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Felasticsearch) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Felasticsearch%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Felasticsearch) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_elasticsearch)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_elasticsearch&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@JaredTan95](https://www.github.com/JaredTan95), [@carsonip](https://www.github.com/carsonip), [@lahsivjar](https://www.github.com/lahsivjar) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@JaredTan95](https://www.github.com/JaredTan95), [@blakerouse](https://www.github.com/blakerouse), [@carsonip](https://www.github.com/carsonip), [@lahsivjar](https://www.github.com/lahsivjar) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -76,7 +76,12 @@ service:
 The Elasticsearch exporter supports common [HTTP Configuration Settings][confighttp]. Gzip compression is enabled by default. To disable compression, set `compression` to `none`. Default Compression Level is set to 1 (gzip.BestSpeed).
 As a consequence of supporting [confighttp], the Elasticsearch exporter also supports common [TLS Configuration Settings][configtls].
 
+```yaml
+timeout: 90s
+```
+
 The Elasticsearch exporter sets `timeout` (HTTP request timeout) to 90s by default.
+Note that this is per request and is independent between HTTP request retries.
 All other defaults are as defined by [confighttp].
 
 ### Queuing and batching
@@ -107,8 +112,8 @@ Documents are statically or dynamically routed to the target index / data stream
 2. "Dynamic - Index attribute mode": Route to index name specified in `elasticsearch.index` attribute (precedence: log record / data point / span attribute > scope attribute > resource attribute) if the attribute exists. [^3]
 3. "Dynamic - Data stream routing mode": Route to data stream constructed from `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`,
 where `data_stream.type` is `logs` for log records, `metrics` for data points, and `traces` for spans, and is static. [^3]
-In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`) can be dynamically set from attributes.
-The resulting documents will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
+  In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`, `traces`, `profiles`, `synthetics`) can be dynamically set from attributes.
+  The resulting documents will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
    1. `data_stream.dataset` or `data_stream.namespace` in attributes (precedence: log record / data point / span attribute > scope attribute > resource attribute)
    2. Otherwise, if a scope attribute with the name `encoding.format` exists and contains a string value, `data_stream.dataset` will be set to this value. 
 
@@ -171,6 +176,8 @@ behaviours, which may be configured through the following settings:
 - `mapping`:
   - `mode` (DEPRECATED): The mapping mode if supplied via config file is ignored. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. If not specified via these methods, the default mapping mode is `otel`.
   - `allowed_modes` (defaults to all mapping modes): A list of allowed mapping modes.
+    If `otel` is included in the list, it is used as the default mapping mode.
+    Otherwise, the first entry in the list is used as the default.
 
 The mapping mode can be controlled via the client metadata key `X-Elastic-Mapping-Mode`,
 e.g. via HTTP headers, gRPC metadata.
@@ -282,6 +289,13 @@ This mode may be used for compatibility with existing dashboards that work with 
 | Metrics   | :white_check_mark: |
 | Profiles  | :no_entry_sign:    |
 
+In ECS mapping mode, span events are extracted as separate ECS-formatted log documents following
+the APM data stream convention:
+
+- Span events named `exception` with `exception.type` or `exception.message` present are routed
+  to `logs-apm.error-<namespace>`.
+- All other span events are routed to `logs-apm.app.<service_name>-<namespace>`.
+
 #### Bodymap mapping mode
 
 > [!WARNING]
@@ -351,7 +365,8 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `max_retries` (default=2): Number of HTTP request retries. To disable retries, set `retry::enabled` to `false` instead of setting `max_retries` to `0`.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
-  - `retry_on_status` (default=[429]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it defaults to `[429]`.
+  - `retry_on_status` (default=[429]): Status codes that trigger request level retries. To avoid duplicates, it defaults to `[429]`.
+  - `retry_on_document_status` (default=same as `retry_on_status`): Status codes that trigger document level retries for failed documents in successful bulk HTTP responses. Set to `[]` to disable document level retries by status code while keeping request level retries configured through `retry_on_status`.
 - `sending_queue`: Configures the queueing and batching behaviour. Below are the defaults (which may vary from standard defaults), for full configuration check the [`exporterhelper` docs][exporterhelper].
   - `enabled` (default=true): Enable queueing and batching behaviour.
   - `num_consumers` (default=10): Number of consumers that dequeue batches.
@@ -442,6 +457,19 @@ The index template must define dynamic templates whose names match the values se
 
 - **OTel**: Each metric is written under the `metrics` object; the bulk action maps full field names (e.g. `metrics.my_metric`) to one of the OTel template names above based on metric type (histogram, summary, gauge, or counter) and value type.
 - **ECS**: Each metric is written as a top-level field `metric.<name>`; the bulk action maps that field name to one of the ECS/APM template names (`histogram_metrics`, `summary_metrics`, or `double_metrics` for gauges and counters).
+
+### Bulk Response Filter Path
+
+The Elasticsearch bulk API accepts a [filter_path](https://www.elastic.co/docs/reference/elasticsearch/rest-apis/common-options#common-options-response-filtering) parameter.  This can be used to reduce the response returned by Elasticsearch.  The exporter uses a default `filter_path` that is set by the [go-docappender](https://github.com/elastic/go-docappender).  The default is currently `items.*._index,items.*.status,items.*.failure_store,items.*.error.type,items.*.error.reason` and is defined by the `DefaultFilterPath` in the [go-docappnder](https://github.com/elastic/go-docappender) package.
+
+If you want to change the `filter_path` you may do so by setting `bulk_response_filter_path` to the desired string in the configuration.
+
+
+> [!NOTE]
+> If `items.*._index.items` is not in the BulkResponseFilterPath than for any failed documents, the exporter will not be able to log the index to which the document was being written to.
+
+> [!NOTE]
+> If `items.*._index.items` is not in the BulkResponseFilterPath than the exporter will log rejection of duplicates to ".profiling-stackframes" which were previously suppressed.
 
 ## Exporting profiles
 

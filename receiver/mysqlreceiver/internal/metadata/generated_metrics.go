@@ -1058,79 +1058,102 @@ var MapAttributeWriteLockType = map[string]AttributeWriteLockType{
 
 var MetricsInfo = metricsInfo{
 	MysqlBufferPoolDataPages: metricInfo{
-		Name: "mysql.buffer_pool.data_pages",
+		Name:       "mysql.buffer_pool.data_pages",
+		Attributes: []string{"buffer_pool_data"},
 	},
 	MysqlBufferPoolLimit: metricInfo{
 		Name: "mysql.buffer_pool.limit",
 	},
 	MysqlBufferPoolOperations: metricInfo{
-		Name: "mysql.buffer_pool.operations",
+		Name:       "mysql.buffer_pool.operations",
+		Attributes: []string{"buffer_pool_operations"},
 	},
 	MysqlBufferPoolPageFlushes: metricInfo{
 		Name: "mysql.buffer_pool.page_flushes",
 	},
 	MysqlBufferPoolPages: metricInfo{
-		Name: "mysql.buffer_pool.pages",
+		Name:       "mysql.buffer_pool.pages",
+		Attributes: []string{"buffer_pool_pages"},
 	},
 	MysqlBufferPoolUsage: metricInfo{
-		Name: "mysql.buffer_pool.usage",
+		Name:       "mysql.buffer_pool.usage",
+		Attributes: []string{"buffer_pool_data"},
 	},
 	MysqlClientNetworkIo: metricInfo{
-		Name: "mysql.client.network.io",
+		Name:       "mysql.client.network.io",
+		Attributes: []string{"direction"},
 	},
 	MysqlCommands: metricInfo{
-		Name: "mysql.commands",
+		Name:       "mysql.commands",
+		Attributes: []string{"command"},
 	},
 	MysqlConnectionCount: metricInfo{
 		Name: "mysql.connection.count",
 	},
 	MysqlConnectionErrors: metricInfo{
-		Name: "mysql.connection.errors",
+		Name:       "mysql.connection.errors",
+		Attributes: []string{"connection_error"},
 	},
 	MysqlDoubleWrites: metricInfo{
-		Name: "mysql.double_writes",
+		Name:       "mysql.double_writes",
+		Attributes: []string{"double_writes"},
+	},
+	MysqlFileOpen: metricInfo{
+		Name: "mysql.file.open",
 	},
 	MysqlHandlers: metricInfo{
-		Name: "mysql.handlers",
+		Name:       "mysql.handlers",
+		Attributes: []string{"handler"},
 	},
 	MysqlIndexIoWaitCount: metricInfo{
-		Name: "mysql.index.io.wait.count",
+		Name:       "mysql.index.io.wait.count",
+		Attributes: []string{"io_waits_operations", "table_name", "schema", "index_name"},
 	},
 	MysqlIndexIoWaitTime: metricInfo{
-		Name: "mysql.index.io.wait.time",
+		Name:       "mysql.index.io.wait.time",
+		Attributes: []string{"io_waits_operations", "table_name", "schema", "index_name"},
 	},
 	MysqlJoins: metricInfo{
-		Name: "mysql.joins",
+		Name:       "mysql.joins",
+		Attributes: []string{"join_kind"},
 	},
 	MysqlLocks: metricInfo{
-		Name: "mysql.locks",
+		Name:       "mysql.locks",
+		Attributes: []string{"locks"},
 	},
 	MysqlLogOperations: metricInfo{
-		Name: "mysql.log_operations",
+		Name:       "mysql.log_operations",
+		Attributes: []string{"log_operations"},
 	},
 	MysqlMaxUsedConnections: metricInfo{
 		Name: "mysql.max_used_connections",
 	},
 	MysqlMysqlxConnections: metricInfo{
-		Name: "mysql.mysqlx_connections",
+		Name:       "mysql.mysqlx_connections",
+		Attributes: []string{"connection_status"},
 	},
 	MysqlMysqlxWorkerThreads: metricInfo{
-		Name: "mysql.mysqlx_worker_threads",
+		Name:       "mysql.mysqlx_worker_threads",
+		Attributes: []string{"mysqlx_threads"},
 	},
 	MysqlOpenedResources: metricInfo{
-		Name: "mysql.opened_resources",
+		Name:       "mysql.opened_resources",
+		Attributes: []string{"opened_resources"},
 	},
 	MysqlOperations: metricInfo{
-		Name: "mysql.operations",
+		Name:       "mysql.operations",
+		Attributes: []string{"operations"},
 	},
 	MysqlPageOperations: metricInfo{
-		Name: "mysql.page_operations",
+		Name:       "mysql.page_operations",
+		Attributes: []string{"page_operations"},
 	},
 	MysqlPageSize: metricInfo{
 		Name: "mysql.page_size",
 	},
 	MysqlPreparedStatements: metricInfo{
-		Name: "mysql.prepared_statements",
+		Name:       "mysql.prepared_statements",
+		Attributes: []string{"prepared_statements_command"},
 	},
 	MysqlQueryClientCount: metricInfo{
 		Name: "mysql.query.client.count",
@@ -1148,55 +1171,78 @@ var MetricsInfo = metricsInfo{
 		Name: "mysql.replica.time_behind_source",
 	},
 	MysqlRowLocks: metricInfo{
-		Name: "mysql.row_locks",
+		Name:       "mysql.row_locks",
+		Attributes: []string{"row_locks"},
 	},
 	MysqlRowOperations: metricInfo{
-		Name: "mysql.row_operations",
+		Name:       "mysql.row_operations",
+		Attributes: []string{"row_operations"},
 	},
 	MysqlSorts: metricInfo{
-		Name: "mysql.sorts",
+		Name:       "mysql.sorts",
+		Attributes: []string{"sorts"},
 	},
 	MysqlStatementEventCount: metricInfo{
-		Name: "mysql.statement_event.count",
+		Name:       "mysql.statement_event.count",
+		Attributes: []string{"schema", "digest", "digest_text", "event_state"},
 	},
 	MysqlStatementEventWaitTime: metricInfo{
-		Name: "mysql.statement_event.wait.time",
+		Name:       "mysql.statement_event.wait.time",
+		Attributes: []string{"schema", "digest", "digest_text"},
 	},
 	MysqlTableAverageRowLength: metricInfo{
-		Name: "mysql.table.average_row_length",
+		Name:       "mysql.table.average_row_length",
+		Attributes: []string{"table_name", "schema"},
 	},
 	MysqlTableIoWaitCount: metricInfo{
-		Name: "mysql.table.io.wait.count",
+		Name:       "mysql.table.io.wait.count",
+		Attributes: []string{"io_waits_operations", "table_name", "schema"},
 	},
 	MysqlTableIoWaitTime: metricInfo{
-		Name: "mysql.table.io.wait.time",
+		Name:       "mysql.table.io.wait.time",
+		Attributes: []string{"io_waits_operations", "table_name", "schema"},
 	},
 	MysqlTableLockWaitReadCount: metricInfo{
-		Name: "mysql.table.lock_wait.read.count",
+		Name:       "mysql.table.lock_wait.read.count",
+		Attributes: []string{"schema", "table_name", "read_lock_type"},
 	},
 	MysqlTableLockWaitReadTime: metricInfo{
-		Name: "mysql.table.lock_wait.read.time",
+		Name:       "mysql.table.lock_wait.read.time",
+		Attributes: []string{"schema", "table_name", "read_lock_type"},
 	},
 	MysqlTableLockWaitWriteCount: metricInfo{
-		Name: "mysql.table.lock_wait.write.count",
+		Name:       "mysql.table.lock_wait.write.count",
+		Attributes: []string{"schema", "table_name", "write_lock_type"},
 	},
 	MysqlTableLockWaitWriteTime: metricInfo{
-		Name: "mysql.table.lock_wait.write.time",
+		Name:       "mysql.table.lock_wait.write.time",
+		Attributes: []string{"schema", "table_name", "write_lock_type"},
+	},
+	MysqlTableOpen: metricInfo{
+		Name: "mysql.table.open",
 	},
 	MysqlTableRows: metricInfo{
-		Name: "mysql.table.rows",
+		Name:       "mysql.table.rows",
+		Attributes: []string{"table_name", "schema"},
 	},
 	MysqlTableSize: metricInfo{
-		Name: "mysql.table.size",
+		Name:       "mysql.table.size",
+		Attributes: []string{"table_name", "schema", "table_size_type"},
 	},
 	MysqlTableOpenCache: metricInfo{
-		Name: "mysql.table_open_cache",
+		Name:       "mysql.table_open_cache",
+		Attributes: []string{"cache_status"},
+	},
+	MysqlThreadSlowLaunch: metricInfo{
+		Name: "mysql.thread.slow_launch",
 	},
 	MysqlThreads: metricInfo{
-		Name: "mysql.threads",
+		Name:       "mysql.threads",
+		Attributes: []string{"threads"},
 	},
 	MysqlTmpResources: metricInfo{
-		Name: "mysql.tmp_resources",
+		Name:       "mysql.tmp_resources",
+		Attributes: []string{"tmp_resource"},
 	},
 	MysqlUptime: metricInfo{
 		Name: "mysql.uptime",
@@ -1215,6 +1261,7 @@ type metricsInfo struct {
 	MysqlConnectionCount         metricInfo
 	MysqlConnectionErrors        metricInfo
 	MysqlDoubleWrites            metricInfo
+	MysqlFileOpen                metricInfo
 	MysqlHandlers                metricInfo
 	MysqlIndexIoWaitCount        metricInfo
 	MysqlIndexIoWaitTime         metricInfo
@@ -1246,16 +1293,19 @@ type metricsInfo struct {
 	MysqlTableLockWaitReadTime   metricInfo
 	MysqlTableLockWaitWriteCount metricInfo
 	MysqlTableLockWaitWriteTime  metricInfo
+	MysqlTableOpen               metricInfo
 	MysqlTableRows               metricInfo
 	MysqlTableSize               metricInfo
 	MysqlTableOpenCache          metricInfo
+	MysqlThreadSlowLaunch        metricInfo
 	MysqlThreads                 metricInfo
 	MysqlTmpResources            metricInfo
 	MysqlUptime                  metricInfo
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricMysqlBufferPoolDataPages struct {
@@ -2134,6 +2184,56 @@ func (m *metricMysqlDoubleWrites) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlDoubleWrites(cfg MysqlDoubleWritesMetricConfig) metricMysqlDoubleWrites {
 	m := metricMysqlDoubleWrites{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlFileOpen struct {
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   MysqlFileOpenMetricConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
+}
+
+// init fills mysql.file.open metric with initial data.
+func (m *metricMysqlFileOpen) init() {
+	m.data.SetName("mysql.file.open")
+	m.data.SetDescription("The number of currently open files.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlFileOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlFileOpen) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlFileOpen) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlFileOpen(cfg MysqlFileOpenMetricConfig) metricMysqlFileOpen {
+	m := metricMysqlFileOpen{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4762,6 +4862,56 @@ func newMetricMysqlTableLockWaitWriteTime(cfg MysqlTableLockWaitWriteTimeMetricC
 	return m
 }
 
+type metricMysqlTableOpen struct {
+	data     pmetric.Metric             // data buffer for generated metric.
+	config   MysqlTableOpenMetricConfig // metric config provided by user.
+	capacity int                        // max observed number of data points added to the metric.
+}
+
+// init fills mysql.table.open metric with initial data.
+func (m *metricMysqlTableOpen) init() {
+	m.data.SetName("mysql.table.open")
+	m.data.SetDescription("The number of currently open tables.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlTableOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlTableOpen) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlTableOpen) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlTableOpen(cfg MysqlTableOpenMetricConfig) metricMysqlTableOpen {
+	m := metricMysqlTableOpen{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlTableRows struct {
 	data          pmetric.Metric             // data buffer for generated metric.
 	config        MysqlTableRowsMetricConfig // metric config provided by user.
@@ -5044,6 +5194,58 @@ func newMetricMysqlTableOpenCache(cfg MysqlTableOpenCacheMetricConfig) metricMys
 	return m
 }
 
+type metricMysqlThreadSlowLaunch struct {
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   MysqlThreadSlowLaunchMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
+}
+
+// init fills mysql.thread.slow_launch metric with initial data.
+func (m *metricMysqlThreadSlowLaunch) init() {
+	m.data.SetName("mysql.thread.slow_launch")
+	m.data.SetDescription("The number of threads that have taken more than slow_launch_time seconds to create.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlThreadSlowLaunch) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlThreadSlowLaunch) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlThreadSlowLaunch) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlThreadSlowLaunch(cfg MysqlThreadSlowLaunchMetricConfig) metricMysqlThreadSlowLaunch {
+	m := metricMysqlThreadSlowLaunch{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlThreads struct {
 	data          pmetric.Metric           // data buffer for generated metric.
 	config        MysqlThreadsMetricConfig // metric config provided by user.
@@ -5299,6 +5501,7 @@ type MetricsBuilder struct {
 	metricMysqlConnectionCount         metricMysqlConnectionCount
 	metricMysqlConnectionErrors        metricMysqlConnectionErrors
 	metricMysqlDoubleWrites            metricMysqlDoubleWrites
+	metricMysqlFileOpen                metricMysqlFileOpen
 	metricMysqlHandlers                metricMysqlHandlers
 	metricMysqlIndexIoWaitCount        metricMysqlIndexIoWaitCount
 	metricMysqlIndexIoWaitTime         metricMysqlIndexIoWaitTime
@@ -5330,9 +5533,11 @@ type MetricsBuilder struct {
 	metricMysqlTableLockWaitReadTime   metricMysqlTableLockWaitReadTime
 	metricMysqlTableLockWaitWriteCount metricMysqlTableLockWaitWriteCount
 	metricMysqlTableLockWaitWriteTime  metricMysqlTableLockWaitWriteTime
+	metricMysqlTableOpen               metricMysqlTableOpen
 	metricMysqlTableRows               metricMysqlTableRows
 	metricMysqlTableSize               metricMysqlTableSize
 	metricMysqlTableOpenCache          metricMysqlTableOpenCache
+	metricMysqlThreadSlowLaunch        metricMysqlThreadSlowLaunch
 	metricMysqlThreads                 metricMysqlThreads
 	metricMysqlTmpResources            metricMysqlTmpResources
 	metricMysqlUptime                  metricMysqlUptime
@@ -5372,6 +5577,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlConnectionCount:         newMetricMysqlConnectionCount(mbc.Metrics.MysqlConnectionCount),
 		metricMysqlConnectionErrors:        newMetricMysqlConnectionErrors(mbc.Metrics.MysqlConnectionErrors),
 		metricMysqlDoubleWrites:            newMetricMysqlDoubleWrites(mbc.Metrics.MysqlDoubleWrites),
+		metricMysqlFileOpen:                newMetricMysqlFileOpen(mbc.Metrics.MysqlFileOpen),
 		metricMysqlHandlers:                newMetricMysqlHandlers(mbc.Metrics.MysqlHandlers),
 		metricMysqlIndexIoWaitCount:        newMetricMysqlIndexIoWaitCount(mbc.Metrics.MysqlIndexIoWaitCount),
 		metricMysqlIndexIoWaitTime:         newMetricMysqlIndexIoWaitTime(mbc.Metrics.MysqlIndexIoWaitTime),
@@ -5403,20 +5609,52 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlTableLockWaitReadTime:   newMetricMysqlTableLockWaitReadTime(mbc.Metrics.MysqlTableLockWaitReadTime),
 		metricMysqlTableLockWaitWriteCount: newMetricMysqlTableLockWaitWriteCount(mbc.Metrics.MysqlTableLockWaitWriteCount),
 		metricMysqlTableLockWaitWriteTime:  newMetricMysqlTableLockWaitWriteTime(mbc.Metrics.MysqlTableLockWaitWriteTime),
+		metricMysqlTableOpen:               newMetricMysqlTableOpen(mbc.Metrics.MysqlTableOpen),
 		metricMysqlTableRows:               newMetricMysqlTableRows(mbc.Metrics.MysqlTableRows),
 		metricMysqlTableSize:               newMetricMysqlTableSize(mbc.Metrics.MysqlTableSize),
 		metricMysqlTableOpenCache:          newMetricMysqlTableOpenCache(mbc.Metrics.MysqlTableOpenCache),
+		metricMysqlThreadSlowLaunch:        newMetricMysqlThreadSlowLaunch(mbc.Metrics.MysqlThreadSlowLaunch),
 		metricMysqlThreads:                 newMetricMysqlThreads(mbc.Metrics.MysqlThreads),
 		metricMysqlTmpResources:            newMetricMysqlTmpResources(mbc.Metrics.MysqlTmpResources),
 		metricMysqlUptime:                  newMetricMysqlUptime(mbc.Metrics.MysqlUptime),
 		resourceAttributeIncludeFilter:     make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:     make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.DbSystemName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["db.system.name"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.DbSystemName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["db.system.name"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.DbSystemVersion.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["db.system.version"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemVersion.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.DbSystemVersion.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["db.system.version"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemVersion.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["mysql.instance.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["mysql.instance.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["service.instance.id"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServiceInstanceID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["service.instance.id"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceInstanceID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServiceName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["service.name"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServiceName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["service.name"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServiceNamespace.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["service.namespace"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceNamespace.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServiceNamespace.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["service.namespace"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceNamespace.MetricsExclude)
 	}
 
 	for _, op := range options {
@@ -5498,6 +5736,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlConnectionCount.emit(ils.Metrics())
 	mb.metricMysqlConnectionErrors.emit(ils.Metrics())
 	mb.metricMysqlDoubleWrites.emit(ils.Metrics())
+	mb.metricMysqlFileOpen.emit(ils.Metrics())
 	mb.metricMysqlHandlers.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitTime.emit(ils.Metrics())
@@ -5529,9 +5768,11 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlTableLockWaitReadTime.emit(ils.Metrics())
 	mb.metricMysqlTableLockWaitWriteCount.emit(ils.Metrics())
 	mb.metricMysqlTableLockWaitWriteTime.emit(ils.Metrics())
+	mb.metricMysqlTableOpen.emit(ils.Metrics())
 	mb.metricMysqlTableRows.emit(ils.Metrics())
 	mb.metricMysqlTableSize.emit(ils.Metrics())
 	mb.metricMysqlTableOpenCache.emit(ils.Metrics())
+	mb.metricMysqlThreadSlowLaunch.emit(ils.Metrics())
 	mb.metricMysqlThreads.emit(ils.Metrics())
 	mb.metricMysqlTmpResources.emit(ils.Metrics())
 	mb.metricMysqlUptime.emit(ils.Metrics())
@@ -5663,6 +5904,16 @@ func (mb *MetricsBuilder) RecordMysqlDoubleWritesDataPoint(ts pcommon.Timestamp,
 		return fmt.Errorf("failed to parse int64 for MysqlDoubleWrites, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlDoubleWrites.recordDataPoint(mb.startTime, ts, val, doubleWritesAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlFileOpenDataPoint adds a data point to mysql.file.open metric.
+func (mb *MetricsBuilder) RecordMysqlFileOpenDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlFileOpen, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlFileOpen.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
@@ -5911,6 +6162,16 @@ func (mb *MetricsBuilder) RecordMysqlTableLockWaitWriteTimeDataPoint(ts pcommon.
 	mb.metricMysqlTableLockWaitWriteTime.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue, tableNameAttributeValue, writeLockTypeAttributeValue.String())
 }
 
+// RecordMysqlTableOpenDataPoint adds a data point to mysql.table.open metric.
+func (mb *MetricsBuilder) RecordMysqlTableOpenDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlTableOpen, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlTableOpen.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordMysqlTableRowsDataPoint adds a data point to mysql.table.rows metric.
 func (mb *MetricsBuilder) RecordMysqlTableRowsDataPoint(ts pcommon.Timestamp, val int64, tableNameAttributeValue string, schemaAttributeValue string) {
 	mb.metricMysqlTableRows.recordDataPoint(mb.startTime, ts, val, tableNameAttributeValue, schemaAttributeValue)
@@ -5928,6 +6189,16 @@ func (mb *MetricsBuilder) RecordMysqlTableOpenCacheDataPoint(ts pcommon.Timestam
 		return fmt.Errorf("failed to parse int64 for MysqlTableOpenCache, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlTableOpenCache.recordDataPoint(mb.startTime, ts, val, cacheStatusAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlThreadSlowLaunchDataPoint adds a data point to mysql.thread.slow_launch metric.
+func (mb *MetricsBuilder) RecordMysqlThreadSlowLaunchDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlThreadSlowLaunch, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlThreadSlowLaunch.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

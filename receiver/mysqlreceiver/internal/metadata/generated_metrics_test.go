@@ -67,43 +67,43 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["MysqlBufferPoolDataPages"] = mb.metricMysqlBufferPoolDataPages.config.AggregationStrategy
-			aggMap["MysqlBufferPoolOperations"] = mb.metricMysqlBufferPoolOperations.config.AggregationStrategy
-			aggMap["MysqlBufferPoolPages"] = mb.metricMysqlBufferPoolPages.config.AggregationStrategy
-			aggMap["MysqlBufferPoolUsage"] = mb.metricMysqlBufferPoolUsage.config.AggregationStrategy
-			aggMap["MysqlClientNetworkIo"] = mb.metricMysqlClientNetworkIo.config.AggregationStrategy
-			aggMap["MysqlCommands"] = mb.metricMysqlCommands.config.AggregationStrategy
-			aggMap["MysqlConnectionErrors"] = mb.metricMysqlConnectionErrors.config.AggregationStrategy
-			aggMap["MysqlDoubleWrites"] = mb.metricMysqlDoubleWrites.config.AggregationStrategy
-			aggMap["MysqlHandlers"] = mb.metricMysqlHandlers.config.AggregationStrategy
-			aggMap["MysqlIndexIoWaitCount"] = mb.metricMysqlIndexIoWaitCount.config.AggregationStrategy
-			aggMap["MysqlIndexIoWaitTime"] = mb.metricMysqlIndexIoWaitTime.config.AggregationStrategy
-			aggMap["MysqlJoins"] = mb.metricMysqlJoins.config.AggregationStrategy
-			aggMap["MysqlLocks"] = mb.metricMysqlLocks.config.AggregationStrategy
-			aggMap["MysqlLogOperations"] = mb.metricMysqlLogOperations.config.AggregationStrategy
-			aggMap["MysqlMysqlxConnections"] = mb.metricMysqlMysqlxConnections.config.AggregationStrategy
-			aggMap["MysqlMysqlxWorkerThreads"] = mb.metricMysqlMysqlxWorkerThreads.config.AggregationStrategy
-			aggMap["MysqlOpenedResources"] = mb.metricMysqlOpenedResources.config.AggregationStrategy
-			aggMap["MysqlOperations"] = mb.metricMysqlOperations.config.AggregationStrategy
-			aggMap["MysqlPageOperations"] = mb.metricMysqlPageOperations.config.AggregationStrategy
-			aggMap["MysqlPreparedStatements"] = mb.metricMysqlPreparedStatements.config.AggregationStrategy
-			aggMap["MysqlRowLocks"] = mb.metricMysqlRowLocks.config.AggregationStrategy
-			aggMap["MysqlRowOperations"] = mb.metricMysqlRowOperations.config.AggregationStrategy
-			aggMap["MysqlSorts"] = mb.metricMysqlSorts.config.AggregationStrategy
-			aggMap["MysqlStatementEventCount"] = mb.metricMysqlStatementEventCount.config.AggregationStrategy
-			aggMap["MysqlStatementEventWaitTime"] = mb.metricMysqlStatementEventWaitTime.config.AggregationStrategy
-			aggMap["MysqlTableAverageRowLength"] = mb.metricMysqlTableAverageRowLength.config.AggregationStrategy
-			aggMap["MysqlTableIoWaitCount"] = mb.metricMysqlTableIoWaitCount.config.AggregationStrategy
-			aggMap["MysqlTableIoWaitTime"] = mb.metricMysqlTableIoWaitTime.config.AggregationStrategy
-			aggMap["MysqlTableLockWaitReadCount"] = mb.metricMysqlTableLockWaitReadCount.config.AggregationStrategy
-			aggMap["MysqlTableLockWaitReadTime"] = mb.metricMysqlTableLockWaitReadTime.config.AggregationStrategy
-			aggMap["MysqlTableLockWaitWriteCount"] = mb.metricMysqlTableLockWaitWriteCount.config.AggregationStrategy
-			aggMap["MysqlTableLockWaitWriteTime"] = mb.metricMysqlTableLockWaitWriteTime.config.AggregationStrategy
-			aggMap["MysqlTableRows"] = mb.metricMysqlTableRows.config.AggregationStrategy
-			aggMap["MysqlTableSize"] = mb.metricMysqlTableSize.config.AggregationStrategy
-			aggMap["MysqlTableOpenCache"] = mb.metricMysqlTableOpenCache.config.AggregationStrategy
-			aggMap["MysqlThreads"] = mb.metricMysqlThreads.config.AggregationStrategy
-			aggMap["MysqlTmpResources"] = mb.metricMysqlTmpResources.config.AggregationStrategy
+			aggMap["mysql.buffer_pool.data_pages"] = mb.metricMysqlBufferPoolDataPages.config.AggregationStrategy
+			aggMap["mysql.buffer_pool.operations"] = mb.metricMysqlBufferPoolOperations.config.AggregationStrategy
+			aggMap["mysql.buffer_pool.pages"] = mb.metricMysqlBufferPoolPages.config.AggregationStrategy
+			aggMap["mysql.buffer_pool.usage"] = mb.metricMysqlBufferPoolUsage.config.AggregationStrategy
+			aggMap["mysql.client.network.io"] = mb.metricMysqlClientNetworkIo.config.AggregationStrategy
+			aggMap["mysql.commands"] = mb.metricMysqlCommands.config.AggregationStrategy
+			aggMap["mysql.connection.errors"] = mb.metricMysqlConnectionErrors.config.AggregationStrategy
+			aggMap["mysql.double_writes"] = mb.metricMysqlDoubleWrites.config.AggregationStrategy
+			aggMap["mysql.handlers"] = mb.metricMysqlHandlers.config.AggregationStrategy
+			aggMap["mysql.index.io.wait.count"] = mb.metricMysqlIndexIoWaitCount.config.AggregationStrategy
+			aggMap["mysql.index.io.wait.time"] = mb.metricMysqlIndexIoWaitTime.config.AggregationStrategy
+			aggMap["mysql.joins"] = mb.metricMysqlJoins.config.AggregationStrategy
+			aggMap["mysql.locks"] = mb.metricMysqlLocks.config.AggregationStrategy
+			aggMap["mysql.log_operations"] = mb.metricMysqlLogOperations.config.AggregationStrategy
+			aggMap["mysql.mysqlx_connections"] = mb.metricMysqlMysqlxConnections.config.AggregationStrategy
+			aggMap["mysql.mysqlx_worker_threads"] = mb.metricMysqlMysqlxWorkerThreads.config.AggregationStrategy
+			aggMap["mysql.opened_resources"] = mb.metricMysqlOpenedResources.config.AggregationStrategy
+			aggMap["mysql.operations"] = mb.metricMysqlOperations.config.AggregationStrategy
+			aggMap["mysql.page_operations"] = mb.metricMysqlPageOperations.config.AggregationStrategy
+			aggMap["mysql.prepared_statements"] = mb.metricMysqlPreparedStatements.config.AggregationStrategy
+			aggMap["mysql.row_locks"] = mb.metricMysqlRowLocks.config.AggregationStrategy
+			aggMap["mysql.row_operations"] = mb.metricMysqlRowOperations.config.AggregationStrategy
+			aggMap["mysql.sorts"] = mb.metricMysqlSorts.config.AggregationStrategy
+			aggMap["mysql.statement_event.count"] = mb.metricMysqlStatementEventCount.config.AggregationStrategy
+			aggMap["mysql.statement_event.wait.time"] = mb.metricMysqlStatementEventWaitTime.config.AggregationStrategy
+			aggMap["mysql.table.average_row_length"] = mb.metricMysqlTableAverageRowLength.config.AggregationStrategy
+			aggMap["mysql.table.io.wait.count"] = mb.metricMysqlTableIoWaitCount.config.AggregationStrategy
+			aggMap["mysql.table.io.wait.time"] = mb.metricMysqlTableIoWaitTime.config.AggregationStrategy
+			aggMap["mysql.table.lock_wait.read.count"] = mb.metricMysqlTableLockWaitReadCount.config.AggregationStrategy
+			aggMap["mysql.table.lock_wait.read.time"] = mb.metricMysqlTableLockWaitReadTime.config.AggregationStrategy
+			aggMap["mysql.table.lock_wait.write.count"] = mb.metricMysqlTableLockWaitWriteCount.config.AggregationStrategy
+			aggMap["mysql.table.lock_wait.write.time"] = mb.metricMysqlTableLockWaitWriteTime.config.AggregationStrategy
+			aggMap["mysql.table.rows"] = mb.metricMysqlTableRows.config.AggregationStrategy
+			aggMap["mysql.table.size"] = mb.metricMysqlTableSize.config.AggregationStrategy
+			aggMap["mysql.table_open_cache"] = mb.metricMysqlTableOpenCache.config.AggregationStrategy
+			aggMap["mysql.threads"] = mb.metricMysqlThreads.config.AggregationStrategy
+			aggMap["mysql.tmp_resources"] = mb.metricMysqlTmpResources.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -112,36 +112,30 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlBufferPoolDataPagesDataPoint(ts, 1, AttributeBufferPoolDataDirty)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlBufferPoolDataPagesDataPoint(ts, 3, AttributeBufferPoolDataClean)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlBufferPoolLimitDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlBufferPoolOperationsDataPoint(ts, "1", AttributeBufferPoolOperationsReadAheadRnd)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlBufferPoolOperationsDataPoint(ts, "3", AttributeBufferPoolOperationsReadAhead)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlBufferPoolPageFlushesDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlBufferPoolPagesDataPoint(ts, "1", AttributeBufferPoolPagesData)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlBufferPoolPagesDataPoint(ts, "3", AttributeBufferPoolPagesFree)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlBufferPoolUsageDataPoint(ts, 1, AttributeBufferPoolDataDirty)
@@ -169,7 +163,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlConnectionErrorsDataPoint(ts, "3", AttributeConnectionErrorInternal)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlDoubleWritesDataPoint(ts, "1", AttributeDoubleWritesPagesWritten)
@@ -177,20 +170,20 @@ func TestMetricsBuilder(t *testing.T) {
 				mb.RecordMysqlDoubleWritesDataPoint(ts, "3", AttributeDoubleWritesWrites)
 			}
 
+			allMetricsCount++
+			mb.RecordMysqlFileOpenDataPoint(ts, "1")
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlHandlersDataPoint(ts, "1", AttributeHandlerCommit)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlHandlersDataPoint(ts, "3", AttributeHandlerDelete)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlIndexIoWaitCountDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val", "index_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlIndexIoWaitCountDataPoint(ts, 3, AttributeIoWaitsOperationsFetch, "table_name-val-2", "schema-val-2", "index_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlIndexIoWaitTimeDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val", "index_name-val")
@@ -203,14 +196,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlJoinsDataPoint(ts, "3", AttributeJoinKindFullRange)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlLocksDataPoint(ts, "1", AttributeLocksImmediate)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlLocksDataPoint(ts, "3", AttributeLocksWaited)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlLogOperationsDataPoint(ts, "1", AttributeLogOperationsWaits)
@@ -220,7 +211,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMysqlMaxUsedConnectionsDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlMysqlxConnectionsDataPoint(ts, "1", AttributeConnectionStatusAccepted)
@@ -233,21 +223,18 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlMysqlxWorkerThreadsDataPoint(ts, "3", AttributeMysqlxThreadsActive)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlOpenedResourcesDataPoint(ts, "1", AttributeOpenedResourcesFile)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlOpenedResourcesDataPoint(ts, "3", AttributeOpenedResourcesTableDefinition)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlOperationsDataPoint(ts, "1", AttributeOperationsFsyncs)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlOperationsDataPoint(ts, "3", AttributeOperationsReads)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlPageOperationsDataPoint(ts, "1", AttributePageOperationsCreated)
@@ -257,7 +244,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMysqlPageSizeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlPreparedStatementsDataPoint(ts, "1", AttributePreparedStatementsCommandExecute)
@@ -279,21 +265,18 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMysqlReplicaTimeBehindSourceDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlRowLocksDataPoint(ts, "1", AttributeRowLocksWaits)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlRowLocksDataPoint(ts, "3", AttributeRowLocksTime)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlRowOperationsDataPoint(ts, "1", AttributeRowOperationsDeleted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlRowOperationsDataPoint(ts, "3", AttributeRowOperationsInserted)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlSortsDataPoint(ts, "1", AttributeSortsMergePasses)
@@ -318,14 +301,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlTableAverageRowLengthDataPoint(ts, 3, "table_name-val-2", "schema-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlTableIoWaitCountDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlTableIoWaitCountDataPoint(ts, 3, AttributeIoWaitsOperationsFetch, "table_name-val-2", "schema-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlTableIoWaitTimeDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val")
@@ -358,6 +339,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordMysqlTableOpenDataPoint(ts, "1")
+
+			allMetricsCount++
 			mb.RecordMysqlTableRowsDataPoint(ts, 1, "table_name-val", "schema-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlTableRowsDataPoint(ts, 3, "table_name-val-2", "schema-val-2")
@@ -375,26 +359,31 @@ func TestMetricsBuilder(t *testing.T) {
 				mb.RecordMysqlTableOpenCacheDataPoint(ts, "3", AttributeCacheStatusMiss)
 			}
 
+			allMetricsCount++
+			mb.RecordMysqlThreadSlowLaunchDataPoint(ts, "1")
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlThreadsDataPoint(ts, "1", AttributeThreadsCached)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlThreadsDataPoint(ts, "3", AttributeThreadsConnected)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlTmpResourcesDataPoint(ts, "1", AttributeTmpResourceDiskTables)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlTmpResourcesDataPoint(ts, "3", AttributeTmpResourceFiles)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlUptimeDataPoint(ts, "1")
 
 			rb := mb.NewResourceBuilder()
+			rb.SetDbSystemName("db.system.name-val")
+			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
+			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
+			rb.SetServiceNamespace("service.namespace-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
@@ -856,6 +845,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("kind")
 						assert.False(t, ok)
 					}
+				case "mysql.file.open":
+					assert.False(t, validatedMetrics["mysql.file.open"], "Found a duplicate in the metrics slice: mysql.file.open")
+					validatedMetrics["mysql.file.open"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of currently open files.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.handlers":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.handlers"], "Found a duplicate in the metrics slice: mysql.handlers")
@@ -2130,6 +2131,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("kind")
 						assert.False(t, ok)
 					}
+				case "mysql.table.open":
+					assert.False(t, validatedMetrics["mysql.table.open"], "Found a duplicate in the metrics slice: mysql.table.open")
+					validatedMetrics["mysql.table.open"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of currently open tables.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.table.rows":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.table.rows"], "Found a duplicate in the metrics slice: mysql.table.rows")
@@ -2277,6 +2290,20 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("status")
 						assert.False(t, ok)
 					}
+				case "mysql.thread.slow_launch":
+					assert.False(t, validatedMetrics["mysql.thread.slow_launch"], "Found a duplicate in the metrics slice: mysql.thread.slow_launch")
+					validatedMetrics["mysql.thread.slow_launch"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of threads that have taken more than slow_launch_time seconds to create.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.threads":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.threads"], "Found a duplicate in the metrics slice: mysql.threads")

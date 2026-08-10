@@ -29,7 +29,7 @@ func getCollectorVersion() string {
 		for _, mod := range info.Deps {
 			if mod.Path == "go.opentelemetry.io/collector" {
 				// Extract the semantic version without metadata.
-				semVer := strings.SplitN(mod.Version, "-", 2)[0]
+				semVer, _, _ := strings.Cut(mod.Version, "-")
 				cachedVersion = "otelc-" + semVer + "-" + osInformation
 				return
 			}

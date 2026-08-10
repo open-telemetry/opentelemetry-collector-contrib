@@ -5,6 +5,7 @@ package hetzner // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	hcloudmeta "github.com/hetznercloud/hcloud-go/v2/hcloud/metadata"
@@ -31,48 +32,68 @@ var newHcloudClient = func() *hcloudmeta.Client {
 
 // Detector is a Hetzner metadata detector.
 type Detector struct {
-	client *hcloudmeta.Client
-	logger *zap.Logger
-	rb     *metadata.ResourceBuilder
+	client                *hcloudmeta.Client
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new Hetzner metadata detector.
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	return &Detector{
-		client: newHcloudClient(),
-		logger: p.Logger,
-		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		client:                newHcloudClient(),
+		logger:                p.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones.
-func (d *Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
+func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
 	// Quick check: if not running in Hetzner Cloud, return empty.
-	if !d.client.IsHcloudServer() {
+	if !d.client.IsHcloudServerWithContext(ctx) {
 		d.logger.Debug("Hetzner detector: not running on a Hetzner Cloud server")
 		return pcommon.NewResource(), "", nil
 	}
 
-	id, err := d.client.InstanceID()
+	var errs []error
+
+	id, err := d.client.InstanceIDWithContext(ctx)
 	if err != nil {
 		d.logger.Debug("Hetzner detector: instance ID retrieval failed", zap.Error(err))
+		if d.failOnMissingMetadata {
+			errs = append(errs, err)
+		}
 	}
 
-	hostname, err := d.client.Hostname()
+	hostname, err := d.client.HostnameWithContext(ctx)
 	if err != nil {
 		d.logger.Debug("Hetzner detector: hostname retrieval failed", zap.Error(err))
+		if d.failOnMissingMetadata {
+			errs = append(errs, err)
+		}
 	}
 
-	region, err := d.client.Region()
+	region, err := d.client.RegionWithContext(ctx)
 	if err != nil {
 		d.logger.Debug("Hetzner detector: region retrieval failed", zap.Error(err))
+		if d.failOnMissingMetadata {
+			errs = append(errs, err)
+		}
 	}
 
-	availabilityZone, err := d.client.AvailabilityZone()
+	availabilityZone, err := d.client.AvailabilityZoneWithContext(ctx)
 	if err != nil {
 		d.logger.Debug("Hetzner detector: availability zone retrieval failed", zap.Error(err))
+		if d.failOnMissingMetadata {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) > 0 {
+		return pcommon.NewResource(), "", errors.Join(errs...)
 	}
 
 	d.rb.SetCloudProvider(conventions.CloudProviderHetzner.Value.AsString())

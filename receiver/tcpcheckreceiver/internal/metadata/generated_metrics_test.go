@@ -58,7 +58,7 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["TcpcheckError"] = mb.metricTcpcheckError.config.AggregationStrategy
+			aggMap["tcpcheck.error"] = mb.metricTcpcheckError.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -67,18 +67,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTcpcheckDurationDataPoint(ts, 1, "tcpcheck.endpoint-val")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTcpcheckErrorDataPoint(ts, 1, "tcpcheck.endpoint-val", AttributeErrorCodeConnectionRefused)
 			if tt.name == "reaggregate_set" {
 				mb.RecordTcpcheckErrorDataPoint(ts, 3, "tcpcheck.endpoint-val", AttributeErrorCodeConnectionTimeout)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTcpcheckStatusDataPoint(ts, 1, "tcpcheck.endpoint-val")

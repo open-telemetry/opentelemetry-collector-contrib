@@ -11,6 +11,8 @@ type RecordIntDataPointFunc func(*MetricsBuilder, pcommon.Timestamp, int64)
 
 type RecordIntDataPointWithDirectionFunc func(*MetricsBuilder, pcommon.Timestamp, int64, string, AttributeDirection)
 
+type RecordIntDataPointWithFsTypeFunc func(*MetricsBuilder, pcommon.Timestamp, int64, AttributeFsType)
+
 type MetricsBuilders struct {
 	NodeMetricsBuilder      *MetricsBuilder
 	PodMetricsBuilder       *MetricsBuilder
@@ -103,15 +105,23 @@ var SystemContainerMemoryMetrics = MemoryMetrics{
 }
 
 type FilesystemMetrics struct {
-	Available RecordIntDataPointFunc
-	Capacity  RecordIntDataPointFunc
-	Usage     RecordIntDataPointFunc
+	Available  RecordIntDataPointFunc
+	Capacity   RecordIntDataPointFunc
+	Usage      RecordIntDataPointFunc
+	Inodes     RecordIntDataPointFunc
+	InodesFree RecordIntDataPointFunc
+}
+
+type EphemeralStorageMetrics struct {
+	Usage RecordIntDataPointWithFsTypeFunc
 }
 
 var NodeFilesystemMetrics = FilesystemMetrics{
-	Available: (*MetricsBuilder).RecordK8sNodeFilesystemAvailableDataPoint,
-	Capacity:  (*MetricsBuilder).RecordK8sNodeFilesystemCapacityDataPoint,
-	Usage:     (*MetricsBuilder).RecordK8sNodeFilesystemUsageDataPoint,
+	Available:  (*MetricsBuilder).RecordK8sNodeFilesystemAvailableDataPoint,
+	Capacity:   (*MetricsBuilder).RecordK8sNodeFilesystemCapacityDataPoint,
+	Usage:      (*MetricsBuilder).RecordK8sNodeFilesystemUsageDataPoint,
+	Inodes:     (*MetricsBuilder).RecordK8sNodeFilesystemInodeCountDataPoint,
+	InodesFree: (*MetricsBuilder).RecordK8sNodeFilesystemInodeFreeDataPoint,
 }
 
 var PodFilesystemMetrics = FilesystemMetrics{
@@ -124,6 +134,10 @@ var ContainerFilesystemMetrics = FilesystemMetrics{
 	Available: (*MetricsBuilder).RecordContainerFilesystemAvailableDataPoint,
 	Capacity:  (*MetricsBuilder).RecordContainerFilesystemCapacityDataPoint,
 	Usage:     (*MetricsBuilder).RecordContainerFilesystemUsageDataPoint,
+}
+
+var ContainerEphemeralStorageMetrics = EphemeralStorageMetrics{
+	Usage: (*MetricsBuilder).RecordK8sContainerEphemeralStorageUsageDataPoint,
 }
 
 type NetworkMetrics struct {

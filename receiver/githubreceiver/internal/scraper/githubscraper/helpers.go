@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v85/github"
+	"github.com/google/go-github/v89/github"
 )
 
 const (
@@ -124,13 +124,16 @@ func genDefaultSearchQuery(ownertype, ghorg string) string {
 // https://docs.github.com/en/enterprise-server@3.8/graphql/guides/forming-calls-with-graphql#the-graphql-endpoint
 // https://docs.github.com/en/enterprise-server@3.8/rest/guides/getting-started-with-the-rest-api#making-a-request
 func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *github.Client, err error) {
-	rClient = github.NewClient(ghs.client)
+	rClient, err = github.NewClient(github.WithHTTPClient(ghs.client))
+	if err != nil {
+		return nil, nil, err
+	}
 	gClient = graphql.NewClient(defaultGraphURL, ghs.client)
 
-	if ghs.cfg.Endpoint != "" {
+	if ghs.cfg.ClientConfig.Endpoint != "" {
 		// Given endpoint set as `https://myGHEserver.com` we need to join the path
 		// with `api/graphql`
-		gu, err := url.JoinPath(ghs.cfg.Endpoint, "api/graphql")
+		gu, err := url.JoinPath(ghs.cfg.ClientConfig.Endpoint, "api/graphql")
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error joining graphql endpoint: %v", err)
 			return nil, nil, err
@@ -138,8 +141,8 @@ func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *gith
 		gClient = graphql.NewClient(gu, ghs.client)
 
 		// The rest client needs the endpoint to be the root of the server
-		ru := ghs.cfg.Endpoint
-		rClient, err = github.NewClient(ghs.client).WithEnterpriseURLs(ru, ru)
+		ru := ghs.cfg.ClientConfig.Endpoint
+		rClient, err = github.NewClient(github.WithHTTPClient(ghs.client), github.WithEnterpriseURLs(ru, ru))
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error creating enterprise client: %v", err)
 			return nil, nil, err
@@ -247,8 +250,9 @@ func (ghs *githubScraper) getMergedPullRequests(
 
 		// Process PRs in reverse chronological order (most recent first)
 		// Stop immediately when we hit a PR older than our cutoff
-		for i := range prs.Repository.PullRequests.Nodes {
-			pr := &prs.Repository.PullRequests.Nodes[i]
+		nodes := prs.Repository.PullRequests.Nodes
+		for i := len(nodes) - 1; i >= 0; i-- {
+			pr := &nodes[i]
 
 			// Check if this PR is older than our cutoff date using the Before
 			// method, meaning; earlier in time which is older than our cutoff.

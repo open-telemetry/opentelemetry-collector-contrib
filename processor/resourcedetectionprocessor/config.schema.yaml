@@ -15,6 +15,9 @@ $defs:
       azure:
         description: Azure contains user-specified configurations for the azure detector
         $ref: ./internal/azure.config
+      azurecontainerapps:
+        description: AzureContainerAppsConfig contains user-specified configurations for the Azure Container Apps detector
+        $ref: ./internal/azure/containerapps.config
       consul:
         description: ConsulConfig contains user-specified configurations for the Consul detector
         $ref: ./internal/consul.config
@@ -51,9 +54,12 @@ $defs:
       ibmcloud_vpc:
         description: IBMCloudVPCConfig contains user-specified configurations for the IBM Cloud VPC detector
         $ref: ./internal/ibmcloud/vpc.config
+      k8s_api:
+        description: K8SAPIConfig contains user-specified configurations for the K8S API detector
+        $ref: ./internal/k8sapi.config
       k8snode:
-        description: K8SNode contains user-specified configurations for the K8SNode detector
-        $ref: ./internal/k8snode.config
+        description: 'K8SNodeConfig contains user-specified configurations for the K8SNode detector (deprecated: use K8SAPIConfig)'
+        $ref: ./internal/k8sapi.config
       kubeadm:
         description: Kubeadm contains user-specified configurations for the Kubeadm detector
         $ref: ./internal/kubeadm.config
@@ -92,6 +98,9 @@ properties:
     type: array
     items:
       type: string
+  fail_on_missing_metadata:
+    description: 'FailOnMissingMetadata controls whether network-based detectors treat an unreachable metadata service as a hard failure. When true, affected detectors return an error instead of silently returning an empty resource, enabling the processor''s retry mechanism to wait until the metadata service becomes available (e.g., during GKE/AKS node startup races). Supersedes the per-detector fail_on_missing_metadata fields (now deprecated). Default: false (backward compatible).'
+    type: boolean
   override:
     description: Override indicates whether any existing resource attributes should be overridden or preserved. Defaults to true.
     type: boolean
@@ -99,6 +108,9 @@ properties:
     description: If > 0, periodically re-run detection for all configured detectors. When 0 (default), no periodic refresh occurs.
     type: string
     format: duration
+  retry:
+    description: Retry controls retry/backoff for each detection attempt. Set Enabled=false to perform a single attempt per detector with no retries.
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
 allOf:
   - $ref: detector_config
   - $ref: go.opentelemetry.io/collector/config/confighttp.client_config

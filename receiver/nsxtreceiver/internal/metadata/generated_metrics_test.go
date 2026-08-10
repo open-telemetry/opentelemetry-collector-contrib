@@ -67,10 +67,10 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["NsxtNodeCPUUtilization"] = mb.metricNsxtNodeCPUUtilization.config.AggregationStrategy
-			aggMap["NsxtNodeFilesystemUsage"] = mb.metricNsxtNodeFilesystemUsage.config.AggregationStrategy
-			aggMap["NsxtNodeNetworkIo"] = mb.metricNsxtNodeNetworkIo.config.AggregationStrategy
-			aggMap["NsxtNodeNetworkPacketCount"] = mb.metricNsxtNodeNetworkPacketCount.config.AggregationStrategy
+			aggMap["nsxt.node.cpu.utilization"] = mb.metricNsxtNodeCPUUtilization.config.AggregationStrategy
+			aggMap["nsxt.node.filesystem.usage"] = mb.metricNsxtNodeFilesystemUsage.config.AggregationStrategy
+			aggMap["nsxt.node.network.io"] = mb.metricNsxtNodeNetworkIo.config.AggregationStrategy
+			aggMap["nsxt.node.network.packet.count"] = mb.metricNsxtNodeNetworkPacketCount.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -79,40 +79,33 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeCPUUtilizationDataPoint(ts, 1, AttributeClassDatapath)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNsxtNodeCPUUtilizationDataPoint(ts, 3, AttributeClassServices)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeFilesystemUsageDataPoint(ts, 1, AttributeDiskStateUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNsxtNodeFilesystemUsageDataPoint(ts, 3, AttributeDiskStateAvailable)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeFilesystemUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeMemoryCacheUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeMemoryUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeNetworkIoDataPoint(ts, 1, AttributeDirectionReceived)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNsxtNodeNetworkIoDataPoint(ts, 3, AttributeDirectionTransmitted)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeNetworkPacketCountDataPoint(ts, 1, AttributeDirectionReceived, AttributePacketTypeDropped)
@@ -261,7 +254,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "The size of the node's memory cache.", mi.Description())
-					assert.Equal(t, "KBy", mi.Unit())
+					assert.Equal(t, "kBy", mi.Unit())
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -275,7 +268,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "The memory usage of the node.", mi.Description())
-					assert.Equal(t, "KBy", mi.Unit())
+					assert.Equal(t, "kBy", mi.Unit())
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)

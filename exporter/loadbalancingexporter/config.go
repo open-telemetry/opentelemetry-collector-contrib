@@ -36,9 +36,9 @@ const (
 
 // Config defines configuration for the exporter.
 type Config struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+	BackOffConfig   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	Protocol Protocol         `mapstructure:"protocol"`
 	Resolver ResolverSettings `mapstructure:"resolver"`
@@ -50,6 +50,8 @@ type Config struct {
 	//
 	// For traces, attributes can come from resource, scope, or span, plus the pseudo attributes "span.kind" and
 	// "span.name".
+	// For logs, attributes can come from resource, scope, or log record attributes, plus the pseudo attributes
+	// "log.severity" and "log.body".
 	// For metrics, attributes can come from resource, scope, or datapoint attributes.
 	// Keys are encoded as "name=value|name=value|" in the order configured. Missing attributes are encoded as "name=|".
 	// Non-string values are deterministically stringified.
@@ -121,4 +123,5 @@ type AWSCloudMapResolver struct {
 	Interval      time.Duration            `mapstructure:"interval"`
 	Timeout       time.Duration            `mapstructure:"timeout"`
 	Port          *uint16                  `mapstructure:"port"`
+	OwnerAccount  *string                  `mapstructure:"owner_account"`
 }

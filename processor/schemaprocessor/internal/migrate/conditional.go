@@ -21,14 +21,14 @@ type ConditionalAttributeSet struct {
 
 type ConditionalAttributeSetSlice []*ConditionalAttributeSet
 
-func NewConditionalAttributeSet[Match ValueMatch](mappings map[string]string, matches ...Match) ConditionalAttributeSet {
+func NewConditionalAttributeSet[Match ValueMatch](mappings map[string]string, copyAttributes bool, matches ...Match) ConditionalAttributeSet {
 	on := make(map[string]struct{})
 	for _, m := range matches {
 		on[string(m)] = struct{}{}
 	}
 	return ConditionalAttributeSet{
 		on:    on,
-		attrs: NewAttributeChangeSet(mappings),
+		attrs: NewAttributeChangeSet(mappings, copyAttributes),
 	}
 }
 
@@ -47,7 +47,7 @@ func (ca *ConditionalAttributeSet) check(values ...string) bool {
 		return true
 	}
 	for _, v := range values {
-		if _, ok := (ca.on)[v]; !ok {
+		if _, ok := ca.on[v]; !ok {
 			return false
 		}
 	}

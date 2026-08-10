@@ -71,7 +71,7 @@ service:
 #### Logs example:
 * We recommend using `sending_queue::batch` option. Batching helps better compress the data and reduce the number of outgoing connections required to transmit the data.
 * We recommend adding `type` attribute to classify your log records
-* We recommend adding `resourcedetection` processor to add metadata to your log records
+* We recommend adding `resource_detection` processor to add metadata to your log records
 
 ```yaml
 receivers:
@@ -86,7 +86,7 @@ receivers:
     attributes:
       type: <<your-logzio-type>>
 processors:
-  resourcedetection/system:
+  resource_detection/system:
     detectors: [ "system" ]
     system:
       hostname_sources: [ "os" ]
@@ -98,18 +98,18 @@ service:
   pipelines:
     logs:
       receivers: [file_log]
-      processors: [ resourcedetection/system ]
+      processors: [ resource_detection/system ]
       exporters: [logzio/logs]
   telemetry:
     logs:
       level: "debug"
 ```
 #### Metrics:
-In order to use the Prometheus backend you must use the standard prometheusremotewrite exporter as well. The following [regions](https://docs.logz.io/user-guide/accounts/account-region.html#supported-regions-for-prometheus-metrics) are supported and configured as follows. The Logz.io Listener URL for your region, configured to use port 8052 for http traffic, or port 8053 for https traffic.
+In order to use the Prometheus backend you must use the standard prometheus_remote_write exporter as well. The following [regions](https://docs.logz.io/user-guide/accounts/account-region.html#supported-regions-for-prometheus-metrics) are supported and configured as follows. The Logz.io Listener URL for your region, configured to use port 8052 for http traffic, or port 8053 for https traffic.
 Example:
 ```yaml
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: "https://listener.logz.io:8053"
     headers:
       Authorization: "Bearer LOGZIOprometheusTOKEN"
@@ -137,7 +137,7 @@ exporters:
     account_token: "LOGZIOtraceTOKEN"
     region: "us"
 
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: "https://listener.logz.io:8053"
     headers:
       Authorization: "Bearer LOGZIOprometheusTOKEN"
@@ -150,7 +150,7 @@ service:
 
     metrics:
       receivers: [prometheus]
-      exporters: [prometheusremotewrite]
+      exporters: [prometheus_remote_write]
   
   telemetry:
     logs:

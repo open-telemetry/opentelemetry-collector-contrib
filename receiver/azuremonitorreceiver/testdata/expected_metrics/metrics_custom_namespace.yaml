@@ -1,0 +1,37 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: azuremonitor.subscription_id
+          value:
+            stringValue: sub-id-1
+        - key: azuremonitor.tenant_id
+          value:
+            stringValue: fake-tenant-id
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asDouble: 92.5
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/sub-id-1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/my-vm
+                    - key: location
+                      value:
+                        stringValue: eastus
+                    - key: name
+                      value:
+                        stringValue: my-vm
+                    - key: resource_group
+                      value:
+                        stringValue: rg
+                    - key: type
+                      value:
+                        stringValue: Microsoft.Compute/virtualMachines
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "1000000"
+            name: azure_disk/free_percent_average
+            unit: Percent
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
+          version: latest

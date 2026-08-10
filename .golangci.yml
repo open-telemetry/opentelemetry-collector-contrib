@@ -85,12 +85,6 @@ linters:
         path: processor/transformprocessor/internal/common/
         text: "var-naming: avoid meaningless package names"
 
-      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45003
-      - linters:
-          - revive
-        path: internal/healthcheck/internal/common/
-        text: "var-naming: avoid meaningless package names"
-
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45004
       - linters:
           - revive
@@ -115,58 +109,15 @@ linters:
         path: extension/sumologicextension/internal/api/
         text: "var-naming: avoid meaningless package names"
 
-      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45003
-      - linters:
-          - revive
-        path: internal/healthcheck/internal/http/
-        text: "var-naming: avoid package names that conflict with Go standard library package names"
-
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116
       - linters:
           - forbidigo
-        path: connector/servicegraphconnector/
-      - linters:
-          - forbidigo
-        path: connector/spanmetricsconnector/
-      - linters:
-          - forbidigo
-        path: exporter/awsemfexporter/
-      - linters:
-          - forbidigo
-        path: exporter/awsxrayexporter/
-      - linters:
-          - forbidigo
-        path: exporter/clickhouseexporter/
-      - linters:
-          - forbidigo
-        path: exporter/signalfxexporter/
-      - linters:
-          - forbidigo
-        path: extension/encoding/awslogsencodingextension/
-      - linters:
-          - forbidigo
-        path: extension/opampextension/
+        path: exporter/awsxrayexporter/internal/translator/
       - linters:
           - forbidigo
         path: internal/filter/
-      - linters:
-          - forbidigo
-        path: pkg/ottl/
-      - linters:
-          - forbidigo
-        path: pkg/translator/prometheus/
-      - linters:
-          - forbidigo
-        path: receiver/awscontainerinsightreceiver/
-      - linters:
-          - forbidigo
-        path: receiver/datadogreceiver/
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
-      - linters:
-          - forbidigo
-        path: internal/aws/proxy/
-        text: confighttp
       - linters:
           - forbidigo
         path: testbed/
@@ -212,6 +163,11 @@ linters:
 
             - pkg: sigs.k8s.io/yaml
               desc: "Use 'go.yaml.in/yaml' instead of sigs.k8s.io/yaml"
+
+            # Block AWS SDK v1 to prevent new usage while migration to v2 is in progress.
+            # See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
+            - pkg: github.com/aws/aws-sdk-go/
+              desc: "Use github.com/aws/aws-sdk-go-v2 instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699"
 
         semconv:
           list-mode: lax
@@ -265,6 +221,8 @@ linters:
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47543
             - go.opentelemetry.io/otel/semconv/v1.39.0
             - go.opentelemetry.io/otel/semconv/v1.40.0
+            - go.opentelemetry.io/otel/semconv/v1.41.0
+            - go.opentelemetry.io/otel/semconv/v1.42.0
 
         semconv-in-test:
           list-mode: lax
@@ -353,6 +311,10 @@ linters:
       # Default is to use a neutral variety of English.
       # Setting locale to US will correct the British spelling of 'colour' to 'color'.
       locale: US
+
+    modernize:
+      disable:
+        - importcomment
 
     nolintlint:
       require-specific: true

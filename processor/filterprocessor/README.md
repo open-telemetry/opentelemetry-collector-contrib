@@ -34,7 +34,7 @@ If **any** condition is met, the telemetry is dropped (each condition is ORed to
 
 ```yaml
 filter:
-  error_mode: propagate
+  error_mode: ignore
   <trace|metric|log|profile>_conditions: []
 ```
 
@@ -95,7 +95,7 @@ This condition translates to: For each span event, check whether its parent span
 
 ### Error Modes
 
-The filter processor also allows configuring an optional field, `error_mode`, which will determine how the processor reacts to errors that occur while processing an OTTL condition. `propagate` is the default mode.
+The filter processor also allows configuring an optional field, `error_mode`, which will determine how the processor reacts to errors that occur while processing an OTTL condition. `ignore` is the default mode.
 
 | error_mode | description                                                                                                                            |
 |------------|----------------------------------------------------------------------------------------------------------------------------------------|
@@ -107,13 +107,9 @@ The filter processor also allows configuring an optional field, `error_mode`, wh
 
 ##### `processor.filter.defaultErrorModeIgnore`
 
-The `processor.filter.defaultErrorModeIgnore` feature gate changes the default `error_mode` of the filter processor from `propagate` to `ignore`. 
-`ignore` is the recommended mode to improve resiliency, as errors are logged for visibility but valid data is preserved, and processing continues with the next condition.
-This feature gate is currently in Alpha (disabled by default) and must be explicitly enabled.
-
-**Example Usage**
-
-Run the collector with the feature gate enabled: `./otelcol --config config.yaml --feature-gates=processor.filter.defaultErrorModeIgnore`.
+The `processor.filter.defaultErrorModeIgnore` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) changes the default `error_mode` of the filter processor from `propagate` to `ignore`.
+This gate is currently in `stable` (always enabled). The default `error_mode` is `ignore` and can no longer be reverted via this gate.
+The gate will be removed in v0.159.0.
 
 ### Basic Config
 

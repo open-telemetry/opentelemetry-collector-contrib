@@ -3,17 +3,33 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// SystemNetworkErrorsMetricAttributeKey specifies the key of an attribute for the system.network.errors metric.
+type SystemNetworkErrorsMetricAttributeKey string
+
+const (
+	SystemNetworkErrorsMetricAttributeKeyNetworkIoDirection          SystemNetworkErrorsMetricAttributeKey = "network.io.direction"
+	SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceDescription SystemNetworkErrorsMetricAttributeKey = "network.interface.description"
+	SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceMac         SystemNetworkErrorsMetricAttributeKey = "network.interface.mac"
+	SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceName        SystemNetworkErrorsMetricAttributeKey = "network.interface.name"
+	SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceSpeed       SystemNetworkErrorsMetricAttributeKey = "network.interface.speed"
+)
+
+// SystemNetworkErrorsMetricConfig provides config for the system.network.errors metric.
+type SystemNetworkErrorsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemNetworkErrorsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemNetworkErrorsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -27,31 +43,266 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+func (ms *SystemNetworkErrorsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemNetworkErrorsMetricAttributeKeyNetworkIoDirection, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceMac, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceName, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceSpeed:
+		default:
+			return fmt.Errorf("metric system.network.errors doesn't have an attribute %v, valid attributes: [network.io.direction, network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemNetworkInterfaceStatusMetricAttributeKey specifies the key of an attribute for the system.network.interface.status metric.
+type SystemNetworkInterfaceStatusMetricAttributeKey string
+
+const (
+	SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceDescription SystemNetworkInterfaceStatusMetricAttributeKey = "network.interface.description"
+	SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceMac         SystemNetworkInterfaceStatusMetricAttributeKey = "network.interface.mac"
+	SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceName        SystemNetworkInterfaceStatusMetricAttributeKey = "network.interface.name"
+	SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceSpeed       SystemNetworkInterfaceStatusMetricAttributeKey = "network.interface.speed"
+)
+
+// SystemNetworkInterfaceStatusMetricConfig provides config for the system.network.interface.status metric.
+type SystemNetworkInterfaceStatusMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemNetworkInterfaceStatusMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemNetworkInterfaceStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemNetworkInterfaceStatusMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceMac, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceName, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceSpeed:
+		default:
+			return fmt.Errorf("metric system.network.interface.status doesn't have an attribute %v, valid attributes: [network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemNetworkIoMetricAttributeKey specifies the key of an attribute for the system.network.io metric.
+type SystemNetworkIoMetricAttributeKey string
+
+const (
+	SystemNetworkIoMetricAttributeKeyNetworkIoDirection          SystemNetworkIoMetricAttributeKey = "network.io.direction"
+	SystemNetworkIoMetricAttributeKeyNetworkInterfaceDescription SystemNetworkIoMetricAttributeKey = "network.interface.description"
+	SystemNetworkIoMetricAttributeKeyNetworkInterfaceMac         SystemNetworkIoMetricAttributeKey = "network.interface.mac"
+	SystemNetworkIoMetricAttributeKeyNetworkInterfaceName        SystemNetworkIoMetricAttributeKey = "network.interface.name"
+	SystemNetworkIoMetricAttributeKeyNetworkInterfaceSpeed       SystemNetworkIoMetricAttributeKey = "network.interface.speed"
+)
+
+// SystemNetworkIoMetricConfig provides config for the system.network.io metric.
+type SystemNetworkIoMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemNetworkIoMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemNetworkIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemNetworkIoMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemNetworkIoMetricAttributeKeyNetworkIoDirection, SystemNetworkIoMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkIoMetricAttributeKeyNetworkInterfaceMac, SystemNetworkIoMetricAttributeKeyNetworkInterfaceName, SystemNetworkIoMetricAttributeKeyNetworkInterfaceSpeed:
+		default:
+			return fmt.Errorf("metric system.network.io doesn't have an attribute %v, valid attributes: [network.io.direction, network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemNetworkPacketCountMetricAttributeKey specifies the key of an attribute for the system.network.packet.count metric.
+type SystemNetworkPacketCountMetricAttributeKey string
+
+const (
+	SystemNetworkPacketCountMetricAttributeKeyNetworkPacketType           SystemNetworkPacketCountMetricAttributeKey = "network.packet.type"
+	SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceDescription SystemNetworkPacketCountMetricAttributeKey = "network.interface.description"
+	SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceMac         SystemNetworkPacketCountMetricAttributeKey = "network.interface.mac"
+	SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceName        SystemNetworkPacketCountMetricAttributeKey = "network.interface.name"
+	SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceSpeed       SystemNetworkPacketCountMetricAttributeKey = "network.interface.speed"
+)
+
+// SystemNetworkPacketCountMetricConfig provides config for the system.network.packet.count metric.
+type SystemNetworkPacketCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemNetworkPacketCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemNetworkPacketCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemNetworkPacketCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemNetworkPacketCountMetricAttributeKeyNetworkPacketType, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceMac, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceName, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceSpeed:
+		default:
+			return fmt.Errorf("metric system.network.packet.count doesn't have an attribute %v, valid attributes: [network.packet.type, network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemNetworkPacketDroppedMetricAttributeKey specifies the key of an attribute for the system.network.packet.dropped metric.
+type SystemNetworkPacketDroppedMetricAttributeKey string
+
+const (
+	SystemNetworkPacketDroppedMetricAttributeKeyNetworkIoDirection          SystemNetworkPacketDroppedMetricAttributeKey = "network.io.direction"
+	SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceDescription SystemNetworkPacketDroppedMetricAttributeKey = "network.interface.description"
+	SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceMac         SystemNetworkPacketDroppedMetricAttributeKey = "network.interface.mac"
+	SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceName        SystemNetworkPacketDroppedMetricAttributeKey = "network.interface.name"
+	SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceSpeed       SystemNetworkPacketDroppedMetricAttributeKey = "network.interface.speed"
+)
+
+// SystemNetworkPacketDroppedMetricConfig provides config for the system.network.packet.dropped metric.
+type SystemNetworkPacketDroppedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemNetworkPacketDroppedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemNetworkPacketDroppedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemNetworkPacketDroppedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemNetworkPacketDroppedMetricAttributeKeyNetworkIoDirection, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceMac, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceName, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceSpeed:
+		default:
+			return fmt.Errorf("metric system.network.packet.dropped doesn't have an attribute %v, valid attributes: [network.io.direction, network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for interfaces metrics.
 type MetricsConfig struct {
-	SystemNetworkErrors          MetricConfig `mapstructure:"system.network.errors"`
-	SystemNetworkInterfaceStatus MetricConfig `mapstructure:"system.network.interface.status"`
-	SystemNetworkIo              MetricConfig `mapstructure:"system.network.io"`
-	SystemNetworkPacketCount     MetricConfig `mapstructure:"system.network.packet.count"`
-	SystemNetworkPacketDropped   MetricConfig `mapstructure:"system.network.packet.dropped"`
+	SystemNetworkErrors          SystemNetworkErrorsMetricConfig          `mapstructure:"system.network.errors"`
+	SystemNetworkInterfaceStatus SystemNetworkInterfaceStatusMetricConfig `mapstructure:"system.network.interface.status"`
+	SystemNetworkIo              SystemNetworkIoMetricConfig              `mapstructure:"system.network.io"`
+	SystemNetworkPacketCount     SystemNetworkPacketCountMetricConfig     `mapstructure:"system.network.packet.count"`
+	SystemNetworkPacketDropped   SystemNetworkPacketDroppedMetricConfig   `mapstructure:"system.network.packet.dropped"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemNetworkErrors: MetricConfig{
-			Enabled: true,
+		SystemNetworkErrors: SystemNetworkErrorsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemNetworkErrorsMetricAttributeKey{SystemNetworkErrorsMetricAttributeKeyNetworkIoDirection, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceMac, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceName, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceSpeed},
 		},
-		SystemNetworkInterfaceStatus: MetricConfig{
-			Enabled: true,
+		SystemNetworkInterfaceStatus: SystemNetworkInterfaceStatusMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SystemNetworkInterfaceStatusMetricAttributeKey{SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceMac, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceName, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceSpeed},
 		},
-		SystemNetworkIo: MetricConfig{
-			Enabled: true,
+		SystemNetworkIo: SystemNetworkIoMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemNetworkIoMetricAttributeKey{SystemNetworkIoMetricAttributeKeyNetworkIoDirection, SystemNetworkIoMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkIoMetricAttributeKeyNetworkInterfaceMac, SystemNetworkIoMetricAttributeKeyNetworkInterfaceName, SystemNetworkIoMetricAttributeKeyNetworkInterfaceSpeed},
 		},
-		SystemNetworkPacketCount: MetricConfig{
-			Enabled: true,
+		SystemNetworkPacketCount: SystemNetworkPacketCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemNetworkPacketCountMetricAttributeKey{SystemNetworkPacketCountMetricAttributeKeyNetworkPacketType, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceMac, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceName, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceSpeed},
 		},
-		SystemNetworkPacketDropped: MetricConfig{
-			Enabled: true,
+		SystemNetworkPacketDropped: SystemNetworkPacketDroppedMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemNetworkPacketDroppedMetricAttributeKey{SystemNetworkPacketDroppedMetricAttributeKeyNetworkIoDirection, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceMac, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceName, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceSpeed},
 		},
 	}
 }

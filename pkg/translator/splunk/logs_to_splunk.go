@@ -43,6 +43,9 @@ func LogToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, toOtelAttrs HecTo
 	if lr.SeverityNumber() != plog.SeverityNumberUnspecified {
 		fields[toHecAttrs.SeverityNumber] = lr.SeverityNumber()
 	}
+	if lr.EventName() != "" {
+		fields[toHecAttrs.Name] = lr.EventName()
+	}
 
 	for k, v := range res.Attributes().All() {
 		switch k {

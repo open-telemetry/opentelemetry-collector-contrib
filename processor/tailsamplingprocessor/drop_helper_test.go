@@ -36,6 +36,34 @@ func TestDropHelper(t *testing.T) {
 		assert.Equal(t, expected, actual)
 	})
 
+	t.Run("valid nested not policy", func(t *testing.T) {
+		actual, err := getNewDropPolicy(componenttest.NewNopTelemetrySettings(), &DropCfg{
+			SubPolicyCfg: []AndSubPolicyCfg{
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "test-drop-policy-1",
+						Type: Not,
+					},
+					NotCfg: NotCfg{
+						SubPolicy: NotSubPolicyCfg{
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name:       "test-not-policy-1",
+								Type:       Latency,
+								LatencyCfg: LatencyCfg{ThresholdMs: 100},
+							},
+						},
+					},
+				},
+			},
+		}, nil)
+		require.NoError(t, err)
+
+		expected := sampling.NewDrop(zap.NewNop(), []samplingpolicy.Evaluator{
+			sampling.NewNot(zap.NewNop(), sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 100, 0)),
+		})
+		assert.Equal(t, expected, actual)
+	})
+
 	t.Run("unsupported sampling policy type", func(t *testing.T) {
 		_, err := getNewDropPolicy(componenttest.NewNopTelemetrySettings(), &DropCfg{
 			SubPolicyCfg: []AndSubPolicyCfg{

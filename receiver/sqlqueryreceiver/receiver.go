@@ -8,9 +8,12 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
@@ -41,8 +44,8 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 		var dataSource string
 		var err error
 
-		if sqlCfg.DataSource != "" {
-			dataSource = sqlCfg.DataSource
+		if sqlCfg.Config.DataSource != "" {
+			dataSource = sqlCfg.Config.DataSource
 		} else {
 			dataSource, err = sqlquery.BuildDataSourceString(sqlCfg.Config)
 			if err != nil {
@@ -50,9 +53,9 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 			}
 		}
 		var opts []scraperhelper.ControllerOption
-		pool := internal.NewPool(sqlOpenerFunc, sqlCfg.Driver, dataSource, sqlCfg.MaxOpenConn)
+		pool := internal.NewPool(sqlOpenerFunc, sqlCfg.Config.Driver, dataSource, sqlCfg.MaxOpenConn)
 
-		for i, query := range sqlCfg.Queries {
+		for i, query := range sqlCfg.Config.Queries {
 			if len(query.Metrics) == 0 {
 				continue
 			}
@@ -60,17 +63,46 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 
 			scope := pcommon.NewInstrumentationScope()
 			scope.SetName(metadata.ScopeName)
-			mp := sqlquery.NewScraper(id, query, sqlCfg.ControllerConfig, settings.Logger, sqlCfg.Telemetry, pool.DB, clientProviderFunc, scope)
+			mp := sqlquery.NewScraper(id, query, sqlCfg.Config.ControllerConfig, settings.Logger, sqlCfg.Config.Telemetry, pool.DB, clientProviderFunc, scope)
 
-			opt := scraperhelper.AddMetricsScraper(metadata.Type, mp)
+			wrapped := &statusReportingScraper{
+				delegate: mp,
+			}
+			opt := scraperhelper.AddMetricsScraper(metadata.Type, wrapped)
 			opts = append(opts, opt)
 		}
 
 		return scraperhelper.NewMetricsController(
-			&sqlCfg.ControllerConfig,
+			&sqlCfg.Config.ControllerConfig,
 			settings,
 			consumer,
 			opts...,
 		)
 	}
 }
+
+type statusReportingScraper struct {
+	delegate *sqlquery.Scraper
+	host     component.Host
+}
+
+func (s *statusReportingScraper) Start(ctx context.Context, host component.Host) error {
+	s.host = host
+	return s.delegate.Start(ctx, host)
+}
+
+func (s *statusReportingScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
+	metrics, err := s.delegate.ScrapeMetrics(ctx)
+	if err != nil {
+		componentstatus.ReportStatus(s.host, componentstatus.NewRecoverableErrorEvent(err))
+	} else {
+		componentstatus.ReportStatus(s.host, componentstatus.NewEvent(componentstatus.StatusOK))
+	}
+	return metrics, err
+}
+
+func (s *statusReportingScraper) Shutdown(ctx context.Context) error {
+	return s.delegate.Shutdown(ctx)
+}
+
+var _ scraper.Metrics = (*statusReportingScraper)(nil)

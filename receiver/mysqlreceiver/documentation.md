@@ -416,6 +416,14 @@ Errors that occur during the client connection process.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` | Recommended | - |
 
+### mysql.file.open
+
+The number of currently open files.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
 ### mysql.joins
 
 The number of joins that perform table scans.
@@ -614,6 +622,14 @@ The total table lock wait write events times.
 | table | Table name for event or process. | Any Str | Recommended | - |
 | kind | Write operation types. | Str: ``allow_write``, ``concurrent_insert``, ``low_priority``, ``normal``, ``external`` | Recommended | - |
 
+### mysql.table.open
+
+The number of currently open tables.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
 ### mysql.table.rows
 
 The number of rows for a given table.
@@ -659,6 +675,14 @@ The number of hits, misses or overflows for open tables cache lookups.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | status | The status of cache access. | Str: ``hit``, ``miss``, ``overflow`` | Recommended | - |
 
+### mysql.thread.slow_launch
+
+The number of threads that have taken more than slow_launch_time seconds to create.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | Development |
+
 ## Default Events
 
 The following events are emitted by default. Each of them can be disabled by applying the following configuration:
@@ -684,7 +708,6 @@ events:
 Query sample collection enables monitoring of current running database statements.
 This provides real-time visibility into active queries, helping users monitor database activity and performance as part of their observability pipeline.
 
-
 #### Attributes
 
 | Name | Description | Values | Semantic Convention |
@@ -697,6 +720,7 @@ This provides real-time visibility into active queries, helping users monitor da
 | mysql.threads.processlist_state | An action, event, or state that indicates what the thread is doing. | Any Str | - |
 | db.query.text | The SQL statement text for the event. | Any Str | - |
 | mysql.events_statements_current.digest | The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no. | Any Str | - |
+| mysql.query_plan | The query plan for the statement, if available. | Any Str | - |
 | mysql.query_plan.hash | This attribute is set to the same value as mysql.events_statements_summary_by_digest.digest (query digest) by design. | Any Str | - |
 | mysql.event_id | The thread associated with the event and the thread current event number when the event starts. | Any Int | - |
 | mysql.wait_type | The name of the instrument that produced the event. | Any Str | - |
@@ -714,7 +738,6 @@ This provides real-time visibility into active queries, helping users monitor da
 Top query collection enables monitoring of the queries that consumed the most CPU in the database.
 This provides insights into query performance and resource usage, helping users identify and optimize high-impact queries as part of their observability pipeline.
 
-
 #### Attributes
 
 | Name | Description | Values | Semantic Convention |
@@ -729,6 +752,11 @@ This provides insights into query performance and resource usage, helping users 
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| db.system.name | The database product of the instance. Examples include "mysql" and "mariadb". | Any Str | false | - | - |
+| db.system.version | The database version of the instance. Examples include "8.0.34" and "10.11.7-MariaDB". | Any Str | false | - | - |
+| mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - | - |
+| service.instance.id | A unique identifier of the MySQL instance as a UUID v5, derived from the endpoint using the OTel namespace. | Any Str | true | - | - |
+| service.name | Logical name of the service. When enabled, defaults to unknown_service:mysql. | Any Str | false | - | - |
+| service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |

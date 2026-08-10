@@ -16,7 +16,6 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
@@ -55,6 +54,7 @@ func spanToEnvelopes(
 	instrumentationScope pcommon.InstrumentationScope,
 	span ptrace.Span,
 	spanEventsEnabled bool,
+	tagMappings *TagMappingsConfig,
 	logger *zap.Logger,
 ) ([]*contracts.Envelope, error) {
 	spanKind := span.Kind()
@@ -122,8 +122,8 @@ func spanToEnvelopes(
 	resourceAttributes := resource.Attributes()
 	applyResourcesToDataProperties(dataProperties, resourceAttributes)
 	applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
-	applyCloudTagsToEnvelope(envelope, resourceAttributes)
-	applyApplicationTagsToEnvelope(envelope, resourceAttributes)
+	applyCloudTagsToEnvelope(envelope, resourceAttributes, tagMappings)
+	applyApplicationTagsToEnvelope(envelope, resourceAttributes, tagMappings)
 	applyDeviceTagsToEnvelope(envelope, resourceAttributes)
 	applyInternalSdkVersionTagToEnvelope(envelope)
 	applyLinksToDataProperties(dataProperties, span.Links(), logger)
@@ -171,8 +171,8 @@ func spanToEnvelopes(
 
 		applyResourcesToDataProperties(dataProperties, resourceAttributes)
 		applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
-		applyCloudTagsToEnvelope(spanEventEnvelope, resourceAttributes)
-		applyApplicationTagsToEnvelope(spanEventEnvelope, resourceAttributes)
+		applyCloudTagsToEnvelope(spanEventEnvelope, resourceAttributes, tagMappings)
+		applyApplicationTagsToEnvelope(spanEventEnvelope, resourceAttributes, tagMappings)
 		applyDeviceTagsToEnvelope(spanEventEnvelope, resourceAttributes)
 		applyInternalSdkVersionTagToEnvelope(spanEventEnvelope)
 
@@ -521,7 +521,11 @@ func fillRemoteDependencyDataRPC(span ptrace.Span, data *contracts.RemoteDepende
 
 // Returns the RPC status code as a string
 func getRPCStatusCodeAsString(rpcAttributes *rpcAttributes) (statusCodeAsString string) {
-	// Honor the attribute rpc.grpc.status_code if there
+	// Prefer the new rpc.response.status_code (string) attribute
+	if rpcAttributes.RPCResponseStatusCode != "" {
+		return rpcAttributes.RPCResponseStatusCode
+	}
+	// Fall back to the deprecated rpc.grpc.status_code (int) attribute
 	if rpcAttributes.RPCGRPCStatusCode != 0 {
 		return strconv.FormatInt(rpcAttributes.RPCGRPCStatusCode, 10)
 	}
@@ -601,7 +605,8 @@ func copyAndExtractHTTPAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }
@@ -615,7 +620,8 @@ func copyAndExtractRPCAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }
@@ -629,7 +635,8 @@ func copyAndExtractDatabaseAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }
@@ -643,7 +650,8 @@ func copyAndExtractMessagingAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }
@@ -657,7 +665,8 @@ func copyAndExtractExceptionAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }
@@ -675,8 +684,11 @@ func mapIncomingSpanToType(attributeMap pcommon.Map) spanType {
 		return unknownSpanType
 	}
 
-	// RPC
-	if _, exists := attributeMap.Get(string(conventionsv138.RPCSystemKey)); exists {
+	// RPC — check both the new (rpc.system.name) and deprecated (rpc.system) attribute keys
+	if _, exists := attributeMap.Get(string(conventions.RPCSystemNameKey)); exists {
+		return rpcSpanType
+	}
+	if _, exists := attributeMap.Get("rpc.system"); exists {
 		return rpcSpanType
 	}
 

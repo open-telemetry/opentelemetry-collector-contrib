@@ -67,16 +67,18 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["RedisClusterState"] = mb.metricRedisClusterState.config.AggregationStrategy
-			aggMap["RedisCmdCalls"] = mb.metricRedisCmdCalls.config.AggregationStrategy
-			aggMap["RedisCmdLatency"] = mb.metricRedisCmdLatency.config.AggregationStrategy
-			aggMap["RedisCmdUsec"] = mb.metricRedisCmdUsec.config.AggregationStrategy
-			aggMap["RedisCPUTime"] = mb.metricRedisCPUTime.config.AggregationStrategy
-			aggMap["RedisDbAvgTTL"] = mb.metricRedisDbAvgTTL.config.AggregationStrategy
-			aggMap["RedisDbExpires"] = mb.metricRedisDbExpires.config.AggregationStrategy
-			aggMap["RedisDbKeys"] = mb.metricRedisDbKeys.config.AggregationStrategy
-			aggMap["RedisMode"] = mb.metricRedisMode.config.AggregationStrategy
-			aggMap["RedisRole"] = mb.metricRedisRole.config.AggregationStrategy
+			aggMap["redis.cluster.state"] = mb.metricRedisClusterState.config.AggregationStrategy
+			aggMap["redis.cmd.calls"] = mb.metricRedisCmdCalls.config.AggregationStrategy
+			aggMap["redis.cmd.latency"] = mb.metricRedisCmdLatency.config.AggregationStrategy
+			aggMap["redis.cmd.usec"] = mb.metricRedisCmdUsec.config.AggregationStrategy
+			aggMap["redis.cpu.time"] = mb.metricRedisCPUTime.config.AggregationStrategy
+			aggMap["redis.db.avg_ttl"] = mb.metricRedisDbAvgTTL.config.AggregationStrategy
+			aggMap["redis.db.expires"] = mb.metricRedisDbExpires.config.AggregationStrategy
+			aggMap["redis.db.keys"] = mb.metricRedisDbKeys.config.AggregationStrategy
+			aggMap["redis.mode"] = mb.metricRedisMode.config.AggregationStrategy
+			aggMap["redis.pubsub.channel.status"] = mb.metricRedisPubsubChannelStatus.config.AggregationStrategy
+			aggMap["redis.pubsub.pattern.status"] = mb.metricRedisPubsubPatternStatus.config.AggregationStrategy
+			aggMap["redis.role"] = mb.metricRedisRole.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -85,19 +87,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisClientsBlockedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisClientsConnectedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisClientsMaxInputBufferDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisClientsMaxOutputBufferDataPoint(ts, 1)
@@ -161,90 +159,72 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordRedisCmdUsecDataPoint(ts, 3, "cmd-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisCommandsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisCommandsProcessedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisConnectionsReceivedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisConnectionsRejectedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisCPUTimeDataPoint(ts, 1, AttributeStateSys)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRedisCPUTimeDataPoint(ts, 3, AttributeStateSysChildren)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisDbAvgTTLDataPoint(ts, 1, "db-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordRedisDbAvgTTLDataPoint(ts, 3, "db-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisDbExpiresDataPoint(ts, 1, "db-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordRedisDbExpiresDataPoint(ts, 3, "db-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisDbKeysDataPoint(ts, 1, "db-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordRedisDbKeysDataPoint(ts, 3, "db-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisKeysEvictedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisKeysExpiredDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisKeyspaceHitsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisKeyspaceMissesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisLatestForkDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordRedisMaxmemoryDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryFragmentationRatioDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryLuaDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryPeakDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryRssDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryUsedDataPoint(ts, 1)
@@ -260,23 +240,33 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordRedisModeDataPoint(ts, 3, AttributeModeSentinel)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisNetInputDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisNetOutputDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordRedisPubsubChannelStatusDataPoint(ts, 1, AttributeRedisPubsubChannelStateActive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRedisPubsubChannelStatusDataPoint(ts, 3, AttributeRedisPubsubChannelStateShard)
+			}
+
+			allMetricsCount++
+			mb.RecordRedisPubsubConnectionCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisPubsubPatternStatusDataPoint(ts, 1, AttributeRedisPubsubPatternStateActive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRedisPubsubPatternStatusDataPoint(ts, 3, AttributeRedisPubsubPatternStateActive)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisRdbChangesSinceLastSaveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisReplicationBacklogFirstByteOffsetDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisReplicationOffsetDataPoint(ts, 1)
@@ -307,14 +297,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordRedisSentinelTotalTiltDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisSlavesConnectedDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordRedisTrackingTotalKeysDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisUptimeDataPoint(ts, 1)
@@ -335,6 +323,8 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricRedisDbExpires.aggDataPoints)
 				assert.Empty(t, mb.metricRedisDbKeys.aggDataPoints)
 				assert.Empty(t, mb.metricRedisMode.aggDataPoints)
+				assert.Empty(t, mb.metricRedisPubsubChannelStatus.aggDataPoints)
+				assert.Empty(t, mb.metricRedisPubsubPatternStatus.aggDataPoints)
 				assert.Empty(t, mb.metricRedisRole.aggDataPoints)
 			}
 
@@ -1192,6 +1182,108 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.pubsub.channel.status":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["redis.pubsub.channel.status"], "Found a duplicate in the metrics slice: redis.pubsub.channel.status")
+						validatedMetrics["redis.pubsub.channel.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of pub/sub channels", mi.Description())
+						assert.Equal(t, "{channel}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						redisPubsubChannelStateAttrVal, ok := dp.Attributes().Get("redis.pubsub.channel.state")
+						assert.True(t, ok)
+						assert.Equal(t, "active", redisPubsubChannelStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["redis.pubsub.channel.status"], "Found a duplicate in the metrics slice: redis.pubsub.channel.status")
+						validatedMetrics["redis.pubsub.channel.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of pub/sub channels", mi.Description())
+						assert.Equal(t, "{channel}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["redis.pubsub.channel.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("redis.pubsub.channel.state")
+						assert.False(t, ok)
+					}
+				case "redis.pubsub.connection.count":
+					assert.False(t, validatedMetrics["redis.pubsub.connection.count"], "Found a duplicate in the metrics slice: redis.pubsub.connection.count")
+					validatedMetrics["redis.pubsub.connection.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of clients subscribed to pub/sub channels or patterns (available in Redis 7.2+)", mi.Description())
+					assert.Equal(t, "{client}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.pubsub.pattern.status":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["redis.pubsub.pattern.status"], "Found a duplicate in the metrics slice: redis.pubsub.pattern.status")
+						validatedMetrics["redis.pubsub.pattern.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of pub/sub patterns", mi.Description())
+						assert.Equal(t, "{pattern}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						redisPubsubPatternStateAttrVal, ok := dp.Attributes().Get("redis.pubsub.pattern.state")
+						assert.True(t, ok)
+						assert.Equal(t, "active", redisPubsubPatternStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["redis.pubsub.pattern.status"], "Found a duplicate in the metrics slice: redis.pubsub.pattern.status")
+						validatedMetrics["redis.pubsub.pattern.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of pub/sub patterns", mi.Description())
+						assert.Equal(t, "{pattern}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["redis.pubsub.pattern.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("redis.pubsub.pattern.state")
+						assert.False(t, ok)
+					}
 				case "redis.rdb.changes_since_last_save":
 					assert.False(t, validatedMetrics["redis.rdb.changes_since_last_save"], "Found a duplicate in the metrics slice: redis.rdb.changes_since_last_save")
 					validatedMetrics["redis.rdb.changes_since_last_save"] = true

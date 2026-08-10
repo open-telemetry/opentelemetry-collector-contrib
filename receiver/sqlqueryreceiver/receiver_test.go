@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -181,6 +183,63 @@ func TestCreateMetricsBothDatasourceFields(t *testing.T) {
 	err = receiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 	require.NoError(t, receiver.Shutdown(ctx))
+}
+
+func TestStatusReportingMetrics(t *testing.T) {
+	createReceiver := createMetricsReceiverFunc(fakeDBConnect, mkFakeClient)
+	ctx := t.Context()
+
+	statusEvents := make(chan *componentstatus.Event, 10)
+	host := &statusReporterHost{
+		Host: componenttest.NewNopHost(),
+		report: func(event *componentstatus.Event) {
+			statusEvents <- event
+		},
+	}
+
+	receiver, err := createReceiver(
+		ctx,
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{
+			Config: sqlquery.Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 10 * time.Millisecond,
+				},
+				Driver:     "postgres",
+				DataSource: "my-datasource",
+				Queries: []sqlquery.Query{{
+					SQL: "select * from foo",
+					Metrics: []sqlquery.MetricCfg{{
+						MetricName:  "my-metric",
+						ValueColumn: "foo",
+					}},
+				}},
+			},
+		},
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	require.NoError(t, receiver.Start(ctx, host))
+
+	select {
+	case event := <-statusEvents:
+		require.Equal(t, componentstatus.StatusOK, event.Status())
+	case <-time.After(1 * time.Second):
+		t.Fatal("timed out waiting for status event")
+	}
+
+	require.NoError(t, receiver.Shutdown(ctx))
+}
+
+type statusReporterHost struct {
+	component.Host
+	report func(*componentstatus.Event)
+}
+
+func (h *statusReporterHost) Report(event *componentstatus.Event) {
+	if h.report != nil {
+		h.report(event)
+	}
 }
 
 func fakeDBConnect(string, string) (*sql.DB, error) {

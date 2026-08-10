@@ -36,25 +36,32 @@ func TestJaegerMarshaler(t *testing.T) {
 	jsonByteBuffer := new(bytes.Buffer)
 	require.NoError(t, jsonMarshaler.Marshal(jsonByteBuffer, batches[0].Spans[0]))
 
+	type message struct {
+		Key   []byte
+		Value []byte
+	}
 	tests := []struct {
 		marshaler TracesMarshaler
 		encoding  string
-		messages  []Message
+		messages  []message
 	}{
 		{
 			marshaler: JaegerProtoSpanMarshaler{},
-			messages:  []Message{{Value: jaegerProtoBytes, Key: messageKey}},
+			messages:  []message{{Value: jaegerProtoBytes, Key: messageKey}},
 		},
 		{
 			marshaler: JaegerJSONSpanMarshaler{},
-			messages:  []Message{{Value: jsonByteBuffer.Bytes(), Key: messageKey}},
+			messages:  []message{{Value: jsonByteBuffer.Bytes(), Key: messageKey}},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.encoding, func(t *testing.T) {
-			messages, err := test.marshaler.MarshalTraces(td)
+			var got []message
+			err := test.marshaler.MarshalTraces(td, func(k, v []byte) {
+				got = append(got, message{Key: k, Value: v})
+			})
 			require.NoError(t, err)
-			assert.Equal(t, test.messages, messages)
+			assert.Equal(t, test.messages, got)
 		})
 	}
 }

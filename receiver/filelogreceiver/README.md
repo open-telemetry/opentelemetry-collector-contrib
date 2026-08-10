@@ -3,7 +3,6 @@
 
 This receiver tails and parses logs from files.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: logs   |
@@ -41,7 +40,7 @@ This receiver tails and parses logs from files.
 | `include_file_record_number`          | `false`                              | Whether to add the record number in the file as the attribute `log.file.record_number`.                                                                                                                                                                         |
 | `include_file_record_offset`          | `false`                              | Whether to add the record offset in the file as the attribute `log.file.record_offset`                                                                                                                                                                          |
 | `poll_interval`                       | 200ms                                | The [duration](#time-parameters) between filesystem polls.                                                                                                                                                                                                      |
-| `fingerprint_size`                    | `1kb`                                | The number of bytes with which to identify a file. The first bytes in the file are used as the fingerprint. Decreasing this value at any point will cause existing fingerprints to forgotten, meaning that all files will be read from the beginning (one time) |
+| `fingerprint_size`                    | `1000`                               | The number of bytes, read from the start of a file, used to uniquely identify it. Must be at least `16`. Decreasing this value will trigger re-ingestion of files larger than the new fingerprint size.                                                         |
 | `initial_buffer_size`                 | `16KiB`                              | The initial size of the to read buffer for headers and logs, the buffer will be grown as necessary. Larger values may lead to unnecessary large buffer allocations, and smaller values may lead to lots of copies while growing the buffer.                     |
 | `max_log_size`                        | `1MiB`                               | The maximum size of a log entry to read. The behavior for oversized log entries is controlled by `max_log_size_behavior`. Protects against reading large amounts of data into memory.                                                                            |
 | `max_log_size_behavior`               | `split`                              | Behavior when a log entry exceeds `max_log_size`. Options are `split` (default) which splits oversized entries into multiple log entries, or `truncate` which truncates the entry and drops the remainder.                                                       |
@@ -49,8 +48,9 @@ This receiver tails and parses logs from files.
 | `max_batches`                         | 0                                    | Only applicable when files must be batched in order to respect `max_concurrent_files`. This value limits the number of batches that will be processed during a single poll interval. A value of 0 indicates no limit.                                           |
 | `delete_after_read`                   | `false`                              | If `true`, each log file will be read and then immediately deleted. Requires that the `filelog.allowFileDeletion` feature gate is enabled. Must be `false` when `start_at` is set to `end`.                                                                     |
 | `acquire_fs_lock`                     | `false`                              | Whether to attempt to acquire a filesystem lock before reading a file (Unix only).                                                                                                                                                                              |
-| `attributes`                          | {}                                   | A map of `key: value` pairs to add to the entry's attributes.                                                                                                                                                                                                   |
-| `resource`                            | {}                                   | A map of `key: value` pairs to add to the entry's resource.                                                                                                                                                                                                     |
+| `file_cache_advise`                   | `false`                              | Hints the operating system to release cached file pages after they are read, helping reduce page cache usage for large sequential workloads.  (Linux only).                                                                                                                                                                              |
+| `attributes`                          | {}                                   | A map of `key: value` pairs to add to the entry's attributes. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string.                                                               |
+| `resource`                            | {}                                   | A map of `key: value` pairs to add to the entry's resource. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string.                                                                 |
 | `operators`                           | []                                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details.                                                                                                                                    |
 | `storage`                             | none                                 | The ID of a storage extension to be used to store file offsets. File offsets allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage offsets in memory only.              |
 | `header`                              | nil                                  | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details. Must not be set when `start_at` is set to `end`.                                                          |
@@ -304,15 +304,3 @@ To enable this feature gate, use the flag: `--feature-gates=filelog.protobufChec
 Schedule for this feature gate is:
 
 - Introduce as `Alpha` (disabled by default) in `v0.148.0`
-
-### `filelog.decompressFingerprint`
-
-When this feature gate is enabled, the fingerprint of compressed file is computed by first decompressing its data. Note, it is important to set `compression` to a non-empty value for it to work.
-
-This can cause existing gzip files to be re-ingested because of changes in how fingerprints are computed.
-
-Schedule for this feature gate is:
-
-- Introduce as `Alpha` (disabled by default) in `v0.128.0`
-- Move to `Beta` (enabled by default) in `v0.133.0`
-- Move to `Stable` (cannot be disabled) in `v0.142.0`

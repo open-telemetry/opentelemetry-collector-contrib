@@ -107,9 +107,9 @@ func run(args []string) error {
 
 	if len(sink.Errors) > 0 {
 		var errMsg strings.Builder
-		errMsg.WriteString(fmt.Sprintf("comparison failed with %d error(s):\n", len(sink.Errors)))
+		fmt.Fprintf(&errMsg, "comparison failed with %d error(s):\n", len(sink.Errors))
 		for _, attemptErr := range sink.Errors {
-			errMsg.WriteString(fmt.Sprintf("  Attempt %d: %v\n", attemptErr.AttemptNumber, attemptErr.Error))
+			fmt.Fprintf(&errMsg, "  Attempt %d: %v\n", attemptErr.AttemptNumber, attemptErr.Error)
 		}
 		return errors.New(errMsg.String())
 	}

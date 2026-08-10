@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"path/filepath"
 	"testing"
 
@@ -17,11 +16,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetricassert"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
 
@@ -30,10 +28,10 @@ func TestScraper(t *testing.T) {
 	defer func() { apacheMock.Close() }()
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
-	require.NoError(t, xconfmap.Validate(cfg))
+	cfg.ClientConfig.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
+	require.NoError(t, confmap.Validate(cfg))
 
-	serverName, port, err := parseResourceAttributes(cfg.Endpoint)
+	serverName, port, err := parseResourceAttributes(cfg.ClientConfig.Endpoint)
 	require.NoError(t, err)
 	scraper := newApacheScraper(receivertest.NewNopSettings(metadata.Type), cfg, serverName, port)
 
@@ -43,17 +41,10 @@ func TestScraper(t *testing.T) {
 	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
-	expectedMetrics, err := golden.ReadMetrics(expectedFile)
-	require.NoError(t, err)
-	url, err := url.Parse(apacheMock.URL)
-	require.NoError(t, err)
-
-	expectedMetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("apache.server.port", url.Port())
-
-	// The port is random, so we shouldn't check if this value matches.
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+	expectedFile := filepath.Join("testdata", "scraper", "metrics.assert.yaml")
+	// To regenerate: uncomment, run the test once, re-comment.
+	// require.NoError(t, pmetricassert.WriteAssertionFile(t, expectedFile, actualMetrics))
+	require.NoError(t, pmetricassert.AssertMetrics(expectedFile, actualMetrics))
 }
 
 func TestScraperFailedStart(t *testing.T) {
@@ -188,6 +179,8 @@ CPUChildrenUser: 0.02
 CPUSystem: 0.03
 CPUUser: 0.04
 CPULoad: 0.66
+ReqPerSec: 719.771
+BytesPerSec: 73.12
 Load1: 0.9
 Load5: 0.4
 Load15: 0.3

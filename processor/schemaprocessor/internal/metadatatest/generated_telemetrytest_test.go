@@ -19,6 +19,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.ProcessorSchemaTranslated.Add(context.Background(), 1)
 	tb.ProcessorSchemaCacheHits.Add(context.Background(), 1)
 	tb.ProcessorSchemaCacheMisses.Add(context.Background(), 1)
 	tb.ProcessorSchemaLogsFailed.Add(context.Background(), 1)
@@ -28,6 +29,9 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorSchemaResourceFailed.Add(context.Background(), 1)
 	tb.ProcessorSchemaTracesFailed.Add(context.Background(), 1)
 	tb.ProcessorSchemaTracesSkipped.Add(context.Background(), 1)
+	AssertEqualProcessorSchemaTranslated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorSchemaCacheHits(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())

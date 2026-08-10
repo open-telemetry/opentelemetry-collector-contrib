@@ -11,18 +11,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
 var (
@@ -662,7 +661,8 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						nil,
 					},
 					isCumulative: []bool{false},
-				}),
+				},
+			),
 		},
 		{
 			name: "cumulative_to_delta_include_histogram_metrics",
@@ -713,7 +713,8 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						nil,
 					},
 					isCumulative: []bool{false},
-				}),
+				},
+			),
 		},
 		{
 			name: "cumulative_to_delta_unsupported_include_metric_type",
@@ -1037,15 +1038,17 @@ func generateMixedTestMetrics(tsm testSumMetric, thm testHistogramMetric) pmetri
 
 func BenchmarkConsumeMetrics(b *testing.B) {
 	c := consumertest.NewNop()
-	params := processor.Settings{
-		TelemetrySettings: component.TelemetrySettings{
-			Logger: zap.NewNop(),
-		},
-		BuildInfo: component.BuildInfo{},
-	}
+	params := processortest.NewNopSettings(metadata.Type)
+	params.Logger = zap.NewNop()
 	cfg := createDefaultConfig().(*Config)
+	// InitialValueKeep so the first observation isn't dropped: with
+	// InitialValueAuto the processor would remove the empty metric container
+	// after the first call and the loop's reset() would dereference a stale
+	// pmetric.Metric.
+	cfg.InitialValue = tracking.InitialValueKeep
 	p, err := createMetricsProcessor(b.Context(), params, cfg, c)
 	require.NoError(b, err)
+	b.Cleanup(func() { require.NoError(b, p.Shutdown(b.Context())) })
 
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()

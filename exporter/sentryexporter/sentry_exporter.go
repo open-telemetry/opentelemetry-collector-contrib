@@ -107,8 +107,8 @@ func newEndpointState(config *Config, set exporter.Settings) (*endpointState, er
 		return nil, err
 	}
 
-	if config.Timeout == 0 {
-		config.Timeout = 30 * time.Second
+	if config.ClientConfig.Timeout == 0 {
+		config.ClientConfig.Timeout = 30 * time.Second
 	}
 
 	workerCtx, workerCancel := context.WithCancel(context.Background())
@@ -731,6 +731,10 @@ func (s *endpointState) extractProjectSlug(attrs pcommon.Map) string {
 		if mappedSlug, ok := s.projectMapping[serviceName]; ok {
 			return mappedSlug
 		}
+	}
+
+	if !projectSlugRegexp.MatchString(serviceName) {
+		return ""
 	}
 
 	return serviceName
