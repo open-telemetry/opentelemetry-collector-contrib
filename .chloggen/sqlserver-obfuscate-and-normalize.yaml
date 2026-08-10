@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/sqlserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Use the go-sqllexer `ObfuscateAndNormalize` engine to obfuscate SQL in the top query and query sample collectors
+note: Use the go-sqllexer `ObfuscateAndNormalize` engine to obfuscate SQL in the top query and query sample collectors, and upgrade `github.com/DataDog/datadog-agent/pkg/obfuscate` to v0.82.0
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50065]
@@ -20,7 +20,9 @@ subtext: |
   error logs; they now obfuscate to an empty string. Statements the legacy tokenizer could not parse are
   obfuscated instead of being dropped. The obfuscated `db.query.text` is now normalized (whitespace collapsed,
   comments and aliases removed), which changes the obfuscated output format; this is a one-time change and may
-  alter any downstream identifiers derived from the obfuscated query text.
+  alter any downstream identifiers derived from the obfuscated query text. The obfuscate library upgrade to
+  v0.82.0 also normalizes qualified identifiers consistently (e.g. `schema.table` no longer renders with a
+  spurious space after the dot), which contributes to the same one-time change in obfuscated output.
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 # Optional: The change log or logs in which this entry should be included.
