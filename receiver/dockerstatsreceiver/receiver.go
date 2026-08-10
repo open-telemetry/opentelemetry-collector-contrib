@@ -178,17 +178,17 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 	if container.State != nil && container.State.Health != nil {
 		switch container.State.Health.Status {
 		case "starting":
-			r.mb.RecordContainerHealthStatusDataPoint(now, 1, metadata.AttributeContainerHealthStatusStarting)
-			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStatusHealthy)
-			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStatusUnhealthy)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 1, metadata.AttributeContainerHealthStateStarting)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStateHealthy)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStateUnhealthy)
 		case "healthy":
-			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStatusStarting)
-			r.mb.RecordContainerHealthStatusDataPoint(now, 1, metadata.AttributeContainerHealthStatusHealthy)
-			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStatusUnhealthy)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStateStarting)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 1, metadata.AttributeContainerHealthStateHealthy)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStateUnhealthy)
 		case "unhealthy":
-			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStatusStarting)
-			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStatusHealthy)
-			r.mb.RecordContainerHealthStatusDataPoint(now, 1, metadata.AttributeContainerHealthStatusUnhealthy)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStateStarting)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStateHealthy)
+			r.mb.RecordContainerHealthStatusDataPoint(now, 1, metadata.AttributeContainerHealthStateUnhealthy)
 		}
 	}
 

@@ -3,10 +3,10 @@ resourceMetrics:
       attributes:
         - key: container.hostname
           value:
-            stringValue: 2927e7cf3d9f
+            stringValue: 9a7551457842
         - key: container.id
           value:
-            stringValue: 2927e7cf3d9fdabd0d0397a456800809b8c030ecec88ec43a013059cec7ea719
+            stringValue: 9a7551457842da38cbcf6c4d6e692b1d540f1cbf5ed5415d82ed9c1d0cf163e9
         - key: container.image.name
           value:
             stringValue: docker.io/library/nginx:1.17
@@ -24,7 +24,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "7013000"
+                - asInt: "7362000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -34,7 +34,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "27052000"
+                - asInt: "25243000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -44,7 +44,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "20038000"
+                - asInt: "17881000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -52,7 +52,7 @@ resourceMetrics:
           - description: Percent of CPU used by the container.
             gauge:
               dataPoints:
-                - asDouble: 2.4408115382571404e-05
+                - asDouble: 0.0004885589851799775
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.cpu.utilization
@@ -64,21 +64,21 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: container.health.status
+                    - key: container.health.state
                       value:
                         stringValue: healthy
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
-                    - key: container.health.status
+                    - key: container.health.state
                       value:
                         stringValue: starting
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: container.health.status
+                    - key: container.health.state
                       value:
                         stringValue: unhealthy
                   startTimeUnixNano: "1000000"
@@ -96,7 +96,7 @@ resourceMetrics:
           - description: Percentage of memory used. Not supported on Windows.
             gauge:
               dataPoints:
-                - asDouble: 0.0041101031391238925
+                - asDouble: 0.004077483605457793
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.memory.percent
@@ -106,7 +106,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "50227060736"
+                - asInt: "50227056640"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -115,7 +115,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2064384"
+                - asInt: "2048000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -124,7 +124,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "776"
+                - asInt: "966"
                   attributes:
                     - key: interface
                       value:

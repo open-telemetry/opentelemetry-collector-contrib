@@ -681,7 +681,7 @@ func (ms *ContainerCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) e
 type ContainerHealthStatusMetricAttributeKey string
 
 const (
-	ContainerHealthStatusMetricAttributeKeyContainerHealthStatus ContainerHealthStatusMetricAttributeKey = "container.health.status"
+	ContainerHealthStatusMetricAttributeKeyContainerHealthState ContainerHealthStatusMetricAttributeKey = "container.health.state"
 )
 
 // ContainerHealthStatusMetricConfig provides config for the container.health.status metric.
@@ -710,9 +710,9 @@ func (ms *ContainerHealthStatusMetricConfig) Unmarshal(parser *confmap.Conf) err
 func (ms *ContainerHealthStatusMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerHealthStatusMetricAttributeKeyContainerHealthStatus:
+		case ContainerHealthStatusMetricAttributeKeyContainerHealthState:
 		default:
-			return fmt.Errorf("metric container.health.status doesn't have an attribute %v, valid attributes: [container.health.status]", val)
+			return fmt.Errorf("metric container.health.status doesn't have an attribute %v, valid attributes: [container.health.state]", val)
 		}
 	}
 
@@ -2128,7 +2128,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerHealthStatus: ContainerHealthStatusMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerHealthStatusMetricAttributeKey{ContainerHealthStatusMetricAttributeKeyContainerHealthStatus},
+			EnabledAttributes:   []ContainerHealthStatusMetricAttributeKey{ContainerHealthStatusMetricAttributeKeyContainerHealthState},
 		},
 		ContainerMemoryActiveAnon: ContainerMemoryActiveAnonMetricConfig{
 			Enabled: false,

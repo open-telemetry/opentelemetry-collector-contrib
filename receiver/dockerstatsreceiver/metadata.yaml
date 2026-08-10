@@ -59,8 +59,8 @@ resource_attributes:
     enabled: true
 
 attributes:
-  container.health.status:
-    description: "The health status of the container."
+  container.health.state:
+    description: "The health state of the container."
     type: string
     requirement_level: recommended
     enum:
@@ -326,7 +326,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
     attributes:
-      - container.health.status
+      - container.health.state
 
   container.memory.active_anon:
     enabled: false

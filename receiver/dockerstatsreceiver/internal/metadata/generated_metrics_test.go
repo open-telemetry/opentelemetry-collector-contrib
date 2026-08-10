@@ -182,9 +182,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerHealthStatusDataPoint(ts, 1, AttributeContainerHealthStatusStarting)
+			mb.RecordContainerHealthStatusDataPoint(ts, 1, AttributeContainerHealthStateStarting)
 			if tt.name == "reaggregate_set" {
-				mb.RecordContainerHealthStatusDataPoint(ts, 3, AttributeContainerHealthStatusHealthy)
+				mb.RecordContainerHealthStatusDataPoint(ts, 3, AttributeContainerHealthStateHealthy)
 			}
 
 			allMetricsCount++
@@ -1057,9 +1057,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						containerHealthStatusAttrVal, ok := dp.Attributes().Get("container.health.status")
+						containerHealthStateAttrVal, ok := dp.Attributes().Get("container.health.state")
 						assert.True(t, ok)
-						assert.Equal(t, "starting", containerHealthStatusAttrVal.Str())
+						assert.Equal(t, "starting", containerHealthStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.health.status"], "Found a duplicate in the metrics slice: container.health.status")
 						validatedMetrics["container.health.status"] = true
@@ -1083,7 +1083,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("container.health.status")
+						_, ok := dp.Attributes().Get("container.health.state")
 						assert.False(t, ok)
 					}
 				case "container.memory.active_anon":

@@ -107,7 +107,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerHealthStatus: ContainerHealthStatusMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ContainerHealthStatusMetricAttributeKey{ContainerHealthStatusMetricAttributeKeyContainerHealthStatus},
+						EnabledAttributes:   []ContainerHealthStatusMetricAttributeKey{ContainerHealthStatusMetricAttributeKeyContainerHealthState},
 					},
 					ContainerMemoryActiveAnon: ContainerMemoryActiveAnonMetricConfig{
 						Enabled: true,
@@ -375,7 +375,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerHealthStatus: ContainerHealthStatusMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ContainerHealthStatusMetricAttributeKey{ContainerHealthStatusMetricAttributeKeyContainerHealthStatus},
+						EnabledAttributes:   []ContainerHealthStatusMetricAttributeKey{ContainerHealthStatusMetricAttributeKeyContainerHealthState},
 					},
 					ContainerMemoryActiveAnon: ContainerMemoryActiveAnonMetricConfig{
 						Enabled: false,
@@ -680,7 +680,7 @@ func TestContainerHealthStatusMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []ContainerHealthStatusMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric container.health.status doesn't have an attribute invalid, valid attributes: [container.health.status]")
+	require.ErrorContains(t, cfg.Validate(), "metric container.health.status doesn't have an attribute invalid, valid attributes: [container.health.state]")
 
 	cfg = DefaultMetricsConfig().ContainerHealthStatus
 	cfg.AggregationStrategy = "invalid"

@@ -20,34 +20,34 @@ const (
 	AggregationStrategyMax = "max"
 )
 
-// AttributeContainerHealthStatus specifies the value container.health.status attribute.
-type AttributeContainerHealthStatus int
+// AttributeContainerHealthState specifies the value container.health.state attribute.
+type AttributeContainerHealthState int
 
 const (
-	_ AttributeContainerHealthStatus = iota
-	AttributeContainerHealthStatusStarting
-	AttributeContainerHealthStatusHealthy
-	AttributeContainerHealthStatusUnhealthy
+	_ AttributeContainerHealthState = iota
+	AttributeContainerHealthStateStarting
+	AttributeContainerHealthStateHealthy
+	AttributeContainerHealthStateUnhealthy
 )
 
-// String returns the string representation of the AttributeContainerHealthStatus.
-func (av AttributeContainerHealthStatus) String() string {
+// String returns the string representation of the AttributeContainerHealthState.
+func (av AttributeContainerHealthState) String() string {
 	switch av {
-	case AttributeContainerHealthStatusStarting:
+	case AttributeContainerHealthStateStarting:
 		return "starting"
-	case AttributeContainerHealthStatusHealthy:
+	case AttributeContainerHealthStateHealthy:
 		return "healthy"
-	case AttributeContainerHealthStatusUnhealthy:
+	case AttributeContainerHealthStateUnhealthy:
 		return "unhealthy"
 	}
 	return ""
 }
 
-// MapAttributeContainerHealthStatus is a helper map of string to AttributeContainerHealthStatus attribute value.
-var MapAttributeContainerHealthStatus = map[string]AttributeContainerHealthStatus{
-	"starting":  AttributeContainerHealthStatusStarting,
-	"healthy":   AttributeContainerHealthStatusHealthy,
-	"unhealthy": AttributeContainerHealthStatusUnhealthy,
+// MapAttributeContainerHealthState is a helper map of string to AttributeContainerHealthState attribute value.
+var MapAttributeContainerHealthState = map[string]AttributeContainerHealthState{
+	"starting":  AttributeContainerHealthStateStarting,
+	"healthy":   AttributeContainerHealthStateHealthy,
+	"unhealthy": AttributeContainerHealthStateUnhealthy,
 }
 
 var MetricsInfo = metricsInfo{
@@ -122,7 +122,7 @@ var MetricsInfo = metricsInfo{
 	},
 	ContainerHealthStatus: metricInfo{
 		Name:       "container.health.status",
-		Attributes: []string{"container.health.status"},
+		Attributes: []string{"container.health.state"},
 	},
 	ContainerMemoryActiveAnon: metricInfo{
 		Name: "container.memory.active_anon",
@@ -1817,7 +1817,7 @@ func (m *metricContainerHealthStatus) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricContainerHealthStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, containerHealthStatusAttributeValue string) {
+func (m *metricContainerHealthStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, containerHealthStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1825,8 +1825,8 @@ func (m *metricContainerHealthStatus) recordDataPoint(start pcommon.Timestamp, t
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, ContainerHealthStatusMetricAttributeKeyContainerHealthStatus) {
-		dp.Attributes().PutStr("container.health.status", containerHealthStatusAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, ContainerHealthStatusMetricAttributeKeyContainerHealthState) {
+		dp.Attributes().PutStr("container.health.state", containerHealthStateAttributeValue)
 	}
 
 	var s string
@@ -5347,8 +5347,8 @@ func (mb *MetricsBuilder) RecordContainerCPUUtilizationDataPoint(ts pcommon.Time
 }
 
 // RecordContainerHealthStatusDataPoint adds a data point to container.health.status metric.
-func (mb *MetricsBuilder) RecordContainerHealthStatusDataPoint(ts pcommon.Timestamp, val int64, containerHealthStatusAttributeValue AttributeContainerHealthStatus) {
-	mb.metricContainerHealthStatus.recordDataPoint(mb.startTime, ts, val, containerHealthStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordContainerHealthStatusDataPoint(ts pcommon.Timestamp, val int64, containerHealthStateAttributeValue AttributeContainerHealthState) {
+	mb.metricContainerHealthStatus.recordDataPoint(mb.startTime, ts, val, containerHealthStateAttributeValue.String())
 }
 
 // RecordContainerMemoryActiveAnonDataPoint adds a data point to container.memory.active_anon metric.

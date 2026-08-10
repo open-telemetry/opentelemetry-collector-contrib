@@ -382,7 +382,7 @@ Describes the number of containers that are currently in a given state. All poss
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| container.health.status | The health status of the container. | Str: ``starting``, ``healthy``, ``unhealthy`` | Recommended | - |
+| container.health.state | The health state of the container. | Str: ``starting``, ``healthy``, ``unhealthy`` | Recommended | - |
 
 ### container.memory.active_anon
 
