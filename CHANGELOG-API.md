@@ -7,6 +7,17 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.158.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Stops embedding all configuration fields (#49797, #49913, #49914, #49915, #49965, #49966, #49972, #49973, #49974)
+  - Embedded fields do not work well with tooling and libraries such as mapstructure and should be avoided.
+  
+- `pkg/ottl`: OTTL context path setters now handle nil values based on the path type (#49728)
+
+<!-- previous-version -->
+
 ## v0.157.0
 
 ### 🛑 Breaking changes 🛑

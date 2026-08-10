@@ -6,7 +6,7 @@ resourceMetrics:
             stringValue: localhost:3306
         - key: service.instance.id
           value:
-            stringValue: placeholder
+            stringValue: 24770532-5e1e-5d8a-8f7c-d5d61b1baf28
     scopeMetrics:
       - metrics:
           - description: The number of data pages in the InnoDB buffer pool.
@@ -328,6 +328,14 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
+            unit: "1"
+          - description: The number of currently open files.
+            gauge:
+              dataPoints:
+                - asInt: "367"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mysql.file.open
             unit: "1"
           - description: The number of requests to various MySQL handlers.
             name: mysql.handlers
@@ -672,6 +680,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "256"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: fsyncs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "253"
                   attributes:
                     - key: operation
@@ -691,13 +706,6 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: writes
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "256"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: fsyncs
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -1264,7 +1272,7 @@ resourceMetrics:
                         stringValue: a_table
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: "By"
+            unit: By
           - description: The total count of I/O wait events for a table.
             name: mysql.table.io.wait.count
             sum:
@@ -1667,6 +1675,14 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: ns
+          - description: The number of currently open tables.
+            gauge:
+              dataPoints:
+                - asInt: "370"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mysql.table.open
+            unit: "1"
           - description: The number of rows for a given table.
             name: mysql.table.rows
             sum:
@@ -1690,31 +1706,31 @@ resourceMetrics:
               dataPoints:
                 - asInt: "734976"
                   attributes:
+                    - key: kind
+                      value:
+                        stringValue: data
                     - key: schema
                       value:
                         stringValue: a_schema
                     - key: table
                       value:
                         stringValue: a_table
-                    - key: kind
-                      value:
-                        stringValue: data
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: kind
+                      value:
+                        stringValue: index
                     - key: schema
                       value:
                         stringValue: a_schema
                     - key: table
                       value:
                         stringValue: a_table
-                    - key: kind
-                      value:
-                        stringValue: index
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: "By"
+            unit: By
           - description: The number of hits, misses or overflows for open tables cache lookups.
             name: mysql.table_open_cache
             sum:
@@ -1739,6 +1755,16 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: overflow
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of threads that have taken more than slow_launch_time seconds to create.
+            name: mysql.thread.slow_launch
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "414"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true

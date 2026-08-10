@@ -135,18 +135,19 @@ func createLogsReceiver(
 			scraper.NewFactory(metadata.Type, nil,
 				scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
 					return s, nil
-				}, component.StabilityLevelAlpha)), nil)
+				}, component.StabilityLevelAlpha)), nil,
+		)
 		opts = append(opts, opt)
 	}
 
 	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		// we have 10 updated only attributes. so we set the cache size accordingly.
-		ns, err := newPostgreSQLScraper(params, cfg, clientFactory, newCache(int(cfg.TopNQuery*10*2)), newTTLCache[string](cfg.QueryPlanCacheSize, cfg.QueryPlanCacheTTL))
+		ns, err := newPostgreSQLScraper(params, cfg, clientFactory, newCache(int(cfg.TopQueryCollection.TopNQuery*10*2)), newTTLCache[string](cfg.TopQueryCollection.QueryPlanCacheSize, cfg.TopQueryCollection.QueryPlanCacheTTL))
 		if err != nil {
 			return nil, err
 		}
 		s, err := scraper.NewLogs(func(ctx context.Context) (plog.Logs, error) {
-			return ns.scrapeTopQuery(ctx, cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopNQuery, cfg.MaxExplainEachInterval, cfg.TopQueryCollection.CollectionInterval)
+			return ns.scrapeTopQuery(ctx, cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, cfg.TopQueryCollection.CollectionInterval)
 		}, scraper.WithStart(ns.start), scraper.WithShutdown(ns.shutdown))
 		if err != nil {
 			return nil, err
@@ -155,7 +156,8 @@ func createLogsReceiver(
 			scraper.NewFactory(metadata.Type, nil,
 				scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
 					return s, nil
-				}, component.StabilityLevelAlpha)), nil)
+				}, component.StabilityLevelAlpha)), nil,
+		)
 		opts = append(opts, opt)
 	}
 

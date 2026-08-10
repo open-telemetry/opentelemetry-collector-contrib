@@ -1124,6 +1124,9 @@ var MetricsInfo = metricsInfo{
 		Name:       "mysql.double_writes",
 		Attributes: []string{"double_writes"},
 	},
+	MysqlFileOpen: metricInfo{
+		Name: "mysql.file.open",
+	},
 	MysqlHandlers: metricInfo{
 		Name:       "mysql.handlers",
 		Attributes: []string{"handler"},
@@ -1248,6 +1251,9 @@ var MetricsInfo = metricsInfo{
 		Name:       "mysql.table.lock_wait.write.time",
 		Attributes: []string{"schema", "table_name", "write_lock_type"},
 	},
+	MysqlTableOpen: metricInfo{
+		Name: "mysql.table.open",
+	},
 	MysqlTableRows: metricInfo{
 		Name:       "mysql.table.rows",
 		Attributes: []string{"table_name", "schema"},
@@ -1259,6 +1265,9 @@ var MetricsInfo = metricsInfo{
 	MysqlTableOpenCache: metricInfo{
 		Name:       "mysql.table_open_cache",
 		Attributes: []string{"cache_status"},
+	},
+	MysqlThreadSlowLaunch: metricInfo{
+		Name: "mysql.thread.slow_launch",
 	},
 	MysqlThreads: metricInfo{
 		Name:       "mysql.threads",
@@ -1285,6 +1294,7 @@ type metricsInfo struct {
 	MysqlConnectionCount         metricInfo
 	MysqlConnectionErrors        metricInfo
 	MysqlDoubleWrites            metricInfo
+	MysqlFileOpen                metricInfo
 	MysqlHandlers                metricInfo
 	MysqlIndexIoWaitCount        metricInfo
 	MysqlIndexIoWaitTime         metricInfo
@@ -1318,9 +1328,11 @@ type metricsInfo struct {
 	MysqlTableLockWaitReadTime   metricInfo
 	MysqlTableLockWaitWriteCount metricInfo
 	MysqlTableLockWaitWriteTime  metricInfo
+	MysqlTableOpen               metricInfo
 	MysqlTableRows               metricInfo
 	MysqlTableSize               metricInfo
 	MysqlTableOpenCache          metricInfo
+	MysqlThreadSlowLaunch        metricInfo
 	MysqlThreads                 metricInfo
 	MysqlTmpResources            metricInfo
 	MysqlUptime                  metricInfo
@@ -2207,6 +2219,56 @@ func (m *metricMysqlDoubleWrites) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlDoubleWrites(cfg MysqlDoubleWritesMetricConfig) metricMysqlDoubleWrites {
 	m := metricMysqlDoubleWrites{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlFileOpen struct {
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   MysqlFileOpenMetricConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
+}
+
+// init fills mysql.file.open metric with initial data.
+func (m *metricMysqlFileOpen) init() {
+	m.data.SetName("mysql.file.open")
+	m.data.SetDescription("The number of currently open files.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlFileOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlFileOpen) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlFileOpen) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlFileOpen(cfg MysqlFileOpenMetricConfig) metricMysqlFileOpen {
+	m := metricMysqlFileOpen{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4977,6 +5039,56 @@ func newMetricMysqlTableLockWaitWriteTime(cfg MysqlTableLockWaitWriteTimeMetricC
 	return m
 }
 
+type metricMysqlTableOpen struct {
+	data     pmetric.Metric             // data buffer for generated metric.
+	config   MysqlTableOpenMetricConfig // metric config provided by user.
+	capacity int                        // max observed number of data points added to the metric.
+}
+
+// init fills mysql.table.open metric with initial data.
+func (m *metricMysqlTableOpen) init() {
+	m.data.SetName("mysql.table.open")
+	m.data.SetDescription("The number of currently open tables.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlTableOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlTableOpen) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlTableOpen) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlTableOpen(cfg MysqlTableOpenMetricConfig) metricMysqlTableOpen {
+	m := metricMysqlTableOpen{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlTableRows struct {
 	data          pmetric.Metric             // data buffer for generated metric.
 	config        MysqlTableRowsMetricConfig // metric config provided by user.
@@ -5259,6 +5371,58 @@ func newMetricMysqlTableOpenCache(cfg MysqlTableOpenCacheMetricConfig) metricMys
 	return m
 }
 
+type metricMysqlThreadSlowLaunch struct {
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   MysqlThreadSlowLaunchMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
+}
+
+// init fills mysql.thread.slow_launch metric with initial data.
+func (m *metricMysqlThreadSlowLaunch) init() {
+	m.data.SetName("mysql.thread.slow_launch")
+	m.data.SetDescription("The number of threads that have taken more than slow_launch_time seconds to create.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlThreadSlowLaunch) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlThreadSlowLaunch) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlThreadSlowLaunch) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlThreadSlowLaunch(cfg MysqlThreadSlowLaunchMetricConfig) metricMysqlThreadSlowLaunch {
+	m := metricMysqlThreadSlowLaunch{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlThreads struct {
 	data          pmetric.Metric           // data buffer for generated metric.
 	config        MysqlThreadsMetricConfig // metric config provided by user.
@@ -5514,6 +5678,7 @@ type MetricsBuilder struct {
 	metricMysqlConnectionCount         metricMysqlConnectionCount
 	metricMysqlConnectionErrors        metricMysqlConnectionErrors
 	metricMysqlDoubleWrites            metricMysqlDoubleWrites
+	metricMysqlFileOpen                metricMysqlFileOpen
 	metricMysqlHandlers                metricMysqlHandlers
 	metricMysqlIndexIoWaitCount        metricMysqlIndexIoWaitCount
 	metricMysqlIndexIoWaitTime         metricMysqlIndexIoWaitTime
@@ -5547,9 +5712,11 @@ type MetricsBuilder struct {
 	metricMysqlTableLockWaitReadTime   metricMysqlTableLockWaitReadTime
 	metricMysqlTableLockWaitWriteCount metricMysqlTableLockWaitWriteCount
 	metricMysqlTableLockWaitWriteTime  metricMysqlTableLockWaitWriteTime
+	metricMysqlTableOpen               metricMysqlTableOpen
 	metricMysqlTableRows               metricMysqlTableRows
 	metricMysqlTableSize               metricMysqlTableSize
 	metricMysqlTableOpenCache          metricMysqlTableOpenCache
+	metricMysqlThreadSlowLaunch        metricMysqlThreadSlowLaunch
 	metricMysqlThreads                 metricMysqlThreads
 	metricMysqlTmpResources            metricMysqlTmpResources
 	metricMysqlUptime                  metricMysqlUptime
@@ -5589,6 +5756,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlConnectionCount:         newMetricMysqlConnectionCount(mbc.Metrics.MysqlConnectionCount),
 		metricMysqlConnectionErrors:        newMetricMysqlConnectionErrors(mbc.Metrics.MysqlConnectionErrors),
 		metricMysqlDoubleWrites:            newMetricMysqlDoubleWrites(mbc.Metrics.MysqlDoubleWrites),
+		metricMysqlFileOpen:                newMetricMysqlFileOpen(mbc.Metrics.MysqlFileOpen),
 		metricMysqlHandlers:                newMetricMysqlHandlers(mbc.Metrics.MysqlHandlers),
 		metricMysqlIndexIoWaitCount:        newMetricMysqlIndexIoWaitCount(mbc.Metrics.MysqlIndexIoWaitCount),
 		metricMysqlIndexIoWaitTime:         newMetricMysqlIndexIoWaitTime(mbc.Metrics.MysqlIndexIoWaitTime),
@@ -5622,9 +5790,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlTableLockWaitReadTime:   newMetricMysqlTableLockWaitReadTime(mbc.Metrics.MysqlTableLockWaitReadTime),
 		metricMysqlTableLockWaitWriteCount: newMetricMysqlTableLockWaitWriteCount(mbc.Metrics.MysqlTableLockWaitWriteCount),
 		metricMysqlTableLockWaitWriteTime:  newMetricMysqlTableLockWaitWriteTime(mbc.Metrics.MysqlTableLockWaitWriteTime),
+		metricMysqlTableOpen:               newMetricMysqlTableOpen(mbc.Metrics.MysqlTableOpen),
 		metricMysqlTableRows:               newMetricMysqlTableRows(mbc.Metrics.MysqlTableRows),
 		metricMysqlTableSize:               newMetricMysqlTableSize(mbc.Metrics.MysqlTableSize),
 		metricMysqlTableOpenCache:          newMetricMysqlTableOpenCache(mbc.Metrics.MysqlTableOpenCache),
+		metricMysqlThreadSlowLaunch:        newMetricMysqlThreadSlowLaunch(mbc.Metrics.MysqlThreadSlowLaunch),
 		metricMysqlThreads:                 newMetricMysqlThreads(mbc.Metrics.MysqlThreads),
 		metricMysqlTmpResources:            newMetricMysqlTmpResources(mbc.Metrics.MysqlTmpResources),
 		metricMysqlUptime:                  newMetricMysqlUptime(mbc.Metrics.MysqlUptime),
@@ -5747,6 +5917,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlConnectionCount.emit(ils.Metrics())
 	mb.metricMysqlConnectionErrors.emit(ils.Metrics())
 	mb.metricMysqlDoubleWrites.emit(ils.Metrics())
+	mb.metricMysqlFileOpen.emit(ils.Metrics())
 	mb.metricMysqlHandlers.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitTime.emit(ils.Metrics())
@@ -5780,9 +5951,11 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlTableLockWaitReadTime.emit(ils.Metrics())
 	mb.metricMysqlTableLockWaitWriteCount.emit(ils.Metrics())
 	mb.metricMysqlTableLockWaitWriteTime.emit(ils.Metrics())
+	mb.metricMysqlTableOpen.emit(ils.Metrics())
 	mb.metricMysqlTableRows.emit(ils.Metrics())
 	mb.metricMysqlTableSize.emit(ils.Metrics())
 	mb.metricMysqlTableOpenCache.emit(ils.Metrics())
+	mb.metricMysqlThreadSlowLaunch.emit(ils.Metrics())
 	mb.metricMysqlThreads.emit(ils.Metrics())
 	mb.metricMysqlTmpResources.emit(ils.Metrics())
 	mb.metricMysqlUptime.emit(ils.Metrics())
@@ -5914,6 +6087,16 @@ func (mb *MetricsBuilder) RecordMysqlDoubleWritesDataPoint(ts pcommon.Timestamp,
 		return fmt.Errorf("failed to parse int64 for MysqlDoubleWrites, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlDoubleWrites.recordDataPoint(mb.startTime, ts, val, doubleWritesAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlFileOpenDataPoint adds a data point to mysql.file.open metric.
+func (mb *MetricsBuilder) RecordMysqlFileOpenDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlFileOpen, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlFileOpen.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
@@ -6172,6 +6355,16 @@ func (mb *MetricsBuilder) RecordMysqlTableLockWaitWriteTimeDataPoint(ts pcommon.
 	mb.metricMysqlTableLockWaitWriteTime.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue, tableNameAttributeValue, writeLockTypeAttributeValue.String())
 }
 
+// RecordMysqlTableOpenDataPoint adds a data point to mysql.table.open metric.
+func (mb *MetricsBuilder) RecordMysqlTableOpenDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlTableOpen, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlTableOpen.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordMysqlTableRowsDataPoint adds a data point to mysql.table.rows metric.
 func (mb *MetricsBuilder) RecordMysqlTableRowsDataPoint(ts pcommon.Timestamp, val int64, tableNameAttributeValue string, schemaAttributeValue string) {
 	mb.metricMysqlTableRows.recordDataPoint(mb.startTime, ts, val, tableNameAttributeValue, schemaAttributeValue)
@@ -6189,6 +6382,16 @@ func (mb *MetricsBuilder) RecordMysqlTableOpenCacheDataPoint(ts pcommon.Timestam
 		return fmt.Errorf("failed to parse int64 for MysqlTableOpenCache, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlTableOpenCache.recordDataPoint(mb.startTime, ts, val, cacheStatusAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlThreadSlowLaunchDataPoint adds a data point to mysql.thread.slow_launch metric.
+func (mb *MetricsBuilder) RecordMysqlThreadSlowLaunchDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlThreadSlowLaunch, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlThreadSlowLaunch.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

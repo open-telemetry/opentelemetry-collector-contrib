@@ -416,6 +416,14 @@ Errors that occur during the client connection process.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` | Recommended | - |
 
+### mysql.file.open
+
+The number of currently open files.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
 ### mysql.joins
 
 The number of joins that perform table scans.
@@ -637,6 +645,14 @@ The total table lock wait write events times.
 | table | Table name for event or process. | Any Str | Recommended | - |
 | kind | Write operation types. | Str: ``allow_write``, ``concurrent_insert``, ``low_priority``, ``normal``, ``external`` | Recommended | - |
 
+### mysql.table.open
+
+The number of currently open tables.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
 ### mysql.table.rows
 
 The number of rows for a given table.
@@ -681,6 +697,14 @@ The number of hits, misses or overflows for open tables cache lookups.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | status | The status of cache access. | Str: ``hit``, ``miss``, ``overflow`` | Recommended | - |
+
+### mysql.thread.slow_launch
+
+The number of threads that have taken more than slow_launch_time seconds to create.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 ## Default Events
 

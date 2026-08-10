@@ -300,6 +300,26 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.node.filesystem.inode.count:
+    enabled: false
+    description: "Total number of inodes in the node's root filesystem."
+    unit: "{inode}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  k8s.node.filesystem.inode.free:
+    enabled: false
+    description: "Number of free inodes in the node's root filesystem."
+    unit: "{inode}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
   k8s.node.filesystem.usage:
     enabled: true
     description: "Node filesystem usage"
