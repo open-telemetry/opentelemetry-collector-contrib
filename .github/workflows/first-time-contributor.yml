@@ -1,4 +1,4 @@
-name: 'First time contributor'
+name: "First time contributor"
 on:
   pull_request_target:
     types:
@@ -13,7 +13,7 @@ jobs:
       pull-requests: write # required by the workflow to post the welcome comment
     uses: open-telemetry/shared-workflows/.github/workflows/first-time-pr.yml@62d5939b47144252763c5ff9fffe8c20d76cd806 # v0.4.0
     with:
-      label: 'first-time contributor'
+      label: "first-time contributor"
       custom_message: |
         - First-time contributors should keep **at most one PR marked as ready for review until their first PR is merged**; once two are open for review, any further PR is automatically converted to draft.
         - If your change isn't one of our [priority components](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44130), reviews may take more time.
@@ -44,7 +44,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
-          PR_NODE_ID: ${{ github.event.pull_request.node_id }}
         run: |
           set -euo pipefail
           raw=$(gh pr list --author "$PR_AUTHOR" --state open --json number,isDraft)
@@ -55,13 +54,7 @@ jobs:
             exit 0
           fi
           search_url="https://github.com/${GH_REPO}/pulls?q=is%3Apr+is%3Aopen+draft%3Afalse+author%3A${PR_AUTHOR}"
-          gh api graphql \
-            -f query='mutation($id: ID!) {
-              convertPullRequestToDraft(input: {pullRequestId: $id}) {
-                pullRequest { number isDraft }
-              }
-            }' \
-            -f id="$PR_NODE_ID"
+          gh pr ready --undo "$PR_NUMBER"
           {
             printf 'This pull request is now a draft because you already have [other pull requests open for review](%s).\n\n' "$search_url"
             printf 'Until your first pull request is merged, please keep only one open for review.\n'
