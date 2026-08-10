@@ -46,6 +46,21 @@ type Parser struct {
 	cache                   *lru.Cache[string, map[string]any]
 }
 
+var (
+	// mapPool reuses maps to reduce allocations for parsing
+	mapPool = sync.Pool{
+		New: func() any {
+			return make(map[string]any, 4)
+		},
+	}
+	// pathMapPool reuses maps for path parsing
+	pathMapPool = sync.Pool{
+		New: func() any {
+			return make(map[string]any, 5)
+		},
+	}
+)
+
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
 	processedEntries := make([]*entry.Entry, 0, len(entries))
 	write := func(_ context.Context, ent *entry.Entry) error {
@@ -264,7 +279,7 @@ func (p *Parser) parseEntry(e *entry.Entry) (map[string]any, string, error) {
 		detected = dockerFormat
 	} else {
 		var containerd bool
-		fields, containerd, ok = splitCRI(raw)
+		fields, containerd, ok = parseCRI(raw)
 		if !ok {
 			return nil, "", errors.New("entry cannot be split to CRI fields")
 		}
@@ -360,6 +375,7 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 		p.cache.Add(rawLogPath, parsedValues)
 	}
 
+	pathMapPool.Put(parsedValues)
 	return p.setK8sMetadataFromParsedValues(e, parsedValues)
 }
 
@@ -430,9 +446,9 @@ func parseTime(e *entry.Entry, layout string) error {
 	return nil
 }
 
-// splitCRI parses a raw CRI log line (containerd or crio format) without regex.
+// parseCRI parses a raw CRI log line (containerd or crio format) without regex.
 // It returns the parsed fields as a map, whether the format is containerd (vs crio), and whether parsing succeeded.
-func splitCRI(raw string) (map[string]any, bool, bool) {
+func parseCRI(raw string) (map[string]any, bool, bool) {
 	i := strings.IndexByte(raw, ' ')
 	if i <= 0 {
 		return nil, false, false
@@ -467,12 +483,18 @@ func splitCRI(raw string) (map[string]any, bool, bool) {
 		logtag = rest
 	}
 
-	return map[string]any{
-		"time":   timeVal,
-		"stream": stream,
-		"logtag": logtag,
-		"log":    log,
-	}, containerd, true
+	// Use pool to reduce allocations
+	m := mapPool.Get().(map[string]any)
+
+	for k := range m {
+		delete(m, k)
+	}
+
+	m["time"] = timeVal
+	m["stream"] = stream
+	m["logtag"] = logtag
+	m["log"] = log
+	return m, containerd, true
 }
 
 // stripLogSuffix validates and strips the log file suffix from a path.
@@ -577,13 +599,19 @@ func parseLogPath(raw string) (map[string]any, bool) {
 		return nil, false
 	}
 
-	return map[string]any{
-		"k8s.namespace.name":          ns,
-		"k8s.pod.name":                pod,
-		"k8s.pod.uid":                 uid,
-		"k8s.container.name":          containerName,
-		"k8s.container.restart_count": restartCount,
-	}, true
+	m := pathMapPool.Get().(map[string]any)
+	// Clear the map in case it was reused
+	for k := range m {
+		delete(m, k)
+	}
+
+	m["k8s.namespace.name"] = ns
+	m["k8s.pod.name"] = pod
+	m["k8s.pod.uid"] = uid
+	m["k8s.container.name"] = containerName
+	m["k8s.container.restart_count"] = restartCount
+
+	return m, true
 }
 
 // isNamespace matches [^_]+ from the regex — any char except underscore, one or more.
