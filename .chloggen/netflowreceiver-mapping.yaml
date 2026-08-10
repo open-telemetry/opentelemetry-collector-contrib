@@ -10,7 +10,7 @@ component: receiver/netflow
 note: Add an optional `mapping` config option to supply a goflow2 mapping YAML file for mapping extra template fields or extracting fields from the raw payload by offset.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [40763]
+issues: [50140]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
