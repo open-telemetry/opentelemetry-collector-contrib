@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 )
@@ -73,10 +73,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expectedErr != nil {
-				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.expectedErr.Error())
+				assert.ErrorContains(t, confmap.Validate(cfg), tt.expectedErr.Error())
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -85,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 func TestConfigValidateMissingAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "someQueue"
-	err := xconfmap.Validate(cfg)
+	err := confmap.Validate(cfg)
 	assert.ErrorContains(t, err, errMissingAuthDetails.Error())
 }
 
@@ -94,14 +94,14 @@ func TestConfigValidateMultipleAuth(t *testing.T) {
 	cfg.Queue = "someQueue"
 	cfg.Auth.PlainText = configoptional.Some(SaslPlainTextConfig{Username: "Username", Password: "Password"})
 	cfg.Auth.XAuth2 = configoptional.Some(SaslXAuth2Config{Username: "Username", Bearer: "Bearer"})
-	err := xconfmap.Validate(cfg)
+	err := confmap.Validate(cfg)
 	assert.ErrorContains(t, err, errTooManyAuthDetails.Error())
 }
 
 func TestConfigValidateMissingQueue(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Auth.PlainText = configoptional.Some(SaslPlainTextConfig{Username: "Username", Password: "Password"})
-	err := xconfmap.Validate(cfg)
+	err := confmap.Validate(cfg)
 	assert.ErrorContains(t, err, errMissingQueueName.Error())
 }
 
@@ -147,7 +147,7 @@ func TestConfigValidateSuccess(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Queue = "someQueue"
 			configure(cfg)
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			assert.NoError(t, err)
 		})
 	}
