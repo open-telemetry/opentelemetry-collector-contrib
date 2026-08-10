@@ -1132,6 +1132,8 @@ go.opentelemetry.io/contrib/detectors/azure/azurevm v0.17.0 h1:ySRed/MgKSYjGWkrl
 go.opentelemetry.io/contrib/detectors/azure/azurevm v0.17.0/go.mod h1:UUY5lMDJ3KcIuj/9GY2zLx8JUYx+Yrjh8t2igQJFh8E=
 go.opentelemetry.io/contrib/detectors/gcp v1.45.0 h1:9jR0ZPRok9ryaOQ2Wx8rg5F7Aon59mxrqbVI60/vlBk=
 go.opentelemetry.io/contrib/detectors/gcp v1.45.0/go.mod h1:VSme3o2fvSg5bVg0dRzyHaj4Z5EVhG+g2Fde6LKzmQA=
+go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0 h1:zhELKuXxvdj0t3hWImgDdSm8Aaujhf8RjFBhIGe1yY4=
+go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0/go.mod h1:oZWjl1Hfwo7Z6ip5onlP4v9F9KpNAyTUR5oJt8CkgJw=
 go.opentelemetry.io/contrib/detectors/vultr v0.17.0 h1:4Jq5L/3oxU8SvzcQAq739a9SiA6HhZdfVJro1hWpnXU=
 go.opentelemetry.io/contrib/detectors/vultr v0.17.0/go.mod h1:4rEFOGNurfS14q5MngDG1U+hSmAgzvaSkjm92Jh9kkw=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.70.0 h1:oECp5f+hN7nkwjU/8BxQ/q23bGPb8FIrD839owX222E=

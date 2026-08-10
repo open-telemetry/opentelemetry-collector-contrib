@@ -453,6 +453,8 @@ go.opentelemetry.io/collector/receiver/xreceiver v0.158.1-0.20260805181402-19664
 go.opentelemetry.io/collector/receiver/xreceiver v0.158.1-0.20260805181402-19664a7b14af/go.mod h1:Pp9gUxuckXXheBT3ikuNyHMXWbMm9Y9FqXNb2OAt9/0=
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0 h1:6TvMbWB8r3b3bDnmEOINXY4LGDkS5Tb/KdMIRk1b8gQ=
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0/go.mod h1:l5PtALrPd1LdGoCatPskfemVbh1KupYQ6GyWX+JiyRY=
+go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0 h1:zhELKuXxvdj0t3hWImgDdSm8Aaujhf8RjFBhIGe1yY4=
+go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0/go.mod h1:oZWjl1Hfwo7Z6ip5onlP4v9F9KpNAyTUR5oJt8CkgJw=
 go.opentelemetry.io/contrib/detectors/vultr v0.17.0 h1:4Jq5L/3oxU8SvzcQAq739a9SiA6HhZdfVJro1hWpnXU=
 go.opentelemetry.io/contrib/detectors/vultr v0.17.0/go.mod h1:4rEFOGNurfS14q5MngDG1U+hSmAgzvaSkjm92Jh9kkw=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.70.0 h1:oECp5f+hN7nkwjU/8BxQ/q23bGPb8FIrD839owX222E=
