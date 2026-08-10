@@ -55,17 +55,17 @@ func Test_clear(t *testing.T) {
 		{
 			name:          "pcommon.Value",
 			initialValue:  pcommon.NewValueStr("test"),
-			expectedValue: pcommon.Value{},
+			expectedValue: pcommon.NewValueEmpty(),
 		},
 		{
 			name:          "pcommon.Map",
 			initialValue:  pcommon.NewMap(),
-			expectedValue: pcommon.Map{},
+			expectedValue: pcommon.NewMap(),
 		},
 		{
 			name:          "pcommon.Slice",
 			initialValue:  pcommon.NewSlice(),
-			expectedValue: pcommon.Slice{},
+			expectedValue: pcommon.NewSlice(),
 		},
 		{
 			name:          "[]byte",

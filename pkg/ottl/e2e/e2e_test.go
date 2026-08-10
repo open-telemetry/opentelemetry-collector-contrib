@@ -51,6 +51,36 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `clear(attributes["foo"])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptyMap("foo")
+			},
+		},
+		{
+			statement: `clear(attributes["slice2"])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptySlice("slice2")
+			},
+		},
+		{
+			statement: `clear(span_id)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().SetSpanID(pcommon.NewSpanIDEmpty())
+			},
+		},
+		{
+			statement: `clear(trace_id)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().SetTraceID(pcommon.NewTraceIDEmpty())
+			},
+		},
+		{
+			statement: `clear(time)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().SetTimestamp(pcommon.NewTimestampFromTime(time.Time{}))
+			},
+		},
+		{
 			statement: `delete_key(attributes, "http.method")`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().Remove("http.method")

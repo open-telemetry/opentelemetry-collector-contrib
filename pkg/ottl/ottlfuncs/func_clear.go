@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -39,11 +41,20 @@ func clearFunc[K any](target ottl.GetSetter[K]) ottl.ExprFunc[K] {
 
 		var val any
 		if targetVal != nil {
-			zero := reflect.Zero(reflect.TypeOf(targetVal))
-			if !zero.CanInterface() {
-				return nil, fmt.Errorf("cannot infer zero value for type %T in clear", targetVal)
+			switch targetVal.(type) {
+			case pcommon.Map:
+				val = pcommon.NewMap()
+			case pcommon.Slice:
+				val = pcommon.NewSlice()
+			case pcommon.Value:
+				val = pcommon.NewValueEmpty()
+			default:
+				zero := reflect.Zero(reflect.TypeOf(targetVal))
+				if !zero.CanInterface() {
+					return nil, fmt.Errorf("cannot infer zero value for type %T in clear", targetVal)
+				}
+				val = zero.Interface()
 			}
-			val = zero.Interface()
 		}
 
 		err = target.Set(ctx, tCtx, val)
