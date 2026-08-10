@@ -14,6 +14,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -262,6 +263,7 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 
 	m.recordDataPages(now, globalStats, errs)
 	m.recordDataUsage(now, globalStats, errs)
+	m.recordReplicaOpenTempTables(now, globalStats, errs)
 
 	for k, v := range globalStats {
 		switch k {
@@ -733,6 +735,35 @@ func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 		}
 
 		m.mb.RecordMysqlReplicaSQLDelayDataPoint(now, s.sqlDelay)
+		m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaIORunning), metadata.AttributeReplicaThreadIo)
+		m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaSQLRunning), metadata.AttributeReplicaThreadSQL)
+	}
+}
+
+func replicaThreadRunningValue(status string) int64 {
+	if strings.EqualFold(status, "yes") {
+		return 1
+	}
+	return 0
+}
+
+func (m *mySQLScraper) recordReplicaOpenTempTables(now pcommon.Timestamp, globalStats map[string]string, errs *scrapererror.ScrapeErrors) {
+	if !m.config.MetricsBuilderConfig.Metrics.MysqlReplicaOpenTempTables.Enabled {
+		return
+	}
+	for _, key := range []string{"Replica_open_temp_tables", "Slave_open_temp_tables"} {
+		v, ok := globalStats[key]
+		if !ok {
+			continue
+		}
+		val, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			m.logger.Warn("Replica open temporary tables global status is not an integer", zap.String("key", key), zap.String("value", v), zap.Error(err))
+			errs.AddPartial(1, err)
+			return
+		}
+		m.mb.RecordMysqlReplicaOpenTempTablesDataPoint(now, val)
+		return
 	}
 }
 

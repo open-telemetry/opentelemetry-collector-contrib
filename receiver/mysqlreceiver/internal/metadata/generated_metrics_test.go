@@ -87,6 +87,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["mysql.operations"] = mb.metricMysqlOperations.config.AggregationStrategy
 			aggMap["mysql.page_operations"] = mb.metricMysqlPageOperations.config.AggregationStrategy
 			aggMap["mysql.prepared_statements"] = mb.metricMysqlPreparedStatements.config.AggregationStrategy
+			aggMap["mysql.replica.thread_running"] = mb.metricMysqlReplicaThreadRunning.config.AggregationStrategy
 			aggMap["mysql.row_locks"] = mb.metricMysqlRowLocks.config.AggregationStrategy
 			aggMap["mysql.row_operations"] = mb.metricMysqlRowOperations.config.AggregationStrategy
 			aggMap["mysql.sorts"] = mb.metricMysqlSorts.config.AggregationStrategy
@@ -258,7 +259,16 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
 
 			allMetricsCount++
+			mb.RecordMysqlReplicaOpenTempTablesDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMysqlReplicaThreadRunningDataPoint(ts, 1, AttributeReplicaThreadIo)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMysqlReplicaThreadRunningDataPoint(ts, 3, AttributeReplicaThreadSQL)
+			}
 
 			allMetricsCount++
 			mb.RecordMysqlReplicaTimeBehindSourceDataPoint(ts, 1)
@@ -398,6 +408,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricMysqlOperations.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlPageOperations.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlPreparedStatements.aggDataPoints)
+				assert.Empty(t, mb.metricMysqlReplicaThreadRunning.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlRowLocks.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlRowOperations.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlSorts.aggDataPoints)
@@ -1464,6 +1475,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.replica.open_temp_tables":
+					assert.False(t, validatedMetrics["mysql.replica.open_temp_tables"], "Found a duplicate in the metrics slice: mysql.replica.open_temp_tables")
+					validatedMetrics["mysql.replica.open_temp_tables"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of temporary tables that the replica SQL thread currently has open.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.replica.sql_delay":
 					assert.False(t, validatedMetrics["mysql.replica.sql_delay"], "Found a duplicate in the metrics slice: mysql.replica.sql_delay")
 					validatedMetrics["mysql.replica.sql_delay"] = true
@@ -1478,6 +1501,44 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.replica.thread_running":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mysql.replica.thread_running"], "Found a duplicate in the metrics slice: mysql.replica.thread_running")
+						validatedMetrics["mysql.replica.thread_running"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Whether the replica IO and SQL threads are running. A value of 1 means running, and 0 means not running.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						replicaThreadAttrVal, ok := dp.Attributes().Get("thread")
+						assert.True(t, ok)
+						assert.Equal(t, "io", replicaThreadAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mysql.replica.thread_running"], "Found a duplicate in the metrics slice: mysql.replica.thread_running")
+						validatedMetrics["mysql.replica.thread_running"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Whether the replica IO and SQL threads are running. A value of 1 means running, and 0 means not running.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						_, ok := dp.Attributes().Get("thread")
+						assert.False(t, ok)
+						dp = mi.Gauge().DataPoints().At(1)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(3), dp.IntValue())
+						_, ok = dp.Attributes().Get("thread")
+						assert.False(t, ok)
+					}
 				case "mysql.replica.time_behind_source":
 					assert.False(t, validatedMetrics["mysql.replica.time_behind_source"], "Found a duplicate in the metrics slice: mysql.replica.time_behind_source")
 					validatedMetrics["mysql.replica.time_behind_source"] = true

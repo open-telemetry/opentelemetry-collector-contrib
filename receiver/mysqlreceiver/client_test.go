@@ -5,9 +5,12 @@ package mysqlreceiver
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"regexp"
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	// registers the mysql driver for TestFetchDBVersionTimeout
 	_ "github.com/go-sql-driver/mysql"
 	version "github.com/hashicorp/go-version"
@@ -340,6 +343,57 @@ func TestReplicaStatusQuery(t *testing.T) {
 				q = "SHOW SLAVE STATUS"
 			}
 			assert.Equal(t, tt.wantQuery, q)
+		})
+	}
+}
+
+func TestGetReplicaStatusStatsNormalizesColumnSpellings(t *testing.T) {
+	tests := []struct {
+		name                  string
+		supportsReplicaStatus bool
+		query                 string
+		columns               []string
+		values                []driver.Value
+		wantReplicaIORunning  string
+		wantReplicaSQLRunning string
+	}{
+		{
+			name:                  "replica column spellings",
+			supportsReplicaStatus: true,
+			query:                 "SHOW REPLICA STATUS",
+			columns:               []string{"Replica_IO_Running", "Replica_SQL_Running", "Replica_Open_Temp_Tables"},
+			values:                []driver.Value{"Yes", "No", int64(4)},
+			wantReplicaIORunning:  "Yes",
+			wantReplicaSQLRunning: "No",
+		},
+		{
+			name:                  "slave column spellings",
+			supportsReplicaStatus: false,
+			query:                 "SHOW SLAVE STATUS",
+			columns:               []string{"Slave_IO_Running", "Slave_SQL_Running", "Slave_Open_Temp_Tables"},
+			values:                []driver.Value{"Connecting", "Yes", int64(7)},
+			wantReplicaIORunning:  "Connecting",
+			wantReplicaSQLRunning: "Yes",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			mock.ExpectQuery(regexp.QuoteMeta(tt.query)).
+				WillReturnRows(sqlmock.NewRows(tt.columns).AddRow(tt.values...))
+
+			c := &mySQLClient{client: db}
+			got, err := c.getReplicaStatusStats(tt.supportsReplicaStatus)
+			require.NoError(t, err)
+			require.NoError(t, mock.ExpectationsWereMet())
+			require.Len(t, got, 1)
+
+			assert.Equal(t, tt.wantReplicaIORunning, got[0].replicaIORunning)
+			assert.Equal(t, tt.wantReplicaSQLRunning, got[0].replicaSQLRunning)
 		})
 	}
 }

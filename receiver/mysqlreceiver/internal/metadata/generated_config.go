@@ -1136,6 +1136,26 @@ func (ms *MysqlQuerySlowCountMetricConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
+// MysqlReplicaOpenTempTablesMetricConfig provides config for the mysql.replica.open_temp_tables metric.
+type MysqlReplicaOpenTempTablesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlReplicaOpenTempTablesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MysqlReplicaSQLDelayMetricConfig provides config for the mysql.replica.sql_delay metric.
 type MysqlReplicaSQLDelayMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1153,6 +1173,54 @@ func (ms *MysqlReplicaSQLDelayMetricConfig) Unmarshal(parser *confmap.Conf) erro
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlReplicaThreadRunningMetricAttributeKey specifies the key of an attribute for the mysql.replica.thread_running metric.
+type MysqlReplicaThreadRunningMetricAttributeKey string
+
+const (
+	MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread MysqlReplicaThreadRunningMetricAttributeKey = "thread"
+)
+
+// MysqlReplicaThreadRunningMetricConfig provides config for the mysql.replica.thread_running metric.
+type MysqlReplicaThreadRunningMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlReplicaThreadRunningMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlReplicaThreadRunningMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlReplicaThreadRunningMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread:
+		default:
+			return fmt.Errorf("metric mysql.replica.thread_running doesn't have an attribute %v, valid attributes: [thread]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -2063,7 +2131,9 @@ type MetricsConfig struct {
 	MysqlQueryClientCount        MysqlQueryClientCountMetricConfig        `mapstructure:"mysql.query.client.count"`
 	MysqlQueryCount              MysqlQueryCountMetricConfig              `mapstructure:"mysql.query.count"`
 	MysqlQuerySlowCount          MysqlQuerySlowCountMetricConfig          `mapstructure:"mysql.query.slow.count"`
+	MysqlReplicaOpenTempTables   MysqlReplicaOpenTempTablesMetricConfig   `mapstructure:"mysql.replica.open_temp_tables"`
 	MysqlReplicaSQLDelay         MysqlReplicaSQLDelayMetricConfig         `mapstructure:"mysql.replica.sql_delay"`
+	MysqlReplicaThreadRunning    MysqlReplicaThreadRunningMetricConfig    `mapstructure:"mysql.replica.thread_running"`
 	MysqlReplicaTimeBehindSource MysqlReplicaTimeBehindSourceMetricConfig `mapstructure:"mysql.replica.time_behind_source"`
 	MysqlRowLocks                MysqlRowLocksMetricConfig                `mapstructure:"mysql.row_locks"`
 	MysqlRowOperations           MysqlRowOperationsMetricConfig           `mapstructure:"mysql.row_operations"`
@@ -2211,8 +2281,16 @@ func DefaultMetricsConfig() MetricsConfig {
 		MysqlQuerySlowCount: MysqlQuerySlowCountMetricConfig{
 			Enabled: false,
 		},
+		MysqlReplicaOpenTempTables: MysqlReplicaOpenTempTablesMetricConfig{
+			Enabled: false,
+		},
 		MysqlReplicaSQLDelay: MysqlReplicaSQLDelayMetricConfig{
 			Enabled: false,
+		},
+		MysqlReplicaThreadRunning: MysqlReplicaThreadRunningMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MysqlReplicaThreadRunningMetricAttributeKey{MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread},
 		},
 		MysqlReplicaTimeBehindSource: MysqlReplicaTimeBehindSourceMetricConfig{
 			Enabled: false,

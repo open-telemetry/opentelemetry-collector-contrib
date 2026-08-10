@@ -834,6 +834,32 @@ var MapAttributeReadLockType = map[string]AttributeReadLockType{
 	"external":          AttributeReadLockTypeExternal,
 }
 
+// AttributeReplicaThread specifies the value replica_thread attribute.
+type AttributeReplicaThread int
+
+const (
+	_ AttributeReplicaThread = iota
+	AttributeReplicaThreadIo
+	AttributeReplicaThreadSQL
+)
+
+// String returns the string representation of the AttributeReplicaThread.
+func (av AttributeReplicaThread) String() string {
+	switch av {
+	case AttributeReplicaThreadIo:
+		return "io"
+	case AttributeReplicaThreadSQL:
+		return "sql"
+	}
+	return ""
+}
+
+// MapAttributeReplicaThread is a helper map of string to AttributeReplicaThread attribute value.
+var MapAttributeReplicaThread = map[string]AttributeReplicaThread{
+	"io":  AttributeReplicaThreadIo,
+	"sql": AttributeReplicaThreadSQL,
+}
+
 // AttributeRowLocks specifies the value row_locks attribute.
 type AttributeRowLocks int
 
@@ -1161,8 +1187,15 @@ var MetricsInfo = metricsInfo{
 	MysqlQuerySlowCount: metricInfo{
 		Name: "mysql.query.slow.count",
 	},
+	MysqlReplicaOpenTempTables: metricInfo{
+		Name: "mysql.replica.open_temp_tables",
+	},
 	MysqlReplicaSQLDelay: metricInfo{
 		Name: "mysql.replica.sql_delay",
+	},
+	MysqlReplicaThreadRunning: metricInfo{
+		Name:       "mysql.replica.thread_running",
+		Attributes: []string{"replica_thread"},
 	},
 	MysqlReplicaTimeBehindSource: metricInfo{
 		Name: "mysql.replica.time_behind_source",
@@ -1269,7 +1302,9 @@ type metricsInfo struct {
 	MysqlQueryClientCount        metricInfo
 	MysqlQueryCount              metricInfo
 	MysqlQuerySlowCount          metricInfo
+	MysqlReplicaOpenTempTables   metricInfo
 	MysqlReplicaSQLDelay         metricInfo
+	MysqlReplicaThreadRunning    metricInfo
 	MysqlReplicaTimeBehindSource metricInfo
 	MysqlRowLocks                metricInfo
 	MysqlRowOperations           metricInfo
@@ -3550,6 +3585,56 @@ func newMetricMysqlQuerySlowCount(cfg MysqlQuerySlowCountMetricConfig) metricMys
 	return m
 }
 
+type metricMysqlReplicaOpenTempTables struct {
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   MysqlReplicaOpenTempTablesMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
+}
+
+// init fills mysql.replica.open_temp_tables metric with initial data.
+func (m *metricMysqlReplicaOpenTempTables) init() {
+	m.data.SetName("mysql.replica.open_temp_tables")
+	m.data.SetDescription("The number of temporary tables that the replica SQL thread currently has open.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlReplicaOpenTempTables) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlReplicaOpenTempTables) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlReplicaOpenTempTables) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlReplicaOpenTempTables(cfg MysqlReplicaOpenTempTablesMetricConfig) metricMysqlReplicaOpenTempTables {
+	m := metricMysqlReplicaOpenTempTables{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlReplicaSQLDelay struct {
 	data     pmetric.Metric                   // data buffer for generated metric.
 	config   MysqlReplicaSQLDelayMetricConfig // metric config provided by user.
@@ -3594,6 +3679,72 @@ func (m *metricMysqlReplicaSQLDelay) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlReplicaSQLDelay(cfg MysqlReplicaSQLDelayMetricConfig) metricMysqlReplicaSQLDelay {
 	m := metricMysqlReplicaSQLDelay{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlReplicaThreadRunning struct {
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        MysqlReplicaThreadRunningMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
+}
+
+// init fills mysql.replica.thread_running metric with initial data.
+func (m *metricMysqlReplicaThreadRunning) init() {
+	m.data.SetName("mysql.replica.thread_running")
+	m.data.SetDescription("Whether the replica IO and SQL threads are running. A value of 1 means running, and 0 means not running.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricMysqlReplicaThreadRunning) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, replicaThreadAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread) {
+		dp.Attributes().PutStr("thread", replicaThreadAttributeValue)
+	}
+
+	dps := m.data.Gauge().DataPoints()
+
+	dp.SetIntValue(val)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlReplicaThreadRunning) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlReplicaThreadRunning) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlReplicaThreadRunning(cfg MysqlReplicaThreadRunningMetricConfig) metricMysqlReplicaThreadRunning {
+	m := metricMysqlReplicaThreadRunning{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5354,7 +5505,9 @@ type MetricsBuilder struct {
 	metricMysqlQueryClientCount        metricMysqlQueryClientCount
 	metricMysqlQueryCount              metricMysqlQueryCount
 	metricMysqlQuerySlowCount          metricMysqlQuerySlowCount
+	metricMysqlReplicaOpenTempTables   metricMysqlReplicaOpenTempTables
 	metricMysqlReplicaSQLDelay         metricMysqlReplicaSQLDelay
+	metricMysqlReplicaThreadRunning    metricMysqlReplicaThreadRunning
 	metricMysqlReplicaTimeBehindSource metricMysqlReplicaTimeBehindSource
 	metricMysqlRowLocks                metricMysqlRowLocks
 	metricMysqlRowOperations           metricMysqlRowOperations
@@ -5427,7 +5580,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlQueryClientCount:        newMetricMysqlQueryClientCount(mbc.Metrics.MysqlQueryClientCount),
 		metricMysqlQueryCount:              newMetricMysqlQueryCount(mbc.Metrics.MysqlQueryCount),
 		metricMysqlQuerySlowCount:          newMetricMysqlQuerySlowCount(mbc.Metrics.MysqlQuerySlowCount),
+		metricMysqlReplicaOpenTempTables:   newMetricMysqlReplicaOpenTempTables(mbc.Metrics.MysqlReplicaOpenTempTables),
 		metricMysqlReplicaSQLDelay:         newMetricMysqlReplicaSQLDelay(mbc.Metrics.MysqlReplicaSQLDelay),
+		metricMysqlReplicaThreadRunning:    newMetricMysqlReplicaThreadRunning(mbc.Metrics.MysqlReplicaThreadRunning),
 		metricMysqlReplicaTimeBehindSource: newMetricMysqlReplicaTimeBehindSource(mbc.Metrics.MysqlReplicaTimeBehindSource),
 		metricMysqlRowLocks:                newMetricMysqlRowLocks(mbc.Metrics.MysqlRowLocks),
 		metricMysqlRowOperations:           newMetricMysqlRowOperations(mbc.Metrics.MysqlRowOperations),
@@ -5583,7 +5738,9 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlQueryClientCount.emit(ils.Metrics())
 	mb.metricMysqlQueryCount.emit(ils.Metrics())
 	mb.metricMysqlQuerySlowCount.emit(ils.Metrics())
+	mb.metricMysqlReplicaOpenTempTables.emit(ils.Metrics())
 	mb.metricMysqlReplicaSQLDelay.emit(ils.Metrics())
+	mb.metricMysqlReplicaThreadRunning.emit(ils.Metrics())
 	mb.metricMysqlReplicaTimeBehindSource.emit(ils.Metrics())
 	mb.metricMysqlRowLocks.emit(ils.Metrics())
 	mb.metricMysqlRowOperations.emit(ils.Metrics())
@@ -5894,9 +6051,19 @@ func (mb *MetricsBuilder) RecordMysqlQuerySlowCountDataPoint(ts pcommon.Timestam
 	return nil
 }
 
+// RecordMysqlReplicaOpenTempTablesDataPoint adds a data point to mysql.replica.open_temp_tables metric.
+func (mb *MetricsBuilder) RecordMysqlReplicaOpenTempTablesDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlReplicaOpenTempTables.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordMysqlReplicaSQLDelayDataPoint adds a data point to mysql.replica.sql_delay metric.
 func (mb *MetricsBuilder) RecordMysqlReplicaSQLDelayDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricMysqlReplicaSQLDelay.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlReplicaThreadRunningDataPoint adds a data point to mysql.replica.thread_running metric.
+func (mb *MetricsBuilder) RecordMysqlReplicaThreadRunningDataPoint(ts pcommon.Timestamp, val int64, replicaThreadAttributeValue AttributeReplicaThread) {
+	mb.metricMysqlReplicaThreadRunning.recordDataPoint(mb.startTime, ts, val, replicaThreadAttributeValue.String())
 }
 
 // RecordMysqlReplicaTimeBehindSourceDataPoint adds a data point to mysql.replica.time_behind_source metric.
