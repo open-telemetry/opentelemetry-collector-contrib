@@ -288,3 +288,42 @@ func TestProcessorShutdownWithSlowOperator(t *testing.T) {
 	err = ltp.Shutdown(t.Context())
 	require.NoError(t, err)
 }
+
+// TestProcessorConverterLoopSurvivesStartContextCancellation is a regression test for
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31140.
+// The collector cancels the context passed to Start shortly after Start returns, so the
+// converter loop must not be tied to it; otherwise the processor stops processing logs
+// right after startup.
+func TestProcessorConverterLoopSurvivesStartContextCancellation(t *testing.T) {
+	tln := new(consumertest.LogsSink)
+	factory := NewFactory()
+	ltp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, tln)
+	require.NoError(t, err)
+
+	startCtx, cancelStart := context.WithCancel(t.Context())
+	err = ltp.Start(startCtx, componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	// Simulate the collector cancelling the Start context shortly after Start returns.
+	cancelStart()
+
+	// Give the converter loop a moment to observe the cancellation if it were still
+	// tied to the Start context.
+	time.Sleep(100 * time.Millisecond)
+
+	// The converter loop should still be alive and process logs.
+	sourceLogData := generateLogData([]testLogMessage{
+		{
+			body:         pcommon.NewValueStr("2022-01-01 01:02:03 INFO this is a test message"),
+			observedTime: parseTime("2006-01-02", "2022-01-02"),
+		},
+	})
+	err = ltp.ConsumeLogs(t.Context(), sourceLogData)
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		return len(tln.AllLogs()) > 0
+	}, 2*time.Second, 10*time.Millisecond)
+
+	require.NoError(t, ltp.Shutdown(t.Context()))
+}
