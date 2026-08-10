@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"sync"
 
 	"github.com/netsampler/goflow2/v2/decoders/netflow"
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 )
 
 var _ utils.ReceiverCallback = (*dropHandler)(nil)
@@ -106,8 +108,16 @@ func (nr *netflowReceiver) Shutdown(context.Context) error {
 // This is the fuction that will be invoked for every netflow packet received
 // The function depends on the type of schema (netflow, sflow, flow)
 func (nr *netflowReceiver) buildDecodeFunc() (utils.DecoderFunc, error) {
-	// Eventually this can be used to configure mappings
 	cfgProducer := &protoproducer.ProducerConfig{}
+	if nr.config.Mapping != "" {
+		b, err := os.ReadFile(nr.config.Mapping)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read mapping file %q: %w", nr.config.Mapping, err)
+		}
+		if err := yaml.Unmarshal(b, cfgProducer); err != nil {
+			return nil, fmt.Errorf("failed to parse mapping file %q: %w", nr.config.Mapping, err)
+		}
+	}
 	cfgm, err := cfgProducer.Compile() // converts configuration into a format that can be used by a protobuf producer
 	if err != nil {
 		return nil, err

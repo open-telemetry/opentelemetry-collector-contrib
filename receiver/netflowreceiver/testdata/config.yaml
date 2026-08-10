@@ -48,3 +48,17 @@ netflow/raw_logs:
   workers: 1
   queue_size: 0
   send_raw: true
+
+netflow/valid_mapping:
+  scheme: sflow
+  port: 2055
+  sockets: 1
+  workers: 1
+  mapping: testdata/mapping.yaml
+
+netflow/invalid_mapping:
+  scheme: netflow
+  port: 2055
+  sockets: 1
+  workers: 1
+  mapping: testdata/does_not_exist.yaml

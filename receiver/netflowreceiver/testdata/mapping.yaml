@@ -1,0 +1,20 @@
+# Example goflow2 mapping file used by the netflow receiver tests.
+# See https://github.com/netsampler/goflow2#mapping-extra-fields
+#
+# Extracts the VXLAN VNI from the raw sFlow sampled header by byte offset:
+# the VNI sits 12 bytes into the UDP payload (8B UDP header + 4B into the VXLAN
+# header) -> offset 96 bits, length 24 bits, for VXLAN packets (UDP/4789).
+formatter:
+  fields:
+    - vni
+  protobuf:
+    - name: vni
+      index: 1000
+      type: varint
+sflow:
+  mapping:
+    - layer: udp
+      encap: false
+      offset: 96
+      length: 24
+      destination: vni

@@ -79,6 +79,7 @@ You would then configure your network devices to send netflow, sflow, or ipfix d
 | workers | The number of workers used to decode incoming flow messages | 2 | 2 |
 | queue_size | The size of the incoming netflow packets queue, it will always be at least 1000. | 5000 | 1000 |
 | send_raw   | Whether to send raw flow messages instead of parsing them                        | `true`, `false`    | `false`   |
+| mapping | Optional path to a [goflow2 mapping YAML file](https://github.com/netsampler/goflow2#mapping-extra-fields), used to map extra template fields or extract fields from the raw payload by byte offset (e.g. a VXLAN VNI). | `/etc/otel/netflow-mapping.yaml` | (none) |
 
 When `send_raw` is set to `true`, the receiver will:
 
@@ -145,11 +146,11 @@ The log record timestamps will be:
 * Process [Template Records](https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html) if present
 * Process Netflow V5, V9, and IPFIX messages
 * Extract the attributes documented above
-* Mapping of custom fields is not yet supported
+* Custom field mapping is supported via the `mapping` option (see [goflow2 mapping](https://github.com/netsampler/goflow2#mapping-extra-fields))
 
 #### sflow
 
 * Process [sFlow version 5](https://sflow.org/sflow_version_5.txt) datagrams
 * `flow_sample` and `flow_sample_expanded` are supported.
 * `counter_sample` and `counter_sample_expanded` are NOT yet supported.
-* Mapping of custom fields is not yet supported
+* Custom field mapping is supported via the `mapping` option (see [goflow2 mapping](https://github.com/netsampler/goflow2#mapping-extra-fields))

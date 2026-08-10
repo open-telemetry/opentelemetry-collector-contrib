@@ -71,6 +71,17 @@ func TestLoadConfig(t *testing.T) {
 				SendRaw:   true,
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "valid_mapping"),
+			expected: &Config{
+				Scheme:    "sflow",
+				Port:      2055,
+				Sockets:   1,
+				Workers:   1,
+				QueueSize: 1000,
+				Mapping:   "testdata/mapping.yaml",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -113,6 +124,10 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			id:  component.NewIDWithName(metadata.Type, "zero_workers"),
 			err: "workers must be greater than 0",
+		},
+		{
+			id:  component.NewIDWithName(metadata.Type, "invalid_mapping"),
+			err: "is not readable",
 		},
 	}
 

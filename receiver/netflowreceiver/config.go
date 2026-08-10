@@ -5,6 +5,8 @@ package netflowreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"errors"
+	"fmt"
+	"os"
 )
 
 // Config represents the receiver config settings within the collector's config.yaml
@@ -33,6 +35,11 @@ type Config struct {
 
 	// SendRaw determines whether to send raw flow messages instead of parsing them
 	SendRaw bool `mapstructure:"send_raw"`
+
+	// Mapping is an optional path to a goflow2 mapping YAML file, used to map
+	// extra template fields or extract fields from the raw payload by offset
+	// (e.g. a VXLAN VNI). See https://github.com/netsampler/goflow2#mapping-extra-fields
+	Mapping string `mapstructure:"mapping"`
 }
 
 // Validate checks if the receiver configuration is valid
@@ -64,6 +71,12 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Port <= 0 {
 		return errors.New("port must be greater than 0")
+	}
+
+	if cfg.Mapping != "" {
+		if _, err := os.Stat(cfg.Mapping); err != nil {
+			return fmt.Errorf("mapping file %q is not readable: %w", cfg.Mapping, err)
+		}
 	}
 
 	return nil
