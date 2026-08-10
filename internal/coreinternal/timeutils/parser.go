@@ -103,7 +103,46 @@ func ParseGotime(layout string, value any, location *time.Location) (time.Time, 
 	if err != nil {
 		return time.Time{}, err
 	}
+
+	// If the layout has no date elements (e.g. a time-only layout like
+	// "15:04:05,999" or "%H:%M:%S,%L"), the parsed time has no real date:
+	// time.Parse fills missing elements with their zero value (Jan 1, year 0).
+	// Use today's date so the result isn't stuck on January 1.
+	if !hasDateElements(layout) {
+		n := Now()
+		return time.Date(n.Year(), n.Month(), n.Day(), timeValue.Hour(), timeValue.Minute(), timeValue.Second(), timeValue.Nanosecond(), timeValue.Location()), nil
+	}
+
 	return SetTimestampYear(timeValue), nil
+}
+
+// dateElements is the set of Go layout tokens that unambiguously represent a
+// date: year, month, day, or weekday. A layout containing any of these has a
+// date part; a layout containing none of them (e.g. "15:04:05,999") is
+// time-only. Bare non-padded "1"/"2" tokens (month/day) are intentionally
+// omitted because "1" appears inside the hour token "15" and would misclassify
+// time-only layouts.
+var dateElements = []string{
+	"2006", // year (4-digit)
+	"06",   // year (2-digit)
+	"January", "Jan", // month name
+	"01", "_1", // month number
+	"02", "_2", // day of month
+	"Monday", "Mon", // weekday
+	"002", // day of year
+}
+
+// hasDateElements reports whether a Go time layout contains date elements
+// (year, month, day, or weekday). It is used to distinguish time-only layouts
+// (e.g. "15:04:05,999") from layouts that include a date (e.g. rfc3164-style
+// "Jan 02 15:04:05"), so that the latter are never rewritten to today's date.
+func hasDateElements(layout string) bool {
+	for _, elem := range dateElements {
+		if strings.Contains(layout, elem) {
+			return true
+		}
+	}
+	return false
 }
 
 func parseGotime(layout string, value any, location *time.Location) (time.Time, error) {
@@ -167,17 +206,6 @@ func SetTimestampYear(t time.Time) time.Time {
 		return t
 	}
 	n := Now()
-
-	// If the parsed time is at the Go zero date (January 1 of year 0), the input
-	// contained no date elements at all (e.g. time-only layouts such as "%H:%M:%S,%L").
-	// In that case use today's month and day instead of January 1.
-	// Per the time.Parse documentation, elements omitted from the layout are
-	// assumed to be zero or, when zero is impossible, one — so a time-only parse
-	// yields "Jan 1, year 0".
-	if t.Month() == time.January && t.Day() == 1 {
-		return time.Date(n.Year(), n.Month(), n.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
-	}
-
 	d := time.Date(n.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
 	// Assume the timestamp is from last year if its month and day are
 	// more than 7 days past the current date.

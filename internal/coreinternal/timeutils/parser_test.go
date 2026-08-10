@@ -81,28 +81,6 @@ func Test_setTimestampYear(t *testing.T) {
 		require.Equal(t, expected, yearAdded)
 	})
 
-	t.Run("NoDatePart", func(t *testing.T) {
-		Now = func() time.Time {
-			return time.Date(2026, 0o2, 16, 11, 48, 14, 0, time.UTC)
-		}
-
-		noDate := time.Date(0, 1, 1, 11, 31, 6, 491000000, time.UTC)
-		dateAdded := SetTimestampYear(noDate)
-		expected := time.Date(2026, 0o2, 16, 11, 31, 6, 491000000, time.UTC)
-		require.Equal(t, expected, dateAdded)
-	})
-
-	t.Run("NoDatePartYearBoundary", func(t *testing.T) {
-		Now = func() time.Time {
-			return time.Date(2026, 0o1, 0o1, 0, 0, 0, 0, time.UTC)
-		}
-
-		noDate := time.Date(0, 1, 1, 23, 59, 59, 0, time.UTC)
-		dateAdded := SetTimestampYear(noDate)
-		expected := time.Date(2026, 0o1, 0o1, 23, 59, 59, 0, time.UTC)
-		require.Equal(t, expected, dateAdded)
-	})
-
 	t.Run("PartialDatePreserved", func(t *testing.T) {
 		Now = func() time.Time {
 			return time.Date(2026, 0o2, 16, 0, 0, 0, 0, time.UTC)
@@ -114,6 +92,72 @@ func Test_setTimestampYear(t *testing.T) {
 		dateAdded := SetTimestampYear(partialDate)
 		expected := time.Date(2026, 0o2, 15, 10, 30, 0, 0, time.UTC)
 		require.Equal(t, expected, dateAdded)
+	})
+
+	t.Run("JanuaryFirstPartialDatePreserved", func(t *testing.T) {
+		Now = func() time.Time {
+			return time.Date(2026, 0o2, 16, 0, 0, 0, 0, time.UTC)
+		}
+
+		// A legitimate rfc3164-style partial date of "Jan 1" without a year
+		// must keep January 1 — it is NOT a time-only parse (which also yields
+		// Jan 1, year 0). The layout-based detection in ParseGotime disambiguates.
+		janFirst := time.Date(0, 0o1, 0o1, 10, 30, 0, 0, time.UTC)
+		dateAdded := SetTimestampYear(janFirst)
+		expected := time.Date(2026, 0o1, 0o1, 10, 30, 0, 0, time.UTC)
+		require.Equal(t, expected, dateAdded)
+	})
+}
+
+func TestParseGotime(t *testing.T) {
+	t.Run("NoDatePart", func(t *testing.T) {
+		Now = func() time.Time {
+			return time.Date(2026, 0o2, 16, 11, 48, 14, 0, time.UTC)
+		}
+
+		// Time-only layout: no date elements -> today's date is used.
+		got, err := ParseGotime("15:04:05,999", "11:31:06,491", time.UTC)
+		require.NoError(t, err)
+		expected := time.Date(2026, 0o2, 16, 11, 31, 6, 491000000, time.UTC)
+		require.Equal(t, expected, got)
+	})
+
+	t.Run("NoDatePartYearBoundary", func(t *testing.T) {
+		Now = func() time.Time {
+			return time.Date(2026, 0o1, 0o1, 0, 0, 0, 0, time.UTC)
+		}
+
+		got, err := ParseGotime("15:04:05", "23:59:59", time.UTC)
+		require.NoError(t, err)
+		expected := time.Date(2026, 0o1, 0o1, 23, 59, 59, 0, time.UTC)
+		require.Equal(t, expected, got)
+	})
+
+	t.Run("PartialDateKeepsDate", func(t *testing.T) {
+		Now = func() time.Time {
+			return time.Date(2026, 0o2, 16, 0, 0, 0, 0, time.UTC)
+		}
+
+		// rfc3164-style layout includes %b %d -> month/day parsed from input
+		// are preserved; only the year is replaced. June 9 is more than 7 days
+		// after the mocked Now (Feb 16), so the rollover logic assigns 2025.
+		got, err := ParseGotime("Jan 02 15:04:05", "Jun 09 11:39:45", time.UTC)
+		require.NoError(t, err)
+		expected := time.Date(2025, time.June, 9, 11, 39, 45, 0, time.UTC)
+		require.Equal(t, expected, got)
+	})
+
+	t.Run("JanuaryFirstPartialDateKeepsDate", func(t *testing.T) {
+		Now = func() time.Time {
+			return time.Date(2026, 0o2, 16, 0, 0, 0, 0, time.UTC)
+		}
+
+		// A legitimate "Jan 1" partial date (no year) must keep January 1,
+		// NOT be rewritten to today's date. Layout has %b %d -> date present.
+		got, err := ParseGotime("Jan 02 15:04:05", "Jan 01 10:30:00", time.UTC)
+		require.NoError(t, err)
+		expected := time.Date(2026, time.January, 1, 10, 30, 0, 0, time.UTC)
+		require.Equal(t, expected, got)
 	})
 }
 
