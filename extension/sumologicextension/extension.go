@@ -451,6 +451,7 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 		Ephemeral:     se.conf.Ephemeral,
 		Clobber:       se.conf.Clobber,
 		TimeZone:      se.conf.TimeZone,
+		FleetID:       se.conf.FleetID,
 	})
 	if err != nil {
 		return credentials.CollectorCredentials{}, err
@@ -481,6 +482,17 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 	defer res.Body.Close()
 
 	if res.StatusCode < 200 || res.StatusCode >= 400 {
+		if se.conf.FleetID != "" && res.StatusCode == http.StatusBadRequest {
+			bodyBytes, readErr := io.ReadAll(res.Body)
+			if readErr == nil && isInvalidFleetIDError(bodyBytes) {
+				se.logger.Warn("Invalid fleet ID, retrying registration without fleet ID",
+					zap.String("fleet_id", se.conf.FleetID),
+				)
+				se.conf.FleetID = ""
+				return se.registerCollector(ctx, collectorName)
+			}
+			res.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		}
 		return credentials.CollectorCredentials{}, se.handleRegistrationError(res)
 	} else if res.StatusCode == http.StatusMovedPermanently {
 		// Use the URL from Location header for subsequent requests.
@@ -543,6 +555,19 @@ func (se *SumologicExtension) handleRegistrationError(res *http.Response) error 
 	return fmt.Errorf(
 		"failed to register the collector, got HTTP status code: %d", res.StatusCode,
 	)
+}
+
+func isInvalidFleetIDError(body []byte) bool {
+	var errResponse api.ErrorResponsePayload
+	if err := json.Unmarshal(body, &errResponse); err != nil {
+		return false
+	}
+	for _, e := range errResponse.Errors {
+		if e.Code == "collector-registration:invalid_fleet_id" {
+			return true
+		}
+	}
+	return false
 }
 
 // callRegisterWithBackoff calls registration using exponential backoff algorithm
