@@ -1696,7 +1696,7 @@ func TestSplitCRI(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			fields, containerd, ok := splitCRI(tc.input)
+			fields, containerd, ok := parseCRI(tc.input)
 			require.Equal(t, tc.wantOK, ok)
 			if !ok {
 				return

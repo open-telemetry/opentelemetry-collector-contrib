@@ -2,13 +2,13 @@ change_type: enhancement
 
 component: pkg/stanza
 
-note: Optimize container parser operator by replacing CRI line regexes with a hand-written scanner and caching log filepath metadata extraction, reducing CPU usage by ~70% on the container parser hot path
+note: Optimize container parser operator by replacing CRI line and File path regexes with a hand-written parsers and caching log filepath metadata extraction, reducing CPU usage by ~70% on the container parser hot path
 
 issues: [41672]
 
 subtext: |
-  The `containerdPattern` and `crioPattern` regexes are replaced by a string scanner (`splitCRI`) that is byte-for-byte equivalent.
-  The `logpathPattern` regex on `extractk8sMetaFromFilePath` is replaced by a custom string parser (`splitLogPath`) backed by a configurable LRU cache with size - 1024.
-  End-to-end pprof profiles confirm regexp functions are fully absent from the hot path after this change.
+  The `containerdPattern` and `crioPattern` regexes are replaced by a string scanner (`parseCRI`) that is byte-for-byte equivalent.
+  The `logpathPattern` regex on `extractk8sMetaFromFilePath` is replaced by a custom string parser (`parseLogPath`) backed by a LRU cache with size - 1024.
+  Map pools are added in order to reduce memory allocations.
 
 change_logs: [user]
