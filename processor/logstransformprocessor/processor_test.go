@@ -304,7 +304,7 @@ func TestProcessorConverterLoopSurvivesStartContextCancellation(t *testing.T) {
 	err = ltp.Start(startCtx, componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	// Simulate the collector cancelling the Start context shortly after Start returns.
+	// Simulate the collector canceling the Start context shortly after Start returns.
 	cancelStart()
 
 	// Give the converter loop a moment to observe the cancellation if it were still
