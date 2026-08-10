@@ -162,19 +162,19 @@ func TestMaxEventPayloadBytesValidate(t *testing.T) {
 	}
 
 	t.Run("zero is allowed (means use default)", func(t *testing.T) {
-		assert.NoError(t, xconfmap.Validate(base(0)))
+		assert.NoError(t, confmap.Validate(base(0)))
 	})
 	t.Run("256 KiB is allowed", func(t *testing.T) {
-		assert.NoError(t, xconfmap.Validate(base(1024*256)))
+		assert.NoError(t, confmap.Validate(base(1024*256)))
 	})
 	t.Run("1 MiB is allowed (post 2025-04-02 service limit)", func(t *testing.T) {
-		assert.NoError(t, xconfmap.Validate(base(1024*1024)))
+		assert.NoError(t, confmap.Validate(base(1024*1024)))
 	})
 	t.Run("below minimum is rejected", func(t *testing.T) {
-		assert.Error(t, xconfmap.Validate(base(10)))
+		assert.Error(t, confmap.Validate(base(10)))
 	})
 	t.Run("above 1 MiB is rejected", func(t *testing.T) {
-		assert.Error(t, xconfmap.Validate(base(1024*1024+1)))
+		assert.Error(t, confmap.Validate(base(1024*1024+1)))
 	})
 }
 
