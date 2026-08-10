@@ -401,6 +401,93 @@ func TestReconstructMessages_EmptyContent(t *testing.T) {
 	assert.Empty(t, parts)
 }
 
+func TestReconstructMessages_ContentsArray(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                             "system",
+		"llm.input_messages.0.message.contents.0.message_content.type":  "text",
+		"llm.input_messages.0.message.contents.0.message_content.text":  "You are a haiku poet.",
+		"llm.input_messages.1.message.role":                             "user",
+		"llm.input_messages.1.message.contents.0.message_content.type":  "text",
+		"llm.input_messages.1.message.contents.0.message_content.text":  "Topic: e2e test",
+		"llm.output_messages.0.message.role":                            "assistant",
+		"llm.output_messages.0.message.contents.0.message_content.type": "text",
+		"llm.output_messages.0.message.contents.0.message_content.text": "haiku here",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 2)
+	assert.Equal(t, []any{map[string]any{"type": "text", "content": "You are a haiku poet."}},
+		msgs[0].(map[string]any)["parts"])
+	assert.Equal(t, []any{map[string]any{"type": "text", "content": "Topic: e2e test"}},
+		msgs[1].(map[string]any)["parts"])
+
+	out, _ := attrs.Get(otelsemconv.GenAIOutputMessages)
+	outMsgs := parseJSON(t, out.AsString())
+	require.Len(t, outMsgs, 1)
+	assert.Equal(t, []any{map[string]any{"type": "text", "content": "haiku here"}},
+		outMsgs[0].(map[string]any)["parts"])
+
+	// removeOriginals must strip the indexed keys too, not just the flat ones.
+	_, ok := attrs.Get("llm.input_messages.0.message.contents.0.message_content.text")
+	assert.False(t, ok)
+}
+
+func TestReconstructMessages_ContentsArrayMultipleParts(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                            "user",
+		"llm.input_messages.0.message.contents.0.message_content.type": "text",
+		"llm.input_messages.0.message.contents.0.message_content.text": "first",
+		"llm.input_messages.0.message.contents.1.message_content.type": "text",
+		"llm.input_messages.0.message.contents.1.message_content.text": "second",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	assert.Equal(t, []any{
+		map[string]any{"type": "text", "content": "first"},
+		map[string]any{"type": "text", "content": "second"},
+	}, msgs[0].(map[string]any)["parts"])
+}
+
+func TestReconstructMessages_ContentsArrayNonTextSkipped(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                             "user",
+		"llm.input_messages.0.message.contents.0.message_content.type":  "image",
+		"llm.input_messages.0.message.contents.0.message_content.image": "http://example.com/a.png",
+		"llm.input_messages.0.message.contents.1.message_content.type":  "text",
+		"llm.input_messages.0.message.contents.1.message_content.text":  "describe this",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	assert.Equal(t, []any{map[string]any{"type": "text", "content": "describe this"}},
+		msgs[0].(map[string]any)["parts"])
+}
+
+func TestReconstructMessages_FlatContentTakesPrecedence(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                            "user",
+		"llm.input_messages.0.message.content":                         "flat",
+		"llm.input_messages.0.message.contents.0.message_content.type": "text",
+		"llm.input_messages.0.message.contents.0.message_content.text": "indexed",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	assert.Equal(t, []any{map[string]any{"type": "text", "content": "flat"}},
+		msgs[0].(map[string]any)["parts"])
+}
+
 func TestReconstructMessages_BothInputAndOutput(t *testing.T) {
 	attrs := newAttrs(map[string]string{
 		"llm.input_messages.0.message.role":     "user",
