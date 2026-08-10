@@ -116,3 +116,44 @@ func Test_set_get_nil(t *testing.T) {
 		assert.False(t, setterCalled, "setter should not have been called")
 	}
 }
+
+func Test_SetFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewSetFactory[any]()
+		assert.Equal(t, "set", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewSetFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &SetArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Value"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewSetFactory[any]()
+		args := factory.CreateDefaultArguments()
+		setArgs, ok := args.(*SetArguments[any])
+		require.True(t, ok)
+		setArgs.Target = &ottl.StandardGetSetter[any]{
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+		setArgs.Value = &ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "value", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createSetFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "SetFactory args must be of type *SetArguments[K]")
+	})
+}
