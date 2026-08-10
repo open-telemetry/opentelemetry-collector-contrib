@@ -406,23 +406,23 @@ func (ms *MysqlConnectionErrorsMetricConfig) Validate() error {
 	return nil
 }
 
-// MysqlDataIoMetricAttributeKey specifies the key of an attribute for the mysql.data.io metric.
-type MysqlDataIoMetricAttributeKey string
+// MysqlDataFileIoMetricAttributeKey specifies the key of an attribute for the mysql.data_file.io metric.
+type MysqlDataFileIoMetricAttributeKey string
 
 const (
-	MysqlDataIoMetricAttributeKeyDiskIoDirection MysqlDataIoMetricAttributeKey = "disk.io.direction"
+	MysqlDataFileIoMetricAttributeKeyDiskIoDirection MysqlDataFileIoMetricAttributeKey = "disk.io.direction"
 )
 
-// MysqlDataIoMetricConfig provides config for the mysql.data.io metric.
-type MysqlDataIoMetricConfig struct {
+// MysqlDataFileIoMetricConfig provides config for the mysql.data_file.io metric.
+type MysqlDataFileIoMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []MysqlDataIoMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlDataFileIoMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MysqlDataIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *MysqlDataFileIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -436,12 +436,12 @@ func (ms *MysqlDataIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *MysqlDataIoMetricConfig) Validate() error {
+func (ms *MysqlDataFileIoMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case MysqlDataIoMetricAttributeKeyDiskIoDirection:
+		case MysqlDataFileIoMetricAttributeKeyDiskIoDirection:
 		default:
-			return fmt.Errorf("metric mysql.data.io doesn't have an attribute %v, valid attributes: [disk.io.direction]", val)
+			return fmt.Errorf("metric mysql.data_file.io doesn't have an attribute %v, valid attributes: [disk.io.direction]", val)
 		}
 	}
 
@@ -980,6 +980,54 @@ func (ms *MysqlOpenedResourcesMetricConfig) Validate() error {
 	return nil
 }
 
+// MysqlOperationPendingMetricAttributeKey specifies the key of an attribute for the mysql.operation.pending metric.
+type MysqlOperationPendingMetricAttributeKey string
+
+const (
+	MysqlOperationPendingMetricAttributeKeyOperations MysqlOperationPendingMetricAttributeKey = "operation"
+)
+
+// MysqlOperationPendingMetricConfig provides config for the mysql.operation.pending metric.
+type MysqlOperationPendingMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlOperationPendingMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlOperationPendingMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlOperationPendingMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlOperationPendingMetricAttributeKeyOperations:
+		default:
+			return fmt.Errorf("metric mysql.operation.pending doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MysqlOperationsMetricAttributeKey specifies the key of an attribute for the mysql.operations metric.
 type MysqlOperationsMetricAttributeKey string
 
@@ -1016,54 +1064,6 @@ func (ms *MysqlOperationsMetricConfig) Validate() error {
 		case MysqlOperationsMetricAttributeKeyOperations:
 		default:
 			return fmt.Errorf("metric mysql.operations doesn't have an attribute %v, valid attributes: [operation]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// MysqlOperationsPendingMetricAttributeKey specifies the key of an attribute for the mysql.operations.pending metric.
-type MysqlOperationsPendingMetricAttributeKey string
-
-const (
-	MysqlOperationsPendingMetricAttributeKeyOperations MysqlOperationsPendingMetricAttributeKey = "operation"
-)
-
-// MysqlOperationsPendingMetricConfig provides config for the mysql.operations.pending metric.
-type MysqlOperationsPendingMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []MysqlOperationsPendingMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *MysqlOperationsPendingMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *MysqlOperationsPendingMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case MysqlOperationsPendingMetricAttributeKeyOperations:
-		default:
-			return fmt.Errorf("metric mysql.operations.pending doesn't have an attribute %v, valid attributes: [operation]", val)
 		}
 	}
 
@@ -2201,7 +2201,7 @@ type MetricsConfig struct {
 	MysqlCommands                MysqlCommandsMetricConfig                `mapstructure:"mysql.commands"`
 	MysqlConnectionCount         MysqlConnectionCountMetricConfig         `mapstructure:"mysql.connection.count"`
 	MysqlConnectionErrors        MysqlConnectionErrorsMetricConfig        `mapstructure:"mysql.connection.errors"`
-	MysqlDataIo                  MysqlDataIoMetricConfig                  `mapstructure:"mysql.data.io"`
+	MysqlDataFileIo              MysqlDataFileIoMetricConfig              `mapstructure:"mysql.data_file.io"`
 	MysqlDoubleWrites            MysqlDoubleWritesMetricConfig            `mapstructure:"mysql.double_writes"`
 	MysqlFileOpen                MysqlFileOpenMetricConfig                `mapstructure:"mysql.file.open"`
 	MysqlHandlers                MysqlHandlersMetricConfig                `mapstructure:"mysql.handlers"`
@@ -2214,8 +2214,8 @@ type MetricsConfig struct {
 	MysqlMysqlxConnections       MysqlMysqlxConnectionsMetricConfig       `mapstructure:"mysql.mysqlx_connections"`
 	MysqlMysqlxWorkerThreads     MysqlMysqlxWorkerThreadsMetricConfig     `mapstructure:"mysql.mysqlx_worker_threads"`
 	MysqlOpenedResources         MysqlOpenedResourcesMetricConfig         `mapstructure:"mysql.opened_resources"`
+	MysqlOperationPending        MysqlOperationPendingMetricConfig        `mapstructure:"mysql.operation.pending"`
 	MysqlOperations              MysqlOperationsMetricConfig              `mapstructure:"mysql.operations"`
-	MysqlOperationsPending       MysqlOperationsPendingMetricConfig       `mapstructure:"mysql.operations.pending"`
 	MysqlPageOperations          MysqlPageOperationsMetricConfig          `mapstructure:"mysql.page_operations"`
 	MysqlPageSize                MysqlPageSizeMetricConfig                `mapstructure:"mysql.page_size"`
 	MysqlPreparedStatements      MysqlPreparedStatementsMetricConfig      `mapstructure:"mysql.prepared_statements"`
@@ -2292,10 +2292,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlConnectionErrorsMetricAttributeKey{MysqlConnectionErrorsMetricAttributeKeyConnectionError},
 		},
-		MysqlDataIo: MysqlDataIoMetricConfig{
+		MysqlDataFileIo: MysqlDataFileIoMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []MysqlDataIoMetricAttributeKey{MysqlDataIoMetricAttributeKeyDiskIoDirection},
+			EnabledAttributes:   []MysqlDataFileIoMetricAttributeKey{MysqlDataFileIoMetricAttributeKeyDiskIoDirection},
 		},
 		MysqlDoubleWrites: MysqlDoubleWritesMetricConfig{
 			Enabled:             true,
@@ -2353,15 +2353,15 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlOpenedResourcesMetricAttributeKey{MysqlOpenedResourcesMetricAttributeKeyOpenedResources},
 		},
+		MysqlOperationPending: MysqlOperationPendingMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlOperationPendingMetricAttributeKey{MysqlOperationPendingMetricAttributeKeyOperations},
+		},
 		MysqlOperations: MysqlOperationsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlOperationsMetricAttributeKey{MysqlOperationsMetricAttributeKeyOperations},
-		},
-		MysqlOperationsPending: MysqlOperationsPendingMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []MysqlOperationsPendingMetricAttributeKey{MysqlOperationsPendingMetricAttributeKeyOperations},
 		},
 		MysqlPageOperations: MysqlPageOperationsMetricConfig{
 			Enabled:             true,

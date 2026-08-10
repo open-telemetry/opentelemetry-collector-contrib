@@ -454,7 +454,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [connection_error]
-  mysql.data.io:
+  mysql.data_file.io:
     enabled: false
     description: The total bytes read from and written to InnoDB data files.
     stability: development
@@ -594,6 +594,17 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [opened_resources]
+  mysql.operation.pending:
+    enabled: false
+    description: The number of pending InnoDB data file operations.
+    stability: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [operations]
   mysql.operations:
     enabled: true
     description: The number of InnoDB operations.
@@ -603,17 +614,6 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation_temporality: cumulative
-    attributes: [operations]
-  mysql.operations.pending:
-    enabled: false
-    description: The number of pending InnoDB data file operations.
-    stability: development
-    unit: "1"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: false
       aggregation_temporality: cumulative
     attributes: [operations]
   mysql.page_operations:

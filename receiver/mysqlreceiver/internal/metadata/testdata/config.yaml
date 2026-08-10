@@ -28,7 +28,7 @@ all_set:
     mysql.connection.errors:
       enabled: true
       attributes: ["error"]
-    mysql.data.io:
+    mysql.data_file.io:
       enabled: true
       attributes: ["disk.io.direction"]
     mysql.double_writes:
@@ -65,10 +65,10 @@ all_set:
     mysql.opened_resources:
       enabled: true
       attributes: ["kind"]
-    mysql.operations:
+    mysql.operation.pending:
       enabled: true
       attributes: ["operation"]
-    mysql.operations.pending:
+    mysql.operations:
       enabled: true
       attributes: ["operation"]
     mysql.page_operations:
@@ -193,7 +193,7 @@ reaggregate_set:
     mysql.connection.errors:
       enabled: true
       attributes: []
-    mysql.data.io:
+    mysql.data_file.io:
       enabled: true
       attributes: []
     mysql.double_writes:
@@ -230,10 +230,10 @@ reaggregate_set:
     mysql.opened_resources:
       enabled: true
       attributes: []
-    mysql.operations:
+    mysql.operation.pending:
       enabled: true
       attributes: []
-    mysql.operations.pending:
+    mysql.operations:
       enabled: true
       attributes: []
     mysql.page_operations:
@@ -358,7 +358,7 @@ none_set:
     mysql.connection.errors:
       enabled: false
       attributes: ["error"]
-    mysql.data.io:
+    mysql.data_file.io:
       enabled: false
       attributes: ["disk.io.direction"]
     mysql.double_writes:
@@ -395,10 +395,10 @@ none_set:
     mysql.opened_resources:
       enabled: false
       attributes: ["kind"]
-    mysql.operations:
+    mysql.operation.pending:
       enabled: false
       attributes: ["operation"]
-    mysql.operations.pending:
+    mysql.operations:
       enabled: false
       attributes: ["operation"]
     mysql.page_operations:

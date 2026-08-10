@@ -1120,8 +1120,8 @@ var MetricsInfo = metricsInfo{
 		Name:       "mysql.connection.errors",
 		Attributes: []string{"connection_error"},
 	},
-	MysqlDataIo: metricInfo{
-		Name:       "mysql.data.io",
+	MysqlDataFileIo: metricInfo{
+		Name:       "mysql.data_file.io",
 		Attributes: []string{"disk.io.direction"},
 	},
 	MysqlDoubleWrites: metricInfo{
@@ -1170,12 +1170,12 @@ var MetricsInfo = metricsInfo{
 		Name:       "mysql.opened_resources",
 		Attributes: []string{"opened_resources"},
 	},
-	MysqlOperations: metricInfo{
-		Name:       "mysql.operations",
+	MysqlOperationPending: metricInfo{
+		Name:       "mysql.operation.pending",
 		Attributes: []string{"operations"},
 	},
-	MysqlOperationsPending: metricInfo{
-		Name:       "mysql.operations.pending",
+	MysqlOperations: metricInfo{
+		Name:       "mysql.operations",
 		Attributes: []string{"operations"},
 	},
 	MysqlPageOperations: metricInfo{
@@ -1294,7 +1294,7 @@ type metricsInfo struct {
 	MysqlCommands                metricInfo
 	MysqlConnectionCount         metricInfo
 	MysqlConnectionErrors        metricInfo
-	MysqlDataIo                  metricInfo
+	MysqlDataFileIo              metricInfo
 	MysqlDoubleWrites            metricInfo
 	MysqlFileOpen                metricInfo
 	MysqlHandlers                metricInfo
@@ -1307,8 +1307,8 @@ type metricsInfo struct {
 	MysqlMysqlxConnections       metricInfo
 	MysqlMysqlxWorkerThreads     metricInfo
 	MysqlOpenedResources         metricInfo
+	MysqlOperationPending        metricInfo
 	MysqlOperations              metricInfo
-	MysqlOperationsPending       metricInfo
 	MysqlPageOperations          metricInfo
 	MysqlPageSize                metricInfo
 	MysqlPreparedStatements      metricInfo
@@ -2137,16 +2137,16 @@ func newMetricMysqlConnectionErrors(cfg MysqlConnectionErrorsMetricConfig) metri
 	return m
 }
 
-type metricMysqlDataIo struct {
-	data          pmetric.Metric          // data buffer for generated metric.
-	config        MysqlDataIoMetricConfig // metric config provided by user.
-	capacity      int                     // max observed number of data points added to the metric.
-	aggDataPoints []int64                 // slice containing number of aggregated datapoints at each index
+type metricMysqlDataFileIo struct {
+	data          pmetric.Metric              // data buffer for generated metric.
+	config        MysqlDataFileIoMetricConfig // metric config provided by user.
+	capacity      int                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                     // slice containing number of aggregated datapoints at each index
 }
 
-// init fills mysql.data.io metric with initial data.
-func (m *metricMysqlDataIo) init() {
-	m.data.SetName("mysql.data.io")
+// init fills mysql.data_file.io metric with initial data.
+func (m *metricMysqlDataFileIo) init() {
+	m.data.SetName("mysql.data_file.io")
 	m.data.SetDescription("The total bytes read from and written to InnoDB data files.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
@@ -2156,7 +2156,7 @@ func (m *metricMysqlDataIo) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricMysqlDataIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string) {
+func (m *metricMysqlDataFileIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2164,7 +2164,7 @@ func (m *metricMysqlDataIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, MysqlDataIoMetricAttributeKeyDiskIoDirection) {
+	if slices.Contains(m.config.EnabledAttributes, MysqlDataFileIoMetricAttributeKeyDiskIoDirection) {
 		dp.Attributes().PutStr("disk.io.direction", diskIoDirectionAttributeValue)
 	}
 
@@ -2198,14 +2198,14 @@ func (m *metricMysqlDataIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMysqlDataIo) updateCapacity() {
+func (m *metricMysqlDataFileIo) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMysqlDataIo) emit(metrics pmetric.MetricSlice) {
+func (m *metricMysqlDataFileIo) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
@@ -2218,8 +2218,8 @@ func (m *metricMysqlDataIo) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricMysqlDataIo(cfg MysqlDataIoMetricConfig) metricMysqlDataIo {
-	m := metricMysqlDataIo{config: cfg}
+func newMetricMysqlDataFileIo(cfg MysqlDataFileIoMetricConfig) metricMysqlDataFileIo {
+	m := metricMysqlDataFileIo{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3258,6 +3258,97 @@ func newMetricMysqlOpenedResources(cfg MysqlOpenedResourcesMetricConfig) metricM
 	return m
 }
 
+type metricMysqlOperationPending struct {
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        MysqlOperationPendingMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+}
+
+// init fills mysql.operation.pending metric with initial data.
+func (m *metricMysqlOperationPending) init() {
+	m.data.SetName("mysql.operation.pending")
+	m.data.SetDescription("The number of pending InnoDB data file operations.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricMysqlOperationPending) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationsAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MysqlOperationPendingMetricAttributeKeyOperations) {
+		dp.Attributes().PutStr("operation", operationsAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlOperationPending) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlOperationPending) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlOperationPending(cfg MysqlOperationPendingMetricConfig) metricMysqlOperationPending {
+	m := metricMysqlOperationPending{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlOperations struct {
 	data          pmetric.Metric              // data buffer for generated metric.
 	config        MysqlOperationsMetricConfig // metric config provided by user.
@@ -3341,97 +3432,6 @@ func (m *metricMysqlOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlOperations(cfg MysqlOperationsMetricConfig) metricMysqlOperations {
 	m := metricMysqlOperations{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricMysqlOperationsPending struct {
-	data          pmetric.Metric                     // data buffer for generated metric.
-	config        MysqlOperationsPendingMetricConfig // metric config provided by user.
-	capacity      int                                // max observed number of data points added to the metric.
-	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
-}
-
-// init fills mysql.operations.pending metric with initial data.
-func (m *metricMysqlOperationsPending) init() {
-	m.data.SetName("mysql.operations.pending")
-	m.data.SetDescription("The number of pending InnoDB data file operations.")
-	m.data.SetUnit("1")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
-}
-
-func (m *metricMysqlOperationsPending) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationsAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-
-	dp := pmetric.NewNumberDataPoint()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, MysqlOperationsPendingMetricAttributeKeyOperations) {
-		dp.Attributes().PutStr("operation", operationsAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
-	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMysqlOperationsPending) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMysqlOperationsPending) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricMysqlOperationsPending(cfg MysqlOperationsPendingMetricConfig) metricMysqlOperationsPending {
-	m := metricMysqlOperationsPending{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5718,7 +5718,7 @@ type MetricsBuilder struct {
 	metricMysqlCommands                metricMysqlCommands
 	metricMysqlConnectionCount         metricMysqlConnectionCount
 	metricMysqlConnectionErrors        metricMysqlConnectionErrors
-	metricMysqlDataIo                  metricMysqlDataIo
+	metricMysqlDataFileIo              metricMysqlDataFileIo
 	metricMysqlDoubleWrites            metricMysqlDoubleWrites
 	metricMysqlFileOpen                metricMysqlFileOpen
 	metricMysqlHandlers                metricMysqlHandlers
@@ -5731,8 +5731,8 @@ type MetricsBuilder struct {
 	metricMysqlMysqlxConnections       metricMysqlMysqlxConnections
 	metricMysqlMysqlxWorkerThreads     metricMysqlMysqlxWorkerThreads
 	metricMysqlOpenedResources         metricMysqlOpenedResources
+	metricMysqlOperationPending        metricMysqlOperationPending
 	metricMysqlOperations              metricMysqlOperations
-	metricMysqlOperationsPending       metricMysqlOperationsPending
 	metricMysqlPageOperations          metricMysqlPageOperations
 	metricMysqlPageSize                metricMysqlPageSize
 	metricMysqlPreparedStatements      metricMysqlPreparedStatements
@@ -5796,7 +5796,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlCommands:                newMetricMysqlCommands(mbc.Metrics.MysqlCommands),
 		metricMysqlConnectionCount:         newMetricMysqlConnectionCount(mbc.Metrics.MysqlConnectionCount),
 		metricMysqlConnectionErrors:        newMetricMysqlConnectionErrors(mbc.Metrics.MysqlConnectionErrors),
-		metricMysqlDataIo:                  newMetricMysqlDataIo(mbc.Metrics.MysqlDataIo),
+		metricMysqlDataFileIo:              newMetricMysqlDataFileIo(mbc.Metrics.MysqlDataFileIo),
 		metricMysqlDoubleWrites:            newMetricMysqlDoubleWrites(mbc.Metrics.MysqlDoubleWrites),
 		metricMysqlFileOpen:                newMetricMysqlFileOpen(mbc.Metrics.MysqlFileOpen),
 		metricMysqlHandlers:                newMetricMysqlHandlers(mbc.Metrics.MysqlHandlers),
@@ -5809,8 +5809,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlMysqlxConnections:       newMetricMysqlMysqlxConnections(mbc.Metrics.MysqlMysqlxConnections),
 		metricMysqlMysqlxWorkerThreads:     newMetricMysqlMysqlxWorkerThreads(mbc.Metrics.MysqlMysqlxWorkerThreads),
 		metricMysqlOpenedResources:         newMetricMysqlOpenedResources(mbc.Metrics.MysqlOpenedResources),
+		metricMysqlOperationPending:        newMetricMysqlOperationPending(mbc.Metrics.MysqlOperationPending),
 		metricMysqlOperations:              newMetricMysqlOperations(mbc.Metrics.MysqlOperations),
-		metricMysqlOperationsPending:       newMetricMysqlOperationsPending(mbc.Metrics.MysqlOperationsPending),
 		metricMysqlPageOperations:          newMetricMysqlPageOperations(mbc.Metrics.MysqlPageOperations),
 		metricMysqlPageSize:                newMetricMysqlPageSize(mbc.Metrics.MysqlPageSize),
 		metricMysqlPreparedStatements:      newMetricMysqlPreparedStatements(mbc.Metrics.MysqlPreparedStatements),
@@ -5957,7 +5957,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlCommands.emit(ils.Metrics())
 	mb.metricMysqlConnectionCount.emit(ils.Metrics())
 	mb.metricMysqlConnectionErrors.emit(ils.Metrics())
-	mb.metricMysqlDataIo.emit(ils.Metrics())
+	mb.metricMysqlDataFileIo.emit(ils.Metrics())
 	mb.metricMysqlDoubleWrites.emit(ils.Metrics())
 	mb.metricMysqlFileOpen.emit(ils.Metrics())
 	mb.metricMysqlHandlers.emit(ils.Metrics())
@@ -5970,8 +5970,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlMysqlxConnections.emit(ils.Metrics())
 	mb.metricMysqlMysqlxWorkerThreads.emit(ils.Metrics())
 	mb.metricMysqlOpenedResources.emit(ils.Metrics())
+	mb.metricMysqlOperationPending.emit(ils.Metrics())
 	mb.metricMysqlOperations.emit(ils.Metrics())
-	mb.metricMysqlOperationsPending.emit(ils.Metrics())
 	mb.metricMysqlPageOperations.emit(ils.Metrics())
 	mb.metricMysqlPageSize.emit(ils.Metrics())
 	mb.metricMysqlPreparedStatements.emit(ils.Metrics())
@@ -6121,13 +6121,13 @@ func (mb *MetricsBuilder) RecordMysqlConnectionErrorsDataPoint(ts pcommon.Timest
 	return nil
 }
 
-// RecordMysqlDataIoDataPoint adds a data point to mysql.data.io metric.
-func (mb *MetricsBuilder) RecordMysqlDataIoDataPoint(ts pcommon.Timestamp, inputVal string, diskIoDirectionAttributeValue AttributeDiskIoDirection) error {
+// RecordMysqlDataFileIoDataPoint adds a data point to mysql.data_file.io metric.
+func (mb *MetricsBuilder) RecordMysqlDataFileIoDataPoint(ts pcommon.Timestamp, inputVal string, diskIoDirectionAttributeValue AttributeDiskIoDirection) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
-		return fmt.Errorf("failed to parse int64 for MysqlDataIo, value was %s: %w", inputVal, err)
+		return fmt.Errorf("failed to parse int64 for MysqlDataFileIo, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlDataIo.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String())
+	mb.metricMysqlDataFileIo.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String())
 	return nil
 }
 
@@ -6241,6 +6241,16 @@ func (mb *MetricsBuilder) RecordMysqlOpenedResourcesDataPoint(ts pcommon.Timesta
 	return nil
 }
 
+// RecordMysqlOperationPendingDataPoint adds a data point to mysql.operation.pending metric.
+func (mb *MetricsBuilder) RecordMysqlOperationPendingDataPoint(ts pcommon.Timestamp, inputVal string, operationsAttributeValue AttributeOperations) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlOperationPending, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlOperationPending.recordDataPoint(mb.startTime, ts, val, operationsAttributeValue.String())
+	return nil
+}
+
 // RecordMysqlOperationsDataPoint adds a data point to mysql.operations metric.
 func (mb *MetricsBuilder) RecordMysqlOperationsDataPoint(ts pcommon.Timestamp, inputVal string, operationsAttributeValue AttributeOperations) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -6248,16 +6258,6 @@ func (mb *MetricsBuilder) RecordMysqlOperationsDataPoint(ts pcommon.Timestamp, i
 		return fmt.Errorf("failed to parse int64 for MysqlOperations, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlOperations.recordDataPoint(mb.startTime, ts, val, operationsAttributeValue.String())
-	return nil
-}
-
-// RecordMysqlOperationsPendingDataPoint adds a data point to mysql.operations.pending metric.
-func (mb *MetricsBuilder) RecordMysqlOperationsPendingDataPoint(ts pcommon.Timestamp, inputVal string, operationsAttributeValue AttributeOperations) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for MysqlOperationsPending, value was %s: %w", inputVal, err)
-	}
-	mb.metricMysqlOperationsPending.recordDataPoint(mb.startTime, ts, val, operationsAttributeValue.String())
 	return nil
 }
 

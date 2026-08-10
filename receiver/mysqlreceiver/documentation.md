@@ -416,7 +416,7 @@ Errors that occur during the client connection process.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` | Recommended | - |
 
-### mysql.data.io
+### mysql.data_file.io
 
 The total bytes read from and written to InnoDB data files.
 
@@ -476,7 +476,7 @@ This metric is specific for MySQL working as Document Store (X-Plugin). [more do
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | kind | The worker thread count kind. | Str: ``available``, ``active`` | Recommended | - |
 
-### mysql.operations.pending
+### mysql.operation.pending
 
 The number of pending InnoDB data file operations.
 
