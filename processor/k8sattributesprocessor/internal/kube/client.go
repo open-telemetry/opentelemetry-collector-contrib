@@ -414,7 +414,9 @@ func (c *WatchClient) handlePodAdd(obj any) {
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", obj))
 	}
+	c.m.RLock()
 	podTableSize := len(c.Pods)
+	c.m.RUnlock()
 	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
 	}
@@ -436,7 +438,9 @@ func (c *WatchClient) handlePodUpdate(_, newPod any) {
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", newPod))
 	}
+	c.m.RLock()
 	podTableSize := len(c.Pods)
+	c.m.RUnlock()
 	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
 	}
@@ -779,9 +783,10 @@ func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
 	for i := range toDelete {
 		d := toDelete[i]
 		if p, ok := c.Pods[d.id]; ok {
-			// Sanity check: make sure we are deleting the same pod
-			// and the underlying state (ip<>pod mapping) has not changed.
-			if p.PodUID == d.podUID {
+			// Use pointer equality: if c.Pods[id] changed since the delete was
+			// queued (cross-pod replacement or active->stale->active re-activation),
+			// d.pod will differ from the current pointer and we skip the delete.
+			if p == d.pod {
 				delete(c.Pods, d.id)
 				deleted = true
 			}
@@ -1614,7 +1619,6 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	newPod := c.podFromAPI(pod)
 	newIdentifiers := c.getIdentifiersFromAssoc(newPod)
 	var staleRequests []deleteRequest
-	var reactivatedIDs []PodIdentifier
 
 	c.m.Lock()
 	var oldPod *Pod
@@ -1635,23 +1639,15 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 			}
 		}
 		c.Pods[id] = newPod
-		reactivatedIDs = append(reactivatedIDs, id)
 	}
 	if oldPod != nil && c.Pods[podUIDIdentifier(newPod.PodUID)] == newPod {
 		// Clean up identifiers that were present in oldPod but are no longer in newPod.
 		// This handles memory leaks for all identifier types (container.id, labels, annotations, etc.).
 		// Run only when this watch actually replaced the pod under k8s.pod.uid.
-		staleRequests = c.staleIdentifierDeleteRequestsLocked(oldPod, newPod)
+		staleRequests = c.staleIdentifierDeleteRequestsLocked(oldPod, newPod, newIdentifiers)
 	}
 	c.m.Unlock()
 
-	// Cancel any pending deletes for identifiers that are now active again.
-	// This fixes the active->stale->active case where an identifier temporarily disappears
-	// and reappears before the grace period expires, preventing incorrect removal.
-	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48588
-	if newPod.PodUID != "" {
-		c.cancelDeleteRequests(reactivatedIDs, newPod.PodUID)
-	}
 	c.appendDeleteRequests(staleRequests)
 }
 
@@ -1682,7 +1678,7 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 		p, ok := c.GetPod(id)
 
 		if ok && p.PodUID == string(pod.UID) {
-			c.appendDeleteQueue(id, p.PodUID)
+			c.appendDeleteQueue(id, p)
 		}
 	}
 }
@@ -1691,13 +1687,13 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 // that were present in oldPod but are no longer present in newPod.
 // This covers memory leaks for all identifier types including container.id,
 // custom labels, annotations, and any other association source.
+// newIdentifiers must be the pre-computed result of getIdentifiersFromAssoc(newPod).
 // Must be called with c.m held.
-func (c *WatchClient) staleIdentifierDeleteRequestsLocked(oldPod, newPod *Pod) []deleteRequest {
+func (c *WatchClient) staleIdentifierDeleteRequestsLocked(oldPod, newPod *Pod, newIdentifiers []PodIdentifier) []deleteRequest {
 	if oldPod == nil || newPod == nil || oldPod.PodUID == "" || oldPod.PodUID != newPod.PodUID {
 		return nil
 	}
 
-	newIdentifiers := c.getIdentifiersFromAssoc(newPod)
 	newIDSet := make(map[PodIdentifier]struct{}, len(newIdentifiers))
 	for i := range newIdentifiers {
 		newIDSet[newIdentifiers[i]] = struct{}{}
@@ -1711,7 +1707,7 @@ func (c *WatchClient) staleIdentifierDeleteRequestsLocked(oldPod, newPod *Pod) [
 			continue
 		}
 		if p, ok := c.Pods[id]; ok && p.PodUID == oldPod.PodUID {
-			requests = append(requests, deleteRequest{id: id, podUID: oldPod.PodUID})
+			requests = append(requests, deleteRequest{id: id, pod: p})
 		}
 	}
 	return requests
@@ -1725,48 +1721,16 @@ func podUIDIdentifier(podUID string) PodIdentifier {
 
 func (c *WatchClient) appendDeleteRequests(requests []deleteRequest) {
 	for i := range requests {
-		c.appendDeleteQueue(requests[i].id, requests[i].podUID)
+		c.appendDeleteQueue(requests[i].id, requests[i].pod)
 	}
 }
 
-// cancelDeleteRequests removes any pending delete requests that match the given identifiers and podUID.
-// This prevents stale deletes from removing an identifier that has since been re-added to the cache.
-func (c *WatchClient) cancelDeleteRequests(ids []PodIdentifier, podUID string) {
-	if len(ids) == 0 {
-		return
-	}
-
-	c.deleteMut.Lock()
-	if len(c.deleteQueue) == 0 {
-		c.deleteMut.Unlock()
-		return
-	}
-
-	idSet := make(map[PodIdentifier]struct{}, len(ids))
-	for i := range ids {
-		idSet[ids[i]] = struct{}{}
-	}
-
-	newQueue := c.deleteQueue[:0]
-	for i := range c.deleteQueue {
-		d := c.deleteQueue[i]
-		if d.podUID == podUID {
-			if _, ok := idSet[d.id]; ok {
-				continue // Cancel this delete request
-			}
-		}
-		newQueue = append(newQueue, d)
-	}
-	c.deleteQueue = newQueue
-	c.deleteMut.Unlock()
-}
-
-func (c *WatchClient) appendDeleteQueue(podID PodIdentifier, podUID string) {
+func (c *WatchClient) appendDeleteQueue(podID PodIdentifier, pod *Pod) {
 	c.deleteMut.Lock()
 	c.deleteQueue = append(c.deleteQueue, deleteRequest{
-		id:     podID,
-		podUID: podUID,
-		ts:     time.Now(),
+		id:  podID,
+		pod: pod,
+		ts:  time.Now(),
 	})
 	c.deleteMut.Unlock()
 }
