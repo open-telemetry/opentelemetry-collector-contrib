@@ -357,7 +357,7 @@ func TestExplainQueryParamCount(t *testing.T) {
 					wait.ForLog("database system is ready to accept connections").
 						WithOccurrence(2).
 						WithStartupTimeout(2*time.Minute),
-				).WithStartupTimeout(2 * time.Minute),
+				).WithDeadline(2 * time.Minute),
 			},
 		},
 	)
