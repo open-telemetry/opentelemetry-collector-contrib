@@ -193,15 +193,15 @@ func TestReplicaThreadRunningValue(t *testing.T) {
 	}
 }
 
-func TestScrapeReplicaThreadRunningRecordsRowsAsDuplicateDataPoints(t *testing.T) {
+func TestScrapeReplicaThreadRunningRecordsRowsByChannel(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaThreadRunning.Enabled = true
 
 	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
 		replicaStatusStats: []replicaStatusStats{
-			{replicaIORunning: "Yes", replicaSQLRunning: "Yes"},
-			{replicaIORunning: "No", replicaSQLRunning: "Yes"},
+			{replicaIORunning: "Yes", replicaSQLRunning: "Yes", channelName: "source_a"},
+			{replicaIORunning: "No", replicaSQLRunning: "Yes", channelName: "source_b"},
 		},
 	}
 
@@ -209,10 +209,10 @@ func TestScrapeReplicaThreadRunningRecordsRowsAsDuplicateDataPoints(t *testing.T
 
 	got := replicaThreadRunningDataPoints(t, scraper.mb.Emit())
 	assert.Equal(t, []replicaThreadRunningDataPoint{
-		{thread: "io", value: 1},
-		{thread: "sql", value: 1},
-		{thread: "io", value: 0},
-		{thread: "sql", value: 1},
+		{thread: "io", channel: "source_a", value: 1},
+		{thread: "sql", channel: "source_a", value: 1},
+		{thread: "io", channel: "source_b", value: 0},
+		{thread: "sql", channel: "source_b", value: 1},
 	}, got)
 }
 
@@ -259,8 +259,9 @@ func TestScrapeReplicaStatusDoesNotRecordReplicaOpenTempTables(t *testing.T) {
 }
 
 type replicaThreadRunningDataPoint struct {
-	thread string
-	value  int64
+	thread  string
+	channel string
+	value   int64
 }
 
 func replicaThreadRunningDataPoints(t *testing.T, metrics pmetric.Metrics) []replicaThreadRunningDataPoint {
@@ -282,9 +283,12 @@ func replicaThreadRunningDataPoints(t *testing.T, metrics pmetric.Metrics) []rep
 					dp := dataPoints.At(dpIndex)
 					thread, ok := dp.Attributes().Get("thread")
 					require.True(t, ok)
+					channel, ok := dp.Attributes().Get("channel")
+					require.True(t, ok)
 					got = append(got, replicaThreadRunningDataPoint{
-						thread: thread.Str(),
-						value:  dp.IntValue(),
+						thread:  thread.Str(),
+						channel: channel.Str(),
+						value:   dp.IntValue(),
 					})
 				}
 				return got

@@ -247,6 +247,11 @@ attributes:
     type: string
     enum: [normal, with_shared_locks, high_priority, no_insert, external]
     requirement_level: recommended
+  replica_channel:
+    name_override: channel
+    description: The replication channel name.
+    type: string
+    requirement_level: recommended
   replica_thread:
     name_override: thread
     description: The replica thread type.
@@ -673,7 +678,7 @@ metrics:
     unit: "1"
     gauge:
       value_type: int
-    attributes: [replica_thread]
+    attributes: [replica_thread, replica_channel]
   mysql.replica.time_behind_source:
     enabled: false
     description: This field is an indication of how “late” the replica is.

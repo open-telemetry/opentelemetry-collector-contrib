@@ -1195,7 +1195,7 @@ var MetricsInfo = metricsInfo{
 	},
 	MysqlReplicaThreadRunning: metricInfo{
 		Name:       "mysql.replica.thread_running",
-		Attributes: []string{"replica_thread"},
+		Attributes: []string{"replica_thread", "replica_channel"},
 	},
 	MysqlReplicaTimeBehindSource: metricInfo{
 		Name: "mysql.replica.time_behind_source",
@@ -3704,7 +3704,7 @@ func (m *metricMysqlReplicaThreadRunning) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricMysqlReplicaThreadRunning) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, replicaThreadAttributeValue string) {
+func (m *metricMysqlReplicaThreadRunning) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, replicaThreadAttributeValue string, replicaChannelAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3715,10 +3715,36 @@ func (m *metricMysqlReplicaThreadRunning) recordDataPoint(start pcommon.Timestam
 	if slices.Contains(m.config.EnabledAttributes, MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread) {
 		dp.Attributes().PutStr("thread", replicaThreadAttributeValue)
 	}
+	if slices.Contains(m.config.EnabledAttributes, MysqlReplicaThreadRunningMetricAttributeKeyReplicaChannel) {
+		dp.Attributes().PutStr("channel", replicaChannelAttributeValue)
+	}
 
+	var s string
 	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
 
 	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -6062,8 +6088,8 @@ func (mb *MetricsBuilder) RecordMysqlReplicaSQLDelayDataPoint(ts pcommon.Timesta
 }
 
 // RecordMysqlReplicaThreadRunningDataPoint adds a data point to mysql.replica.thread_running metric.
-func (mb *MetricsBuilder) RecordMysqlReplicaThreadRunningDataPoint(ts pcommon.Timestamp, val int64, replicaThreadAttributeValue AttributeReplicaThread) {
-	mb.metricMysqlReplicaThreadRunning.recordDataPoint(mb.startTime, ts, val, replicaThreadAttributeValue.String())
+func (mb *MetricsBuilder) RecordMysqlReplicaThreadRunningDataPoint(ts pcommon.Timestamp, val int64, replicaThreadAttributeValue AttributeReplicaThread, replicaChannelAttributeValue string) {
+	mb.metricMysqlReplicaThreadRunning.recordDataPoint(mb.startTime, ts, val, replicaThreadAttributeValue.String(), replicaChannelAttributeValue)
 }
 
 // RecordMysqlReplicaTimeBehindSourceDataPoint adds a data point to mysql.replica.time_behind_source metric.

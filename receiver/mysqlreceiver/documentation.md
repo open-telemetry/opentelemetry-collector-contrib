@@ -515,6 +515,7 @@ Whether the replica IO and SQL threads are running. A value of 1 means running, 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | thread | The replica thread type. | Str: ``io``, ``sql`` | Recommended | - |
+| channel | The replication channel name. | Any Str | Recommended | - |
 
 ### mysql.replica.time_behind_source
 

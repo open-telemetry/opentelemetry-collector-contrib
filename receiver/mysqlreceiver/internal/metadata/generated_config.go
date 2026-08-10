@@ -1180,7 +1180,8 @@ func (ms *MysqlReplicaSQLDelayMetricConfig) Unmarshal(parser *confmap.Conf) erro
 type MysqlReplicaThreadRunningMetricAttributeKey string
 
 const (
-	MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread MysqlReplicaThreadRunningMetricAttributeKey = "thread"
+	MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread  MysqlReplicaThreadRunningMetricAttributeKey = "thread"
+	MysqlReplicaThreadRunningMetricAttributeKeyReplicaChannel MysqlReplicaThreadRunningMetricAttributeKey = "channel"
 )
 
 // MysqlReplicaThreadRunningMetricConfig provides config for the mysql.replica.thread_running metric.
@@ -1209,9 +1210,9 @@ func (ms *MysqlReplicaThreadRunningMetricConfig) Unmarshal(parser *confmap.Conf)
 func (ms *MysqlReplicaThreadRunningMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread:
+		case MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread, MysqlReplicaThreadRunningMetricAttributeKeyReplicaChannel:
 		default:
-			return fmt.Errorf("metric mysql.replica.thread_running doesn't have an attribute %v, valid attributes: [thread]", val)
+			return fmt.Errorf("metric mysql.replica.thread_running doesn't have an attribute %v, valid attributes: [thread, channel]", val)
 		}
 	}
 
@@ -2290,7 +2291,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		MysqlReplicaThreadRunning: MysqlReplicaThreadRunningMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []MysqlReplicaThreadRunningMetricAttributeKey{MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread},
+			EnabledAttributes:   []MysqlReplicaThreadRunningMetricAttributeKey{MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread, MysqlReplicaThreadRunningMetricAttributeKeyReplicaChannel},
 		},
 		MysqlReplicaTimeBehindSource: MysqlReplicaTimeBehindSourceMetricConfig{
 			Enabled: false,

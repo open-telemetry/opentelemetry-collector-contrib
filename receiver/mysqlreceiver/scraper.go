@@ -735,8 +735,8 @@ func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 		}
 
 		m.mb.RecordMysqlReplicaSQLDelayDataPoint(now, s.sqlDelay)
-		m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaIORunning), metadata.AttributeReplicaThreadIo)
-		m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaSQLRunning), metadata.AttributeReplicaThreadSQL)
+		m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaIORunning), metadata.AttributeReplicaThreadIo, s.channelName)
+		m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaSQLRunning), metadata.AttributeReplicaThreadSQL, s.channelName)
 	}
 }
 

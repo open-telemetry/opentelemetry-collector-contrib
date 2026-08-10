@@ -265,9 +265,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordMysqlReplicaThreadRunningDataPoint(ts, 1, AttributeReplicaThreadIo)
+			mb.RecordMysqlReplicaThreadRunningDataPoint(ts, 1, AttributeReplicaThreadIo, "replica_channel-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordMysqlReplicaThreadRunningDataPoint(ts, 3, AttributeReplicaThreadSQL)
+				mb.RecordMysqlReplicaThreadRunningDataPoint(ts, 3, AttributeReplicaThreadSQL, "replica_channel-val-2")
 			}
 
 			allMetricsCount++
@@ -1517,26 +1517,33 @@ func TestMetricsBuilder(t *testing.T) {
 						replicaThreadAttrVal, ok := dp.Attributes().Get("thread")
 						assert.True(t, ok)
 						assert.Equal(t, "io", replicaThreadAttrVal.Str())
+						replicaChannelAttrVal, ok := dp.Attributes().Get("channel")
+						assert.True(t, ok)
+						assert.Equal(t, "replica_channel-val", replicaChannelAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["mysql.replica.thread_running"], "Found a duplicate in the metrics slice: mysql.replica.thread_running")
 						validatedMetrics["mysql.replica.thread_running"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Whether the replica IO and SQL threads are running. A value of 1 means running, and 0 means not running.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
+						switch aggMap["mysql.replica.thread_running"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
 						_, ok := dp.Attributes().Get("thread")
 						assert.False(t, ok)
-						dp = mi.Gauge().DataPoints().At(1)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(3), dp.IntValue())
-						_, ok = dp.Attributes().Get("thread")
+						_, ok = dp.Attributes().Get("channel")
 						assert.False(t, ok)
 					}
 				case "mysql.replica.time_behind_source":

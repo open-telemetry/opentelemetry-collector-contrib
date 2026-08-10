@@ -160,7 +160,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlReplicaThreadRunning: MysqlReplicaThreadRunningMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []MysqlReplicaThreadRunningMetricAttributeKey{MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread},
+						EnabledAttributes:   []MysqlReplicaThreadRunningMetricAttributeKey{MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread, MysqlReplicaThreadRunningMetricAttributeKeyReplicaChannel},
 					},
 					MysqlReplicaTimeBehindSource: MysqlReplicaTimeBehindSourceMetricConfig{
 						Enabled: true,
@@ -401,7 +401,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlReplicaThreadRunning: MysqlReplicaThreadRunningMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []MysqlReplicaThreadRunningMetricAttributeKey{MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread},
+						EnabledAttributes:   []MysqlReplicaThreadRunningMetricAttributeKey{MysqlReplicaThreadRunningMetricAttributeKeyReplicaThread, MysqlReplicaThreadRunningMetricAttributeKeyReplicaChannel},
 					},
 					MysqlReplicaTimeBehindSource: MysqlReplicaTimeBehindSourceMetricConfig{
 						Enabled: false,
@@ -759,7 +759,7 @@ func TestMysqlReplicaThreadRunningMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []MysqlReplicaThreadRunningMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric mysql.replica.thread_running doesn't have an attribute invalid, valid attributes: [thread]")
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.replica.thread_running doesn't have an attribute invalid, valid attributes: [thread, channel]")
 
 	cfg = DefaultMetricsConfig().MysqlReplicaThreadRunning
 	cfg.AggregationStrategy = "invalid"

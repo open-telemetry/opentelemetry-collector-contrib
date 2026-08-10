@@ -947,6 +947,9 @@ resourceMetrics:
                     - key: thread
                       value:
                         stringValue: io
+                    - key: channel
+                      value:
+                        stringValue: "y"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "1"
@@ -954,6 +957,9 @@ resourceMetrics:
                     - key: thread
                       value:
                         stringValue: sql
+                    - key: channel
+                      value:
+                        stringValue: "y"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: mysql.replica.thread_running

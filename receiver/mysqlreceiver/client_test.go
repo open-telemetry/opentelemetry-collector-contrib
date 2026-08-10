@@ -356,24 +356,27 @@ func TestGetReplicaStatusStatsNormalizesColumnSpellings(t *testing.T) {
 		values                []driver.Value
 		wantReplicaIORunning  string
 		wantReplicaSQLRunning string
+		wantChannelName       string
 	}{
 		{
 			name:                  "replica column spellings",
 			supportsReplicaStatus: true,
 			query:                 "SHOW REPLICA STATUS",
-			columns:               []string{"Replica_IO_Running", "Replica_SQL_Running", "Replica_Open_Temp_Tables"},
-			values:                []driver.Value{"Yes", "No", int64(4)},
+			columns:               []string{"Replica_IO_Running", "Replica_SQL_Running", "Replica_Open_Temp_Tables", "Channel_Name"},
+			values:                []driver.Value{"Yes", "No", int64(4), "source_a"},
 			wantReplicaIORunning:  "Yes",
 			wantReplicaSQLRunning: "No",
+			wantChannelName:       "source_a",
 		},
 		{
 			name:                  "slave column spellings",
 			supportsReplicaStatus: false,
 			query:                 "SHOW SLAVE STATUS",
-			columns:               []string{"Slave_IO_Running", "Slave_SQL_Running", "Slave_Open_Temp_Tables"},
-			values:                []driver.Value{"Connecting", "Yes", int64(7)},
+			columns:               []string{"Slave_IO_Running", "Slave_SQL_Running", "Slave_Open_Temp_Tables", "Channel_Name"},
+			values:                []driver.Value{"Connecting", "Yes", int64(7), "source_b"},
 			wantReplicaIORunning:  "Connecting",
 			wantReplicaSQLRunning: "Yes",
+			wantChannelName:       "source_b",
 		},
 	}
 
@@ -394,6 +397,7 @@ func TestGetReplicaStatusStatsNormalizesColumnSpellings(t *testing.T) {
 
 			assert.Equal(t, tt.wantReplicaIORunning, got[0].replicaIORunning)
 			assert.Equal(t, tt.wantReplicaSQLRunning, got[0].replicaSQLRunning)
+			assert.Equal(t, tt.wantChannelName, got[0].channelName)
 		})
 	}
 }
