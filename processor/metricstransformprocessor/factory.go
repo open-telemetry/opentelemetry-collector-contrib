@@ -131,6 +131,15 @@ func validateConfiguration(config *Config) error {
 			if (op.Action == aggregateLabels || op.Action == aggregateLabelValues) && op.AggregationType == "" {
 				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, aggregationTypeFieldName, actionFieldName, op.Action)
 			}
+			if op.Action == aggregateLabelValues && op.Label == "" {
+				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, labelFieldName, actionFieldName, aggregateLabelValues)
+			}
+			if op.Action == aggregateLabelValues && op.NewValue == "" {
+				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, newValueFieldName, actionFieldName, aggregateLabelValues)
+			}
+			if op.Action == aggregateLabels && len(op.LabelSet) == 0 {
+				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, "label_set", actionFieldName, aggregateLabels)
+			}
 
 			if op.AggregationType != "" && !op.AggregationType.IsValid() {
 				return fmt.Errorf("operation %v: %q must be in %q", i+1, aggregationTypeFieldName, aggregateutil.AggregationTypes)

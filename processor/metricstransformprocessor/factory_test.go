@@ -281,6 +281,73 @@ func TestFactory_validateConfiguration(t *testing.T) {
 
 	err = validateConfiguration(&v5)
 	assert.NoError(t, err)
+
+	v6 := Config{
+		Transforms: []transform{
+			{
+				MetricIncludeFilter: filterConfig{
+					Include:   "mymetric",
+					MatchType: strictMatchType,
+				},
+				Action: Update,
+				Operations: []operation{
+					{
+						Action:          aggregateLabelValues,
+						AggregationType: aggregateutil.Sum,
+						// Label is missing
+						AggregatedValues: []string{"value1"},
+						NewValue:         "new_value",
+					},
+				},
+			},
+		},
+	}
+	err = validateConfiguration(&v6)
+	assert.EqualError(t, err, "operation 1: missing required field \"label\" while \"action\" is aggregate_label_values")
+
+	v7 := Config{
+		Transforms: []transform{
+			{
+				MetricIncludeFilter: filterConfig{
+					Include:   "mymetric",
+					MatchType: strictMatchType,
+				},
+				Action: Update,
+				Operations: []operation{
+					{
+						Action:           aggregateLabelValues,
+						AggregationType:  aggregateutil.Sum,
+						Label:            "label1",
+						AggregatedValues: []string{"value1"},
+						// NewValue is missing
+					},
+				},
+			},
+		},
+	}
+	err = validateConfiguration(&v7)
+	assert.EqualError(t, err, "operation 1: missing required field \"new_value\" while \"action\" is aggregate_label_values")
+
+	v8 := Config{
+		Transforms: []transform{
+			{
+				MetricIncludeFilter: filterConfig{
+					Include:   "mymetric",
+					MatchType: strictMatchType,
+				},
+				Action: Update,
+				Operations: []operation{
+					{
+						Action:          aggregateLabels,
+						AggregationType: aggregateutil.Sum,
+						// LabelSet is missing
+					},
+				},
+			},
+		},
+	}
+	err = validateConfiguration(&v8)
+	assert.EqualError(t, err, "operation 1: missing required field \"label_set\" while \"action\" is aggregate_labels")
 }
 
 func TestBuildHelperConfig_SubmatchCaseCopied(t *testing.T) {
