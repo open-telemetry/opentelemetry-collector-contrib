@@ -51,6 +51,12 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `clear(body)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("")
+			},
+		},
+		{
 			statement: `clear(attributes["foo"])`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutEmptyMap("foo")
@@ -78,6 +84,18 @@ func Test_e2e_editors(t *testing.T) {
 			statement: `clear(time)`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().SetTimestamp(pcommon.NewTimestampFromTime(time.Time{}))
+			},
+		},
+		{
+			statement: `clear(severity_number)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().SetSeverityNumber(0)
+			},
+		},
+		{
+			statement: `clear(dropped_attributes_count)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().SetDroppedAttributesCount(0)
 			},
 		},
 		{
@@ -2134,6 +2152,22 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 		want       func(tCtx *ottllog.TransformContext)
 	}{
 		{
+			name: "clear primitive types",
+			statements: []string{
+				`set(attributes["int_val"], 42)`,
+				`set(attributes["double_val"], 3.14)`,
+				`set(attributes["bool_val"], true)`,
+				`clear(attributes["int_val"])`,
+				`clear(attributes["double_val"])`,
+				`clear(attributes["bool_val"])`,
+			},
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("int_val", 0)
+				tCtx.GetLogRecord().Attributes().PutDouble("double_val", 0.0)
+				tCtx.GetLogRecord().Attributes().PutBool("bool_val", false)
+			},
+		},
+		{
 			name: "delete key of map literal",
 			statements: []string{
 				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
@@ -3097,4 +3131,25 @@ func createLambdaEvalFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 		}
 		return lambda.Eval(tCtx)
 	}, nil
+}
+
+func Test_e2e_clear_bytes_value(t *testing.T) {
+	statement := `clear(attributes["byte_val"])`
+	settings := componenttest.NewNopTelemetrySettings()
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings)
+	require.NoError(t, err)
+
+	parsedStatement, err := parser.ParseStatement(statement)
+	require.NoError(t, err)
+
+	tCtx := constructLogTransformContext()
+	tCtx.GetLogRecord().Attributes().PutEmptyBytes("byte_val").FromRaw([]byte{1, 2, 3})
+
+	_, _, err = parsedStatement.Execute(t.Context(), tCtx)
+	require.NoError(t, err)
+
+	val, ok := tCtx.GetLogRecord().Attributes().Get("byte_val")
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeBytes, val.Type())
+	assert.Empty(t, val.Bytes().AsRaw(), "byte array should be cleared to empty")
 }
