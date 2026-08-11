@@ -596,7 +596,7 @@ type metricProcessCPUTimeV1 struct {
 // init fills process.cpu.time@v1 metric with initial data.
 func (m *metricProcessCPUTimeV1) init() {
 	m.data.SetName("process.cpu.time")
-	m.data.SetDescription("Total CPU seconds broken down by different cpu.modes.")
+	m.data.SetDescription("Total CPU seconds broken down by different CPU modes.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -742,7 +742,7 @@ type metricProcessCPUUtilizationV1 struct {
 // init fills process.cpu.utilization@v1 metric with initial data.
 func (m *metricProcessCPUUtilizationV1) init() {
 	m.data.SetName("process.cpu.utilization")
-	m.data.SetDescription("Percentage of total CPU time used by the process since last scrape, expressed as a value between 0 and 1. On the first scrape, no data point is emitted for this metric.")
+	m.data.SetDescription("Difference in process.cpu.time since the last measurement,  divided by the elapsed time and number of CPUs available to the process. On the first scrape, no data point is emitted for this metric.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

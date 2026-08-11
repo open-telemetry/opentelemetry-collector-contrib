@@ -126,7 +126,7 @@ Emitted Name: `process.context_switches`
 
 ### process.cpu.time@v1
 
-Total CPU seconds broken down by different cpu.modes.
+Total CPU seconds broken down by different CPU modes.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -164,7 +164,7 @@ When the disable-old gate is enabled, emission of this metric is suppressed. Whe
 
 ### process.cpu.utilization@v1
 
-Percentage of total CPU time used by the process since last scrape, expressed as a value between 0 and 1. On the first scrape, no data point is emitted for this metric.
+Difference in process.cpu.time since the last measurement,  divided by the elapsed time and number of CPUs available to the process. On the first scrape, no data point is emitted for this metric.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
