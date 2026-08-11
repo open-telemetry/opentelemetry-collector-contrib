@@ -494,14 +494,6 @@ The number of slow queries.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | 1 | Sum | Int | Cumulative | true | Development |
 
-### mysql.replica.open_temp_tables
-
-The number of temporary tables that the replica SQL thread currently has open.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
-
 ### mysql.replica.sql_delay
 
 The number of seconds that the replica must lag the source.
@@ -510,7 +502,15 @@ The number of seconds that the replica must lag the source.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | false | Development |
 
-### mysql.replica.thread_running
+### mysql.replica.temp_tables.open
+
+The number of temporary tables currently open by the replica while applying replicated events.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+### mysql.replica.thread.running
 
 Whether the replica IO and SQL threads are running. A value of 1 means running, and 0 means not running.
 
@@ -522,8 +522,8 @@ Whether the replica IO and SQL threads are running. A value of 1 means running, 
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| thread | The replica thread type. | Str: ``io``, ``sql`` | Recommended | - |
-| channel | The replication channel name. | Any Str | Recommended | - |
+| mysql.replica.thread.type | The replica thread type. | Str: ``io``, ``sql`` | Recommended | - |
+| mysql.replica.channel.name | The replication channel name. | Any Str | Recommended | - |
 
 ### mysql.replica.time_behind_source
 

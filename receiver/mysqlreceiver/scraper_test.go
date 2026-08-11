@@ -69,7 +69,7 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaSQLDelay.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTimeBehindSource.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaThreadRunning.Enabled = true
-		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaOpenTempTables.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTablesOpen.Enabled = true
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionCount.Enabled = true
 
@@ -212,16 +212,16 @@ func TestScrapeReplicaThreadRunningRecordsRowsByChannel(t *testing.T) {
 
 	got := replicaThreadRunningDataPoints(t, scraper.mb.Emit())
 	assert.Equal(t, []replicaThreadRunningDataPoint{
-		{thread: "io", channel: "source_a", value: 1},
-		{thread: "sql", channel: "source_a", value: 1},
-		{thread: "io", channel: "source_b", value: 0},
-		{thread: "sql", channel: "source_b", value: 1},
+		{threadType: "io", channel: "source_a", value: 1},
+		{threadType: "sql", channel: "source_a", value: 1},
+		{threadType: "io", channel: "source_b", value: 0},
+		{threadType: "sql", channel: "source_b", value: 1},
 	}, got)
 }
 
 func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromGlobalStatus(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaOpenTempTables.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTablesOpen.Enabled = true
 
 	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
@@ -235,7 +235,7 @@ func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromGlobalStatus(t *testin
 
 func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromLegacyGlobalStatusName(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaOpenTempTables.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTablesOpen.Enabled = true
 
 	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
@@ -249,7 +249,7 @@ func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromLegacyGlobalStatusName
 
 func TestScrapeReplicaStatusDoesNotRecordReplicaOpenTempTables(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaOpenTempTables.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTablesOpen.Enabled = true
 
 	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
@@ -262,9 +262,9 @@ func TestScrapeReplicaStatusDoesNotRecordReplicaOpenTempTables(t *testing.T) {
 }
 
 type replicaThreadRunningDataPoint struct {
-	thread  string
-	channel string
-	value   int64
+	threadType string
+	channel    string
+	value      int64
 }
 
 func replicaThreadRunningDataPoints(t *testing.T, metrics pmetric.Metrics) []replicaThreadRunningDataPoint {
@@ -276,7 +276,7 @@ func replicaThreadRunningDataPoints(t *testing.T, metrics pmetric.Metrics) []rep
 			scopeMetrics := resourceMetrics.ScopeMetrics().At(j)
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
-				if metric.Name() != "mysql.replica.thread_running" {
+				if metric.Name() != "mysql.replica.thread.running" {
 					continue
 				}
 
@@ -284,14 +284,14 @@ func replicaThreadRunningDataPoints(t *testing.T, metrics pmetric.Metrics) []rep
 				got := make([]replicaThreadRunningDataPoint, 0, dataPoints.Len())
 				for dpIndex := 0; dpIndex < dataPoints.Len(); dpIndex++ {
 					dp := dataPoints.At(dpIndex)
-					thread, ok := dp.Attributes().Get("thread")
+					threadType, ok := dp.Attributes().Get("mysql.replica.thread.type")
 					require.True(t, ok)
-					channel, ok := dp.Attributes().Get("channel")
+					channel, ok := dp.Attributes().Get("mysql.replica.channel.name")
 					require.True(t, ok)
 					got = append(got, replicaThreadRunningDataPoint{
-						thread:  thread.Str(),
-						channel: channel.Str(),
-						value:   dp.IntValue(),
+						threadType: threadType.Str(),
+						channel:    channel.Str(),
+						value:      dp.IntValue(),
 					})
 				}
 				return got
@@ -299,7 +299,7 @@ func replicaThreadRunningDataPoints(t *testing.T, metrics pmetric.Metrics) []rep
 		}
 	}
 
-	require.Fail(t, "mysql.replica.thread_running metric not found")
+	require.Fail(t, "mysql.replica.thread.running metric not found")
 	return nil
 }
 
@@ -310,7 +310,7 @@ func replicaOpenTempTablesDataPoints(metrics pmetric.Metrics) []int64 {
 			scopeMetrics := resourceMetrics.ScopeMetrics().At(j)
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
-				if metric.Name() != "mysql.replica.open_temp_tables" {
+				if metric.Name() != "mysql.replica.temp_tables.open" {
 					continue
 				}
 

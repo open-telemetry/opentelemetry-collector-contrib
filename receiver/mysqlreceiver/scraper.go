@@ -745,8 +745,8 @@ func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 		}
 
 		m.mb.RecordMysqlReplicaSQLDelayDataPoint(now, s.sqlDelay)
-		m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaIORunning), metadata.AttributeReplicaThreadIo, s.channelName)
-		m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaSQLRunning), metadata.AttributeReplicaThreadSQL, s.channelName)
+		m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaIORunning), metadata.AttributeMysqlReplicaThreadTypeIo, s.channelName)
+		m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaSQLRunning), metadata.AttributeMysqlReplicaThreadTypeSQL, s.channelName)
 	}
 }
 
@@ -758,7 +758,7 @@ func replicaThreadRunningValue(status string) int64 {
 }
 
 func (m *mySQLScraper) recordReplicaOpenTempTables(now pcommon.Timestamp, globalStats map[string]string, errs *scrapererror.ScrapeErrors) {
-	if !m.config.MetricsBuilderConfig.Metrics.MysqlReplicaOpenTempTables.Enabled {
+	if !m.config.MetricsBuilderConfig.Metrics.MysqlReplicaTempTablesOpen.Enabled {
 		return
 	}
 	for _, key := range []string{"Replica_open_temp_tables", "Slave_open_temp_tables"} {
@@ -772,7 +772,7 @@ func (m *mySQLScraper) recordReplicaOpenTempTables(now pcommon.Timestamp, global
 			errs.AddPartial(1, err)
 			return
 		}
-		m.mb.RecordMysqlReplicaOpenTempTablesDataPoint(now, val)
+		m.mb.RecordMysqlReplicaTempTablesOpenDataPoint(now, val)
 		return
 	}
 }

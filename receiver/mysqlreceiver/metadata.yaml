@@ -187,6 +187,15 @@ attributes:
   mysql.query_plan.hash:
     description: This attribute is set to the same value as mysql.events_statements_summary_by_digest.digest (query digest) by design.
     type: string
+  mysql.replica.channel.name:
+    description: The replication channel name.
+    type: string
+    requirement_level: recommended
+  mysql.replica.thread.type:
+    description: The replica thread type.
+    type: string
+    enum: [io, sql]
+    requirement_level: recommended
   mysql.session.id:
     description: The unique identifier for the session associated with the event.
     type: int
@@ -246,17 +255,6 @@ attributes:
     description: Read operation types.
     type: string
     enum: [normal, with_shared_locks, high_priority, no_insert, external]
-    requirement_level: recommended
-  replica_channel:
-    name_override: channel
-    description: The replication channel name.
-    type: string
-    requirement_level: recommended
-  replica_thread:
-    name_override: thread
-    description: The replica thread type.
-    type: string
-    enum: [io, sql]
     requirement_level: recommended
   row_locks:
     name_override: kind
@@ -663,13 +661,6 @@ metrics:
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
-  mysql.replica.open_temp_tables:
-    enabled: false
-    description: The number of temporary tables that the replica SQL thread currently has open.
-    stability: development
-    unit: "1"
-    gauge:
-      value_type: int
   mysql.replica.sql_delay:
     enabled: false
     description: The number of seconds that the replica must lag the source.
@@ -680,14 +671,21 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: []
-  mysql.replica.thread_running:
+  mysql.replica.temp_tables.open:
+    enabled: false
+    description: The number of temporary tables currently open by the replica while applying replicated events.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.replica.thread.running:
     enabled: false
     description: Whether the replica IO and SQL threads are running. A value of 1 means running, and 0 means not running.
     stability: development
     unit: "1"
     gauge:
       value_type: int
-    attributes: [replica_thread, replica_channel]
+    attributes: [mysql.replica.thread.type, mysql.replica.channel.name]
   mysql.replica.time_behind_source:
     enabled: false
     description: This field is an indication of how “late” the replica is.

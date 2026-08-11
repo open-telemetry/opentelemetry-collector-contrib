@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/mysql
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add mysql.replica.thread_running and mysql.replica.open_temp_tables metrics to the mysqlreceiver.
+note: Add replica thread running and open temporary table metrics to the mysqlreceiver.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50132]
