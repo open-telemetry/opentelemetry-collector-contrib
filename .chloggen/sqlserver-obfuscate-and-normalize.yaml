@@ -23,6 +23,8 @@ subtext: |
   alter any downstream identifiers derived from the obfuscated query text. The obfuscate library upgrade to
   v0.82.0 also normalizes qualified identifiers consistently (e.g. `schema.table` no longer renders with a
   spurious space after the dot), which contributes to the same one-time change in obfuscated output.
+  The transitive `github.com/DataDog/go-sqllexer` dependency is pinned to v0.2.4, which fixes obfuscation of
+  string literals containing a backslash (e.g. `REPLACE(@@SERVERNAME, '\', ':')`).
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 # Optional: The change log or logs in which this entry should be included.

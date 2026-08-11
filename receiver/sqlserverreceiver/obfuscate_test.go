@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -190,4 +191,19 @@ func TestObfuscateQueryPlanWithZeroWidthSpace(t *testing.T) {
 	result, err := obf.obfuscateXMLPlan(plan)
 	assert.NoError(t, err)
 	assert.Equal(t, `<ShowPlanXML StatementText="SELECT * FROM table"></ShowPlanXML>`, result)
+}
+
+func TestObfuscateSQLServerBackslashLiteral(t *testing.T) {
+	obf := newObfuscator(zap.NewNop())
+
+	result, err := obf.obfuscateSQLString(
+		`SELECT REPLACE(@@SERVERNAME, '\', ':'), HOST_NAME(), 42`,
+	)
+
+	require.NoError(t, err)
+	assert.Equal(
+		t,
+		"SELECT REPLACE ( @@SERVERNAME, ?, ? ), HOST_NAME ( ), ?",
+		result,
+	)
 }
