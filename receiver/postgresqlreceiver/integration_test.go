@@ -352,12 +352,8 @@ func TestExplainQueryParamCount(t *testing.T) {
 					FileMode:          700,
 				}},
 				ExposedPorts: []string{postgresqlPort},
-				WaitingFor: wait.ForAll(
-					wait.ForListeningPort(postgresqlPort),
-					wait.ForLog("database system is ready to accept connections").
-						WithOccurrence(2).
-						WithStartupTimeout(2*time.Minute),
-				).WithDeadline(2 * time.Minute),
+				WaitingFor: wait.ForListeningPort(postgresqlPort).
+					WithStartupTimeout(2 * time.Minute),
 			},
 		},
 	)
