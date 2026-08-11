@@ -409,6 +409,7 @@ Replication status of the KV store.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str | Recommended | - |
+| splunk.kvstore.storage.engine | The backend storage used by the KV store | Any Str | Recommended | - |
 | splunk.splunkd.build | The build number for this Splunk instance version | Any Str | Recommended | - |
 | splunk.splunkd.version | The splunkd version number | Any Str | Recommended | - |
 

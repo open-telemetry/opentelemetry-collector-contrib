@@ -1168,9 +1168,10 @@ func (ms *SplunkKvstoreBackupStatusMetricConfig) Validate() error {
 type SplunkKvstoreReplicationStatusMetricAttributeKey string
 
 const (
-	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.kvstore.status.value"
-	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild       SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.splunkd.build"
-	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion     SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.splunkd.version"
+	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue   SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.kvstore.status.value"
+	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStorageEngine SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.kvstore.storage.engine"
+	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild         SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.splunkd.build"
+	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion       SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.splunkd.version"
 )
 
 // SplunkKvstoreReplicationStatusMetricConfig provides config for the splunk.kvstore.replication.status metric.
@@ -1199,9 +1200,9 @@ func (ms *SplunkKvstoreReplicationStatusMetricConfig) Unmarshal(parser *confmap.
 func (ms *SplunkKvstoreReplicationStatusMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion:
+		case SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion:
 		default:
-			return fmt.Errorf("metric splunk.kvstore.replication.status doesn't have an attribute %v, valid attributes: [splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]", val)
+			return fmt.Errorf("metric splunk.kvstore.replication.status doesn't have an attribute %v, valid attributes: [splunk.kvstore.status.value, splunk.kvstore.storage.engine, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
 	}
 
@@ -2741,7 +2742,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SplunkKvstoreReplicationStatus: SplunkKvstoreReplicationStatusMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkKvstoreReplicationStatusMetricAttributeKey{SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkKvstoreReplicationStatusMetricAttributeKey{SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion},
 		},
 		SplunkKvstoreStatus: SplunkKvstoreStatusMetricConfig{
 			Enabled:             false,

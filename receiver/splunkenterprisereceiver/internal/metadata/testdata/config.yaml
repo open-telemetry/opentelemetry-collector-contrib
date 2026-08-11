@@ -72,7 +72,7 @@ all_set:
       attributes: ["splunk.kvstore.status.value","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.kvstore.replication.status:
       enabled: true
-      attributes: ["splunk.kvstore.status.value","splunk.splunkd.build","splunk.splunkd.version"]
+      attributes: ["splunk.kvstore.status.value","splunk.kvstore.storage.engine","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.kvstore.status:
       enabled: true
       attributes: ["splunk.kvstore.storage.engine","splunk.kvstore.external","splunk.kvstore.status.value","splunk.splunkd.build","splunk.splunkd.version"]
@@ -382,7 +382,7 @@ none_set:
       attributes: ["splunk.kvstore.status.value","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.kvstore.replication.status:
       enabled: false
-      attributes: ["splunk.kvstore.status.value","splunk.splunkd.build","splunk.splunkd.version"]
+      attributes: ["splunk.kvstore.status.value","splunk.kvstore.storage.engine","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.kvstore.status:
       enabled: false
       attributes: ["splunk.kvstore.storage.engine","splunk.kvstore.external","splunk.kvstore.status.value","splunk.splunkd.build","splunk.splunkd.version"]

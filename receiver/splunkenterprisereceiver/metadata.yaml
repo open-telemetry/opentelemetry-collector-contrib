@@ -292,12 +292,12 @@ metrics:
     attributes: [splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]
   splunk.kvstore.replication.status:
     enabled: false
-    description: Replication status of the KV store.
+    description: Replication status of the KV store. 
     stability: development
     unit: '{status}'
     gauge:
       value_type: int
-    attributes: [splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]
+    attributes: [splunk.kvstore.status.value, splunk.kvstore.storage.engine, splunk.splunkd.build, splunk.splunkd.version]
 #'services/kvstore/status'
   splunk.kvstore.status:
     enabled: false
