@@ -60,15 +60,15 @@ func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
 	}
 
 	if conf.Encoding != nil {
-		encodingExt := host.GetExtensions()[*conf.Encoding]
-		if encodingExt == nil {
+		encoding := host.GetExtensions()[*conf.Encoding]
+		if encoding == nil {
 			return nil, fmt.Errorf("unknown encoding %q", conf.Encoding)
 		}
 		// cast with ok to avoid panics.
-		tm, _ := encodingExt.(ptrace.Marshaler)
-		mm, _ := encodingExt.(pmetric.Marshaler)
-		lm, _ := encodingExt.(plog.Marshaler)
-		pm, _ := encodingExt.(pprofile.Marshaler)
+		tm, _ := encoding.(ptrace.Marshaler)
+		mm, _ := encoding.(pmetric.Marshaler)
+		lm, _ := encoding.(plog.Marshaler)
+		pm, _ := encoding.(pprofile.Marshaler)
 		return &marshaller{
 			tracesMarshaler:   tm,
 			metricsMarshaler:  mm,
