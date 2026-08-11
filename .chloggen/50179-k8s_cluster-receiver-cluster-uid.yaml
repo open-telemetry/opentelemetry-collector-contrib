@@ -1,0 +1,15 @@
+change_type: enhancement
+
+component: receiver/k8s_cluster
+
+note: Add an optional `k8s.cluster.uid` resource attribute to all emitted metrics and entity events.
+
+issues: [50179]
+
+subtext: |
+  The value is the UID of the `kube-system` namespace, as defined by semantic conventions. The attribute is off by
+  default and can be enabled via `resource_attributes::k8s.cluster.uid::enabled`. When it is enabled, the receiver reads
+  the `kube-system` namespace once at startup, which requires permission to `get` it. If the namespace cannot be read,
+  for example when the collector is limited to a set of namespaces, a warning is logged and the attribute is omitted.
+
+change_logs: [user]
