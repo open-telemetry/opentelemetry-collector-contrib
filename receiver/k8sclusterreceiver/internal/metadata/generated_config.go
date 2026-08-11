@@ -1424,6 +1424,7 @@ type ResourceAttributesConfig struct {
 	ContainerImageTag                      ResourceAttributeConfig `mapstructure:"container.image.tag"`
 	ContainerRuntime                       ResourceAttributeConfig `mapstructure:"container.runtime"`
 	ContainerRuntimeVersion                ResourceAttributeConfig `mapstructure:"container.runtime.version"`
+	K8sClusterUID                          ResourceAttributeConfig `mapstructure:"k8s.cluster.uid"`
 	K8sContainerName                       ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sContainerStatusLastTerminatedReason ResourceAttributeConfig `mapstructure:"k8s.container.status.last_terminated_reason"`
 	K8sCronjobName                         ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
@@ -1487,6 +1488,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		ContainerRuntimeVersion: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sClusterUID: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		K8sContainerName: ResourceAttributeConfig{

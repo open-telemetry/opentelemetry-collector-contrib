@@ -55,6 +55,18 @@ func deletePods(t *testing.T, client *fake.Clientset, numPods int) {
 	time.Sleep(2 * time.Millisecond)
 }
 
+// createKubeSystemNamespace creates the kube-system namespace, whose UID is used as the cluster UID.
+func createKubeSystemNamespace(t *testing.T, client *fake.Clientset, uid string) {
+	ns := &corev1.Namespace{
+		ObjectMeta: v1.ObjectMeta{
+			UID:  types.UID(uid),
+			Name: kubeSystemNamespace,
+		},
+	}
+	_, err := client.CoreV1().Namespaces().Create(t.Context(), ns, v1.CreateOptions{})
+	require.NoError(t, err, "error creating the kube-system namespace")
+}
+
 func createNodes(t *testing.T, client *fake.Clientset, numNodes int) {
 	for i := range numNodes {
 		n := &corev1.Node{
