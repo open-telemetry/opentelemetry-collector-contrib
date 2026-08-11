@@ -4,7 +4,8 @@ type: googlecloudpubsubpush
 status:
   class: receiver
   stability:
-    development: [logs]
+    alpha: [logs]
+  distributions: [contrib]
   codeowners:
     active: [constanca-m]
     emeritus: [axw]

@@ -173,6 +173,7 @@ components:
         - google_cloud_spanner
         - googlecloudmonitoring
         - googlecloudpubsub
+        - googlecloudpubsubpush
         - haproxy
         - host_metrics
         - http_check

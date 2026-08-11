@@ -333,6 +333,11 @@ attributes:
   oracledb.status:
     description: Execution state or result of a database query or session.
     type: string
+  oracledb.tablespace.state:
+    description: Tablespace state as reported by Oracle (e.g. online, offline, read only)
+    type: string
+    enum: [online, offline, read only]
+    requirement_level: recommended
   oracledb.transaction.type:
     description: The type of user transaction.
     type: string
@@ -1617,6 +1622,39 @@ metrics:
     gauge:
       value_type: double
     unit: "{process}"
+  oracledb.tablespace.limit:
+    attributes:
+      - tablespace_name
+      - oracle.db.pdb
+    description: Maximum autoextend size of tablespace in bytes. Returns 0 for temporary tablespaces and tablespaces without autoextend enabled.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
+  oracledb.tablespace.status:
+    attributes:
+      - tablespace_name
+      - oracledb.tablespace.state
+      - oracle.db.pdb
+    description: Current status of tablespaces, broken down by state. A timeseries is produced for every possible value of oracledb.tablespace.state; the value is 1 for a tablespace's current state, and 0 for all other states.
+    enabled: false
+    stability: development
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    unit: "{tablespace}"
+  oracledb.tablespace.utilization:
+    attributes:
+      - tablespace_name
+      - oracle.db.pdb
+    description: Fraction of tablespace currently in use, expressed as a value between 0 and 1.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "1"
   oracledb.tablespace_size.limit:
     attributes:
       - tablespace_name

@@ -1,13 +1,18 @@
 type: resourcedetectionprocessor/elastic_beanstalk
+sem_conv_version: 1.40.0
 
 parent: resourcedetection
 
 resource_attributes:
   cloud.platform:
+    semantic_convention:
+      ref: cloud.md#cloud-platform
     description: The cloud.platform
     type: string
     enabled: true
   cloud.provider:
+    semantic_convention:
+      ref: cloud.md#cloud-provider
     description: The cloud.provider
     type: string
     enabled: true
@@ -16,10 +21,14 @@ resource_attributes:
     type: string
     enabled: true
   service.instance.id:
+    semantic_convention:
+      ref: service.md#service-instance-id
     description: The service.instance.id
     type: string
     enabled: true
   service.version:
+    semantic_convention:
+      ref: service.md#service-version
     description: The service.version
     type: string
     enabled: true
