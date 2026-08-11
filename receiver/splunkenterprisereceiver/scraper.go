@@ -2221,7 +2221,7 @@ func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now
 		errs <- err
 		return
 	}
-	if res.StatusCode != 200 {
+	if res.StatusCode != http.StatusOK {
 		errs <- fmt.Errorf("non 200 returned by scrape: %s", res.Status)
 	}
 	defer res.Body.Close()
