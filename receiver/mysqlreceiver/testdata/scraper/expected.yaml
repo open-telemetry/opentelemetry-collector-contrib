@@ -184,6 +184,27 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "19"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: alter_table
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "38"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: create_index
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "42"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: create_table
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "50"
                   attributes:
                     - key: command
@@ -203,6 +224,13 @@ resourceMetrics:
                     - key: command
                       value:
                         stringValue: insert
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "86"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: optimize
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "106"
