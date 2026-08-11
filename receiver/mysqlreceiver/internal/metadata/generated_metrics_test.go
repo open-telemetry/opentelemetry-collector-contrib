@@ -150,9 +150,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommandDelete)
+			mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommandAlterTable)
 			if tt.name == "reaggregate_set" {
-				mb.RecordMysqlCommandsDataPoint(ts, "3", AttributeCommandDeleteMulti)
+				mb.RecordMysqlCommandsDataPoint(ts, "3", AttributeCommandCreateIndex)
 			}
 
 			allMetricsCount++
@@ -716,7 +716,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, int64(1), dp.IntValue())
 						commandAttrVal, ok := dp.Attributes().Get("command")
 						assert.True(t, ok)
-						assert.Equal(t, "delete", commandAttrVal.Str())
+						assert.Equal(t, "alter_table", commandAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["mysql.commands"], "Found a duplicate in the metrics slice: mysql.commands")
 						validatedMetrics["mysql.commands"] = true
