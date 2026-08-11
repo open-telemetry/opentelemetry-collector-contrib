@@ -187,15 +187,17 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 
 			maps.Copy(edge.Dimensions, prodEdge.Dimensions)
 			maps.Copy(edge.Peer, prodEdge.Peer)
-
-			if edge.isComplete() {
-				s.onComplete(edge)
-				return true, nil
-			}
 		} else {
 			// Producer not present: mark for deferred registration.
 			isPendingConsumer = true
 		}
+	}
+
+	// Restore the fast-path for edges that become complete immediately
+	// (e.g., single-span Database requests) or after matching a producer above.
+	if edge.isComplete() {
+		s.onComplete(edge)
+		return true, nil
 	}
 
 	// Check we can add new edges (Evict if necessary)
