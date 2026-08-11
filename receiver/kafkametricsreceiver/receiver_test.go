@@ -82,7 +82,8 @@ func TestNewReceiver_EnablesResourceAttributeWhenClusterAliasSet(t *testing.T) {
 		return scraper.NewMetrics(
 			func(context.Context) (pmetric.Metrics, error) {
 				return pmetric.Metrics{}, nil
-			})
+			},
+		)
 	}
 	allScrapers["brokers"] = mockScraper
 
