@@ -5,7 +5,6 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"math"
-	"strconv"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
