@@ -358,6 +358,10 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 		return
 	}
 	for _, atts := range attributes {
+		// The template filters excluded databases server side already; this is belt and braces.
+		if p.isExcluded(attrString(atts, string(semconv.DBNamespaceKey))) {
+			continue
+		}
 		// Use a background context so query-sample logs are not automatically linked to the scrape context.
 		logCtx := context.Background()
 		if ctxFromQuery, ok := atts[querySampleTraceContextKey]; ok {
