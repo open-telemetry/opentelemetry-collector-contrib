@@ -146,6 +146,28 @@ The total time of I/O wait events for an index.
 | schema | The schema of the object. | Any Str | Recommended | - |
 | index | The name of the index. | Any Str | Recommended | - |
 
+### mysql.innodb.row_lock.wait.count
+
+The number of InnoDB row lock waits currently pending.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {wait} | Gauge | Int | Development |
+
+### mysql.innodb.row_lock.wait.time
+
+The InnoDB row lock wait time.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mysql.innodb.row_lock.wait.time.statistic | The row lock wait time statistic. | Str: ``avg``, ``max`` | Required | - |
+
 ### mysql.locks
 
 The number of MySQL locks.

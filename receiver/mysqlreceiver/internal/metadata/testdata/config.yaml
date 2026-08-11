@@ -42,6 +42,10 @@ all_set:
     mysql.index.io.wait.time:
       enabled: true
       attributes: ["operation","table","schema","index"]
+    mysql.innodb.row_lock.wait.count:
+      enabled: true
+    mysql.innodb.row_lock.wait.time:
+      enabled: true
     mysql.joins:
       enabled: true
       attributes: ["kind"]
@@ -201,6 +205,10 @@ reaggregate_set:
     mysql.index.io.wait.time:
       enabled: true
       attributes: []
+    mysql.innodb.row_lock.wait.count:
+      enabled: true
+    mysql.innodb.row_lock.wait.time:
+      enabled: true
     mysql.joins:
       enabled: true
       attributes: []
@@ -360,6 +368,10 @@ none_set:
     mysql.index.io.wait.time:
       enabled: false
       attributes: ["operation","table","schema","index"]
+    mysql.innodb.row_lock.wait.count:
+      enabled: false
+    mysql.innodb.row_lock.wait.time:
+      enabled: false
     mysql.joins:
       enabled: false
       attributes: ["kind"]

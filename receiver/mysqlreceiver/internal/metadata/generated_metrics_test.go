@@ -190,6 +190,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlIndexIoWaitTimeDataPoint(ts, 3, AttributeIoWaitsOperationsFetch, "table_name-val-2", "schema-val-2", "index_name-val-2")
 			}
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMysqlInnodbRowLockWaitCountDataPoint(ts, "1")
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMysqlInnodbRowLockWaitTimeDataPoint(ts, 1, AttributeMysqlInnodbRowLockWaitTimeStatisticAvg)
 
 			allMetricsCount++
 			mb.RecordMysqlJoinsDataPoint(ts, "1", AttributeJoinKindFull)
@@ -1019,6 +1025,33 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("index")
 						assert.False(t, ok)
 					}
+				case "mysql.innodb.row_lock.wait.count":
+					assert.False(t, validatedMetrics["mysql.innodb.row_lock.wait.count"], "Found a duplicate in the metrics slice: mysql.innodb.row_lock.wait.count")
+					validatedMetrics["mysql.innodb.row_lock.wait.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of InnoDB row lock waits currently pending.", mi.Description())
+					assert.Equal(t, "{wait}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.innodb.row_lock.wait.time":
+					assert.False(t, validatedMetrics["mysql.innodb.row_lock.wait.time"], "Found a duplicate in the metrics slice: mysql.innodb.row_lock.wait.time")
+					validatedMetrics["mysql.innodb.row_lock.wait.time"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The InnoDB row lock wait time.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					mysqlInnodbRowLockWaitTimeStatisticAttrVal, ok := dp.Attributes().Get("mysql.innodb.row_lock.wait.time.statistic")
+					assert.True(t, ok)
+					assert.Equal(t, "avg", mysqlInnodbRowLockWaitTimeStatisticAttrVal.Str())
 				case "mysql.joins":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.joins"], "Found a duplicate in the metrics slice: mysql.joins")

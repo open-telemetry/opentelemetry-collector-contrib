@@ -654,6 +654,32 @@ var MapAttributeLogOperations = map[string]AttributeLogOperations{
 	"fsyncs":         AttributeLogOperationsFsyncs,
 }
 
+// AttributeMysqlInnodbRowLockWaitTimeStatistic specifies the value mysql.innodb.row_lock.wait.time.statistic attribute.
+type AttributeMysqlInnodbRowLockWaitTimeStatistic int
+
+const (
+	_ AttributeMysqlInnodbRowLockWaitTimeStatistic = iota
+	AttributeMysqlInnodbRowLockWaitTimeStatisticAvg
+	AttributeMysqlInnodbRowLockWaitTimeStatisticMax
+)
+
+// String returns the string representation of the AttributeMysqlInnodbRowLockWaitTimeStatistic.
+func (av AttributeMysqlInnodbRowLockWaitTimeStatistic) String() string {
+	switch av {
+	case AttributeMysqlInnodbRowLockWaitTimeStatisticAvg:
+		return "avg"
+	case AttributeMysqlInnodbRowLockWaitTimeStatisticMax:
+		return "max"
+	}
+	return ""
+}
+
+// MapAttributeMysqlInnodbRowLockWaitTimeStatistic is a helper map of string to AttributeMysqlInnodbRowLockWaitTimeStatistic attribute value.
+var MapAttributeMysqlInnodbRowLockWaitTimeStatistic = map[string]AttributeMysqlInnodbRowLockWaitTimeStatistic{
+	"avg": AttributeMysqlInnodbRowLockWaitTimeStatisticAvg,
+	"max": AttributeMysqlInnodbRowLockWaitTimeStatisticMax,
+}
+
 // AttributeMysqlxThreads specifies the value mysqlx_threads attribute.
 type AttributeMysqlxThreads int
 
@@ -1129,6 +1155,13 @@ var MetricsInfo = metricsInfo{
 		Name:       "mysql.index.io.wait.time",
 		Attributes: []string{"io_waits_operations", "table_name", "schema", "index_name"},
 	},
+	MysqlInnodbRowLockWaitCount: metricInfo{
+		Name: "mysql.innodb.row_lock.wait.count",
+	},
+	MysqlInnodbRowLockWaitTime: metricInfo{
+		Name:       "mysql.innodb.row_lock.wait.time",
+		Attributes: []string{"mysql.innodb.row_lock.wait.time.statistic"},
+	},
 	MysqlJoins: metricInfo{
 		Name:       "mysql.joins",
 		Attributes: []string{"join_kind"},
@@ -1281,6 +1314,8 @@ type metricsInfo struct {
 	MysqlHandlers                metricInfo
 	MysqlIndexIoWaitCount        metricInfo
 	MysqlIndexIoWaitTime         metricInfo
+	MysqlInnodbRowLockWaitCount  metricInfo
+	MysqlInnodbRowLockWaitTime   metricInfo
 	MysqlJoins                   metricInfo
 	MysqlLocks                   metricInfo
 	MysqlLogOperations           metricInfo
@@ -2541,6 +2576,108 @@ func (m *metricMysqlIndexIoWaitTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlIndexIoWaitTime(cfg MysqlIndexIoWaitTimeMetricConfig) metricMysqlIndexIoWaitTime {
 	m := metricMysqlIndexIoWaitTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbRowLockWaitCount struct {
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   MysqlInnodbRowLockWaitCountMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.row_lock.wait.count metric with initial data.
+func (m *metricMysqlInnodbRowLockWaitCount) init() {
+	m.data.SetName("mysql.innodb.row_lock.wait.count")
+	m.data.SetDescription("The number of InnoDB row lock waits currently pending.")
+	m.data.SetUnit("{wait}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbRowLockWaitCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbRowLockWaitCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbRowLockWaitCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbRowLockWaitCount(cfg MysqlInnodbRowLockWaitCountMetricConfig) metricMysqlInnodbRowLockWaitCount {
+	m := metricMysqlInnodbRowLockWaitCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbRowLockWaitTime struct {
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   MysqlInnodbRowLockWaitTimeMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.row_lock.wait.time metric with initial data.
+func (m *metricMysqlInnodbRowLockWaitTime) init() {
+	m.data.SetName("mysql.innodb.row_lock.wait.time")
+	m.data.SetDescription("The InnoDB row lock wait time.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlInnodbRowLockWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, mysqlInnodbRowLockWaitTimeStatisticAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("mysql.innodb.row_lock.wait.time.statistic", mysqlInnodbRowLockWaitTimeStatisticAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbRowLockWaitTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbRowLockWaitTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbRowLockWaitTime(cfg MysqlInnodbRowLockWaitTimeMetricConfig) metricMysqlInnodbRowLockWaitTime {
+	m := metricMysqlInnodbRowLockWaitTime{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5521,6 +5658,8 @@ type MetricsBuilder struct {
 	metricMysqlHandlers                metricMysqlHandlers
 	metricMysqlIndexIoWaitCount        metricMysqlIndexIoWaitCount
 	metricMysqlIndexIoWaitTime         metricMysqlIndexIoWaitTime
+	metricMysqlInnodbRowLockWaitCount  metricMysqlInnodbRowLockWaitCount
+	metricMysqlInnodbRowLockWaitTime   metricMysqlInnodbRowLockWaitTime
 	metricMysqlJoins                   metricMysqlJoins
 	metricMysqlLocks                   metricMysqlLocks
 	metricMysqlLogOperations           metricMysqlLogOperations
@@ -5597,6 +5736,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlHandlers:                newMetricMysqlHandlers(mbc.Metrics.MysqlHandlers),
 		metricMysqlIndexIoWaitCount:        newMetricMysqlIndexIoWaitCount(mbc.Metrics.MysqlIndexIoWaitCount),
 		metricMysqlIndexIoWaitTime:         newMetricMysqlIndexIoWaitTime(mbc.Metrics.MysqlIndexIoWaitTime),
+		metricMysqlInnodbRowLockWaitCount:  newMetricMysqlInnodbRowLockWaitCount(mbc.Metrics.MysqlInnodbRowLockWaitCount),
+		metricMysqlInnodbRowLockWaitTime:   newMetricMysqlInnodbRowLockWaitTime(mbc.Metrics.MysqlInnodbRowLockWaitTime),
 		metricMysqlJoins:                   newMetricMysqlJoins(mbc.Metrics.MysqlJoins),
 		metricMysqlLocks:                   newMetricMysqlLocks(mbc.Metrics.MysqlLocks),
 		metricMysqlLogOperations:           newMetricMysqlLogOperations(mbc.Metrics.MysqlLogOperations),
@@ -5756,6 +5897,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlHandlers.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitTime.emit(ils.Metrics())
+	mb.metricMysqlInnodbRowLockWaitCount.emit(ils.Metrics())
+	mb.metricMysqlInnodbRowLockWaitTime.emit(ils.Metrics())
 	mb.metricMysqlJoins.emit(ils.Metrics())
 	mb.metricMysqlLocks.emit(ils.Metrics())
 	mb.metricMysqlLogOperations.emit(ils.Metrics())
@@ -5951,6 +6094,21 @@ func (mb *MetricsBuilder) RecordMysqlIndexIoWaitCountDataPoint(ts pcommon.Timest
 // RecordMysqlIndexIoWaitTimeDataPoint adds a data point to mysql.index.io.wait.time metric.
 func (mb *MetricsBuilder) RecordMysqlIndexIoWaitTimeDataPoint(ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue AttributeIoWaitsOperations, tableNameAttributeValue string, schemaAttributeValue string, indexNameAttributeValue string) {
 	mb.metricMysqlIndexIoWaitTime.recordDataPoint(mb.startTime, ts, val, ioWaitsOperationsAttributeValue.String(), tableNameAttributeValue, schemaAttributeValue, indexNameAttributeValue)
+}
+
+// RecordMysqlInnodbRowLockWaitCountDataPoint adds a data point to mysql.innodb.row_lock.wait.count metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbRowLockWaitCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbRowLockWaitCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbRowLockWaitCount.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbRowLockWaitTimeDataPoint adds a data point to mysql.innodb.row_lock.wait.time metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbRowLockWaitTimeDataPoint(ts pcommon.Timestamp, val float64, mysqlInnodbRowLockWaitTimeStatisticAttributeValue AttributeMysqlInnodbRowLockWaitTimeStatistic) {
+	mb.metricMysqlInnodbRowLockWaitTime.recordDataPoint(mb.startTime, ts, val, mysqlInnodbRowLockWaitTimeStatisticAttributeValue.String())
 }
 
 // RecordMysqlJoinsDataPoint adds a data point to mysql.joins metric.

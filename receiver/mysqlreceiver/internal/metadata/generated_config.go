@@ -624,6 +624,46 @@ func (ms *MysqlIndexIoWaitTimeMetricConfig) Validate() error {
 	return nil
 }
 
+// MysqlInnodbRowLockWaitCountMetricConfig provides config for the mysql.innodb.row_lock.wait.count metric.
+type MysqlInnodbRowLockWaitCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlInnodbRowLockWaitCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlInnodbRowLockWaitTimeMetricConfig provides config for the mysql.innodb.row_lock.wait.time metric.
+type MysqlInnodbRowLockWaitTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlInnodbRowLockWaitTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MysqlJoinsMetricAttributeKey specifies the key of an attribute for the mysql.joins metric.
 type MysqlJoinsMetricAttributeKey string
 
@@ -2110,6 +2150,8 @@ type MetricsConfig struct {
 	MysqlHandlers                MysqlHandlersMetricConfig                `mapstructure:"mysql.handlers"`
 	MysqlIndexIoWaitCount        MysqlIndexIoWaitCountMetricConfig        `mapstructure:"mysql.index.io.wait.count"`
 	MysqlIndexIoWaitTime         MysqlIndexIoWaitTimeMetricConfig         `mapstructure:"mysql.index.io.wait.time"`
+	MysqlInnodbRowLockWaitCount  MysqlInnodbRowLockWaitCountMetricConfig  `mapstructure:"mysql.innodb.row_lock.wait.count"`
+	MysqlInnodbRowLockWaitTime   MysqlInnodbRowLockWaitTimeMetricConfig   `mapstructure:"mysql.innodb.row_lock.wait.time"`
 	MysqlJoins                   MysqlJoinsMetricConfig                   `mapstructure:"mysql.joins"`
 	MysqlLocks                   MysqlLocksMetricConfig                   `mapstructure:"mysql.locks"`
 	MysqlLogOperations           MysqlLogOperationsMetricConfig           `mapstructure:"mysql.log_operations"`
@@ -2216,6 +2258,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlIndexIoWaitTimeMetricAttributeKey{MysqlIndexIoWaitTimeMetricAttributeKeyIoWaitsOperations, MysqlIndexIoWaitTimeMetricAttributeKeyTableName, MysqlIndexIoWaitTimeMetricAttributeKeySchema, MysqlIndexIoWaitTimeMetricAttributeKeyIndexName},
+		},
+		MysqlInnodbRowLockWaitCount: MysqlInnodbRowLockWaitCountMetricConfig{
+			Enabled: true,
+		},
+		MysqlInnodbRowLockWaitTime: MysqlInnodbRowLockWaitTimeMetricConfig{
+			Enabled: true,
 		},
 		MysqlJoins: MysqlJoinsMetricConfig{
 			Enabled:             false,
