@@ -10,7 +10,6 @@ import (
 	"math"
 	"slices"
 	"sort"
-	"strconv"
 	"time"
 	"unicode/utf8"
 
@@ -494,7 +493,7 @@ func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDat
 			if pt.Flags().NoRecordedValue() {
 				quantile.Value = math.Float64frombits(value.StaleNaN)
 			}
-			percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
+			percentileStr := promLabels.FormatOpenMetricsFloat(qt.Quantile())
 			qtlabels := createLabels(baseName, baseLabels, quantileStr, percentileStr)
 			c.addSample(quantile, qtlabels)
 		}
