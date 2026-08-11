@@ -107,11 +107,12 @@ Telemetry data is compressed according to the `compression` setting.
 > per-message compression to native file-level compression, producing standard `.zst` files
 > compatible with tools like `zstd -d`. See [Feature Gates](documentation.md) for details.
 >
-> With this gate enabled, JSON output and encodings that report line-delimited output are
-> written newline-delimited, so the decompressed file is clean text usable with `zstdcat`,
-> `grep` and similar tooling. `text_encoding` reports line-delimited output when its
-> `marshaling_separator` is left at the default newline. Every other encoding, and `proto`
-> format, keeps the length-prefix framing described under [File Format](#file-format).
+> With this gate enabled the compression stream carries the file-level framing, so message
+> framing follows `format` alone, matching what an uncompressed file already does. `json`
+> is written newline-delimited, which keeps the decompressed file usable with `zstdcat`,
+> `grep` and similar tooling, including when an `encoding` such as `text_encoding` supplies
+> the payload. Use `format: proto` to keep the length-prefix framing described under
+> [File Format](#file-format) for an encoding that emits binary.
 
 Currently, `fileexporter` support the `zstd` compression algorithm, and we will support more compression algorithms in the future.
 
@@ -121,7 +122,9 @@ Telemetry data is encoded according to the `format` setting and then written to 
 
 When `format` is json and `compression` is none , telemetry data is written to file in JSON format. Each line in the file is a JSON object.
 
-Otherwise, when using `proto` format or any kind of encoding, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object.When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
+Otherwise, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object.When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
+
+Setting `encoding` replaces the payload, not the framing: an encoded object is delimited according to `format`, so the default `json` writes one record per line and `proto` length-prefixes each record.
 
 ## Group by attribute
 

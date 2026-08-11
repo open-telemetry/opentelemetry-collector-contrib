@@ -16,14 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 )
 
-// lineDelimitedLogsMarshaler is optionally implemented by encoding extensions whose marshaled
-// logs output already uses newline as its record separator. Such output is appended to the file
-// newline-delimited rather than length-prefixed, so the result stays readable by standard
-// tooling. Encodings that do not implement it keep length-prefix framing.
-type lineDelimitedLogsMarshaler interface {
-	LogsLineDelimited() bool
-}
-
 // Marshaler configuration used for marshaling Protobuf
 var tracesMarshalers = map[string]ptrace.Marshaler{
 	formatTypeJSON:  &ptrace.JSONMarshaler{},
@@ -55,10 +47,6 @@ type marshaller struct {
 	compressor  compressFunc
 
 	formatType string
-
-	// encodingLineDelimited is true when the configured encoding marshals records
-	// newline-separated, so length-prefix framing is unnecessary.
-	encodingLineDelimited bool
 }
 
 func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
@@ -81,21 +69,13 @@ func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
 		mm, _ := encodingExt.(pmetric.Marshaler)
 		lm, _ := encodingExt.(plog.Marshaler)
 		pm, _ := encodingExt.(pprofile.Marshaler)
-		// A single export function is shared across every signal (see the sharedcomponent use
-		// in factory.go), so newline framing is only safe when logs is the only signal this
-		// encoding marshals. Drop the extra conditions once framing is chosen per signal.
-		lineDelimited := false
-		if ldm, ok := encodingExt.(lineDelimitedLogsMarshaler); ok && ldm.LogsLineDelimited() {
-			lineDelimited = tm == nil && mm == nil && pm == nil
-		}
 		return &marshaller{
-			tracesMarshaler:       tm,
-			metricsMarshaler:      mm,
-			logsMarshaler:         lm,
-			profilesMarshaler:     pm,
-			compression:           compression,
-			compressor:            compressor,
-			encodingLineDelimited: lineDelimited,
+			tracesMarshaler:   tm,
+			metricsMarshaler:  mm,
+			logsMarshaler:     lm,
+			profilesMarshaler: pm,
+			compression:       compression,
+			compressor:        compressor,
 		}, nil
 	}
 	return &marshaller{

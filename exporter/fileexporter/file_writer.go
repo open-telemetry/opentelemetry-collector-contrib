@@ -108,14 +108,14 @@ func (w *fileWriter) shutdown() error {
 }
 
 // buildExportFunc selects the framing used to write encoded telemetry.
-// encodingLineDelimited omits length-prefix framing for encodings that already
-// separate records with a newline.
-func buildExportFunc(cfg *Config, encodingLineDelimited bool) func(w *fileWriter, buf []byte) error {
+func buildExportFunc(cfg *Config) func(w *fileWriter, buf []byte) error {
 	if metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled() && cfg.Compression != "" {
-		// The compression stream handles framing: JSON and line-delimited encodings
-		// use newline-delimited output; other encodings and proto keep length-prefix
-		// framing for message boundary detection.
-		if (cfg.FormatType == formatTypeJSON && cfg.Encoding == nil) || encodingLineDelimited {
+		// The compression stream carries the file-level framing, so message framing follows
+		// `format` alone, exactly as it does when compression is off: `json` is written
+		// newline-delimited and `proto` keeps the length prefix. An `encoding` replaces the
+		// payload, not the framing, so set `format: proto` to keep length prefixes for an
+		// encoding that emits binary.
+		if cfg.FormatType == formatTypeJSON {
 			return exportMessageAsLine
 		}
 		return exportMessageAsBuffer
