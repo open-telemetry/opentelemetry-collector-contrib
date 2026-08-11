@@ -99,11 +99,11 @@ func (ltp *logsTransformProcessor) Start(_ context.Context, _ component.Host) er
 	// since the collector cancels it shortly after Start returns. The converter loop is exactly such a
 	// long-running goroutine, so derive a dedicated context that is cancelled by the shutdown path instead (#31140).
 	loopCtx, loopCancel := context.WithCancel(context.Background())
+	ltp.startConverterLoop(loopCtx)
 	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		loopCancel()
 		return nil
 	})
-	ltp.startConverterLoop(loopCtx)
 	ltp.startFromConverter()
 
 	return nil
