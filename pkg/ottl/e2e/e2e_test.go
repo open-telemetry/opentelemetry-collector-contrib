@@ -45,6 +45,12 @@ func Test_e2e_editors(t *testing.T) {
 		want      func(tCtx *ottllog.TransformContext)
 	}{
 		{
+			statement: `clear(attributes)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().Clear()
+			},
+		},
+		{
 			statement: `clear(attributes["http.method"])`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("http.method", "")
