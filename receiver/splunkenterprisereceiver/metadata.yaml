@@ -54,7 +54,7 @@ attributes:
     description: The string value of the status returned when reporting on KV store using the introspection endpoint
     type: string
     requirement_level: recommended
-  splunk.kvstore.storage.engine:
+  splunk.kvstore.storage_engine:
     description: The backend storage used by the KV store
     type: string
     requirement_level: recommended
@@ -297,7 +297,7 @@ metrics:
     unit: '{status}'
     gauge:
       value_type: int
-    attributes: [splunk.kvstore.status.value, splunk.kvstore.storage.engine, splunk.splunkd.build, splunk.splunkd.version]
+    attributes: [splunk.kvstore.status.value, splunk.kvstore.storage_engine, splunk.splunkd.build, splunk.splunkd.version]
 #'services/kvstore/status'
   splunk.kvstore.status:
     enabled: false
@@ -306,7 +306,7 @@ metrics:
     unit: '{status}'
     gauge:
       value_type: int
-    attributes: [splunk.kvstore.storage.engine, splunk.kvstore.external, splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]
+    attributes: [splunk.kvstore.storage_engine, splunk.kvstore.external, splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]
   splunk.license.expiration.seconds_remaining:
     enabled: false
     stability: development
