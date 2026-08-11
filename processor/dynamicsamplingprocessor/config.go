@@ -52,6 +52,59 @@ type Config struct {
 	// Rules are evaluated in order, first match wins. The matched rule's sampler
 	// produces the sample rate for the trace.
 	Rules []RuleConfig `mapstructure:"rules"`
+	// RootSpanCondition is an OTTL boolean expression evaluated against every
+	// span in the ottlspan context. When it returns true for a span, that span
+	// triggers the trace to move from accumulation to the decision-delay phase.
+	// If unset, defaults to `IsRootSpan()`: any span with an empty ParentSpanID
+	// is treated as a trigger, preserving the historical behavior.
+	//
+	// Example use-cases:
+	//   - Broaden detection to include cross-process server spans:
+	//       IsRootSpan() or (span.kind == SPAN_KIND_SERVER and
+	//                        resource.attributes["service.name"] == "gateway")
+	//   - Accept a producer-side hint attribute:
+	//       IsRootSpan() or span.attributes["otelcol.dynamic_sampling.root_span"] == true
+	//   - Only trigger on explicit hints (no default):
+	//       span.attributes["otelcol.dynamic_sampling.root_span"] == true
+	RootSpanCondition string `mapstructure:"root_span_condition"`
+	// Eviction controls what happens to the oldest pending trace when the
+	// buffer is full (NumTraces reached) and a new trace arrives. Both
+	// policies emit a real decision (recorded in the decision cache and, for
+	// kept traces, stamped with ot=th) rather than silently dropping spans.
+	Eviction EvictionConfig `mapstructure:"eviction"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// defaultRootSpanCondition is applied when Config.RootSpanCondition is unset.
+// It matches any span whose ParentSpanID is empty, preserving the behavior
+// the processor shipped with before root_span_condition was configurable.
+const defaultRootSpanCondition = "IsRootSpan()"
+
+// EvictionPolicy selects how an evicted trace is decided.
+type EvictionPolicy string
+
+const (
+	// EvictionEvaluate runs the evicted trace through the normal rules and
+	// threshold path immediately, with the spans seen so far and no
+	// decision_delay. Honors the configured rules at the cost of OTTL
+	// evaluation per evicted span.
+	EvictionEvaluate EvictionPolicy = "evaluate"
+	// EvictionProbabilistic skips rule evaluation and decides the evicted
+	// trace by comparing a threshold derived from SamplingPercentage against
+	// the trace's randomness. Constant-time load shedding under pressure;
+	// kept traces still carry a correct ot=th.
+	EvictionProbabilistic EvictionPolicy = "probabilistic"
+)
+
+// EvictionConfig configures the decision made for evicted traces.
+type EvictionConfig struct {
+	// Policy selects the eviction decision mode. Defaults to evaluate.
+	Policy EvictionPolicy `mapstructure:"policy"`
+	// SamplingPercentage is the percentage of evicted traces to keep (0-100]
+	// under the probabilistic policy. Required for probabilistic; must be
+	// unset for evaluate.
+	SamplingPercentage float64 `mapstructure:"sampling_percentage"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -196,7 +249,42 @@ func (c *Config) Validate() error {
 			return err
 		}
 	}
+	if cond := c.effectiveRootSpanCondition(); cond != "" {
+		settings := component.TelemetrySettings{Logger: zap.NewNop()}
+		if _, err := filterottl.NewBoolExprForSpan([]string{cond}, filterottl.StandardSpanFuncs(), ottl.PropagateError, settings); err != nil {
+			return fmt.Errorf("root_span_condition: %w", err)
+		}
+	}
+	if err := c.Eviction.validate(); err != nil {
+		return err
+	}
 	return nil
+}
+
+func (e *EvictionConfig) validate() error {
+	switch e.Policy {
+	case "", EvictionEvaluate:
+		if e.SamplingPercentage != 0 {
+			return errors.New("eviction: sampling_percentage is only used by the probabilistic policy")
+		}
+	case EvictionProbabilistic:
+		if e.SamplingPercentage <= 0 || e.SamplingPercentage > 100 {
+			return errors.New("eviction: sampling_percentage must be in (0, 100] for the probabilistic policy")
+		}
+	default:
+		return fmt.Errorf("eviction: policy must be %q or %q", EvictionEvaluate, EvictionProbabilistic)
+	}
+	return nil
+}
+
+// effectiveRootSpanCondition returns the OTTL expression that should decide
+// which spans trigger the accumulate to decision transition. Falls back to
+// defaultRootSpanCondition when the operator did not set one.
+func (c *Config) effectiveRootSpanCondition() string {
+	if c.RootSpanCondition == "" {
+		return defaultRootSpanCondition
+	}
+	return c.RootSpanCondition
 }
 
 func (r *RuleConfig) validateMatch() error {

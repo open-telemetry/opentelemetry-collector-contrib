@@ -92,7 +92,7 @@ func newSQLServerScraper(id component.ID,
 		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
 		cache:                  cache,
 		lastExecutionTimestamp: time.Unix(0, 0),
-		obfuscator:             newObfuscator(),
+		obfuscator:             newObfuscator(params.Logger),
 		serviceInstanceID:      serviceInstanceID,
 	}
 }
@@ -102,6 +102,9 @@ func (s *sqlServerScraperHelper) ID() component.ID {
 }
 
 func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
+	// The connection pool is owned by the receiver and shared across all
+	// scrapers. Fetch the shared pool (opened once by the provider) rather than
+	// opening a new one here.
 	var err error
 	s.db, err = s.dbProviderFunc()
 	if err != nil {
@@ -319,10 +322,9 @@ func isThreeNumericSegments(s string) bool {
 	return isDigits(s[:firstSep]) && isDigits(s[firstSep+1:secondSep]) && isDigits(s[secondSep+1:])
 }
 
-func (s *sqlServerScraperHelper) Shutdown(context.Context) error {
-	if s.db != nil {
-		return s.db.Close()
-	}
+func (*sqlServerScraperHelper) Shutdown(context.Context) error {
+	// The connection pool is owned and closed by the receiver, not the scraper,
+	// so that a single shared pool's lifecycle is not tied to any one scraper.
 	return nil
 }
 
@@ -1605,7 +1607,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	rows, err := s.client.QueryRows(
 		ctx,
 		sql.Named("lookbackTime", -int(s.config.EffectiveLookbackTime().Seconds())),
-		sql.Named("maxSampleCount", s.config.MaxQuerySampleCount),
+		sql.Named("maxSampleCount", s.config.TopQueryCollection.MaxQuerySampleCount),
 	)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
@@ -1636,7 +1638,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	}
 	// sort the rows based on the totalElapsedTimeDiffs in descending order,
 	// only report first T(T=topQueryCount) rows.
-	rows = sortRows(rows, totalElapsedTimeDiffsMicrosecond, s.config.TopQueryCount)
+	rows = sortRows(rows, totalElapsedTimeDiffsMicrosecond, s.config.TopQueryCollection.TopQueryCount)
 
 	// sort the totalElapsedTimeDiffs in descending order as well
 	sort.Slice(totalElapsedTimeDiffsMicrosecond, func(i, j int) bool { return totalElapsedTimeDiffsMicrosecond[i] > totalElapsedTimeDiffsMicrosecond[j] })
@@ -2003,7 +2005,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 	rows, err := s.client.QueryRows(
 		ctx,
-		sql.Named("top", s.config.MaxRowsPerQuery),
+		sql.Named("top", s.config.QuerySample.MaxRowsPerQuery),
 	)
 	resources := pcommon.NewResource()
 	if err != nil {
@@ -2049,7 +2051,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 		idleRows, idleErr := idleBlockingClient.QueryRows(
 			ctx,
-			sql.Named("top", s.config.MaxRowsPerQuery),
+			sql.Named("top", s.config.QuerySample.MaxRowsPerQuery),
 		)
 		if idleErr != nil {
 			s.logger.Warn("problems encountered getting idle blocker log rows", zap.Error(idleErr))

@@ -81,11 +81,11 @@ func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupReturned.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupUpdated.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeySource}, legacyConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlDatabaseLocksMetricAttributeKey{metadata.PostgresqlDatabaseLocksMetricAttributeKeyRelation, metadata.PostgresqlDatabaseLocksMetricAttributeKeyMode, metadata.PostgresqlDatabaseLocksMetricAttributeKeyLockType}, legacyConfig.Metrics.PostgresqlDatabaseLocks.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlFunctionCallsMetricAttributeKey{metadata.PostgresqlFunctionCallsMetricAttributeKeyFunction}, legacyConfig.Metrics.PostgresqlFunctionCalls.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlOperationsMetricAttributeKey{metadata.PostgresqlOperationsMetricAttributeKeyOperation}, legacyConfig.Metrics.PostgresqlOperations.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlQueryConflictsMetricAttributeKey{metadata.PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType}, legacyConfig.Metrics.PostgresqlQueryConflicts.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlRowsMetricAttributeKey{metadata.PostgresqlRowsMetricAttributeKeyState}, legacyConfig.Metrics.PostgresqlRows.EnabledAttributes)
-	assert.Equal(t, cfg.Metrics.PostgresqlDatabaseLocks.EnabledAttributes, legacyConfig.Metrics.PostgresqlDatabaseLocks.EnabledAttributes)
 	assert.Equal(t, cfg.Metrics.PostgresqlReplicationDataDelay.EnabledAttributes, legacyConfig.Metrics.PostgresqlReplicationDataDelay.EnabledAttributes)
 	assert.Equal(t, cfg.Metrics.PostgresqlWalDelay.EnabledAttributes, legacyConfig.Metrics.PostgresqlWalDelay.EnabledAttributes)
 	assert.Equal(t, cfg.Metrics.PostgresqlWalLag.EnabledAttributes, legacyConfig.Metrics.PostgresqlWalLag.EnabledAttributes)
@@ -1228,7 +1228,11 @@ func TestScrapeTopQueries(t *testing.T) {
 	scraper.cache.Add(queryid+tempBlksWrittenColumnName, 1110)
 
 	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(sqlmock.NewRows(expectedRows).FromCSVString(expectedValues[:len(expectedValues)-1]))
-	mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow("[{\"Plan\":{\"Node Type\":\"Merge Join\",\"Parallel Aware\":false,\"Async Capable\":false,\"Join Type\":\"Inner\",\"Startup Cost\":0.43,\"Total Cost\":55.27,\"Plan Rows\":290,\"Plan Width\":1675,\"Inner Unique\":\"?\",\"Merge Cond\":\"( e.businessentityid = p.businessentityid )\",\"Plans\":[{\"Node Type\":\"Index Scan\",\"Parent Relationship\":\"Outer\",\"Parallel Aware\":false,\"Async Capable\":false,\"Scan Direction\":\"Forward\",\"Index Name\":\"PK_Employee_BusinessEntityID\",\"Relation Name\":\"employee\",\"Alias\":\"e\",\"Startup Cost\":0.15,\"Total Cost\":21.5,\"Plan Rows\":290,\"Plan Width\":112},{\"Node Type\":\"Index Scan\",\"Parent Relationship\":\"Inner\",\"Parallel Aware\":false,\"Async Capable\":false,\"Scan Direction\":\"Forward\",\"Index Name\":\"PK_Person_BusinessEntityID\",\"Relation Name\":\"person\",\"Alias\":\"p\",\"Startup Cost\":0.29,\"Total Cost\":2261.87,\"Plan Rows\":19972,\"Plan Width\":1563}]}}]"))
+	mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
+	mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
+		WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
+	mock.ExpectQuery("EXPLAIN(FORMAT JSON) EXECUTE otel_114514;").WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow("[{\"Plan\":{\"Node Type\":\"Merge Join\",\"Parallel Aware\":false,\"Async Capable\":false,\"Join Type\":\"Inner\",\"Startup Cost\":0.43,\"Total Cost\":55.27,\"Plan Rows\":290,\"Plan Width\":1675,\"Inner Unique\":\"?\",\"Merge Cond\":\"( e.businessentityid = p.businessentityid )\",\"Plans\":[{\"Node Type\":\"Index Scan\",\"Parent Relationship\":\"Outer\",\"Parallel Aware\":false,\"Async Capable\":false,\"Scan Direction\":\"Forward\",\"Index Name\":\"PK_Employee_BusinessEntityID\",\"Relation Name\":\"employee\",\"Alias\":\"e\",\"Startup Cost\":0.15,\"Total Cost\":21.5,\"Plan Rows\":290,\"Plan Width\":112},{\"Node Type\":\"Index Scan\",\"Parent Relationship\":\"Inner\",\"Parallel Aware\":false,\"Async Capable\":false,\"Scan Direction\":\"Forward\",\"Index Name\":\"PK_Person_BusinessEntityID\",\"Relation Name\":\"person\",\"Alias\":\"p\",\"Startup Cost\":0.29,\"Total Cost\":2261.87,\"Plan Rows\":19972,\"Plan Width\":1563}]}}]"))
+	mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_114514").WillReturnResult(sqlmock.NewResult(0, 0))
 	actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
 	assert.NoError(t, err)
 	expectedFile := filepath.Join("testdata", "scraper", "top-query", "expected.yaml")
@@ -1376,39 +1380,76 @@ func TestIsCollectionDue(t *testing.T) {
 
 func TestExplainQuery(t *testing.T) {
 	testCases := []struct {
-		name           string
-		query          string
-		queryID        string
-		expectedSQL    string
-		mockPlanResult string
+		name              string
+		query             string
+		queryID           string
+		normalizedQueryID string
+		paramCount        int
+		mockPlanResult    string
 	}{
 		{
-			name:           "query with no parameters",
-			query:          "SELECT * FROM users",
-			queryID:        "12345",
-			expectedSQL:    "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_12345 AS SELECT * FROM users;EXPLAIN(FORMAT JSON) EXECUTE otel_12345;",
-			mockPlanResult: `[{"Plan":{"Node Type":"Seq Scan","Relation Name":"users"}}]`,
+			name:              "query with no parameters",
+			query:             "SELECT * FROM users",
+			queryID:           "12345",
+			normalizedQueryID: "12345",
+			paramCount:        0,
+			mockPlanResult:    `[{"Plan":{"Node Type":"Seq Scan","Relation Name":"users"}}]`,
 		},
 		{
-			name:           "query with single parameter",
-			query:          "SELECT * FROM users WHERE id = $1",
-			queryID:        "12346",
-			expectedSQL:    "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_12346 AS SELECT * FROM users WHERE id = $1;EXPLAIN(FORMAT JSON) EXECUTE otel_12346(null);",
-			mockPlanResult: `[{"Plan":{"Node Type":"Index Scan","Relation Name":"users"}}]`,
+			name:              "query with single parameter",
+			query:             "SELECT * FROM users WHERE id = $1",
+			queryID:           "12346",
+			normalizedQueryID: "12346",
+			paramCount:        1,
+			mockPlanResult:    `[{"Plan":{"Node Type":"Index Scan","Relation Name":"users"}}]`,
 		},
 		{
-			name:           "query with multiple parameters",
-			query:          "SELECT * FROM orders WHERE user_id = $1 AND status = $2 AND created_at > $3",
-			queryID:        "12347",
-			expectedSQL:    "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_12347 AS SELECT * FROM orders WHERE user_id = $1 AND status = $2 AND created_at > $3;EXPLAIN(FORMAT JSON) EXECUTE otel_12347(null, null, null);",
-			mockPlanResult: `[{"Plan":{"Node Type":"Index Scan","Relation Name":"orders"}}]`,
+			name:              "query with multiple distinct parameters",
+			query:             "SELECT * FROM orders WHERE user_id = $1 AND status = $2 AND created_at > $3",
+			queryID:           "12347",
+			normalizedQueryID: "12347",
+			paramCount:        3,
+			mockPlanResult:    `[{"Plan":{"Node Type":"Index Scan","Relation Name":"orders"}}]`,
 		},
 		{
-			name:           "query with hyphenated queryID",
-			query:          "SELECT * FROM products WHERE id = $1",
-			queryID:        "abc-def-123",
-			expectedSQL:    "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_abc_def_123 AS SELECT * FROM products WHERE id = $1;EXPLAIN(FORMAT JSON) EXECUTE otel_abc_def_123(null);",
-			mockPlanResult: `[{"Plan":{"Node Type":"Index Scan","Relation Name":"products"}}]`,
+			name:              "query with hyphenated queryID",
+			query:             "SELECT * FROM products WHERE id = $1",
+			queryID:           "abc-def-123",
+			normalizedQueryID: "abc_def_123",
+			paramCount:        1,
+			mockPlanResult:    `[{"Plan":{"Node Type":"Index Scan","Relation Name":"products"}}]`,
+		},
+		{
+			// Bug-fix regression: the old regex counted "$1" twice here (it appears twice in
+			// the query text) and would have tried to bind 2 nulls against a 1-parameter
+			// prepared statement. The real parameter count from pg_prepared_statements is 1.
+			name:              "query with repeated placeholder",
+			query:             "SELECT * FROM orders WHERE customer_id = $1 OR referred_by = $1",
+			queryID:           "20001",
+			normalizedQueryID: "20001",
+			paramCount:        1,
+			mockPlanResult:    `[{"Plan":{"Node Type":"Seq Scan","Relation Name":"orders"}}]`,
+		},
+		{
+			// Bug-fix regression: the old regex matched "$123" inside the string literal and
+			// would have tried to bind 1 null against a 0-parameter prepared statement.
+			name:              "query with dollar-sign inside string literal",
+			query:             "SELECT * FROM logs WHERE message = '$123'",
+			queryID:           "20002",
+			normalizedQueryID: "20002",
+			paramCount:        0,
+			mockPlanResult:    `[{"Plan":{"Node Type":"Seq Scan","Relation Name":"logs"}}]`,
+		},
+		{
+			// Combines both bug modes in one query to prove the fix isn't order-dependent or
+			// only catching one at a time: one real (repeated) parameter, plus a string
+			// literal that looks like a second placeholder but isn't.
+			name:              "query with repeated placeholder and a literal dollar-sign",
+			query:             "SELECT * FROM orders WHERE customer_id = $1 OR referred_by = $1 AND note = '$99'",
+			queryID:           "20003",
+			normalizedQueryID: "20003",
+			paramCount:        1,
+			mockPlanResult:    `[{"Plan":{"Node Type":"Seq Scan","Relation Name":"orders"}}]`,
 		},
 	}
 
@@ -1426,16 +1467,98 @@ func TestExplainQuery(t *testing.T) {
 				closeFn: func() error { return nil },
 			}
 
-			// Expect the EXPLAIN query
-			mock.ExpectQuery(tc.expectedSQL).WillReturnRows(
+			expectedPrepareSQL := fmt.Sprintf(
+				"/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_%s AS %s;",
+				tc.normalizedQueryID, tc.query,
+			)
+			mock.ExpectQuery(expectedPrepareSQL).WillReturnRows(sqlmock.NewRows([]string{"result"}))
+
+			expectedParamCountSQL := fmt.Sprintf(
+				"/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_%s';",
+				tc.normalizedQueryID,
+			)
+			mock.ExpectQuery(expectedParamCountSQL).WillReturnRows(
+				sqlmock.NewRows([]string{"param_count"}).AddRow(fmt.Sprintf("%d", tc.paramCount)),
+			)
+
+			nullsString := ""
+			if tc.paramCount > 0 {
+				nulls := make([]string, tc.paramCount)
+				for i := range nulls {
+					nulls[i] = "null"
+				}
+				nullsString = "(" + strings.Join(nulls, ", ") + ")"
+			}
+			expectedExplainSQL := fmt.Sprintf("EXPLAIN(FORMAT JSON) EXECUTE otel_%s%s;", tc.normalizedQueryID, nullsString)
+			mock.ExpectQuery(expectedExplainSQL).WillReturnRows(
 				sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(tc.mockPlanResult),
 			)
 
-			plan, err := client.explainQuery(tc.query, tc.queryID, logger)
+			// The prepared statement must always be deallocated afterwards,
+			// otherwise it leaks server-side state on pooled connections.
+			mock.ExpectExec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", tc.normalizedQueryID)).
+				WillReturnResult(sqlmock.NewResult(0, 0))
+
+			plan, err := client.explainQuery(t.Context(), tc.query, tc.queryID, logger)
 			require.NoError(t, err)
 			assert.Equal(t, tc.mockPlanResult, plan)
+			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func TestExplainQueryErrorStillCleansUp(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	logger := zap.NewNop()
+	client := &postgreSQLClient{
+		client:  db,
+		closeFn: func() error { return nil },
+	}
+
+	expectedPrepareSQL := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_12345 AS SELECT * FROM users;"
+	mock.ExpectQuery(expectedPrepareSQL).WillReturnError(errors.New("syntax error"))
+
+	// Even though PREPARE itself failed, cleanup must still run: PostgreSQL's DEALLOCATE
+	// has no IF EXISTS clause, and a failed PREPARE can still register partial server-side
+	// state, so the receiver always attempts cleanup rather than checking first.
+	mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_12345").
+		WillReturnResult(sqlmock.NewResult(0, 0))
+
+	_, err = client.explainQuery(t.Context(), "SELECT * FROM users", "12345", logger)
+	require.Error(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestExplainQueryUsesContext(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	logger := zap.NewNop()
+	client := &postgreSQLClient{
+		client:  db,
+		closeFn: func() error { return nil },
+	}
+
+	expectedPrepareSQL := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_12345 AS SELECT * FROM users;"
+	mock.ExpectQuery(expectedPrepareSQL).
+		WillDelayFor(200 * time.Millisecond).
+		WillReturnRows(sqlmock.NewRows([]string{"result"}))
+
+	// Cleanup (DEALLOCATE PREPARE) must still run even though ctx expires
+	// mid-query, otherwise the prepared statement leaks on pooled connections.
+	mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_12345").
+		WillReturnResult(sqlmock.NewResult(0, 0))
+
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
+	defer cancel()
+
+	_, err = client.explainQuery(ctx, "SELECT * FROM users", "12345", logger)
+	require.Error(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
 }
 
 type (
@@ -1447,7 +1570,7 @@ type (
 )
 
 // explainQuery implements client.
-func (*mockClient) explainQuery(string, string, *zap.Logger) (string, error) {
+func (*mockClient) explainQuery(context.Context, string, string, *zap.Logger) (string, error) {
 	panic("unimplemented")
 }
 
@@ -1500,6 +1623,11 @@ func (m *mockClient) getExecutionTimeStats(_ context.Context, databases []string
 }
 
 func (m *mockClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]databaseLocks), args.Error(1)
+}
+
+func (m *mockClient) getSharedRelationLocks(ctx context.Context) ([]databaseLocks, error) {
 	args := m.Called(ctx)
 	return args.Get(0).([]databaseLocks), args.Error(1)
 }
@@ -1656,34 +1784,14 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		}, nil)
 		m.On("getMaxConnections", mock.Anything).Return(int64(100), nil)
 		m.On("getLatestWalAgeSeconds", mock.Anything).Return(int64(3600), nil)
-		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
+		m.On("getSharedRelationLocks", mock.Anything).Return([]databaseLocks{
 			{
-				relation: "pg_locks",
+				relation: "pg_database",
 				mode:     "AccessShareLock",
 				lockType: "relation",
-				locks:    3600,
-			},
-			{
-				relation: "pg_class",
-				mode:     "AccessShareLock",
-				lockType: "relation",
-				locks:    5600,
+				locks:    2,
 			},
 		}, nil)
-		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
-			{
-				relation: "abd_table",
-				mode:     "ExplicitLock",
-				lockType: "relation",
-				locks:    1600,
-			},
-			{
-				relation: "pg_class",
-				mode:     "AccessShareLock",
-				lockType: "relation",
-				locks:    5600,
-			},
-		}, errors.New("some error"))
 		m.On("getReplicationStats", mock.Anything).Return([]replicationStats{
 			{
 				clientAddr:   "unix",
@@ -1812,6 +1920,21 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		}
 		m.On("getFunctionStats", mock.Anything, database).Return(functionStats, nil)
 
+		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
+			{
+				relation: "pg_locks",
+				mode:     "AccessShareLock",
+				lockType: "relation",
+				locks:    int64(index + 3600),
+			},
+			{
+				relation: "pg_class",
+				mode:     "AccessShareLock",
+				lockType: "relation",
+				locks:    int64(index + 5600),
+			},
+		}, nil)
+
 		vectorSearchStats := []vectorSearchStat{
 			{
 				distanceFunction: "cosine",
@@ -1836,6 +1959,30 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		}
 		m.On("getVectorInsertStats", mock.Anything).Return(vectorInsertStats, nil)
 	}
+}
+
+func TestCollectDatabaseLocksError(t *testing.T) {
+	c := new(mockClient)
+	c.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks(nil), errors.New("some error"))
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+	var errs errsMux
+	scraper.collectDatabaseLocks(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, "otel", &errs)
+	require.Error(t, errs.combine())
+}
+
+func TestCollectSharedRelationLocksError(t *testing.T) {
+	c := new(mockClient)
+	c.On("getSharedRelationLocks", mock.Anything).Return([]databaseLocks(nil), errors.New("some error"))
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+	var errs errsMux
+	scraper.collectSharedRelationLocks(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, &errs)
+	require.Error(t, errs.combine())
 }
 
 func TestGetInstanceId(t *testing.T) {

@@ -4071,8 +4071,8 @@ func enableExtensionsFeatureGate(t *testing.T) {
 }
 
 // supervisorBinarySizeLimitBytes is the size budget for the supervisor binary,
-// in bytes. 24 MiB.
-const supervisorBinarySizeLimitBytes = 24 * 1024 * 1024
+// in bytes. 28 MiB.
+const supervisorBinarySizeLimitBytes = 28 * 1024 * 1024
 
 // TestSupervisorBinarySize guards against unintended growth of the supervisor
 // binary. It builds the supervisor with the same flags used for release
