@@ -243,7 +243,7 @@ FROM (
          (SELECT value FROM v$parameter WHERE name = 'dml_locks')
   FROM dual
 )`
-	tablespaceUsageSQL      = `
+	tablespaceUsageSQL = `
 		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE, ts.STATUS
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
@@ -392,10 +392,10 @@ type oracleScraper struct {
 	recycleBinSizeClient     dbClient
 	sgaInfoClient            dbClient
 	storageUsageClient       dbClient
-	sysmetricClient         dbClient
-	sysmetricCDBClient      dbClient
-	sysmetricComputedClient dbClient
-	db                      *sql.DB
+	sysmetricClient          dbClient
+	sysmetricCDBClient       dbClient
+	sysmetricComputedClient  dbClient
+	db                       *sql.DB
 	clientProviderFunc       clientProviderFunc
 	mb                       *metadata.MetricsBuilder
 	lb                       *metadata.LogsBuilder
