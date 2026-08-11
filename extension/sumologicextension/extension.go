@@ -482,11 +482,12 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 	defer res.Body.Close()
 
 	if res.StatusCode < 200 || res.StatusCode >= 400 {
-		if se.conf.FleetID != "" && res.StatusCode == http.StatusBadRequest {
+		if se.conf.FleetID != "" && (res.StatusCode == http.StatusBadRequest || res.StatusCode == http.StatusNotFound) {
 			bodyBytes, readErr := io.ReadAll(res.Body)
-			if readErr == nil && isInvalidFleetIDError(bodyBytes) {
-				se.logger.Warn("Invalid fleet ID, retrying registration without fleet ID",
+			if readErr == nil && isFleetIDError(bodyBytes) {
+				se.logger.Warn("Fleet ID error, retrying registration without fleet ID",
 					zap.String("fleet_id", se.conf.FleetID),
+					zap.Int("status_code", res.StatusCode),
 				)
 				se.conf.FleetID = ""
 				return se.registerCollector(ctx, collectorName)
@@ -557,13 +558,13 @@ func (se *SumologicExtension) handleRegistrationError(res *http.Response) error 
 	)
 }
 
-func isInvalidFleetIDError(body []byte) bool {
+func isFleetIDError(body []byte) bool {
 	var errResponse api.ErrorResponsePayload
 	if err := json.Unmarshal(body, &errResponse); err != nil {
 		return false
 	}
 	for _, e := range errResponse.Errors {
-		if e.Code == "collector-registration:invalid_fleet_id" {
+		if e.Code == "collector-registration:invalid_fleet_id" || e.Code == "collector-registration:fleet_not_found" {
 			return true
 		}
 	}

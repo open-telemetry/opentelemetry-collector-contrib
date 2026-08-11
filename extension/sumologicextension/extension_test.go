@@ -1905,3 +1905,72 @@ func TestRegistrationRetriesWithoutInvalidFleetID(t *testing.T) {
 
 	require.NoError(t, se.Shutdown(t.Context()))
 }
+
+func TestRegistrationRetriesWithoutFleetIDWhenFleetNotFound(t *testing.T) {
+	t.Parallel()
+
+	var reqCount atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		reqNum := reqCount.Add(1)
+
+		switch reqNum {
+		// first registration attempt - reject with fleet not found error
+		case 1:
+			assert.Equal(t, registerURL, req.URL.Path)
+
+			var reqPayload api.OpenRegisterRequestPayload
+			assert.NoError(t, json.NewDecoder(req.Body).Decode(&reqPayload))
+			assert.Equal(t, "000000000ABC1234", reqPayload.FleetID)
+
+			w.WriteHeader(http.StatusNotFound)
+			_, err := w.Write([]byte(`{
+				"id": "some-error-id",
+				"errors": [{"code": "collector-registration:fleet_not_found", "message": "Fleet with id '000000000ABC1234' not found."}]
+			}`))
+			assert.NoError(t, err)
+
+		// second registration attempt - should have empty fleet ID
+		case 2:
+			assert.Equal(t, registerURL, req.URL.Path)
+
+			var reqPayload api.OpenRegisterRequestPayload
+			assert.NoError(t, json.NewDecoder(req.Body).Decode(&reqPayload))
+			assert.Empty(t, reqPayload.FleetID)
+
+			_, err := w.Write([]byte(`{
+				"collectorCredentialID": "mycredentialID",
+				"collectorCredentialKey": "mycredentialKey",
+				"collectorId": "0000000001231231",
+				"collectorName": "otc-test-fleet-notfound"
+			}`))
+			assert.NoError(t, err)
+
+		// metadata
+		case 3:
+			assert.Equal(t, metadataURL, req.URL.Path)
+			w.WriteHeader(http.StatusOK)
+		}
+	}))
+
+	dir := t.TempDir()
+	t.Cleanup(func() {
+		srv.Close()
+	})
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.CollectorName = "otc-test-fleet-notfound"
+	cfg.APIBaseURL = srv.URL
+	cfg.Credentials.InstallationToken = "dummy_install_token"
+	cfg.CollectorCredentialsDirectory = dir
+	cfg.BackOff.InitialInterval = time.Millisecond
+	cfg.BackOff.MaxInterval = time.Millisecond
+	cfg.FleetID = "000000000ABC1234"
+
+	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
+	require.NoError(t, err)
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+
+	assert.Equal(t, int32(3), reqCount.Load(), "expected exactly 3 requests: failed register, successful register, metadata")
+
+	require.NoError(t, se.Shutdown(t.Context()))
+}
