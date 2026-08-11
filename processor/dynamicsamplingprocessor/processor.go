@@ -307,7 +307,11 @@ func (p *dynamicSamplingProcessor) Shutdown(ctx context.Context) error {
 	// arrive. Bounded by num_traces. The pipeline shuts down front to back,
 	// so the next consumer still accepts the forwarded traces.
 	for _, pt := range pending {
-		p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerShutdownAttr)
+		// A trace already in its decision_delay window was counted when its
+		// trigger fired; shutdown merely completes that decision early.
+		if !pt.triggered {
+			p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerShutdownAttr)
+		}
 		p.decideTrace(ctx, pt)
 	}
 
@@ -724,7 +728,12 @@ func (p *dynamicSamplingProcessor) finishDecision(ctx context.Context, pt *pendi
 // configured eviction policy. The trace may be incomplete; decision_delay is
 // deliberately skipped because there is no room to wait.
 func (p *dynamicSamplingProcessor) decideEvicted(ctx context.Context, pt *pendingTrace) {
-	p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerEvictionAttr)
+	// Same rule as the shutdown drain: a trace already in its decision_delay
+	// window was counted when its trigger fired, so eviction of a mid-delay
+	// trace must not count the decision twice.
+	if !pt.triggered {
+		p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerEvictionAttr)
+	}
 	if p.cfg.Eviction.Policy == EvictionProbabilistic {
 		p.decideEvictedProbabilistic(ctx, pt)
 		return

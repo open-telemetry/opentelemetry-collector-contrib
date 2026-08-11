@@ -1062,3 +1062,81 @@ func TestProcessor_ShutdownDrain_Metrics(t *testing.T) {
 		metricdatatest.IgnoreExemplars(),
 	)
 }
+
+func TestProcessor_ShutdownDrain_TriggeredTraceNotDoubleCounted(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Hour, // triggered traces sit in the delay window until shutdown
+		NumTraces:     10,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+
+	// Root span triggers the decision (trigger=root_span) but the decision
+	// itself waits on decision_delay, so the trace is still pending at
+	// shutdown.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newRootTrace(pcommon.TraceID([16]byte{0xE6}))))
+	require.NoError(t, p.Shutdown(t.Context()))
+
+	require.Equal(t, 1, sink.SpanCount(), "triggered trace must still be drained")
+	metadatatest.AssertEqualProcessorDynamicSamplingDecisionTriggers(t, tt,
+		[]metricdata.DataPoint[int64]{{
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("trigger", "root_span")),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
+}
+
+func TestProcessor_Eviction_TriggeredTraceNotDoubleCounted(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Hour,
+		NumTraces:     1,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	// First trace is a root trace: counted under trigger=root_span, then held
+	// in its decision_delay window. The second trace overflows the buffer and
+	// evicts it mid-delay; that decision must not be counted again.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newRootTrace(pcommon.TraceID([16]byte{0xE7}))))
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID([16]byte{0xE8}), ptrace.StatusCodeUnset)))
+
+	require.Equal(t, 1, sink.SpanCount(), "evicted trace is still decided and forwarded")
+	metadatatest.AssertEqualProcessorDynamicSamplingDecisionTriggers(t, tt,
+		[]metricdata.DataPoint[int64]{{
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("trigger", "root_span")),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
+	metadatatest.AssertEqualProcessorDynamicSamplingTracesEvicted(t, tt,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
+}

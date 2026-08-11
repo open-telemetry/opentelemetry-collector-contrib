@@ -19,7 +19,9 @@ subtext: |
   Previously a collector restart, rollout, or config reload discarded every buffered trace
   without a decision (up to trace_timeout worth of spans). Shutdown now decides each pending
   trace with the spans seen so far, forwards the kept ones with a correct ot=th tracestate,
-  and reports them on the decision-triggers counter with trigger="shutdown".
+  and reports them on the decision-triggers counter with trigger="shutdown". Traces already
+  counted by an earlier trigger are not counted again, and the same double-count guard is
+  applied to eviction of a trace in its decision_delay window.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you can use "Skip Changelog" label instead of filing a changelog entry (see CONTRIBUTING.md).
