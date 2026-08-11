@@ -2680,7 +2680,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 		t.Run(tt.statement, func(t *testing.T) {
 			settings := componenttest.NewNopTelemetrySettings()
 			funcs := ottlfuncs.StandardFuncs[*ottlspan.TransformContext]()
-			isRootSpanFactory := ottlfuncs.NewIsRootSpanFactoryNew()
+			isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
 			funcs[isRootSpanFactory.Name()] = isRootSpanFactory
 			spanParser, err := ottlspan.NewParser(funcs, settings)
 			require.NoError(t, err)
@@ -2761,7 +2761,8 @@ func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statemen
 			&parserWithPathCtx,
 			ottl.WithStatementConverter(func(_ *ottl.ParserCollection[*ottl.Statement[*ottllog.TransformContext]], _ ottl.StatementsGetter, parsedStatements []*ottl.Statement[*ottllog.TransformContext]) (*ottl.Statement[*ottllog.TransformContext], error) {
 				return parsedStatements[0], nil
-			})))
+			}),
+		))
 	if err != nil {
 		return nil, err
 	}

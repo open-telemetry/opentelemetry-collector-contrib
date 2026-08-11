@@ -23,8 +23,8 @@ components:
         - awss3
         - awsxray
         - azure_blob
+        - azure_monitor
         - azuredataexplorer
-        - azuremonitor
         - bmc_helix
         - cassandra
         - clickhouse
@@ -88,7 +88,6 @@ components:
         - json_log_encoding
         - k8s_leader_elector
         - k8s_observer
-        - kafkatopics_observer
         - oauth2client
         - oidc
         - opamp
@@ -104,8 +103,8 @@ components:
         - attributes
         - cardinality_guardian
         - cumulative_to_delta
-        - deltatocumulative
-        - deltatorate
+        - delta_to_cumulative
+        - delta_to_rate
         - drain
         - filter
         - gen_ai_normalizer
@@ -126,7 +125,7 @@ components:
         - resource_detection
         - schema
         - span
-        - spanpruning
+        - span_pruning
         - sumologic
         - tail_sampling
         - transform
@@ -174,6 +173,7 @@ components:
         - google_cloud_spanner
         - googlecloudmonitoring
         - googlecloudpubsub
+        - googlecloudpubsubpush
         - haproxy
         - host_metrics
         - http_check

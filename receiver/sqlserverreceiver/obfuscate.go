@@ -6,10 +6,11 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"strings"
+	"unicode"
 
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
+	"go.uber.org/zap"
 )
 
 var xmlPlanObfuscationAttrs = []string{
@@ -19,18 +20,37 @@ var xmlPlanObfuscationAttrs = []string{
 	"ParameterCompiledValue",
 }
 
-type obfuscator obfuscate.Obfuscator
+type obfuscator struct {
+	*obfuscate.Obfuscator
+	logger *zap.Logger
+}
 
-func newObfuscator() *obfuscator {
-	return (*obfuscator)(obfuscate.NewObfuscator(obfuscate.Config{
-		SQL: obfuscate.SQLConfig{
-			DBMS: "mssql",
-		},
-	}))
+func newObfuscator(logger *zap.Logger) *obfuscator {
+	return &obfuscator{
+		Obfuscator: obfuscate.NewObfuscator(obfuscate.Config{
+			SQL: obfuscate.SQLConfig{
+				DBMS: "mssql",
+			},
+		}),
+		logger: logger,
+	}
+}
+
+// sanitizeSQL strips non-semantic Unicode format characters that can cause the
+// tokenizer to fail (e.g. a zero-width space U+200B in a query text makes the
+// DataDog tokenizer abort with "unexpected byte 8203"), even though they carry
+// no SQL semantics.
+func sanitizeSQL(sql string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.Is(unicode.Cf, r) {
+			return -1
+		}
+		return r
+	}, sql)
 }
 
 func (o *obfuscator) obfuscateSQLString(sql string) (string, error) {
-	obfuscatedQuery, err := (*obfuscate.Obfuscator)(o).ObfuscateSQLString(sql)
+	obfuscatedQuery, err := o.ObfuscateSQLString(sanitizeSQL(sql))
 	if err != nil {
 		return "", err
 	}
@@ -62,8 +82,9 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 						}
 						val, err := o.obfuscateSQLString(elem.Attr[i].Value)
 						if err != nil {
-							fmt.Println("Unable to obfuscate SQL statement in query plan, skipping: " + elem.Attr[i].Value)
-							return "", nil
+							o.logger.Warn("Unable to obfuscate SQL statement in query plan, redacting attribute", zap.String("attr", attrName), zap.Error(err))
+							elem.Attr[i].Value = "?"
+							continue
 						}
 						elem.Attr[i].Value = val
 					}
