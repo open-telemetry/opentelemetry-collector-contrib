@@ -296,33 +296,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
-          - description: The number of InnoDB row lock waits currently pending.
-            gauge:
-              dataPoints:
-                - asInt: "265"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: mysql.innodb.row_lock.wait.count
-            unit: "{wait}"
-          - description: The InnoDB row lock wait time.
-            gauge:
-              dataPoints:
-                - asDouble: 0.267
-                  attributes:
-                    - key: mysql.innodb.row_lock.wait.time.statistic
-                      value:
-                        stringValue: avg
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asDouble: 0.268
-                  attributes:
-                    - key: mysql.innodb.row_lock.wait.time.statistic
-                      value:
-                        stringValue: max
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: mysql.innodb.row_lock.wait.time
-            unit: s
           - description: The number of MySQL locks.
             name: mysql.locks
             sum:

@@ -2260,10 +2260,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []MysqlIndexIoWaitTimeMetricAttributeKey{MysqlIndexIoWaitTimeMetricAttributeKeyIoWaitsOperations, MysqlIndexIoWaitTimeMetricAttributeKeyTableName, MysqlIndexIoWaitTimeMetricAttributeKeySchema, MysqlIndexIoWaitTimeMetricAttributeKeyIndexName},
 		},
 		MysqlInnodbRowLockWaitCount: MysqlInnodbRowLockWaitCountMetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MysqlInnodbRowLockWaitTime: MysqlInnodbRowLockWaitTimeMetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MysqlJoins: MysqlJoinsMetricConfig{
 			Enabled:             false,

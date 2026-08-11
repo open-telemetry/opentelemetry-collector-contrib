@@ -190,10 +190,10 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlIndexIoWaitTimeDataPoint(ts, 3, AttributeIoWaitsOperationsFetch, "table_name-val-2", "schema-val-2", "index_name-val-2")
 			}
-			defaultMetricsCount++
+
 			allMetricsCount++
 			mb.RecordMysqlInnodbRowLockWaitCountDataPoint(ts, "1")
-			defaultMetricsCount++
+
 			allMetricsCount++
 			mb.RecordMysqlInnodbRowLockWaitTimeDataPoint(ts, 1, AttributeMysqlInnodbRowLockWaitTimeStatisticAvg)
 
