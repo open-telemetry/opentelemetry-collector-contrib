@@ -2,6 +2,8 @@ github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERo
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/SAP/go-hdb v1.17.2 h1:bxQfX6tw3twRIeCUf4HCcagORVPtLF5/vigFRQkh1UA=
 github.com/SAP/go-hdb v1.17.2/go.mod h1:UyvW+7VKLmwEYhV3KGEqrR63BWPP22LWWYG6WK0BHSc=
+github.com/SAP/go-hdb v1.17.3 h1:mwv9VhtwUMHKmg0YgkicGla2PlyfPpa9VStmc8YzP9g=
+github.com/SAP/go-hdb v1.17.3/go.mod h1:UyvW+7VKLmwEYhV3KGEqrR63BWPP22LWWYG6WK0BHSc=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
