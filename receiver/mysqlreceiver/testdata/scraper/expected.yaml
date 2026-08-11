@@ -633,6 +633,34 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: ns
+          - description: The number of pending InnoDB data file operations.
+            name: mysql.innodb.operation.pending
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "244"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: fsyncs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "245"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: reads
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "246"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: writes
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: false
+            unit: "1"
           - description: The number of joins that perform table scans.
             name: mysql.joins
             sum:
@@ -806,34 +834,6 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "1"
-          - description: The number of pending InnoDB data file operations.
-            name: mysql.operation.pending
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "244"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: fsyncs
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "245"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: reads
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "246"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: writes
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: false
             unit: "1"
           - description: The number of InnoDB operations.
             name: mysql.operations

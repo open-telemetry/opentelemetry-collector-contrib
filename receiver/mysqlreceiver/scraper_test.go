@@ -63,7 +63,7 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlCommands.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlFileOpen.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlDataFileIo.Enabled = true
-		cfg.MetricsBuilderConfig.Metrics.MysqlOperationPending.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbOperationPending.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableOpen.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlThreadSlowLaunch.Enabled = true
 

@@ -45,6 +45,9 @@ all_set:
     mysql.index.io.wait.time:
       enabled: true
       attributes: ["operation","table","schema","index"]
+    mysql.innodb.operation.pending:
+      enabled: true
+      attributes: ["operation"]
     mysql.joins:
       enabled: true
       attributes: ["kind"]
@@ -65,9 +68,6 @@ all_set:
     mysql.opened_resources:
       enabled: true
       attributes: ["kind"]
-    mysql.operation.pending:
-      enabled: true
-      attributes: ["operation"]
     mysql.operations:
       enabled: true
       attributes: ["operation"]
@@ -210,6 +210,9 @@ reaggregate_set:
     mysql.index.io.wait.time:
       enabled: true
       attributes: []
+    mysql.innodb.operation.pending:
+      enabled: true
+      attributes: []
     mysql.joins:
       enabled: true
       attributes: []
@@ -228,9 +231,6 @@ reaggregate_set:
       enabled: true
       attributes: []
     mysql.opened_resources:
-      enabled: true
-      attributes: []
-    mysql.operation.pending:
       enabled: true
       attributes: []
     mysql.operations:
@@ -375,6 +375,9 @@ none_set:
     mysql.index.io.wait.time:
       enabled: false
       attributes: ["operation","table","schema","index"]
+    mysql.innodb.operation.pending:
+      enabled: false
+      attributes: ["operation"]
     mysql.joins:
       enabled: false
       attributes: ["kind"]
@@ -395,9 +398,6 @@ none_set:
     mysql.opened_resources:
       enabled: false
       attributes: ["kind"]
-    mysql.operation.pending:
-      enabled: false
-      attributes: ["operation"]
     mysql.operations:
       enabled: false
       attributes: ["operation"]

@@ -438,6 +438,20 @@ The number of currently open files.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Int | Development |
 
+### mysql.innodb.operation.pending
+
+The number of pending InnoDB data file operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The operation types. | Str: ``fsyncs``, ``reads``, ``writes`` | Recommended | - |
+
 ### mysql.joins
 
 The number of joins that perform table scans.
@@ -475,20 +489,6 @@ This metric is specific for MySQL working as Document Store (X-Plugin). [more do
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | kind | The worker thread count kind. | Str: ``available``, ``active`` | Recommended | - |
-
-### mysql.operation.pending
-
-The number of pending InnoDB data file operations.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| operation | The operation types. | Str: ``fsyncs``, ``reads``, ``writes`` | Recommended | - |
 
 ### mysql.page_size
 
