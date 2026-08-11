@@ -96,8 +96,6 @@ github.com/iskorotkov/avro/v2 v2.33.0 h1:fbscLHxRFT4QBPQp6MuYEL2Ao9o89KPAWYCHQ//
 github.com/iskorotkov/avro/v2 v2.33.0/go.mod h1:yNyfWEaSvNBFk7FtQHUxMGO9YZzsCxxNqnzDKzzRCaY=
 github.com/iskorotkov/avro/v2 v2.33.1 h1:/tyfa5IFPNDkeB59kuyu9fyPZ3aiwv9YsMZwd39CNg0=
 github.com/iskorotkov/avro/v2 v2.33.1/go.mod h1:yNyfWEaSvNBFk7FtQHUxMGO9YZzsCxxNqnzDKzzRCaY=
-github.com/jaegertracing/jaeger-idl v0.9.0 h1:dI4olA7ArW3cjXwVbic/aYKDbdlfe7V+9wPQqAdzu8Y=
-github.com/jaegertracing/jaeger-idl v0.9.0/go.mod h1:W+9vbcr2cVZyS6z/cbr540EOzSkKYml3hmaWEavxkB0=
 github.com/jaegertracing/jaeger-idl v0.10.0 h1:lPqSLp9WxGwcyYJRRZkE9UZTidewf1ioV8NbZTAqK7Y=
 github.com/jaegertracing/jaeger-idl v0.10.0/go.mod h1:W+9vbcr2cVZyS6z/cbr540EOzSkKYml3hmaWEavxkB0=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
