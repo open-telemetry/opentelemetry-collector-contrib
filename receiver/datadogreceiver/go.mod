@@ -1,18 +1,18 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver
 
-go 1.25.0
+go 1.25.7
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.205
+	github.com/DataDog/agent-payload/v5 v5.0.208
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.82.0
 	github.com/DataDog/datadog-agent/pkg/proto v0.82.0
 	github.com/DataDog/datadog-agent/pkg/trace v0.82.0
 	github.com/DataDog/datadog-agent/pkg/trace/stats v0.82.0
 	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.82.0
-	github.com/DataDog/datadog-api-client-go/v2 v2.62.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.63.0
 	github.com/DataDog/sketches-go v1.4.8
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/klauspost/compress v1.19.1
+	github.com/klauspost/compress v1.19.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.158.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.158.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.158.0
