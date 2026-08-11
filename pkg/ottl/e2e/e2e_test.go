@@ -2726,7 +2726,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 		t.Run(tt.statement, func(t *testing.T) {
 			settings := componenttest.NewNopTelemetrySettings()
 			funcs := ottlfuncs.StandardFuncs[*ottlspan.TransformContext]()
-			isRootSpanFactory := ottlfuncs.NewIsRootSpanFactoryNew()
+			isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
 			funcs[isRootSpanFactory.Name()] = isRootSpanFactory
 			spanParser, err := ottlspan.NewParser(funcs, settings)
 			require.NoError(t, err)
