@@ -30,6 +30,7 @@ func TestNewS3Manager(t *testing.T) {
 		&PartitionKeyBuilder{},
 		s3.New(s3.Options{}),
 		"STANDARD",
+		aws.Config{},
 		WithACL(s3types.ObjectCannedACLPrivate),
 	)
 
@@ -316,6 +317,7 @@ func TestS3ManagerUpload(t *testing.T) {
 					Region:       "local",
 				}),
 				"STANDARD_IA",
+				aws.Config{},
 				WithACL(s3types.ObjectCannedACLPrivate),
 			)
 
@@ -328,6 +330,70 @@ func TestS3ManagerUpload(t *testing.T) {
 				assert.EqualError(t, err, tc.errVal, "Must match the expected error")
 			} else {
 				assert.NoError(t, err, "Must not have return an error")
+			}
+		})
+	}
+}
+
+// TestS3ManagerUploadRequestChecksumCalculation verifies that the RequestChecksumCalculation
+// from the AWS config is honored on upload.
+func TestS3ManagerUploadRequestChecksumCalculation(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name         string
+		checksumCalc aws.RequestChecksumCalculation
+		wantChecksum bool
+	}{
+		{
+			name:         "when_supported calculates a CRC32 checksum",
+			checksumCalc: aws.RequestChecksumCalculationWhenSupported,
+			wantChecksum: true,
+		},
+		{
+			name:         "when_required omits the checksum",
+			checksumCalc: aws.RequestChecksumCalculationWhenRequired,
+			wantChecksum: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var gotAlgo, gotCRC32 string
+			s := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+				gotAlgo = r.Header.Get("x-amz-sdk-checksum-algorithm")
+				gotCRC32 = r.Header.Get("x-amz-checksum-crc32")
+				_, err := io.Copy(io.Discard, r.Body)
+				assert.NoError(t, err)
+				err = r.Body.Close()
+				assert.NoError(t, err)
+			}))
+			t.Cleanup(s.Close)
+
+			sm := NewS3Manager(
+				zap.NewNop(),
+				"my-bucket",
+				&PartitionKeyBuilder{
+					FileFormat:    "metrics",
+					UniqueKeyFunc: func() string { return "random" },
+				},
+				s3.New(s3.Options{
+					BaseEndpoint: aws.String(s.URL),
+					Region:       "local",
+				}),
+				"STANDARD",
+				aws.Config{RequestChecksumCalculation: tc.checksumCalc},
+			)
+
+			err := sm.Upload(t.Context(), []byte("hello world"), nil)
+			assert.NoError(t, err, "Must not error uploading")
+
+			if tc.wantChecksum {
+				assert.Equal(t, "CRC32", gotAlgo, "Must calculate a CRC32 checksum")
+				assert.NotEmpty(t, gotCRC32, "Must send the CRC32 checksum value")
+			} else {
+				assert.Empty(t, gotAlgo, "Must not calculate a checksum")
+				assert.Empty(t, gotCRC32, "Must not send a checksum value")
 			}
 		})
 	}
