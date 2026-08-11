@@ -37,26 +37,26 @@ metrics:
     enabled: true
     stability: development
     gauge:
-      value_type: int
+      value_type: double
     unit: ms
   ping.rtt.max:
     description: Maximum round-trip time in milliseconds.
     enabled: true
     stability: development
     gauge:
-      value_type: int
+      value_type: double
     unit: ms
   ping.rtt.min:
     description: Minimum round-trip time in milliseconds.
     enabled: true
     stability: development
     gauge:
-      value_type: int
+      value_type: double
     unit: ms
   ping.rtt.stddev:
     description: Standard deviation of round-trip time in milliseconds.
     enabled: true
     stability: development
     gauge:
-      value_type: int
+      value_type: double
     unit: ms

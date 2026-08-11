@@ -4,12 +4,12 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cloud.account.id | The cloud account id (e.g., OpenStack project or tenant ID) | Any Str | true |
-| cloud.availability_zone | The cloud availability zone | Any Str | true |
-| cloud.platform | The cloud platform | Any Str | true |
-| cloud.provider | The cloud provider | Any Str | true |
-| host.id | The host.id | Any Str | true |
-| host.name | The hostname | Any Str | true |
-| host.type | The host instance type (Nova flavor name or ID) | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| cloud.account.id | The cloud account id (e.g., OpenStack project or tenant ID) | Any Str | true | [cloud.account.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-account-id) | - |
+| cloud.availability_zone | The cloud availability zone | Any Str | true | [cloud.availability_zone](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-availability-zone) | - |
+| cloud.platform | The cloud platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
+| cloud.provider | The cloud provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
+| host.id | The host.id | Any Str | true | [host.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-id) | - |
+| host.name | The hostname | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-name) | - |
+| host.type | The host instance type (Nova flavor name or ID) | Any Str | true | [host.type](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-type) | - |

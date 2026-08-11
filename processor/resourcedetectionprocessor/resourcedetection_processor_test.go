@@ -157,9 +157,10 @@ func TestResourceProcessor(t *testing.T) {
 			require.NoError(t, res.Attributes().FromRaw(tt.detectedResource))
 			md1.On("Detect").Return(res, tt.detectedError)
 			factory.resourceProviderFactory = internal.NewProviderFactory(
-				map[internal.DetectorType]internal.DetectorFactory{"mock": func(processor.Settings, internal.DetectorConfig) (internal.Detector, error) {
+				map[internal.DetectorType]internal.DetectorFactory{"mock": func(processor.Settings, internal.DetectorConfig, bool) (internal.Detector, error) {
 					return md1, nil
-				}})
+				}},
+			)
 
 			if tt.detectorKeys == nil {
 				tt.detectorKeys = []string{"mock"}
@@ -319,7 +320,7 @@ func TestProcessor_RefreshInterval_UpdatesResource(t *testing.T) {
 	// Hook detector into factory.
 	factory.resourceProviderFactory = internal.NewProviderFactory(
 		map[internal.DetectorType]internal.DetectorFactory{
-			"mock": func(processor.Settings, internal.DetectorConfig) (internal.Detector, error) {
+			"mock": func(processor.Settings, internal.DetectorConfig, bool) (internal.Detector, error) {
 				return md, nil
 			},
 		},
@@ -438,7 +439,7 @@ func TestProcessor_RefreshInterval_KeepsLastGoodOnFailure(t *testing.T) {
 	// Wire detector into factory.
 	factory.resourceProviderFactory = internal.NewProviderFactory(
 		map[internal.DetectorType]internal.DetectorFactory{
-			"mock": func(processor.Settings, internal.DetectorConfig) (internal.Detector, error) {
+			"mock": func(processor.Settings, internal.DetectorConfig, bool) (internal.Detector, error) {
 				return md, nil
 			},
 		},

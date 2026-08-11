@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
@@ -29,6 +30,17 @@ func (m *mockMetadata) Metadata(context.Context) (*consul.Metadata, error) {
 	args := m.MethodCalled("Metadata")
 
 	return args.Get(0).(*consul.Metadata), args.Error(1)
+}
+
+// setPrefixMetaAttributesGate forces the state of the meta attribute prefix gate
+// for the duration of the test.
+func setPrefixMetaAttributesGate(t *testing.T, enabled bool) {
+	gate := metadata.ProcessorResourcedetectionConsulPrefixMetaAttributesFeatureGate
+	originalValue := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), originalValue))
+	})
 }
 
 func TestDetect(t *testing.T) {
@@ -57,6 +69,39 @@ func TestDetect(t *testing.T) {
 		"cloud.region": "dc1",
 		"host.id":      "00000000-0000-0000-0000-000000000000",
 		"test":         "test",
+	}
+
+	assert.Equal(t, expected, res.Attributes().AsRaw())
+}
+
+func TestDetectPrefixedMetaAttributes(t *testing.T) {
+	setPrefixMetaAttributesGate(t, true)
+
+	md := &mockMetadata{}
+	md.On("Metadata").Return(
+		&consul.Metadata{
+			Hostname:     "hostname",
+			Datacenter:   "dc1",
+			NodeID:       "00000000-0000-0000-0000-000000000000",
+			HostMetadata: map[string]string{"test": "test"},
+		},
+		nil,
+	)
+	detector := &Detector{
+		provider: md,
+		logger:   zap.NewNop(),
+		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+	}
+	res, schemaURL, err := detector.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+	md.AssertExpectations(t)
+
+	expected := map[string]any{
+		"host.name":        "hostname",
+		"cloud.region":     "dc1",
+		"host.id":          "00000000-0000-0000-0000-000000000000",
+		"consul.meta.test": "test",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())

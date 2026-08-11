@@ -59,3 +59,39 @@ func Test_values(t *testing.T) {
 		})
 	}
 }
+
+func Test_ValuesFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewValuesFactory[any]()
+		assert.Equal(t, "Values", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewValuesFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ValuesArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewValuesFactory[any]()
+		args := factory.CreateDefaultArguments()
+		valuesArgs, ok := args.(*ValuesArguments[any])
+		require.True(t, ok)
+		valuesArgs.Target = &ottl.StandardPMapGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createValuesFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ValuesFactory args must be of type *ValuesArguments[K]")
+	})
+}

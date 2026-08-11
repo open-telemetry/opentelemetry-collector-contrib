@@ -392,7 +392,7 @@ The number of times each type of command has been executed.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| command | The command types. | Str: ``delete``, ``delete_multi``, ``insert``, ``select``, ``update``, ``update_multi`` | Recommended | - |
+| command | The command types. | Str: ``alter_table``, ``create_index``, ``create_table``, ``delete``, ``delete_multi``, ``insert``, ``optimize``, ``select``, ``update``, ``update_multi`` | Recommended | - |
 
 ### mysql.connection.count
 
@@ -415,6 +415,14 @@ Errors that occur during the client connection process.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` | Recommended | - |
+
+### mysql.file.open
+
+The number of currently open files.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
 
 ### mysql.joins
 
@@ -614,6 +622,14 @@ The total table lock wait write events times.
 | table | Table name for event or process. | Any Str | Recommended | - |
 | kind | Write operation types. | Str: ``allow_write``, ``concurrent_insert``, ``low_priority``, ``normal``, ``external`` | Recommended | - |
 
+### mysql.table.open
+
+The number of currently open tables.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
 ### mysql.table.rows
 
 The number of rows for a given table.
@@ -659,6 +675,14 @@ The number of hits, misses or overflows for open tables cache lookups.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | status | The status of cache access. | Str: ``hit``, ``miss``, ``overflow`` | Recommended | - |
 
+### mysql.thread.slow_launch
+
+The number of threads that have taken more than slow_launch_time seconds to create.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | Development |
+
 ## Default Events
 
 The following events are emitted by default. Each of them can be disabled by applying the following configuration:
@@ -683,7 +707,6 @@ events:
 
 Query sample collection enables monitoring of current running database statements.
 This provides real-time visibility into active queries, helping users monitor database activity and performance as part of their observability pipeline.
-
 
 #### Attributes
 
@@ -714,7 +737,6 @@ This provides real-time visibility into active queries, helping users monitor da
 
 Top query collection enables monitoring of the queries that consumed the most CPU in the database.
 This provides insights into query performance and resource usage, helping users identify and optimize high-impact queries as part of their observability pipeline.
-
 
 #### Attributes
 

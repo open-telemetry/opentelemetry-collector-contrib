@@ -150,9 +150,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommandDelete)
+			mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommandAlterTable)
 			if tt.name == "reaggregate_set" {
-				mb.RecordMysqlCommandsDataPoint(ts, "3", AttributeCommandDeleteMulti)
+				mb.RecordMysqlCommandsDataPoint(ts, "3", AttributeCommandCreateIndex)
 			}
 
 			allMetricsCount++
@@ -169,6 +169,9 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlDoubleWritesDataPoint(ts, "3", AttributeDoubleWritesWrites)
 			}
+
+			allMetricsCount++
+			mb.RecordMysqlFileOpenDataPoint(ts, "1")
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlHandlersDataPoint(ts, "1", AttributeHandlerCommit)
@@ -336,6 +339,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordMysqlTableOpenDataPoint(ts, "1")
+
+			allMetricsCount++
 			mb.RecordMysqlTableRowsDataPoint(ts, 1, "table_name-val", "schema-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlTableRowsDataPoint(ts, 3, "table_name-val-2", "schema-val-2")
@@ -352,6 +358,9 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlTableOpenCacheDataPoint(ts, "3", AttributeCacheStatusMiss)
 			}
+
+			allMetricsCount++
+			mb.RecordMysqlThreadSlowLaunchDataPoint(ts, "1")
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlThreadsDataPoint(ts, "1", AttributeThreadsCached)
@@ -707,7 +716,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, int64(1), dp.IntValue())
 						commandAttrVal, ok := dp.Attributes().Get("command")
 						assert.True(t, ok)
-						assert.Equal(t, "delete", commandAttrVal.Str())
+						assert.Equal(t, "alter_table", commandAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["mysql.commands"], "Found a duplicate in the metrics slice: mysql.commands")
 						validatedMetrics["mysql.commands"] = true
@@ -836,6 +845,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("kind")
 						assert.False(t, ok)
 					}
+				case "mysql.file.open":
+					assert.False(t, validatedMetrics["mysql.file.open"], "Found a duplicate in the metrics slice: mysql.file.open")
+					validatedMetrics["mysql.file.open"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of currently open files.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.handlers":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.handlers"], "Found a duplicate in the metrics slice: mysql.handlers")
@@ -2110,6 +2131,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("kind")
 						assert.False(t, ok)
 					}
+				case "mysql.table.open":
+					assert.False(t, validatedMetrics["mysql.table.open"], "Found a duplicate in the metrics slice: mysql.table.open")
+					validatedMetrics["mysql.table.open"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of currently open tables.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.table.rows":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.table.rows"], "Found a duplicate in the metrics slice: mysql.table.rows")
@@ -2257,6 +2290,20 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("status")
 						assert.False(t, ok)
 					}
+				case "mysql.thread.slow_launch":
+					assert.False(t, validatedMetrics["mysql.thread.slow_launch"], "Found a duplicate in the metrics slice: mysql.thread.slow_launch")
+					validatedMetrics["mysql.thread.slow_launch"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of threads that have taken more than slow_launch_time seconds to create.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.threads":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.threads"], "Found a duplicate in the metrics slice: mysql.threads")

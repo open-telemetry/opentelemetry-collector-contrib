@@ -600,7 +600,6 @@ query sample
 Emits one event per slow query execution. The top N slowest executions per scrape window are emitted.
 Note: when database profiling is disabled, the receiver falls back to MongoDB's diagnostic log (`getLog`), a fixed-size ring buffer (~1024 entries) that may rotate slow-query entries out before the next scrape on busy servers; enable the profiler for reliable capture.
 
-
 #### Attributes
 
 | Name | Description | Values | Semantic Convention |
