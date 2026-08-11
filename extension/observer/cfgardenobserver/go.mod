@@ -5,13 +5,13 @@ go 1.25.0
 require (
 	code.cloudfoundry.org/garden v0.0.0-20241023020423-a21e43a17f84
 	github.com/cloudfoundry/go-cfclient/v3 v3.0.0-beta.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.157.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.158.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.63.1-0.20260803152855-18ed8fe814ea
-	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260803152855-18ed8fe814ea
-	go.opentelemetry.io/collector/confmap v1.63.1-0.20260803152855-18ed8fe814ea
-	go.opentelemetry.io/collector/extension v1.63.1-0.20260803152855-18ed8fe814ea
-	go.opentelemetry.io/collector/extension/extensiontest v0.157.1-0.20260803152855-18ed8fe814ea
+	go.opentelemetry.io/collector/component v1.64.1-0.20260805181402-19664a7b14af
+	go.opentelemetry.io/collector/component/componenttest v0.158.1-0.20260805181402-19664a7b14af
+	go.opentelemetry.io/collector/confmap v1.64.1-0.20260805181402-19664a7b14af
+	go.opentelemetry.io/collector/extension v1.64.1-0.20260805181402-19664a7b14af
+	go.opentelemetry.io/collector/extension/extensiontest v0.158.1-0.20260805181402-19664a7b14af
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 )
@@ -23,7 +23,7 @@ require (
 	github.com/codegangsta/inject v0.0.0-20150114235600-33e0aa1cb7c0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
-	github.com/go-logr/logr v1.4.3 // indirect
+	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-martini/martini v0.0.0-20170121215854-22fa46961aab // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
@@ -34,8 +34,8 @@ require (
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
-	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.3.5 // indirect
+	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
+	github.com/knadh/koanf/v2 v2.3.6 // indirect
 	github.com/martini-contrib/render v0.0.0-20150707142108-ec18f8345a11 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -48,18 +48,18 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/tedsuo/rata v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.63.1-0.20260803152855-18ed8fe814ea // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.157.1-0.20260803152855-18ed8fe814ea // indirect
-	go.opentelemetry.io/collector/pdata v1.63.1-0.20260803152855-18ed8fe814ea // indirect
-	go.opentelemetry.io/otel v1.44.0 // indirect
-	go.opentelemetry.io/otel/metric v1.44.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
-	go.opentelemetry.io/otel/trace v1.44.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.64.1-0.20260805181402-19664a7b14af // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.158.1-0.20260805181402-19664a7b14af // indirect
+	go.opentelemetry.io/collector/pdata v1.64.1-0.20260805181402-19664a7b14af // indirect
+	go.opentelemetry.io/otel v1.45.0 // indirect
+	go.opentelemetry.io/otel/metric v1.45.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.45.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.45.0 // indirect
+	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/tools v0.47.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

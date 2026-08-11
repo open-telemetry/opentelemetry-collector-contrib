@@ -39,7 +39,7 @@ func AssertEqualProcessorDynamicSamplingDecisionSampleRate(t *testing.T, tt *com
 func AssertEqualProcessorDynamicSamplingDecisionTriggers(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_dynamic_sampling_decision_triggers",
-		Description: "Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout). [Development]",
+		Description: "Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction). [Development]",
 		Unit:        "{decisions}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -117,7 +117,7 @@ func AssertEqualProcessorDynamicSamplingTracesDropped(t *testing.T, tt *componen
 func AssertEqualProcessorDynamicSamplingTracesEvicted(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_dynamic_sampling_traces_evicted",
-		Description: "Number of traces evicted from the buffer before a decision could be made. [Development]",
+		Description: "Number of traces evicted from the buffer due to num_traces pressure. Evicted traces are decided immediately per the configured eviction policy. [Development]",
 		Unit:        "{traces}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
