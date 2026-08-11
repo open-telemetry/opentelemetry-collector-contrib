@@ -67,7 +67,19 @@ The following settings are optional:
 
 - `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases.
 
-- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. Excluded databases are never connected to, so use this for databases a monitoring user cannot reach, such as `rdsadmin` on Amazon RDS, `azure_maintenance` on Azure, or `cloudsqladmin` on Cloud SQL. Excluding every database in `databases` is a configuration error.
+- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. The receiver never connects to an excluded database. Excluding every database in `databases` is a configuration error.
+
+> [!NOTE]
+> Managed PostgreSQL services create internal databases that no customer credential can connect to. The receiver discovers them like any other database and logs a connection error on every scrape. If you use one of these services, add its internal databases to `exclude_databases`:
+>
+> | Service | Databases to exclude |
+> |---|---|
+> | Amazon RDS / Aurora PostgreSQL | `rdsadmin` |
+> | Azure Database for PostgreSQL | `azure_maintenance` |
+> | Google Cloud SQL | `cloudsqladmin` |
+> | Google AlloyDB | `alloydbadmin`, `alloydbmetadata` |
+>
+> Example: `exclude_databases: [rdsadmin]`
 
 The following settings are also optional and nested under `tls` to help configure client transport security
 
