@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/apache/thrift v0.24.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger-idl v0.9.0
+	github.com/jaegertracing/jaeger-idl v0.10.0
 	github.com/kr/pretty v0.3.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.158.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.158.0
