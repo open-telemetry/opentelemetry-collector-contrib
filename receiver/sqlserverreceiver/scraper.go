@@ -1651,7 +1651,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 		procID := row[storedProcedureID]
 
-		if row[queryText] == "" || strings.HasPrefix(row[queryText], "--") {
+		trimmedQueryText := strings.TrimSpace(row[queryText])
+		if trimmedQueryText == "" || strings.HasPrefix(trimmedQueryText, "--") {
 			s.logger.Debug(fmt.Sprintf("skipping empty or comment-only SQL statement: %v", row[queryText]))
 			continue
 		}
@@ -2084,7 +2085,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
-		if row[command] != "IDLE_BLOCKER" && (row[statementText] == "" || strings.HasPrefix(row[statementText], "--")) {
+		trimmedStatementText := strings.TrimSpace(row[statementText])
+		if row[command] != "IDLE_BLOCKER" && (trimmedStatementText == "" || strings.HasPrefix(trimmedStatementText, "--")) {
 			s.logger.Debug(fmt.Sprintf("skipping empty or comment-only SQL statement: %v", row[statementText]))
 			continue
 		}
@@ -2095,7 +2097,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			statement := row[columnName]
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
-				idleBlockerEmptyOrComment := row[command] == "IDLE_BLOCKER" && (statement == "" || strings.HasPrefix(statement, "--"))
+				trimmedStatement := strings.TrimSpace(statement)
+				idleBlockerEmptyOrComment := row[command] == "IDLE_BLOCKER" && (trimmedStatement == "" || strings.HasPrefix(trimmedStatement, "--"))
 				if !idleBlockerEmptyOrComment {
 					s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v, error: %v", statement, err))
 				}
