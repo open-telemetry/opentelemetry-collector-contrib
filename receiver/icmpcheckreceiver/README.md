@@ -39,7 +39,7 @@ Each metric can be enabled or disabled individually. By default, all metrics are
 
 ```yaml
 receivers:
-  icmpcheck:
+  icmpcheckreceiver:
     metrics:
       ping.rtt.min:
         enabled: false
@@ -60,7 +60,7 @@ The following attributes are added to all reported resources:
 
 ```yaml
 receivers:
-  icmpcheck:
+  icmpcheckreceiver:
     collection_interval: 30s
     metrics:
       ping.rtt.min:
@@ -82,7 +82,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [ icmpcheck ]
+      receivers: [ icmpcheckreceiver ]
       processors: [ batch ]
       exporters: [ debug ]
 ```
