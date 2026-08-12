@@ -499,6 +499,22 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 	}
 	statusUpdateChannel <- &status.AggregateStatus{
 		Event: &mockStatusEvent{
+			status:    componentstatus.StatusOK,
+			err:       nil,
+			timestamp: now.Add(1 * time.Second),
+		},
+		ComponentStatusMap: map[string]*status.AggregateStatus{
+			"test-receiver": {
+				Event: &mockStatusEvent{
+					status:    componentstatus.StatusOK,
+					err:       nil,
+					timestamp: now.Add(1 * time.Second),
+				},
+			},
+		},
+	}
+	statusUpdateChannel <- &status.AggregateStatus{
+		Event: &mockStatusEvent{
 			status:    componentstatus.StatusPermanentError,
 			err:       errors.New("unexpected error"),
 			timestamp: now,
