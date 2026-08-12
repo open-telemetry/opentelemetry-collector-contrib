@@ -1220,7 +1220,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.DeleteAfterRead = true
-	sink := emittest.NewSink(emittest.WithCallBuffer(10))
+	sink := emittest.NewSink(emittest.WithCallBuffer(0))
 	operator := testManagerWithSink(t, cfg, sink)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
@@ -1239,9 +1239,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	// Verify we have no checkpointed files
 	require.Equal(t, 0, operator.tracker.TotalReaders())
 
-	// Wait until the only line in the short file and
-	// at least one line from the long file have been consumed
-	var shortOne, longOne bool
+	// Consume tokens only until the first long-file line arrives.
 	ctx, cancel := context.WithCancel(t.Context())
 
 	var wg sync.WaitGroup
@@ -1249,12 +1247,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 		operator.poll(ctx)
 	})
 
-	for !shortOne || !longOne {
-		if token := sink.NextToken(t); string(token) == shortFileLine {
-			shortOne = true
-		} else {
-			longOne = true
-		}
+	for string(sink.NextToken(t)) == shortFileLine {
 	}
 
 	// Short file was fully consumed and should eventually be deleted.
