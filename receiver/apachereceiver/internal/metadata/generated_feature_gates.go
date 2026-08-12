@@ -11,7 +11,7 @@ var ReceiverApacheDisableOldFormatMetricsFeatureGate = featuregate.GlobalRegistr
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the receiver no longer emits the original metric and attribute names (e.g. apache.requests, apache.scoreboard, and the mode/level/state attributes). Requires receiver.apache.enableNewFormatMetrics to also be enabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47327"),
-	featuregate.WithRegisterFromVersion("v0.157.0"),
+	featuregate.WithRegisterFromVersion("v0.159.0"),
 )
 
 var ReceiverApacheEnableNewFormatMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -19,5 +19,5 @@ var ReceiverApacheEnableNewFormatMetricsFeatureGate = featuregate.GlobalRegistry
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the receiver emits the new, consistently named metrics and attributes (e.g. apache.request.count, apache.worker.status, cpu.mode) alongside the original ones. See the migration guide linked from the component README for the full mapping."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47327"),
-	featuregate.WithRegisterFromVersion("v0.157.0"),
+	featuregate.WithRegisterFromVersion("v0.159.0"),
 )
