@@ -57,7 +57,8 @@ func TestStart_WithError(t *testing.T) {
 }
 
 func TestStart_WithNoProjectError(t *testing.T) {
-	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "testdata/fake_creds_no_project.json")
+	t.Setenv("GOOGLE_CLOUD_PROJECT", "")
 	ext, err := CreateExtension(t.Context(), extension.Settings{}, CreateDefaultConfig())
 	assert.NotNil(t, ext)
 	assert.NoError(t, err)
