@@ -455,16 +455,44 @@ func TestDetectNotOnGCP(t *testing.T) {
 }
 
 func TestDetectFailOnMissingMetadata(t *testing.T) {
-	withFakeDetector(t, nil, errors.New("failed to get metadata"))
+	for _, tc := range []struct {
+		desc        string
+		sdkResource *sdkresource.Resource
+		sdkErr      error
+		errContains string
+	}{
+		{
+			desc:        "sdk returns error",
+			sdkResource: nil,
+			sdkErr:      errors.New("failed to get metadata"),
+			errContains: "gcp metadata unavailable: failed to get metadata",
+		},
+		{
+			desc:        "sdk returns empty resource without error",
+			sdkResource: sdkresource.Empty(),
+			sdkErr:      nil,
+			errContains: "gcp metadata unavailable",
+		},
+		{
+			desc:        "sdk returns nil resource without error",
+			sdkResource: nil,
+			sdkErr:      nil,
+			errContains: "gcp metadata unavailable",
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			withFakeDetector(t, tc.sdkResource, tc.sdkErr)
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), true)
-	require.NoError(t, err)
+			d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), true)
+			require.NoError(t, err)
 
-	res, schema, err := d.Detect(t.Context())
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "failed to get metadata")
-	assert.Empty(t, schema)
-	assert.Equal(t, 0, res.Attributes().Len())
+			res, schema, err := d.Detect(t.Context())
+			require.Error(t, err)
+			assert.ErrorContains(t, err, tc.errContains)
+			assert.Empty(t, schema)
+			assert.Equal(t, 0, res.Attributes().Len())
+		})
+	}
 }
 
 func TestGCELabels(t *testing.T) {
