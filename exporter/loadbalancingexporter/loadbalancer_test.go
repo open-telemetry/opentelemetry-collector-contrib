@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -244,6 +245,72 @@ func TestOnBackendChanges(t *testing.T) {
 	p.onBackendChanges(endpoints)
 
 	// verify
+	assert.Len(t, p.ring.items, 2*defaultWeight)
+}
+
+func TestOnBackendChanges_SlowStartDoesNotBlockDataPath(t *testing.T) {
+	// prepare
+	ts, tb := getTelemetryAssets(t)
+	cfg := simpleConfig()
+
+	reached := make(chan struct{})
+	release := make(chan struct{})
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		if endpoint == endpointWithPort("endpoint-2") {
+			close(reached)
+			<-release
+		}
+
+		return newNopMockExporter(), nil
+	}
+
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	p.onBackendChanges([]string{"endpoint-1"})
+	require.Len(t, p.exporters, 1)
+
+	// test
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		p.onBackendChanges([]string{"endpoint-1", "endpoint-2"})
+	}()
+
+	// the transition is now blocked inside the component factory for endpoint-2
+	<-reached
+
+	type lookup struct {
+		endpoint string
+		err      error
+	}
+	result := make(chan lookup, 1)
+	go func() {
+		_, endpoint, lookupErr := p.exporterAndEndpoint([]byte{128, 128, 0, 0})
+		result <- lookup{endpoint: endpoint, err: lookupErr}
+	}()
+
+	// verify the data path is still served by the existing ring
+	select {
+	case res := <-result:
+		require.NoError(t, res.err)
+		assert.Equal(t, "endpoint-1", res.endpoint)
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "exporterAndEndpoint blocked while the new exporter was being started")
+	}
+
+	// test
+	close(release)
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "the backend transition didn't complete")
+	}
+
+	// verify
+	assert.Len(t, p.exporters, 2)
 	assert.Len(t, p.ring.items, 2*defaultWeight)
 }
 
