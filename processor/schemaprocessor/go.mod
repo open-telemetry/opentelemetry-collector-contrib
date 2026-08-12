@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/processor/processortest v0.158.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/metric v1.45.0
-	go.opentelemetry.io/otel/schema v0.0.17
+	go.opentelemetry.io/otel/schema v0.0.18
 	go.opentelemetry.io/otel/sdk/metric v1.45.0
 	go.opentelemetry.io/otel/trace v1.45.0
 	go.uber.org/goleak v1.3.0
