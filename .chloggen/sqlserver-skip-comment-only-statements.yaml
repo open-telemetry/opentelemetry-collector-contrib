@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/sqlserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Skip emitting empty query samples and top queries for statements that SQL Server masks as comment-only placeholders.
+note: Skip emitting query sample and top query events whose text is empty or a comment-only placeholder, except idle blocker query samples which are still emitted.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: []
@@ -19,7 +19,10 @@ subtext: |
   SQL Server returns a placeholder line comment (e.g. `--*UPDATE----`) in place of
   data-modifying OPENROWSET statements that carry inline credentials. The obfuscator
   strips line comments, leaving an empty query text, so these rows previously emitted
-  empty query sample and top query events. They are now skipped in both paths.
+  empty query sample and top query events. Such rows are now skipped, with one
+  exception: idle blocker query samples (command = IDLE_BLOCKER) are still emitted even
+  when their query text is empty, so the blocking-session information they carry is
+  preserved.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

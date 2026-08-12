@@ -1651,8 +1651,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 		procID := row[storedProcedureID]
 
-		if strings.HasPrefix(row[queryText], "--") {
-			s.logger.Debug(fmt.Sprintf("skipping comment-only SQL statement: %v", row[queryText]))
+		if row[queryText] == "" || strings.HasPrefix(row[queryText], "--") {
+			s.logger.Debug(fmt.Sprintf("skipping empty or comment-only SQL statement: %v", row[queryText]))
 			continue
 		}
 
@@ -1660,7 +1660,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			statement := row[columnName]
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
-				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v, error: %v", statement, err))
 				return "", nil
 			}
 
@@ -2084,8 +2084,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
-		if strings.HasPrefix(row[statementText], "--") {
-			s.logger.Debug(fmt.Sprintf("skipping comment-only SQL statement: %v", row[statementText]))
+		if row[command] != "IDLE_BLOCKER" && (row[statementText] == "" || strings.HasPrefix(row[statementText], "--")) {
+			s.logger.Debug(fmt.Sprintf("skipping empty or comment-only SQL statement: %v", row[statementText]))
 			continue
 		}
 
@@ -2095,7 +2095,10 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			statement := row[columnName]
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
-				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+				idleBlockerEmptyOrComment := row[command] == "IDLE_BLOCKER" && (statement == "" || strings.HasPrefix(statement, "--"))
+				if !idleBlockerEmptyOrComment {
+					s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v, error: %v", statement, err))
+				}
 				return "", nil
 			}
 			return obfuscated, nil
