@@ -1236,11 +1236,14 @@ func functionKey(database, schema, function string) functionIdentifer {
 //go:embed templates/querySampleTemplate.tmpl
 var querySampleTemplate string
 
+// querySampleTmpl is parsed once at init: the template text is embedded at
+// compile time, so per-call parsing would only repeat identical work.
+var querySampleTmpl = template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
+
 func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, float64, error) {
-	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
-	if tmplErr := tmpl.Execute(&buf, map[string]any{
+	if tmplErr := querySampleTmpl.Execute(&buf, map[string]any{
 		"limit":                limit,
 		"newestQueryTimestamp": newestQueryTimestamp,
 		"excludedDatabases":    quoteDatabaseList(excludedDatabases),
@@ -1398,15 +1401,18 @@ func convertToInt(column, value string, logger *zap.Logger) (any, error) {
 //go:embed templates/topQueryTemplate.tmpl
 var topQueryTemplate string
 
+// topQueryTmpl is parsed once at init: the template text is embedded at
+// compile time, so per-call parsing would only repeat identical work.
+var topQueryTmpl = template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
+
 // getTopQuery implements client.
 func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, error) {
-	tmpl := template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
 	buf := bytes.Buffer{}
 
 	// TODO: Only get query after the oldest query we got from the previous sample query colelction.
 	// For instance, if from the last sample query we got queries executed between 8:00 ~ 8:15,
 	// in this query, we should only gather query after 8:15
-	if err := tmpl.Execute(&buf, map[string]any{
+	if err := topQueryTmpl.Execute(&buf, map[string]any{
 		"limit":             limit,
 		"excludedDatabases": quoteDatabaseList(excludedDatabases),
 	}); err != nil {
