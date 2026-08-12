@@ -97,7 +97,7 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 	var isGCE bool
 	var projectID, zone, instanceName string
 	for _, attr := range res.Attributes() {
-		val := attr.Value.AsString()
+		val := attr.Value.String()
 		switch attr.Key {
 		case conventions.CloudProviderKey:
 			d.rb.SetCloudProvider(val)
