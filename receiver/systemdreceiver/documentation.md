@@ -26,17 +26,17 @@ Total CPU time spent by this service.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | cpu.mode | Breakdown of CPU usage by type. | Str: ``system``, ``user`` | Recommended | - |
 
-### systemd.service.memory.peak
+### systemd.service.memory.usage
 
-Peak bytes of memory used by this service.
+Bytes of memory in use by this service.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
-### systemd.service.memory.usage
+### systemd.service.memory.usage.max
 
-Bytes of memory in use by this service.
+Maximum memory used by this service, in bytes.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |

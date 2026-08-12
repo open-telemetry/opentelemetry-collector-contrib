@@ -31,10 +31,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []SystemdServiceCPUTimeMetricAttributeKey{SystemdServiceCPUTimeMetricAttributeKeyCPUMode},
 					},
-					SystemdServiceMemoryPeak: SystemdServiceMemoryPeakMetricConfig{
+					SystemdServiceMemoryUsage: SystemdServiceMemoryUsageMetricConfig{
 						Enabled: true,
 					},
-					SystemdServiceMemoryUsage: SystemdServiceMemoryUsageMetricConfig{
+					SystemdServiceMemoryUsageMax: SystemdServiceMemoryUsageMaxMetricConfig{
 						Enabled: true,
 					},
 					SystemdServiceRestarts: SystemdServiceRestartsMetricConfig{
@@ -60,10 +60,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []SystemdServiceCPUTimeMetricAttributeKey{SystemdServiceCPUTimeMetricAttributeKeyCPUMode},
 					},
-					SystemdServiceMemoryPeak: SystemdServiceMemoryPeakMetricConfig{
+					SystemdServiceMemoryUsage: SystemdServiceMemoryUsageMetricConfig{
 						Enabled: false,
 					},
-					SystemdServiceMemoryUsage: SystemdServiceMemoryUsageMetricConfig{
+					SystemdServiceMemoryUsageMax: SystemdServiceMemoryUsageMaxMetricConfig{
 						Enabled: false,
 					},
 					SystemdServiceRestarts: SystemdServiceRestartsMetricConfig{
@@ -84,7 +84,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemdServiceCPUTimeMetricConfig{}, SystemdServiceMemoryPeakMetricConfig{}, SystemdServiceMemoryUsageMetricConfig{}, SystemdServiceRestartsMetricConfig{}, SystemdUnitStateMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemdServiceCPUTimeMetricConfig{}, SystemdServiceMemoryUsageMetricConfig{}, SystemdServiceMemoryUsageMaxMetricConfig{}, SystemdServiceRestartsMetricConfig{}, SystemdUnitStateMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

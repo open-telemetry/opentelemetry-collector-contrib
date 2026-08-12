@@ -85,10 +85,10 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemdServiceMemoryPeakDataPoint(ts, 1)
+			mb.RecordSystemdServiceMemoryUsageDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemdServiceMemoryUsageDataPoint(ts, 1)
+			mb.RecordSystemdServiceMemoryUsageMaxDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSystemdServiceRestartsDataPoint(ts, 1)
@@ -177,12 +177,12 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("cpu.mode")
 						assert.False(t, ok)
 					}
-				case "systemd.service.memory.peak":
-					assert.False(t, validatedMetrics["systemd.service.memory.peak"], "Found a duplicate in the metrics slice: systemd.service.memory.peak")
-					validatedMetrics["systemd.service.memory.peak"] = true
+				case "systemd.service.memory.usage":
+					assert.False(t, validatedMetrics["systemd.service.memory.usage"], "Found a duplicate in the metrics slice: systemd.service.memory.usage")
+					validatedMetrics["systemd.service.memory.usage"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Peak bytes of memory used by this service.", mi.Description())
+					assert.Equal(t, "Bytes of memory in use by this service.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -191,12 +191,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "systemd.service.memory.usage":
-					assert.False(t, validatedMetrics["systemd.service.memory.usage"], "Found a duplicate in the metrics slice: systemd.service.memory.usage")
-					validatedMetrics["systemd.service.memory.usage"] = true
+				case "systemd.service.memory.usage.max":
+					assert.False(t, validatedMetrics["systemd.service.memory.usage.max"], "Found a duplicate in the metrics slice: systemd.service.memory.usage.max")
+					validatedMetrics["systemd.service.memory.usage.max"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of memory in use by this service.", mi.Description())
+					assert.Equal(t, "Maximum memory used by this service, in bytes.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())

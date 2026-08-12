@@ -119,8 +119,8 @@ func (s *systemdScraper) scrapeServiceCgroup(now pcommon.Timestamp, unit *unitTu
 	}
 
 	if stats.Memory != nil {
-		s.mb.RecordSystemdServiceMemoryPeakDataPoint(now, int64(stats.Memory.MaxUsage))
 		s.mb.RecordSystemdServiceMemoryUsageDataPoint(now, int64(stats.Memory.Usage))
+		s.mb.RecordSystemdServiceMemoryUsageMaxDataPoint(now, int64(stats.Memory.MaxUsage))
 	}
 
 	return nil
@@ -129,7 +129,7 @@ func (s *systemdScraper) scrapeServiceCgroup(now pcommon.Timestamp, unit *unitTu
 // Are any of our cgroup requiring metrics available
 func (s *systemdScraper) hasCgroupMetrics() bool {
 	return (s.cfg.MetricsBuilderConfig.Metrics.SystemdServiceCPUTime.Enabled ||
-		s.cfg.MetricsBuilderConfig.Metrics.SystemdServiceMemoryPeak.Enabled || s.cfg.MetricsBuilderConfig.Metrics.SystemdServiceMemoryUsage.Enabled)
+		s.cfg.MetricsBuilderConfig.Metrics.SystemdServiceMemoryUsage.Enabled || s.cfg.MetricsBuilderConfig.Metrics.SystemdServiceMemoryUsageMax.Enabled)
 }
 
 func (s *systemdScraper) scrapeRestartCount(now pcommon.Timestamp, unit *unitTuple) error {

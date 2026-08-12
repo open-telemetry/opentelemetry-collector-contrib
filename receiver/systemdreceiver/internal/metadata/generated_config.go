@@ -57,13 +57,13 @@ func (ms *SystemdServiceCPUTimeMetricConfig) Validate() error {
 	return nil
 }
 
-// SystemdServiceMemoryPeakMetricConfig provides config for the systemd.service.memory.peak metric.
-type SystemdServiceMemoryPeakMetricConfig struct {
+// SystemdServiceMemoryUsageMetricConfig provides config for the systemd.service.memory.usage metric.
+type SystemdServiceMemoryUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SystemdServiceMemoryPeakMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemdServiceMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -77,13 +77,13 @@ func (ms *SystemdServiceMemoryPeakMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// SystemdServiceMemoryUsageMetricConfig provides config for the systemd.service.memory.usage metric.
-type SystemdServiceMemoryUsageMetricConfig struct {
+// SystemdServiceMemoryUsageMaxMetricConfig provides config for the systemd.service.memory.usage.max metric.
+type SystemdServiceMemoryUsageMaxMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SystemdServiceMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemdServiceMemoryUsageMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -167,11 +167,11 @@ func (ms *SystemdUnitStateMetricConfig) Validate() error {
 
 // MetricsConfig provides config for systemd metrics.
 type MetricsConfig struct {
-	SystemdServiceCPUTime     SystemdServiceCPUTimeMetricConfig     `mapstructure:"systemd.service.cpu.time"`
-	SystemdServiceMemoryPeak  SystemdServiceMemoryPeakMetricConfig  `mapstructure:"systemd.service.memory.peak"`
-	SystemdServiceMemoryUsage SystemdServiceMemoryUsageMetricConfig `mapstructure:"systemd.service.memory.usage"`
-	SystemdServiceRestarts    SystemdServiceRestartsMetricConfig    `mapstructure:"systemd.service.restarts"`
-	SystemdUnitState          SystemdUnitStateMetricConfig          `mapstructure:"systemd.unit.state"`
+	SystemdServiceCPUTime        SystemdServiceCPUTimeMetricConfig        `mapstructure:"systemd.service.cpu.time"`
+	SystemdServiceMemoryUsage    SystemdServiceMemoryUsageMetricConfig    `mapstructure:"systemd.service.memory.usage"`
+	SystemdServiceMemoryUsageMax SystemdServiceMemoryUsageMaxMetricConfig `mapstructure:"systemd.service.memory.usage.max"`
+	SystemdServiceRestarts       SystemdServiceRestartsMetricConfig       `mapstructure:"systemd.service.restarts"`
+	SystemdUnitState             SystemdUnitStateMetricConfig             `mapstructure:"systemd.unit.state"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -181,10 +181,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []SystemdServiceCPUTimeMetricAttributeKey{SystemdServiceCPUTimeMetricAttributeKeyCPUMode},
 		},
-		SystemdServiceMemoryPeak: SystemdServiceMemoryPeakMetricConfig{
+		SystemdServiceMemoryUsage: SystemdServiceMemoryUsageMetricConfig{
 			Enabled: true,
 		},
-		SystemdServiceMemoryUsage: SystemdServiceMemoryUsageMetricConfig{
+		SystemdServiceMemoryUsageMax: SystemdServiceMemoryUsageMaxMetricConfig{
 			Enabled: true,
 		},
 		SystemdServiceRestarts: SystemdServiceRestartsMetricConfig{
