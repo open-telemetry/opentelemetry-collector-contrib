@@ -92,19 +92,6 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
-		"legacy_auth_tls": {
-			expected: func() ClientConfig {
-				cfg := NewDefaultClientConfig()
-				cfg.Authentication.TLS = &configtls.ClientConfig{
-					Config: configtls.Config{
-						CAFile:   "ca.pem",
-						CertFile: "cert.pem",
-						KeyFile:  "key.pem",
-					},
-				}
-				return cfg
-			}(),
-		},
 		"legacy_auth_plain_text": {
 			expected: func() ClientConfig {
 				cfg := NewDefaultClientConfig()

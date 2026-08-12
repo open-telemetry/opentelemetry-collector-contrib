@@ -305,9 +305,6 @@ func commonOpts(
 		kgo.DisableClientMetrics(),
 	)
 	tlsConfig := clientCfg.TLS
-	if tlsConfig == nil {
-		tlsConfig = clientCfg.Authentication.TLS
-	}
 	// Configure TLS if needed
 	if tlsConfig != nil {
 		tlsCfg, err := tlsConfig.LoadTLSConfig(ctx)

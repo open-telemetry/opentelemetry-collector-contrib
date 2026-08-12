@@ -473,12 +473,6 @@ type AuthenticationConfig struct {
 
 	// Kerberos holds Kerberos authentication configuration.
 	Kerberos *KerberosConfig `mapstructure:"kerberos"`
-
-	// TLS holds TLS configuration for connecting to Kafka brokers.
-	//
-	// Deprecated [v0.124.0]: use ClientConfig.TLS instead. This will
-	// be used only if ClientConfig.TLS is not set.
-	TLS *configtls.ClientConfig `mapstructure:"tls"`
 }
 
 // PlainTextConfig defines plaintext authentication.

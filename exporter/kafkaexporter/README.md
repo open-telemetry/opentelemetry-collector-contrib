@@ -78,7 +78,6 @@ The following settings can be optionally configured:
     - `aws_msk`
       - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
     - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client` or `azure_auth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
-  - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
   - `kerberos`
     - `service_name`: Kerberos service name
     - `realm`: Kerberos realm
