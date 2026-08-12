@@ -16,11 +16,12 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
 )
+
+const testSchemaURL = "https://opentelemetry.io/schemas/1.40.0"
 
 type mockInstancesClient struct {
 	labels map[string]string
@@ -90,14 +91,14 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "zonal GKE cluster",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
-				conventions.CloudAccountID("my-project"),
-				conventions.CloudPlatformGCPKubernetesEngine,
-				conventions.K8SClusterName("my-cluster"),
-				conventions.CloudAvailabilityZone("us-central1-c"),
-				conventions.HostID("1472385723456792345"),
-				conventions.HostName("my-gke-node-1234"),
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
+				attribute.String("cloud.account.id", "my-project"),
+				attribute.String("cloud.platform", "gcp_kubernetes_engine"),
+				attribute.String("k8s.cluster.name", "my-cluster"),
+				attribute.String("cloud.availability_zone", "us-central1-c"),
+				attribute.String("host.id", "1472385723456792345"),
+				attribute.String("host.name", "my-gke-node-1234"),
 			),
 			expectedResource: map[string]any{
 				"cloud.provider":          "gcp",
@@ -112,14 +113,14 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "regional GKE cluster",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
-				conventions.CloudAccountID("my-project"),
-				conventions.CloudPlatformGCPKubernetesEngine,
-				conventions.K8SClusterName("my-cluster"),
-				conventions.CloudRegion("us-central1"),
-				conventions.HostID("1472385723456792345"),
-				conventions.HostName("my-gke-node-1234"),
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
+				attribute.String("cloud.account.id", "my-project"),
+				attribute.String("cloud.platform", "gcp_kubernetes_engine"),
+				attribute.String("k8s.cluster.name", "my-cluster"),
+				attribute.String("cloud.region", "us-central1"),
+				attribute.String("host.id", "1472385723456792345"),
+				attribute.String("host.name", "my-gke-node-1234"),
 			),
 			expectedResource: map[string]any{
 				"cloud.provider":   "gcp",
@@ -134,13 +135,13 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "regional GKE cluster with workload identity",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
-				conventions.CloudAccountID("my-project"),
-				conventions.CloudPlatformGCPKubernetesEngine,
-				conventions.K8SClusterName("my-cluster"),
-				conventions.CloudRegion("us-central1"),
-				conventions.HostID("1472385723456792345"),
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
+				attribute.String("cloud.account.id", "my-project"),
+				attribute.String("cloud.platform", "gcp_kubernetes_engine"),
+				attribute.String("k8s.cluster.name", "my-cluster"),
+				attribute.String("cloud.region", "us-central1"),
+				attribute.String("host.id", "1472385723456792345"),
 			),
 			expectedResource: map[string]any{
 				"cloud.provider":   "gcp",
@@ -154,15 +155,15 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "GCE",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
-				conventions.CloudAccountID("my-project"),
-				conventions.CloudPlatformGCPComputeEngine,
-				conventions.HostID("1472385723456792345"),
-				conventions.HostName("my-gke-node-1234"),
-				conventions.HostType("n1-standard1"),
-				conventions.CloudRegion("us-central1"),
-				conventions.CloudAvailabilityZone("us-central1-c"),
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
+				attribute.String("cloud.account.id", "my-project"),
+				attribute.String("cloud.platform", "gcp_compute_engine"),
+				attribute.String("host.id", "1472385723456792345"),
+				attribute.String("host.name", "my-gke-node-1234"),
+				attribute.String("host.type", "n1-standard1"),
+				attribute.String("cloud.region", "us-central1"),
+				attribute.String("cloud.availability_zone", "us-central1-c"),
 				attribute.String("gcp.gce.instance.name", "my-gke-node-1234"),
 				attribute.String("gcp.gce.instance.hostname", "custom.dns.example.com"),
 			),
@@ -180,15 +181,15 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "GCE with instance.hostname and instance.name enabled",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
-				conventions.CloudAccountID("my-project"),
-				conventions.CloudPlatformGCPComputeEngine,
-				conventions.HostID("1472385723456792345"),
-				conventions.HostName("my-gke-node-1234"),
-				conventions.HostType("n1-standard1"),
-				conventions.CloudRegion("us-central1"),
-				conventions.CloudAvailabilityZone("us-central1-c"),
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
+				attribute.String("cloud.account.id", "my-project"),
+				attribute.String("cloud.platform", "gcp_compute_engine"),
+				attribute.String("host.id", "1472385723456792345"),
+				attribute.String("host.name", "my-gke-node-1234"),
+				attribute.String("host.type", "n1-standard1"),
+				attribute.String("cloud.region", "us-central1"),
+				attribute.String("cloud.availability_zone", "us-central1-c"),
 				attribute.String("gcp.gce.instance.name", "my-gke-node-1234"),
 				attribute.String("gcp.gce.instance.hostname", "custom.dns.example.com"),
 			),
@@ -212,15 +213,15 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "GCE with MIG",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
-				conventions.CloudAccountID("my-project"),
-				conventions.CloudPlatformGCPComputeEngine,
-				conventions.HostID("1472385723456792345"),
-				conventions.HostName("my-gke-node-1234"),
-				conventions.HostType("n1-standard1"),
-				conventions.CloudRegion("us-central1"),
-				conventions.CloudAvailabilityZone("us-central1-c"),
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
+				attribute.String("cloud.account.id", "my-project"),
+				attribute.String("cloud.platform", "gcp_compute_engine"),
+				attribute.String("host.id", "1472385723456792345"),
+				attribute.String("host.name", "my-gke-node-1234"),
+				attribute.String("host.type", "n1-standard1"),
+				attribute.String("cloud.region", "us-central1"),
+				attribute.String("cloud.availability_zone", "us-central1-c"),
 				attribute.String("gcp.gce.instance.name", "my-gke-node-1234"),
 				attribute.String("gcp.gce.instance.hostname", "custom.dns.example.com"),
 				attribute.String("gcp.gce.instance_group_manager.name", "my-gke-node"),
@@ -242,14 +243,14 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "Cloud Run",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
-				conventions.CloudAccountID("my-project"),
-				conventions.CloudPlatformGCPCloudRun,
-				conventions.CloudRegion("us-central1"),
-				conventions.FaaSName("my-service"),
-				conventions.FaaSVersion("123456"),
-				conventions.FaaSInstance("1472385723456792345"),
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
+				attribute.String("cloud.account.id", "my-project"),
+				attribute.String("cloud.platform", "gcp_cloud_run"),
+				attribute.String("cloud.region", "us-central1"),
+				attribute.String("faas.name", "my-service"),
+				attribute.String("faas.version", "123456"),
+				attribute.String("faas.instance", "1472385723456792345"),
 			),
 			expectedResource: map[string]any{
 				"cloud.provider":   "gcp",
@@ -264,14 +265,14 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "Cloud Run Worker Pool",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
-				conventions.CloudAccountID("my-project"),
-				conventions.CloudPlatformGCPCloudRun,
-				conventions.CloudRegion("us-central1"),
-				conventions.FaaSName("my-service"),
-				conventions.FaaSVersion("123456"),
-				conventions.FaaSInstance("1472385723456792345"),
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
+				attribute.String("cloud.account.id", "my-project"),
+				attribute.String("cloud.platform", "gcp_cloud_run"),
+				attribute.String("cloud.region", "us-central1"),
+				attribute.String("faas.name", "my-service"),
+				attribute.String("faas.version", "123456"),
+				attribute.String("faas.instance", "1472385723456792345"),
 			),
 			expectedResource: map[string]any{
 				"cloud.provider":   "gcp",
@@ -286,13 +287,13 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "Cloud Run Job",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
-				conventions.CloudAccountID("my-project"),
-				conventions.CloudPlatformGCPCloudRun,
-				conventions.CloudRegion("us-central1"),
-				conventions.FaaSName("my-service"),
-				conventions.FaaSInstance("1472385723456792345"),
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
+				attribute.String("cloud.account.id", "my-project"),
+				attribute.String("cloud.platform", "gcp_cloud_run"),
+				attribute.String("cloud.region", "us-central1"),
+				attribute.String("faas.name", "my-service"),
+				attribute.String("faas.instance", "1472385723456792345"),
 				attribute.String("gcp.cloud_run.job.execution", "my-service-ajg89"),
 				attribute.String("gcp.cloud_run.job.task_index", "2"),
 			),
@@ -310,14 +311,14 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "Cloud Functions",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
-				conventions.CloudAccountID("my-project"),
-				conventions.CloudPlatformGCPCloudFunctions,
-				conventions.CloudRegion("us-central1"),
-				conventions.FaaSName("my-service"),
-				conventions.FaaSVersion("123456"),
-				conventions.FaaSInstance("1472385723456792345"),
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
+				attribute.String("cloud.account.id", "my-project"),
+				attribute.String("cloud.platform", "gcp_cloud_functions"),
+				attribute.String("cloud.region", "us-central1"),
+				attribute.String("faas.name", "my-service"),
+				attribute.String("faas.version", "123456"),
+				attribute.String("faas.instance", "1472385723456792345"),
 			),
 			expectedResource: map[string]any{
 				"cloud.provider":   "gcp",
@@ -332,15 +333,15 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "App Engine Standard",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
-				conventions.CloudAccountID("my-project"),
-				conventions.CloudPlatformGCPAppEngine,
-				conventions.CloudRegion("us-central1"),
-				conventions.CloudAvailabilityZone("us-central1-c"),
-				conventions.FaaSName("my-service"),
-				conventions.FaaSVersion("123456"),
-				conventions.FaaSInstance("1472385723456792345"),
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
+				attribute.String("cloud.account.id", "my-project"),
+				attribute.String("cloud.platform", "gcp_app_engine"),
+				attribute.String("cloud.region", "us-central1"),
+				attribute.String("cloud.availability_zone", "us-central1-c"),
+				attribute.String("faas.name", "my-service"),
+				attribute.String("faas.version", "123456"),
+				attribute.String("faas.instance", "1472385723456792345"),
 			),
 			expectedResource: map[string]any{
 				"cloud.provider":          "gcp",
@@ -356,15 +357,15 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "App Engine Flex",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
-				conventions.CloudAccountID("my-project"),
-				conventions.CloudPlatformGCPAppEngine,
-				conventions.CloudRegion("us-central1"),
-				conventions.CloudAvailabilityZone("us-central1-c"),
-				conventions.FaaSName("my-service"),
-				conventions.FaaSVersion("123456"),
-				conventions.FaaSInstance("1472385723456792345"),
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
+				attribute.String("cloud.account.id", "my-project"),
+				attribute.String("cloud.platform", "gcp_app_engine"),
+				attribute.String("cloud.region", "us-central1"),
+				attribute.String("cloud.availability_zone", "us-central1-c"),
+				attribute.String("faas.name", "my-service"),
+				attribute.String("faas.version", "123456"),
+				attribute.String("faas.instance", "1472385723456792345"),
 			),
 			expectedResource: map[string]any{
 				"cloud.provider":          "gcp",
@@ -380,12 +381,12 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "Bare Metal Solution",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
 				attribute.String("cloud.platform", "gcp_bare_metal_solution"),
-				conventions.CloudAccountID("my-project"),
-				conventions.HostName("1472385723456792345"),
-				conventions.CloudRegion("us-central1"),
+				attribute.String("cloud.account.id", "my-project"),
+				attribute.String("host.name", "1472385723456792345"),
+				attribute.String("cloud.region", "us-central1"),
 			),
 			expectedResource: map[string]any{
 				"cloud.provider":   "gcp",
@@ -398,9 +399,9 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "Unknown Platform",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
-				conventions.CloudAccountID("my-project"),
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
+				attribute.String("cloud.account.id", "my-project"),
 			),
 			expectedResource: map[string]any{
 				"cloud.provider":   "gcp",
@@ -410,8 +411,8 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "error with partial resource",
 			sdkResource: sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
 			),
 			sdkErr: fmt.Errorf("%w: failed to get metadata", sdkresource.ErrPartialResource),
 			expectedResource: map[string]any{
@@ -562,15 +563,15 @@ func TestGCELabels(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gceResource := sdkresource.NewWithAttributes(
-				conventions.SchemaURL,
-				conventions.CloudProviderGCP,
-				conventions.CloudAccountID("test-proj"),
-				conventions.CloudPlatformGCPComputeEngine,
-				conventions.CloudAvailabilityZone("us-central1-a"),
-				conventions.CloudRegion("us-central1"),
-				conventions.HostID("1234567890"),
-				conventions.HostName("test-vm"),
-				conventions.HostType("n2-standard-2"),
+				testSchemaURL,
+				attribute.String("cloud.provider", "gcp"),
+				attribute.String("cloud.account.id", "test-proj"),
+				attribute.String("cloud.platform", "gcp_compute_engine"),
+				attribute.String("cloud.availability_zone", "us-central1-a"),
+				attribute.String("cloud.region", "us-central1"),
+				attribute.String("host.id", "1234567890"),
+				attribute.String("host.name", "test-vm"),
+				attribute.String("host.type", "n2-standard-2"),
 				attribute.String("gcp.gce.instance.name", "test-vm"),
 			)
 			withFakeDetector(t, gceResource, nil)
