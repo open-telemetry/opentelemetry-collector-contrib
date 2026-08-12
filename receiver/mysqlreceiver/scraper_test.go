@@ -69,7 +69,7 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaSQLDelay.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTimeBehindSource.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaThreadRunning.Enabled = true
-		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTablesOpen.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionCount.Enabled = true
 
@@ -221,7 +221,7 @@ func TestScrapeReplicaThreadRunningRecordsRowsByChannel(t *testing.T) {
 
 func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromGlobalStatus(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTablesOpen.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
 
 	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
@@ -235,7 +235,7 @@ func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromGlobalStatus(t *testin
 
 func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromLegacyGlobalStatusName(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTablesOpen.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
 
 	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
@@ -249,7 +249,7 @@ func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromLegacyGlobalStatusName
 
 func TestScrapeReplicaStatusDoesNotRecordReplicaOpenTempTables(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTablesOpen.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
 
 	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
@@ -310,7 +310,7 @@ func replicaOpenTempTablesDataPoints(metrics pmetric.Metrics) []int64 {
 			scopeMetrics := resourceMetrics.ScopeMetrics().At(j)
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
-				if metric.Name() != "mysql.replica.temp_tables.open" {
+				if metric.Name() != "mysql.replica.temp_table.open" {
 					continue
 				}
 

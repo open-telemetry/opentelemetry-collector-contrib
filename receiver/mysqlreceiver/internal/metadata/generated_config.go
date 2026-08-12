@@ -1176,13 +1176,13 @@ func (ms *MysqlReplicaSQLDelayMetricConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-// MysqlReplicaTempTablesOpenMetricConfig provides config for the mysql.replica.temp_tables.open metric.
-type MysqlReplicaTempTablesOpenMetricConfig struct {
+// MysqlReplicaTempTableOpenMetricConfig provides config for the mysql.replica.temp_table.open metric.
+type MysqlReplicaTempTableOpenMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MysqlReplicaTempTablesOpenMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *MysqlReplicaTempTableOpenMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2194,7 +2194,7 @@ type MetricsConfig struct {
 	MysqlQueryCount              MysqlQueryCountMetricConfig              `mapstructure:"mysql.query.count"`
 	MysqlQuerySlowCount          MysqlQuerySlowCountMetricConfig          `mapstructure:"mysql.query.slow.count"`
 	MysqlReplicaSQLDelay         MysqlReplicaSQLDelayMetricConfig         `mapstructure:"mysql.replica.sql_delay"`
-	MysqlReplicaTempTablesOpen   MysqlReplicaTempTablesOpenMetricConfig   `mapstructure:"mysql.replica.temp_tables.open"`
+	MysqlReplicaTempTableOpen    MysqlReplicaTempTableOpenMetricConfig    `mapstructure:"mysql.replica.temp_table.open"`
 	MysqlReplicaThreadRunning    MysqlReplicaThreadRunningMetricConfig    `mapstructure:"mysql.replica.thread.running"`
 	MysqlReplicaTimeBehindSource MysqlReplicaTimeBehindSourceMetricConfig `mapstructure:"mysql.replica.time_behind_source"`
 	MysqlRowLocks                MysqlRowLocksMetricConfig                `mapstructure:"mysql.row_locks"`
@@ -2351,7 +2351,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		MysqlReplicaSQLDelay: MysqlReplicaSQLDelayMetricConfig{
 			Enabled: false,
 		},
-		MysqlReplicaTempTablesOpen: MysqlReplicaTempTablesOpenMetricConfig{
+		MysqlReplicaTempTableOpen: MysqlReplicaTempTableOpenMetricConfig{
 			Enabled: false,
 		},
 		MysqlReplicaThreadRunning: MysqlReplicaThreadRunningMetricConfig{

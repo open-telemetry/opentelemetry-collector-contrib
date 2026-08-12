@@ -539,8 +539,8 @@ $defs:
           enabled:
             type: boolean
             default: false
-      mysql.replica.temp_tables.open:
-        description: "MysqlReplicaTempTablesOpenMetricConfig provides config for the mysql.replica.temp_tables.open metric."
+      mysql.replica.temp_table.open:
+        description: "MysqlReplicaTempTableOpenMetricConfig provides config for the mysql.replica.temp_table.open metric."
         type: object
         properties:
           enabled:

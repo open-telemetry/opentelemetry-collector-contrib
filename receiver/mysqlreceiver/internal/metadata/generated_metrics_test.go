@@ -265,7 +265,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordMysqlReplicaTempTablesOpenDataPoint(ts, 1)
+			mb.RecordMysqlReplicaTempTableOpenDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordMysqlReplicaThreadRunningDataPoint(ts, 1, AttributeMysqlReplicaThreadTypeIo, "mysql.replica.channel.name-val")
@@ -1510,13 +1510,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "mysql.replica.temp_tables.open":
-					assert.False(t, validatedMetrics["mysql.replica.temp_tables.open"], "Found a duplicate in the metrics slice: mysql.replica.temp_tables.open")
-					validatedMetrics["mysql.replica.temp_tables.open"] = true
+				case "mysql.replica.temp_table.open":
+					assert.False(t, validatedMetrics["mysql.replica.temp_table.open"], "Found a duplicate in the metrics slice: mysql.replica.temp_table.open")
+					validatedMetrics["mysql.replica.temp_table.open"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "The number of temporary tables currently open by the replica while applying replicated events.", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
+					assert.Equal(t, "{table}", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1528,7 +1528,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["mysql.replica.thread.running"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Whether the replica IO and SQL threads are running. A value of 1 means running, and 0 means not running.", mi.Description())
+						assert.Equal(t, "Whether the replica IO and SQL threads report a running status. A value of 1 means the thread reports Yes; 0 means any other status, including No or Connecting.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -1546,7 +1546,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["mysql.replica.thread.running"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Whether the replica IO and SQL threads are running. A value of 1 means running, and 0 means not running.", mi.Description())
+						assert.Equal(t, "Whether the replica IO and SQL threads report a running status. A value of 1 means the thread reports Yes; 0 means any other status, including No or Connecting.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())

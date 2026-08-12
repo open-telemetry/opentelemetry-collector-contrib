@@ -671,16 +671,16 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: []
-  mysql.replica.temp_tables.open:
+  mysql.replica.temp_table.open:
     enabled: false
     description: The number of temporary tables currently open by the replica while applying replicated events.
     stability: development
-    unit: "1"
+    unit: "{table}"
     gauge:
       value_type: int
   mysql.replica.thread.running:
     enabled: false
-    description: Whether the replica IO and SQL threads are running. A value of 1 means running, and 0 means not running.
+    description: Whether the replica IO and SQL threads report a running status. A value of 1 means the thread reports Yes; 0 means any other status, including No or Connecting.
     stability: development
     unit: "1"
     gauge:

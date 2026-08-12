@@ -758,7 +758,7 @@ func replicaThreadRunningValue(status string) int64 {
 }
 
 func (m *mySQLScraper) recordReplicaOpenTempTables(now pcommon.Timestamp, globalStats map[string]string, errs *scrapererror.ScrapeErrors) {
-	if !m.config.MetricsBuilderConfig.Metrics.MysqlReplicaTempTablesOpen.Enabled {
+	if !m.config.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled {
 		return
 	}
 	for _, key := range []string{"Replica_open_temp_tables", "Slave_open_temp_tables"} {
@@ -772,7 +772,7 @@ func (m *mySQLScraper) recordReplicaOpenTempTables(now pcommon.Timestamp, global
 			errs.AddPartial(1, err)
 			return
 		}
-		m.mb.RecordMysqlReplicaTempTablesOpenDataPoint(now, val)
+		m.mb.RecordMysqlReplicaTempTableOpenDataPoint(now, val)
 		return
 	}
 }

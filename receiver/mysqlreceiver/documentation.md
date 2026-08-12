@@ -502,17 +502,17 @@ The number of seconds that the replica must lag the source.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | false | Development |
 
-### mysql.replica.temp_tables.open
+### mysql.replica.temp_table.open
 
 The number of temporary tables currently open by the replica while applying replicated events.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
+| {table} | Gauge | Int | Development |
 
 ### mysql.replica.thread.running
 
-Whether the replica IO and SQL threads are running. A value of 1 means running, and 0 means not running.
+Whether the replica IO and SQL threads report a running status. A value of 1 means the thread reports Yes; 0 means any other status, including No or Connecting.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

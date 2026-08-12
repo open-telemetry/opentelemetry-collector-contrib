@@ -678,8 +678,6 @@ func (c *mySQLClient) getReplicaStatusStats(supportsReplicaStatus bool) ([]repli
 				dest = append(dest, &s.replicaSQLRunning)
 			case "slave_sql_running":
 				dest = append(dest, &s.replicaSQLRunning)
-			case "replica_open_temp_tables", "slave_open_temp_tables":
-				dest = append(dest, new(any))
 			case "replicate_do_db":
 				dest = append(dest, &s.replicateDoDB)
 			case "replicate_ignore_db":

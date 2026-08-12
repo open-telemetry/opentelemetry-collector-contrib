@@ -81,7 +81,7 @@ all_set:
       enabled: true
     mysql.replica.sql_delay:
       enabled: true
-    mysql.replica.temp_tables.open:
+    mysql.replica.temp_table.open:
       enabled: true
     mysql.replica.thread.running:
       enabled: true
@@ -245,7 +245,7 @@ reaggregate_set:
       enabled: true
     mysql.replica.sql_delay:
       enabled: true
-    mysql.replica.temp_tables.open:
+    mysql.replica.temp_table.open:
       enabled: true
     mysql.replica.thread.running:
       enabled: true
@@ -409,7 +409,7 @@ none_set:
       enabled: false
     mysql.replica.sql_delay:
       enabled: false
-    mysql.replica.temp_tables.open:
+    mysql.replica.temp_table.open:
       enabled: false
     mysql.replica.thread.running:
       enabled: false
