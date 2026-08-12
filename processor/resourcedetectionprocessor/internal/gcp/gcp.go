@@ -87,8 +87,11 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 	// metadata service is unreachable and when not running on a GCP environment.
 	if res == nil || res.Len() == 0 {
 		d.logger.Debug("GCP detector: metadata unavailable or not running on a GCP environment")
-		if d.failOnMissingMetadata && err != nil {
-			return pcommon.NewResource(), "", fmt.Errorf("gcp metadata unavailable: %w", err)
+		if d.failOnMissingMetadata {
+			if err != nil {
+				return pcommon.NewResource(), "", fmt.Errorf("gcp metadata unavailable: %w", err)
+			}
+			return pcommon.NewResource(), "", errors.New("gcp metadata unavailable")
 		}
 		return pcommon.NewResource(), "", nil
 	}
@@ -149,10 +152,6 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 	}
 
 	emittedRes := d.rb.Emit()
-
-	if err != nil && d.failOnMissingMetadata {
-		return pcommon.NewResource(), "", err
-	}
 
 	if isGCE && len(d.labelKeyRegexes) > 0 {
 		if projectID != "" && zone != "" && instanceName != "" {
