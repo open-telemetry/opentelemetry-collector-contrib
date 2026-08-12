@@ -2072,6 +2072,67 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: ms
+          - description: Total number of documents currently being ingested by a pipeline.
+            name: elasticsearch.node.pipeline.ingest.documents.current
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: xpack_monitoring_6
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: xpack_monitoring_7
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{documents}'
+          - description: Number of documents preprocessed by the ingest pipeline.
+            name: elasticsearch.node.pipeline.ingest.documents.preprocessed
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: xpack_monitoring_6
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: xpack_monitoring_7
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{documents}'
+          - description: Total number of failed operations for the ingest pipeline.
+            name: elasticsearch.node.pipeline.ingest.operations.failed
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: xpack_monitoring_6
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: xpack_monitoring_7
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operation}'
           - description: Total number of times the script cache has evicted old data.
             name: elasticsearch.node.script.cache_evictions
             sum:
