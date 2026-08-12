@@ -23,15 +23,42 @@ var (
 	benchPathMatcher       = regexp.MustCompile(`^.*(\/|\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]+)(\/|\\)(?P<container_name>[^\._]+)(\/|\\)(?P<restart_count>\d+)\.log(\.\d{8}-\d{6})?$`)
 )
 
-// BenchmarkCRIParsing compares the hand-written CRI scanner against the original
-// regex-based approach for both containerd and crio log line formats.
-func BenchmarkCRIParsing(b *testing.B) {
+// BenchmarkContainerdCRIParsing compares the hand-written CRI scanner against the original
+// regex-based approach for containerd log line formats.
+func BenchmarkContainerdCRIParsing(b *testing.B) {
 	benchmarks := []struct {
 		name  string
 		input string
 		re    *regexp.Regexp
 	}{
 		{"Containerd", benchContainerdLog, benchContainerdMatcher},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run("Regex/"+bm.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				_, _ = helper.MatchValues(bm.input, bm.re)
+			}
+		})
+
+		b.Run("NoRegex/"+bm.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				_, _ = parseContainerd(bm.input)
+			}
+		})
+	}
+}
+
+// BenchmarkCRIOParsing compares the hand-written CRIO scanner against the original
+// regex-based approach for crio log line formats.
+func BenchmarkCRIOParsing(b *testing.B) {
+	benchmarks := []struct {
+		name  string
+		input string
+		re    *regexp.Regexp
+	}{
 		{"CRIO", benchCRIOLog, benchCRIOMatcher},
 	}
 
@@ -46,7 +73,7 @@ func BenchmarkCRIParsing(b *testing.B) {
 		b.Run("NoRegex/"+bm.name, func(b *testing.B) {
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, _, _ = parseCRI(bm.input)
+				_, _ = parseCRIO(bm.input)
 			}
 		})
 	}

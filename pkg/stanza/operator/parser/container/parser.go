@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"sync"
 	"time"
@@ -47,13 +48,13 @@ type Parser struct {
 }
 
 var (
-	// mapPool reuses maps to reduce allocations for parsing
+	// mapPool reuses maps to reduce allocations for CRI log line parsing.
 	mapPool = sync.Pool{
 		New: func() any {
 			return make(map[string]any, 4)
 		},
 	}
-	// pathMapPool reuses maps for path parsing
+	// pathMapPool reuses maps for log path parsing.
 	pathMapPool = sync.Pool{
 		New: func() any {
 			return make(map[string]any, 5)
@@ -81,10 +82,13 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 			continue
 		}
 
-		fields, format, err := p.parseEntry(ent)
-		if err != nil {
-			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, fmt.Errorf("failed to parse entry: %w", err), write))
-			continue
+		format := p.format
+		if format == "" {
+			format, err = p.detectFormat(ent)
+			if err != nil {
+				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, fmt.Errorf("failed to detect a valid container log format: %w", err), write))
+				continue
+			}
 		}
 
 		switch format {
@@ -117,16 +121,21 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 				p.recombineStarted = true
 			})
 
-			capturedFields := fields
-			if err = p.ParseWith(ctx, ent, func(_ any) (any, error) { return capturedFields, nil }, write); err != nil {
-				if !errors.Is(err, helper.ErrEntryHandled) {
-					errs = append(errs, fmt.Errorf("failed to parse cri log: %w", err))
-				}
-				continue
-			}
 			if format == containerdFormat {
+				if err = p.ParseWith(ctx, ent, parseContainerd, write); err != nil {
+					if !errors.Is(err, helper.ErrEntryHandled) {
+						errs = append(errs, fmt.Errorf("failed to parse cri log: %w", err))
+					}
+					continue
+				}
 				p.timeLayout = goTimeLayout
 			} else {
+				if err = p.ParseWith(ctx, ent, parseCRIO, write); err != nil {
+					if !errors.Is(err, helper.ErrEntryHandled) {
+						errs = append(errs, fmt.Errorf("failed to parse cri log: %w", err))
+					}
+					continue
+				}
 				p.timeLayout = crioTimeLayout
 			}
 
@@ -167,9 +176,12 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 		return p.Write(ctx, entry)
 	}
 
-	fields, format, err := p.parseEntry(entry)
-	if err != nil {
-		return p.HandleEntryError(ctx, entry, fmt.Errorf("failed to parse entry: %w", err))
+	format := p.format
+	if format == "" {
+		format, err = p.detectFormat(entry)
+		if err != nil {
+			return p.HandleEntryError(ctx, entry, fmt.Errorf("failed to detect a valid container log format: %w", err))
+		}
 	}
 
 	switch format {
@@ -194,17 +206,19 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			p.recombineStarted = true
 		})
 
-		capturedFields := fields
-		err = p.ParseWith(ctx, entry, func(_ any) (any, error) { return capturedFields, nil }, p.Write)
-		if err != nil {
-			if errors.Is(err, helper.ErrEntryHandled) {
-				return nil
-			}
-			return fmt.Errorf("failed to parse cri log: %w", err)
-		}
 		if format == containerdFormat {
+			if err = p.ParseWith(ctx, entry, parseContainerd, p.Write); err != nil {
+				if errors.Is(err, helper.ErrEntryHandled) {
+					return nil
+				}
+			}
 			p.timeLayout = goTimeLayout
 		} else {
+			if err = p.ParseWith(ctx, entry, parseCRIO, p.Write); err != nil {
+				if errors.Is(err, helper.ErrEntryHandled) {
+					return nil
+				}
+			}
 			p.timeLayout = crioTimeLayout
 		}
 
@@ -259,42 +273,108 @@ func (p *Parser) Stop() error {
 	return errs
 }
 
-// parseEntry reads the raw value from the entry and detects its format via splitCRI.
-// If p.format is pinned in config, the detected format must match — a mismatch is an error.
-func (p *Parser) parseEntry(e *entry.Entry) (map[string]any, string, error) {
+func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
 	value, ok := e.Get(p.ParseFrom)
 	if !ok {
-		return nil, "", errors.New("entry cannot be parsed as container logs")
+		return "", errors.New("entry cannot be parsed as container logs")
 	}
 
 	raw, ok := value.(string)
 	if !ok {
-		return nil, "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
+		return "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
 	}
-
-	var detected string
-	var fields map[string]any
 
 	if raw != "" && raw[0] == '{' {
-		detected = dockerFormat
-	} else {
-		var containerd bool
-		fields, containerd, ok = parseCRI(raw)
-		if !ok {
-			return nil, "", errors.New("entry cannot be split to CRI fields")
-		}
-		if containerd {
-			detected = containerdFormat
-		} else {
-			detected = crioFormat
-		}
+		return dockerFormat, nil
 	}
 
-	if p.format != "" && p.format != detected {
-		return nil, "", fmt.Errorf("entry detected as %s but format is configured as %s", detected, p.format)
+	timePart, rest, ok := splitFirstOn(raw, ' ')
+	if !ok {
+		return "", errors.New("could not detect format")
 	}
 
-	return fields, detected, nil
+	stream, _, ok := splitFirstOn(rest, ' ')
+	if !ok || (stream != "stdout" && stream != "stderr") {
+		return "", errors.New("could not detect format")
+	}
+
+	if strings.HasSuffix(timePart, "Z") {
+		return containerdFormat, nil
+	}
+
+	return crioFormat, nil
+}
+
+func parseContainerd(value any) (any, error) {
+	raw, ok := value.(string)
+	if !ok {
+		return "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
+	}
+
+	timePart, rest, ok := splitFirstOn(raw, ' ')
+	if !ok || !strings.HasSuffix(timePart, "Z") {
+		return nil, errors.New("could not parse containerd fields")
+	}
+	// [^ ^Z]+Z — reject any Z or ^ before the trailing Z
+	if strings.ContainsAny(timePart[:len(timePart)-1], " ^Z") {
+		return nil, errors.New("could not parse containerd fields")
+	}
+
+	stream, rest, ok := splitFirstOn(rest, ' ')
+	if !ok || (stream != "stdout" && stream != "stderr") {
+		return nil, errors.New("could not parse containerd fields")
+	}
+
+	logtag, logPart, ok := splitFirstOn(rest, ' ')
+	if !ok {
+		logtag = rest
+		logPart = ""
+	}
+
+	m := mapPool.Get().(map[string]any)
+	for k := range m {
+		delete(m, k)
+	}
+	m["time"] = timePart
+	m["stream"] = stream
+	m["logtag"] = logtag
+	m["log"] = logPart
+	return m, nil
+}
+
+func parseCRIO(value any) (any, error) {
+	raw, ok := value.(string)
+	if !ok {
+		return "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
+	}
+
+	timePart, rest, ok := splitFirstOn(raw, ' ')
+	if !ok {
+		return nil, errors.New("could not parse CRIO fields")
+	}
+
+	stream, rest, ok := splitFirstOn(rest, ' ')
+	if !ok || (stream != "stdout" && stream != "stderr") {
+		return nil, errors.New("could not parse CRIO fields")
+	}
+
+	logtag, logPart, ok := splitFirstOn(rest, ' ')
+	if !ok {
+		logtag = rest
+		logPart = ""
+	}
+
+	// Use pool to reduce allocations
+	m := mapPool.Get().(map[string]any)
+	// Clear the map in case it was reused
+	for k := range m {
+		delete(m, k)
+	}
+	m["time"] = timePart
+	m["stream"] = stream
+	m["logtag"] = logtag
+	m["log"] = logPart
+	return m, nil
 }
 
 // parseDocker will parse a docker log value as JSON
@@ -372,11 +452,14 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 	}
 
 	if p.cache != nil {
-		p.cache.Add(rawLogPath, parsedValues)
+		cachedMap := make(map[string]any, len(parsedValues))
+		maps.Copy(cachedMap, parsedValues)
+		p.cache.Add(rawLogPath, cachedMap)
 	}
 
+	err := p.setK8sMetadataFromParsedValues(e, parsedValues)
 	pathMapPool.Put(parsedValues)
-	return p.setK8sMetadataFromParsedValues(e, parsedValues)
+	return err
 }
 
 func (*Parser) setK8sMetadataFromParsedValues(e *entry.Entry, parsedValues map[string]any) error {
@@ -444,57 +527,6 @@ func parseTime(e *entry.Entry, layout string) error {
 	e.Delete(entry.NewAttributeField(parseFrom))
 
 	return nil
-}
-
-// parseCRI parses a raw CRI log line (containerd or crio format) without regex.
-// It returns the parsed fields as a map, whether the format is containerd (vs crio), and whether parsing succeeded.
-func parseCRI(raw string) (map[string]any, bool, bool) {
-	i := strings.IndexByte(raw, ' ')
-	if i <= 0 {
-		return nil, false, false
-	}
-	timeVal := raw[:i]
-	containerd := false
-	if raw[i-1] == 'Z' {
-		// containerd: [^ ^Z]+Z — excludes space, caret, and any Z before the trailing one
-		if strings.ContainsAny(timeVal[:len(timeVal)-1], " ^Z") {
-			return nil, false, false
-		}
-		containerd = true
-	} else if strings.IndexByte(timeVal, 'Z') >= 0 { // crio: [^ Z]+
-		return nil, false, false
-	}
-
-	rest := raw[i+1:]
-	const n = len("stdout")
-	if len(rest) < n+1 || rest[n] != ' ' {
-		return nil, false, false
-	}
-	stream := rest[:n]
-	if stream != "stdout" && stream != "stderr" {
-		return nil, false, false
-	}
-	rest = rest[n+1:]
-
-	var logtag, log string
-	if before, after, ok := strings.Cut(rest, " "); ok {
-		logtag, log = before, after
-	} else {
-		logtag = rest
-	}
-
-	// Use pool to reduce allocations
-	m := mapPool.Get().(map[string]any)
-
-	for k := range m {
-		delete(m, k)
-	}
-
-	m["time"] = timeVal
-	m["stream"] = stream
-	m["logtag"] = logtag
-	m["log"] = log
-	return m, containerd, true
 }
 
 // stripLogSuffix validates and strips the log file suffix from a path.
@@ -600,11 +632,9 @@ func parseLogPath(raw string) (map[string]any, bool) {
 	}
 
 	m := pathMapPool.Get().(map[string]any)
-	// Clear the map in case it was reused
 	for k := range m {
 		delete(m, k)
 	}
-
 	m["k8s.namespace.name"] = ns
 	m["k8s.pod.name"] = pod
 	m["k8s.pod.uid"] = uid
@@ -612,6 +642,15 @@ func parseLogPath(raw string) (map[string]any, bool) {
 	m["k8s.container.restart_count"] = restartCount
 
 	return m, true
+}
+
+// splitFirstOn splits s on the first occurrence of sep.
+func splitFirstOn(s string, sep byte) (head, tail string, ok bool) {
+	idx := strings.IndexByte(s, sep)
+	if idx == -1 {
+		return "", "", false
+	}
+	return s[:idx], s[idx+1:], true
 }
 
 // isNamespace matches [^_]+ from the regex — any char except underscore, one or more.
