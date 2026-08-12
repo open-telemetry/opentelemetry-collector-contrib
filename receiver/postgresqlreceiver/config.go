@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -24,12 +23,11 @@ import (
 
 // Errors for missing required config parameters.
 const (
-	ErrNoUsername           = "invalid config: missing username"
-	ErrNoPassword           = "invalid config: missing password" // #nosec G101 - not hardcoded credentials
-	ErrNotSupported         = "invalid config: field '%s' not supported"
-	ErrTransportsSupported  = "invalid config: 'transport' must be 'tcp' or 'unix'"
-	ErrHostPort             = "invalid config: 'endpoint' must be in the form <host>:<port> no matter what 'transport' is configured"
-	ErrAllDatabasesExcluded = "invalid config: 'exclude_databases' excludes every database listed in 'databases'"
+	ErrNoUsername          = "invalid config: missing username"
+	ErrNoPassword          = "invalid config: missing password" // #nosec G101 - not hardcoded credentials
+	ErrNotSupported        = "invalid config: field '%s' not supported"
+	ErrTransportsSupported = "invalid config: 'transport' must be 'tcp' or 'unix'"
+	ErrHostPort            = "invalid config: 'endpoint' must be in the form <host>:<port> no matter what 'transport' is configured"
 	// #nosec G101 - not hardcoded credentials
 	ErrPasswordAndDBAuth = "invalid config: set either 'password' or 'db_auth', not both"
 )
@@ -106,14 +104,6 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.ClientConfig.MinVersion != "" {
 		err = multierr.Append(err, fmt.Errorf(ErrNotSupported, "MinVersion"))
-	}
-
-	// Reject a config whose excludes cover every listed database. Autodiscovery
-	// resolves the list at scrape time, so the scraper repeats this check.
-	if len(cfg.Databases) > 0 && !slices.ContainsFunc(cfg.Databases, func(db string) bool {
-		return !slices.Contains(cfg.ExcludeDatabases, db)
-	}) {
-		err = multierr.Append(err, errors.New(ErrAllDatabasesExcluded))
 	}
 
 	switch cfg.AddrConfig.Transport {

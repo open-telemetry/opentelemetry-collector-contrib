@@ -97,7 +97,7 @@ The following settings are optional:
 
 - `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases.
 
-- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. The receiver never connects to an excluded database. Excluding every database in `databases` is a configuration error.
+- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. The receiver never connects to an excluded database. If every candidate database is excluded, per-database metrics are skipped.
 
 > [!NOTE]
 > Managed PostgreSQL services create internal databases that no customer credential can connect to. The receiver discovers them like any other database and logs a connection error on every scrape. If you use one of these services, add its internal databases to `exclude_databases`:

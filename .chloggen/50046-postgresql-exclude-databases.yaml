@@ -22,8 +22,7 @@ subtext: |
   cache expiry. Both collectors now filter excluded databases server side and never connect to them.
 
   Also: excluding every candidate database no longer runs the per-database retrieval queries against
-  the whole cluster, and a config whose `exclude_databases` covers every entry in `databases` is now
-  rejected at startup.
+  the whole cluster; per-database metrics are skipped instead.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
