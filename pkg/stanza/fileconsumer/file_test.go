@@ -1247,7 +1247,11 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 		operator.poll(ctx)
 	})
 
-	for string(sink.NextToken(t)) == shortFileLine {
+	for {
+		token := sink.NextToken(t)
+		if string(token) != shortFileLine {
+			break
+		}
 	}
 
 	// Short file was fully consumed and should eventually be deleted.
