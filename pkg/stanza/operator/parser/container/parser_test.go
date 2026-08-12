@@ -1597,123 +1597,6 @@ func TestFilepathCacheDisabledWhenMetadataOff(t *testing.T) {
 	require.Nil(t, p.cache, "cache should be nil when add_metadata_from_filepath is false")
 }
 
-func TestSplitCRI(t *testing.T) {
-	cases := []struct {
-		name           string
-		input          string
-		wantOK         bool
-		wantContainerd bool
-		wantTime       string
-		wantStream     string
-		wantLogtag     string
-		wantLog        string
-	}{
-		{
-			name:           "containerd full line",
-			input:          "2024-01-15T10:30:00.000Z stdout F log message here",
-			wantOK:         true,
-			wantContainerd: true,
-			wantTime:       "2024-01-15T10:30:00.000Z",
-			wantStream:     "stdout",
-			wantLogtag:     "F",
-			wantLog:        "log message here",
-		},
-		{
-			name:           "containerd stderr partial",
-			input:          "2024-01-15T10:30:00.000Z stderr P partial log",
-			wantOK:         true,
-			wantContainerd: true,
-			wantStream:     "stderr",
-			wantLogtag:     "P",
-			wantLog:        "partial log",
-		},
-		{
-			name:           "containerd empty log message",
-			input:          "2024-01-15T10:30:00.000Z stdout F ",
-			wantOK:         true,
-			wantContainerd: true,
-			wantLogtag:     "F",
-			wantLog:        "",
-		},
-		{
-			name:           "containerd empty logtag no message",
-			input:          "2024-01-15T10:30:00.000Z stdout ",
-			wantOK:         true,
-			wantContainerd: true,
-			wantLogtag:     "",
-			wantLog:        "",
-		},
-		{
-			name:           "crio with timezone offset",
-			input:          "2024-01-15T10:30:00.000000000+00:00 stdout F log message",
-			wantOK:         true,
-			wantContainerd: false,
-			wantTime:       "2024-01-15T10:30:00.000000000+00:00",
-			wantStream:     "stdout",
-			wantLogtag:     "F",
-			wantLog:        "log message",
-		},
-		{
-			name:           "crio with negative timezone offset",
-			input:          "2024-01-15T10:30:00.000000000-05:00 stderr F error line",
-			wantOK:         true,
-			wantContainerd: false,
-			wantStream:     "stderr",
-			wantLogtag:     "F",
-			wantLog:        "error line",
-		},
-		{
-			name:   "invalid stream",
-			input:  "2024-01-15T10:30:00.000Z stdxxx F message",
-			wantOK: false,
-		},
-		{
-			name:   "missing space after timestamp",
-			input:  "2024-01-15T10:30:00.000Zstdout F message",
-			wantOK: false,
-		},
-		{
-			name:   "empty string",
-			input:  "",
-			wantOK: false,
-		},
-		{
-			name:   "caret in timestamp rejected for containerd",
-			input:  "2024-01-15T10:30:00.000^Z stdout F message",
-			wantOK: false,
-		},
-		{
-			name:   "Z mid-timestamp rejected for crio",
-			input:  "2024Z01-15T10:30:00.000 stdout F message",
-			wantOK: false,
-		},
-		{
-			name:   "mid-timestamp Z rejected for containerd",
-			input:  "abcZdefZ stdout F message",
-			wantOK: false,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			fields, containerd, ok := parseCRI(tc.input)
-			require.Equal(t, tc.wantOK, ok)
-			if !ok {
-				return
-			}
-			require.Equal(t, tc.wantContainerd, containerd)
-			if tc.wantTime != "" {
-				require.Equal(t, tc.wantTime, fields["time"])
-			}
-			if tc.wantStream != "" {
-				require.Equal(t, tc.wantStream, fields["stream"])
-			}
-			require.Equal(t, tc.wantLogtag, fields["logtag"])
-			require.Equal(t, tc.wantLog, fields["log"])
-		})
-	}
-}
-
 func TestStripLogSuffix(t *testing.T) {
 	cases := []struct {
 		input    string
@@ -1873,29 +1756,22 @@ func TestSplitLogPath(t *testing.T) {
 }
 
 func TestPinnedFormatMismatch(t *testing.T) {
+	// When format is pinned, detectFormat is skipped and the pinned parser is called directly.
+	// A mismatched line (e.g. docker JSON sent to a containerd-pinned parser) causes a parse error.
 	cases := []struct {
 		name         string
 		pinnedFormat string
 		body         string
-		wantErrMsg   string
 	}{
-		{
-			name:         "cri line rejected when docker pinned",
-			pinnedFormat: dockerFormat,
-			body:         "2024-01-15T10:30:00.000Z stdout F log message",
-			wantErrMsg:   "detected as containerd but format is configured as docker",
-		},
 		{
 			name:         "docker line rejected when containerd pinned",
 			pinnedFormat: containerdFormat,
 			body:         `{"log":"msg","stream":"stdout","time":"2024-01-15T10:30:00.000Z"}`,
-			wantErrMsg:   "detected as docker but format is configured as containerd",
 		},
 		{
-			name:         "containerd line rejected when crio pinned",
+			name:         "docker line rejected when crio pinned",
 			pinnedFormat: crioFormat,
-			body:         "2024-01-15T10:30:00.000Z stdout F log message",
-			wantErrMsg:   "detected as containerd but format is configured as crio",
+			body:         `{"log":"msg","stream":"stdout","time":"2024-01-15T10:30:00.000Z"}`,
 		},
 	}
 
@@ -1912,7 +1788,160 @@ func TestPinnedFormatMismatch(t *testing.T) {
 			e := entry.New()
 			e.Body = tc.body
 			err = op.Process(t.Context(), e)
-			require.ErrorContains(t, err, tc.wantErrMsg)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestParseContainerdFields(t *testing.T) {
+	cases := []struct {
+		name       string
+		input      any
+		wantOK     bool
+		wantTime   string
+		wantStream string
+		wantLogtag string
+		wantLog    string
+	}{
+		{
+			name:       "full line",
+			input:      "2024-01-15T10:30:00.000Z stdout F log message here",
+			wantOK:     true,
+			wantTime:   "2024-01-15T10:30:00.000Z",
+			wantStream: "stdout",
+			wantLogtag: "F",
+			wantLog:    "log message here",
+		},
+		{
+			name:       "stderr partial",
+			input:      "2024-01-15T10:30:00.000Z stderr P partial line",
+			wantOK:     true,
+			wantStream: "stderr",
+			wantLogtag: "P",
+			wantLog:    "partial line",
+		},
+		{
+			name:       "empty log message",
+			input:      "2024-01-15T10:30:00.000Z stdout F ",
+			wantOK:     true,
+			wantLogtag: "F",
+			wantLog:    "",
+		},
+		{
+			name:       "no log body logtag only",
+			input:      "2024-01-15T10:30:00.000Z stdout F",
+			wantOK:     true,
+			wantLogtag: "F",
+			wantLog:    "",
+		},
+		{
+			name:   "invalid stream",
+			input:  "2024-01-15T10:30:00.000Z stdxxx F message",
+			wantOK: false,
+		},
+		{
+			name:   "no trailing Z on timestamp",
+			input:  "2024-01-15T10:30:00.000+00:00 stdout F message",
+			wantOK: false,
+		},
+		{
+			name:   "wrong type",
+			input:  42,
+			wantOK: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := parseContainerd(tc.input)
+			if !tc.wantOK {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			m, ok := result.(map[string]any)
+			require.True(t, ok)
+			if tc.wantTime != "" {
+				require.Equal(t, tc.wantTime, m["time"])
+			}
+			if tc.wantStream != "" {
+				require.Equal(t, tc.wantStream, m["stream"])
+			}
+			require.Equal(t, tc.wantLogtag, m["logtag"])
+			require.Equal(t, tc.wantLog, m["log"])
+		})
+	}
+}
+
+func TestParseCRIOFields(t *testing.T) {
+	cases := []struct {
+		name       string
+		input      any
+		wantOK     bool
+		wantTime   string
+		wantStream string
+		wantLogtag string
+		wantLog    string
+	}{
+		{
+			name:       "full line with UTC offset",
+			input:      "2024-01-15T10:30:00.000000000+00:00 stdout F log message",
+			wantOK:     true,
+			wantTime:   "2024-01-15T10:30:00.000000000+00:00",
+			wantStream: "stdout",
+			wantLogtag: "F",
+			wantLog:    "log message",
+		},
+		{
+			name:       "negative timezone offset",
+			input:      "2024-01-15T10:30:00.000000000-05:00 stderr F error line",
+			wantOK:     true,
+			wantStream: "stderr",
+			wantLogtag: "F",
+			wantLog:    "error line",
+		},
+		{
+			name:       "empty log body",
+			input:      "2024-01-15T10:30:00.000000000+00:00 stdout F ",
+			wantOK:     true,
+			wantLogtag: "F",
+			wantLog:    "",
+		},
+		{
+			name:   "invalid stream",
+			input:  "2024-01-15T10:30:00.000000000+00:00 stdxxx F message",
+			wantOK: false,
+		},
+		{
+			name:   "missing timestamp",
+			input:  "stdout F message",
+			wantOK: false,
+		},
+		{
+			name:   "wrong type",
+			input:  42,
+			wantOK: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := parseCRIO(tc.input)
+			if !tc.wantOK {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			m, ok := result.(map[string]any)
+			require.True(t, ok)
+			if tc.wantTime != "" {
+				require.Equal(t, tc.wantTime, m["time"])
+			}
+			if tc.wantStream != "" {
+				require.Equal(t, tc.wantStream, m["stream"])
+			}
+			require.Equal(t, tc.wantLogtag, m["logtag"])
+			require.Equal(t, tc.wantLog, m["log"])
 		})
 	}
 }
