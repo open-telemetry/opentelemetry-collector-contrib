@@ -615,6 +615,198 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
+		{
+			"p", true,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "True",
+							},
+						},
+					},
+					Right: []*opAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &booleanValue{
+								ConstExpr: &constExpr{
+									Converter: &converter{
+										Function: "True",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			"q", false,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "True",
+							},
+						},
+					},
+					Right: []*opAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &booleanValue{
+								ConstExpr: &constExpr{
+									Converter: &converter{
+										Function: "False",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			"r", false,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "False",
+							},
+						},
+					},
+					Right: []*opAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &booleanValue{
+								ConstExpr: &constExpr{
+									Converter: &converter{
+										Function: "True",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			"s", false,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "False",
+							},
+						},
+					},
+				},
+				Right: []*opOrTerm{
+					{
+						Operator: "or",
+						Term: &term{
+							Left: &booleanValue{
+								ConstExpr: &constExpr{
+									Converter: &converter{
+										Function: "False",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			"t", true,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "False",
+							},
+						},
+					},
+				},
+				Right: []*opOrTerm{
+					{
+						Operator: "or",
+						Term: &term{
+							Left: &booleanValue{
+								ConstExpr: &constExpr{
+									Converter: &converter{
+										Function: "True",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			"u", true,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "True",
+							},
+						},
+					},
+				},
+				Right: []*opOrTerm{
+					{
+						Operator: "or",
+						Term: &term{
+							Left: &booleanValue{
+								ConstExpr: &constExpr{
+									Converter: &converter{
+										Function: "False",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			"v", false,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation: ottltest.Strp("not"),
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "True",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			"w", true,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation: ottltest.Strp("not"),
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "False",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -629,6 +821,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 
 func Test_newBooleanExpressionEvaluator_invalid(t *testing.T) {
 	functions := map[string]Factory[any]{"Hello": createFactory("Hello", &struct{}{}, hello)}
+	functions["True"] = createFactory("True", &struct{}{}, True)
+	functions["False"] = createFactory("False", &struct{}{}, False)
 
 	p, _ := NewParser(
 		functions,
@@ -646,6 +840,75 @@ func Test_newBooleanExpressionEvaluator_invalid(t *testing.T) {
 			expr: &booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "Hello",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "and left errors",
+			expr: &booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "Hello",
+							},
+						},
+					},
+					Right: []*opAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &booleanValue{
+								ConstExpr: &constExpr{
+									Converter: &converter{
+										Function: "True",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "or left errors",
+			expr: &booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "Hello",
+							},
+						},
+					},
+				},
+				Right: []*opOrTerm{
+					{
+						Operator: "or",
+						Term: &term{
+							Left: &booleanValue{
+								ConstExpr: &constExpr{
+									Converter: &converter{
+										Function: "False",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "not errors",
+			expr: &booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation: ottltest.Strp("not"),
 						ConstExpr: &constExpr{
 							Converter: &converter{
 								Function: "Hello",

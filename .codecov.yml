@@ -401,10 +401,6 @@ component_management:
     name: extension_observer_k8sobserver
     paths:
     - extension/observer/k8sobserver/**
-  - component_id: extension_observer_kafkatopicsobserver
-    name: extension_observer_kafkatopicsobserver
-    paths:
-    - extension/observer/kafkatopicsobserver/**
   - component_id: extension_oidcauth
     name: extension_oidcauth
     paths:
@@ -425,6 +421,10 @@ component_management:
     name: extension_remotetap
     paths:
     - extension/remotetapextension/**
+  - component_id: extension_sdnotify
+    name: extension_sdnotify
+    paths:
+    - extension/sdnotifyextension/**
   - component_id: extension_sigv4auth
     name: extension_sigv4auth
     paths:
