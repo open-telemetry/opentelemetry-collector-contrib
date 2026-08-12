@@ -4,6 +4,7 @@
 package googleclientauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension/internal/googleclientauthextension"
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -76,20 +77,29 @@ func TestRoundTripperWithIDToken(t *testing.T) {
 	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "testdata/fake_isa_creds.json")
 	ca := clientAuthenticator{
 		config: &Config{
-			Project:     "my-project",
-			TokenType:   idToken,
-			Audience:    "http://example.com",
-			TokenHeader: authorizationHeader,
+			Project:      "my-project",
+			QuotaProject: "other-project",
+			TokenType:    idToken,
+			Audience:     "http://example.com",
+			TokenHeader:  authorizationHeader,
 		},
-		newIDTokenSource: idtoken.NewTokenSource,
+		newIDTokenSource: func(_ context.Context, _ string, _ ...idtoken.ClientOption) (oauth2.TokenSource, error) {
+			return &mockIDTokenSource{token: "dummy token"}, nil
+		},
 	}
 	err := ca.Start(t.Context(), nil)
 	assert.NoError(t, err)
 
-	rt, err := ca.RoundTripper(roundTripperFunc(func(_ *http.Request) (*http.Response, error) {
-		return nil, nil
+	rt, err := ca.RoundTripper(roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "Bearer dummy token", r.Header.Get("Authorization"))
+		assert.Equal(t, "other-project", r.Header.Get("X-Goog-User-Project"))
+		assert.Equal(t, "my-project", r.Header.Get("X-Goog-Project-ID"))
+		return &http.Response{}, nil
 	}))
 	assert.NotNil(t, rt)
+	assert.NoError(t, err)
+
+	_, err = rt.RoundTrip(&http.Request{Header: make(http.Header)})
 	assert.NoError(t, err)
 }
 
