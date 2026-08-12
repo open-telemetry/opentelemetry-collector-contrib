@@ -44,7 +44,9 @@ all_set:
       attributes: ["operation","table","schema","index"]
     mysql.innodb.row_lock.wait.count:
       enabled: true
-    mysql.innodb.row_lock.wait.time:
+    mysql.innodb.row_lock.wait.time.avg:
+      enabled: true
+    mysql.innodb.row_lock.wait.time.max:
       enabled: true
     mysql.joins:
       enabled: true
@@ -207,7 +209,9 @@ reaggregate_set:
       attributes: []
     mysql.innodb.row_lock.wait.count:
       enabled: true
-    mysql.innodb.row_lock.wait.time:
+    mysql.innodb.row_lock.wait.time.avg:
+      enabled: true
+    mysql.innodb.row_lock.wait.time.max:
       enabled: true
     mysql.joins:
       enabled: true
@@ -370,7 +374,9 @@ none_set:
       attributes: ["operation","table","schema","index"]
     mysql.innodb.row_lock.wait.count:
       enabled: false
-    mysql.innodb.row_lock.wait.time:
+    mysql.innodb.row_lock.wait.time.avg:
+      enabled: false
+    mysql.innodb.row_lock.wait.time.max:
       enabled: false
     mysql.joins:
       enabled: false

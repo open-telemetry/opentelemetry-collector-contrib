@@ -97,7 +97,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlInnodbRowLockWaitCount: MysqlInnodbRowLockWaitCountMetricConfig{
 						Enabled: true,
 					},
-					MysqlInnodbRowLockWaitTime: MysqlInnodbRowLockWaitTimeMetricConfig{
+					MysqlInnodbRowLockWaitTimeAvg: MysqlInnodbRowLockWaitTimeAvgMetricConfig{
+						Enabled: true,
+					},
+					MysqlInnodbRowLockWaitTimeMax: MysqlInnodbRowLockWaitTimeMaxMetricConfig{
 						Enabled: true,
 					},
 					MysqlJoins: MysqlJoinsMetricConfig{
@@ -345,7 +348,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlInnodbRowLockWaitCount: MysqlInnodbRowLockWaitCountMetricConfig{
 						Enabled: false,
 					},
-					MysqlInnodbRowLockWaitTime: MysqlInnodbRowLockWaitTimeMetricConfig{
+					MysqlInnodbRowLockWaitTimeAvg: MysqlInnodbRowLockWaitTimeAvgMetricConfig{
+						Enabled: false,
+					},
+					MysqlInnodbRowLockWaitTimeMax: MysqlInnodbRowLockWaitTimeMaxMetricConfig{
 						Enabled: false,
 					},
 					MysqlJoins: MysqlJoinsMetricConfig{
@@ -523,7 +529,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MysqlBufferPoolDataPagesMetricConfig{}, MysqlBufferPoolLimitMetricConfig{}, MysqlBufferPoolOperationsMetricConfig{}, MysqlBufferPoolPageFlushesMetricConfig{}, MysqlBufferPoolPagesMetricConfig{}, MysqlBufferPoolUsageMetricConfig{}, MysqlClientNetworkIoMetricConfig{}, MysqlCommandsMetricConfig{}, MysqlConnectionCountMetricConfig{}, MysqlConnectionErrorsMetricConfig{}, MysqlDoubleWritesMetricConfig{}, MysqlFileOpenMetricConfig{}, MysqlHandlersMetricConfig{}, MysqlIndexIoWaitCountMetricConfig{}, MysqlIndexIoWaitTimeMetricConfig{}, MysqlInnodbRowLockWaitCountMetricConfig{}, MysqlInnodbRowLockWaitTimeMetricConfig{}, MysqlJoinsMetricConfig{}, MysqlLocksMetricConfig{}, MysqlLogOperationsMetricConfig{}, MysqlMaxUsedConnectionsMetricConfig{}, MysqlMysqlxConnectionsMetricConfig{}, MysqlMysqlxWorkerThreadsMetricConfig{}, MysqlOpenedResourcesMetricConfig{}, MysqlOperationsMetricConfig{}, MysqlPageOperationsMetricConfig{}, MysqlPageSizeMetricConfig{}, MysqlPreparedStatementsMetricConfig{}, MysqlQueryClientCountMetricConfig{}, MysqlQueryCountMetricConfig{}, MysqlQuerySlowCountMetricConfig{}, MysqlReplicaSQLDelayMetricConfig{}, MysqlReplicaTimeBehindSourceMetricConfig{}, MysqlRowLocksMetricConfig{}, MysqlRowOperationsMetricConfig{}, MysqlSortsMetricConfig{}, MysqlStatementEventCountMetricConfig{}, MysqlStatementEventWaitTimeMetricConfig{}, MysqlTableAverageRowLengthMetricConfig{}, MysqlTableIoWaitCountMetricConfig{}, MysqlTableIoWaitTimeMetricConfig{}, MysqlTableLockWaitReadCountMetricConfig{}, MysqlTableLockWaitReadTimeMetricConfig{}, MysqlTableLockWaitWriteCountMetricConfig{}, MysqlTableLockWaitWriteTimeMetricConfig{}, MysqlTableOpenMetricConfig{}, MysqlTableRowsMetricConfig{}, MysqlTableSizeMetricConfig{}, MysqlTableOpenCacheMetricConfig{}, MysqlThreadSlowLaunchMetricConfig{}, MysqlThreadsMetricConfig{}, MysqlTmpResourcesMetricConfig{}, MysqlUptimeMetricConfig{}, DbSystemNameResourceAttributeConfig{}, DbSystemVersionResourceAttributeConfig{}, MysqlInstanceEndpointResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MysqlBufferPoolDataPagesMetricConfig{}, MysqlBufferPoolLimitMetricConfig{}, MysqlBufferPoolOperationsMetricConfig{}, MysqlBufferPoolPageFlushesMetricConfig{}, MysqlBufferPoolPagesMetricConfig{}, MysqlBufferPoolUsageMetricConfig{}, MysqlClientNetworkIoMetricConfig{}, MysqlCommandsMetricConfig{}, MysqlConnectionCountMetricConfig{}, MysqlConnectionErrorsMetricConfig{}, MysqlDoubleWritesMetricConfig{}, MysqlFileOpenMetricConfig{}, MysqlHandlersMetricConfig{}, MysqlIndexIoWaitCountMetricConfig{}, MysqlIndexIoWaitTimeMetricConfig{}, MysqlInnodbRowLockWaitCountMetricConfig{}, MysqlInnodbRowLockWaitTimeAvgMetricConfig{}, MysqlInnodbRowLockWaitTimeMaxMetricConfig{}, MysqlJoinsMetricConfig{}, MysqlLocksMetricConfig{}, MysqlLogOperationsMetricConfig{}, MysqlMaxUsedConnectionsMetricConfig{}, MysqlMysqlxConnectionsMetricConfig{}, MysqlMysqlxWorkerThreadsMetricConfig{}, MysqlOpenedResourcesMetricConfig{}, MysqlOperationsMetricConfig{}, MysqlPageOperationsMetricConfig{}, MysqlPageSizeMetricConfig{}, MysqlPreparedStatementsMetricConfig{}, MysqlQueryClientCountMetricConfig{}, MysqlQueryCountMetricConfig{}, MysqlQuerySlowCountMetricConfig{}, MysqlReplicaSQLDelayMetricConfig{}, MysqlReplicaTimeBehindSourceMetricConfig{}, MysqlRowLocksMetricConfig{}, MysqlRowOperationsMetricConfig{}, MysqlSortsMetricConfig{}, MysqlStatementEventCountMetricConfig{}, MysqlStatementEventWaitTimeMetricConfig{}, MysqlTableAverageRowLengthMetricConfig{}, MysqlTableIoWaitCountMetricConfig{}, MysqlTableIoWaitTimeMetricConfig{}, MysqlTableLockWaitReadCountMetricConfig{}, MysqlTableLockWaitReadTimeMetricConfig{}, MysqlTableLockWaitWriteCountMetricConfig{}, MysqlTableLockWaitWriteTimeMetricConfig{}, MysqlTableOpenMetricConfig{}, MysqlTableRowsMetricConfig{}, MysqlTableSizeMetricConfig{}, MysqlTableOpenCacheMetricConfig{}, MysqlThreadSlowLaunchMetricConfig{}, MysqlThreadsMetricConfig{}, MysqlTmpResourcesMetricConfig{}, MysqlUptimeMetricConfig{}, DbSystemNameResourceAttributeConfig{}, DbSystemVersionResourceAttributeConfig{}, MysqlInstanceEndpointResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

@@ -181,11 +181,6 @@ attributes:
   mysql.events_waits_current.timer_wait:
     description: Timing information for the event, indicating elapsed time the event waited in seconds.
     type: double
-  mysql.innodb.row_lock.wait.time.statistic:
-    description: The row lock wait time statistic.
-    type: string
-    enum: [avg, max]
-    requirement_level: required
   mysql.query_plan:
     description: The query plan for the statement, if available.
     type: string
@@ -514,14 +509,20 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  mysql.innodb.row_lock.wait.time:
+  mysql.innodb.row_lock.wait.time.avg:
     enabled: false
-    description: The InnoDB row lock wait time.
+    description: The average InnoDB row lock wait time.
     stability: development
     unit: s
     gauge:
       value_type: double
-    attributes: [mysql.innodb.row_lock.wait.time.statistic]
+  mysql.innodb.row_lock.wait.time.max:
+    enabled: false
+    description: The maximum InnoDB row lock wait time.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
   mysql.joins:
     enabled: false
     description: The number of joins that perform table scans.
