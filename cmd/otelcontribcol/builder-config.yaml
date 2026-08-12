@@ -233,7 +233,6 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.158.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver v0.158.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver v0.158.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.158.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.158.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.158.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver v0.158.0
