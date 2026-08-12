@@ -751,11 +751,11 @@ var querySampleColumns = []string{
 	querySampleColumnBlockingTxnStartTime,
 }
 
-func newQuerySampleRows(t *testing.T, values map[string]any) *sqlmock.Rows {
-	t.Helper()
-
-	rowValues := make([]driver.Value, len(querySampleColumns))
-	for i, col := range querySampleColumns {
+// newSQLMockRows builds a one-row sqlmock result in the given column order,
+// filling any column missing from values with an empty string.
+func newSQLMockRows(columns []string, values map[string]any) *sqlmock.Rows {
+	rowValues := make([]driver.Value, len(columns))
+	for i, col := range columns {
 		if v, ok := values[col]; ok {
 			rowValues[i] = v
 			continue
@@ -763,7 +763,7 @@ func newQuerySampleRows(t *testing.T, values map[string]any) *sqlmock.Rows {
 		rowValues[i] = ""
 	}
 
-	return sqlmock.NewRows(querySampleColumns).AddRow(rowValues...)
+	return sqlmock.NewRows(columns).AddRow(rowValues...)
 }
 
 var topQueryColumns = []string{
@@ -781,19 +781,6 @@ var topQueryColumns = []string{
 	rowsColumnName,
 	totalExecTimeColumnName,
 	totalPlanTimeColumnName,
-}
-
-func newTopQueryRows(t *testing.T, values map[string]any) *sqlmock.Rows {
-	t.Helper()
-
-	rowValues := make([]driver.Value, len(topQueryColumns))
-	for i, col := range topQueryColumns {
-		v, ok := values[col]
-		require.True(t, ok, "missing value for top query column %q", col)
-		rowValues[i] = v
-	}
-
-	return sqlmock.NewRows(topQueryColumns).AddRow(rowValues...)
 }
 
 func TestScrapeQuerySample(t *testing.T) {
@@ -818,7 +805,7 @@ func TestScrapeQuerySample(t *testing.T) {
 	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, scraperErr)
 	scraper.newestQueryTimestamp = 123440.111
-	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newSQLMockRows(querySampleColumns, map[string]any{
 		querySampleColumnDatname:              "postgres",
 		querySampleColumnUsename:              "otelu",
 		querySampleColumnClientAddr:           "11.4.5.14",
@@ -864,7 +851,7 @@ func TestScrapeQuerySampleSemconv(t *testing.T) {
 	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, scraperErr)
 	scraper.newestQueryTimestamp = 123440.111
-	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newSQLMockRows(querySampleColumns, map[string]any{
 		querySampleColumnDatname:              "postgres",
 		querySampleColumnUsename:              "otelu",
 		querySampleColumnClientAddr:           "11.4.5.14",
@@ -919,7 +906,7 @@ func TestScrapeQuerySampleWithTraceparent(t *testing.T) {
 	scraper.newestQueryTimestamp = 123440.111
 
 	traceparent := "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
-	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newSQLMockRows(querySampleColumns, map[string]any{
 		querySampleColumnDatname:              "postgres",
 		querySampleColumnUsename:              "otelu",
 		querySampleColumnClientAddr:           "11.4.5.14",
@@ -1188,7 +1175,7 @@ func TestScrapeQuerySampleBlockedSession(t *testing.T) {
 	require.NoError(t, scraperErr)
 	scraper.newestQueryTimestamp = 123440.111
 
-	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newSQLMockRows(querySampleColumns, map[string]any{
 		querySampleColumnDatname:              "postgres",
 		querySampleColumnUsename:              "otelu",
 		querySampleColumnClientAddr:           "11.4.5.14",
@@ -1244,7 +1231,7 @@ func TestScrapeQuerySampleMultiBlocker(t *testing.T) {
 	require.NoError(t, scraperErr)
 	scraper.newestQueryTimestamp = 123440.111
 
-	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newSQLMockRows(querySampleColumns, map[string]any{
 		querySampleColumnDatname:              "postgres",
 		querySampleColumnUsename:              "otelu",
 		querySampleColumnClientAddr:           "11.4.5.14",
@@ -1309,7 +1296,7 @@ func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
 			// The template filters this row out server side; returning it anyway exercises the
 			// EXPLAIN guard. No EXPLAIN is expected: the row must be skipped, not explained.
 			mock.ExpectQuery(`AND datname NOT IN \('rdsadmin'\)`).
-				WillReturnRows(newTopQueryRows(t, map[string]any{
+				WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 					callsColumnName:             "123",
 					"datname":                   "rdsadmin",
 					sharedBlksDirtiedColumnName: "1111",
@@ -1407,7 +1394,7 @@ func TestScrapeTopQueries(t *testing.T) {
 	scraper.cache.Add(queryid+tempBlksReadColumnName, 1110)
 	scraper.cache.Add(queryid+tempBlksWrittenColumnName, 1110)
 
-	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newTopQueryRows(t, map[string]any{
+	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 		callsColumnName:             "123",
 		"datname":                   "postgres",
 		sharedBlksDirtiedColumnName: "1111",
