@@ -91,3 +91,39 @@ func Test_Base64DecodeError(t *testing.T) {
 		})
 	}
 }
+
+func Test_Base64DecodeFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewBase64DecodeFactory[any]()
+		assert.Equal(t, "Base64Decode", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewBase64DecodeFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &Base64DecodeArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewBase64DecodeFactory[any]()
+		args := factory.CreateDefaultArguments()
+		decodeArgs, ok := args.(*Base64DecodeArguments[any])
+		require.True(t, ok)
+		decodeArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "aGVsbG8gd29ybGQ=", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createBase64DecodeFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "Base64DecodeFactory args must be of type *Base64DecodeArguments[K]")
+	})
+}

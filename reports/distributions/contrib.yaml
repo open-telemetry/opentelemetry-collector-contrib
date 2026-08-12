@@ -64,6 +64,7 @@ components:
     extension:
         - ack
         - asapclient
+        - aws_iam_db_auth
         - aws_logs_encoding
         - awscloudwatchmetricstreams_encoding
         - awsproxy
@@ -95,6 +96,7 @@ components:
         - pebble_tail_storage
         - pprof
         - redis_storage
+        - sd_notify
         - sigv4auth
         - skywalking_encoding
         - text_encoding
@@ -173,6 +175,7 @@ components:
         - google_cloud_spanner
         - googlecloudmonitoring
         - googlecloudpubsub
+        - googlecloudpubsubpush
         - haproxy
         - host_metrics
         - http_check
@@ -222,7 +225,7 @@ components:
         - solace
         - splunk_enterprise
         - splunk_hec
-        - sqlquery
+        - sql_query
         - sqlserver
         - ssh_check
         - statsd
