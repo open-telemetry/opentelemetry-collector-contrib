@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"sync"
@@ -41,6 +42,11 @@ type loadBalancer struct {
 
 	stopped    bool
 	updateLock sync.RWMutex
+
+	// backendChangeMu serializes the resolver callbacks, so that topology updates are still
+	// applied one at a time without having to hold updateLock while exporters are being
+	// created and started.
+	backendChangeMu sync.Mutex
 }
 
 // Create new load balancer
@@ -151,41 +157,73 @@ func (lb *loadBalancer) Start(ctx context.Context, host component.Host) error {
 }
 
 func (lb *loadBalancer) onBackendChanges(resolved []string) {
+	lb.backendChangeMu.Lock()
+	defer lb.backendChangeMu.Unlock()
+
 	newRing := newHashRing(resolved)
 
-	if !newRing.equal(lb.ring) {
-		lb.updateLock.Lock()
-		defer lb.updateLock.Unlock()
+	// prepare phase: take a snapshot of the current state, holding updateLock only for the
+	// duration of the copy
+	lb.updateLock.RLock()
+	unchanged := newRing.equal(lb.ring)
+	existing := maps.Clone(lb.exporters)
+	lb.updateLock.RUnlock()
 
-		lb.ring = newRing
-
-		// TODO: set a timeout?
-		ctx := context.Background()
-
-		// add the missing exporters first
-		lb.addMissingExporters(ctx, resolved)
-		lb.removeExtraExporters(ctx, resolved)
+	if unchanged {
+		return
 	}
+
+	// TODO: set a timeout?
+	ctx := context.Background()
+
+	// create and start the missing exporters without holding updateLock, so that slow
+	// component factories or Start calls don't block the data path
+	added := lb.startMissingExporters(ctx, resolved, existing)
+
+	// commit phase: install the new exporters and publish the new ring atomically
+	lb.updateLock.Lock()
+	defer lb.updateLock.Unlock()
+
+	maps.Copy(lb.exporters, added)
+	lb.ring = newRing
+	lb.removeExtraExporters(ctx, resolved)
 }
 
-func (lb *loadBalancer) addMissingExporters(ctx context.Context, endpoints []string) {
+// startMissingExporters creates and starts an exporter for every endpoint that isn't part of the
+// given existing exporters, returning the successfully started ones keyed by endpoint. The returned
+// exporters are not installed into the load balancer, so that partially constructed state stays
+// private to the caller.
+func (lb *loadBalancer) startMissingExporters(ctx context.Context, endpoints []string, existing map[string]*wrappedExporter) map[string]*wrappedExporter {
+	added := make(map[string]*wrappedExporter)
 	for _, endpoint := range endpoints {
 		endpoint = endpointWithPort(endpoint)
 
-		if _, exists := lb.exporters[endpoint]; !exists {
+		_, exists := existing[endpoint]
+		if !exists {
+			_, exists = added[endpoint]
+		}
+
+		if !exists {
 			exp, err := lb.componentFactory(ctx, endpoint)
 			if err != nil {
 				lb.logger.Error("failed to create new exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
 				continue
 			}
+
 			we := newWrappedExporter(exp, endpoint)
 			if err = we.Start(ctx, lb.host); err != nil {
 				lb.logger.Error("failed to start new exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
 				continue
 			}
-			lb.exporters[endpoint] = we
+			added[endpoint] = we
 		}
 	}
+
+	return added
+}
+
+func (lb *loadBalancer) addMissingExporters(ctx context.Context, endpoints []string) {
+	maps.Copy(lb.exporters, lb.startMissingExporters(ctx, endpoints, lb.exporters))
 }
 
 func endpointWithPort(endpoint string) string {
