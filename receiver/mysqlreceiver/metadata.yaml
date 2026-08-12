@@ -681,6 +681,7 @@ metrics:
   mysql.replica.thread.running:
     enabled: false
     description: Whether the replica IO and SQL threads report a running status. A value of 1 means the thread reports Yes; 0 means any other status, including No or Connecting.
+    extended_documentation: If the thread type or channel name attributes are disabled or dropped, configure the aggregation strategy as min or max based on the desired collapsed status.
     stability: development
     unit: "1"
     gauge:

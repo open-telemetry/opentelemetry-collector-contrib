@@ -514,6 +514,8 @@ The number of temporary tables currently open by the replica while applying repl
 
 Whether the replica IO and SQL threads report a running status. A value of 1 means the thread reports Yes; 0 means any other status, including No or Connecting.
 
+If the thread type or channel name attributes are disabled or dropped, configure the aggregation strategy as min or max based on the desired collapsed status.
+
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Int | Development |
