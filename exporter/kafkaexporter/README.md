@@ -67,9 +67,6 @@ The following settings can be optionally configured:
   - `extension`: The component ID of a custom partitioner extension. When set, partitioning is delegated to the specified extension.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options. Set to `tls: insecure: false` explicitly when using `AWS_MSK_IAM_OAUTHBEARER` as the authentication method.
 - `auth`
-  - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
-    - `username`: The username to use.
-    - `password`: The password to use
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use
