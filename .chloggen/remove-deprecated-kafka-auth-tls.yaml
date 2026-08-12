@@ -7,7 +7,7 @@ change_type: breaking
 component: exporter/kafka
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Removes the deprecated auth.tls configuration.
+note: Removes the deprecated auth.tls and auth.plain_text configurations.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50202]

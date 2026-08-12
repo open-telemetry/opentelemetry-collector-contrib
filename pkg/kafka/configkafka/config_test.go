@@ -92,16 +92,6 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
-		"legacy_auth_plain_text": {
-			expected: func() ClientConfig {
-				cfg := NewDefaultClientConfig()
-				cfg.Authentication.PlainText = &PlainTextConfig{
-					Username: "abc",
-					Password: "def",
-				}
-				return cfg
-			}(),
-		},
 		"not_use_leader_epoch": {
 			expected: func() ClientConfig {
 				cfg := NewDefaultClientConfig()

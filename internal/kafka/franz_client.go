@@ -315,14 +315,6 @@ func commonOpts(
 			opts = append(opts, kgo.DialTLSConfig(tlsCfg))
 		}
 	}
-	// Configure authentication
-	if clientCfg.Authentication.PlainText != nil {
-		auth := plain.Auth{
-			User: clientCfg.Authentication.PlainText.Username,
-			Pass: clientCfg.Authentication.PlainText.Password,
-		}
-		opts = append(opts, kgo.SASL(auth.AsMechanism()))
-	}
 	if clientCfg.Authentication.SASL != nil {
 		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL, host)
 		if err != nil {
