@@ -78,6 +78,13 @@ attributes:
     description: The database management system (DBMS) product as identified by the client instrumentation.
     type: string
     enum: [ mongodb ]
+  disk.io.direction:
+    description: The disk I/O operation direction.
+    type: string
+    requirement_level: recommended
+    enum:
+      - read
+      - write
   lock_mode:
     description: The mode of Lock which denotes the degree of access
     type: string
@@ -201,6 +208,14 @@ attributes:
   mongodb.query.truncated:
     description: Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output.
     type: bool
+  mongodb.wt.log.operation.type:
+    description: The WiredTiger journal operation type.
+    type: string
+    requirement_level: recommended
+    enum:
+      - write
+      - sync
+      - flush
   operation:
     description: The MongoDB operation being counted.
     type: string
@@ -739,6 +754,54 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: []
+  mongodb.wt.concurrent_transactions.out:
+    description: The number of in-flight WiredTiger read/write concurrent-transaction tickets.
+    stability: development
+    unit: "{transaction}"
+    enabled: false
+    gauge:
+      value_type: int
+    attributes: [disk.io.direction]
+  mongodb.wt.fsync.count:
+    description: The total number of fsync I/Os issued by the WiredTiger storage engine.
+    stability: development
+    unit: "{fsync}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: []
+  mongodb.wt.log.bytes:
+    description: The total number of bytes written to the WiredTiger journal.
+    stability: development
+    unit: By
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: []
+  mongodb.wt.log.operations:
+    description: The total number of WiredTiger journal operations.
+    stability: development
+    unit: "{operation}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [mongodb.wt.log.operation.type]
+  mongodb.wt.log.sync.time:
+    description: The cumulative time spent syncing the WiredTiger journal.
+    stability: development
+    unit: s
+    enabled: false
+    sum:
+      value_type: double
+      aggregation_temporality: cumulative
+      monotonic: true
     attributes: []
   mongodb.wtcache.bytes.read:
     description: The number of bytes read into the WiredTiger cache.
