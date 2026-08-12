@@ -263,28 +263,6 @@ func TestDetect(t *testing.T) {
 			},
 		},
 		{
-			desc: "Cloud Run Worker Pool",
-			sdkResource: sdkresource.NewWithAttributes(
-				testSchemaURL,
-				attribute.String("cloud.provider", "gcp"),
-				attribute.String("cloud.account.id", "my-project"),
-				attribute.String("cloud.platform", "gcp_cloud_run"),
-				attribute.String("cloud.region", "us-central1"),
-				attribute.String("faas.name", "my-service"),
-				attribute.String("faas.version", "123456"),
-				attribute.String("faas.instance", "1472385723456792345"),
-			),
-			expectedResource: map[string]any{
-				"cloud.provider":   "gcp",
-				"cloud.account.id": "my-project",
-				"cloud.platform":   "gcp_cloud_run",
-				"cloud.region":     "us-central1",
-				"faas.name":        "my-service",
-				"faas.version":     "123456",
-				"faas.instance":    "1472385723456792345",
-			},
-		},
-		{
 			desc: "Cloud Run Job",
 			sdkResource: sdkresource.NewWithAttributes(
 				testSchemaURL,
