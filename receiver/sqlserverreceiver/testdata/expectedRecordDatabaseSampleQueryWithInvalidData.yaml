@@ -39,7 +39,7 @@ resourceLogs:
                   stringValue: master
               - key: db.query.text
                 value:
-                  stringValue: ""
+                  stringValue: SELECT cpu_time
               - key: db.system.name
                 value:
                   stringValue: microsoft.sql_server
@@ -150,7 +150,7 @@ resourceLogs:
                   stringValue: "0"
             body: {}
             eventName: db.server.query_sample
-            timeUnixNano: "1781104670101813000"
+            timeUnixNano: "1786561904012849000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

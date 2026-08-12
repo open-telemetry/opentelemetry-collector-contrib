@@ -1661,12 +1661,16 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			statement := row[columnName]
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
-				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v, error: %v", statement, err))
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement, skipping event: %v, error: %v", statement, err))
 				return "", nil
 			}
 
 			return obfuscated, nil
 		})
+
+		if queryTextVal.(string) == "" {
+			continue
+		}
 
 		databaseNameVal := row[databaseName]
 
@@ -2100,12 +2104,21 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				trimmedStatement := strings.TrimSpace(statement)
 				idleBlockerEmptyOrComment := row[command] == "IDLE_BLOCKER" && (trimmedStatement == "" || strings.HasPrefix(trimmedStatement, "--"))
 				if !idleBlockerEmptyOrComment {
-					s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v, error: %v", statement, err))
+					s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement, skipping event: %v, error: %v", statement, err))
 				}
 				return "", nil
 			}
 			return obfuscated, nil
 		}).(string)
+
+		if queryTextVal == "" {
+			trimmedStatement := strings.TrimSpace(row[statementText])
+			idleBlockerEmptyOrComment := row[command] == "IDLE_BLOCKER" && (trimmedStatement == "" || strings.HasPrefix(trimmedStatement, "--"))
+			if !idleBlockerEmptyOrComment {
+				continue
+			}
+		}
+
 		networkPeerAddressVal := row[clientAddress]
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)
