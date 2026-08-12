@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/google/go-cmp v0.7.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.158.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.158.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.158.0
 	github.com/stretchr/testify v1.11.1
@@ -128,6 +129,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 retract (
 	v0.76.2

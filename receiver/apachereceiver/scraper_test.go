@@ -17,9 +17,9 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetricassert"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
@@ -54,16 +54,10 @@ func TestScraper(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.enableNew {
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverApacheEnableNewFormatMetricsFeatureGate.ID(), true))
-				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverApacheEnableNewFormatMetricsFeatureGate.ID(), false))
-				}()
+				defer testutil.SetFeatureGateForTest(t, metadata.ReceiverApacheEnableNewFormatMetricsFeatureGate, true)()
 			}
 			if tt.disableOld {
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverApacheDisableOldFormatMetricsFeatureGate.ID(), true))
-				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverApacheDisableOldFormatMetricsFeatureGate.ID(), false))
-				}()
+				defer testutil.SetFeatureGateForTest(t, metadata.ReceiverApacheDisableOldFormatMetricsFeatureGate, true)()
 			}
 
 			apacheMock := newMockServer(t)
