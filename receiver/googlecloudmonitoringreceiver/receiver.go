@@ -94,7 +94,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 	defer mr.mutex.RUnlock()
 	for metricType, metricDesc := range mr.metricDescriptors {
 		// Set interval and delay times, using defaults if not provided
-		gInterval = mr.config.CollectionInterval
+		gInterval = mr.config.ControllerConfig.CollectionInterval
 		if gInterval <= 0 {
 			gInterval = defaultCollectionInterval
 		}
@@ -155,6 +155,9 @@ func (mr *monitoringReceiver) initializeClient(ctx context.Context) error {
 	}
 
 	opts := []option.ClientOption{option.WithCredentials(creds)}
+	if mr.config.UniverseDomain != "" {
+		opts = append(opts, option.WithUniverseDomain(mr.config.UniverseDomain))
+	}
 	if mr.config.Endpoint != "" {
 		opts = append(opts, option.WithEndpoint(mr.config.Endpoint))
 	}

@@ -58,8 +58,8 @@ func newLogsReceiver(
 	}
 
 	var dataSource string
-	if config.DataSource != "" {
-		dataSource = config.DataSource
+	if config.Config.DataSource != "" {
+		dataSource = config.Config.DataSource
 	} else {
 		dataSource, err = sqlquery.BuildDataSourceString(config.Config)
 		if err != nil {
@@ -71,7 +71,7 @@ func newLogsReceiver(
 		config:   config,
 		settings: settings,
 		createConnection: func() (*sql.DB, error) {
-			return sqlOpenerFunc(config.Driver, dataSource)
+			return sqlOpenerFunc(config.Config.Driver, dataSource)
 		},
 		createClient:      createClient,
 		nextConsumer:      nextConsumer,
@@ -93,7 +93,7 @@ func (receiver *logsReceiver) Start(ctx context.Context, host component.Host) er
 	receiver.host = host
 
 	var err error
-	receiver.storageClient, err = adapter.GetStorageClient(ctx, host, receiver.config.StorageID, receiver.settings.ID)
+	receiver.storageClient, err = adapter.GetStorageClient(ctx, host, receiver.config.Config.StorageID, receiver.settings.ID)
 	if err != nil {
 		return fmt.Errorf("error connecting to storage: %w", err)
 	}
@@ -116,7 +116,7 @@ func (receiver *logsReceiver) Start(ctx context.Context, host component.Host) er
 
 func (receiver *logsReceiver) createQueryReceivers() error {
 	receiver.queryReceivers = nil
-	for i, query := range receiver.config.Queries {
+	for i, query := range receiver.config.Config.Queries {
 		if len(query.Logs) == 0 {
 			continue
 		}
@@ -127,7 +127,7 @@ func (receiver *logsReceiver) createQueryReceivers() error {
 			receiver.createConnection,
 			receiver.createClient,
 			receiver.settings.Logger,
-			receiver.config.Telemetry,
+			receiver.config.Config.Telemetry,
 			receiver.storageClient,
 		)
 		receiver.queryReceivers = append(receiver.queryReceivers, queryReceiver)
@@ -136,7 +136,7 @@ func (receiver *logsReceiver) createQueryReceivers() error {
 }
 
 func (receiver *logsReceiver) startCollecting() {
-	initialDelay := receiver.config.InitialDelay
+	initialDelay := receiver.config.Config.InitialDelay
 
 	go func() {
 		if initialDelay > 0 {
@@ -150,7 +150,7 @@ func (receiver *logsReceiver) startCollecting() {
 			}
 		}
 
-		collectionIntervalTicker := time.NewTicker(receiver.config.CollectionInterval)
+		collectionIntervalTicker := time.NewTicker(receiver.config.Config.CollectionInterval)
 
 		for {
 			select {
@@ -172,7 +172,16 @@ func (receiver *logsReceiver) collect() {
 	resultsChannel := make(chan collectResult, len(receiver.queryReceivers))
 	for _, queryReceiver := range receiver.queryReceivers {
 		go func(queryReceiver *logsQueryReceiver) {
-			logs, err := queryReceiver.collect(context.Background())
+			ctx := context.Background()
+			// Bound the query execution with the configured timeout so that a
+			// locked table or otherwise slow query does not block collection
+			// indefinitely. A non-positive timeout means no deadline.
+			if receiver.config.Config.Timeout > 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, receiver.config.Config.Timeout)
+				defer cancel()
+			}
+			logs, err := queryReceiver.collect(ctx)
 			if err != nil {
 				receiver.settings.Logger.Error("error collecting logs", zap.Error(err), zap.String("query", queryReceiver.ID()))
 			}

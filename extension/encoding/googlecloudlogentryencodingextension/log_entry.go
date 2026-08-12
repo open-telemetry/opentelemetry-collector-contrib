@@ -232,21 +232,32 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 	}
 
 	if req.Protocol != "" {
-		if strings.Count(req.Protocol, "/") != 1 {
-			return fmt.Errorf(
-				`invalid protocol %q: expected exactly one "/" (format "<name>/<version>", e.g. "HTTP/1.1")`,
-				req.Protocol,
-			)
+		name, version, hasSlash := strings.Cut(req.Protocol, "/")
+		if !hasSlash {
+			// Short ALPN token (RFC 7301). Map the well-known HTTP variants to
+			// "http" + numeric version so telemetry stays consistent with the
+			// "HTTP/1.1" form; unknown tokens fall back to the raw value as the
+			// protocol name with no version.
+			switch strings.ToLower(req.Protocol) {
+			case "h2", "h2c":
+				attributes.PutStr(string(conventions.NetworkProtocolNameKey), "http")
+				attributes.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
+			case "h3":
+				attributes.PutStr(string(conventions.NetworkProtocolNameKey), "http")
+				attributes.PutStr(string(conventions.NetworkProtocolVersionKey), "3")
+			default:
+				attributes.PutStr(string(conventions.NetworkProtocolNameKey), strings.ToLower(req.Protocol))
+			}
+		} else {
+			if name == "" || version == "" {
+				return fmt.Errorf("invalid protocol %q: name or version is missing", req.Protocol)
+			}
+			if strings.Contains(version, "/") {
+				return fmt.Errorf("invalid protocol %q: expected at most one \"/\"", req.Protocol)
+			}
+			attributes.PutStr(string(conventions.NetworkProtocolNameKey), strings.ToLower(name))
+			attributes.PutStr(string(conventions.NetworkProtocolVersionKey), version)
 		}
-		name, version, found := strings.Cut(req.Protocol, "/")
-		if !found || name == "" || version == "" {
-			return fmt.Errorf(
-				`invalid protocol %q: name or version is missing (expected format "<name>/<version>", e.g. "HTTP/1.1")`,
-				req.Protocol,
-			)
-		}
-		attributes.PutStr(string(conventions.NetworkProtocolNameKey), strings.ToLower(name))
-		attributes.PutStr(string(conventions.NetworkProtocolVersionKey), version)
 	}
 
 	shared.PutInt(string(conventions.HTTPResponseStatusCodeKey), req.Status, attributes)

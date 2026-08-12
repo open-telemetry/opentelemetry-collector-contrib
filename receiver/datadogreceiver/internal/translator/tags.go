@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
@@ -53,6 +52,14 @@ var datadogKnownResourceAttributes = map[string]string{
 	"kube_namespace":      string(conventions.K8SNamespaceNameKey),
 	"pod_name":            string(conventions.K8SPodNameKey),
 
+	// Kubernetes recommended labels (https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/)
+	"kube_app_name":       "app.kubernetes.io/name",
+	"kube_app_instance":   "app.kubernetes.io/instance",
+	"kube_app_version":    "app.kubernetes.io/version",
+	"kube_app_component":  "app.kubernetes.io/component",
+	"kube_app_part_of":    "app.kubernetes.io/part-of",
+	"kube_app_managed_by": "app.kubernetes.io/managed-by",
+
 	// HTTP
 	"http.client_ip":               string(conventions.ClientAddressKey),
 	"http.response.content_length": string(conventions.HTTPResponseBodySizeKey),
@@ -69,7 +76,7 @@ var datadogKnownResourceAttributes = map[string]string{
 	// AWS S3
 	"aws.s3.bucket_name":      string(conventions.AWSS3BucketKey),
 	"aws.response.request_id": string(conventions.AWSRequestIDKey),
-	"aws.service":             string(conventionsv138.RPCServiceKey),
+	"aws.service":             "rpc.service",
 	"aws.operation":           string(conventions.RPCMethodKey),
 
 	// DB
@@ -175,6 +182,9 @@ func tagsToAttributes(tags []string, host string, stringPool *StringPool) attrib
 	for _, tag := range tags {
 		key, val = translateDatadogTagToKeyValuePair(tag)
 		if attr, ok := datadogKnownResourceAttributes[key]; ok {
+			if attr == "rpc.service" && metadata.ReceiverDatadogreceiverDontEmitDeprecatedRPCServiceAttrFeatureGate.IsEnabled() {
+				continue
+			}
 			val = stringPool.Intern(val)                           // No need to intern the key if we already have it
 			if attr == string(conventions.ContainerImageTagsKey) { // type: string[]
 				attrs.resource.PutEmptySlice(attr).AppendEmpty().SetStr(val)

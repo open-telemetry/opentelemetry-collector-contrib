@@ -56,6 +56,7 @@ pkg/datadog
 receiver/datadogreceiver
 receiver/jaegerreceiver
 receiver/signalfxreceiver
+pkg/translator/pprof
 pkg/translator/splunk
 exporter/splunkhecexporter
 extension/ackextension
@@ -65,9 +66,10 @@ receiver/syslogreceiver
 testbed/mockdatasenders/mockdatadogagentexporter
 testbed
 cmd/opampsupervisor
-cmd/schemagen
 cmd/telemetrygen
 cmd/telemetrygen/internal/e2etest
+extension/dbauth
+config/configdbauth
 confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider
@@ -149,6 +151,7 @@ extension/awsproxy
 extension/azureauthextension
 extension/cgroupruntimeextension
 extension/datadogextension
+extension/dbauth/awsiamdbauthextension
 extension/encoding/avrologencodingextension
 pkg/xstreamencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension
@@ -213,7 +216,6 @@ pkg/expohisto
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
-pkg/translator/pprof
 processor/attributesprocessor
 processor/awsecsattributesprocessor
 processor/cardinalityguardianprocessor
@@ -221,6 +223,7 @@ processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
 processor/deltatorateprocessor
 processor/drainprocessor
+processor/dynamicsamplingprocessor
 processor/filterprocessor
 processor/genainormalizerprocessor
 processor/geoipprocessor
@@ -264,6 +267,7 @@ receiver/cloudflarereceiver
 receiver/cloudfoundryreceiver
 receiver/collectdreceiver
 receiver/couchdbreceiver
+receiver/dnscheckreceiver
 receiver/elasticsearchreceiver
 receiver/envoyalsreceiver
 receiver/expvarreceiver
@@ -283,7 +287,6 @@ receiver/huaweicloudcesreceiver
 receiver/icmpcheckreceiver
 receiver/iisreceiver
 receiver/influxdbreceiver
-receiver/jmxreceiver
 receiver/journaldreceiver
 receiver/k8sclusterreceiver
 receiver/k8seventsreceiver

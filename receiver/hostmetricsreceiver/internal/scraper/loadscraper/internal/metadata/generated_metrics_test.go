@@ -19,7 +19,6 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
-	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -38,11 +37,6 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:        "reaggregate_set",
-			metricsSet:  testDataSetReag,
-			resAttrsSet: testDataSetReag,
-		},
-		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
 			resAttrsSet: testDataSetNone,
@@ -59,29 +53,22 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if tt.metricsSet != testDataSetReag {
-				assert.Equal(t, expectedWarnings, observedLogs.Len())
-			}
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemCPULoadAverage15mDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemCPULoadAverage1mDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemCPULoadAverage5mDataPoint(ts, 1)
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
-			if tt.name == "reaggregate_set" {
-			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

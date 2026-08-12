@@ -69,7 +69,7 @@ func (path StandardGetSetter[K]) Set(ctx context.Context, tCtx K, val any) error
 
 type exprGetter[K any] struct {
 	expr Expr[K]
-	keys []key
+	keys []Key[K]
 }
 
 func (g *exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
@@ -77,82 +77,163 @@ func (g *exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	return getIndexedValue[K](ctx, tCtx, result, g.keys)
+}
 
-	if len(g.keys) == 0 {
-		return result, nil
+func getIndexedValue[K any](ctx context.Context, tCtx K, val any, keys []Key[K]) (any, error) {
+	if len(keys) == 0 {
+		return val, nil
 	}
 
-	for _, k := range g.keys {
-		switch {
-		case k.String != nil:
+	result := val
+	for _, k := range keys {
+		rawKeyVal, err := resolveIndexKey[K](ctx, tCtx, k)
+		if err != nil {
+			return nil, err
+		}
+
+		switch keyVal := rawKeyVal.(type) {
+		case string:
 			switch r := result.(type) {
 			case pcommon.Map:
-				val, ok := r.Get(*k.String)
+				val, ok := r.Get(keyVal)
 				if !ok {
 					return nil, errors.New("key not found in map")
 				}
 				result = ottlcommon.GetValue(val)
 			case map[string]any:
-				val, ok := r[*k.String]
+				val, ok := r[keyVal]
 				if !ok {
 					return nil, errors.New("key not found in map")
 				}
 				result = val
 			default:
-				return nil, fmt.Errorf("type, %T, does not support string indexing", result)
+				return nil, fmt.Errorf("type %T does not support string indexing", result)
 			}
-		case k.Int != nil:
+		case int64:
 			switch r := result.(type) {
 			case pcommon.Slice:
-				if int(*k.Int) >= r.Len() || int(*k.Int) < 0 {
-					return nil, fmt.Errorf("index %v out of bounds", *k.Int)
+				if int(keyVal) >= r.Len() || int(keyVal) < 0 {
+					return nil, fmt.Errorf("index %v out of bounds", keyVal)
 				}
-				result = ottlcommon.GetValue(r.At(int(*k.Int)))
+				result = ottlcommon.GetValue(r.At(int(keyVal)))
 			case []any:
-				result, err = getElementByIndex(r, k.Int)
+				result, err = getElementByIndex(r, keyVal)
 				if err != nil {
 					return nil, err
 				}
 			case []string:
-				result, err = getElementByIndex(r, k.Int)
+				result, err = getElementByIndex(r, keyVal)
 				if err != nil {
 					return nil, err
 				}
 			case []bool:
-				result, err = getElementByIndex(r, k.Int)
+				result, err = getElementByIndex(r, keyVal)
 				if err != nil {
 					return nil, err
 				}
 			case []float64:
-				result, err = getElementByIndex(r, k.Int)
+				result, err = getElementByIndex(r, keyVal)
 				if err != nil {
 					return nil, err
 				}
 			case []int64:
-				result, err = getElementByIndex(r, k.Int)
+				result, err = getElementByIndex(r, keyVal)
 				if err != nil {
 					return nil, err
 				}
 			case []byte:
-				result, err = getElementByIndex(r, k.Int)
+				result, err = getElementByIndex(r, keyVal)
 				if err != nil {
 					return nil, err
 				}
 			default:
-				return nil, fmt.Errorf("type, %T, does not support int indexing", result)
+				return nil, fmt.Errorf("type %T does not support int indexing", result)
 			}
 		default:
-			return nil, errors.New("neither map nor slice index were set; this is an error in OTTL")
+			return nil, fmt.Errorf("invalid key: expected string or int index, got %T", rawKeyVal)
 		}
 	}
 	return result, nil
 }
 
-func getElementByIndex[T any](r []T, idx *int64) (any, error) {
-	if int(*idx) >= len(r) || int(*idx) < 0 {
-		return nil, fmt.Errorf("index %v out of bounds", *idx)
+func getElementByIndex[T any](r []T, idx int64) (any, error) {
+	if int(idx) >= len(r) || int(idx) < 0 {
+		return nil, fmt.Errorf("index %v out of bounds", idx)
 	}
-	return r[*idx], nil
+	return r[idx], nil
+}
+
+func resolveIndexKey[K any](ctx context.Context, tCtx K, key Key[K]) (any, error) {
+	if strKey, err := key.String(ctx, tCtx); err != nil {
+		return nil, err
+	} else if strKey != nil {
+		return *strKey, nil
+	}
+
+	if intKey, err := key.Int(ctx, tCtx); err != nil {
+		return nil, err
+	} else if intKey != nil {
+		return *intKey, nil
+	}
+
+	return resolveExpressionIndexKey(ctx, tCtx, key)
+}
+
+var errNilKeyExpressionResult = errors.New("key expression returned nil, expected an int or string")
+
+func resolveExpressionIndexKey[K any](ctx context.Context, tCtx K, key Key[K]) (any, error) {
+	keyGetter, err := key.ExpressionGetter(ctx, tCtx)
+	if err != nil {
+		return nil, err
+	}
+	if keyGetter == nil {
+		return nil, errors.New("malformed or empty indexing key")
+	}
+
+	evalKey, err := keyGetter.Get(ctx, tCtx)
+	if err != nil {
+		return nil, err
+	}
+	if evalKey == nil {
+		return nil, errNilKeyExpressionResult
+	}
+
+	return coerceToIndexKey(evalKey)
+}
+
+func coerceToIndexKey(val any) (any, error) {
+	switch v := val.(type) {
+	case string, int64:
+		return v, nil
+	case int:
+		return int64(v), nil
+	case *string:
+		if v == nil {
+			return nil, errNilKeyExpressionResult
+		}
+		return *v, nil
+	case *int:
+		if v == nil {
+			return nil, errNilKeyExpressionResult
+		}
+		return int64(*v), nil
+	case *int64:
+		if v == nil {
+			return nil, errNilKeyExpressionResult
+		}
+		return *v, nil
+	case pcommon.Value:
+		switch v.Type() {
+		case pcommon.ValueTypeStr:
+			return v.Str(), nil
+		case pcommon.ValueTypeInt:
+			return v.Int(), nil
+		default:
+			return nil, fmt.Errorf("key expression must evaluate to string or int, got %s", v.Type().String())
+		}
+	}
+	return nil, fmt.Errorf("key expression must evaluate to string or int, got %T", val)
 }
 
 type listGetter[K any] struct {
@@ -1091,7 +1172,7 @@ func (g StandardBoolLikeGetter[K]) Get(ctx context.Context, tCtx K) (*bool, erro
 	return &result, nil
 }
 
-func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
+func (p *parseContext[K]) newGetter(val value) (Getter[K], error) {
 	if val.IsNil != nil && *val.IsNil {
 		return newLiteral[K, any](nil), nil
 	}
@@ -1114,6 +1195,14 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 		return newLiteral[K, any](int64(*enum)), nil
 	}
 
+	if val.Lambda != nil {
+		lambExp, err := p.newLambdaExpression(val.Lambda)
+		if err != nil {
+			return nil, err
+		}
+		return newLiteral[K, any](lambExp), nil
+	}
+
 	if eL := val.Literal; eL != nil {
 		if f := eL.Float; f != nil {
 			return newLiteral[K, any](*f), nil
@@ -1122,11 +1211,7 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 			return newLiteral[K, any](*i), nil
 		}
 		if eL.Path != nil {
-			np, err := p.newPath(eL.Path)
-			if err != nil {
-				return nil, err
-			}
-			return p.parsePath(np)
+			return p.buildGetSetterFromPath(eL.Path)
 		}
 		if eL.Converter != nil {
 			return p.newGetterFromConverter(*eL.Converter)
@@ -1164,14 +1249,20 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 	return p.evaluateMathExpression(val.MathExpression)
 }
 
-func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {
+func (p *parseContext[K]) newGetterFromConverter(c converter) (Getter[K], error) {
 	call, err := p.newFunctionCall(editor(c))
 	if err != nil {
 		return nil, err
 	}
+
+	keys, err := p.newKeys(c.Keys)
+	if err != nil {
+		return nil, err
+	}
+
 	return &exprGetter[K]{
 		expr: call,
-		keys: c.Keys,
+		keys: keys,
 	}, nil
 }
 

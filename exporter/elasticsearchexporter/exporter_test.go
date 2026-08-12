@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -284,7 +284,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = configopaque.MapList{
+			cfg.ClientConfig.Headers = configopaque.MapList{
 				{Name: "foo", Value: "bah"},
 			}
 		})
@@ -307,7 +307,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = configopaque.MapList{
+			cfg.ClientConfig.Headers = configopaque.MapList{
 				{Name: "User-Agent", Value: "overridden"},
 			}
 		})
@@ -1101,7 +1101,7 @@ func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 		cfg.Mapping.Mode = "ecs"
 	})
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	f := NewFactory()
 	exp, err := f.CreateLogs(t.Context(), params, cfg)
@@ -2852,8 +2852,9 @@ func TestExporterTraces(t *testing.T) {
 
 	t.Run("publish with dynamic id in ecs mode", func(t *testing.T) {
 		t.Parallel()
-		// Test that spans respect dynamic document IDs in ECS mode,
-		// while span events are embedded (not separate documents)
+		// Test that spans respect dynamic document IDs in ECS mode.
+		// Span events are extracted as separate documents; the DocumentIDAttributeName
+		// on the event is ignored (ECS span event IDs are not user-controlled).
 		exampleDocID := "ecs-span-doc-id-789"
 
 		rec := newBulkRecorder()
@@ -2883,10 +2884,11 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, traces)
 
-		// In ECS mode, only the span document is created (span events are embedded)
-		rec.WaitItems(1)
+		// In ECS mode, span events are extracted as separate log documents,
+		// so we expect 2 documents: the span and the span event.
+		rec.WaitItems(2)
 		docs := rec.Items()
-		require.Len(t, docs, 1, "should only have 1 document (span) in ECS mode")
+		require.Len(t, docs, 2, "should have 2 documents: span and span event in ECS mode")
 
 		// Verify the span document has the correct _id
 		assert.Equal(t, exampleDocID, actionJSONToID(t, docs[0].Action), "span should have dynamic _id")
@@ -3220,7 +3222,7 @@ func TestExporterAuth(t *testing.T) {
 	done := make(chan struct{}, 1)
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
+		cfg.ClientConfig.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 	})
 	err := exporter.Start(t.Context(), &mockHost{
 		extensions: map[component.ID]component.Component{
@@ -3254,7 +3256,7 @@ func TestExporterBatcher(t *testing.T) {
 			MinSize:      8192,
 			MaxSize:      10000,
 		})
-		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
+		cfg.ClientConfig.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 		cfg.Retry.Enabled = false
 	})
 	err := exporter.Start(t.Context(), &mockHost{
@@ -3292,7 +3294,7 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 	})
 	configSetupFn := func(cfg *Config) {
 		cfg.MetadataKeys = slices.Collect(metadata.Keys())
-		cfg.Auth = configoptional.Some(configauth.Config{
+		cfg.ClientConfig.Auth = configoptional.Some(configauth.Config{
 			AuthenticatorID: testCtxKey,
 		})
 		// Configure sending queue with batching enabled. Batching configuration are
@@ -3487,7 +3489,7 @@ func newUnstartedTestTracesExporter(t *testing.T, url string, fns ...func(*Confi
 		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -3511,7 +3513,7 @@ func newUnstartedTestProfilesExporter(t *testing.T, url string, fns ...func(*Con
 		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateProfiles(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -3534,7 +3536,7 @@ func newUnstartedTestMetricsExporter(t *testing.T, url string, fns ...func(*Conf
 		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -3558,7 +3560,7 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 		// Batch is defined as default configuration
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp

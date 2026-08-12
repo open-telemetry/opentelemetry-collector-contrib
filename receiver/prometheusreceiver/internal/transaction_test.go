@@ -5,6 +5,7 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -53,7 +54,8 @@ var (
 
 	scrapeCtx = scrape.ContextWithMetricMetadataStore(
 		scrape.ContextWithTarget(context.Background(), target),
-		testMetadataStore(testMetadata))
+		testMetadataStore(testMetadata),
+	)
 )
 
 func TestTransactionCommitWithoutAdding(t *testing.T) {
@@ -385,7 +387,8 @@ func testTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T
 
 	ctx := scrape.ContextWithMetricMetadataStore(
 		scrape.ContextWithTarget(t.Context(), scrapeTarget),
-		testMetadataStore(testMetadata))
+		testMetadataStore(testMetadata),
+	)
 
 	tr := newTransaction(ctx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
@@ -760,7 +763,8 @@ func TestMetricBuilderCounters(t *testing.T) {
 									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc880"}, {Name: "span_id", Value: "dfa4597a9d"}}...),
 								},
 							},
-							"foo", "bar"),
+							"foo", "bar",
+						),
 					},
 				},
 			},
@@ -991,7 +995,8 @@ func TestMetricBuilderGauges(t *testing.T) {
 									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc880"}, {Name: "span_id", Value: "dfa4597a9d"}}...),
 								},
 							},
-							"foo", "bar"),
+							"foo", "bar",
+						),
 					},
 				},
 				{
@@ -1316,7 +1321,8 @@ func TestMetricBuilderHistogram(t *testing.T) {
 									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc88"}, {Name: "span_id", Value: "dfa4597a9"}}...),
 								},
 							},
-							"foo", "bar", "le", "10"),
+							"foo", "bar", "le", "10",
+						),
 						createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
 						createDataPoint("hist_test_bucket", 10, nil, "foo", "bar", "le", "+inf"),
 						createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
@@ -2281,4 +2287,58 @@ func TestTransactionAppend(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTransactionAppendFailedScrapeWithReason(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	receiverSettings := receivertest.NewNopSettings(receivertest.NopType)
+	core, observedLogs := observer.New(zap.WarnLevel)
+	receiverSettings.Logger = zap.New(core)
+
+	scrapeErr := errors.New("connection refused")
+	targetWithErr := scrape.NewTarget(
+		labels.FromMap(map[string]string{
+			model.InstanceLabel: "localhost:8080",
+			model.JobLabel:      "test",
+		}),
+		&config.ScrapeConfig{},
+		map[model.LabelName]model.LabelValue{
+			model.AddressLabel: "address:8080",
+			model.SchemeLabel:  "http",
+		},
+		nil,
+	)
+	targetWithErr.Report(time.Now(), 0, scrapeErr)
+
+	scrapeCtxWithTarget := scrape.ContextWithMetricMetadataStore(
+		scrape.ContextWithTarget(t.Context(), targetWithErr),
+		testMetadataStore(testMetadata),
+	)
+
+	tr := newTransaction(
+		scrapeCtxWithTarget,
+		sink,
+		labels.EmptyLabels(),
+		receiverSettings,
+		nopObsRecv(t),
+		false,
+		true,
+	)
+
+	badLabels := labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test",
+		model.MetricNameLabel: scrapeUpMetricName,
+	})
+
+	_, err := tr.Append(0, badLabels, 0, time.Now().Unix()*1000, 0.0, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, observedLogs.Len())
+	logs := observedLogs.All()
+	assert.Equal(t, "Failed to scrape Prometheus endpoint", logs[0].Message)
+
+	errField, ok := logs[0].ContextMap()["error"]
+	assert.True(t, ok)
+	assert.Equal(t, "connection refused", errField)
 }

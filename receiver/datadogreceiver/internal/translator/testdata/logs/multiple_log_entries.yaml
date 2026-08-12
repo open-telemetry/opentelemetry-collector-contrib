@@ -1,69 +1,76 @@
 resourceLogs:
-  - scopeLogs:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: host1
+        - key: service.name
+          value:
+            stringValue: service1
+    scopeLogs:
       - logRecords:
           - attributes:
-              - key: status
-                value:
-                  stringValue: info
-              - key: timestamp
-                value:
-                  intValue: 1000000000
-              - key: hostname
-                value:
-                  stringValue: host1
-              - key: service
-                value:
-                  stringValue: service1
-              - key: ddsource
+              - key: datadog.ddsource
                 value:
                   stringValue: source1
-              - key: ddtags
+              - key: tag1
                 value:
-                  stringValue: tag1:value1
+                  stringValue: value1
             body:
               stringValue: First log
-            timeUnixNano: "1736889934967986176"
+            observedTimeUnixNano: "1700000000000000000"
+            severityNumber: 9
+            severityText: info
+            timeUnixNano: "1000000000000000"
+        scope: {}
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: host2
+        - key: service.name
+          value:
+            stringValue: service2
+    scopeLogs:
+      - logRecords:
           - attributes:
-              - key: status
-                value:
-                  stringValue: error
-              - key: timestamp
-                value:
-                  intValue: 2000000000
-              - key: hostname
-                value:
-                  stringValue: host2
-              - key: service
-                value:
-                  stringValue: service2
-              - key: ddsource
+              - key: datadog.ddsource
                 value:
                   stringValue: source2
-              - key: ddtags
+              - key: tag2
                 value:
-                  stringValue: tag2:value2,tagB:valueB
+                  stringValue: value2
+              - key: tagB
+                value:
+                  stringValue: valueB
             body:
               stringValue: Second log
-            timeUnixNano: "1736889934967986176"
+            observedTimeUnixNano: "1700000000000000000"
+            severityNumber: 17
+            severityText: error
+            timeUnixNano: "2000000000000000"
+        scope: {}
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: host3
+        - key: service.name
+          value:
+            stringValue: service3
+    scopeLogs:
+      - logRecords:
           - attributes:
-              - key: status
-                value:
-                  stringValue: warning
-              - key: timestamp
-                value:
-                  intValue: 3000000000
-              - key: hostname
-                value:
-                  stringValue: host3
-              - key: service
-                value:
-                  stringValue: service3
-              - key: ddsource
+              - key: datadog.ddsource
                 value:
                   stringValue: source3
-              - key: ddtags
+              - key: tag3
                 value:
-                  stringValue: tag3:value3
+                  stringValue: value3
             body:
               stringValue: Third log
-            timeUnixNano: "1736889934967986176"
+            observedTimeUnixNano: "1700000000000000000"
+            severityNumber: 13
+            severityText: warning
+            timeUnixNano: "3000000000000000"
+        scope: {}

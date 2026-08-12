@@ -22,7 +22,8 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, metadata.TracesStability))
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -44,6 +45,9 @@ func createTracesProcessor(
 
 	if telemetry.IsRecordPolicyEnabled() {
 		tCfg.Options = append(tCfg.Options, withRecordPolicy())
+	}
+	if telemetry.IsUseTracestateEnabled() {
+		tCfg.Options = append(tCfg.Options, withUseTracestate())
 	}
 	return newTracesProcessor(ctx, params, nextConsumer, *tCfg)
 }

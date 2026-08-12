@@ -33,10 +33,12 @@ type TopQueryCollection struct {
 	MaxQuerySampleCount uint          `mapstructure:"max_query_sample_count"`
 	TopQueryCount       uint          `mapstructure:"top_query_count"`
 	CollectionInterval  time.Duration `mapstructure:"collection_interval"`
+	AllowedCommentKeys  []string      `mapstructure:"allowed_comment_keys"`
 }
 
 type QuerySample struct {
-	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
+	MaxRowsPerQuery    uint64   `mapstructure:"max_rows_per_query"`
+	AllowedCommentKeys []string `mapstructure:"allowed_comment_keys"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -50,18 +52,18 @@ type SessionWaitEvent struct {
 }
 
 type Config struct {
-	DataSource                     string `mapstructure:"datasource"`
-	Endpoint                       string `mapstructure:"endpoint"`
-	Password                       string `mapstructure:"password"`
-	Service                        string `mapstructure:"service"`
-	Username                       string `mapstructure:"username"`
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	metadata.LogsBuilderConfig     `mapstructure:",squash"`
+	DataSource           string                         `mapstructure:"datasource"`
+	Endpoint             string                         `mapstructure:"endpoint"`
+	Password             string                         `mapstructure:"password"`
+	Service              string                         `mapstructure:"service"`
+	Username             string                         `mapstructure:"username"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	LogsBuilderConfig    metadata.LogsBuilderConfig     `mapstructure:",squash"`
 
-	TopQueryCollection `mapstructure:"top_query_collection"`
-	QuerySample        `mapstructure:"query_sample_collection"`
-	SessionWaitEvent   `mapstructure:"session_wait_event_collection"`
+	TopQueryCollection TopQueryCollection `mapstructure:"top_query_collection"`
+	QuerySample        QuerySample        `mapstructure:"query_sample_collection"`
+	SessionWaitEvent   SessionWaitEvent   `mapstructure:"session_wait_event_collection"`
 }
 
 func (c Config) Validate() error {
@@ -108,10 +110,10 @@ func (c Config) Validate() error {
 		}
 	}
 
-	if c.MaxQuerySampleCount < 1 || c.MaxQuerySampleCount > 10000 {
+	if c.TopQueryCollection.MaxQuerySampleCount < 1 || c.TopQueryCollection.MaxQuerySampleCount > 10000 {
 		allErrs = multierr.Append(allErrs, errMaxQuerySampleCount)
 	}
-	if c.TopQueryCount < 1 || c.TopQueryCount > 200 || c.TopQueryCount > c.MaxQuerySampleCount {
+	if c.TopQueryCollection.TopQueryCount < 1 || c.TopQueryCollection.TopQueryCount > 200 || c.TopQueryCollection.TopQueryCount > c.TopQueryCollection.MaxQuerySampleCount {
 		allErrs = multierr.Append(allErrs, errTopQueryCount)
 	}
 	return allErrs

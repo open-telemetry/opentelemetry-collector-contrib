@@ -115,6 +115,53 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestNsxtNodeCPUUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NsxtNodeCPUUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NsxtNodeCPUUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric nsxt.node.cpu.utilization doesn't have an attribute invalid, valid attributes: [class]")
+
+	cfg = DefaultMetricsConfig().NsxtNodeCPUUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestNsxtNodeFilesystemUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NsxtNodeFilesystemUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NsxtNodeFilesystemUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric nsxt.node.filesystem.usage doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().NsxtNodeFilesystemUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestNsxtNodeNetworkIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NsxtNodeNetworkIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NsxtNodeNetworkIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric nsxt.node.network.io doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().NsxtNodeNetworkIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestNsxtNodeNetworkPacketCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NsxtNodeNetworkPacketCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NsxtNodeNetworkPacketCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric nsxt.node.network.packet.count doesn't have an attribute invalid, valid attributes: [direction, type]")
+
+	cfg = DefaultMetricsConfig().NsxtNodeNetworkPacketCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

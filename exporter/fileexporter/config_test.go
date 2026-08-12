@@ -11,8 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 )
@@ -58,6 +59,22 @@ func TestLoadConfig(t *testing.T) {
 				},
 				FormatType:    formatTypeProto,
 				Compression:   compressionZSTD,
+				FlushInterval: time.Second,
+				GroupBy: &GroupBy{
+					MaxOpenFiles:      defaultMaxOpenFiles,
+					ResourceAttribute: defaultResourceAttribute,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "zstd_with_level"),
+			expected: &Config{
+				Path:        "./filename",
+				FormatType:  formatTypeProto,
+				Compression: compressionZSTD,
+				CompressionParams: configcompression.CompressionParams{
+					Level: 6,
+				},
 				FlushInterval: time.Second,
 				GroupBy: &GroupBy{
 					MaxOpenFiles:      defaultMaxOpenFiles,
@@ -198,11 +215,11 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
+				assert.EqualError(t, confmap.Validate(cfg), tt.errorMessage)
 				return
 			}
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

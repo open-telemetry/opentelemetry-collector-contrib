@@ -124,6 +124,8 @@ func (si *signingRoundTripper) inferServiceAndRegion(r *http.Request) (service, 
 		service, region = extractServiceAndRegion(service, region, host, "logs")
 	case strings.HasPrefix(host, "xray"):
 		service, region = extractServiceAndRegion(service, region, host, "xray")
+	case strings.HasPrefix(host, "monitoring"):
+		service, region = extractServiceAndRegion(service, region, host, "monitoring")
 	}
 
 	if service == "" || region == "" {
