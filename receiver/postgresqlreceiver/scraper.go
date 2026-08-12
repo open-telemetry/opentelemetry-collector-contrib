@@ -61,8 +61,6 @@ type postgreSQLScraper struct {
 	newestQueryTimestamp   float64
 	serviceInstanceID      string
 	lastExecutionTimestamp time.Time
-	// warnNoDatabases suppresses the "everything is excluded" warning after the first scrape.
-	warnNoDatabases sync.Once
 }
 
 type errsMux struct {
@@ -237,11 +235,6 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		dbConflictStats:  make(map[databaseName]databaseConflictStats),
 		executionTimeMap: make(map[databaseName]float64),
 	}
-	if len(databases) == 0 {
-		p.warnNoDatabases.Do(func() {
-			p.logger.Warn("no databases remain after applying exclude_databases; skipping per-database metrics")
-		})
-	}
 	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
 	for _, database := range databases {
@@ -358,10 +351,6 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 		return
 	}
 	for _, atts := range attributes {
-		// The template filters excluded databases server side already; this is belt and braces.
-		if p.isExcluded(attrString(atts, string(semconv.DBNamespaceKey))) {
-			continue
-		}
 		// Use a background context so query-sample logs are not automatically linked to the scrape context.
 		logCtx := context.Background()
 		if ctxFromQuery, ok := atts[querySampleTraceContextKey]; ok {
@@ -440,6 +429,12 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 	pq := make(priorityqueue.PriorityQueue[map[string]any, float64], 0)
 
 	for i, row := range rows {
+		// The template filters excluded databases server side; this guards the EXPLAIN
+		// connection below in case a row slips through, before the row touches the cache.
+		if database, _ := row[string(semconv.DBNamespaceKey)].(string); p.isExcluded(database) {
+			continue
+		}
+
 		queryID := row[dbAttributePrefix+queryidColumnName]
 
 		if queryID == nil {
@@ -492,11 +487,6 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		query := item.Value[string(semconv.DBQueryTextKey)].(string)
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
 		database := item.Value[string(semconv.DBNamespaceKey)].(string)
-		// EXPLAIN opens a connection, and managed providers reject connections to their
-		// internal databases. The template filters these out already; this is belt and braces.
-		if p.isExcluded(database) {
-			continue
-		}
 		// Use raw query (with $1, $2 placeholders) for EXPLAIN, not the obfuscated one (with ?)
 		rawQuery, _ := item.Value[dbAttributePrefix+"raw_query"].(string)
 		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
@@ -559,6 +549,7 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 	// An empty list means everything was excluded, not "all databases":
 	// filterQueryByDatabases would drop its WHERE clause and scan the whole cluster.
 	if len(databases) == 0 {
+		p.logger.Warn("no databases remain after applying exclude_databases; skipping per-database metrics")
 		return
 	}
 

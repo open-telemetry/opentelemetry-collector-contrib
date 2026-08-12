@@ -88,11 +88,11 @@ func (cfg *Config) Validate() error {
 		err = multierr.Append(err, fmt.Errorf(ErrNotSupported, "MinVersion"))
 	}
 
-	// Autodiscovery resolves the list at scrape time, so the scraper repeats this check.
-	remaining := slices.DeleteFunc(slices.Clone(cfg.Databases), func(db string) bool {
-		return slices.Contains(cfg.ExcludeDatabases, db)
-	})
-	if len(cfg.Databases) > 0 && len(remaining) == 0 {
+	// Reject a config whose excludes cover every listed database. Autodiscovery
+	// resolves the list at scrape time, so the scraper repeats this check.
+	if len(cfg.Databases) > 0 && !slices.ContainsFunc(cfg.Databases, func(db string) bool {
+		return !slices.Contains(cfg.ExcludeDatabases, db)
+	}) {
 		err = multierr.Append(err, errors.New(ErrAllDatabasesExcluded))
 	}
 

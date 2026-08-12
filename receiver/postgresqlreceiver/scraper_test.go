@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"text/template"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -765,6 +764,36 @@ func newQuerySampleRows(t *testing.T, values map[string]any) *sqlmock.Rows {
 	return sqlmock.NewRows(querySampleColumns).AddRow(rowValues...)
 }
 
+var topQueryColumns = []string{
+	callsColumnName,
+	"datname",
+	sharedBlksDirtiedColumnName,
+	sharedBlksHitColumnName,
+	sharedBlksReadColumnName,
+	sharedBlksWrittenColumnName,
+	tempBlksReadColumnName,
+	tempBlksWrittenColumnName,
+	"query",
+	queryidColumnName,
+	"rolname",
+	rowsColumnName,
+	totalExecTimeColumnName,
+	totalPlanTimeColumnName,
+}
+
+func newTopQueryRows(t *testing.T, values map[string]any) *sqlmock.Rows {
+	t.Helper()
+
+	rowValues := make([]driver.Value, len(topQueryColumns))
+	for i, col := range topQueryColumns {
+		v, ok := values[col]
+		require.True(t, ok, "missing value for top query column %q", col)
+		rowValues[i] = v
+	}
+
+	return sqlmock.NewRows(topQueryColumns).AddRow(rowValues...)
+}
+
 func TestScrapeQuerySample(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
@@ -923,7 +952,7 @@ func TestScrapeQuerySampleWithTraceparent(t *testing.T) {
 }
 
 func TestQuerySampleTemplateRendering(t *testing.T) {
-	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
+	tmpl := querySampleTmpl
 
 	tests := []struct {
 		name           string
@@ -988,7 +1017,7 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 }
 
 func TestTopQueryTemplateRendering(t *testing.T) {
-	tmpl := template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
+	tmpl := topQueryTmpl
 
 	tests := []struct {
 		name           string
@@ -1275,21 +1304,25 @@ func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
 			scraper, err := newPostgreSQLScraper(settings, cfg, mockSimpleClientFactory{db: db}, newCache(30), newTTLCache[string](1, time.Second))
 			require.NoError(t, err)
 
-			columns := []string{
-				callsColumnName, "datname", sharedBlksDirtiedColumnName, sharedBlksHitColumnName,
-				sharedBlksReadColumnName, sharedBlksWrittenColumnName, tempBlksReadColumnName,
-				tempBlksWrittenColumnName, "query", queryidColumnName, "rolname", rowsColumnName,
-				totalExecTimeColumnName, totalPlanTimeColumnName,
-			}
-
 			// The template filters this row out server side; returning it anyway exercises the
 			// EXPLAIN guard. No EXPLAIN is expected: the row must be skipped, not explained.
 			mock.ExpectQuery(`AND datname NOT IN \('rdsadmin'\)`).
-				WillReturnRows(sqlmock.NewRows(columns).AddRow(
-					"123", "rdsadmin", "1111", "1112", "1113", "1114", "1115", "1116",
-					"select s.* from rds_get_stat_dxl_counters() as s", "114514",
-					"rdsadmin", "30", "11000", "12000",
-				))
+				WillReturnRows(newTopQueryRows(t, map[string]any{
+					callsColumnName:             "123",
+					"datname":                   "rdsadmin",
+					sharedBlksDirtiedColumnName: "1111",
+					sharedBlksHitColumnName:     "1112",
+					sharedBlksReadColumnName:    "1113",
+					sharedBlksWrittenColumnName: "1114",
+					tempBlksReadColumnName:      "1115",
+					tempBlksWrittenColumnName:   "1116",
+					"query":                     "select s.* from rds_get_stat_dxl_counters() as s",
+					queryidColumnName:           "114514",
+					"rolname":                   "rdsadmin",
+					rowsColumnName:              "30",
+					totalExecTimeColumnName:     "11000",
+					totalPlanTimeColumnName:     "12000",
+				}))
 
 			actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
 			require.NoError(t, err)
@@ -1301,53 +1334,34 @@ func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
 }
 
 func TestScrapeQuerySamplesHonorsExcludeDatabases(t *testing.T) {
-	// The exclusion logic must behave identically with the legacy resource model
-	// and with the receiver.postgresql.useOTelSemconv feature gate enabled.
-	for _, useSemconv := range []bool{false, true} {
-		t.Run(fmt.Sprintf("semconv=%t", useSemconv), func(t *testing.T) {
-			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, useSemconv)()
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.ExcludeDatabases = []string{"rdsadmin"}
+	cfg.Events.DbServerQuerySample.Enabled = true
 
-			cfg := createDefaultConfig().(*Config)
-			cfg.Databases = []string{}
-			cfg.ExcludeDatabases = []string{"rdsadmin"}
-			cfg.Events.DbServerQuerySample.Enabled = true
+	// Regexp matcher so the assertion is on the clause itself, not a re-render of the template.
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
 
-			// Regexp matcher so the assertion is on the clause itself, not a re-render of the template.
-			db, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer db.Close()
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
 
-			settings := receivertest.NewNopSettings(metadata.Type)
-			logger, err := zap.NewProduction()
-			require.NoError(t, err)
-			settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+	scraper, err := newPostgreSQLScraper(settings, cfg, mockSimpleClientFactory{db: db}, newCache(30), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
 
-			scraper, err := newPostgreSQLScraper(settings, cfg, mockSimpleClientFactory{db: db}, newCache(30), newTTLCache[string](1, time.Second))
-			require.NoError(t, err)
+	// The template is the only exclusion mechanism on this path: the rendered SQL must
+	// carry the NOT IN clause, and the server returns no rows for excluded databases.
+	mock.ExpectQuery(`AND COALESCE\(sa\.datname, ''\) NOT IN \('rdsadmin'\)`).
+		WillReturnRows(sqlmock.NewRows(querySampleColumns))
 
-			// The template filters this row out server side; returning it anyway exercises the
-			// scraper-side guard. The row must be dropped, not emitted as an event.
-			mock.ExpectQuery(`AND COALESCE\(sa\.datname, ''\) NOT IN \('rdsadmin'\)`).
-				WillReturnRows(newQuerySampleRows(t, map[string]any{
-					querySampleColumnDatname:              "rdsadmin",
-					querySampleColumnUsename:              "rdsadmin",
-					querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
-					querySampleColumnQueryID:              "114514",
-					querySampleColumnPID:                  "1450",
-					querySampleColumnQueryStartTimestamp:  "123445.123",
-					querySampleColumnState:                "active",
-					querySampleColumnQuery:                "select s.* from rds_get_stat_dxl_counters() as s",
-					querySampleColumnDurationMilliseconds: "1.2",
-					querySampleColumnBlockingPIDs:         "{}",
-				}))
+	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
+	require.NoError(t, err)
 
-			actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
-			require.NoError(t, err)
-
-			require.NoError(t, mock.ExpectationsWereMet())
-			assert.Equal(t, 0, actualLogs.LogRecordCount())
-		})
-	}
+	require.NoError(t, mock.ExpectationsWereMet())
+	assert.Equal(t, 0, actualLogs.LogRecordCount())
 }
 
 //go:embed testdata/scraper/top-query/expectedSql.sql
@@ -1377,31 +1391,6 @@ func TestScrapeTopQueries(t *testing.T) {
 	}
 
 	queryid := "114514"
-	expectedReturnedValue := map[string]string{
-		"calls":               "123",
-		"datname":             "postgres",
-		"shared_blks_dirtied": "1111",
-		"shared_blks_hit":     "1112",
-		"shared_blks_read":    "1113",
-		"shared_blks_written": "1114",
-		"temp_blks_read":      "1115",
-		"temp_blks_written":   "1116",
-		"query":               "select * from pg_stat_activity where id = 32",
-		"queryid":             queryid,
-		"rolname":             "master",
-		"rows":                "30",
-		"total_exec_time":     "11000",
-		"total_plan_time":     "12000",
-	}
-
-	expectedRows := make([]string, 0, len(expectedReturnedValue))
-	var expectedValuesBuilder strings.Builder
-	for k, v := range expectedReturnedValue {
-		expectedRows = append(expectedRows, k)
-		fmt.Fprintf(&expectedValuesBuilder, "%s,", v)
-	}
-	expectedValues := expectedValuesBuilder.String()
-
 	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 	require.NoError(t, scraperErr)
 	scraper.cache.Add(queryid+totalExecTimeColumnName, 10)
@@ -1416,7 +1405,22 @@ func TestScrapeTopQueries(t *testing.T) {
 	scraper.cache.Add(queryid+tempBlksReadColumnName, 1110)
 	scraper.cache.Add(queryid+tempBlksWrittenColumnName, 1110)
 
-	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(sqlmock.NewRows(expectedRows).FromCSVString(expectedValues[:len(expectedValues)-1]))
+	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newTopQueryRows(t, map[string]any{
+		callsColumnName:             "123",
+		"datname":                   "postgres",
+		sharedBlksDirtiedColumnName: "1111",
+		sharedBlksHitColumnName:     "1112",
+		sharedBlksReadColumnName:    "1113",
+		sharedBlksWrittenColumnName: "1114",
+		tempBlksReadColumnName:      "1115",
+		tempBlksWrittenColumnName:   "1116",
+		"query":                     "select * from pg_stat_activity where id = 32",
+		queryidColumnName:           queryid,
+		"rolname":                   "master",
+		rowsColumnName:              "30",
+		totalExecTimeColumnName:     "11000",
+		totalPlanTimeColumnName:     "12000",
+	}))
 	mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow("[{\"Plan\":{\"Node Type\":\"Merge Join\",\"Parallel Aware\":false,\"Async Capable\":false,\"Join Type\":\"Inner\",\"Startup Cost\":0.43,\"Total Cost\":55.27,\"Plan Rows\":290,\"Plan Width\":1675,\"Inner Unique\":\"?\",\"Merge Cond\":\"( e.businessentityid = p.businessentityid )\",\"Plans\":[{\"Node Type\":\"Index Scan\",\"Parent Relationship\":\"Outer\",\"Parallel Aware\":false,\"Async Capable\":false,\"Scan Direction\":\"Forward\",\"Index Name\":\"PK_Employee_BusinessEntityID\",\"Relation Name\":\"employee\",\"Alias\":\"e\",\"Startup Cost\":0.15,\"Total Cost\":21.5,\"Plan Rows\":290,\"Plan Width\":112},{\"Node Type\":\"Index Scan\",\"Parent Relationship\":\"Inner\",\"Parallel Aware\":false,\"Async Capable\":false,\"Scan Direction\":\"Forward\",\"Index Name\":\"PK_Person_BusinessEntityID\",\"Relation Name\":\"person\",\"Alias\":\"p\",\"Startup Cost\":0.29,\"Total Cost\":2261.87,\"Plan Rows\":19972,\"Plan Width\":1563}]}}]"))
 	actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
 	assert.NoError(t, err)
