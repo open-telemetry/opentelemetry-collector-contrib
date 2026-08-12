@@ -288,12 +288,12 @@ func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
 		return dockerFormat, nil
 	}
 
-	timePart, rest, ok := splitFirstOn(raw, ' ')
+	timePart, rest, ok := splitFirstOnInterval(raw)
 	if !ok {
 		return "", errors.New("could not detect format")
 	}
 
-	stream, _, ok := splitFirstOn(rest, ' ')
+	stream, _, ok := splitFirstOnInterval(rest)
 	if !ok || (stream != "stdout" && stream != "stderr") {
 		return "", errors.New("could not detect format")
 	}
@@ -311,7 +311,7 @@ func parseContainerd(value any) (any, error) {
 		return "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
 	}
 
-	timePart, rest, ok := splitFirstOn(raw, ' ')
+	timePart, rest, ok := splitFirstOnInterval(raw)
 	if !ok || !strings.HasSuffix(timePart, "Z") {
 		return nil, errors.New("could not parse containerd fields")
 	}
@@ -320,12 +320,12 @@ func parseContainerd(value any) (any, error) {
 		return nil, errors.New("could not parse containerd fields")
 	}
 
-	stream, rest, ok := splitFirstOn(rest, ' ')
+	stream, rest, ok := splitFirstOnInterval(rest)
 	if !ok || (stream != "stdout" && stream != "stderr") {
 		return nil, errors.New("could not parse containerd fields")
 	}
 
-	logtag, logPart, ok := splitFirstOn(rest, ' ')
+	logtag, logPart, ok := splitFirstOnInterval(rest)
 	if !ok {
 		logtag = rest
 		logPart = ""
@@ -348,17 +348,17 @@ func parseCRIO(value any) (any, error) {
 		return "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
 	}
 
-	timePart, rest, ok := splitFirstOn(raw, ' ')
+	timePart, rest, ok := splitFirstOnInterval(raw)
 	if !ok {
 		return nil, errors.New("could not parse CRIO fields")
 	}
 
-	stream, rest, ok := splitFirstOn(rest, ' ')
+	stream, rest, ok := splitFirstOnInterval(rest)
 	if !ok || (stream != "stdout" && stream != "stderr") {
 		return nil, errors.New("could not parse CRIO fields")
 	}
 
-	logtag, logPart, ok := splitFirstOn(rest, ' ')
+	logtag, logPart, ok := splitFirstOnInterval(rest)
 	if !ok {
 		logtag = rest
 		logPart = ""
@@ -645,8 +645,8 @@ func parseLogPath(raw string) (map[string]any, bool) {
 }
 
 // splitFirstOn splits s on the first occurrence of sep.
-func splitFirstOn(s string, sep byte) (head, tail string, ok bool) {
-	idx := strings.IndexByte(s, sep)
+func splitFirstOnInterval(s string) (head, tail string, ok bool) {
+	idx := strings.IndexByte(s, ' ')
 	if idx == -1 {
 		return "", "", false
 	}
