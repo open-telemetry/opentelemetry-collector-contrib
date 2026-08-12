@@ -70,7 +70,7 @@ func (otelCollector) Run(ctx context.Context, opts sender.Options) error {
 	}
 
 	var buf bytes.Buffer
-	if err := collectorConfigTmpl.Execute(&buf, opts); err != nil {
+	if err = collectorConfigTmpl.Execute(&buf, opts); err != nil {
 		return fmt.Errorf("failed to execute config template: %w", err)
 	}
 
@@ -104,7 +104,7 @@ var _ sender.Sender = otelCollector{}
 func collectorBinary() (string, error) {
 	path := os.Getenv("OTELCOL_COMPLIANCE_BINARY")
 	if path == "" {
-		path = fmt.Sprintf("../../../bin/otelcontribcol_%s_%s", runtime.GOOS, runtime.GOARCH)
+		path = filepath.Join("../../../bin", collectorBinaryName(runtime.GOOS, runtime.GOARCH))
 	}
 	abs, err := filepath.Abs(path)
 	if err != nil {
@@ -114,6 +114,14 @@ func collectorBinary() (string, error) {
 		return "", fmt.Errorf("collector binary not found at %s; build it with `make otelcontribcol` or set OTELCOL_COMPLIANCE_BINARY: %w", abs, err)
 	}
 	return abs, nil
+}
+
+func collectorBinaryName(goos, goarch string) string {
+	name := fmt.Sprintf("otelcontribcol_%s_%s", goos, goarch)
+	if goos == "windows" {
+		name += ".exe"
+	}
+	return name
 }
 
 // TestRemoteWriteSender runs the remote write sender compliance tests defined

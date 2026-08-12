@@ -136,6 +136,7 @@ exporter/logicmonitorexporter
 exporter/logzioexporter
 exporter/mezmoexporter
 exporter/opensearchexporter
+exporter/prometheusremotewriteexporter/compliance
 exporter/pulsarexporter
 internal/rabbitmq
 exporter/rabbitmqexporter
