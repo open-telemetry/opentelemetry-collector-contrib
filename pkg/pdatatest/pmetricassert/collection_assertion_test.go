@@ -21,18 +21,18 @@ func TestMetricsAssertionValidate(t *testing.T) {
 			{Name: "svc.active", Type: "gauge", Unit: "1"},
 			{Name: "svc.requests", Type: "sum", Unit: "{requests}", Temporality: "cumulative", Monotonic: boolPtr(true)},
 		}
-		assertion := MetricsAssertion{Exact: exact}
+		assertion := MetricsAssertion{Values: exact}
 		require.NoError(t, assertion.Validate(actual))
 	})
 
 	t.Run("include subset", func(t *testing.T) {
 		include := []MetricAssertion{{Name: "svc.active", Type: "gauge", Unit: "1"}}
-		assertion := MetricsAssertion{Include: include}
+		assertion := MetricsAssertion{Includes: include}
 		require.NoError(t, assertion.Validate(actual))
 	})
 
 	t.Run("include missing", func(t *testing.T) {
-		assertion := MetricsAssertion{Include: []MetricAssertion{{Name: "svc.latency", Type: "histogram"}}}
+		assertion := MetricsAssertion{Includes: []MetricAssertion{{Name: "svc.latency", Type: "histogram"}}}
 		err := assertion.Validate(actual)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "included metric[0] (\"svc.latency\") was not found")

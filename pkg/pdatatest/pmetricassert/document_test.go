@@ -33,29 +33,29 @@ resources/include:
 
 	doc, err := readDocument(path)
 	require.NoError(t, err)
-	require.Len(t, doc.Resources.Include, 1)
+	require.Len(t, doc.Resources.Includes, 1)
 
-	res := doc.Resources.Include[0]
-	require.Len(t, res.Scopes.Include, 1)
-	scope := res.Scopes.Include[0]
-	require.Len(t, scope.Metrics.Include, 1)
-	metric := scope.Metrics.Include[0]
-	require.Len(t, metric.Datapoints.Include, 1)
-	require.Equal(t, "GET", metric.Datapoints.Include[0].Attributes["method"])
+	res := doc.Resources.Includes[0]
+	require.Len(t, res.Scopes.Includes, 1)
+	scope := res.Scopes.Includes[0]
+	require.Len(t, scope.Metrics.Includes, 1)
+	metric := scope.Metrics.Includes[0]
+	require.Len(t, metric.Datapoints.Includes, 1)
+	require.Equal(t, "GET", metric.Datapoints.Includes[0].Attributes["method"])
 }
 
 func TestWriteDocument_DefaultCollectionsMarshalAsExact(t *testing.T) {
 	doc := &document{
 		Version: documentVersion,
 		Signal:  "metrics",
-		Resources: ResourcesAssertion{Exact: []resourceAssertion{
+		Resources: ResourcesAssertion{Values: []resourceAssertion{
 			{
 				Attributes: map[string]any{"service.name": "svc"},
-				Scopes: ScopesAssertion{Exact: []scopeAssertion{
+				Scopes: ScopesAssertion{Values: []scopeAssertion{
 					{
 						Name: "scope",
-						Metrics: MetricsAssertion{Exact: []metricAssertion{
-							{Name: "svc.active", Type: "gauge", Unit: "1", Datapoints: DatapointsAssertion{Exact: []datapointAssertion{{}}}},
+						Metrics: MetricsAssertion{Values: []metricAssertion{
+							{Name: "svc.active", Type: "gauge", Unit: "1", Datapoints: DatapointsAssertion{Values: []datapointAssertion{{}}}},
 						}},
 					},
 				}},

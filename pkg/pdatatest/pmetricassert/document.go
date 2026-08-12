@@ -58,76 +58,6 @@ type datapointAssertion struct {
 	Max            *float64       `yaml:"max,omitempty"`
 }
 
-// --- MarshalYAML Methods ---
-
-func (d document) MarshalYAML() (any, error) {
-	out := map[string]any{
-		"version": d.Version,
-		"signal":  d.Signal,
-	}
-	if len(d.Resources.Exact) > 0 {
-		out["resources"] = d.Resources.Exact
-	}
-	if len(d.Resources.Include) > 0 {
-		out["resources/include"] = d.Resources.Include
-	}
-	return out, nil
-}
-
-func (r resourceAssertion) MarshalYAML() (any, error) {
-	out := map[string]any{}
-	if r.Attributes != nil {
-		out["attributes"] = r.Attributes
-	}
-	if len(r.Scopes.Exact) > 0 {
-		out["scopes"] = r.Scopes.Exact
-	}
-	if len(r.Scopes.Include) > 0 {
-		out["scopes/include"] = r.Scopes.Include
-	}
-	return out, nil
-}
-
-func (s scopeAssertion) MarshalYAML() (any, error) {
-	out := map[string]any{}
-	if s.Name != "" {
-		out["name"] = s.Name
-	}
-	if s.Version != "" {
-		out["version"] = s.Version
-	}
-	if len(s.Metrics.Exact) > 0 {
-		out["metrics"] = s.Metrics.Exact
-	}
-	if len(s.Metrics.Include) > 0 {
-		out["metrics/include"] = s.Metrics.Include
-	}
-	return out, nil
-}
-
-func (m metricAssertion) MarshalYAML() (any, error) {
-	out := map[string]any{
-		"name": m.Name,
-		"type": m.Type,
-	}
-	if m.Unit != "" {
-		out["unit"] = m.Unit
-	}
-	if m.Temporality != "" {
-		out["temporality"] = m.Temporality
-	}
-	if m.Monotonic != nil {
-		out["monotonic"] = m.Monotonic
-	}
-	if len(m.Datapoints.Exact) > 0 {
-		out["datapoints"] = m.Datapoints.Exact
-	}
-	if len(m.Datapoints.Include) > 0 {
-		out["datapoints/include"] = m.Datapoints.Include
-	}
-	return out, nil
-}
-
 func readDocument(path string) (*document, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -158,35 +88,35 @@ func readDocument(path string) (*document, error) {
 // before comparison, so pmetricassert does not accept the empty-metric
 // encoding as a valid assertion either.
 func expandShorthand(doc *document) {
-	for i := range doc.Resources.Exact {
-		expandResourceShorthand(&doc.Resources.Exact[i])
+	for i := range doc.Resources.Values {
+		expandResourceShorthand(&doc.Resources.Values[i])
 	}
-	for i := range doc.Resources.Include {
-		expandResourceShorthand(&doc.Resources.Include[i])
+	for i := range doc.Resources.Includes {
+		expandResourceShorthand(&doc.Resources.Includes[i])
 	}
 }
 
 func expandResourceShorthand(r *resourceAssertion) {
-	for i := range r.Scopes.Exact {
-		expandScopeShorthand(&r.Scopes.Exact[i])
+	for i := range r.Scopes.Values {
+		expandScopeShorthand(&r.Scopes.Values[i])
 	}
-	for i := range r.Scopes.Include {
-		expandScopeShorthand(&r.Scopes.Include[i])
+	for i := range r.Scopes.Includes {
+		expandScopeShorthand(&r.Scopes.Includes[i])
 	}
 }
 
 func expandScopeShorthand(s *scopeAssertion) {
-	for i := range s.Metrics.Exact {
-		expandMetricShorthand(&s.Metrics.Exact[i])
+	for i := range s.Metrics.Values {
+		expandMetricShorthand(&s.Metrics.Values[i])
 	}
-	for i := range s.Metrics.Include {
-		expandMetricShorthand(&s.Metrics.Include[i])
+	for i := range s.Metrics.Includes {
+		expandMetricShorthand(&s.Metrics.Includes[i])
 	}
 }
 
 func expandMetricShorthand(m *metricAssertion) {
-	if len(m.Datapoints.Exact) == 0 && len(m.Datapoints.Include) == 0 {
-		m.Datapoints.Exact = []datapointAssertion{{}}
+	if len(m.Datapoints.Values) == 0 && len(m.Datapoints.Includes) == 0 {
+		m.Datapoints.Values = []datapointAssertion{{}}
 	}
 }
 
@@ -203,43 +133,43 @@ func writeDocument(path string, doc *document) error {
 // single empty-attribute datapoint so the emitted YAML reads as "metric with
 // no dimensioning attributes" rather than "metric with one empty datapoint".
 func compactShorthand(doc *document) {
-	for i := range doc.Resources.Exact {
-		compactResourceShorthand(&doc.Resources.Exact[i])
+	for i := range doc.Resources.Values {
+		compactResourceShorthand(&doc.Resources.Values[i])
 	}
-	for i := range doc.Resources.Include {
-		compactResourceShorthand(&doc.Resources.Include[i])
+	for i := range doc.Resources.Includes {
+		compactResourceShorthand(&doc.Resources.Includes[i])
 	}
-	if len(doc.Resources.Include) == 0 {
-		doc.Resources = ResourcesAssertion{Exact: doc.Resources.Exact}
+	if len(doc.Resources.Includes) == 0 {
+		doc.Resources = ResourcesAssertion{Values: doc.Resources.Values}
 	}
 }
 
 func compactResourceShorthand(r *resourceAssertion) {
-	for i := range r.Scopes.Exact {
-		compactScopeShorthand(&r.Scopes.Exact[i])
+	for i := range r.Scopes.Values {
+		compactScopeShorthand(&r.Scopes.Values[i])
 	}
-	for i := range r.Scopes.Include {
-		compactScopeShorthand(&r.Scopes.Include[i])
+	for i := range r.Scopes.Includes {
+		compactScopeShorthand(&r.Scopes.Includes[i])
 	}
-	if len(r.Scopes.Include) == 0 {
-		r.Scopes = ScopesAssertion{Exact: r.Scopes.Exact}
+	if len(r.Scopes.Includes) == 0 {
+		r.Scopes = ScopesAssertion{Values: r.Scopes.Values}
 	}
 }
 
 func compactScopeShorthand(s *scopeAssertion) {
-	for i := range s.Metrics.Exact {
-		compactMetricShorthand(&s.Metrics.Exact[i])
+	for i := range s.Metrics.Values {
+		compactMetricShorthand(&s.Metrics.Values[i])
 	}
-	for i := range s.Metrics.Include {
-		compactMetricShorthand(&s.Metrics.Include[i])
+	for i := range s.Metrics.Includes {
+		compactMetricShorthand(&s.Metrics.Includes[i])
 	}
-	if len(s.Metrics.Include) == 0 {
-		s.Metrics = MetricsAssertion{Exact: s.Metrics.Exact}
+	if len(s.Metrics.Includes) == 0 {
+		s.Metrics = MetricsAssertion{Values: s.Metrics.Values}
 	}
 }
 
 func compactMetricShorthand(m *metricAssertion) {
-	if len(m.Datapoints.Exact) == 1 && len(m.Datapoints.Exact[0].Attributes) == 0 && m.Datapoints.Exact[0].Value == nil && len(m.Datapoints.Include) == 0 {
+	if len(m.Datapoints.Values) == 1 && len(m.Datapoints.Values[0].Attributes) == 0 && m.Datapoints.Values[0].Value == nil && len(m.Datapoints.Includes) == 0 {
 		m.Datapoints = DatapointsAssertion{}
 	}
 }

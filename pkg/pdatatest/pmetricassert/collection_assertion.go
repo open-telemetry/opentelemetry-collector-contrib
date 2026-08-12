@@ -24,35 +24,35 @@ type (
 
 // MetricsAssertion supports exact/include collection operators.
 type ResourcesAssertion struct {
-	Exact   []resourceAssertion `yaml:"resources,omitempty"`
-	Include []resourceAssertion `yaml:"resources/include,omitempty"`
+	Values   []resourceAssertion `yaml:"resources,omitempty"`
+	Includes []resourceAssertion `yaml:"resources/include,omitempty"`
 }
 
 type ScopesAssertion struct {
-	Exact   []scopeAssertion `yaml:"scopes,omitempty"`
-	Include []scopeAssertion `yaml:"scopes/include,omitempty"`
+	Values   []scopeAssertion `yaml:"scopes,omitempty"`
+	Includes []scopeAssertion `yaml:"scopes/include,omitempty"`
 }
 
 type MetricsAssertion struct {
-	Exact   []metricAssertion `yaml:"metrics,omitempty"`
-	Include []metricAssertion `yaml:"metrics/include,omitempty"`
+	Values   []metricAssertion `yaml:"metrics,omitempty"`
+	Includes []metricAssertion `yaml:"metrics/include,omitempty"`
 }
 
 type DatapointsAssertion struct {
-	Exact   []datapointAssertion `yaml:"datapoints,omitempty"`
-	Include []datapointAssertion `yaml:"datapoints/include,omitempty"`
+	Values   []datapointAssertion `yaml:"datapoints,omitempty"`
+	Includes []datapointAssertion `yaml:"datapoints/include,omitempty"`
 }
 
 // Validate checks actual metrics against exact/include operators.
 func (a MetricsAssertion) Validate(actualMetrics pmetric.MetricSlice) error {
-	if a.Exact != nil {
-		if err := validateMetricExact(a.Exact, actualMetrics); err != nil {
+	if a.Values != nil {
+		if err := validateMetricExact(a.Values, actualMetrics); err != nil {
 			return fmt.Errorf("metrics exact assertion failed: %w", err)
 		}
 	}
 
-	if len(a.Include) > 0 {
-		if err := validateMetricInclude(a.Include, actualMetrics); err != nil {
+	if len(a.Includes) > 0 {
+		if err := validateMetricInclude(a.Includes, actualMetrics); err != nil {
 			return fmt.Errorf("metrics include assertion failed: %w", err)
 		}
 	}
@@ -61,16 +61,16 @@ func (a MetricsAssertion) Validate(actualMetrics pmetric.MetricSlice) error {
 }
 
 func (a MetricsAssertion) ValidateAssertions(actual []metricAssertion) error {
-	if len(a.Exact) > 0 {
-		if err := validateExactCollection("metric", a.Exact, actual, func(expected, got metricAssertion) error {
+	if len(a.Values) > 0 {
+		if err := validateExactCollection("metric", a.Values, actual, func(expected, got metricAssertion) error {
 			return expected.MatchesAssertion(got)
 		}); err != nil {
 			return fmt.Errorf("metrics exact assertion failed: %w", err)
 		}
 	}
 
-	if len(a.Include) > 0 {
-		if err := validateIncludeCollection("metric", a.Include, actual, func(expected, got metricAssertion) error {
+	if len(a.Includes) > 0 {
+		if err := validateIncludeCollection("metric", a.Includes, actual, func(expected, got metricAssertion) error {
 			return expected.MatchesAssertion(got)
 		}); err != nil {
 			return fmt.Errorf("metrics include assertion failed: %w", err)
@@ -81,15 +81,15 @@ func (a MetricsAssertion) ValidateAssertions(actual []metricAssertion) error {
 }
 
 func (a ResourcesAssertion) Validate(actual []resourceAssertion) error {
-	if a.Exact != nil {
-		if err := validateExactCollection("resource", a.Exact, actual, func(expected, got resourceAssertion) error {
+	if a.Values != nil {
+		if err := validateExactCollection("resource", a.Values, actual, func(expected, got resourceAssertion) error {
 			return expected.Matches(got)
 		}); err != nil {
 			return fmt.Errorf("resources exact assertion failed: %w", err)
 		}
 	}
-	if len(a.Include) > 0 {
-		if err := validateIncludeCollection("resource", a.Include, actual, func(expected, got resourceAssertion) error {
+	if len(a.Includes) > 0 {
+		if err := validateIncludeCollection("resource", a.Includes, actual, func(expected, got resourceAssertion) error {
 			return expected.Matches(got)
 		}); err != nil {
 			return fmt.Errorf("resources include assertion failed: %w", err)
@@ -99,15 +99,15 @@ func (a ResourcesAssertion) Validate(actual []resourceAssertion) error {
 }
 
 func (a ScopesAssertion) Validate(actual []scopeAssertion) error {
-	if a.Exact != nil {
-		if err := validateExactCollection("scope", a.Exact, actual, func(expected, got scopeAssertion) error {
+	if a.Values != nil {
+		if err := validateExactCollection("scope", a.Values, actual, func(expected, got scopeAssertion) error {
 			return expected.Matches(got)
 		}); err != nil {
 			return fmt.Errorf("scopes exact assertion failed: %w", err)
 		}
 	}
-	if len(a.Include) > 0 {
-		if err := validateIncludeCollection("scope", a.Include, actual, func(expected, got scopeAssertion) error {
+	if len(a.Includes) > 0 {
+		if err := validateIncludeCollection("scope", a.Includes, actual, func(expected, got scopeAssertion) error {
 			return expected.Matches(got)
 		}); err != nil {
 			return fmt.Errorf("scopes include assertion failed: %w", err)
@@ -117,15 +117,15 @@ func (a ScopesAssertion) Validate(actual []scopeAssertion) error {
 }
 
 func (a DatapointsAssertion) Validate(actual []datapointAssertion) error {
-	if a.Exact != nil {
-		if err := validateExactCollection("datapoint", a.Exact, actual, func(expected, got datapointAssertion) error {
+	if a.Values != nil {
+		if err := validateExactCollection("datapoint", a.Values, actual, func(expected, got datapointAssertion) error {
 			return expected.Matches(got)
 		}); err != nil {
 			return fmt.Errorf("datapoints exact assertion failed: %w", err)
 		}
 	}
-	if len(a.Include) > 0 {
-		if err := validateIncludeCollection("datapoint", a.Include, actual, func(expected, got datapointAssertion) error {
+	if len(a.Includes) > 0 {
+		if err := validateIncludeCollection("datapoint", a.Includes, actual, func(expected, got datapointAssertion) error {
 			return expected.Matches(got)
 		}); err != nil {
 			return fmt.Errorf("datapoints include assertion failed: %w", err)
@@ -255,14 +255,14 @@ func (d datapointAssertion) Matches(actual datapointAssertion) error {
 // Matches validates one actual metric against this expected metric assertion.
 func (m metricAssertion) Matches(actual pmetric.Metric) error {
 	expected := m
-	if len(expected.Datapoints.Exact) == 0 && len(expected.Datapoints.Include) == 0 {
-		expected.Datapoints.Exact = []datapointAssertion{{}}
+	if len(expected.Datapoints.Values) == 0 && len(expected.Datapoints.Includes) == 0 {
+		expected.Datapoints.Values = []datapointAssertion{{}}
 	}
 
 	actualAssertion := buildMetricAssertion(actual)
-	actualAssertion.Datapoints.Exact = make([]datapointAssertion, 0, len(extractDatapoints(actual)))
+	actualAssertion.Datapoints.Values = make([]datapointAssertion, 0, len(extractDatapoints(actual)))
 	for _, ed := range extractDatapoints(actual) {
-		actualAssertion.Datapoints.Exact = append(actualAssertion.Datapoints.Exact, datapointAssertion{
+		actualAssertion.Datapoints.Values = append(actualAssertion.Datapoints.Values, datapointAssertion{
 			Attributes: attrMapToRaw(ed.attributes),
 			Value:      ed.value,
 		})
@@ -272,8 +272,8 @@ func (m metricAssertion) Matches(actual pmetric.Metric) error {
 
 func (m metricAssertion) MatchesAssertion(actual metricAssertion) error {
 	expected := m
-	if len(expected.Datapoints.Exact) == 0 && len(expected.Datapoints.Include) == 0 {
-		expected.Datapoints.Exact = []datapointAssertion{{}}
+	if len(expected.Datapoints.Values) == 0 && len(expected.Datapoints.Includes) == 0 {
+		expected.Datapoints.Values = []datapointAssertion{{}}
 	}
 	return compareMetric(expected, actual)
 }
