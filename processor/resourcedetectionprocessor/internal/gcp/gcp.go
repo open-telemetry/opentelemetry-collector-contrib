@@ -30,9 +30,7 @@ const (
 )
 
 // newResourceDetector is overridden in tests to substitute a fake SDK detector.
-var newResourceDetector = func() sdkresource.Detector {
-	return gcpdetector.NewDetector()
-}
+var newResourceDetector = gcpdetector.NewDetector
 
 var _ internal.Detector = (*Detector)(nil)
 
