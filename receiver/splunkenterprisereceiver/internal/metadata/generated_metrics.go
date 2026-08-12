@@ -3,12 +3,13 @@
 package metadata
 
 import (
+	"slices"
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"slices"
-	"time"
 )
 
 const (
@@ -113,11 +114,11 @@ var MetricsInfo = metricsInfo{
 	},
 	SplunkKvstoreReplicationStatus: metricInfo{
 		Name:       "splunk.kvstore.replication.status",
-		Attributes: []string{"splunk.kvstore.status.value", "splunk.kvstore.storage.engine", "splunk.splunkd.build", "splunk.splunkd.version"},
+		Attributes: []string{"splunk.kvstore.status.value", "splunk.kvstore.storage_engine", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkKvstoreStatus: metricInfo{
 		Name:       "splunk.kvstore.status",
-		Attributes: []string{"splunk.kvstore.storage.engine", "splunk.kvstore.external", "splunk.kvstore.status.value", "splunk.splunkd.build", "splunk.splunkd.version"},
+		Attributes: []string{"splunk.kvstore.storage_engine", "splunk.kvstore.external", "splunk.kvstore.status.value", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkLicenseExpirationSecondsRemaining: metricInfo{
 		Name:       "splunk.license.expiration.seconds_remaining",
@@ -2516,7 +2517,7 @@ func (m *metricSplunkKvstoreReplicationStatus) recordDataPoint(start pcommon.Tim
 		dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStorageEngine) {
-		dp.Attributes().PutStr("splunk.kvstore.storage.engine", splunkKvstoreStorageEngineAttributeValue)
+		dp.Attributes().PutStr("splunk.kvstore.storage_engine", splunkKvstoreStorageEngineAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
@@ -2611,7 +2612,7 @@ func (m *metricSplunkKvstoreStatus) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStorageEngine) {
-		dp.Attributes().PutStr("splunk.kvstore.storage.engine", splunkKvstoreStorageEngineAttributeValue)
+		dp.Attributes().PutStr("splunk.kvstore.storage_engine", splunkKvstoreStorageEngineAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreExternal) {
 		dp.Attributes().PutStr("splunk.kvstore.external", splunkKvstoreExternalAttributeValue)

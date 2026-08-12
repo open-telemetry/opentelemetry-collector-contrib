@@ -257,15 +257,15 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordSplunkKvstoreReplicationStatusDataPoint(ts, 1, "splunk.kvstore.status.value-val", "splunk.kvstore.storage.engine-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			mb.RecordSplunkKvstoreReplicationStatusDataPoint(ts, 1, "splunk.kvstore.status.value-val", "splunk.kvstore.storage_engine-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSplunkKvstoreReplicationStatusDataPoint(ts, 3, "splunk.kvstore.status.value-val-2", "splunk.kvstore.storage.engine-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				mb.RecordSplunkKvstoreReplicationStatusDataPoint(ts, 3, "splunk.kvstore.status.value-val-2", "splunk.kvstore.storage_engine-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSplunkKvstoreStatusDataPoint(ts, 1, "splunk.kvstore.storage.engine-val", "splunk.kvstore.external-val", "splunk.kvstore.status.value-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			mb.RecordSplunkKvstoreStatusDataPoint(ts, 1, "splunk.kvstore.storage_engine-val", "splunk.kvstore.external-val", "splunk.kvstore.status.value-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSplunkKvstoreStatusDataPoint(ts, 3, "splunk.kvstore.storage.engine-val-2", "splunk.kvstore.external-val-2", "splunk.kvstore.status.value-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				mb.RecordSplunkKvstoreStatusDataPoint(ts, 3, "splunk.kvstore.storage_engine-val-2", "splunk.kvstore.external-val-2", "splunk.kvstore.status.value-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
 			}
 
 			allMetricsCount++
@@ -1701,9 +1701,9 @@ func TestMetricsBuilder(t *testing.T) {
 						splunkKvstoreStatusValueAttrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
 						assert.True(t, ok)
 						assert.Equal(t, "splunk.kvstore.status.value-val", splunkKvstoreStatusValueAttrVal.Str())
-						splunkKvstoreStorageEngineAttrVal, ok := dp.Attributes().Get("splunk.kvstore.storage.engine")
+						splunkKvstoreStorageEngineAttrVal, ok := dp.Attributes().Get("splunk.kvstore.storage_engine")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.kvstore.storage.engine-val", splunkKvstoreStorageEngineAttrVal.Str())
+						assert.Equal(t, "splunk.kvstore.storage_engine-val", splunkKvstoreStorageEngineAttrVal.Str())
 						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
 						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
@@ -1733,7 +1733,7 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("splunk.kvstore.status.value")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("splunk.kvstore.storage.engine")
+						_, ok = dp.Attributes().Get("splunk.kvstore.storage_engine")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("splunk.splunkd.build")
 						assert.False(t, ok)
@@ -1753,9 +1753,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						splunkKvstoreStorageEngineAttrVal, ok := dp.Attributes().Get("splunk.kvstore.storage.engine")
+						splunkKvstoreStorageEngineAttrVal, ok := dp.Attributes().Get("splunk.kvstore.storage_engine")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.kvstore.storage.engine-val", splunkKvstoreStorageEngineAttrVal.Str())
+						assert.Equal(t, "splunk.kvstore.storage_engine-val", splunkKvstoreStorageEngineAttrVal.Str())
 						splunkKvstoreExternalAttrVal, ok := dp.Attributes().Get("splunk.kvstore.external")
 						assert.True(t, ok)
 						assert.Equal(t, "splunk.kvstore.external-val", splunkKvstoreExternalAttrVal.Str())
@@ -1789,7 +1789,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("splunk.kvstore.storage.engine")
+						_, ok := dp.Attributes().Get("splunk.kvstore.storage_engine")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("splunk.kvstore.external")
 						assert.False(t, ok)
