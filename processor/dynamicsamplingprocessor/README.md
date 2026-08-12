@@ -122,6 +122,8 @@ Evaluation errors are counted on `processor_dynamic_sampling_ottl_eval_errors` u
 
 Rules are evaluated in order; the first whose conditions all match selects the sampler. A rule with no conditions is a catch-all. Once a rule is selected, its sampler's decision is final: a drop stays dropped, the trace is not handed to any later rule.
 
+Each rule's `name` must be unique. It is recorded on the decision metrics (the `rule` attribute) and stamped on sampled spans, so pick names you want to see on dashboards. Names starting with `_` are rejected at config validation: that prefix is reserved for processor-internal decision labels (such as `_eviction`), so user rules can never collide with them.
+
 > [!WARNING]
 > A rule with no conditions (a catch-all) placed before another rule consumes every trace and renders the later rules unreachable. The processor logs a warning at startup when it detects this configuration so it shows up in collector logs.
 
