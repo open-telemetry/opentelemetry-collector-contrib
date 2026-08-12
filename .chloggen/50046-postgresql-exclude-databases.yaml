@@ -19,7 +19,8 @@ subtext: |
   Previously only the metrics path applied `exclude_databases`. Statements from excluded databases
   were still collected, and the top query collector connected to each one to run EXPLAIN -- which
   managed providers reject, for example `rdsadmin` on Amazon RDS, logging an error on every plan
-  cache expiry. Both collectors now filter excluded databases server side and never connect to them.
+  cache expiry. Both collectors now filter excluded databases server side and no longer connect
+  to them to run EXPLAIN.
 
   Also: excluding every candidate database no longer runs the per-database retrieval queries against
   the whole cluster; per-database metrics are skipped instead.
