@@ -407,7 +407,7 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		sb.WriteString(" ")
 		sb.WriteString(attrs.HTTPRoute)
 	} else if attrs.URLAttributes.URLFull != "" {
-		if u, err := url.Parse(attrs.URLAttributes.URLFull); err == nil {
+		if u, err := url.Parse(attrs.URLAttributes.URLFull); err == nil && u.Path != "" {
 			sb.WriteString(" ")
 			sb.WriteString(u.Path)
 		}
