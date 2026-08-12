@@ -165,13 +165,14 @@ func (lb *loadBalancer) onBackendChanges(resolved []string) {
 	// prepare phase: take a snapshot of the current state, holding updateLock only for the
 	// duration of the copy
 	lb.updateLock.RLock()
-	unchanged := newRing.equal(lb.ring)
-	existing := maps.Clone(lb.exporters)
-	lb.updateLock.RUnlock()
+	if newRing.equal(lb.ring) {
+		lb.updateLock.RUnlock()
 
-	if unchanged {
 		return
 	}
+
+	existing := maps.Clone(lb.exporters)
+	lb.updateLock.RUnlock()
 
 	// TODO: set a timeout?
 	ctx := context.Background()
