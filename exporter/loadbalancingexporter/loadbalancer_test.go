@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -255,6 +256,9 @@ func TestOnBackendChanges_SlowStartDoesNotBlockDataPath(t *testing.T) {
 
 	reached := make(chan struct{})
 	release := make(chan struct{})
+	closeRelease := sync.OnceFunc(func() { close(release) })
+	t.Cleanup(closeRelease) // Register in case of test failure to avoid a leak.
+
 	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
 		if endpoint == endpointWithPort("endpoint-2") {
 			close(reached)
@@ -301,7 +305,7 @@ func TestOnBackendChanges_SlowStartDoesNotBlockDataPath(t *testing.T) {
 	}
 
 	// test
-	close(release)
+	closeRelease()
 
 	select {
 	case <-done:
