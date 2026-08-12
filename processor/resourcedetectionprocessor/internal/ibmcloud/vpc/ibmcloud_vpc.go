@@ -5,15 +5,16 @@ package vpc // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
+	vpcdetector "go.opentelemetry.io/contrib/detectors/ibmcloud/vpc"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
-	vpcprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/ibmcloud/vpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc/internal/metadata"
 )
@@ -23,11 +24,18 @@ const (
 	TypeStr = "ibmcloud_vpc"
 )
 
+// newResourceDetector is overridden in tests to substitute a fake SDK detector.
+var newResourceDetector = func(protocol string) sdkresource.Detector {
+	return vpcdetector.NewResourceDetector(vpcdetector.WithProtocol(protocol))
+}
+
 var _ internal.Detector = (*Detector)(nil)
 
 // Detector queries the IBM Cloud VPC Instance Metadata Service and emits resource attributes.
+// Detection is delegated to the upstream SDK detector so that the attributes reported here match
+// the ones the collector's own telemetry reports.
 type Detector struct {
-	provider              vpcprovider.Provider
+	detector              sdkresource.Detector
 	logger                *zap.Logger
 	rb                    *metadata.ResourceBuilder
 	failOnMissingMetadata bool
@@ -44,7 +52,7 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissi
 	}
 
 	return &Detector{
-		provider:              vpcprovider.NewProvider(cfg.Protocol),
+		detector:              newResourceDetector(cfg.Protocol),
 		logger:                p.Logger,
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		failOnMissingMetadata: failOnMissingMetadata,
@@ -53,51 +61,57 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissi
 
 // Detect detects IBM Cloud VPC instance metadata and returns a resource with the available attributes.
 func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
-	meta, err := d.provider.InstanceMetadata(ctx)
+	res, err := d.detector.Detect(ctx)
 	if err != nil {
 		d.logger.Debug("IBM Cloud VPC metadata not available", zap.Error(err))
+		// A partial result still came from a reachable metadata service, so keep what it did
+		// return. fail_on_missing_metadata covers an unusable metadata service, not individual
+		// fields absent from its response.
+		if !errors.Is(err, sdkresource.ErrPartialResource) {
+			if d.failOnMissingMetadata {
+				return pcommon.NewResource(), "", fmt.Errorf("ibmcloud vpc metadata unavailable: %w", err)
+			}
+			return pcommon.NewResource(), "", nil
+		}
+	}
+
+	// The SDK detector reports an empty resource and no error both when the metadata service is
+	// unreachable and when not running on an IBM Cloud VPC instance.
+	if res.Len() == 0 {
+		d.logger.Debug("IBM Cloud VPC detector: metadata unavailable or not running on a VPC instance")
 		if d.failOnMissingMetadata {
-			return pcommon.NewResource(), "", fmt.Errorf("ibmcloud vpc metadata unavailable: %w", err)
+			return pcommon.NewResource(), "", errors.New("ibmcloud vpc metadata unavailable")
 		}
 		return pcommon.NewResource(), "", nil
 	}
 
-	d.rb.SetCloudProvider(conventions.CloudProviderIBMCloud.Value.AsString())
-	// TODO: Use semconv constant once CloudPlatformIBMCloudVPC is added.
-	d.rb.SetCloudPlatform("ibm_cloud.vpc")
-	d.rb.SetCloudRegion(regionFromZone(meta.Zone.Name))
-	d.rb.SetCloudAvailabilityZone(meta.Zone.Name)
-	d.rb.SetCloudAccountID(accountIDFromCRN(meta.CRN))
-	d.rb.SetCloudResourceID(meta.CRN)
-	d.rb.SetHostID(meta.ID)
-	d.rb.SetHostImageID(meta.Image.ID)
-	d.rb.SetHostImageName(meta.Image.Name)
-	d.rb.SetHostName(meta.Name)
-	d.rb.SetHostType(meta.Profile.Name)
+	for _, attr := range res.Attributes() {
+		val := attr.Value.AsString()
+		switch attr.Key {
+		case conventions.CloudProviderKey:
+			d.rb.SetCloudProvider(val)
+		case conventions.CloudPlatformKey:
+			d.rb.SetCloudPlatform(val)
+		case conventions.CloudRegionKey:
+			d.rb.SetCloudRegion(val)
+		case conventions.CloudAvailabilityZoneKey:
+			d.rb.SetCloudAvailabilityZone(val)
+		case conventions.CloudAccountIDKey:
+			d.rb.SetCloudAccountID(val)
+		case conventions.CloudResourceIDKey:
+			d.rb.SetCloudResourceID(val)
+		case conventions.HostIDKey:
+			d.rb.SetHostID(val)
+		case conventions.HostImageIDKey:
+			d.rb.SetHostImageID(val)
+		case conventions.HostImageNameKey:
+			d.rb.SetHostImageName(val)
+		case conventions.HostNameKey:
+			d.rb.SetHostName(val)
+		case conventions.HostTypeKey:
+			d.rb.SetHostType(val)
+		}
+	}
 
 	return d.rb.Emit(), conventions.SchemaURL, nil
-}
-
-// regionFromZone extracts the region from a zone name.
-// Example: "us-south-1" -> "us-south", "eu-de-2" -> "eu-de"
-func regionFromZone(zone string) string {
-	idx := strings.LastIndex(zone, "-")
-	if idx > 0 {
-		return zone[:idx]
-	}
-	return zone
-}
-
-// accountIDFromCRN extracts the account ID from a CRN.
-// CRN format: crn:v1:cname:ctype:service-name:region:account-id:service-instance:resource-type:resource-id
-// Example: "crn:v1:bluemix:public:is:us-south-1:a/123456::instance:0717_xxx"
-// The account segment is at index 6 and may be prefixed with "a/"
-func accountIDFromCRN(crn string) string {
-	parts := strings.Split(crn, ":")
-	if len(parts) >= 7 {
-		acct := parts[6]
-		acct = strings.TrimPrefix(acct, "a/")
-		return acct
-	}
-	return ""
 }

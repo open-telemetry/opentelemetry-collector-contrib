@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger-idl v0.9.0
+	github.com/jaegertracing/jaeger-idl v0.10.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.158.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.158.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.158.0
@@ -114,8 +114,8 @@ require (
 	go.opentelemetry.io/collector/receiver/xreceiver v0.158.1-0.20260805181402-19664a7b14af // indirect
 	go.opentelemetry.io/otel/sdk v1.45.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.52.0 // indirect
-	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/crypto v0.54.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260610212136-7ab31c22f7ad // indirect
