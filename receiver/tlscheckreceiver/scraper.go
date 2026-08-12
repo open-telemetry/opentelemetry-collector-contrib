@@ -391,7 +391,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		if target.FilePath != "" {
 			go s.scrapeFile(target, &metrics, &wg, &mux, errChan)
 		} else {
-			go s.scrapeEndpoint(target.Endpoint, &metrics, &wg, &mux, errChan)
+			go s.scrapeEndpoint(target.TCPAddrConfig.Endpoint, &metrics, &wg, &mux, errChan)
 		}
 	}
 
