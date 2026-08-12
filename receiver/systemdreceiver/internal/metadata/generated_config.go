@@ -57,6 +57,46 @@ func (ms *SystemdServiceCPUTimeMetricConfig) Validate() error {
 	return nil
 }
 
+// SystemdServiceMemoryPeakMetricConfig provides config for the systemd.service.memory.peak metric.
+type SystemdServiceMemoryPeakMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemdServiceMemoryPeakMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemdServiceMemoryUsageMetricConfig provides config for the systemd.service.memory.usage metric.
+type SystemdServiceMemoryUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemdServiceMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SystemdServiceRestartsMetricConfig provides config for the systemd.service.restarts metric.
 type SystemdServiceRestartsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -127,9 +167,11 @@ func (ms *SystemdUnitStateMetricConfig) Validate() error {
 
 // MetricsConfig provides config for systemd metrics.
 type MetricsConfig struct {
-	SystemdServiceCPUTime  SystemdServiceCPUTimeMetricConfig  `mapstructure:"systemd.service.cpu.time"`
-	SystemdServiceRestarts SystemdServiceRestartsMetricConfig `mapstructure:"systemd.service.restarts"`
-	SystemdUnitState       SystemdUnitStateMetricConfig       `mapstructure:"systemd.unit.state"`
+	SystemdServiceCPUTime     SystemdServiceCPUTimeMetricConfig     `mapstructure:"systemd.service.cpu.time"`
+	SystemdServiceMemoryPeak  SystemdServiceMemoryPeakMetricConfig  `mapstructure:"systemd.service.memory.peak"`
+	SystemdServiceMemoryUsage SystemdServiceMemoryUsageMetricConfig `mapstructure:"systemd.service.memory.usage"`
+	SystemdServiceRestarts    SystemdServiceRestartsMetricConfig    `mapstructure:"systemd.service.restarts"`
+	SystemdUnitState          SystemdUnitStateMetricConfig          `mapstructure:"systemd.unit.state"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -138,6 +180,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []SystemdServiceCPUTimeMetricAttributeKey{SystemdServiceCPUTimeMetricAttributeKeyCPUMode},
+		},
+		SystemdServiceMemoryPeak: SystemdServiceMemoryPeakMetricConfig{
+			Enabled: true,
+		},
+		SystemdServiceMemoryUsage: SystemdServiceMemoryUsageMetricConfig{
+			Enabled: true,
 		},
 		SystemdServiceRestarts: SystemdServiceRestartsMetricConfig{
 			Enabled: false,
