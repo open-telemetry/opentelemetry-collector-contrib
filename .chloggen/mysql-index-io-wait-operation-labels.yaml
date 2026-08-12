@@ -7,7 +7,6 @@ note: Report `mysql.index.io.wait.count` and `mysql.index.io.wait.time` under th
 issues: [49597]
 
 subtext: |
-  The index io_waits query listed its COUNT_ and SUM_TIMER_ columns in a different order than the
-  fields they were scanned into, so each datapoint was recorded under the wrong operation (for
-  example the delete counts were reported as fetch). The columns are now ordered to match the scan,
-  consistent with the table io_waits query.
+  The `mysql.index.io.wait.count` and `mysql.index.io.wait.time` metrics were reported under the
+  wrong `operation` attribute (for example, delete counts appeared under `operation=update`). Each
+  datapoint is now reported under its correct operation.
