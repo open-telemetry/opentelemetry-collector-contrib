@@ -295,7 +295,7 @@ func TestDetect(t *testing.T) {
 				attribute.String("faas.name", "my-service"),
 				attribute.String("faas.instance", "1472385723456792345"),
 				attribute.String("gcp.cloud_run.job.execution", "my-service-ajg89"),
-				attribute.String("gcp.cloud_run.job.task_index", "2"),
+				attribute.Int("gcp.cloud_run.job.task_index", 2),
 			),
 			expectedResource: map[string]any{
 				"cloud.provider":               "gcp",
