@@ -13,13 +13,13 @@ resourceMetrics:
               dataPoints:
                 - asInt: "3"
                   attributes:
-                    - key: backend_type
+                    - key: postgresql.backend_type
                       value:
                         stringValue: client backend
-                    - key: state
+                    - key: postgresql.state
                       value:
                         stringValue: active
-                    - key: wait_event_type
+                    - key: postgresql.wait_event_type
                       value:
                         stringValue: none
                   startTimeUnixNano: "1706802467703361527"
@@ -570,13 +570,13 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: backend_type
+                    - key: postgresql.backend_type
                       value:
                         stringValue: client backend
-                    - key: state
+                    - key: postgresql.state
                       value:
                         stringValue: active
-                    - key: wait_event_type
+                    - key: postgresql.wait_event_type
                       value:
                         stringValue: none
                   startTimeUnixNano: "1706802467703361527"
@@ -1195,13 +1195,13 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: backend_type
+                    - key: postgresql.backend_type
                       value:
                         stringValue: client backend
-                    - key: state
+                    - key: postgresql.state
                       value:
                         stringValue: active
-                    - key: wait_event_type
+                    - key: postgresql.wait_event_type
                       value:
                         stringValue: none
                   startTimeUnixNano: "1706802467703361527"

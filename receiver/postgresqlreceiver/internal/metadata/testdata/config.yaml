@@ -3,7 +3,7 @@ all_set:
   metrics:
     postgresql.backends:
       enabled: true
-      attributes: ["db.namespace","backend_type","state","wait_event_type"]
+      attributes: ["db.namespace","postgresql.backend_type","postgresql.state","postgresql.wait_event_type"]
     postgresql.bgwriter.buffers.allocated:
       enabled: true
     postgresql.bgwriter.buffers.writes:
@@ -303,7 +303,7 @@ none_set:
   metrics:
     postgresql.backends:
       enabled: false
-      attributes: ["db.namespace","backend_type","state","wait_event_type"]
+      attributes: ["db.namespace","postgresql.backend_type","postgresql.state","postgresql.wait_event_type"]
     postgresql.bgwriter.buffers.allocated:
       enabled: false
     postgresql.bgwriter.buffers.writes:

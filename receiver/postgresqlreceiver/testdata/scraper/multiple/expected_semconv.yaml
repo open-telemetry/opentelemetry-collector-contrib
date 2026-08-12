@@ -19,48 +19,48 @@ resourceMetrics:
               dataPoints:
                 - asInt: "4"
                   attributes:
-                    - key: backend_type
-                      value:
-                        stringValue: client backend
                     - key: db.namespace
                       value:
                         stringValue: open
-                    - key: state
+                    - key: postgresql.backend_type
+                      value:
+                        stringValue: client backend
+                    - key: postgresql.state
                       value:
                         stringValue: active
-                    - key: wait_event_type
+                    - key: postgresql.wait_event_type
                       value:
                         stringValue: none
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
-                    - key: backend_type
-                      value:
-                        stringValue: client backend
                     - key: db.namespace
                       value:
                         stringValue: otel
-                    - key: state
+                    - key: postgresql.backend_type
+                      value:
+                        stringValue: client backend
+                    - key: postgresql.state
                       value:
                         stringValue: active
-                    - key: wait_event_type
+                    - key: postgresql.wait_event_type
                       value:
                         stringValue: none
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "5"
                   attributes:
-                    - key: backend_type
-                      value:
-                        stringValue: client backend
                     - key: db.namespace
                       value:
                         stringValue: telemetry
-                    - key: state
+                    - key: postgresql.backend_type
+                      value:
+                        stringValue: client backend
+                    - key: postgresql.state
                       value:
                         stringValue: active
-                    - key: wait_event_type
+                    - key: postgresql.wait_event_type
                       value:
                         stringValue: none
                   startTimeUnixNano: "1000000"

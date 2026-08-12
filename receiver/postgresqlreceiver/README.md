@@ -322,3 +322,17 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 > [!NOTE]
 > The optional `postgresql.query.execution.time` metric requires the `pg_stat_statements` extension to be
 > installed and enabled.
+
+The data point attributes recorded on a metric can be restricted with the `attributes` setting of that
+metric. For example, `postgresql.backends` reports one series per combination of backend type, state and
+wait event type within each database; to keep only the state breakdown and reduce cardinality:
+
+```yaml
+receivers:
+  postgresql:
+    metrics:
+      postgresql.backends:
+        attributes: [db.namespace, postgresql.state]
+```
+
+Data points that only differ in the dropped attributes are aggregated into one (summed by default).
