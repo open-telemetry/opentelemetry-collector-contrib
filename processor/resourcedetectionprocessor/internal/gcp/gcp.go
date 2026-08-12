@@ -5,21 +5,22 @@ package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"regexp"
 	"time"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	computepb "cloud.google.com/go/compute/apiv1/computepb"
-	"cloud.google.com/go/compute/metadata"
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
+	gcpdetector "go.opentelemetry.io/contrib/detectors/gcp"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
-	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
 )
 
 const (
@@ -28,13 +29,26 @@ const (
 	gceLabelPrefix = "gcp.gce.instance.labels."
 )
 
-// NewDetector returns a detector which can detect resource attributes on:
-// * Google Compute Engine (GCE).
-// * Google Kubernetes Engine (GKE).
-// * Google App Engine (GAE).
-// * Cloud Run.
-// * Cloud Functions.
-// * Bare Metal Solutions (BMS).
+// newResourceDetector is overridden in tests to substitute a fake SDK detector.
+var newResourceDetector = func() sdkresource.Detector {
+	return gcpdetector.NewDetector()
+}
+
+var _ internal.Detector = (*Detector)(nil)
+
+// Detector is a GCP metadata detector. Detection is delegated to the upstream
+// SDK detector so that the attributes reported here match the ones the
+// collector's own telemetry reports.
+type Detector struct {
+	detector              sdkresource.Detector
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	labelKeyRegexes       []*regexp.Regexp
+	gceClientBuilder      instancesBuilder
+	failOnMissingMetadata bool
+}
+
+// NewDetector creates a new GCP metadata detector.
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
@@ -43,163 +57,124 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 		return nil, err
 	}
 
-	return &detector{
+	return &Detector{
+		detector:              newResourceDetector(),
 		logger:                set.Logger,
-		detector:              gcp.NewDetector(),
-		rb:                    localMetadata.NewResourceBuilder(cfg.ResourceAttributes),
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		labelKeyRegexes:       labelKeyRegexes,
 		gceClientBuilder:      &instancesRESTBuilder{},
 		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
-type detector struct {
-	logger                *zap.Logger
-	detector              gcpDetector
-	rb                    *localMetadata.ResourceBuilder
-	labelKeyRegexes       []*regexp.Regexp
-	gceClientBuilder      instancesBuilder
-	failOnMissingMetadata bool
-}
-
-func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	if d.detector.CloudPlatform() == gcp.BareMetalSolution {
-		d.rb.SetCloudProvider(conventions.CloudProviderGCP.Value.AsString())
-		errs := d.rb.SetFromCallable(d.rb.SetCloudAccountID, d.detector.BareMetalSolutionProjectID)
-
-		d.rb.SetCloudPlatform("gcp_bare_metal_solution")
-		errs = multierr.Combine(errs,
-			d.rb.SetFromCallable(d.rb.SetHostName, d.detector.BareMetalSolutionInstanceID),
-			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.BareMetalSolutionCloudRegion),
-		)
-		if errs != nil && d.failOnMissingMetadata {
-			return pcommon.NewResource(), "", errs
+// Detect queries the GCP metadata and returns a populated resource.
+func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+	res, err := d.detector.Detect(ctx)
+	if err != nil {
+		d.logger.Debug("GCP metadata unavailable", zap.Error(err))
+		// A partial result still came from a reachable metadata service, so keep
+		// what it did return. fail_on_missing_metadata covers an unusable
+		// metadata service, not individual fields absent from its response.
+		if !errors.Is(err, sdkresource.ErrPartialResource) {
+			if d.failOnMissingMetadata {
+				return pcommon.NewResource(), "", fmt.Errorf("gcp metadata unavailable: %w", err)
+			}
+			return pcommon.NewResource(), "", nil
 		}
-		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
-	if !metadata.OnGCE() {
+	// The SDK detector reports an empty resource (or nil) and no error both when the
+	// metadata service is unreachable and when not running on a GCP environment.
+	if res == nil || res.Len() == 0 {
+		d.logger.Debug("GCP detector: metadata unavailable or not running on a GCP environment")
+		if d.failOnMissingMetadata && err != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("gcp metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 
-	d.rb.SetCloudProvider(conventions.CloudProviderGCP.Value.AsString())
-	errs := d.rb.SetFromCallable(d.rb.SetCloudAccountID, d.detector.ProjectID)
-
-	switch d.detector.CloudPlatform() {
-	case gcp.GKE:
-		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPKubernetesEngine.Value.AsString())
-		errs = multierr.Combine(errs,
-			d.rb.SetZoneOrRegion(d.detector.GKEAvailabilityZoneOrRegion),
-			d.rb.SetFromCallable(d.rb.SetK8sClusterName, d.detector.GKEClusterName),
-			d.rb.SetFromCallable(d.rb.SetHostID, d.detector.GKEHostID),
-		)
-		// GCEHostname is fallible on GKE, since it's not available when using workload identity.
-		if v, err := d.detector.GCEHostName(); err == nil {
-			d.rb.SetHostName(v)
-		} else {
-			d.logger.Info("Fallible detector failed. This attribute will not be available.",
-				zap.String("key", string(conventions.HostNameKey)), zap.Error(err))
+	var isGCE bool
+	var projectID, zone, instanceName string
+	for _, attr := range res.Attributes() {
+		val := attr.Value.AsString()
+		switch attr.Key {
+		case conventions.CloudProviderKey:
+			d.rb.SetCloudProvider(val)
+		case conventions.CloudAccountIDKey:
+			projectID = val
+			d.rb.SetCloudAccountID(val)
+		case conventions.CloudPlatformKey:
+			if val == conventions.CloudPlatformGCPComputeEngine.Value.AsString() {
+				isGCE = true
+			}
+			d.rb.SetCloudPlatform(val)
+		case conventions.CloudAvailabilityZoneKey:
+			zone = val
+			d.rb.SetCloudAvailabilityZone(val)
+		case conventions.CloudRegionKey:
+			d.rb.SetCloudRegion(val)
+		case conventions.FaaSInstanceKey:
+			d.rb.SetFaasInstance(val)
+		case conventions.FaaSNameKey:
+			d.rb.SetFaasName(val)
+		case conventions.FaaSVersionKey:
+			d.rb.SetFaasVersion(val)
+		case "gcp.cloud_run.job.execution":
+			d.rb.SetGcpCloudRunJobExecution(val)
+		case "gcp.cloud_run.job.task_index":
+			d.rb.SetGcpCloudRunJobTaskIndex(val)
+		case "gcp.gce.instance.hostname":
+			d.rb.SetGcpGceInstanceHostname(val)
+		case "gcp.gce.instance.name":
+			instanceName = val
+			d.rb.SetGcpGceInstanceName(val)
+		case "gcp.gce.instance_group_manager.name":
+			d.rb.SetGcpGceInstanceGroupManagerName(val)
+		case "gcp.gce.instance_group_manager.region":
+			d.rb.SetGcpGceInstanceGroupManagerRegion(val)
+		case "gcp.gce.instance_group_manager.zone":
+			d.rb.SetGcpGceInstanceGroupManagerZone(val)
+		case conventions.HostIDKey:
+			d.rb.SetHostID(val)
+		case conventions.HostNameKey:
+			if instanceName == "" {
+				instanceName = val
+			}
+			d.rb.SetHostName(val)
+		case conventions.HostTypeKey:
+			d.rb.SetHostType(val)
+		case conventions.K8SClusterNameKey:
+			d.rb.SetK8sClusterName(val)
 		}
-	case gcp.CloudRun, gcp.CloudRunWorkerPool:
-		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPCloudRun.Value.AsString())
-		errs = multierr.Combine(errs,
-			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
-			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.FaaSVersion),
-			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
-			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
-		)
-	case gcp.CloudRunJob:
-		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPCloudRun.Value.AsString())
-		errs = multierr.Combine(errs,
-			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
-			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
-			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
-			d.rb.SetFromCallable(d.rb.SetGcpCloudRunJobExecution, d.detector.CloudRunJobExecution),
-			d.rb.SetFromCallable(d.rb.SetGcpCloudRunJobTaskIndex, d.detector.CloudRunJobTaskIndex),
-		)
-	case gcp.CloudFunctions:
-		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPCloudFunctions.Value.AsString())
-		errs = multierr.Combine(errs,
-			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
-			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.FaaSVersion),
-			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
-			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
-		)
-	case gcp.AppEngineFlex:
-		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPAppEngine.Value.AsString())
-		errs = multierr.Combine(errs,
-			d.rb.SetZoneAndRegion(d.detector.AppEngineFlexAvailabilityZoneAndRegion),
-			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.AppEngineServiceName),
-			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.AppEngineServiceVersion),
-			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.AppEngineServiceInstance),
-		)
-	case gcp.AppEngineStandard:
-		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPAppEngine.Value.AsString())
-		errs = multierr.Combine(errs,
-			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.AppEngineServiceName),
-			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.AppEngineServiceVersion),
-			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.AppEngineServiceInstance),
-			d.rb.SetFromCallable(d.rb.SetCloudAvailabilityZone, d.detector.AppEngineStandardAvailabilityZone),
-			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.AppEngineStandardCloudRegion),
-		)
-	case gcp.GCE:
-		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPComputeEngine.Value.AsString())
-		errs = multierr.Combine(errs,
-			d.rb.SetZoneAndRegion(d.detector.GCEAvailabilityZoneAndRegion),
-			d.rb.SetFromCallable(d.rb.SetHostType, d.detector.GCEHostType),
-			d.rb.SetFromCallable(d.rb.SetHostID, d.detector.GCEHostID),
-			d.rb.SetFromCallable(d.rb.SetHostName, d.detector.GCEHostName),
-			d.rb.SetFromCallable(d.rb.SetGcpGceInstanceHostname, d.detector.GCEInstanceHostname),
-			d.rb.SetFromCallable(d.rb.SetGcpGceInstanceName, d.detector.GCEInstanceName),
-			d.rb.SetManagedInstanceGroup(d.detector.GCEManagedInstanceGroup),
-		)
-		res := d.rb.Emit()
+	}
 
-		if errs != nil && d.failOnMissingMetadata {
-			return pcommon.NewResource(), "", errs
-		}
+	emittedRes := d.rb.Emit()
 
-		if len(d.labelKeyRegexes) == 0 {
-			return res, conventions.SchemaURL, nil
-		}
+	if err != nil && d.failOnMissingMetadata {
+		return pcommon.NewResource(), "", err
+	}
 
-		projectID, perr := d.detector.ProjectID()
-		zone, _, zerr := d.detector.GCEAvailabilityZoneAndRegion()
-		name, nerr := d.detector.GCEInstanceName()
-		if perr != nil || zerr != nil || nerr != nil {
-			d.logger.Warn("failed reading GCE metadata for labels", zap.NamedError("project_id", perr), zap.NamedError("zone", zerr), zap.NamedError("instance_name", nerr))
-			return res, conventions.SchemaURL, nil
-		}
-
-		instClient, cerr := d.gceClientBuilder.buildClient(ctx)
-		if cerr != nil {
-			d.logger.Warn("failed to build GCE instances client", zap.Error(cerr))
-			return res, conventions.SchemaURL, nil
-		}
-		defer instClient.Close()
-
-		labels, ferr := fetchGCELabels(ctx, instClient, projectID, zone, name, d.labelKeyRegexes)
-		if ferr != nil {
-			d.logger.Warn("failed fetching GCE labels", zap.Error(ferr))
-			return res, conventions.SchemaURL, nil
-		}
-
-		if len(labels) > 0 {
-			attrs := res.Attributes()
-			for k, v := range labels {
-				attrs.PutStr(gceLabelPrefix+k, v)
+	if isGCE && len(d.labelKeyRegexes) > 0 {
+		if projectID != "" && zone != "" && instanceName != "" {
+			instClient, cerr := d.gceClientBuilder.buildClient(ctx)
+			if cerr != nil {
+				d.logger.Warn("failed to build GCE instances client", zap.Error(cerr))
+			} else {
+				defer instClient.Close()
+				labels, ferr := fetchGCELabels(ctx, instClient, projectID, zone, instanceName, d.labelKeyRegexes)
+				if ferr != nil {
+					d.logger.Warn("failed fetching GCE labels", zap.Error(ferr))
+				} else if len(labels) > 0 {
+					attrs := emittedRes.Attributes()
+					for k, v := range labels {
+						attrs.PutStr(gceLabelPrefix+k, v)
+					}
+				}
 			}
 		}
-
-		return res, conventions.SchemaURL, nil
-	default:
-		// We don't support this platform yet, so just return with what we have
 	}
 
-	if errs != nil && d.failOnMissingMetadata {
-		return pcommon.NewResource(), "", errs
-	}
-	return d.rb.Emit(), conventions.SchemaURL, nil
+	return emittedRes, conventions.SchemaURL, nil
 }
 
 type instancesAPI interface {

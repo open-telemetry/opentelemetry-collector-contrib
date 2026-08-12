@@ -455,6 +455,8 @@ go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.17.0 h1:jddCxr64Bv
 go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.17.0/go.mod h1:p1ynrM9EAEk72cNYQtwOLl39gVOtE5zbSy+/vnnlLm4=
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0 h1:6TvMbWB8r3b3bDnmEOINXY4LGDkS5Tb/KdMIRk1b8gQ=
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0/go.mod h1:l5PtALrPd1LdGoCatPskfemVbh1KupYQ6GyWX+JiyRY=
+go.opentelemetry.io/contrib/detectors/gcp v1.45.0 h1:9jR0ZPRok9ryaOQ2Wx8rg5F7Aon59mxrqbVI60/vlBk=
+go.opentelemetry.io/contrib/detectors/gcp v1.45.0/go.mod h1:VSme3o2fvSg5bVg0dRzyHaj4Z5EVhG+g2Fde6LKzmQA=
 go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0 h1:zhELKuXxvdj0t3hWImgDdSm8Aaujhf8RjFBhIGe1yY4=
 go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0/go.mod h1:oZWjl1Hfwo7Z6ip5onlP4v9F9KpNAyTUR5oJt8CkgJw=
 go.opentelemetry.io/contrib/detectors/vultr v0.17.0 h1:4Jq5L/3oxU8SvzcQAq739a9SiA6HhZdfVJro1hWpnXU=
