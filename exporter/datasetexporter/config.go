@@ -162,13 +162,13 @@ func newDefaultServerHostSettings() ServerHostSettings {
 const debugDefault = false
 
 type Config struct {
-	DatasetURL         string              `mapstructure:"dataset_url"`
-	APIKey             configopaque.String `mapstructure:"api_key"`
-	Debug              bool                `mapstructure:"debug"`
-	BufferSettings     `mapstructure:"buffer"`
-	TracesSettings     `mapstructure:"traces"`
-	LogsSettings       `mapstructure:"logs"`
-	ServerHostSettings `mapstructure:"server_host"`
+	DatasetURL         string                                                   `mapstructure:"dataset_url"`
+	APIKey             configopaque.String                                      `mapstructure:"api_key"`
+	Debug              bool                                                     `mapstructure:"debug"`
+	BufferSettings     BufferSettings                                           `mapstructure:"buffer"`
+	TracesSettings     TracesSettings                                           `mapstructure:"traces"`
+	LogsSettings       LogsSettings                                             `mapstructure:"logs"`
+	ServerHostSettings ServerHostSettings                                       `mapstructure:"server_host"`
 	BackOffConfig      configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 	QueueSettings      configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	TimeoutSettings    exporterhelper.TimeoutConfig                             `mapstructure:"timeout"`
@@ -219,21 +219,21 @@ func (c *Config) convert() *exporterConfig {
 			Endpoint: c.DatasetURL,
 			Tokens:   datasetConfig.DataSetTokens{WriteLog: string(c.APIKey)},
 			BufferSettings: buffer_config.DataSetBufferSettings{
-				MaxLifetime:              c.MaxLifetime,
-				PurgeOlderThan:           c.PurgeOlderThan,
+				MaxLifetime:              c.BufferSettings.MaxLifetime,
+				PurgeOlderThan:           c.BufferSettings.PurgeOlderThan,
 				MaxSize:                  buffer.LimitBufferSize,
-				GroupBy:                  c.GroupBy,
-				RetryInitialInterval:     c.RetryInitialInterval,
-				RetryMaxInterval:         c.RetryMaxInterval,
-				RetryMaxElapsedTime:      c.RetryMaxElapsedTime,
+				GroupBy:                  c.BufferSettings.GroupBy,
+				RetryInitialInterval:     c.BufferSettings.RetryInitialInterval,
+				RetryMaxInterval:         c.BufferSettings.RetryMaxInterval,
+				RetryMaxElapsedTime:      c.BufferSettings.RetryMaxElapsedTime,
 				RetryMultiplier:          backoff.DefaultMultiplier,
 				RetryRandomizationFactor: backoff.DefaultRandomizationFactor,
-				RetryShutdownTimeout:     c.RetryShutdownTimeout,
-				MaxParallelOutgoing:      c.MaxParallelOutgoing,
+				RetryShutdownTimeout:     c.BufferSettings.RetryShutdownTimeout,
+				MaxParallelOutgoing:      c.BufferSettings.MaxParallelOutgoing,
 			},
 			ServerHostSettings: server_host_config.DataSetServerHostSettings{
-				UseHostName: c.UseHostName,
-				ServerHost:  c.ServerHost,
+				UseHostName: c.ServerHostSettings.UseHostName,
+				ServerHost:  c.ServerHostSettings.ServerHost,
 			},
 			Debug: c.Debug,
 		},

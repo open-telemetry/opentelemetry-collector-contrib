@@ -109,7 +109,8 @@ func createTracesExporter(
 		cfg,
 		tracker.ProcessTraces,
 		exporterhelper.WithStart(tracker.Start),
-		exporterhelper.WithShutdown(tracker.Shutdown))
+		exporterhelper.WithShutdown(tracker.Shutdown),
+	)
 }
 
 func createMetricsExporter(
@@ -134,14 +135,15 @@ func createMetricsExporter(
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.shutdown))
+		exporterhelper.WithShutdown(exp.shutdown),
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	// If AccessTokenPassthrough enabled, split the incoming Metrics data by splunk.SFxAccessTokenLabel,
 	// this ensures that we get batches of data for the same token when pushing to the backend.
-	if cfg.AccessTokenPassthrough {
+	if cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough {
 		me = &baseMetricsExporter{
 			Component: me,
 			Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(splunk.SFxAccessTokenLabel, me),
@@ -176,14 +178,15 @@ func createLogsExporter(
 		exporterhelper.WithRetry(expCfg.BackOffConfig),
 		exporterhelper.WithQueue(expCfg.QueueSettings),
 		exporterhelper.WithStart(exp.startLogs),
-		exporterhelper.WithShutdown(exp.shutdown))
+		exporterhelper.WithShutdown(exp.shutdown),
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	// If AccessTokenPassthrough enabled, split the incoming Metrics data by splunk.SFxAccessTokenLabel,
 	// this ensures that we get batches of data for the same token when pushing to the backend.
-	if expCfg.AccessTokenPassthrough {
+	if expCfg.AccessTokenPassthroughConfig.AccessTokenPassthrough {
 		le = &baseLogsExporter{
 			Component: le,
 			Logs:      batchperresourceattr.NewBatchPerResourceLogs(splunk.SFxAccessTokenLabel, le),

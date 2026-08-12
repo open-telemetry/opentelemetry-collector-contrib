@@ -37,7 +37,7 @@ func TestIntegration(t *testing.T) {
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
-				rCfg.ResourceAttributes.ContainerName.MetricsInclude = []filter.Config{{Strict: "dockerstatsreceiver-test"}}
+				rCfg.MetricsBuilderConfig.ResourceAttributes.ContainerName.MetricsInclude = []filter.Config{{Strict: "dockerstatsreceiver-test"}}
 			},
 		),
 		scraperinttest.WithCompareOptions(
@@ -52,6 +52,7 @@ func TestIntegration(t *testing.T) {
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()),
+			pmetrictest.IgnoreTimestamp(),
+		),
 	).Run(t)
 }

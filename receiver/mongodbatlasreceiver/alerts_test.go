@@ -566,7 +566,8 @@ func TestAlertsRetrieval(t *testing.T) {
 							MetricThreshold: &mongodbatlas.MetricThreshold{},
 							Notifications:   []mongodbatlas.Notification{},
 						},
-					}, false, nil)
+					}, false, nil,
+				)
 				return tc
 			},
 			validateEntries: func(t *testing.T, l plog.Logs) {
@@ -647,7 +648,8 @@ func testClient() *mockAlertsClient {
 		[]mongodbatlas.Alert{
 			testAlert(),
 		},
-		false, nil)
+		false, nil,
+	)
 	return ac
 }
 
