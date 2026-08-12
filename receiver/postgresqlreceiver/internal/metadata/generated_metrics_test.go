@@ -115,11 +115,11 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlBackendsDataPoint(ts, 1, "db.namespace-val", "backend_type-val", "session_state-val", "wait_event_type-val")
+			mb.RecordPostgresqlBackendsDataPoint(ts, 1, "db.namespace-val", "postgresql.backend_type-val", "postgresql.state-val", "postgresql.wait_event_type-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlBackendsDataPoint(ts, 3, "db.namespace-val-2", "backend_type-val-2", "session_state-val-2", "wait_event_type-val-2")
+				mb.RecordPostgresqlBackendsDataPoint(ts, 3, "db.namespace-val-2", "postgresql.backend_type-val-2", "postgresql.state-val-2", "postgresql.wait_event_type-val-2")
 				// a different timestamp is a different key: must not merge with the above.
-				mb.RecordPostgresqlBackendsDataPoint(ts+1, 3, "db.namespace-val-2", "backend_type-val-2", "session_state-val-2", "wait_event_type-val-2")
+				mb.RecordPostgresqlBackendsDataPoint(ts+1, 3, "db.namespace-val-2", "postgresql.backend_type-val-2", "postgresql.state-val-2", "postgresql.wait_event_type-val-2")
 				assert.Equal(t, 2, mb.metricPostgresqlBackends.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
@@ -568,15 +568,15 @@ func TestMetricsBuilder(t *testing.T) {
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						backendTypeAttrVal, ok := dp.Attributes().Get("backend_type")
+						postgresqlBackendTypeAttrVal, ok := dp.Attributes().Get("postgresql.backend_type")
 						assert.True(t, ok)
-						assert.Equal(t, "backend_type-val", backendTypeAttrVal.Str())
-						sessionStateAttrVal, ok := dp.Attributes().Get("state")
+						assert.Equal(t, "postgresql.backend_type-val", postgresqlBackendTypeAttrVal.Str())
+						postgresqlStateAttrVal, ok := dp.Attributes().Get("postgresql.state")
 						assert.True(t, ok)
-						assert.Equal(t, "session_state-val", sessionStateAttrVal.Str())
-						waitEventTypeAttrVal, ok := dp.Attributes().Get("wait_event_type")
+						assert.Equal(t, "postgresql.state-val", postgresqlStateAttrVal.Str())
+						postgresqlWaitEventTypeAttrVal, ok := dp.Attributes().Get("postgresql.wait_event_type")
 						assert.True(t, ok)
-						assert.Equal(t, "wait_event_type-val", waitEventTypeAttrVal.Str())
+						assert.Equal(t, "postgresql.wait_event_type-val", postgresqlWaitEventTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.backends"], "Found a duplicate in the metrics slice: postgresql.backends")
 						validatedMetrics["postgresql.backends"] = true
@@ -604,11 +604,11 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("backend_type")
+						_, ok = dp.Attributes().Get("postgresql.backend_type")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("state")
+						_, ok = dp.Attributes().Get("postgresql.state")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("wait_event_type")
+						_, ok = dp.Attributes().Get("postgresql.wait_event_type")
 						assert.False(t, ok)
 					}
 				case "postgresql.bgwriter.buffers.allocated":
