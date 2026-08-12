@@ -39,7 +39,7 @@ type parameterTransport struct {
 	config *Config
 }
 
-// RoundTrip adds headers related to
+// RoundTrip adds Google Cloud system parameter headers to outgoing requests.
 // Based on headers added by the google go client:
 // https://github.com/googleapis/google-api-go-client/blob/113082d14d54f188d1b6c34c652e416592fc51b5/transport/http/dial.go#L122
 func (t *parameterTransport) RoundTrip(req *http.Request) (*http.Response, error) {
