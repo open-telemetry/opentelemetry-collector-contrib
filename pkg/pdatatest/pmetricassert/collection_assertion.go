@@ -25,21 +25,25 @@ type (
 // MetricsAssertion supports exact/include collection operators.
 type ResourcesAssertion struct {
 	Values   []resourceAssertion `yaml:"resources,omitempty"`
+	Exact    []resourceAssertion `yaml:"resources/exact,omitempty"`
 	Includes []resourceAssertion `yaml:"resources/include,omitempty"`
 }
 
 type ScopesAssertion struct {
 	Values   []scopeAssertion `yaml:"scopes,omitempty"`
+	Exact    []scopeAssertion `yaml:"scopes/exact,omitempty"`
 	Includes []scopeAssertion `yaml:"scopes/include,omitempty"`
 }
 
 type MetricsAssertion struct {
 	Values   []metricAssertion `yaml:"metrics,omitempty"`
+	Exact    []metricAssertion `yaml:"metrics/exact,omitempty"`
 	Includes []metricAssertion `yaml:"metrics/include,omitempty"`
 }
 
 type DatapointsAssertion struct {
 	Values   []datapointAssertion `yaml:"datapoints,omitempty"`
+	Exact    []datapointAssertion `yaml:"datapoints/exact,omitempty"`
 	Includes []datapointAssertion `yaml:"datapoints/include,omitempty"`
 }
 
@@ -242,14 +246,17 @@ func (s scopeAssertion) Matches(actual scopeAssertion) error {
 	if s.Name != actual.Name {
 		return fmt.Errorf("name mismatch: expected %q, got %q", s.Name, actual.Name)
 	}
-	if s.Version != actual.Version {
-		return fmt.Errorf("version mismatch: expected %q, got %q", s.Version, actual.Version)
+	if err := matchVersion(s.Version, actual.Version.value); err != nil {
+		return fmt.Errorf("version mismatch: %w", err)
 	}
 	return compareScope(s, actual)
 }
 
 func (d datapointAssertion) Matches(actual datapointAssertion) error {
-	return compareAttributes(d.Attributes, actual.Attributes)
+	if err := compareAttributes(d.Attributes, actual.Attributes); err != nil {
+		return err
+	}
+	return compareDatapointValues(d, actual)
 }
 
 // Matches validates one actual metric against this expected metric assertion.

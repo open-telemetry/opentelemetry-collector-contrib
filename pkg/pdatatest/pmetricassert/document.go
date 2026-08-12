@@ -192,6 +192,10 @@ func readDocument(path string) (*document, error) {
 // before comparison, so pmetricassert does not accept the empty-metric
 // encoding as a valid assertion either.
 func expandShorthand(doc *document) {
+	if len(doc.Resources.Exact) > 0 {
+		doc.Resources.Values = doc.Resources.Exact
+		doc.Resources.Exact = nil
+	}
 	for i := range doc.Resources.Values {
 		expandResourceShorthand(&doc.Resources.Values[i])
 	}
@@ -201,6 +205,10 @@ func expandShorthand(doc *document) {
 }
 
 func expandResourceShorthand(r *resourceAssertion) {
+	if len(r.Scopes.Exact) > 0 {
+		r.Scopes.Values = r.Scopes.Exact
+		r.Scopes.Exact = nil
+	}
 	for i := range r.Scopes.Values {
 		expandScopeShorthand(&r.Scopes.Values[i])
 	}
@@ -210,6 +218,10 @@ func expandResourceShorthand(r *resourceAssertion) {
 }
 
 func expandScopeShorthand(s *scopeAssertion) {
+	if len(s.Metrics.Exact) > 0 {
+		s.Metrics.Values = s.Metrics.Exact
+		s.Metrics.Exact = nil
+	}
 	for i := range s.Metrics.Values {
 		expandMetricShorthand(&s.Metrics.Values[i])
 	}
@@ -219,6 +231,10 @@ func expandScopeShorthand(s *scopeAssertion) {
 }
 
 func expandMetricShorthand(m *metricAssertion) {
+	if len(m.Datapoints.Exact) > 0 {
+		m.Datapoints.Values = m.Datapoints.Exact
+		m.Datapoints.Exact = nil
+	}
 	if len(m.Datapoints.Values) == 0 && len(m.Datapoints.Includes) == 0 {
 		m.Datapoints.Values = []datapointAssertion{{}}
 	}
