@@ -406,54 +406,6 @@ func (ms *MysqlConnectionErrorsMetricConfig) Validate() error {
 	return nil
 }
 
-// MysqlDataFileIoMetricAttributeKey specifies the key of an attribute for the mysql.data_file.io metric.
-type MysqlDataFileIoMetricAttributeKey string
-
-const (
-	MysqlDataFileIoMetricAttributeKeyDiskIoDirection MysqlDataFileIoMetricAttributeKey = "disk.io.direction"
-)
-
-// MysqlDataFileIoMetricConfig provides config for the mysql.data_file.io metric.
-type MysqlDataFileIoMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []MysqlDataFileIoMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *MysqlDataFileIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *MysqlDataFileIoMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case MysqlDataFileIoMetricAttributeKeyDiskIoDirection:
-		default:
-			return fmt.Errorf("metric mysql.data_file.io doesn't have an attribute %v, valid attributes: [disk.io.direction]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
 // MysqlDoubleWritesMetricAttributeKey specifies the key of an attribute for the mysql.double_writes metric.
 type MysqlDoubleWritesMetricAttributeKey string
 
@@ -660,6 +612,54 @@ func (ms *MysqlIndexIoWaitTimeMetricConfig) Validate() error {
 		case MysqlIndexIoWaitTimeMetricAttributeKeyIoWaitsOperations, MysqlIndexIoWaitTimeMetricAttributeKeyTableName, MysqlIndexIoWaitTimeMetricAttributeKeySchema, MysqlIndexIoWaitTimeMetricAttributeKeyIndexName:
 		default:
 			return fmt.Errorf("metric mysql.index.io.wait.time doesn't have an attribute %v, valid attributes: [operation, table, schema, index]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlInnodbDataFileIoMetricAttributeKey specifies the key of an attribute for the mysql.innodb.data_file.io metric.
+type MysqlInnodbDataFileIoMetricAttributeKey string
+
+const (
+	MysqlInnodbDataFileIoMetricAttributeKeyDiskIoDirection MysqlInnodbDataFileIoMetricAttributeKey = "disk.io.direction"
+)
+
+// MysqlInnodbDataFileIoMetricConfig provides config for the mysql.innodb.data_file.io metric.
+type MysqlInnodbDataFileIoMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlInnodbDataFileIoMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlInnodbDataFileIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlInnodbDataFileIoMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlInnodbDataFileIoMetricAttributeKeyDiskIoDirection:
+		default:
+			return fmt.Errorf("metric mysql.innodb.data_file.io doesn't have an attribute %v, valid attributes: [disk.io.direction]", val)
 		}
 	}
 
@@ -2201,12 +2201,12 @@ type MetricsConfig struct {
 	MysqlCommands                MysqlCommandsMetricConfig                `mapstructure:"mysql.commands"`
 	MysqlConnectionCount         MysqlConnectionCountMetricConfig         `mapstructure:"mysql.connection.count"`
 	MysqlConnectionErrors        MysqlConnectionErrorsMetricConfig        `mapstructure:"mysql.connection.errors"`
-	MysqlDataFileIo              MysqlDataFileIoMetricConfig              `mapstructure:"mysql.data_file.io"`
 	MysqlDoubleWrites            MysqlDoubleWritesMetricConfig            `mapstructure:"mysql.double_writes"`
 	MysqlFileOpen                MysqlFileOpenMetricConfig                `mapstructure:"mysql.file.open"`
 	MysqlHandlers                MysqlHandlersMetricConfig                `mapstructure:"mysql.handlers"`
 	MysqlIndexIoWaitCount        MysqlIndexIoWaitCountMetricConfig        `mapstructure:"mysql.index.io.wait.count"`
 	MysqlIndexIoWaitTime         MysqlIndexIoWaitTimeMetricConfig         `mapstructure:"mysql.index.io.wait.time"`
+	MysqlInnodbDataFileIo        MysqlInnodbDataFileIoMetricConfig        `mapstructure:"mysql.innodb.data_file.io"`
 	MysqlInnodbOperationPending  MysqlInnodbOperationPendingMetricConfig  `mapstructure:"mysql.innodb.operation.pending"`
 	MysqlJoins                   MysqlJoinsMetricConfig                   `mapstructure:"mysql.joins"`
 	MysqlLocks                   MysqlLocksMetricConfig                   `mapstructure:"mysql.locks"`
@@ -2292,11 +2292,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlConnectionErrorsMetricAttributeKey{MysqlConnectionErrorsMetricAttributeKeyConnectionError},
 		},
-		MysqlDataFileIo: MysqlDataFileIoMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []MysqlDataFileIoMetricAttributeKey{MysqlDataFileIoMetricAttributeKeyDiskIoDirection},
-		},
 		MysqlDoubleWrites: MysqlDoubleWritesMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
@@ -2319,6 +2314,11 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlIndexIoWaitTimeMetricAttributeKey{MysqlIndexIoWaitTimeMetricAttributeKeyIoWaitsOperations, MysqlIndexIoWaitTimeMetricAttributeKeyTableName, MysqlIndexIoWaitTimeMetricAttributeKeySchema, MysqlIndexIoWaitTimeMetricAttributeKeyIndexName},
+		},
+		MysqlInnodbDataFileIo: MysqlInnodbDataFileIoMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlInnodbDataFileIoMetricAttributeKey{MysqlInnodbDataFileIoMetricAttributeKeyDiskIoDirection},
 		},
 		MysqlInnodbOperationPending: MysqlInnodbOperationPendingMetricConfig{
 			Enabled:             false,

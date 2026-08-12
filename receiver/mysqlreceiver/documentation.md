@@ -416,7 +416,15 @@ Errors that occur during the client connection process.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` | Recommended | - |
 
-### mysql.data_file.io
+### mysql.file.open
+
+The number of currently open files.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+### mysql.innodb.data_file.io
 
 The total bytes read from and written to InnoDB data files.
 
@@ -429,14 +437,6 @@ The total bytes read from and written to InnoDB data files.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | The disk IO operation direction. | Str: ``read``, ``write`` | Recommended | - |
-
-### mysql.file.open
-
-The number of currently open files.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
 
 ### mysql.innodb.operation.pending
 

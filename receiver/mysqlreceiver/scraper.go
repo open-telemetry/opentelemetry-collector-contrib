@@ -447,11 +447,11 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Innodb_os_log_fsyncs":
 			addPartialIfError(errs, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsFsyncs))
 
-		// data_file.io
+		// innodb.data_file.io
 		case "Innodb_data_read":
-			addPartialIfError(errs, m.mb.RecordMysqlDataFileIoDataPoint(now, v, metadata.AttributeDiskIoDirectionRead))
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbDataFileIoDataPoint(now, v, metadata.AttributeDiskIoDirectionRead))
 		case "Innodb_data_written":
-			addPartialIfError(errs, m.mb.RecordMysqlDataFileIoDataPoint(now, v, metadata.AttributeDiskIoDirectionWrite))
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbDataFileIoDataPoint(now, v, metadata.AttributeDiskIoDirectionWrite))
 
 		// innodb.operation.pending
 		case "Innodb_data_pending_fsyncs":

@@ -28,9 +28,6 @@ all_set:
     mysql.connection.errors:
       enabled: true
       attributes: ["error"]
-    mysql.data_file.io:
-      enabled: true
-      attributes: ["disk.io.direction"]
     mysql.double_writes:
       enabled: true
       attributes: ["kind"]
@@ -45,6 +42,9 @@ all_set:
     mysql.index.io.wait.time:
       enabled: true
       attributes: ["operation","table","schema","index"]
+    mysql.innodb.data_file.io:
+      enabled: true
+      attributes: ["disk.io.direction"]
     mysql.innodb.operation.pending:
       enabled: true
       attributes: ["operation"]
@@ -193,9 +193,6 @@ reaggregate_set:
     mysql.connection.errors:
       enabled: true
       attributes: []
-    mysql.data_file.io:
-      enabled: true
-      attributes: []
     mysql.double_writes:
       enabled: true
       attributes: []
@@ -208,6 +205,9 @@ reaggregate_set:
       enabled: true
       attributes: []
     mysql.index.io.wait.time:
+      enabled: true
+      attributes: []
+    mysql.innodb.data_file.io:
       enabled: true
       attributes: []
     mysql.innodb.operation.pending:
@@ -358,9 +358,6 @@ none_set:
     mysql.connection.errors:
       enabled: false
       attributes: ["error"]
-    mysql.data_file.io:
-      enabled: false
-      attributes: ["disk.io.direction"]
     mysql.double_writes:
       enabled: false
       attributes: ["kind"]
@@ -375,6 +372,9 @@ none_set:
     mysql.index.io.wait.time:
       enabled: false
       attributes: ["operation","table","schema","index"]
+    mysql.innodb.data_file.io:
+      enabled: false
+      attributes: ["disk.io.direction"]
     mysql.innodb.operation.pending:
       enabled: false
       attributes: ["operation"]

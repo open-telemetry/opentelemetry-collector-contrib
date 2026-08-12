@@ -74,11 +74,11 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["mysql.client.network.io"] = mb.metricMysqlClientNetworkIo.config.AggregationStrategy
 			aggMap["mysql.commands"] = mb.metricMysqlCommands.config.AggregationStrategy
 			aggMap["mysql.connection.errors"] = mb.metricMysqlConnectionErrors.config.AggregationStrategy
-			aggMap["mysql.data_file.io"] = mb.metricMysqlDataFileIo.config.AggregationStrategy
 			aggMap["mysql.double_writes"] = mb.metricMysqlDoubleWrites.config.AggregationStrategy
 			aggMap["mysql.handlers"] = mb.metricMysqlHandlers.config.AggregationStrategy
 			aggMap["mysql.index.io.wait.count"] = mb.metricMysqlIndexIoWaitCount.config.AggregationStrategy
 			aggMap["mysql.index.io.wait.time"] = mb.metricMysqlIndexIoWaitTime.config.AggregationStrategy
+			aggMap["mysql.innodb.data_file.io"] = mb.metricMysqlInnodbDataFileIo.config.AggregationStrategy
 			aggMap["mysql.innodb.operation.pending"] = mb.metricMysqlInnodbOperationPending.config.AggregationStrategy
 			aggMap["mysql.joins"] = mb.metricMysqlJoins.config.AggregationStrategy
 			aggMap["mysql.locks"] = mb.metricMysqlLocks.config.AggregationStrategy
@@ -165,12 +165,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlConnectionErrorsDataPoint(ts, "3", AttributeConnectionErrorInternal)
 			}
-
-			allMetricsCount++
-			mb.RecordMysqlDataFileIoDataPoint(ts, "1", AttributeDiskIoDirectionRead)
-			if tt.name == "reaggregate_set" {
-				mb.RecordMysqlDataFileIoDataPoint(ts, "3", AttributeDiskIoDirectionWrite)
-			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlDoubleWritesDataPoint(ts, "1", AttributeDoubleWritesPagesWritten)
@@ -197,6 +191,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMysqlIndexIoWaitTimeDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val", "index_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlIndexIoWaitTimeDataPoint(ts, 3, AttributeIoWaitsOperationsFetch, "table_name-val-2", "schema-val-2", "index_name-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordMysqlInnodbDataFileIoDataPoint(ts, "1", AttributeDiskIoDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMysqlInnodbDataFileIoDataPoint(ts, "3", AttributeDiskIoDirectionWrite)
 			}
 
 			allMetricsCount++
@@ -408,11 +408,11 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricMysqlClientNetworkIo.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlCommands.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlConnectionErrors.aggDataPoints)
-				assert.Empty(t, mb.metricMysqlDataFileIo.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlDoubleWrites.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlHandlers.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlIndexIoWaitCount.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlIndexIoWaitTime.aggDataPoints)
+				assert.Empty(t, mb.metricMysqlInnodbDataFileIo.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlInnodbOperationPending.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlJoins.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlLocks.aggDataPoints)
@@ -817,50 +817,6 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("error")
 						assert.False(t, ok)
 					}
-				case "mysql.data_file.io":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["mysql.data_file.io"], "Found a duplicate in the metrics slice: mysql.data_file.io")
-						validatedMetrics["mysql.data_file.io"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The total bytes read from and written to InnoDB data files.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						diskIoDirectionAttrVal, ok := dp.Attributes().Get("disk.io.direction")
-						assert.True(t, ok)
-						assert.Equal(t, "read", diskIoDirectionAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["mysql.data_file.io"], "Found a duplicate in the metrics slice: mysql.data_file.io")
-						validatedMetrics["mysql.data_file.io"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The total bytes read from and written to InnoDB data files.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["mysql.data_file.io"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("disk.io.direction")
-						assert.False(t, ok)
-					}
 				case "mysql.double_writes":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.double_writes"], "Found a duplicate in the metrics slice: mysql.double_writes")
@@ -1077,6 +1033,50 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("schema")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("index")
+						assert.False(t, ok)
+					}
+				case "mysql.innodb.data_file.io":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mysql.innodb.data_file.io"], "Found a duplicate in the metrics slice: mysql.innodb.data_file.io")
+						validatedMetrics["mysql.innodb.data_file.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The total bytes read from and written to InnoDB data files.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						diskIoDirectionAttrVal, ok := dp.Attributes().Get("disk.io.direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", diskIoDirectionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mysql.innodb.data_file.io"], "Found a duplicate in the metrics slice: mysql.innodb.data_file.io")
+						validatedMetrics["mysql.innodb.data_file.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The total bytes read from and written to InnoDB data files.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mysql.innodb.data_file.io"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("disk.io.direction")
 						assert.False(t, ok)
 					}
 				case "mysql.innodb.operation.pending":

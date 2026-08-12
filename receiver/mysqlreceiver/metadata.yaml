@@ -454,17 +454,6 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [connection_error]
-  mysql.data_file.io:
-    enabled: false
-    description: The total bytes read from and written to InnoDB data files.
-    stability: development
-    unit: By
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: [disk.io.direction]
   mysql.double_writes:
     enabled: true
     description: The number of writes to the InnoDB doublewrite buffer.
@@ -516,6 +505,17 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [io_waits_operations, table_name, schema, index_name]
+  mysql.innodb.data_file.io:
+    enabled: false
+    description: The total bytes read from and written to InnoDB data files.
+    stability: development
+    unit: By
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [disk.io.direction]
   mysql.innodb.operation.pending:
     enabled: false
     description: The number of pending InnoDB data file operations.
