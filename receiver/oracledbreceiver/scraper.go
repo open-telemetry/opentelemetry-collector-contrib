@@ -205,14 +205,32 @@ const (
 	sessionCountCDBSQL      = "select s.status, s.type, c.name as PDB_NAME, count(*) as VALUE FROM v$session s, v$containers c WHERE s.con_id = c.con_id(+) GROUP BY s.status, s.type, c.name"
 	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
 	tablespaceUsageSQL      = `
-		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE
+		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE, ts.STATUS
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
+	// tablespaceUsageWithMaxSQL extends tablespaceUsageSQL with autoextend max size from DBA_DATA_FILES.
+	tablespaceUsageWithMaxSQL = `
+		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE, ts.STATUS,
+		       NVL(mxb.MAX_BYTES, 0) as MAX_BYTES
+		FROM DBA_TABLESPACE_USAGE_METRICS um
+		INNER JOIN DBA_TABLESPACES ts ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME
+		LEFT JOIN (SELECT TABLESPACE_NAME, SUM(NVL(MAXBYTES, 0)) as MAX_BYTES FROM DBA_DATA_FILES GROUP BY TABLESPACE_NAME) mxb
+		    ON um.TABLESPACE_NAME = mxb.TABLESPACE_NAME`
 	// tablespaceUsageCDBSQL extends tablespaceUsageSQL for CDB root, using CDB_ views to cover all PDBs.
 	tablespaceUsageCDBSQL = `
-		SELECT c.name AS PDB_NAME, t.TABLESPACE_NAME, m.USED_SPACE, m.TABLESPACE_SIZE, t.BLOCK_SIZE
+		SELECT c.name AS PDB_NAME, t.TABLESPACE_NAME, m.USED_SPACE, m.TABLESPACE_SIZE, t.BLOCK_SIZE, t.STATUS
 		FROM CDB_TABLESPACE_USAGE_METRICS m, CDB_TABLESPACES t, v$containers c
 		WHERE m.con_id(+) = t.con_id AND t.con_id = c.con_id AND m.TABLESPACE_NAME(+) = t.TABLESPACE_NAME`
+	// tablespaceUsageCDBWithMaxSQL extends tablespaceUsageCDBSQL with autoextend max size from CDB_DATA_FILES.
+	// Uses ANSI join syntax throughout (Oracle rejects mixing old-style (+) outer joins with ANSI joins).
+	tablespaceUsageCDBWithMaxSQL = `
+		SELECT c.name AS PDB_NAME, t.TABLESPACE_NAME, m.USED_SPACE, m.TABLESPACE_SIZE, t.BLOCK_SIZE, t.STATUS,
+		       NVL(mxb.MAX_BYTES, 0) as MAX_BYTES
+		FROM CDB_TABLESPACES t
+		JOIN v$containers c ON t.con_id = c.con_id
+		LEFT JOIN CDB_TABLESPACE_USAGE_METRICS m ON m.con_id = t.con_id AND m.TABLESPACE_NAME = t.TABLESPACE_NAME
+		LEFT JOIN (SELECT TABLESPACE_NAME, CON_ID, SUM(NVL(MAXBYTES, 0)) as MAX_BYTES FROM CDB_DATA_FILES GROUP BY TABLESPACE_NAME, CON_ID) mxb
+		    ON t.TABLESPACE_NAME = mxb.TABLESPACE_NAME AND t.con_id = mxb.CON_ID`
 	// statsCDBSQL extends statsSQL for CDB root using v$con_sysstat (a Container Data Object)
 	// which returns per-PDB rows with correct CON_IDs; v$sysstat always returns CON_ID=0 from CDB root.
 	statsCDBSQL = `
@@ -400,6 +418,22 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
 
+// buildTablespaceSQL selects the tablespace query variant for the connection type,
+// including the DBA_DATA_FILES/CDB_DATA_FILES join only when needed.
+func (s *oracleScraper) buildTablespaceSQL() string {
+	withMax := s.metricsBuilderConfig.Metrics.OracledbTablespaceLimit.Enabled
+	switch {
+	case s.isCDBRoot && withMax:
+		return tablespaceUsageCDBWithMaxSQL
+	case s.isCDBRoot:
+		return tablespaceUsageCDBSQL
+	case withMax:
+		return tablespaceUsageWithMaxSQL
+	default:
+		return tablespaceUsageSQL
+	}
+}
+
 func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	s.startTime = pcommon.NewTimestampFromTime(time.Now())
 	var err error
@@ -429,12 +463,11 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 		s.logger.Info("oracledbreceiver: connected to CDB root; using CDB-aware queries for per-PDB metrics")
 		s.statsClient = s.clientProviderFunc(s.db, statsCDBSQL, s.logger)
 		s.sessionCountClient = s.clientProviderFunc(s.db, sessionCountCDBSQL, s.logger)
-		s.tablespaceUsageClient = s.clientProviderFunc(s.db, tablespaceUsageCDBSQL, s.logger)
 	} else {
 		s.statsClient = s.clientProviderFunc(s.db, statsSQL, s.logger)
 		s.sessionCountClient = s.clientProviderFunc(s.db, sessionCountSQL, s.logger)
-		s.tablespaceUsageClient = s.clientProviderFunc(s.db, tablespaceUsageSQL, s.logger)
 	}
+	s.tablespaceUsageClient = s.clientProviderFunc(s.db, s.buildTablespaceSQL(), s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
 	s.samplesQueryClient = s.clientProviderFunc(s.db, samplesQuery, s.logger)
 	s.sessionEventClient = s.clientProviderFunc(s.db, sessionEventQuery, s.logger)
@@ -1087,11 +1120,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	if s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeUsage.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeLimit.Enabled {
-		tablespaceQueryName := tablespaceUsageSQL
-		if s.isCDBRoot {
-			tablespaceQueryName = tablespaceUsageCDBSQL
-		}
+		s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeLimit.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTablespaceUtilization.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTablespaceStatus.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTablespaceLimit.Enabled {
+		tablespaceQueryName := s.buildTablespaceSQL()
 		rows, err := s.tablespaceUsageClient.metricRows(ctx)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", tablespaceQueryName, err))
@@ -1132,6 +1165,27 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					s.mb.RecordOracledbTablespaceSizeLimitDataPoint(now, -1, tablespaceName, pdbName)
 				} else {
 					s.mb.RecordOracledbTablespaceSizeLimitDataPoint(now, tablespaceSizeBlockCount*blockSize, tablespaceName, pdbName)
+				}
+
+				if s.metricsBuilderConfig.Metrics.OracledbTablespaceUtilization.Enabled && tablespaceSizeBlockCount > 0 {
+					utilization := float64(usedSpaceBlockCount) / float64(tablespaceSizeBlockCount)
+					s.mb.RecordOracledbTablespaceUtilizationDataPoint(now, utilization, tablespaceName, pdbName)
+				}
+
+				if s.metricsBuilderConfig.Metrics.OracledbTablespaceStatus.Enabled {
+					state := strings.ToLower(strings.TrimSpace(row["STATUS"]))
+					if tablespaceState, ok := metadata.MapAttributeOracledbTablespaceState[state]; ok {
+						s.mb.RecordOracledbTablespaceStatusDataPoint(now, 1, tablespaceName, tablespaceState, pdbName)
+					}
+				}
+
+				if s.metricsBuilderConfig.Metrics.OracledbTablespaceLimit.Enabled {
+					maxBytes, err := strconv.ParseInt(row["MAX_BYTES"], 10, 64)
+					if err != nil {
+						scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbTablespaceLimit, value was %s: %w", row["MAX_BYTES"], err))
+						continue
+					}
+					s.mb.RecordOracledbTablespaceLimitDataPoint(now, maxBytes, tablespaceName, pdbName)
 				}
 			}
 		}

@@ -401,10 +401,6 @@ component_management:
     name: extension_observer_k8sobserver
     paths:
     - extension/observer/k8sobserver/**
-  - component_id: extension_observer_kafkatopicsobserver
-    name: extension_observer_kafkatopicsobserver
-    paths:
-    - extension/observer/kafkatopicsobserver/**
   - component_id: extension_oidcauth
     name: extension_oidcauth
     paths:
