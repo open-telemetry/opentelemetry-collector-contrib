@@ -137,10 +137,10 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 
 	mx := mux.NewRouter()
 	// set up the ack API handler if the ack extension is present
-	if r.config.Extension != nil {
-		ext, found := host.GetExtensions()[*r.config.Extension]
+	if r.config.Ack.Extension != nil {
+		ext, found := host.GetExtensions()[*r.config.Ack.Extension]
 		if !found {
-			return fmt.Errorf("specified ack extension with id %q could not be found", *r.config.Extension)
+			return fmt.Errorf("specified ack extension with id %q could not be found", *r.config.Ack.Extension)
 		}
 		r.ackExt = ext.(ackextension.AckExtension)
 		mx.NewRoute().Path(r.config.Ack.Path).HandlerFunc(r.handleAck)

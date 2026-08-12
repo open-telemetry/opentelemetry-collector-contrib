@@ -76,6 +76,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []MysqlDoubleWritesMetricAttributeKey{MysqlDoubleWritesMetricAttributeKeyDoubleWrites},
 					},
+					MysqlFileOpen: MysqlFileOpenMetricConfig{
+						Enabled: true,
+					},
 					MysqlHandlers: MysqlHandlersMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -154,6 +157,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlReplicaSQLDelay: MysqlReplicaSQLDelayMetricConfig{
 						Enabled: true,
 					},
+					MysqlReplicaTempTableOpen: MysqlReplicaTempTableOpenMetricConfig{
+						Enabled: true,
+					},
+					MysqlReplicaThreadRunning: MysqlReplicaThreadRunningMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MysqlReplicaThreadRunningMetricAttributeKey{MysqlReplicaThreadRunningMetricAttributeKeyMysqlReplicaThreadType, MysqlReplicaThreadRunningMetricAttributeKeyMysqlReplicaChannelName},
+					},
 					MysqlReplicaTimeBehindSource: MysqlReplicaTimeBehindSourceMetricConfig{
 						Enabled: true,
 					},
@@ -217,6 +228,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []MysqlTableLockWaitWriteTimeMetricAttributeKey{MysqlTableLockWaitWriteTimeMetricAttributeKeySchema, MysqlTableLockWaitWriteTimeMetricAttributeKeyTableName, MysqlTableLockWaitWriteTimeMetricAttributeKeyWriteLockType},
 					},
+					MysqlTableOpen: MysqlTableOpenMetricConfig{
+						Enabled: true,
+					},
 					MysqlTableRows: MysqlTableRowsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -231,6 +245,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []MysqlTableOpenCacheMetricAttributeKey{MysqlTableOpenCacheMetricAttributeKeyCacheStatus},
+					},
+					MysqlThreadSlowLaunch: MysqlThreadSlowLaunchMetricConfig{
+						Enabled: true,
 					},
 					MysqlThreads: MysqlThreadsMetricConfig{
 						Enabled:             true,
@@ -309,6 +326,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []MysqlDoubleWritesMetricAttributeKey{MysqlDoubleWritesMetricAttributeKeyDoubleWrites},
 					},
+					MysqlFileOpen: MysqlFileOpenMetricConfig{
+						Enabled: false,
+					},
 					MysqlHandlers: MysqlHandlersMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
@@ -387,6 +407,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlReplicaSQLDelay: MysqlReplicaSQLDelayMetricConfig{
 						Enabled: false,
 					},
+					MysqlReplicaTempTableOpen: MysqlReplicaTempTableOpenMetricConfig{
+						Enabled: false,
+					},
+					MysqlReplicaThreadRunning: MysqlReplicaThreadRunningMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MysqlReplicaThreadRunningMetricAttributeKey{MysqlReplicaThreadRunningMetricAttributeKeyMysqlReplicaThreadType, MysqlReplicaThreadRunningMetricAttributeKeyMysqlReplicaChannelName},
+					},
 					MysqlReplicaTimeBehindSource: MysqlReplicaTimeBehindSourceMetricConfig{
 						Enabled: false,
 					},
@@ -450,6 +478,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []MysqlTableLockWaitWriteTimeMetricAttributeKey{MysqlTableLockWaitWriteTimeMetricAttributeKeySchema, MysqlTableLockWaitWriteTimeMetricAttributeKeyTableName, MysqlTableLockWaitWriteTimeMetricAttributeKeyWriteLockType},
 					},
+					MysqlTableOpen: MysqlTableOpenMetricConfig{
+						Enabled: false,
+					},
 					MysqlTableRows: MysqlTableRowsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
@@ -464,6 +495,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []MysqlTableOpenCacheMetricAttributeKey{MysqlTableOpenCacheMetricAttributeKeyCacheStatus},
+					},
+					MysqlThreadSlowLaunch: MysqlThreadSlowLaunchMetricConfig{
+						Enabled: false,
 					},
 					MysqlThreads: MysqlThreadsMetricConfig{
 						Enabled:             false,
@@ -493,7 +527,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MysqlBufferPoolDataPagesMetricConfig{}, MysqlBufferPoolLimitMetricConfig{}, MysqlBufferPoolOperationsMetricConfig{}, MysqlBufferPoolPageFlushesMetricConfig{}, MysqlBufferPoolPagesMetricConfig{}, MysqlBufferPoolUsageMetricConfig{}, MysqlClientNetworkIoMetricConfig{}, MysqlCommandsMetricConfig{}, MysqlConnectionCountMetricConfig{}, MysqlConnectionErrorsMetricConfig{}, MysqlDoubleWritesMetricConfig{}, MysqlHandlersMetricConfig{}, MysqlIndexIoWaitCountMetricConfig{}, MysqlIndexIoWaitTimeMetricConfig{}, MysqlJoinsMetricConfig{}, MysqlLocksMetricConfig{}, MysqlLogOperationsMetricConfig{}, MysqlMaxUsedConnectionsMetricConfig{}, MysqlMysqlxConnectionsMetricConfig{}, MysqlMysqlxWorkerThreadsMetricConfig{}, MysqlOpenedResourcesMetricConfig{}, MysqlOperationsMetricConfig{}, MysqlPageOperationsMetricConfig{}, MysqlPageSizeMetricConfig{}, MysqlPreparedStatementsMetricConfig{}, MysqlQueryClientCountMetricConfig{}, MysqlQueryCountMetricConfig{}, MysqlQuerySlowCountMetricConfig{}, MysqlReplicaSQLDelayMetricConfig{}, MysqlReplicaTimeBehindSourceMetricConfig{}, MysqlRowLocksMetricConfig{}, MysqlRowOperationsMetricConfig{}, MysqlSortsMetricConfig{}, MysqlStatementEventCountMetricConfig{}, MysqlStatementEventWaitTimeMetricConfig{}, MysqlTableAverageRowLengthMetricConfig{}, MysqlTableIoWaitCountMetricConfig{}, MysqlTableIoWaitTimeMetricConfig{}, MysqlTableLockWaitReadCountMetricConfig{}, MysqlTableLockWaitReadTimeMetricConfig{}, MysqlTableLockWaitWriteCountMetricConfig{}, MysqlTableLockWaitWriteTimeMetricConfig{}, MysqlTableRowsMetricConfig{}, MysqlTableSizeMetricConfig{}, MysqlTableOpenCacheMetricConfig{}, MysqlThreadsMetricConfig{}, MysqlTmpResourcesMetricConfig{}, MysqlUptimeMetricConfig{}, DbSystemNameResourceAttributeConfig{}, DbSystemVersionResourceAttributeConfig{}, MysqlInstanceEndpointResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MysqlBufferPoolDataPagesMetricConfig{}, MysqlBufferPoolLimitMetricConfig{}, MysqlBufferPoolOperationsMetricConfig{}, MysqlBufferPoolPageFlushesMetricConfig{}, MysqlBufferPoolPagesMetricConfig{}, MysqlBufferPoolUsageMetricConfig{}, MysqlClientNetworkIoMetricConfig{}, MysqlCommandsMetricConfig{}, MysqlConnectionCountMetricConfig{}, MysqlConnectionErrorsMetricConfig{}, MysqlDoubleWritesMetricConfig{}, MysqlFileOpenMetricConfig{}, MysqlHandlersMetricConfig{}, MysqlIndexIoWaitCountMetricConfig{}, MysqlIndexIoWaitTimeMetricConfig{}, MysqlJoinsMetricConfig{}, MysqlLocksMetricConfig{}, MysqlLogOperationsMetricConfig{}, MysqlMaxUsedConnectionsMetricConfig{}, MysqlMysqlxConnectionsMetricConfig{}, MysqlMysqlxWorkerThreadsMetricConfig{}, MysqlOpenedResourcesMetricConfig{}, MysqlOperationsMetricConfig{}, MysqlPageOperationsMetricConfig{}, MysqlPageSizeMetricConfig{}, MysqlPreparedStatementsMetricConfig{}, MysqlQueryClientCountMetricConfig{}, MysqlQueryCountMetricConfig{}, MysqlQuerySlowCountMetricConfig{}, MysqlReplicaSQLDelayMetricConfig{}, MysqlReplicaTempTableOpenMetricConfig{}, MysqlReplicaThreadRunningMetricConfig{}, MysqlReplicaTimeBehindSourceMetricConfig{}, MysqlRowLocksMetricConfig{}, MysqlRowOperationsMetricConfig{}, MysqlSortsMetricConfig{}, MysqlStatementEventCountMetricConfig{}, MysqlStatementEventWaitTimeMetricConfig{}, MysqlTableAverageRowLengthMetricConfig{}, MysqlTableIoWaitCountMetricConfig{}, MysqlTableIoWaitTimeMetricConfig{}, MysqlTableLockWaitReadCountMetricConfig{}, MysqlTableLockWaitReadTimeMetricConfig{}, MysqlTableLockWaitWriteCountMetricConfig{}, MysqlTableLockWaitWriteTimeMetricConfig{}, MysqlTableOpenMetricConfig{}, MysqlTableRowsMetricConfig{}, MysqlTableSizeMetricConfig{}, MysqlTableOpenCacheMetricConfig{}, MysqlThreadSlowLaunchMetricConfig{}, MysqlThreadsMetricConfig{}, MysqlTmpResourcesMetricConfig{}, MysqlUptimeMetricConfig{}, DbSystemNameResourceAttributeConfig{}, DbSystemVersionResourceAttributeConfig{}, MysqlInstanceEndpointResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -734,6 +768,18 @@ func TestMysqlPreparedStatementsMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric mysql.prepared_statements doesn't have an attribute invalid, valid attributes: [command]")
 
 	cfg = DefaultMetricsConfig().MysqlPreparedStatements
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlReplicaThreadRunningMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlReplicaThreadRunning
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlReplicaThreadRunningMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.replica.thread.running doesn't have an attribute invalid, valid attributes: [mysql.replica.thread.type, mysql.replica.channel.name]")
+
+	cfg = DefaultMetricsConfig().MysqlReplicaThreadRunning
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
