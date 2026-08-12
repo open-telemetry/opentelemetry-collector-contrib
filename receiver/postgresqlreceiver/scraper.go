@@ -53,8 +53,12 @@ type postgreSQLScraper struct {
 	clientFactory postgreSQLClientFactory
 	mb            *metadata.MetricsBuilder
 	lb            *metadata.LogsBuilder
-	excludes      map[string]struct{}
-	cache         *lru.Cache[string, float64]
+	// excludedDatabases and excludes are the canonical exclusion config, built
+	// together at construction: the slice feeds the collection-query templates,
+	// the map answers membership checks. Read these, not config.ExcludeDatabases.
+	excludedDatabases []string
+	excludes          map[string]struct{}
+	cache             *lru.Cache[string, float64]
 	// if enabled, uses a separated attribute for the schema
 	separateSchemaAttr     bool
 	useOTelSemconv         bool
@@ -97,8 +101,9 @@ func newPostgreSQLScraper(
 	cache *lru.Cache[string, float64],
 	queryPlanCache *expirable.LRU[string, string],
 ) (*postgreSQLScraper, error) {
-	excludes := make(map[string]struct{})
-	for _, db := range config.ExcludeDatabases {
+	excludedDatabases := config.ExcludeDatabases
+	excludes := make(map[string]struct{}, len(excludedDatabases))
+	for _, db := range excludedDatabases {
 		excludes[db] = struct{}{}
 	}
 	separateSchemaAttr := metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate.IsEnabled()
@@ -128,6 +133,7 @@ func newPostgreSQLScraper(
 		clientFactory:      clientFactory,
 		mb:                 metadata.NewMetricsBuilder(mbConfig, settings),
 		lb:                 metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
+		excludedDatabases:  excludedDatabases,
 		excludes:           excludes,
 		cache:              cache,
 		queryPlanCache:     queryPlanCache,
@@ -352,7 +358,7 @@ func attrFloat64(atts map[string]any, key string) float64 {
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimestamp, p.config.ExcludeDatabases, logger)
+	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimestamp, p.excludedDatabases, logger)
 	p.newestQueryTimestamp = newestQueryTimestamp
 	if err != nil {
 		mux.addPartial(err)
@@ -406,7 +412,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 
 	defer defaultDbClient.Close()
 
-	rows, err := defaultDbClient.getTopQuery(ctx, limit, p.config.ExcludeDatabases, logger)
+	rows, err := defaultDbClient.getTopQuery(ctx, limit, p.excludedDatabases, logger)
 	if err != nil {
 		logger.Error("failed to get top query", zap.Error(err))
 		mux.addPartial(err)
