@@ -14,6 +14,12 @@ import (
 	"go.uber.org/zap"
 )
 
+// rateLimitFallbackWait is how long to wait before retrying a rate-limited
+// response that carries no usable wait hint. GitHub documents "wait for at
+// least one minute" for this case.
+// https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#handle-rate-limit-errors-appropriately
+const rateLimitFallbackWait = time.Minute
+
 // retryRoundTripper wraps an http.RoundTripper and retries on transient GitHub
 // API errors (429, 502, 503, 504), secondary rate limits (403 + Retry-After),
 // and primary rate limits (403/429 + X-RateLimit-Remaining: 0).
@@ -99,20 +105,27 @@ func (rt *retryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 
 		delay := b.NextBackOff()
 
-		// Honor server-supplied wait hints. The values are used as-is
-		// (not capped) because retrying before the server's requested
-		// delay just wastes an attempt. Context cancellation and
-		// MaxRetries already bound total retry behavior. The
-		// primary-rate-limit branch (X-RateLimit-Remaining: 0) takes
-		// precedence over the secondary-rate-limit Retry-After path.
-		if primaryRL {
+		// Honor server-supplied wait hints in the precedence GitHub
+		// documents: Retry-After first, then the primary rate-limit
+		// budget (X-RateLimit-Remaining: 0 + X-RateLimit-Reset), and
+		// for any other rate-limit response a floor of at least a
+		// minute. Header values are used as-is (not capped) because
+		// retrying before the server's requested delay just wastes an
+		// attempt. Context cancellation, MaxRetries and MaxElapsedTime
+		// already bound total retry behavior.
+		// https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#handle-rate-limit-errors-appropriately
+		retryAfter := parseRetryAfter(resp.Header)
+		switch {
+		case retryAfter > 0:
+			delay = time.Duration(retryAfter) * time.Second
+			b.Reset()
+		case primaryRL:
 			d := parseRateLimitReset(resp.Header, rt.nowFn())
 			if d <= 0 {
-				// No usable reset hint — the budget is exhausted but
-				// we have no idea when it refills. Burning the
-				// remaining MaxRetries against the same closed window
-				// just wastes API quota and ends in failure anyway.
-				break
+				// Budget is exhausted but the response carries no
+				// usable reset hint, so fall back to the documented
+				// minimum wait.
+				d = rateLimitFallbackWait
 			}
 			delay = d
 			// Only reset backoff on transition into primary-RL handling
@@ -121,9 +134,12 @@ func (rt *retryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 			if !wasPrimaryRL {
 				b.Reset()
 			}
-		} else if ra := parseRetryAfter(resp.Header); ra > 0 {
-			delay = time.Duration(ra) * time.Second
-			b.Reset()
+		case resp.StatusCode == http.StatusTooManyRequests && delay < rateLimitFallbackWait:
+			// A 429 with no wait hints is still a rate-limit error
+			// (typically a secondary rate limit), so it gets the
+			// documented minimum wait rather than the short
+			// exponential schedule used for 502/503/504.
+			delay = rateLimitFallbackWait
 		}
 
 		rt.logger.Debug("retrying GitHub API request",
