@@ -81,6 +81,26 @@ The `ottl.set.allowNil` [feature gate](https://github.com/open-telemetry/opentel
 
 Prior to this gate, passing `nil` to the `set` function (e.g., `set(attributes["key"], nil)`) was a no-op that preserved the existing target value. When this gate is enabled, `set` passes the `nil` value directly to the target's setter. How the `nil` value is handled depends entirely on the specific target's implementation; for example, it can be used to clear values in attribute maps, result in an error for strictly typed fields, or simply be ignored. Users relying on the old guaranteed no-op behavior should migrate their configurations to use conditional checks (e.g., `set(...) where field != nil`).
 
+## Benchmarks
+
+OTTL's performance under a realistic end-to-end pipeline is measured continuously through the
+[transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor)
+and [filter processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor)
+load tests. The CPU and memory results for executing OTTL statements and evaluating OTTL conditions
+against traces, metrics, and logs are publicly available on the benchmarks
+[page](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests):
+
+- Transform processor (OTTL statements): traces ([CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessortraces-cpu-percentage), [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessortraces-ram-mib)), metrics ([CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessormetrics-cpu-percentage), [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessormetrics-ram-mib)), logs ([CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessorlogs-cpu-percentage), [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessorlogs-ram-mib))
+- Filter processor (OTTL conditions): traces ([CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessortraces-cpu-percentage), [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessortraces-ram-mib)), metrics ([CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessormetrics-cpu-percentage), [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessormetrics-ram-mib)), logs ([CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessorlogs-cpu-percentage), [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessorlogs-ram-mib))
+
+OTTL also includes Go benchmarks that measure statement parsing, statement execution, and
+condition evaluation for traces, metrics, and logs, along with micro-benchmarks for
+individual functions and value comparisons. Run all benchmarks from the `pkg/ottl` directory:
+
+```sh
+make benchmark-ottl
+```
+
 ## Troubleshooting
 
 When using OTTL you can enable debug logging in the collector to print out useful information,
