@@ -14,10 +14,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// rateLimitFallbackWait is how long to wait before retrying a rate-limited
-// response that carries no usable wait hint. GitHub documents "wait for at
-// least one minute" for this case.
-// https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#handle-rate-limit-errors-appropriately
+// rateLimitFallbackWait is GitHub's documented "wait for at least one minute"
+// floor for a rate-limited response carrying no usable wait hint.
 const rateLimitFallbackWait = time.Minute
 
 // retryRoundTripper wraps an http.RoundTripper and retries on transient GitHub
@@ -91,7 +89,6 @@ func (rt *retryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 	b.Reset()
 
 	start := rt.nowFn()
-	wasPrimaryRL := false
 	for attempt := 0; ; attempt++ {
 		if !isRetryable(resp, primaryRL) {
 			break
@@ -105,41 +102,28 @@ func (rt *retryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 
 		delay := b.NextBackOff()
 
-		// Honor server-supplied wait hints in the precedence GitHub
-		// documents: Retry-After first, then the primary rate-limit
-		// budget (X-RateLimit-Remaining: 0 + X-RateLimit-Reset), and
-		// for any other rate-limit response a floor of at least a
-		// minute. Header values are used as-is (not capped) because
+		// Wait-hint precedence per GitHub's documented guidance:
+		// Retry-After, then X-RateLimit-Reset when the primary budget is
+		// exhausted, otherwise at least a minute for any other rate-limit
+		// response. Header values are used as-is (not capped) because
 		// retrying before the server's requested delay just wastes an
-		// attempt. Context cancellation, MaxRetries and MaxElapsedTime
-		// already bound total retry behavior.
+		// attempt; the context, MaxRetries and MaxElapsedTime bound the total.
 		// https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#handle-rate-limit-errors-appropriately
-		retryAfter := parseRetryAfter(resp.Header)
-		switch {
+		switch retryAfter := parseRetryAfter(resp.Header); {
 		case retryAfter > 0:
-			delay = time.Duration(retryAfter) * time.Second
+			delay = retryAfter
 			b.Reset()
 		case primaryRL:
-			d := parseRateLimitReset(resp.Header, rt.nowFn())
-			if d <= 0 {
-				// Budget is exhausted but the response carries no
-				// usable reset hint, so fall back to the documented
-				// minimum wait.
-				d = rateLimitFallbackWait
+			delay = parseRateLimitReset(resp.Header, rt.nowFn())
+			if delay <= 0 {
+				delay = rateLimitFallbackWait
 			}
-			delay = d
-			// Only reset backoff on transition into primary-RL handling
-			// so an alternating primary-RL / transient-error sequence
-			// does not wipe the exponential schedule each pass.
-			if !wasPrimaryRL {
-				b.Reset()
-			}
-		case resp.StatusCode == http.StatusTooManyRequests && delay < rateLimitFallbackWait:
-			// A 429 with no wait hints is still a rate-limit error
-			// (typically a secondary rate limit), so it gets the
-			// documented minimum wait rather than the short
-			// exponential schedule used for 502/503/504.
-			delay = rateLimitFallbackWait
+			b.Reset()
+		case resp.StatusCode == http.StatusTooManyRequests:
+			// Still a rate-limit error (typically a secondary one), so it
+			// gets the minimum wait rather than the short exponential
+			// schedule used for 502/503/504.
+			delay = max(delay, rateLimitFallbackWait)
 		}
 
 		rt.logger.Debug("retrying GitHub API request",
@@ -170,7 +154,6 @@ func (rt *retryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 			}
 		}
 
-		wasPrimaryRL = primaryRL
 		resp, err = rt.base.RoundTrip(req)
 		if err != nil {
 			return resp, err
@@ -208,18 +191,15 @@ func isPrimaryRateLimit(resp *http.Response) bool {
 	return resp.Header.Get("X-RateLimit-Remaining") == "0"
 }
 
-// parseRetryAfter extracts the delay in seconds from a Retry-After header.
-// Returns 0 if the header is absent or not a valid integer.
-func parseRetryAfter(h http.Header) int {
-	v := h.Get("Retry-After")
-	if v == "" {
-		return 0
-	}
-	seconds, err := strconv.Atoi(v)
+// parseRetryAfter extracts the delay from a Retry-After header, which GitHub
+// sends as a whole number of seconds. Returns 0 if the header is absent or not
+// a valid integer.
+func parseRetryAfter(h http.Header) time.Duration {
+	seconds, err := strconv.Atoi(h.Get("Retry-After"))
 	if err != nil {
 		return 0
 	}
-	return seconds
+	return time.Duration(seconds) * time.Second
 }
 
 // parseRateLimitReset computes how long to wait before retrying a primary
