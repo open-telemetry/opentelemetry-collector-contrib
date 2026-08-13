@@ -38,10 +38,11 @@ const (
 	ConnectionSource = "connection"
 )
 
-// K8sOwnerKind, K8sOwnerName, and K8sOwnerUID are not (yet) part of the
-// go.opentelemetry.io/otel/semconv package, unlike most other extraction keys
-// in this package, so they're declared here with the same attribute.Key type
-// those use rather than pulled from there.
+// K8sOwnerKind, K8sOwnerName, and K8sOwnerUID describe a pod's controlling
+// owner reference (https://kubernetes.io/docs/reference/kubernetes-api/definitions/owner-reference-v1-meta/#OwnerReference).
+// They are not (yet) part of the go.opentelemetry.io/otel/semconv package,
+// unlike most other extraction keys in this package, so they're declared here
+// with the same attribute.Key type those use rather than pulled from there.
 const (
 	K8sOwnerKind attribute.Key = "k8s.owner.kind"
 	K8sOwnerName attribute.Key = "k8s.owner.name"

@@ -95,7 +95,7 @@ are then also available for the use within association rules. Available attribut
   - k8s.job.name
   - k8s.node.name
   - k8s.node.uid
-  - k8s.owner.kind (the Kind of the pod's controlling owner reference, i.e. the `metadata.ownerReferences` entry with `controller: true`. Unlike the fixed fields above, this isn't limited to known controller kinds - it also covers pods owned by third-party CRDs, e.g. Flux's `HelmRelease` or cert-manager's `Challenge`.)
+  - k8s.owner.kind (the Kind of the pod's controlling owner reference, i.e. the [`metadata.ownerReferences`](https://kubernetes.io/docs/reference/kubernetes-api/definitions/owner-reference-v1-meta/#OwnerReference) entry with `controller: true`. Unlike the fixed fields above, this isn't limited to known controller kinds - it also covers pods owned by third-party CRDs, e.g. Flux's `HelmRelease` or cert-manager's `Challenge`.)
   - k8s.owner.name (the name of the pod's controlling owner reference. See k8s.owner.kind.)
   - k8s.owner.uid (the UID of the pod's controlling owner reference. See k8s.owner.kind.)
   - k8s.cluster.uid

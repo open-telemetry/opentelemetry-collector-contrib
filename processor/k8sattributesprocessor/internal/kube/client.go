@@ -2125,11 +2125,12 @@ func automaticServiceInstanceID(pod *api_v1.Pod, containerName string) string {
 	return strings.Join(resNames, ".")
 }
 
-// findControllerOwnerReference returns the OwnerReference marked as the controlling
-// owner (Controller: true) among refs, matching Kubernetes' own single-controller-owner
-// convention (see meta_v1.GetControllerOf). A pod normally has at most one such
-// reference, regardless of how many OwnerReferences it carries. Returns false if
-// none is marked as a controller.
+// findControllerOwnerReference returns the OwnerReference (see
+// https://kubernetes.io/docs/reference/kubernetes-api/definitions/owner-reference-v1-meta/#OwnerReference)
+// marked as the controlling owner (Controller: true) among refs, matching
+// Kubernetes' own single-controller-owner convention (see meta_v1.GetControllerOf).
+// A pod normally has at most one such reference, regardless of how many
+// OwnerReferences it carries. Returns false if none is marked as a controller.
 func findControllerOwnerReference(refs []meta_v1.OwnerReference) (meta_v1.OwnerReference, bool) {
 	for _, ref := range refs {
 		if ref.Controller != nil && *ref.Controller {
