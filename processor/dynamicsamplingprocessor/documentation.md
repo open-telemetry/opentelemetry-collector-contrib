@@ -16,7 +16,7 @@ Distribution of effective sample rates produced per rule. Useful for detecting a
 
 ### otelcol_processor_dynamic_sampling_decision_triggers
 
-Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout).
+Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction).
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -29,6 +29,14 @@ Number of spans whose incoming W3C tracestate could not be parsed when applying 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {spans} | Sum | Int | true | Development |
+
+### otelcol_processor_dynamic_sampling_ottl_eval_errors
+
+Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {errors} | Sum | Int | true | Development |
 
 ### otelcol_processor_dynamic_sampling_traces_active
 
@@ -48,7 +56,7 @@ Number of traces that were dropped, labelled by the rule that selected them.
 
 ### otelcol_processor_dynamic_sampling_traces_evicted
 
-Number of traces evicted from the buffer before a decision could be made.
+Number of traces evicted from the buffer due to num_traces pressure. Evicted traces are decided immediately per the configured eviction policy.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

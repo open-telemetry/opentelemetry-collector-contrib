@@ -14,7 +14,7 @@ metrics:
 
 ### postgresql.backends
 
-The number of backends.
+The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -360,6 +360,7 @@ The number of database locks.
 | relation | OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation. | Any Str | Recommended | - |
 | mode | Name of the lock mode held or desired by the process. | Any Str | Recommended | - |
 | lock_type | Type of the lockable object. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.deadlocks
 
@@ -403,6 +404,20 @@ Number of queries canceled due to conflicts with recovery on this database. Conf
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | postgresql.conflict.type | The type of recovery conflict that caused a query to be canceled on a standby server. | Str: ``tablespace``, ``lock``, ``snapshot``, ``bufferpin``, ``deadlock`` | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+
+### postgresql.query.execution.time
+
+The total execution time of SQL statements currently tracked by pg_stat_statements for the database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.sequential_scans
