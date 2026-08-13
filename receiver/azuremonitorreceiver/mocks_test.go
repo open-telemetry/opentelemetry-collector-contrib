@@ -430,6 +430,14 @@ func newMetricsClientListResponseMockData(inputMap map[string]map[string][]metri
 					Unit:       &input.Unit,
 					Timeseries: input.TimeSeries,
 				}
+				for _, ts := range result3.Value[i].Timeseries {
+					for _, d := range ts.Data {
+						if d.TimeStamp == nil {
+							t := time.Unix(1, 0).UTC()
+							d.TimeStamp = &t
+						}
+					}
+				}
 			}
 			result2[metricNames] = result3
 		}

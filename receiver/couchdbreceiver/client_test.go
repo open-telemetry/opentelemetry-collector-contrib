@@ -19,13 +19,14 @@ import (
 
 func defaultClient(t *testing.T, endpoint string) client {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = endpoint
+	cfg.ClientConfig.Endpoint = endpoint
 
 	couchdbClient, err := newCouchDBClient(
 		t.Context(),
 		cfg,
 		componenttest.NewNopHost(),
-		componenttest.NewNopTelemetrySettings())
+		componenttest.NewNopTelemetrySettings(),
+	)
 	require.NoError(t, err)
 	require.NotNil(t, couchdbClient)
 	return couchdbClient
@@ -46,7 +47,8 @@ func TestNewCouchDBClient(t *testing.T) {
 				ClientConfig: clientConfig,
 			},
 			componenttest.NewNopHost(),
-			componenttest.NewNopTelemetrySettings())
+			componenttest.NewNopTelemetrySettings(),
+		)
 
 		require.ErrorContains(t, err, "failed to create HTTP Client: ")
 		require.Nil(t, couchdbClient)
@@ -118,7 +120,8 @@ func TestGet(t *testing.T) {
 				Password:     "unauthorized",
 			},
 			componenttest.NewNopHost(),
-			componenttest.NewNopTelemetrySettings())
+			componenttest.NewNopTelemetrySettings(),
+		)
 		require.NoError(t, err)
 		require.NotNil(t, couchdbClient)
 

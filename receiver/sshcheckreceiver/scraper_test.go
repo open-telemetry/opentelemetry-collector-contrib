@@ -176,11 +176,11 @@ func TestScraper(t *testing.T) {
 
 			f := NewFactory()
 			cfg := f.CreateDefaultConfig().(*Config)
-			cfg.CollectionInterval = 100 * time.Millisecond
-			cfg.Username = "otelu"
-			cfg.Password = "otelp"
-			cfg.Endpoint = endpoint
-			cfg.IgnoreHostKey = true
+			cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+			cfg.SSHClientSettings.Username = "otelu"
+			cfg.SSHClientSettings.Password = "otelp"
+			cfg.SSHClientSettings.Endpoint = endpoint
+			cfg.SSHClientSettings.IgnoreHostKey = true
 			if tc.enableSFTP {
 				cfg.MetricsBuilderConfig.Metrics.SshcheckSftpStatus.Enabled = true
 				cfg.MetricsBuilderConfig.Metrics.SshcheckSftpDuration.Enabled = true
@@ -218,11 +218,11 @@ func TestScraperPropagatesResourceAttributes(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.ResourceAttributes.SSHEndpoint.Enabled = true
-	cfg.CollectionInterval = 100 * time.Millisecond
-	cfg.Username = "otelu"
-	cfg.Password = "otelp"
-	cfg.Endpoint = endpoint
-	cfg.IgnoreHostKey = true
+	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+	cfg.SSHClientSettings.Username = "otelu"
+	cfg.SSHClientSettings.Password = "otelp"
+	cfg.SSHClientSettings.Endpoint = endpoint
+	cfg.SSHClientSettings.IgnoreHostKey = true
 
 	settings := receivertest.NewNopSettings(metadata.Type)
 
@@ -253,11 +253,11 @@ func TestScraperDoesNotErrForSSHErr(t *testing.T) {
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.CollectionInterval = 100 * time.Millisecond
-	cfg.Username = "not-the-user"
-	cfg.Password = "not-the-password"
-	cfg.Endpoint = endpoint
-	cfg.IgnoreHostKey = true
+	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+	cfg.SSHClientSettings.Username = "not-the-user"
+	cfg.SSHClientSettings.Password = "not-the-password"
+	cfg.SSHClientSettings.Endpoint = endpoint
+	cfg.SSHClientSettings.IgnoreHostKey = true
 
 	settings := receivertest.NewNopSettings(metadata.Type)
 
@@ -301,7 +301,7 @@ func TestTimeout(t *testing.T) {
 func TestCancellation(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.CollectionInterval = 100 * time.Millisecond
+	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
 
 	settings := receivertest.NewNopSettings(metadata.Type)
 
@@ -321,11 +321,11 @@ func TestCancellation(t *testing.T) {
 func TestWithoutStartErrsNotPanics(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.CollectionInterval = 100 * time.Millisecond
-	cfg.Username = "otelu"
-	cfg.Password = "otelp"
-	cfg.Endpoint = "localhost:22"
-	cfg.IgnoreHostKey = true
+	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+	cfg.SSHClientSettings.Username = "otelu"
+	cfg.SSHClientSettings.Password = "otelp"
+	cfg.SSHClientSettings.Endpoint = "localhost:22"
+	cfg.SSHClientSettings.IgnoreHostKey = true
 	cfg.MetricsBuilderConfig.Metrics.SshcheckSftpStatus.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.SshcheckSftpDuration.Enabled = true
 

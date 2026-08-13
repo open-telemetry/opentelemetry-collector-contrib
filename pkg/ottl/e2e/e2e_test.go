@@ -1735,6 +1735,30 @@ func Test_e2e_converters(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("labels_str", "env=prod;")
 			},
 		},
+		{
+			statement: `set(attributes["prefixed_foo"], MapKeys(attributes["foo"], (k, _) => Concat(["http.", k], "")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				prefixed := tCtx.GetLogRecord().Attributes().PutEmptyMap("prefixed_foo")
+				prefixed.PutStr("http.bar", "pass")
+				prefixed.PutStr("http.flags", "pass")
+				s := prefixed.PutEmptySlice("http.slice")
+				s.AppendEmpty().SetStr("val")
+				nested := prefixed.PutEmptyMap("http.nested")
+				nested.PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["renamed_foo"], MapKeys(attributes["foo"], (k, v) => Concat([k, ":", String(v)], "")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				renamed := tCtx.GetLogRecord().Attributes().PutEmptyMap("renamed_foo")
+				renamed.PutStr("bar:pass", "pass")
+				renamed.PutStr("flags:pass", "pass")
+				s := renamed.PutEmptySlice(`slice:["val"]`)
+				s.AppendEmpty().SetStr("val")
+				nested := renamed.PutEmptyMap(`nested:{"test":"pass"}`)
+				nested.PutStr("test", "pass")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -2632,7 +2656,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 		t.Run(tt.statement, func(t *testing.T) {
 			settings := componenttest.NewNopTelemetrySettings()
 			funcs := ottlfuncs.StandardFuncs[*ottlspan.TransformContext]()
-			isRootSpanFactory := ottlfuncs.NewIsRootSpanFactoryNew()
+			isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
 			funcs[isRootSpanFactory.Name()] = isRootSpanFactory
 			spanParser, err := ottlspan.NewParser(funcs, settings)
 			require.NoError(t, err)
@@ -2713,7 +2737,8 @@ func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statemen
 			&parserWithPathCtx,
 			ottl.WithStatementConverter(func(_ *ottl.ParserCollection[*ottl.Statement[*ottllog.TransformContext]], _ ottl.StatementsGetter, parsedStatements []*ottl.Statement[*ottllog.TransformContext]) (*ottl.Statement[*ottllog.TransformContext], error) {
 				return parsedStatements[0], nil
-			})))
+			}),
+		))
 	if err != nil {
 		return nil, err
 	}
