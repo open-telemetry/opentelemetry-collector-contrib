@@ -27,7 +27,7 @@ telemetry:
       stability: development
     processor_dynamic_sampling_decision_triggers:
       enabled: true
-      description: Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction).
+      description: Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown).
       unit: "{decisions}"
       sum:
         value_type: int

@@ -72,7 +72,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorDynamicSamplingDecisionTriggers, err = builder.meter.Int64Counter(
 		"otelcol_processor_dynamic_sampling_decision_triggers",
-		metric.WithDescription("Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction). [Development]"),
+		metric.WithDescription("Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown). [Development]"),
 		metric.WithUnit("{decisions}"),
 	)
 	errs = errors.Join(errs, err)

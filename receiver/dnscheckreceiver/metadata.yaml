@@ -13,12 +13,20 @@ status:
     active: [dmitryax]
 
 resource_attributes:
-
-attributes:
   dns.domain:
     description: Domain name queried.
     type: string
-    requirement_level: recommended
+    enabled: true
+  dns.record.type:
+    description: Record type queried.
+    type: string
+    enabled: true
+  dns.server:
+    description: Address of the DNS server queried.
+    type: string
+    enabled: true
+
+attributes:
   dns.rcode:
     description: >-
       DNS response code (RCODE) returned for the query. Only present when a
@@ -30,20 +38,12 @@ attributes:
       (https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-6).
     type: int
     requirement_level: recommended
-  dns.record.type:
-    description: Record type queried.
-    type: string
-    requirement_level: recommended
   dns.resolved.all.ips:
     description: All resolved IP addresses.
     type: string
     requirement_level: recommended
   dns.resolved.ip:
     description: First/primary resolved IP address.
-    type: string
-    requirement_level: recommended
-  dns.server:
-    description: Address of the DNS server queried.
     type: string
     requirement_level: recommended
   error.message:
@@ -59,7 +59,7 @@ metrics:
     gauge:
       value_type: int
     unit: ms
-    attributes: [dns.domain, dns.record.type, dns.server]
+    attributes: []
   dnscheck.error:
     description: Number of errors recorded during the DNS check.
     enabled: false
@@ -69,15 +69,16 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
     unit: "{error}"
-    attributes: [dns.domain, dns.record.type, dns.server, error.message]
+    attributes: [error.message]
   dnscheck.status:
     description: >-
       1 if the DNS query returned successfully, 0 otherwise. The
       dns.resolved.ip and dns.resolved.all.ips attributes are only present
-      when the value is 1. The dns.rcode attribute is present whenever a
-      response was received from the server, including non-success responses
-      such as NXDOMAIN, SERVFAIL, or REFUSED; it is absent only when no
-      response was received at all (e.g. timeout or network unreachable).
+      when the value is 1 and the record type is A or AAAA. 
+      The dns.rcode attribute is present whenever a response was received 
+      from the server, including non-success responses such as NXDOMAIN, 
+      SERVFAIL, or REFUSED; it is absent only when no response was received 
+      at all (e.g. timeout or network unreachable).
     enabled: true
     stability: development
     sum:
@@ -85,4 +86,4 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
     unit: "1"
-    attributes: [dns.domain, dns.rcode, dns.record.type, dns.resolved.all.ips, dns.resolved.ip, dns.server]
+    attributes: [dns.rcode, dns.resolved.all.ips, dns.resolved.ip]
