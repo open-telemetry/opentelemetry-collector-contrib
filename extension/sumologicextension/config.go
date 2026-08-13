@@ -76,6 +76,9 @@ type Config struct {
 	// https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List.
 	TimeZone string `mapstructure:"time_zone"`
 
+	// FleetID is the ID of the fleet to assign this collector to during registration.
+	FleetID string `mapstructure:"fleet_id"`
+
 	// BackOff defines configuration of collector registration backoff algorithm
 	// Exponential algorithm is being used.
 	// Please see following link for details: https://github.com/cenkalti/backoff
