@@ -41,7 +41,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the skywalking receiver to be created
-	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
 			Transport: confignet.TransportTypeTCP,
@@ -85,7 +85,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
 			Transport: confignet.TransportTypeTCP,
@@ -103,7 +103,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
 			Transport: confignet.TransportTypeTCP,
@@ -125,18 +125,23 @@ func TestCreateTLSHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).HTTP = &confighttp.ServerConfig{
-		NetAddr: confignet.AddrConfig{
-			Transport: confignet.TransportTypeTCP,
-			Endpoint:  "0.0.0.0:12800",
-		},
-		TLS: configoptional.Some(configtls.ServerConfig{
-			Config: configtls.Config{
-				CertFile: "./testdata/server.crt",
-				KeyFile:  "./testdata/server.key",
-			},
-		}),
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpServerConfig.WriteTimeout = 0
+	httpServerConfig.ReadHeaderTimeout = 0
+	httpServerConfig.IdleTimeout = 0
+	httpServerConfig.KeepAlivesEnabled = false
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "0.0.0.0:12800",
 	}
+	httpServerConfig.TLS = configoptional.Some(configtls.ServerConfig{
+		Config: configtls.Config{
+			CertFile: "./testdata/server.crt",
+			KeyFile:  "./testdata/server.key",
+		},
+	})
+	cfg.(*Config).Protocols.HTTP = &httpServerConfig
 
 	set := receivertest.NewNopSettings(metadata.Type)
 	traceSink := new(consumertest.TracesSink)
@@ -148,12 +153,17 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).HTTP = &confighttp.ServerConfig{
-		NetAddr: confignet.AddrConfig{
-			Transport: confignet.TransportTypeTCP,
-			Endpoint:  "0.0.0.0:12800",
-		},
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpServerConfig.WriteTimeout = 0
+	httpServerConfig.ReadHeaderTimeout = 0
+	httpServerConfig.IdleTimeout = 0
+	httpServerConfig.KeepAlivesEnabled = false
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "0.0.0.0:12800",
 	}
+	cfg.(*Config).Protocols.HTTP = &httpServerConfig
 	set := receivertest.NewNopSettings(metadata.Type)
 	traceSink := new(consumertest.TracesSink)
 	r, err := factory.CreateTraces(t.Context(), set, cfg, traceSink)

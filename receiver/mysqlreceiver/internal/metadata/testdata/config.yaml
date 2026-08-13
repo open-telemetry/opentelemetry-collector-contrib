@@ -31,6 +31,8 @@ all_set:
     mysql.double_writes:
       enabled: true
       attributes: ["kind"]
+    mysql.file.open:
+      enabled: true
     mysql.handlers:
       enabled: true
       attributes: ["kind"]
@@ -40,6 +42,12 @@ all_set:
     mysql.index.io.wait.time:
       enabled: true
       attributes: ["operation","table","schema","index"]
+    mysql.innodb.data_file.io:
+      enabled: true
+      attributes: ["disk.io.direction"]
+    mysql.innodb.operation.pending:
+      enabled: true
+      attributes: ["operation"]
     mysql.joins:
       enabled: true
       attributes: ["kind"]
@@ -79,6 +87,11 @@ all_set:
       enabled: true
     mysql.replica.sql_delay:
       enabled: true
+    mysql.replica.temp_table.open:
+      enabled: true
+    mysql.replica.thread.running:
+      enabled: true
+      attributes: ["mysql.replica.thread.type","mysql.replica.channel.name"]
     mysql.replica.time_behind_source:
       enabled: true
     mysql.row_locks:
@@ -117,6 +130,8 @@ all_set:
     mysql.table.lock_wait.write.time:
       enabled: true
       attributes: ["schema","table","kind"]
+    mysql.table.open:
+      enabled: true
     mysql.table.rows:
       enabled: true
       attributes: ["table","schema"]
@@ -126,6 +141,8 @@ all_set:
     mysql.table_open_cache:
       enabled: true
       attributes: ["status"]
+    mysql.thread.slow_launch:
+      enabled: true
     mysql.threads:
       enabled: true
       attributes: ["kind"]
@@ -140,7 +157,17 @@ all_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.name:
+      enabled: true
+    db.system.version:
+      enabled: true
     mysql.instance.endpoint:
+      enabled: true
+    service.instance.id:
+      enabled: true
+    service.name:
+      enabled: true
+    service.namespace:
       enabled: true
 reaggregate_set:
   metrics:
@@ -174,6 +201,8 @@ reaggregate_set:
     mysql.double_writes:
       enabled: true
       attributes: []
+    mysql.file.open:
+      enabled: true
     mysql.handlers:
       enabled: true
       attributes: []
@@ -181,6 +210,12 @@ reaggregate_set:
       enabled: true
       attributes: []
     mysql.index.io.wait.time:
+      enabled: true
+      attributes: []
+    mysql.innodb.data_file.io:
+      enabled: true
+      attributes: []
+    mysql.innodb.operation.pending:
       enabled: true
       attributes: []
     mysql.joins:
@@ -222,6 +257,11 @@ reaggregate_set:
       enabled: true
     mysql.replica.sql_delay:
       enabled: true
+    mysql.replica.temp_table.open:
+      enabled: true
+    mysql.replica.thread.running:
+      enabled: true
+      attributes: []
     mysql.replica.time_behind_source:
       enabled: true
     mysql.row_locks:
@@ -260,6 +300,8 @@ reaggregate_set:
     mysql.table.lock_wait.write.time:
       enabled: true
       attributes: []
+    mysql.table.open:
+      enabled: true
     mysql.table.rows:
       enabled: true
       attributes: []
@@ -269,6 +311,8 @@ reaggregate_set:
     mysql.table_open_cache:
       enabled: true
       attributes: []
+    mysql.thread.slow_launch:
+      enabled: true
     mysql.threads:
       enabled: true
       attributes: []
@@ -283,7 +327,17 @@ reaggregate_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.name:
+      enabled: true
+    db.system.version:
+      enabled: true
     mysql.instance.endpoint:
+      enabled: true
+    service.instance.id:
+      enabled: true
+    service.name:
+      enabled: true
+    service.namespace:
       enabled: true
 none_set:
   metrics:
@@ -317,6 +371,8 @@ none_set:
     mysql.double_writes:
       enabled: false
       attributes: ["kind"]
+    mysql.file.open:
+      enabled: false
     mysql.handlers:
       enabled: false
       attributes: ["kind"]
@@ -326,6 +382,12 @@ none_set:
     mysql.index.io.wait.time:
       enabled: false
       attributes: ["operation","table","schema","index"]
+    mysql.innodb.data_file.io:
+      enabled: false
+      attributes: ["disk.io.direction"]
+    mysql.innodb.operation.pending:
+      enabled: false
+      attributes: ["operation"]
     mysql.joins:
       enabled: false
       attributes: ["kind"]
@@ -365,6 +427,11 @@ none_set:
       enabled: false
     mysql.replica.sql_delay:
       enabled: false
+    mysql.replica.temp_table.open:
+      enabled: false
+    mysql.replica.thread.running:
+      enabled: false
+      attributes: ["mysql.replica.thread.type","mysql.replica.channel.name"]
     mysql.replica.time_behind_source:
       enabled: false
     mysql.row_locks:
@@ -403,6 +470,8 @@ none_set:
     mysql.table.lock_wait.write.time:
       enabled: false
       attributes: ["schema","table","kind"]
+    mysql.table.open:
+      enabled: false
     mysql.table.rows:
       enabled: false
       attributes: ["table","schema"]
@@ -412,6 +481,8 @@ none_set:
     mysql.table_open_cache:
       enabled: false
       attributes: ["status"]
+    mysql.thread.slow_launch:
+      enabled: false
     mysql.threads:
       enabled: false
       attributes: ["kind"]
@@ -426,11 +497,71 @@ none_set:
     db.server.top_query:
       enabled: false
   resource_attributes:
+    db.system.name:
+      enabled: false
+    db.system.version:
+      enabled: false
     mysql.instance.endpoint:
       enabled: false
+    service.instance.id:
+      enabled: false
+    service.name:
+      enabled: false
+    service.namespace:
+      enabled: false
+override_set:
+  resource_attributes:
+    db.system.name:
+      enabled: true
+      override_value: "override-db.system.name"
+    db.system.version:
+      enabled: true
+      override_value: "override-db.system.version"
+    mysql.instance.endpoint:
+      enabled: true
+      override_value: "override-mysql.instance.endpoint"
+    service.instance.id:
+      enabled: true
+      override_value: "override-service.instance.id"
+    service.name:
+      enabled: true
+      override_value: "override-service.name"
+    service.namespace:
+      enabled: true
+      override_value: "override-service.namespace"
 filter_set_include:
   resource_attributes:
+    db.system.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    db.system.version:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     mysql.instance.endpoint:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.instance.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.namespace:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -438,9 +569,39 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    db.system.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "db.system.name-val"
+      events_exclude:
+        - strict: "db.system.name-val"
+    db.system.version:
+      enabled: true
+      metrics_exclude:
+        - strict: "db.system.version-val"
+      events_exclude:
+        - strict: "db.system.version-val"
     mysql.instance.endpoint:
       enabled: true
       metrics_exclude:
         - strict: "mysql.instance.endpoint-val"
       events_exclude:
         - strict: "mysql.instance.endpoint-val"
+    service.instance.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.instance.id-val"
+      events_exclude:
+        - strict: "service.instance.id-val"
+    service.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.name-val"
+      events_exclude:
+        - strict: "service.name-val"
+    service.namespace:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.namespace-val"
+      events_exclude:
+        - strict: "service.namespace-val"

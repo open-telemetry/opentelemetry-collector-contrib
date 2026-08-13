@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
-	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	defaultforwarderimpl "github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/impl"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -80,17 +80,6 @@ func TestNewConfigComponent_WithOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "with custom config",
-			options: []ConfigOption{
-				WithCustomConfig("custom.setting", "custom-value", pkgconfigmodel.SourceFile),
-				WithCustomConfig("custom.number", 42, pkgconfigmodel.SourceDefault),
-			},
-			verify: func(t *testing.T, config pkgconfigmodel.Config) {
-				assert.Equal(t, "custom-value", config.GetString("custom.setting"))
-				assert.Equal(t, 42, config.GetInt("custom.number"))
-			},
-		},
-		{
 			name: "with logs config",
 			options: []ConfigOption{
 				WithLogsConfig(&datadogconfig.Config{
@@ -122,7 +111,6 @@ func TestNewConfigComponent_WithOptions(t *testing.T) {
 				}),
 				WithLogLevel(set),
 				WithLogsDefaults(),
-				WithCustomConfig("module.name", "test-module", pkgconfigmodel.SourceFile),
 			},
 			verify: func(t *testing.T, config pkgconfigmodel.Config) {
 				// Verify API config
@@ -136,15 +124,15 @@ func TestNewConfigComponent_WithOptions(t *testing.T) {
 
 				// Verify logs defaults
 				assert.True(t, config.GetBool("logs_config.use_v2_api"))
-
-				// Verify custom config
-				assert.Equal(t, "test-module", config.GetString("module.name"))
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Isolate tests from DD_API_KEY and DD_SITE env vars; nodetreemodel skips empty values.
+			t.Setenv("DD_API_KEY", "")
+			t.Setenv("DD_SITE", "")
 			configComponent := NewConfigComponent(tt.options...)
 			require.NotNil(t, configComponent)
 
@@ -155,52 +143,28 @@ func TestNewConfigComponent_WithOptions(t *testing.T) {
 	}
 }
 
-func TestConfigOptions_ModularUsage(t *testing.T) {
-	// Example: A metrics-only module that only needs API config
-	metricsConfig := NewConfigComponent(
+// TestWithAPIConfig_OverridesEnvVar guards against a regression where NewConfigComponent's
+// BuildSchema call rebuilds the config's environment-variable layer from the process
+// environment and silently discards an explicitly-configured API key/site if DD_API_KEY or
+// DD_SITE happen to be set (e.g. because the collector runs alongside a Datadog Agent that
+// injects those variables). The value passed to WithAPIConfig must always win.
+func TestWithAPIConfig_OverridesEnvVar(t *testing.T) {
+	t.Setenv("DD_API_KEY", "env-var-api-key")
+	t.Setenv("DD_SITE", "env-var-site.example.com")
+
+	configComponent := NewConfigComponent(
 		WithAPIConfig(&datadogconfig.Config{
 			API: datadogconfig.APIConfig{
-				Key:  configopaque.String("metrics-api-key"),
-				Site: "datadoghq.com",
-			},
-		}),
-		WithCustomConfig("metrics.enabled", true, pkgconfigmodel.SourceFile),
-	)
-
-	config := metricsConfig.(pkgconfigmodel.Config)
-	assert.Equal(t, "metrics-api-key", config.GetString("api_key"))
-	assert.True(t, config.GetBool("metrics.enabled"))
-	// Should not have logs defaults
-	assert.False(t, config.IsConfigured("logs_config.use_v2_api"))
-
-	// Example: A traces-only module with custom settings
-	tracesConfig := NewConfigComponent(
-		WithAPIConfig(&datadogconfig.Config{
-			API: datadogconfig.APIConfig{
-				Key:  configopaque.String("traces-api-key"),
+				Key:  configopaque.String("explicit-api-key"),
 				Site: "datadoghq.eu",
 			},
 		}),
-		WithCustomConfig("traces.enabled", true, pkgconfigmodel.SourceFile),
-		WithCustomConfig("traces.sample_rate", 0.1, pkgconfigmodel.SourceDefault),
 	)
+	require.NotNil(t, configComponent)
 
-	tracesConfigModel := tracesConfig.(pkgconfigmodel.Config)
-	assert.Equal(t, "traces-api-key", tracesConfigModel.GetString("api_key"))
-	assert.Equal(t, "datadoghq.eu", tracesConfigModel.GetString("site"))
-	assert.True(t, tracesConfigModel.GetBool("traces.enabled"))
-	assert.Equal(t, 0.1, tracesConfigModel.GetFloat64("traces.sample_rate"))
-}
-
-func TestConfigOptions_OrderMatters(t *testing.T) {
-	// Test that later options can override earlier ones
-	config := NewConfigComponent(
-		WithCustomConfig("test.value", "first", pkgconfigmodel.SourceFile),
-		WithCustomConfig("test.value", "second", pkgconfigmodel.SourceFile), // This should win
-	)
-
-	configModel := config.(pkgconfigmodel.Config)
-	assert.Equal(t, "second", configModel.GetString("test.value"))
+	config := configComponent.(pkgconfigmodel.Config)
+	assert.Equal(t, "explicit-api-key", config.GetString("api_key"))
+	assert.Equal(t, "datadoghq.eu", config.GetString("site"))
 }
 
 func TestWithLogsConfig(t *testing.T) {
@@ -308,6 +272,8 @@ func TestWithLogsConfig(t *testing.T) {
 }
 
 func TestWithLogsConfig_CombinedWithOtherOptions(t *testing.T) {
+	t.Setenv("DD_API_KEY", "")
+	t.Setenv("DD_SITE", "")
 	// Test that WithLogsConfig works correctly when combined with other options
 	cfg := &datadogconfig.Config{
 		API: datadogconfig.APIConfig{
@@ -356,7 +322,7 @@ func TestWithProxy(t *testing.T) {
 		proxyURL        string
 		expectedHTTP    string
 		expectedHTTPS   string
-		expectedNoProxy []any
+		expectedNoProxy []string
 	}{
 		{
 			name: "all proxy environment variables set",
@@ -367,7 +333,7 @@ func TestWithProxy(t *testing.T) {
 			},
 			expectedHTTP:    "http://proxy.example.com:8080",
 			expectedHTTPS:   "https://secure-proxy.example.com:8443",
-			expectedNoProxy: []any{"localhost", "127.0.0.1", ".local"},
+			expectedNoProxy: []string{"localhost", "127.0.0.1", ".local"},
 			proxyURL:        "",
 		},
 		{
@@ -377,7 +343,7 @@ func TestWithProxy(t *testing.T) {
 			},
 			expectedHTTP:    "http://proxy.example.com:3128",
 			expectedHTTPS:   "",
-			expectedNoProxy: []any{""},
+			expectedNoProxy: []string{""},
 			proxyURL:        "",
 		},
 		{
@@ -385,7 +351,7 @@ func TestWithProxy(t *testing.T) {
 			envVars:         map[string]string{},
 			expectedHTTP:    "",
 			expectedHTTPS:   "",
-			expectedNoProxy: []any{""},
+			expectedNoProxy: []string{""},
 			proxyURL:        "",
 		},
 		{
@@ -395,7 +361,7 @@ func TestWithProxy(t *testing.T) {
 			},
 			expectedHTTP:    "",
 			expectedHTTPS:   "",
-			expectedNoProxy: []any{"internal.company.com"},
+			expectedNoProxy: []string{"internal.company.com"},
 			proxyURL:        "",
 		},
 		{
@@ -403,7 +369,7 @@ func TestWithProxy(t *testing.T) {
 			envVars:         map[string]string{},
 			expectedHTTP:    "http://proxyurl.example.com:3128",
 			expectedHTTPS:   "http://proxyurl.example.com:3128",
-			expectedNoProxy: []any{""},
+			expectedNoProxy: []string{""},
 			proxyURL:        "http://proxyurl.example.com:3128",
 		},
 		{
@@ -414,7 +380,7 @@ func TestWithProxy(t *testing.T) {
 			},
 			expectedHTTP:    "http://proxyurl.example.com:3128",
 			expectedHTTPS:   "http://proxyurl.example.com:3128",
-			expectedNoProxy: []any{""},
+			expectedNoProxy: []string{""},
 			proxyURL:        "http://proxyurl.example.com:3128",
 		},
 	}
@@ -426,10 +392,14 @@ func TestWithProxy(t *testing.T) {
 				t.Setenv(key, value)
 			}
 
+			clientConfig := confighttp.NewDefaultClientConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			clientConfig.MaxIdleConns = 0
+			clientConfig.IdleConnTimeout = 0
+			clientConfig.ForceAttemptHTTP2 = false
+			clientConfig.ProxyURL = tt.proxyURL
 			cfg := &datadogconfig.Config{
-				ClientConfig: confighttp.ClientConfig{
-					ProxyURL: tt.proxyURL,
-				},
+				ClientConfig: clientConfig,
 			}
 
 			// Create config with proxy settings from environment
@@ -442,8 +412,8 @@ func TestWithProxy(t *testing.T) {
 			assert.Equal(t, tt.expectedHTTP, config.GetString("proxy.http"))
 			assert.Equal(t, tt.expectedHTTPS, config.GetString("proxy.https"))
 
-			// Verify NO_PROXY setting
-			noProxySlice := config.Get("proxy.no_proxy")
+			// Verify NO_PROXY setting (nodetreemodel converts to []string based on registered default type)
+			noProxySlice := config.GetStringSlice("proxy.no_proxy")
 			assert.Equal(t, tt.expectedNoProxy, noProxySlice)
 		})
 	}
@@ -460,10 +430,14 @@ func TestWithTLSSetting(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			clientConfig := confighttp.NewDefaultClientConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			clientConfig.MaxIdleConns = 0
+			clientConfig.IdleConnTimeout = 0
+			clientConfig.ForceAttemptHTTP2 = false
+			clientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: tt.insecureSkipVerify}
 			cfg := &datadogconfig.Config{
-				ClientConfig: confighttp.ClientConfig{
-					TLS: configtls.ClientConfig{InsecureSkipVerify: tt.insecureSkipVerify},
-				},
+				ClientConfig: clientConfig,
 			}
 
 			configComponent := NewConfigComponent(WithTLSSetting(cfg))
@@ -471,7 +445,6 @@ func TestWithTLSSetting(t *testing.T) {
 			config := configComponent.(pkgconfigmodel.Config)
 
 			assert.Equal(t, tt.insecureSkipVerify, config.GetBool("skip_ssl_validation"))
-			assert.Equal(t, tt.insecureSkipVerify, config.GetBool("apm_config.skip_ssl_validation"))
 		})
 	}
 }
@@ -544,12 +517,12 @@ func TestSerializerWithForwarder_LifecycleMethods(t *testing.T) {
 	require.NotNil(t, serializer)
 
 	// Test initial state - should be stopped
-	assert.Equal(t, defaultforwarder.Stopped, serializer.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, serializer.State())
 
 	// Test Start method
 	err = serializer.Start()
 	assert.NoError(t, err, "Start should succeed")
-	assert.Equal(t, defaultforwarder.Started, serializer.State())
+	assert.Equal(t, defaultforwarderimpl.Started, serializer.State())
 
 	// Test that we can call Start again (should return error or be idempotent)
 	err = serializer.Start()
@@ -557,7 +530,7 @@ func TestSerializerWithForwarder_LifecycleMethods(t *testing.T) {
 
 	// Test Stop method
 	serializer.Stop()
-	assert.Equal(t, defaultforwarder.Stopped, serializer.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, serializer.State())
 
 	// Test that we can stop again (should be safe)
 	serializer.Stop() // Should not panic
@@ -589,11 +562,11 @@ func TestForwarderWithLifecycle_CompileTimeCheck(t *testing.T) {
 	require.NotNil(t, forwarder)
 
 	// Lifecycle methods
-	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 
 	err = forwarder.Start()
 	assert.NoError(t, err)
-	assert.Equal(t, defaultforwarder.Started, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Started, forwarder.State())
 
 	// Test that it implements both Forwarder and lifecycle methods
 	// Forwarder interface methods
@@ -601,7 +574,7 @@ func TestForwarderWithLifecycle_CompileTimeCheck(t *testing.T) {
 	assert.NoError(t, err) // Should not panic, may return error
 
 	forwarder.Stop()
-	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 }
 
 func TestAgentComponents_NewLogComponent(t *testing.T) {
@@ -648,7 +621,7 @@ func TestNewForwarderComponent(t *testing.T) {
 				assert.NotNil(t, forwarder)
 
 				// Test that the forwarder is in stopped state initially
-				assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+				assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 			},
 		},
 		{
@@ -676,6 +649,10 @@ func TestNewForwarderComponent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Isolate tests from DD_API_KEY and DD_SITE env vars; nodetreemodel skips empty values.
+			t.Setenv("DD_API_KEY", "")
+			t.Setenv("DD_SITE", "")
+
 			// Create a test logger
 			logger, err := zap.NewDevelopment()
 			require.NoError(t, err)
@@ -732,18 +709,21 @@ func TestNewForwarderComponent_Internal(t *testing.T) {
 	require.NotNil(t, forwarder)
 
 	// Test internal state
-	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 
 	// Test that we can start and stop the forwarder (this tests internal configuration)
 	err = forwarder.Start()
 	assert.NoError(t, err)
-	assert.Equal(t, defaultforwarder.Started, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Started, forwarder.State())
 
 	forwarder.Stop()
-	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 }
 
 func TestNewForwarderComponent_KeysPerDomainConfiguration(t *testing.T) {
+	// Isolate tests from DD_API_KEY and DD_SITE env vars; nodetreemodel skips empty values.
+	t.Setenv("DD_API_KEY", "")
+	t.Setenv("DD_SITE", "")
 	// This test verifies that the keysPerDomain map is constructed correctly
 	logger, err := zap.NewDevelopment()
 	require.NoError(t, err)

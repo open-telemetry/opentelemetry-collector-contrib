@@ -8,6 +8,7 @@ import (
 	"maps"
 	"regexp"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -53,6 +54,24 @@ func newPodIdentifier(from, name, value string) PodIdentifier {
 				Name: name,
 			},
 			Value: value,
+		},
+	}
+}
+
+func podWithContainerID(uid, containerID string, restartCount int32) *api_v1.Pod {
+	startTime := meta_v1.NewTime(time.Unix(1, 0))
+	return &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: "pod-a",
+			UID:  types.UID(uid),
+		},
+		Status: api_v1.PodStatus{
+			StartTime: &startTime,
+			ContainerStatuses: []api_v1.ContainerStatus{{
+				Name:         "container",
+				ContainerID:  "containerd://" + containerID,
+				RestartCount: restartCount,
+			}},
 		},
 	}
 }
@@ -420,6 +439,213 @@ func TestPodUpdate(t *testing.T) {
 	})
 }
 
+func TestPodUpdateQueuesStaleContainerIDAssociation(t *testing.T) {
+	c, _ := newTestClient(t)
+	c.Rules = ExtractionRules{ContainerID: true}
+	c.Associations = []Association{{
+		Sources: []AssociationSource{{
+			From: ResourceSource,
+			Name: "container.id",
+		}},
+	}}
+
+	oldID := newPodIdentifier(ResourceSource, "container.id", "old-container-id")
+	newID := newPodIdentifier(ResourceSource, "container.id", "new-container-id")
+	pod := podWithContainerID("pod-uid", "old-container-id", 0)
+
+	c.handlePodAdd(pod)
+	require.Contains(t, c.Pods, oldID)
+	require.Contains(t, c.Pods, newPodIdentifier(ResourceSource, "k8s.pod.uid", "pod-uid"))
+
+	updatedPod := podWithContainerID("pod-uid", "new-container-id", 1)
+	c.handlePodUpdate(pod, updatedPod)
+
+	require.Contains(t, c.Pods, oldID)
+	require.Contains(t, c.Pods, newID)
+	require.Len(t, c.deleteQueue, 1)
+	assert.Equal(t, oldID, c.deleteQueue[0].id)
+	assert.Equal(t, "pod-uid", c.deleteQueue[0].pod.PodUID)
+
+	c.deleteLoopProcessing(time.Hour)
+	assert.Contains(t, c.Pods, oldID)
+	assert.Contains(t, c.Pods, newID)
+
+	c.deleteLoopProcessing(0)
+	assert.NotContains(t, c.Pods, oldID)
+	assert.Contains(t, c.Pods, newID)
+}
+
+// podWithLabel builds a minimal pod with a single label, used for association tests.
+func podWithLabel(uid, labelKey, labelValue string) *api_v1.Pod {
+	startTime := meta_v1.NewTime(time.Unix(1, 0))
+	return &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:   "pod-a",
+			UID:    types.UID(uid),
+			Labels: map[string]string{labelKey: labelValue},
+		},
+		Status: api_v1.PodStatus{
+			StartTime: &startTime,
+		},
+	}
+}
+
+// podWithoutLabel builds the same pod but without the label.
+func podWithoutLabel(uid string) *api_v1.Pod {
+	startTime := meta_v1.NewTime(time.Unix(1, 0))
+	return &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: "pod-a",
+			UID:  types.UID(uid),
+		},
+		Status: api_v1.PodStatus{
+			StartTime: &startTime,
+		},
+	}
+}
+
+// TestPodUpdateQueuesStaleCustomLabelAssociation verifies that when a pod update removes
+// a label used as a custom association source, the stale identifier is queued for deletion
+// (fix for the memory leak described in issue #48588).
+func TestPodUpdateQueuesStaleCustomLabelAssociation(t *testing.T) {
+	c, _ := newTestClient(t)
+	c.Rules = ExtractionRules{
+		Labels: []FieldExtractionRule{{Name: "my-label", Key: "my-label", From: MetadataFromPod}},
+	}
+	c.Associations = []Association{{
+		Sources: []AssociationSource{{
+			From: ResourceSource,
+			Name: "my-label",
+		}},
+	}}
+
+	labelID := newPodIdentifier(ResourceSource, "my-label", "my-value")
+	uidID := newPodIdentifier(ResourceSource, "k8s.pod.uid", "pod-uid")
+	pod := podWithLabel("pod-uid", "my-label", "my-value")
+
+	c.handlePodAdd(pod)
+	require.Contains(t, c.Pods, labelID)
+	require.Contains(t, c.Pods, uidID)
+
+	// Update the pod without the label — the stale identifier should be queued for deletion.
+	updatedPod := podWithoutLabel("pod-uid")
+	c.handlePodUpdate(pod, updatedPod)
+
+	require.Contains(t, c.Pods, labelID, "stale label identifier should still be in cache during grace period")
+	// The deleteQueue should contain the stale label identifier.
+	require.Len(t, c.deleteQueue, 1)
+	assert.Equal(t, labelID, c.deleteQueue[0].id)
+	assert.Equal(t, "pod-uid", c.deleteQueue[0].pod.PodUID)
+}
+
+// TestPodUpdateCancelsPendingDeleteOnReactivation verifies that when an identifier goes
+// through active->stale->active transitions, the re-activated identifier is not incorrectly
+// removed after the grace period expires (fix for issue #48588).
+// The delete loop skips stale requests via pointer comparison: re-activation writes a new
+// *Pod to c.Pods[id], so the queued delete request (which holds the old pointer) is a no-op.
+func TestPodUpdateCancelsPendingDeleteOnReactivation(t *testing.T) {
+	c, _ := newTestClient(t)
+	c.Rules = ExtractionRules{
+		Labels: []FieldExtractionRule{{Name: "my-label", Key: "my-label", From: MetadataFromPod}},
+	}
+	c.Associations = []Association{{
+		Sources: []AssociationSource{{
+			From: ResourceSource,
+			Name: "my-label",
+		}},
+	}}
+
+	labelID := newPodIdentifier(ResourceSource, "my-label", "my-value")
+	pod := podWithLabel("pod-uid", "my-label", "my-value")
+
+	// Step 1: add pod with the label.
+	c.handlePodAdd(pod)
+	require.Contains(t, c.Pods, labelID)
+	require.Empty(t, c.deleteQueue)
+
+	// Step 2: update removes the label — stale delete is queued with the old *Pod pointer.
+	podWithoutLbl := podWithoutLabel("pod-uid")
+	c.handlePodUpdate(pod, podWithoutLbl)
+	require.Len(t, c.deleteQueue, 1)
+	assert.Equal(t, labelID, c.deleteQueue[0].id)
+	stalePod := c.deleteQueue[0].pod
+
+	// Step 3: update restores the label — a new *Pod is written to c.Pods[labelID].
+	c.handlePodUpdate(podWithoutLbl, pod)
+	require.Contains(t, c.Pods, labelID)
+	// The delete request remains in the queue but holds the old pointer.
+	require.Len(t, c.deleteQueue, 1)
+	assert.NotSame(t, stalePod, c.Pods[labelID], "re-activation must write a new *Pod so the queued delete is skipped")
+
+	// Step 4: the delete loop sees the pointer mismatch and skips the delete.
+	c.deleteLoopProcessing(0)
+	assert.Contains(t, c.Pods, labelID, "re-activated identifier must not be deleted")
+}
+
+// TestReactivationRaceStress drives handlePodUpdate and deleteLoopProcessing concurrently
+// to verify that an active->stale->active identifier is never incorrectly deleted.
+// This reproduces the race described in issue #48588.
+func TestReactivationRaceStress(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping concurrency stress test in -short mode")
+	}
+
+	c, _ := newTestClient(t)
+	c.Rules = ExtractionRules{
+		Labels: []FieldExtractionRule{{Name: "my-label", Key: "my-label", From: MetadataFromPod}},
+	}
+	c.Associations = []Association{{
+		Sources: []AssociationSource{{
+			From: ResourceSource,
+			Name: "my-label",
+		}},
+	}}
+
+	labelID := newPodIdentifier(ResourceSource, "my-label", "my-value")
+	withLabel := podWithLabel("pod-uid", "my-label", "my-value")
+	noLabel := podWithoutLabel("pod-uid")
+
+	c.handlePodAdd(withLabel)
+	require.Contains(t, c.Pods, labelID)
+
+	const iterations = 20000
+	var wrongDelete atomic.Bool
+	stop := make(chan struct{})
+
+	var deleter sync.WaitGroup
+	deleter.Go(func() {
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+				c.deleteLoopProcessing(0)
+			}
+		}
+	})
+
+	var caughtAt int
+	for i := 0; i < iterations && !wrongDelete.Load(); i++ {
+		c.handlePodUpdate(withLabel, noLabel)
+		c.handlePodUpdate(noLabel, withLabel)
+
+		for range 128 {
+			if _, ok := c.GetPod(labelID); !ok {
+				wrongDelete.Store(true)
+				caughtAt = i
+				break
+			}
+		}
+	}
+
+	close(stop)
+	deleter.Wait()
+
+	assert.False(t, wrongDelete.Load(),
+		"active->stale->active identifier was deleted by the concurrent delete loop "+
+			"(caught on iteration %d of %d)", caughtAt, iterations)
+}
+
 func TestNamespaceUpdate(t *testing.T) {
 	c, _ := newTestClient(t)
 	namespaceAddAndUpdateTest(t, c, func(obj any) {
@@ -492,12 +718,12 @@ func TestPodDelete(t *testing.T) {
 	assert.Len(t, c.deleteQueue, 5)
 	deleteRequest = c.deleteQueue[0]
 	assert.Equal(t, newPodIdentifier("connection", "k8s.pod.ip", "2.2.2.2"), deleteRequest.id)
-	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", deleteRequest.podUID)
+	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", deleteRequest.pod.PodUID)
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 	deleteRequest = c.deleteQueue[1]
 	assert.Equal(t, newPodIdentifier("resource_attribute", "k8s.pod.uid", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"), deleteRequest.id)
-	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", deleteRequest.podUID)
+	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", deleteRequest.pod.PodUID)
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 }
@@ -4818,4 +5044,49 @@ func TestExtractPodAttributesClusterUIDRace(t *testing.T) {
 	}()
 
 	wg.Wait()
+}
+
+func TestPodDeleteIPMissingFromDeleteEvent(t *testing.T) {
+	c, _ := newTestClient(t)
+
+	pod := &api_v1.Pod{}
+	pod.Name = "podLeak"
+	pod.Status.PodIP = "4.4.4.4"
+	pod.UID = "uid-leak-test"
+	c.handlePodAdd(pod)
+
+	// Map should have 3 keys for this pod
+	assert.Contains(t, c.Pods, newPodIdentifier("resource_attribute", "k8s.pod.uid", "uid-leak-test"))
+	assert.Contains(t, c.Pods, newPodIdentifier("connection", "k8s.pod.ip", "4.4.4.4"))
+	assert.Contains(t, c.Pods, newPodIdentifier("resource_attribute", "k8s.pod.ip", "4.4.4.4"))
+
+	// Clear the delete queue
+	c.deleteQueue = c.deleteQueue[:0]
+
+	// Simulate delete event where PodIP is missing/empty!
+	deletePod := &api_v1.Pod{}
+	deletePod.Name = "podLeak"
+	deletePod.UID = "uid-leak-test"
+	deletePod.Status.PodIP = ""
+
+	c.handlePodDelete(deletePod)
+
+	// In the bug state, only the UID-based keys are queued for deletion, leaving the IP-based keys leaked.
+	// We expect all unique key patterns (UID, connection IP, and Pod IP) to be queued for deletion.
+	var ids []PodIdentifier
+	for _, req := range c.deleteQueue {
+		assert.Equal(t, "uid-leak-test", req.pod.PodUID)
+		ids = append(ids, req.id)
+	}
+
+	// Verify that each of the three key patterns was queued at least once
+	assert.Contains(t, ids, newPodIdentifier("resource_attribute", "k8s.pod.uid", "uid-leak-test"))
+	assert.Contains(t, ids, newPodIdentifier("connection", "k8s.pod.ip", "4.4.4.4"))
+	assert.Contains(t, ids, newPodIdentifier("resource_attribute", "k8s.pod.ip", "4.4.4.4"))
+
+	// Run the sweep logic to process all queued deletions immediately
+	c.deleteLoopProcessing(0)
+
+	// In the fixed state, all keys associated with the pod should be successfully cleaned up from the cache.
+	assert.Empty(t, c.Pods)
 }

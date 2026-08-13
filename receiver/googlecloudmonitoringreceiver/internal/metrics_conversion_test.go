@@ -124,6 +124,38 @@ func TestConvertGaugeToMetrics(t *testing.T) {
 	}
 }
 
+func TestConvertSumToMetrics(t *testing.T) {
+	logger := zap.NewNop()
+	mb := NewMetricsBuilder(logger)
+
+	ts := &monitoringpb.TimeSeries{
+		Points: []*monitoringpb.Point{
+			{
+				Interval: &monitoringpb.TimeInterval{
+					StartTime: &timestamppb.Timestamp{Seconds: 10},
+					EndTime:   &timestamppb.Timestamp{Seconds: 20},
+				},
+				Value: &monitoringpb.TypedValue{
+					Value: &monitoringpb.TypedValue_Int64Value{Int64Value: 100},
+				},
+			},
+		},
+		Metric: &metric.Metric{
+			Labels: map[string]string{"labelKey": "labelValue"},
+		},
+	}
+
+	m := pmetric.NewMetric()
+	mb.ConvertSumToMetrics(ts, m)
+
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	sum := m.Sum()
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, sum.AggregationTemporality())
+	assert.True(t, sum.IsMonotonic(), "cumulative sums must be marked monotonic")
+	require.Equal(t, 1, sum.DataPoints().Len())
+	assert.Equal(t, int64(100), sum.DataPoints().At(0).IntValue())
+}
+
 func TestConvertDistributionToMetrics_NoDataPoints(t *testing.T) {
 	logger := zap.NewNop()
 	mb := NewMetricsBuilder(logger)

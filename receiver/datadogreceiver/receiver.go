@@ -19,6 +19,7 @@ import (
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/klauspost/compress/zstd"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -112,6 +113,18 @@ func (ddr *datadogReceiver) getEndpoints() []endpoint {
 			{
 				Pattern: "/api/v2/series",
 				Handler: ddr.handleV2Series,
+			},
+			{
+				// the default series endpoint for datadog agent >= 7.81.0:
+				// https://github.com/DataDog/datadog-agent/blob/7.81.0/comp/forwarder/defaultforwarder/endpoints/endpoints.go#L33
+				Pattern: "/api/intake/metrics/v3/series",
+				Handler: ddr.handleV3Series,
+			},
+			{
+				// the v3beta route carries the same payload format and is used
+				// by agents configured for v3 validation/shadow traffic
+				Pattern: "/api/intake/metrics/v3beta/series",
+				Handler: ddr.handleV3Series,
 			},
 			{
 				Pattern: "/api/v1/check_run",
@@ -228,7 +241,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	}
 
 	var err error
-	ddr.server, err = ddr.config.ToServer(
+	ddr.server, err = ddr.config.ServerConfig.ToServer(
 		ctx,
 		host.GetExtensions(),
 		ddr.params.TelemetrySettings,
@@ -237,7 +250,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
 	}
-	hln, err := ddr.config.ToListener(ctx)
+	hln, err := ddr.config.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create datadog listener: %w", err)
 	}
@@ -307,6 +320,8 @@ func (ddr *datadogReceiver) handleLogs(w http.ResponseWriter, req *http.Request)
 		http.Error(w, "Fake featuresdiscovery", http.StatusBadRequest) // The response code should be different of 404 to be considered ok by Datadog SDK.
 		return
 	}
+
+	receivedAt := time.Now()
 	obsCtx := ddr.tReceiver.StartLogsOp(req.Context())
 	var (
 		logCount int
@@ -325,7 +340,17 @@ func (ddr *datadogReceiver) handleLogs(w http.ResponseWriter, req *http.Request)
 	case "application/json":
 		buf := translator.GetBuffer()
 		defer translator.PutBuffer(buf)
-		if _, err = io.Copy(buf, req.Body); err != nil {
+
+		reader, derr := createDecompressingReader(req.Body, req.Header.Get("Content-Encoding"))
+		if derr != nil {
+			err = derr
+			http.Error(w, "Error decompressing payload", http.StatusBadRequest)
+			ddr.params.Logger.Error("error creating decompressing reader", zap.Error(derr))
+			return
+		}
+		defer reader.Close()
+
+		if _, err = io.Copy(buf, reader); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			ddr.params.Logger.Error(err.Error())
 			return
@@ -345,7 +370,7 @@ func (ddr *datadogReceiver) handleLogs(w http.ResponseWriter, req *http.Request)
 			ddLogs = append(ddLogs, ddLog)
 		}
 
-		plogs := translator.ToPlog(ddLogs)
+		plogs := translator.ToPlog(ddLogs, receivedAt, ddr.config.Logs.DecodeJSONMessage)
 
 		logCount = plogs.LogRecordCount()
 		err = ddr.nextLogsConsumer.ConsumeLogs(obsCtx, plogs)
@@ -565,6 +590,43 @@ func (ddr *datadogReceiver) handleV2Series(w http.ResponseWriter, req *http.Requ
 	_ = json.NewEncoder(w).Encode(response)
 }
 
+// handleV3Series handles the v3 series intake endpoint, the default series
+// endpoint for Datadog Agent 7.81.0 and later. The payload is a columnar,
+// dictionary-encoded protobuf format; it is decoded into the v2 series
+// representation and then shares the v2 translation to OTLP.
+func (ddr *datadogReceiver) handleV3Series(w http.ResponseWriter, req *http.Request) {
+	obsCtx := ddr.tReceiver.StartMetricsOp(req.Context())
+	var err error
+	var metricsCount int
+	defer func(metricsCount *int) {
+		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
+	}(&metricsCount)
+
+	series, err := ddr.metricsTranslator.HandleSeriesV3Payload(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ddr.params.Logger.Error(err.Error())
+		return
+	}
+
+	metrics := ddr.metricsTranslator.TranslateSeriesV2(series)
+	metricsCount = metrics.DataPointCount()
+
+	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+	if err != nil {
+		errorutil.HTTPError(w, err)
+		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	response := map[string]any{
+		"errors": []string{},
+	}
+	_ = json.NewEncoder(w).Encode(response)
+}
+
 // handleCheckRun handles the service checks endpoint https://docs.datadoghq.com/api/latest/service-checks/
 func (ddr *datadogReceiver) handleCheckRun(w http.ResponseWriter, req *http.Request) {
 	obsCtx := ddr.tReceiver.StartMetricsOp(req.Context())
@@ -754,7 +816,9 @@ func (ddr *datadogReceiver) runIdleSeriesCleanup() {
 }
 
 // createDecompressingReader creates a reader that handles decompression based on the content encoding.
-// Supported encodings: gzip. Returns the original reader if encoding is empty or unsupported.
+// Supported encodings: gzip, zstd. The Datadog Agent gzips by default on older versions and uses
+// zstd for HTTP logs on newer ones (7.59+). Returns the original reader if encoding is empty or
+// unsupported.
 func createDecompressingReader(body io.ReadCloser, contentEncoding string) (io.ReadCloser, error) {
 	switch contentEncoding {
 	case "gzip":
@@ -762,7 +826,15 @@ func createDecompressingReader(body io.ReadCloser, contentEncoding string) (io.R
 		if err != nil {
 			return nil, fmt.Errorf("error creating gzip reader: %w", err)
 		}
+
 		return gzReader, nil
+	case "zstd":
+		zReader, err := zstd.NewReader(body)
+		if err != nil {
+			return nil, fmt.Errorf("error creating zstd reader: %w", err)
+		}
+
+		return zReader.IOReadCloser(), nil
 	default:
 		return body, nil
 	}

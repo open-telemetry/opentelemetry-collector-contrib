@@ -6,10 +6,10 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| cloud.platform | The cloud.platform | Any Str | true | - |
-| cloud.provider | The cloud.provider | Any Str | true | - |
-| deployment.environment | The deployment.environment | Any Str | true | - |
-| service.instance.id | The service.instance.id | Any Str | true | - |
-| service.version | The service.version | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
+| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
+| deployment.environment | The deployment.environment | Any Str | true | - | - |
+| service.instance.id | The service.instance.id | Any Str | true | [service.instance.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-instance-id) | - |
+| service.version | The service.version | Any Str | true | [service.version](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-version) | - |

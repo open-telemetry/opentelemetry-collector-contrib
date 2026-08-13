@@ -128,6 +128,8 @@ func TestScrape(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.MetricsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
+		cfg.MetricsBuilderConfig.ResourceAttributes.ServiceNamespace.Enabled = true
 		settings := receivertest.NewNopSettings(metadata.Type)
 		scraper := newSQLServerPCScraper(settings, cfg)
 
@@ -149,7 +151,8 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, scrapeData,
-			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreResourceAttributeValue("service.instance.id")))
 	})
 
 	t.Run("named", func(t *testing.T) {
@@ -158,13 +161,22 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig = metadata.MetricsBuilderConfig{
 			Metrics: metadata.DefaultMetricsConfig(),
 			ResourceAttributes: metadata.ResourceAttributesConfig{
-				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
+				ServiceInstanceID: metadata.ServiceInstanceIDResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverInstanceName: metadata.ResourceAttributeConfig{
+				ServiceName: metadata.ServiceNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverComputerName: metadata.ResourceAttributeConfig{
+				ServiceNamespace: metadata.ServiceNamespaceResourceAttributeConfig{
+					Enabled: true,
+				},
+				SqlserverDatabaseName: metadata.SqlserverDatabaseNameResourceAttributeConfig{
+					Enabled: true,
+				},
+				SqlserverInstanceName: metadata.SqlserverInstanceNameResourceAttributeConfig{
+					Enabled: true,
+				},
+				SqlserverComputerName: metadata.SqlserverComputerNameResourceAttributeConfig{
 					Enabled: true,
 				},
 			},

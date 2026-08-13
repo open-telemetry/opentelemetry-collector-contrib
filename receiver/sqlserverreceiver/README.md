@@ -12,7 +12,7 @@ are only available when running on Windows.
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsqlserver%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fsqlserver) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsqlserver%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fsqlserver) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_sqlserver)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_sqlserver&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@sincejune](https://www.github.com/sincejune), [@crobert-1](https://www.github.com/crobert-1) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@sincejune](https://www.github.com/sincejune), [@crobert-1](https://www.github.com/crobert-1), [@sv-splunk](https://www.github.com/sv-splunk), [@ebrdarSplunk](https://www.github.com/ebrdarSplunk), [@XSAM](https://www.github.com/XSAM), [@akshays-19](https://www.github.com/akshays-19), [@splunk-shanu](https://www.github.com/splunk-shanu) \| Seeking more code owners! |
 | Emeritus      | [@StefanKurek](https://www.github.com/StefanKurek) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -38,6 +38,13 @@ When configured to directly connect to the SQL Server instance, the user must ha
 2. Permission to view server state:
    - SQL Server pre-2022: `VIEW SERVER STATE`
    - SQL Server 2022 and later: `VIEW SERVER PERFORMANCE STATE`
+
+3. To collect the per-index physical stats metrics (`sqlserver.index.*`), the following two
+   permissions are also required:
+   - `CONNECT ANY DATABASE` — the receiver enters each user database to read its index
+     physical stats; this grant lets the login connect to all current and future databases.
+   - `VIEW ANY DEFINITION` — makes the index, object, and schema catalog views visible in
+     every database so the physical stats query can resolve index metadata.
 
 ## Configuration
 
@@ -81,6 +88,19 @@ Direct connection options (optional, but all must be specified to enable):
 
 For finer control over the direct connection use the `datasource`, a.k.a. the "connection string", instead.
 Note: it can't be used in conjunction with the `username`, `password`, `server` and `port` options.
+
+When a direct connection is used, all scrapers created for a signal share a single database connection pool
+instead of each opening its own. The pool is scoped per receiver instance: if this receiver is used in both a
+metrics and a logs pipeline, the metrics and logs receivers each own a separate pool. The pool can be tuned
+with the `connection_pool` options (all optional):
+- `max_open` (default = number of scrapers): The maximum number of open connections to the database. `0` means unlimited.
+- `max_idle` (default = number of scrapers): The maximum number of idle connections kept in the pool.
+- `max_lifetime` (optional, example = `5m`, default = unset): The maximum amount of time a connection may be reused. `0` means connections are reused forever.
+- `max_idle_time` (optional, example = `1m`, default = unset): The maximum amount of time a connection may be idle before being closed. `0` means idle connections are not closed due to idle time.
+
+The defaults are derived from the number of enabled scrapers so that every scraper can query concurrently
+while keeping the total number of connections bounded. Most deployments do not need to set these; tune them
+only when connecting to an instance with strict connection limits or a large number of enabled scrapers.
 
 Windows-specific options:
 - `computer_name` (optional): The computer name identifies the SQL Server name or IP address of the computer being monitored.

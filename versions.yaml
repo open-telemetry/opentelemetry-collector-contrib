@@ -2,15 +2,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 module-sets:
+  stable-base:
+    version: v1.0.0
+    modules:
+      # Uncomment once https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49152 is merged
+      # - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
+
   contrib-base:
-    version: v0.154.0
+    version: v0.158.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen
-      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen
+      - github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider
@@ -88,6 +94,8 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth/awsiamdbauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension
@@ -114,12 +122,12 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/kafkatopicsobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sdnotifyextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage
@@ -202,6 +210,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor
@@ -252,6 +261,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dnscheckreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/envoyalsreceiver
@@ -275,7 +285,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver

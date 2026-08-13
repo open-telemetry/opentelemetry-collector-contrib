@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -209,9 +210,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					ServerAddress:     ResourceAttributeConfig{Enabled: true},
-					ServerPort:        ResourceAttributeConfig{Enabled: true},
-					ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
+					ServerAddress:     ServerAddressResourceAttributeConfig{Enabled: true},
+					ServerPort:        ServerPortResourceAttributeConfig{Enabled: true},
+					ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{Enabled: true},
+					ServiceName:       ServiceNameResourceAttributeConfig{Enabled: true},
+					ServiceNamespace:  ServiceNamespaceResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -402,9 +405,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					ServerAddress:     ResourceAttributeConfig{Enabled: false},
-					ServerPort:        ResourceAttributeConfig{Enabled: false},
-					ServiceInstanceID: ResourceAttributeConfig{Enabled: false},
+					ServerAddress:     ServerAddressResourceAttributeConfig{Enabled: false},
+					ServerPort:        ServerPortResourceAttributeConfig{Enabled: false},
+					ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{Enabled: false},
+					ServiceName:       ServiceNameResourceAttributeConfig{Enabled: false},
+					ServiceNamespace:  ServiceNamespaceResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -412,10 +417,250 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MongodbActiveReadsMetricConfig{}, MongodbActiveWritesMetricConfig{}, MongodbCacheOperationsMetricConfig{}, MongodbCollectionCountMetricConfig{}, MongodbCommandsRateMetricConfig{}, MongodbConnectionCountMetricConfig{}, MongodbCursorCountMetricConfig{}, MongodbCursorTimeoutCountMetricConfig{}, MongodbDataSizeMetricConfig{}, MongodbDatabaseCountMetricConfig{}, MongodbDeletesRateMetricConfig{}, MongodbDocumentOperationCountMetricConfig{}, MongodbExtentCountMetricConfig{}, MongodbFlushesRateMetricConfig{}, MongodbGetmoresRateMetricConfig{}, MongodbGlobalLockTimeMetricConfig{}, MongodbHealthMetricConfig{}, MongodbIndexAccessCountMetricConfig{}, MongodbIndexCountMetricConfig{}, MongodbIndexSizeMetricConfig{}, MongodbInsertsRateMetricConfig{}, MongodbLockAcquireCountMetricConfig{}, MongodbLockAcquireTimeMetricConfig{}, MongodbLockAcquireWaitCountMetricConfig{}, MongodbLockDeadlockCountMetricConfig{}, MongodbMemoryUsageMetricConfig{}, MongodbNetworkIoReceiveMetricConfig{}, MongodbNetworkIoTransmitMetricConfig{}, MongodbNetworkRequestCountMetricConfig{}, MongodbObjectCountMetricConfig{}, MongodbOperationCountMetricConfig{}, MongodbOperationLatencyTimeMetricConfig{}, MongodbOperationReplCountMetricConfig{}, MongodbOperationTimeMetricConfig{}, MongodbPageFaultsMetricConfig{}, MongodbQueriesRateMetricConfig{}, MongodbReplCommandsPerSecMetricConfig{}, MongodbReplDeletesPerSecMetricConfig{}, MongodbReplGetmoresPerSecMetricConfig{}, MongodbReplInsertsPerSecMetricConfig{}, MongodbReplQueriesPerSecMetricConfig{}, MongodbReplUpdatesPerSecMetricConfig{}, MongodbSessionCountMetricConfig{}, MongodbStorageSizeMetricConfig{}, MongodbUpdatesRateMetricConfig{}, MongodbUptimeMetricConfig{}, MongodbWtcacheBytesReadMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MongodbActiveReadsMetricConfig{}, MongodbActiveWritesMetricConfig{}, MongodbCacheOperationsMetricConfig{}, MongodbCollectionCountMetricConfig{}, MongodbCommandsRateMetricConfig{}, MongodbConnectionCountMetricConfig{}, MongodbCursorCountMetricConfig{}, MongodbCursorTimeoutCountMetricConfig{}, MongodbDataSizeMetricConfig{}, MongodbDatabaseCountMetricConfig{}, MongodbDeletesRateMetricConfig{}, MongodbDocumentOperationCountMetricConfig{}, MongodbExtentCountMetricConfig{}, MongodbFlushesRateMetricConfig{}, MongodbGetmoresRateMetricConfig{}, MongodbGlobalLockTimeMetricConfig{}, MongodbHealthMetricConfig{}, MongodbIndexAccessCountMetricConfig{}, MongodbIndexCountMetricConfig{}, MongodbIndexSizeMetricConfig{}, MongodbInsertsRateMetricConfig{}, MongodbLockAcquireCountMetricConfig{}, MongodbLockAcquireTimeMetricConfig{}, MongodbLockAcquireWaitCountMetricConfig{}, MongodbLockDeadlockCountMetricConfig{}, MongodbMemoryUsageMetricConfig{}, MongodbNetworkIoReceiveMetricConfig{}, MongodbNetworkIoTransmitMetricConfig{}, MongodbNetworkRequestCountMetricConfig{}, MongodbObjectCountMetricConfig{}, MongodbOperationCountMetricConfig{}, MongodbOperationLatencyTimeMetricConfig{}, MongodbOperationReplCountMetricConfig{}, MongodbOperationTimeMetricConfig{}, MongodbPageFaultsMetricConfig{}, MongodbQueriesRateMetricConfig{}, MongodbReplCommandsPerSecMetricConfig{}, MongodbReplDeletesPerSecMetricConfig{}, MongodbReplGetmoresPerSecMetricConfig{}, MongodbReplInsertsPerSecMetricConfig{}, MongodbReplQueriesPerSecMetricConfig{}, MongodbReplUpdatesPerSecMetricConfig{}, MongodbSessionCountMetricConfig{}, MongodbStorageSizeMetricConfig{}, MongodbUpdatesRateMetricConfig{}, MongodbUptimeMetricConfig{}, MongodbWtcacheBytesReadMetricConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+
+func TestMongodbCacheOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbCacheOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbCacheOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.cache.operations doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().MongodbCacheOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbCollectionCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbCollectionCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbCollectionCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.collection.count doesn't have an attribute invalid, valid attributes: [db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbCollectionCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbConnectionCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbConnectionCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbConnectionCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.connection.count doesn't have an attribute invalid, valid attributes: [type, db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbConnectionCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbDataSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbDataSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbDataSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.data.size doesn't have an attribute invalid, valid attributes: [db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbDataSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbDocumentOperationCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbDocumentOperationCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbDocumentOperationCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.document.operation.count doesn't have an attribute invalid, valid attributes: [operation, db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbDocumentOperationCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbExtentCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbExtentCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbExtentCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.extent.count doesn't have an attribute invalid, valid attributes: [db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbExtentCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbIndexAccessCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbIndexAccessCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbIndexAccessCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.index.access.count doesn't have an attribute invalid, valid attributes: [collection, db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbIndexAccessCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbIndexCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbIndexCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbIndexCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.index.count doesn't have an attribute invalid, valid attributes: [db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbIndexCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbIndexSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbIndexSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbIndexSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.index.size doesn't have an attribute invalid, valid attributes: [db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbIndexSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbLockAcquireCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbLockAcquireCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbLockAcquireCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.lock.acquire.count doesn't have an attribute invalid, valid attributes: [lock_type, lock_mode, db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbLockAcquireCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbLockAcquireTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbLockAcquireTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbLockAcquireTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.lock.acquire.time doesn't have an attribute invalid, valid attributes: [lock_type, lock_mode, db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbLockAcquireTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbLockAcquireWaitCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbLockAcquireWaitCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbLockAcquireWaitCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.lock.acquire.wait_count doesn't have an attribute invalid, valid attributes: [lock_type, lock_mode, db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbLockAcquireWaitCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbLockDeadlockCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbLockDeadlockCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbLockDeadlockCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.lock.deadlock.count doesn't have an attribute invalid, valid attributes: [lock_type, lock_mode, db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbLockDeadlockCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbMemoryUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbMemoryUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbMemoryUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.memory.usage doesn't have an attribute invalid, valid attributes: [type, db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbMemoryUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbObjectCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbObjectCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbObjectCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.object.count doesn't have an attribute invalid, valid attributes: [db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbObjectCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbOperationCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbOperationCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbOperationCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.operation.count doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().MongodbOperationCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbOperationLatencyTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbOperationLatencyTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbOperationLatencyTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.operation.latency.time doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().MongodbOperationLatencyTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbOperationReplCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbOperationReplCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbOperationReplCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.operation.repl.count doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().MongodbOperationReplCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbOperationTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbOperationTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbOperationTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.operation.time doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().MongodbOperationTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbStorageSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbStorageSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbStorageSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.storage.size doesn't have an attribute invalid, valid attributes: [db.namespace]")
+
+	cfg = DefaultMetricsConfig().MongodbStorageSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -424,6 +669,16 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := NewDefaultMetricsBuilderConfig()
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
+	return cfg
+}
+
+func loadLogsBuilderConfig(t *testing.T, name string) LogsBuilderConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultLogsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
@@ -440,27 +695,40 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				ServerAddress:     ResourceAttributeConfig{Enabled: true},
-				ServerPort:        ResourceAttributeConfig{Enabled: true},
-				ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
+				ServerAddress:     ServerAddressResourceAttributeConfig{Enabled: true},
+				ServerPort:        ServerPortResourceAttributeConfig{Enabled: true},
+				ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{Enabled: true},
+				ServiceName:       ServiceNameResourceAttributeConfig{Enabled: true},
+				ServiceNamespace:  ServiceNamespaceResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				ServerAddress:     ResourceAttributeConfig{Enabled: false},
-				ServerPort:        ResourceAttributeConfig{Enabled: false},
-				ServiceInstanceID: ResourceAttributeConfig{Enabled: false},
+				ServerAddress:     ServerAddressResourceAttributeConfig{Enabled: false},
+				ServerPort:        ServerPortResourceAttributeConfig{Enabled: false},
+				ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{Enabled: false},
+				ServiceName:       ServiceNameResourceAttributeConfig{Enabled: false},
+				ServiceNamespace:  ServiceNamespaceResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+
+func TestResourceAttributesOverrideConfig(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	assert.NotNil(t, cfg.ServerAddress.OverrideValue, "override_value should be set for server.address")
+	assert.NotNil(t, cfg.ServerPort.OverrideValue, "override_value should be set for server.port")
+	assert.NotNil(t, cfg.ServiceInstanceID.OverrideValue, "override_value should be set for service.instance.id")
+	assert.NotNil(t, cfg.ServiceName.OverrideValue, "override_value should be set for service.name")
+	assert.NotNil(t, cfg.ServiceNamespace.OverrideValue, "override_value should be set for service.namespace")
 }
 
 func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {

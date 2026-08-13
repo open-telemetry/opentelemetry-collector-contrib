@@ -7,7 +7,8 @@
 | Distributions | [core], [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fkafka%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fkafka) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fkafka%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fkafka) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_kafka)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_kafka&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy), [@axw](https://www.github.com/axw), [@paulojmdias](https://www.github.com/paulojmdias) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy), [@paulojmdias](https://www.github.com/paulojmdias) |
+| Emeritus      | [@axw](https://www.github.com/axw) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -72,10 +73,11 @@ The following settings can be optionally configured:
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use
-    - `mechanism`: The SASL mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, or PLAIN)
+    - `mechanism`: The SASL mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER, or PLAIN)
     - `version` (default = 0): The SASL protocol version to use (0 or 1)
     - `aws_msk`
       - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
+    - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client` or `azure_auth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
   - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
   - `kerberos`
     - `service_name`: Kerberos service name
@@ -161,6 +163,41 @@ exporters:
       my-custom-header: "my-custom-value"
       another-header: "another-value"
 ```
+
+### SASL/OAUTHBEARER (OAuth2 token source)
+
+The `OAUTHBEARER` mechanism delegates token acquisition and refresh to an authenticator
+extension referenced by `oauthbearer_token_source`, such as
+[`oauth2clientauth`](../../extension/oauth2clientauthextension/README.md):
+
+```yaml
+extensions:
+  oauth2client:
+    client_id: someclientid
+    client_secret: someclientsecret
+    token_url: https://example.com/oauth2/default/v1/token
+
+exporters:
+  kafka:
+    brokers: ["localhost:9092"]
+    tls:
+      insecure: false
+    auth:
+      sasl:
+        mechanism: OAUTHBEARER
+        oauthbearer_token_source: oauth2client
+
+service:
+  extensions: [oauth2client]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [kafka]
+```
+
+The [`azureauth`](../../extension/azureauthextension/README.md) extension can also be used
+as a token source, which supports managed identity, workload identity, and service principal
+for authenticating against Azure Event Hubs.
 
 ## Destination Topic
 
