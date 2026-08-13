@@ -48,6 +48,7 @@ const (
 	triggerRootSpan     triggerSource = "root_span"
 	triggerTraceTimeout triggerSource = "trace_timeout"
 	triggerEviction     triggerSource = "eviction"
+	triggerShutdown     triggerSource = "shutdown"
 )
 
 // evictionRuleLabel is the sentinel `rule` label used on decision metrics for
@@ -68,6 +69,7 @@ var (
 	triggerRootSpanAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerRootSpan)))
 	triggerTraceTimeoutAttr = metric.WithAttributes(attribute.String("trigger", string(triggerTraceTimeout)))
 	triggerEvictionAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerEviction)))
+	triggerShutdownAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerShutdown)))
 )
 
 func triggerAttr(source triggerSource) metric.MeasurementOption {
@@ -76,6 +78,8 @@ func triggerAttr(source triggerSource) metric.MeasurementOption {
 		return triggerRootSpanAttr
 	case triggerTraceTimeout:
 		return triggerTraceTimeoutAttr
+	case triggerShutdown:
+		return triggerShutdownAttr
 	default:
 		return triggerEvictionAttr
 	}
@@ -270,8 +274,14 @@ func (p *dynamicSamplingProcessor) Start(context.Context, component.Host) error 
 
 // Shutdown cancels any pending decision timers, stops samplers, and waits for
 // in-flight decisions to drain.
-func (p *dynamicSamplingProcessor) Shutdown(context.Context) error {
+func (p *dynamicSamplingProcessor) Shutdown(ctx context.Context) error {
 	p.mu.Lock()
+	if p.stopped {
+		// Shutdown already ran (drained and stopped the samplers); a second
+		// call must not drain or stop anything again.
+		p.mu.Unlock()
+		return nil
+	}
 	p.stopped = true
 	for id, t := range p.timers {
 		if t.Stop() {
@@ -281,9 +291,34 @@ func (p *dynamicSamplingProcessor) Shutdown(context.Context) error {
 		}
 		delete(p.timers, id)
 	}
+	// Snapshot pending traces in arrival order for the drain below. Every
+	// buffered trace has exactly one arrival entry, but entries may be stale
+	// (already decided or evicted), so only ids still in the map are taken.
+	pending := make([]*pendingTrace, 0, len(p.traces))
+	for _, id := range p.arrival {
+		if pt, ok := p.traces[id]; ok {
+			pending = append(pending, pt)
+			delete(p.traces, id)
+		}
+	}
+	p.arrival = nil
 	p.mu.Unlock()
 
 	p.wg.Wait()
+
+	// Drain: decide every pending trace with the spans seen so far rather
+	// than silently dropping the buffer. Runs the normal rule path (samplers
+	// are still running), skipping decision_delay because nothing more will
+	// arrive. Bounded by num_traces. The pipeline shuts down front to back,
+	// so the next consumer still accepts the forwarded traces.
+	for _, pt := range pending {
+		// A trace already in its decision_delay window was counted when its
+		// trigger fired; shutdown merely completes that decision early.
+		if !pt.triggered {
+			p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerShutdownAttr)
+		}
+		p.decideTrace(ctx, pt)
+	}
 
 	var errs error
 	for _, r := range p.rules {
@@ -698,7 +733,12 @@ func (p *dynamicSamplingProcessor) finishDecision(ctx context.Context, pt *pendi
 // configured eviction policy. The trace may be incomplete; decision_delay is
 // deliberately skipped because there is no room to wait.
 func (p *dynamicSamplingProcessor) decideEvicted(ctx context.Context, pt *pendingTrace) {
-	p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerEvictionAttr)
+	// Same rule as the shutdown drain: a trace already in its decision_delay
+	// window was counted when its trigger fired, so eviction of a mid-delay
+	// trace must not count the decision twice.
+	if !pt.triggered {
+		p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerEvictionAttr)
+	}
 	if p.cfg.Eviction.Policy == EvictionProbabilistic {
 		p.decideEvictedProbabilistic(ctx, pt)
 		return
