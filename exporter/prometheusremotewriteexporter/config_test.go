@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -59,6 +60,8 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: func() *Config {
 				cfg := createDefaultConfig().(*Config)
+				// The flat HTTP client settings are migrated into the nested
+				// HTTP block during Unmarshal, leaving ClientConfig empty.
 				cfg.ClientConfig = confighttp.ClientConfig{}
 				return cfg
 			}(),
@@ -116,7 +119,6 @@ func TestLoadConfig(t *testing.T) {
 				ExternalLabels:      map[string]string{},
 				AddMetricSuffixes:   true,
 				TranslationStrategy: "NoTranslation",
-				ClientConfig:        confighttp.ClientConfig{},
 				HTTP: func() confighttp.ClientConfig {
 					cc := confighttp.NewDefaultClientConfig()
 					cc.Endpoint = "localhost:8888"
@@ -194,7 +196,6 @@ func TestLoadConfig(t *testing.T) {
 				IncludeMetadataKeys: []string{"target-id", "x-org-id"},
 				ExternalLabels:      map[string]string{},
 				AddMetricSuffixes:   true,
-				ClientConfig:        confighttp.ClientConfig{},
 				HTTP: func() confighttp.ClientConfig {
 					cc := confighttp.NewDefaultClientConfig()
 					cc.Endpoint = "localhost:8888"
@@ -261,100 +262,33 @@ func TestDisabledTargetInfo(t *testing.T) {
 	assert.False(t, cfg.(*Config).TargetInfo.Enabled)
 }
 
-func TestHTTPOverridesFlatConfig(t *testing.T) {
-	flatEndpoint := "http://flat.example.com"
-	httpEndpoint := "http://http.example.com"
-	flatTimeout := 15 * time.Second
-	httpTimeout := 10 * time.Second
+func toPtr[T any](val T) *T {
+	return &val
+}
 
-	testCases := []struct {
-		name                string
-		featureGateEnabled  bool
-		conf                map[string]any
-		wantErr             string
-		wantEndpoint        string
-		wantTimeout         time.Duration
-		wantExporterTimeout time.Duration
-		checkDefaults       bool
+func TestConfigValidateWALSegmentCacheSize(t *testing.T) {
+	tests := []struct {
+		name             string
+		segmentCacheSize int
+		wantErr          bool
 	}{
-		{
-			name:               "gate disabled, http block set overrides flat",
-			featureGateEnabled: false,
-			conf: map[string]any{
-				"endpoint": flatEndpoint,
-				"timeout":  flatTimeout.String(),
-				"http": map[string]any{
-					"endpoint": httpEndpoint,
-				},
-			},
-			wantEndpoint: httpEndpoint,
-			// This also ensures that if http.timeout is not set, we fallback to correct defaults
-			wantTimeout: getDefaultHTTPClientConfig().Timeout,
-			// Top-level timeout still configures the exporter helper; http owns the client timeout.
-			wantExporterTimeout: flatTimeout,
-			checkDefaults:       true,
-		},
-		{
-			name:               "gate disabled, http block unset keeps flat",
-			featureGateEnabled: false,
-			conf: map[string]any{
-				"endpoint": flatEndpoint,
-				"timeout":  flatTimeout.String(),
-			},
-			wantEndpoint: flatEndpoint,
-			wantTimeout:  flatTimeout,
-		},
-		{
-			name:               "gate enabled, http block set without flat",
-			featureGateEnabled: true,
-			conf: map[string]any{
-				"http": map[string]any{
-					"endpoint": httpEndpoint,
-					"timeout":  httpTimeout.String(),
-				},
-			},
-			wantEndpoint:  httpEndpoint,
-			wantTimeout:   httpTimeout,
-			checkDefaults: true,
-		},
-		{
-			name:               "gate enabled, flat settings rejected even when http is set",
-			featureGateEnabled: true,
-			conf: map[string]any{
-				"endpoint": flatEndpoint,
-				"http": map[string]any{
-					"endpoint": httpEndpoint,
-					"timeout":  httpTimeout.String(),
-				},
-			},
-			wantErr: "top-level HTTP client settings are not allowed",
-		},
+		{name: "negative", segmentCacheSize: -1, wantErr: true},
+		{name: "zero", segmentCacheSize: 0, wantErr: false},
+		{name: "positive", segmentCacheSize: 10, wantErr: false},
 	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate, tc.featureGateEnabled)()
-
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			err := confmap.NewFromStringMap(tc.conf).Unmarshal(cfg)
-			if tc.wantErr != "" {
-				require.ErrorContains(t, err, tc.wantErr)
-				return
-			}
-			require.NoError(t, err)
-			require.Equal(t, tc.wantEndpoint, cfg.HTTP.Endpoint)
-			require.Equal(t, tc.wantTimeout, cfg.HTTP.Timeout)
-			if tc.wantExporterTimeout != 0 {
-				require.Equal(t, tc.wantExporterTimeout, cfg.TimeoutSettings.Timeout)
-			}
-			if tc.checkDefaults {
-				require.Equal(t, getDefaultHTTPClientConfig().WriteBufferSize, cfg.HTTP.WriteBufferSize)
-				require.Equal(t, getDefaultHTTPClientConfig().MaxIdleConns, cfg.HTTP.MaxIdleConns)
+			cfg.WAL = configoptional.Some(WALConfig{
+				Directory:        t.TempDir(),
+				SegmentCacheSize: tt.segmentCacheSize,
+			})
+			err := cfg.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
-}
-
-func toPtr[T any](val T) *T {
-	return &val
 }

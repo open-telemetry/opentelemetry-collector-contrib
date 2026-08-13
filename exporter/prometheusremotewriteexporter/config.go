@@ -229,6 +229,12 @@ func (cfg *Config) Validate() error {
 		return errors.New("compression type must be snappy")
 	}
 
+	if cfg.WAL.HasValue() {
+		if cfg.WAL.Get().SegmentCacheSize < 0 {
+			return errors.New("wal segment_cache_size can't be negative")
+		}
+	}
+
 	err := cfg.RemoteWriteProtoMsg.Validate()
 	if err != nil {
 		return err
