@@ -20,7 +20,7 @@ import (
 // Retries use exponential backoff with jitter and are bounded by MaxRetries,
 // MaxElapsedTime, and the request context (cancelled when the scrape cycle ends).
 //
-// RoundTrip is safe for concurrent use. The optional now and sleep test seams
+// retryRoundTripper is safe for concurrent use. The optional now and sleep test seams
 // must be set before the round-tripper is first used and never reassigned
 // after; they are read without synchronization on the hot path.
 type retryRoundTripper struct {
