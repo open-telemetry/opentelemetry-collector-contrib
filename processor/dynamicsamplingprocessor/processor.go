@@ -55,10 +55,15 @@ const (
 // evaluation entirely. Same convention as rootSpanConditionRuleLabel.
 const evictionRuleLabel = "_eviction"
 
+// unmatchedRuleLabel is the sentinel `rule` label for traces dropped because
+// no rule matched. All processor-owned labels share the reserved "_" prefix,
+// which config validation forbids in user rule names.
+const unmatchedRuleLabel = "_unmatched"
+
 // Precomputed measurement options for fixed label values, so hot paths avoid
 // rebuilding attribute sets per call.
 var (
-	unmatchedRuleAttr       = metric.WithAttributes(attribute.String("rule", "unmatched"))
+	unmatchedRuleAttr       = metric.WithAttributes(attribute.String("rule", unmatchedRuleLabel))
 	evictionRuleAttr        = metric.WithAttributes(attribute.String("rule", evictionRuleLabel))
 	triggerRootSpanAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerRootSpan)))
 	triggerTraceTimeoutAttr = metric.WithAttributes(attribute.String("trigger", string(triggerTraceTimeout)))
