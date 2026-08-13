@@ -990,13 +990,15 @@ func getInternalSpan(spanName string, initialAttributes map[string]any) ptrace.S
 func getDefaultHTTPServerSpan() ptrace.Span {
 	return getServerSpan(
 		defaultHTTPServerSpanName,
-		requiredHTTPAttributes)
+		requiredHTTPAttributes,
+	)
 }
 
 func getDefaultHTTPClientSpan() ptrace.Span {
 	return getClientSpan(
 		defaultHTTPClientSpanName,
-		requiredHTTPAttributes)
+		requiredHTTPAttributes,
+	)
 }
 
 func getHTTPSpanWithStatusCode(spanKind ptrace.SpanKind, statusCode int) ptrace.Span {
@@ -1008,37 +1010,43 @@ func getHTTPSpanWithStatusCode(spanKind ptrace.SpanKind, statusCode int) ptrace.
 func getDefaultRPCServerSpan() ptrace.Span {
 	return getServerSpan(
 		defaultRPCSpanName,
-		requiredRPCAttributes)
+		requiredRPCAttributes,
+	)
 }
 
 func getDefaultRPCClientSpan() ptrace.Span {
 	return getClientSpan(
 		defaultRPCSpanName,
-		requiredRPCAttributes)
+		requiredRPCAttributes,
+	)
 }
 
 func getDefaultDatabaseClientSpan() ptrace.Span {
 	return getClientSpan(
 		defaultDBSpanName,
-		requiredDatabaseAttributes)
+		requiredDatabaseAttributes,
+	)
 }
 
 func getDefaultMessagingConsumerSpan() ptrace.Span {
 	return getConsumerSpan(
 		defaultMessagingSpanName,
-		requiredMessagingAttributes)
+		requiredMessagingAttributes,
+	)
 }
 
 func getDefaultMessagingProducerSpan() ptrace.Span {
 	return getProducerSpan(
 		defaultMessagingSpanName,
-		requiredMessagingAttributes)
+		requiredMessagingAttributes,
+	)
 }
 
 func getDefaultInternalSpan() ptrace.Span {
 	return getInternalSpan(
 		defaultInternalSpanName,
-		map[string]any{})
+		map[string]any{},
+	)
 }
 
 // Returns a default Resource

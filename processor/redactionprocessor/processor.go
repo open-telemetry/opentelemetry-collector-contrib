@@ -38,13 +38,13 @@ type redaction struct {
 	// Attribute keys ignored in a span
 	ignoreList map[string]string
 	// Attribute key patterns ignored in a span
-	ignoreKeyRegexList map[string]*regexp.Regexp
+	ignoreKeyRegexList []*regexp.Regexp
 	// Attribute values blocked in a span
-	blockRegexList map[string]*regexp.Regexp
+	blockRegexList []*regexp.Regexp
 	// Attribute values allowed in a span
-	allowRegexList map[string]*regexp.Regexp
+	allowRegexList []*regexp.Regexp
 	// Attribute keys blocked in a span
-	blockKeyRegexList map[string]*regexp.Regexp
+	blockKeyRegexList []*regexp.Regexp
 	// Hash function to hash blocked values
 	hashFunction HashFunction
 	// Redaction processor configuration
@@ -631,16 +631,17 @@ func makeIgnoreList(c *Config) map[string]string {
 	return ignoreList
 }
 
-// makeRegexList precompiles all the regex patterns in the defined list
-func makeRegexList(_ context.Context, valuesList []string) (map[string]*regexp.Regexp, error) {
-	regexList := make(map[string]*regexp.Regexp, len(valuesList))
+// makeRegexList precompiles all the regex patterns in the defined list,
+// preserving the order in which they are listed in the configuration
+func makeRegexList(_ context.Context, valuesList []string) ([]*regexp.Regexp, error) {
+	regexList := make([]*regexp.Regexp, 0, len(valuesList))
 	for _, pattern := range valuesList {
 		re, err := regexp.Compile(pattern)
 		if err != nil {
 			// TODO: Placeholder for an error metric in the next PR
 			return nil, fmt.Errorf("error compiling regex in list: %w", err)
 		}
-		regexList[pattern] = re
+		regexList = append(regexList, re)
 	}
 	return regexList, nil
 }
