@@ -143,7 +143,7 @@ resource_attributes:
     semantic_convention:
       ref: k8s.md#k8s-node-uid
   k8s.owner.kind:
-    description: The Kind of the Pod's controlling owner reference (the metadata.ownerReferences entry with controller=true, see https://kubernetes.io/docs/reference/kubernetes-api/definitions/owner-reference-v1-meta/#OwnerReference), e.g. ReplicaSet, DaemonSet, or a third-party CRD such as HelmRelease or Challenge. Unlike k8s.replicaset.name and similar fields, this is not limited to a fixed set of known controller kinds.
+    description: The Kind of the Pod's controlling owner reference, e.g. ReplicaSet, DaemonSet, or a third-party CRD such as HelmRelease or Challenge. Unlike k8s.replicaset.name and similar fields, this is not limited to a fixed set of known controller kinds. A pod's metadata.ownerReferences (see https://kubernetes.io/docs/reference/kubernetes-api/definitions/owner-reference-v1-meta/#OwnerReference) can list several references (e.g. for garbage collection purposes), but at most one is ever marked as the controller (controller=true) - the same single reference client-go's meta_v1.GetControllerOf returns. This field is populated from that one controlling reference, not the full list.
     type: string
     enabled: false
   k8s.owner.name:
