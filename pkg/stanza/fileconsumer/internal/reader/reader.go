@@ -132,6 +132,10 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 // createGzipReader creates gzip reader and returns the file offset
 func (r *Reader) createGzipReader() (int64, error) {
+	// Reset decompressedBytesToSkip at the start to ensure clean state for each file processing attempt
+	// This handles error paths where we might return early before resetting it at the end
+	r.decompressedBytesToSkip = 0
+
 	// We need to create a gzip reader each time ReadToEnd is called because the underlying
 	// SectionReader can only read a fixed window (from previous offset to EOF).
 	info, err := r.file.Stat()
