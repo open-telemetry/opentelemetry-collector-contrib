@@ -338,7 +338,10 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 					// set ProducerKey so the store can reconcile producer->many consumers.
 					for l := 0; l < span.Links().Len(); l++ {
 						link := span.Links().At(l)
-						producerTraceID := link.TraceID()
+						link := span.Links().At(l)
+						if link.TraceID().IsEmpty() || link.SpanID().IsEmpty() {
+							continue
+						}
 						producerSpanID := link.SpanID()
 						producerKey := store.NewKey(producerTraceID, producerSpanID)
 
