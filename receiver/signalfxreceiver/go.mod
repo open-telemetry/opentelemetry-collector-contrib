@@ -1,3 +1,4 @@
+// Deprecated: this module is no longer in use. Use OTLP receiver instead.
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver
 
 go 1.25.0
