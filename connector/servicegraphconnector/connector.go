@@ -338,10 +338,10 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 					// set ProducerKey so the store can reconcile producer->many consumers.
 					for l := 0; l < span.Links().Len(); l++ {
 						link := span.Links().At(l)
-						link := span.Links().At(l)
 						if link.TraceID().IsEmpty() || link.SpanID().IsEmpty() {
 							continue
 						}
+						producerTraceID := link.TraceID()
 						producerSpanID := link.SpanID()
 						producerKey := store.NewKey(producerTraceID, producerSpanID)
 
@@ -450,8 +450,10 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 		zap.String("connection_type", string(e.ConnectionType)),
 		zap.Stringer("trace_id", e.TraceID),
 	)
-
-	p.telemetryBuilder.ConnectorServicegraphExpiredEdges.Add(context.Background(), 1)
+	// Skip incrementing for completed producer edges.
+	if !e.IsMatched {
+		p.telemetryBuilder.ConnectorServicegraphExpiredEdges.Add(context.Background(), 1)
+	}
 
 	// Do not convert messaging system edges into virtual nodes on expiry.
 	if e.ConnectionType == store.MessagingSystem {

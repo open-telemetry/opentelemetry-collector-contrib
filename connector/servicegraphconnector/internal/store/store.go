@@ -108,14 +108,7 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 	defer s.mtx.Unlock()
 
 	// Helper to reconcile pending consumers for a producer key. Assumes lock held.
-	reconcile := func(producerKey Key) {
-		prodElem, ok := s.m[producerKey]
-		if !ok {
-			// no producer stored yet
-			return
-		}
-		prodEdge := prodElem.Value.(*Edge)
-
+	reconcile := func(producerKey Key, prodEdge *Edge) {
 		consumers := s.pending[producerKey]
 		for _, cKey := range consumers {
 			cElem, ok := s.m[cKey]
@@ -129,6 +122,7 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 			cEdge.ClientLatencySec = prodEdge.ClientLatencySec
 			cEdge.ConnectionType = prodEdge.ConnectionType
 			cEdge.Failed = cEdge.Failed || prodEdge.Failed
+			prodEdge.IsMatched = true
 
 			maps.Copy(cEdge.Dimensions, prodEdge.Dimensions)
 			maps.Copy(cEdge.Peer, prodEdge.Peer)
@@ -151,7 +145,7 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 		// reconcile them. We consider this key as a producer key when there
 		// are pending entries mapped to it.
 		if consumers, ok := s.pending[key]; ok && len(consumers) > 0 {
-			reconcile(key)
+			reconcile(key, edge)
 			// Do not delete the producer edge here; keep it to serve future
 			// consumers until it expires.
 			return false, nil
@@ -184,6 +178,7 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 			edge.ClientLatencySec = prodEdge.ClientLatencySec
 			edge.ConnectionType = prodEdge.ConnectionType
 			edge.Failed = edge.Failed || prodEdge.Failed
+			prodEdge.IsMatched = true
 
 			maps.Copy(edge.Dimensions, prodEdge.Dimensions)
 			maps.Copy(edge.Peer, prodEdge.Peer)
@@ -200,6 +195,12 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 		return true, nil
 	}
 
+	// If this is a producer and there are pending consumers, reconcile now.
+	// We reconcile before checking capacity so that completed consumers are freed.
+	if consumers, ok := s.pending[key]; ok && len(consumers) > 0 {
+		reconcile(key, edge)
+	}
+
 	// Check we can add new edges (Evict if necessary)
 	if s.l.Len() >= s.maxItems && !s.tryEvictHead() {
 		return false, ErrTooManyItems
@@ -211,11 +212,6 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 	// Now that the edge is safely in the store, register its pending status
 	if isPendingConsumer {
 		s.pending[edge.ProducerKey] = append(s.pending[edge.ProducerKey], key)
-	}
-
-	// If this is a producer and there are pending consumers, reconcile now.
-	if consumers, ok := s.pending[key]; ok && len(consumers) > 0 {
-		reconcile(key)
 	}
 
 	return true, nil

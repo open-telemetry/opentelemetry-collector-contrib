@@ -188,3 +188,24 @@ func TestStore_ErrTooManyItems_NoPendingLeak(t *testing.T) {
 	assert.ErrorIs(t, err, ErrTooManyItems)
 	assert.Empty(t, s.pending, "Pending map should be empty if UpsertEdge returns ErrTooManyItems")
 }
+
+func TestStore_EvictPendingConsumer_Cleanup(t *testing.T) {
+	s := NewStore(time.Minute, 2, func(*Edge) {}, func(*Edge) {})
+
+	consumerKey := NewKey(pcommon.TraceID([16]byte{2}), pcommon.SpanID([8]byte{2}))
+	producerKey := NewKey(pcommon.TraceID([16]byte{2}), pcommon.SpanID([8]byte{3}))
+
+	_, err := s.UpsertEdge(consumerKey, func(e *Edge) {
+		e.ProducerKey = producerKey
+		e.expiration = time.Now().Add(-time.Second) // Set it to be already expired
+	})
+	require.NoError(t, err)
+
+	assert.Len(t, s.pending, 1)
+
+	// Expire should evict the head edge (consumerKey)
+	s.Expire()
+
+	assert.Equal(t, 0, s.Len())
+	assert.Empty(t, s.pending, "Pending map should be empty after the pending consumer is evicted")
+}
