@@ -12,10 +12,12 @@ azuremonitor/2:
   maxbatchinterval: 10s
   # shutdown channel timeout
   shutdown_timeout: 2s
-  # additional HTTP status codes that should be exported as successful requests/dependencies
-  non_error_http_status_codes: [404, 409]
-  # align Application Insights request success for HTTP server spans with OTel semantic conventions
-  align_http_server_request_success_with_otel_spec: true
+  telemetry_mappings:
+    traces:
+      http:
+        success:
+          server_policy: otel
+          additional_success_status_codes: [404, 409]
 
   sending_queue:
     # queue_size is the maximum number of items that can be queued before dropping data

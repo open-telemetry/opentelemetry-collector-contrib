@@ -16,19 +16,52 @@ import (
 
 // Config defines configuration for Azure Monitor
 type Config struct {
-	QueueSettings                             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	ConnectionString                          configopaque.String                                      `mapstructure:"connection_string"`
-	InstrumentationKey                        configopaque.String                                      `mapstructure:"instrumentation_key"`
-	MaxBatchSize                              int                                                      `mapstructure:"maxbatchsize"`
-	MaxBatchInterval                          time.Duration                                            `mapstructure:"maxbatchinterval"`
-	SpanEventsEnabled                         bool                                                     `mapstructure:"spaneventsenabled"`
-	ShutdownTimeout                           time.Duration                                            `mapstructure:"shutdown_timeout"`
-	CustomEventsEnabled                       bool                                                     `mapstructure:"custom_events_enabled"`
-	ExceptionEventsEnabled                    bool                                                     `mapstructure:"exception_events_enabled"`
-	NonErrorHTTPStatusCodes                   []int                                                    `mapstructure:"non_error_http_status_codes"`
-	AlignHTTPServerRequestSuccessWithOTelSpec bool                                                     `mapstructure:"align_http_server_request_success_with_otel_spec"`
-	TagMappings                               TagMappingsConfig                                        `mapstructure:"tag_mappings"`
-	ClientConfig                              confighttp.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings          configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	ConnectionString       configopaque.String                                      `mapstructure:"connection_string"`
+	InstrumentationKey     configopaque.String                                      `mapstructure:"instrumentation_key"`
+	MaxBatchSize           int                                                      `mapstructure:"maxbatchsize"`
+	MaxBatchInterval       time.Duration                                            `mapstructure:"maxbatchinterval"`
+	SpanEventsEnabled      bool                                                     `mapstructure:"spaneventsenabled"`
+	ShutdownTimeout        time.Duration                                            `mapstructure:"shutdown_timeout"`
+	CustomEventsEnabled    bool                                                     `mapstructure:"custom_events_enabled"`
+	ExceptionEventsEnabled bool                                                     `mapstructure:"exception_events_enabled"`
+	TelemetryMappings      TelemetryMappingsConfig                                  `mapstructure:"telemetry_mappings"`
+	TagMappings            TagMappingsConfig                                        `mapstructure:"tag_mappings"`
+	ClientConfig           confighttp.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+}
+
+type TelemetryMappingsConfig struct {
+	Traces TraceMappingsConfig `mapstructure:"traces"`
+}
+
+// TraceMappingsConfig configures mappings applied when exporting traces.
+type TraceMappingsConfig struct {
+	HTTP HTTPMappingsConfig `mapstructure:"http"`
+}
+
+// HTTPMappingsConfig configures mappings applied to HTTP spans.
+type HTTPMappingsConfig struct {
+	Success HTTPSuccessConfig `mapstructure:"success"`
+}
+
+// HTTPSuccessConfig configures how HTTP response status codes map to Application Insights Success.
+type HTTPSuccessConfig struct {
+	// ServerPolicy may be set to "otel" to follow OpenTelemetry HTTP server span semantics.
+	ServerPolicy string `mapstructure:"server_policy"`
+	// AdditionalSuccessStatusCodes are treated as successful for HTTP server and client spans.
+	AdditionalSuccessStatusCodes []int `mapstructure:"additional_success_status_codes"`
+}
+
+func (c HTTPSuccessConfig) Validate() error {
+	if c.ServerPolicy != "" && c.ServerPolicy != "otel" {
+		return fmt.Errorf("telemetry_mappings.traces.http.success.server_policy must be %q", "otel")
+	}
+	for _, statusCode := range c.AdditionalSuccessStatusCodes {
+		if statusCode < 100 || statusCode > 599 {
+			return fmt.Errorf("telemetry_mappings.traces.http.success.additional_success_status_codes contains invalid HTTP status code %d", statusCode)
+		}
+	}
+	return nil
 }
 
 // TagMappingsConfig overrides the precedence used to populate selected
@@ -66,10 +99,8 @@ func (m TagMappingsConfig) Validate() error {
 
 // Validate forwards to nested config validators.
 func (c *Config) Validate() error {
-	for _, statusCode := range c.NonErrorHTTPStatusCodes {
-		if statusCode < 100 || statusCode > 599 {
-			return fmt.Errorf("non_error_http_status_codes contains invalid HTTP status code %d", statusCode)
-		}
+	if err := c.TelemetryMappings.Traces.HTTP.Success.Validate(); err != nil {
+		return err
 	}
 	return c.TagMappings.Validate()
 }

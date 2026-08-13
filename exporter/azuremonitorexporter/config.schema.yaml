@@ -1,4 +1,18 @@
 $defs:
+  http_mappings_config:
+    type: object
+    properties:
+      success:
+        $ref: httpsuccess_config
+  httpsuccess_config:
+    type: object
+    properties:
+      additional_success_status_codes:
+        type: array
+        items:
+          type: integer
+      server_policy:
+        type: string
   tag_mappings_config:
     description: TagMappingsConfig overrides the precedence used to populate selected Application Insights envelope tags from OpenTelemetry resource attributes. Each field is an ordered list of sources consulted left-to-right; the first source that resolves to a non-empty string wins. A source entry is interpreted as a resource attribute key when it contains a "." (e.g. "service.instance.id"); otherwise it is treated as a string literal terminal default (e.g. "unknown-instance"). When a field is left unset, the factory default — which preserves the historical hardcoded behavior — is used. This feature is alpha and the schema may evolve.
     type: object
@@ -13,11 +27,19 @@ $defs:
         type: array
         items:
           type: string
+  telemetry_mappings_config:
+    type: object
+    properties:
+      traces:
+        $ref: trace_mappings_config
+  trace_mappings_config:
+    type: object
+    properties:
+      http:
+        $ref: http_mappings_config
 description: Config defines configuration for Azure Monitor
 type: object
 properties:
-  align_http_server_request_success_with_otel_spec:
-    type: boolean
   connection_string:
     $ref: go.opentelemetry.io/collector/config/configopaque.string
   custom_events_enabled:
@@ -31,10 +53,6 @@ properties:
     format: duration
   maxbatchsize:
     type: integer
-  non_error_http_status_codes:
-    type: array
-    items:
-      type: integer
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
@@ -45,5 +63,7 @@ properties:
     type: boolean
   tag_mappings:
     $ref: tag_mappings_config
+  telemetry_mappings:
+    $ref: telemetry_mappings_config
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.client_config

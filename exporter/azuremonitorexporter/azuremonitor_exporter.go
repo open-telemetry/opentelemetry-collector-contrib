@@ -113,9 +113,10 @@ func (v *traceVisitor) visit(
 	scope pcommon.InstrumentationScope,
 	span ptrace.Span,
 ) (ok bool) {
+	httpSuccessMapping := v.exporter.config.TelemetryMappings.Traces.HTTP.Success
 	httpSuccessConfig := httpStatusCodeSuccessConfig{
-		NonErrorHTTPStatusCodes:                   v.exporter.config.NonErrorHTTPStatusCodes,
-		AlignHTTPServerRequestSuccessWithOTelSpec: v.exporter.config.AlignHTTPServerRequestSuccessWithOTelSpec,
+		NonErrorHTTPStatusCodes:                   httpSuccessMapping.AdditionalSuccessStatusCodes,
+		AlignHTTPServerRequestSuccessWithOTelSpec: httpSuccessMapping.ServerPolicy == "otel",
 	}
 	envelopes, err := spanToEnvelopes(resource, scope, span, v.exporter.config.SpanEventsEnabled, httpSuccessConfig, &v.exporter.config.TagMappings, v.exporter.logger)
 	if err != nil {
