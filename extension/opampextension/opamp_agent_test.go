@@ -305,6 +305,33 @@ func TestReportFuncReachesStatusAggregatorRegardlessOfHostReporter(t *testing.T)
 	require.NoError(t, o.Shutdown(t.Context()))
 }
 
+func TestReportFuncDoesNotBlockWhenHealthReportingDisabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Capabilities.ReportsHealth = false
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
+
+	o := newTestOpampAgent(cfg, set, &mockOpAMPClient{
+		setHealthFunc: func(_ *protobufs.ComponentHealth) error { return nil },
+	}, &mockStatusAggregator{mtx: &sync.RWMutex{}})
+
+	// initHealthReporting is skipped without ReportsHealth, so componentStatusCh is nil.
+	require.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
+
+	returned := make(chan struct{})
+	go func() {
+		defer close(returned)
+		o.reportFunc(componentstatus.NewFatalErrorEvent(errors.New("collector was orphaned")))
+	}()
+
+	select {
+	case <-returned:
+	case <-time.After(5 * time.Second):
+		t.Fatal("reportFunc blocked on a nil componentStatusCh")
+	}
+
+	require.NoError(t, o.Shutdown(t.Context()))
+}
+
 // availableComponentsHost mocks a receiver.ReceiverHost for test purposes.
 type availableComponentsHost struct {
 	t *testing.T

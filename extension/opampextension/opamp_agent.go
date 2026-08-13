@@ -109,6 +109,11 @@ var (
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 	selfInstanceID := componentstatus.NewInstanceID(o.extensionID, component.KindExtension)
 	o.reportFunc = func(event *componentstatus.Event) {
+		// componentStatusCh is only created by initHealthReporting, so without
+		// ReportsHealth the send below would block forever on a nil channel.
+		if !o.capabilities.ReportsHealth {
+			return
+		}
 		// The service starts extensions with the bare graph.Host, which does not
 		// implement componentstatus.Reporter (only pipeline components are handed
 		// a Reporter-capable host wrapper). componentstatus.ReportStatus would
