@@ -2103,11 +2103,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			statement := row[columnName]
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
-				trimmedStatement := strings.TrimSpace(statement)
-				idleBlockerEmptyOrComment := row[command] == "IDLE_BLOCKER" && (trimmedStatement == "" || strings.HasPrefix(trimmedStatement, "--"))
-				if !idleBlockerEmptyOrComment {
-					s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement, skipping event: %v, error: %v", statement, err))
-				}
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement, skipping event: %v, error: %v", statement, err))
 				return "", nil
 			}
 			return obfuscated, nil
