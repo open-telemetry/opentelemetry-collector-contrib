@@ -14,6 +14,7 @@ components:
     - cmd/otelcontribcol
     - cmd/oteltestbedcol
     - cmd/telemetrygen
+    - config/configdbauth
     - connector/count
     - connector/datadog
     - connector/exceptions
@@ -36,8 +37,8 @@ components:
     - exporter/awss3
     - exporter/awsxray
     - exporter/azure_blob
+    - exporter/azure_monitor
     - exporter/azuredataexplorer
-    - exporter/azuremonitor
     - exporter/bmc_helix
     - exporter/cassandra
     - exporter/clickhouse
@@ -78,6 +79,7 @@ components:
     - extension/ack
     - extension/asapclient
     - extension/avro_log_encoding
+    - extension/aws_iam_db_auth
     - extension/aws_logs_encoding
     - extension/awscloudwatchmetricstreams_encoding
     - extension/awsproxy
@@ -89,6 +91,7 @@ components:
     - extension/cgroup_runtime
     - extension/datadog
     - extension/db_storage
+    - extension/dbauth
     - extension/docker_observer
     - extension/ecs_observer
     - extension/encoding
@@ -105,7 +108,6 @@ components:
     - extension/json_log_encoding
     - extension/k8s_leader_elector
     - extension/k8s_observer
-    - extension/kafkatopics_observer
     - extension/mcp
     - extension/oauth2client
     - extension/observer
@@ -117,6 +119,7 @@ components:
     - extension/pprof
     - extension/redis_storage
     - extension/remotetap
+    - extension/sd_notify
     - extension/sigv4auth
     - extension/skywalking_encoding
     - extension/solarwindsapmsettings
@@ -157,6 +160,7 @@ components:
     - pkg/faro
     - pkg/fileconsumer
     - pkg/golden
+    - pkg/jaeger
     - pkg/kafka/configkafka
     - pkg/otelarrow
     - pkg/ottl
@@ -169,9 +173,9 @@ components:
     - pkg/stanza
     - pkg/stanza/operator/input/journald
     - pkg/status
+    - pkg/tcp_input
     - pkg/topic
     - pkg/translator/azure
-    - pkg/translator/jaeger
     - pkg/translator/loki
     - pkg/translator/pprof
     - pkg/translator/prometheusremotewrite
@@ -184,13 +188,13 @@ components:
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
-    - processor/awsecsattributes
+    - processor/aws_ecs_attributes
     - processor/azuredetector
     - processor/cardinality_guardian
     - processor/coralogix
-    - processor/cumulativetodelta
-    - processor/deltatocumulative
-    - processor/deltatorate
+    - processor/cumulative_to_delta
+    - processor/delta_to_cumulative
+    - processor/delta_to_rate
     - processor/digitaloceandetector
     - processor/drain
     - processor/dynamic_sampling
@@ -222,7 +226,7 @@ components:
     - processor/scalewaydetector
     - processor/schema
     - processor/span
-    - processor/spanpruning
+    - processor/span_pruning
     - processor/sumologic
     - processor/tail_sampling
     - processor/tencentcvmdetector
@@ -259,6 +263,7 @@ components:
     - receiver/collectd
     - receiver/couchdb
     - receiver/datadog
+    - receiver/dns_check
     - receiver/docker_stats
     - receiver/elasticsearch
     - receiver/envoy_als
@@ -282,7 +287,6 @@ components:
     - receiver/iis
     - receiver/influxdb
     - receiver/jaeger
-    - receiver/jmx
     - receiver/journald
     - receiver/k8s_cluster
     - receiver/k8s_events
@@ -328,7 +332,7 @@ components:
     - receiver/solace
     - receiver/splunk_enterprise
     - receiver/splunk_hec
-    - receiver/sqlquery
+    - receiver/sql_query
     - receiver/sqlserver
     - receiver/ssh_check
     - receiver/statsd

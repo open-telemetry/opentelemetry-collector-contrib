@@ -91,3 +91,39 @@ func Test_Double(t *testing.T) {
 		})
 	}
 }
+
+func Test_DoubleFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewDoubleFactory[any]()
+		assert.Equal(t, "Double", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewDoubleFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &DoubleArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewDoubleFactory[any]()
+		args := factory.CreateDefaultArguments()
+		doubleArgs, ok := args.(*DoubleArguments[any])
+		require.True(t, ok)
+		doubleArgs.Target = &ottl.StandardFloatLikeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "42.0", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createDoubleFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "DoubleFactory args must be of type *DoubleArguments[K]")
+	})
+}

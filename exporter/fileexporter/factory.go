@@ -40,6 +40,9 @@ const (
 	defaultMaxOpenFiles = 100
 
 	defaultResourceAttribute = "fileexporter.path_segment"
+
+	// Permissions used when creating new export files.
+	defaultFilePermissions = 0o644
 )
 
 type FileExporter interface {
@@ -58,7 +61,8 @@ func NewFactory() exporter.Factory {
 		xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		xexporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
-		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability))
+		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -157,7 +161,8 @@ func getOrCreateFileExporter(cfg component.Config, logger *zap.Logger) FileExpor
 func newFileExporter(conf *Config, logger *zap.Logger) FileExporter {
 	if conf.GroupBy == nil || !conf.GroupBy.Enabled {
 		return &fileExporter{
-			conf: conf,
+			conf:   conf,
+			logger: logger,
 		}
 	}
 
@@ -178,7 +183,7 @@ func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInte
 		} else {
 			fileFlags |= os.O_TRUNC
 		}
-		f, err := os.OpenFile(path, fileFlags, 0o644)
+		f, err := os.OpenFile(path, fileFlags, defaultFilePermissions)
 		if err != nil {
 			return nil, err
 		}
@@ -190,6 +195,7 @@ func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInte
 			MaxAge:      rotation.MaxDays,
 			MaxBackups:  rotation.MaxBackups,
 			LocalTime:   rotation.LocalTime,
+			FileMode:    defaultFilePermissions,
 			Compression: "none", // ensure compression is handled by the collector
 		}
 	}

@@ -18,7 +18,7 @@ import (
 
 // Config defines configuration for Prometheus exporter.
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 
 	// QueueBatchConfig defines the queue configuration.
 	QueueBatchConfig configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
