@@ -10,22 +10,22 @@ var FilterFilterlogUseOTTLBridgeFeatureGate = featuregate.GlobalRegistry().MustR
 	"filter.filterlog.useOTTLBridge",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, filterlog will convert filterlog configuration to OTTL and use filterottl evaluation"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18642"),
-	featuregate.WithRegisterFromVersion("v0.81.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116"),
+	featuregate.WithRegisterFromVersion("v0.159.0"),
 )
 
 var FilterFiltermetricUseOTTLBridgeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filter.filtermetric.useOTTLBridge",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, filtermetric will convert filtermetric configuration to OTTL and use filterottl evaluation"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18642"),
-	featuregate.WithRegisterFromVersion("v0.81.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116"),
+	featuregate.WithRegisterFromVersion("v0.159.0"),
 )
 
 var FilterFilterspanUseOTTLBridgeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filter.filterspan.useOTTLBridge",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, filterspan will convert filterspan configuration to OTTL and use filterottl evaluation"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18642"),
-	featuregate.WithRegisterFromVersion("v0.79.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116"),
+	featuregate.WithRegisterFromVersion("v0.159.0"),
 )
