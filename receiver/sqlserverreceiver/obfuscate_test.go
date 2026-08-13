@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -28,17 +29,43 @@ func TestObfuscateSQL(t *testing.T) {
 
 func TestObfuscateInvalidSQL(t *testing.T) {
 	obf := newObfuscator(zap.NewNop())
+
+	// The go-sqllexer engine (ObfuscateAndNormalize) is tolerant of malformed
+	// SQL: instead of failing, it obfuscates what it can. An unclosed bracket
+	// identifier no longer produces an error (it did with the legacy tokenizer),
+	// so the statement is passed through rather than dropped.
 	sql := "SELECT cpu_time AS [CPU Usage (time)"
 	result, err := obf.obfuscateSQLString(sql)
+	assert.NoError(t, err)
+	assert.Equal(t, "SELECT cpu_time AS [CPU Usage (time)", result)
 
-	assert.Error(t, err)
-	assert.Empty(t, result)
-
+	// Aliases are stripped during normalization.
 	sql = "SELECT cpu_time AS [CPU Usage Time]"
 	expected := "SELECT cpu_time"
 	result, err = obf.obfuscateSQLString(sql)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
+}
+
+func TestObfuscateCommentOnlyStatement(t *testing.T) {
+	obf := newObfuscator(zap.NewNop())
+
+	// Comment-only statements (e.g. Blue Prism banners captured in
+	// sys.dm_exec_sql_text) have no obfuscatable content. The legacy tokenizer
+	// returned a "result is empty" error for these, which the scraper logged at
+	// error level every scrape interval. The ObfuscateAndNormalize engine
+	// returns an empty string with no error, which is the correct benign outcome.
+	for _, sql := range []string{
+		"--*INSERT-----------",
+		"--*SELECT-----------",
+		"--*UPDATE-----------",
+		"/* banner only */",
+		"-- a line comment",
+	} {
+		result, err := obf.obfuscateSQLString(sql)
+		assert.NoError(t, err, "comment-only statement should not error: %q", sql)
+		assert.Empty(t, result, "comment-only statement should obfuscate to empty: %q", sql)
+	}
 }
 
 func TestObfuscateQueryPlan(t *testing.T) {
@@ -72,11 +99,14 @@ func TestInvalidQueryPlans(t *testing.T) {
 	assert.Empty(t, result)
 	assert.Error(t, err)
 
-	// obfuscate failure: the failing attribute is redacted and the rest of the plan is preserved
+	// A StatementText that the legacy tokenizer could not obfuscate (and would be
+	// redacted to "?" by the #50070 fallback) is now obfuscated successfully by
+	// the go-sqllexer engine, so the plan retains the useful normalized statement
+	// with its literals redacted rather than losing the attribute entirely.
 	plan = `<ShowPlanXML StatementText="[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]/(10000)*(3600)+[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]%(10000)/(100)*(60)+[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]%(100)"></ShowPlanXML>`
 	result, err = obf.obfuscateXMLPlan(plan)
 	assert.NoError(t, err)
-	assert.Equal(t, `<ShowPlanXML StatementText="?"></ShowPlanXML>`, result)
+	assert.Equal(t, `<ShowPlanXML StatementText="msdb.dbo.sysjobhistory.run_duration / ( ? ) * ( ? ) + msdb.dbo.sysjobhistory.run_duration % ( ? ) / ( ? ) * ( ? ) + msdb.dbo.sysjobhistory.run_duration % ( ? )"></ShowPlanXML>`, result)
 }
 
 func TestValidQueryPlans(t *testing.T) {
@@ -161,4 +191,19 @@ func TestObfuscateQueryPlanWithZeroWidthSpace(t *testing.T) {
 	result, err := obf.obfuscateXMLPlan(plan)
 	assert.NoError(t, err)
 	assert.Equal(t, `<ShowPlanXML StatementText="SELECT * FROM table"></ShowPlanXML>`, result)
+}
+
+func TestObfuscateSQLServerBackslashLiteral(t *testing.T) {
+	obf := newObfuscator(zap.NewNop())
+
+	result, err := obf.obfuscateSQLString(
+		`SELECT REPLACE(@@SERVERNAME, '\', ':'), HOST_NAME(), 42`,
+	)
+
+	require.NoError(t, err)
+	assert.Equal(
+		t,
+		"SELECT REPLACE ( @@SERVERNAME, ?, ? ), HOST_NAME ( ), ?",
+		result,
+	)
 }
