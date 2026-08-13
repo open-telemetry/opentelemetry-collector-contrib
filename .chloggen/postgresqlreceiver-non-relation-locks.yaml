@@ -19,6 +19,9 @@ subtext: |
   Locks with a `lock_type` of `transactionid`, `virtualxid`, `object` or `advisory` were dropped and are
   now reported with an empty `relation`. Those on a transaction ID belong to no database, so they carry
   an empty `db.namespace`.
+  This adds data points to a metric that is disabled by default. Every backend holds one `virtualxid`
+  lock, so a sum over this metric grows by about the number of open connections. Check any dashboard or
+  alert that totals this metric.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
