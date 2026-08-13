@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/go-redis/redismock/v9 v9.2.0
-	github.com/redis/go-redis/v9 v9.21.0
+	github.com/redis/go-redis/v9 v9.22.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.64.1-0.20260805181402-19664a7b14af
 	go.opentelemetry.io/collector/component/componenttest v0.158.1-0.20260805181402-19664a7b14af

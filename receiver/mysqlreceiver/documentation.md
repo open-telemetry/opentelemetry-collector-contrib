@@ -526,6 +526,31 @@ The number of seconds that the replica must lag the source.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | false | Development |
 
+### mysql.replica.temp_table.open
+
+The number of temporary tables currently open by the replica while applying replicated events.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {table} | Gauge | Int | Development |
+
+### mysql.replica.thread.running
+
+Whether the replica IO and SQL threads report a running status. A value of 1 means the thread reports Yes; 0 means any other status, including No or Connecting.
+
+If the thread type or channel name attributes are disabled or dropped, configure the aggregation strategy as min or max based on the desired collapsed status.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mysql.replica.thread.type | The replica thread type. | Str: ``io``, ``sql`` | Recommended | - |
+| mysql.replica.channel.name | The replication channel name. | Any Str | Recommended | - |
+
 ### mysql.replica.time_behind_source
 
 This field is an indication of how “late” the replica is.

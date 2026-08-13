@@ -560,6 +560,38 @@ $defs:
           enabled:
             type: boolean
             default: false
+      mysql.replica.temp_table.open:
+        description: "MysqlReplicaTempTableOpenMetricConfig provides config for the mysql.replica.temp_table.open metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      mysql.replica.thread.running:
+        description: "MysqlReplicaThreadRunningMetricConfig provides config for the mysql.replica.thread.running metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "mysql.replica.thread.type"
+                - "mysql.replica.channel.name"
+            default:
+              - "mysql.replica.thread.type"
+              - "mysql.replica.channel.name"
       mysql.replica.time_behind_source:
         description: "MysqlReplicaTimeBehindSourceMetricConfig provides config for the mysql.replica.time_behind_source metric."
         type: object

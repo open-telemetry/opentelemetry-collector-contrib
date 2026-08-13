@@ -991,6 +991,39 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: s
+          - description: The number of temporary tables currently open by the replica while applying replicated events.
+            gauge:
+              dataPoints:
+                - asInt: "413"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mysql.replica.temp_table.open
+            unit: "{table}"
+          - description: Whether the replica IO and SQL threads report a running status. A value of 1 means the thread reports Yes; 0 means any other status, including No or Connecting.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: mysql.replica.thread.type
+                      value:
+                        stringValue: io
+                    - key: mysql.replica.channel.name
+                      value:
+                        stringValue: "y"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: mysql.replica.thread.type
+                      value:
+                        stringValue: sql
+                    - key: mysql.replica.channel.name
+                      value:
+                        stringValue: "y"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mysql.replica.thread.running
+            unit: "1"
           - description: This field is an indication of how “late” the replica is.
             name: mysql.replica.time_behind_source
             sum:

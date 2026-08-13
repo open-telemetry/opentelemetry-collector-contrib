@@ -87,6 +87,11 @@ all_set:
       enabled: true
     mysql.replica.sql_delay:
       enabled: true
+    mysql.replica.temp_table.open:
+      enabled: true
+    mysql.replica.thread.running:
+      enabled: true
+      attributes: ["mysql.replica.thread.type","mysql.replica.channel.name"]
     mysql.replica.time_behind_source:
       enabled: true
     mysql.row_locks:
@@ -252,6 +257,11 @@ reaggregate_set:
       enabled: true
     mysql.replica.sql_delay:
       enabled: true
+    mysql.replica.temp_table.open:
+      enabled: true
+    mysql.replica.thread.running:
+      enabled: true
+      attributes: []
     mysql.replica.time_behind_source:
       enabled: true
     mysql.row_locks:
@@ -417,6 +427,11 @@ none_set:
       enabled: false
     mysql.replica.sql_delay:
       enabled: false
+    mysql.replica.temp_table.open:
+      enabled: false
+    mysql.replica.thread.running:
+      enabled: false
+      attributes: ["mysql.replica.thread.type","mysql.replica.channel.name"]
     mysql.replica.time_behind_source:
       enabled: false
     mysql.row_locks:
