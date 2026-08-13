@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 
 	"gopkg.in/yaml.v3"
 )
@@ -83,9 +84,111 @@ func (r *resourceAssertion) UnmarshalYAML(node *yaml.Node) error {
 }
 
 type scopeAssertion struct {
-	Name    string            `yaml:"name,omitempty"`
-	Version string            `yaml:"version,omitempty"`
+	// Name is always matched exactly: it is the stable instrumentation library
+	// identity, so it has no /exists or /regex operator (unlike Version).
+	Name    string
+	Version versionMatcher
+	Metrics []metricAssertion
+}
+
+type matcherOp int
+
+const (
+	matchExact  matcherOp = iota // `version:` — the only form WriteAssertionFile emits
+	matchExists                  // `version/exists: true` — present, any value
+	matchRegex                   // `version/regex: <pattern>` — full-string match
+)
+
+// versionMatcher matches a scope version. Its zero value is an exact match
+// against "", so an omitted `version:` key still pins the empty scope version.
+type versionMatcher struct {
+	op    matcherOp
+	value string
+}
+
+// scopeAssertionYAML is the on-disk shape of scopeAssertion: the operator keys
+// must be distinct YAML fields because yaml.v3 cannot decode a `version/regex`
+// suffix into the versionMatcher struct directly.
+type scopeAssertionYAML struct {
+	Name          string  `yaml:"name,omitempty"`
+	Version       *string `yaml:"version,omitempty"`
+	VersionExists *bool   `yaml:"version/exists,omitempty"`
+	VersionRegex  *string `yaml:"version/regex,omitempty"`
+
 	Metrics []metricAssertion `yaml:"metrics"`
+}
+
+// UnmarshalYAML decodes a scope, resolving the version operator keys into a versionMatcher.
+func (s *scopeAssertion) UnmarshalYAML(value *yaml.Node) error {
+	var raw scopeAssertionYAML
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+
+	version, err := buildVersionMatcher(raw.Version, raw.VersionExists, raw.VersionRegex)
+	if err != nil {
+		return err
+	}
+
+	s.Name = raw.Name
+	s.Version = version
+	s.Metrics = raw.Metrics
+	return nil
+}
+
+func buildVersionMatcher(exact *string, exists *bool, regex *string) (versionMatcher, error) {
+	set := 0
+	if exact != nil {
+		set++
+	}
+	if exists != nil {
+		set++
+	}
+	if regex != nil {
+		set++
+	}
+	if set > 1 {
+		return versionMatcher{}, errors.New(`scope must use at most one of "version", "version/exists", "version/regex"`)
+	}
+
+	switch {
+	case exists != nil:
+		if !*exists {
+			return versionMatcher{}, errors.New("scope version/exists must be true (the only supported value)")
+		}
+		return versionMatcher{op: matchExists}, nil
+	case regex != nil:
+		if _, err := regexp.Compile("^(?:" + *regex + ")$"); err != nil {
+			return versionMatcher{}, fmt.Errorf("scope version/regex has invalid pattern %q: %w", *regex, err)
+		}
+		return versionMatcher{op: matchRegex, value: *regex}, nil
+	case exact != nil:
+		return versionMatcher{op: matchExact, value: *exact}, nil
+	default:
+		return versionMatcher{op: matchExact}, nil
+	}
+}
+
+// MarshalYAML encodes a scope, rendering an exact version as a plain `version:`
+// scalar (not a suffixed key) so WriteAssertionFile output matches the pre-operator layout.
+func (s scopeAssertion) MarshalYAML() (any, error) {
+	out := scopeAssertionYAML{Name: s.Name, Metrics: s.Metrics}
+
+	switch s.Version.op {
+	case matchExists:
+		t := true
+		out.VersionExists = &t
+	case matchRegex:
+		v := s.Version.value
+		out.VersionRegex = &v
+	case matchExact:
+		if s.Version.value != "" {
+			v := s.Version.value
+			out.Version = &v
+		}
+	}
+
+	return out, nil
 }
 
 type metricAssertion struct {
@@ -100,7 +203,8 @@ type metricAssertion struct {
 type datapointAssertion struct {
 	Attributes     map[string]any `yaml:"attributes,omitempty"`
 	AttributeMode  attributeMode  `yaml:"-"`
-	Value          any            `yaml:"value,omitempty"`
+	IntValue       *int64         `yaml:"int_value,omitempty"`
+	DoubleValue    *float64       `yaml:"double_value,omitempty"`
 	Count          *uint64        `yaml:"count,omitempty"`
 	Sum            *float64       `yaml:"sum,omitempty"`
 	ExplicitBounds *[]float64     `yaml:"explicit_bounds,omitempty"`
@@ -135,12 +239,19 @@ func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
 		d.AttributeMode = attributeModeExact
 	}
 	// Decode optional value fields.
-	if v, ok := raw["value"]; ok {
-		var val any
-		if err := v.Decode(&val); err != nil {
-			return fmt.Errorf("datapoint assertion: decode value: %w", err)
+	if v, ok := raw["int_value"]; ok {
+		var iv int64
+		if err := v.Decode(&iv); err != nil {
+			return fmt.Errorf("datapoint assertion: decode int_value: %w", err)
 		}
-		d.Value = val
+		d.IntValue = &iv
+	}
+	if v, ok := raw["double_value"]; ok {
+		var dv float64
+		if err := v.Decode(&dv); err != nil {
+			return fmt.Errorf("datapoint assertion: decode double_value: %w", err)
+		}
+		d.DoubleValue = &dv
 	}
 	if v, ok := raw["count"]; ok {
 		var c uint64
@@ -256,7 +367,8 @@ func compactShorthand(doc *document) {
 
 func isEmptyDatapointAssertion(dp datapointAssertion) bool {
 	return len(dp.Attributes) == 0 &&
-		dp.Value == nil &&
+		dp.IntValue == nil &&
+		dp.DoubleValue == nil &&
 		dp.Count == nil &&
 		dp.Sum == nil &&
 		dp.ExplicitBounds == nil &&
