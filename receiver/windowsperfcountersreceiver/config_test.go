@@ -66,8 +66,10 @@ func TestLoadConfig(t *testing.T) {
 				},
 				PerfCounters: []ObjectConfig{
 					{
-						Object:   "object1",
-						Counters: []CounterConfig{counterConfig},
+						Object:          "object1",
+						Instances:       []string{"*", "_Global_"},
+						AggregationName: "_Global_",
+						Counters:        []CounterConfig{counterConfig},
 					},
 					{
 						Object: "object2",
@@ -229,6 +231,66 @@ func TestLoadConfig(t *testing.T) {
 			}
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestAggregationSettings(t *testing.T) {
+	tests := []struct {
+		name                       string
+		config                     ObjectConfig
+		expectedAggregationName    string
+		includeAggregationInstance bool
+	}{
+		{
+			name:                    "wildcard preserves old behavior",
+			config:                  ObjectConfig{Instances: []string{"*"}},
+			expectedAggregationName: defaultAggregationName,
+		},
+		{
+			name:                       "wildcard and default aggregation opts in",
+			config:                     ObjectConfig{Instances: []string{"*", defaultAggregationName}},
+			expectedAggregationName:    defaultAggregationName,
+			includeAggregationInstance: true,
+		},
+		{
+			name:                    "default aggregation alone keeps standalone behavior",
+			config:                  ObjectConfig{Instances: []string{defaultAggregationName}},
+			expectedAggregationName: defaultAggregationName,
+		},
+		{
+			name:                    "unrelated explicit instance does not opt in",
+			config:                  ObjectConfig{Instances: []string{"*", "worker"}},
+			expectedAggregationName: defaultAggregationName,
+		},
+		{
+			name:                    "custom aggregation with wildcard",
+			config:                  ObjectConfig{Instances: []string{"*"}, AggregationName: "_Global_"},
+			expectedAggregationName: "_Global_",
+		},
+		{
+			name:                       "wildcard and custom aggregation opts in",
+			config:                     ObjectConfig{Instances: []string{"*", "_Global_"}, AggregationName: "_Global_"},
+			expectedAggregationName:    "_Global_",
+			includeAggregationInstance: true,
+		},
+		{
+			name:                    "default name is ordinary when aggregation is custom",
+			config:                  ObjectConfig{Instances: []string{"*", defaultAggregationName}, AggregationName: "_Global_"},
+			expectedAggregationName: "_Global_",
+		},
+		{
+			name:                    "empty aggregation name uses default",
+			config:                  ObjectConfig{Instances: []string{"*"}, AggregationName: ""},
+			expectedAggregationName: defaultAggregationName,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			aggregationName, includeAggregationInstance := test.config.aggregationSettings()
+			assert.Equal(t, test.expectedAggregationName, aggregationName)
+			assert.Equal(t, test.includeAggregationInstance, includeAggregationInstance)
 		})
 	}
 }

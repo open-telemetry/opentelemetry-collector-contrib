@@ -28,7 +28,7 @@ type perfCounterMetricWatcher struct {
 	recreate bool
 }
 
-type newWatcherFunc func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
+type newWatcherFunc func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
 
 // windowsPerfCountersScraper is the type that scrapes various host metrics.
 type windowsPerfCountersScraper struct {
@@ -41,7 +41,7 @@ type windowsPerfCountersScraper struct {
 }
 
 func newScraper(cfg *Config, settings component.TelemetrySettings) *windowsPerfCountersScraper {
-	return &windowsPerfCountersScraper{cfg: cfg, settings: settings, newWatcher: winperfcounters.NewWatcher}
+	return &windowsPerfCountersScraper{cfg: cfg, settings: settings, newWatcher: winperfcounters.NewWatcherWithOptions}
 }
 
 func (s *windowsPerfCountersScraper) start(context.Context, component.Host) error {
@@ -58,9 +58,14 @@ func (s *windowsPerfCountersScraper) initWatchers() ([]perfCounterMetricWatcher,
 	var watchers []perfCounterMetricWatcher
 
 	for _, objCfg := range s.cfg.PerfCounters {
+		aggregationName, includeAggregationInstance := objCfg.aggregationSettings()
+		options := []winperfcounters.WatcherOption{winperfcounters.WithAggregationName(aggregationName)}
+		if includeAggregationInstance {
+			options = append(options, winperfcounters.WithIncludeAggregationInstance())
+		}
 		for _, instance := range instancesFromConfig(objCfg) {
 			for _, counterCfg := range objCfg.Counters {
-				pcw, err := s.newWatcher(objCfg.Object, instance, counterCfg.Name)
+				pcw, err := s.newWatcher(objCfg.Object, instance, counterCfg.Name, options...)
 				if err != nil {
 					errs = multierr.Append(errs, err)
 					continue
