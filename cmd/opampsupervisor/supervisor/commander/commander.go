@@ -23,10 +23,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
-// stopGracePeriod is how long Stop waits for the Agent process to exit after the
-// graceful shutdown signal before killing it forcibly. It is a variable so tests
-// can shorten it.
-var stopGracePeriod = 10 * time.Second
+// defaultStopGracePeriod is how long Stop waits for the Agent process to exit
+// after the graceful shutdown signal before killing it forcibly.
+const defaultStopGracePeriod = 10 * time.Second
 
 // Commander can start/stop/restart the Agent executable and also watch for a signal
 // for the Agent process to finish.
@@ -41,16 +40,18 @@ type Commander struct {
 	exitCh             chan struct{}
 	outputDoneCh       chan struct{}
 	running            *atomic.Int64
+	stopGracePeriod    time.Duration
 }
 
 func NewCommander(logger *zap.Logger, logFilePath string, cfg config.Agent, args ...string) (*Commander, error) {
 	return &Commander{
-		logger:       logger,
-		logFilePath:  logFilePath,
-		cfg:          cfg,
-		args:         args,
-		outputDoneCh: make(chan struct{}),
-		running:      &atomic.Int64{},
+		logger:          logger,
+		logFilePath:     logFilePath,
+		cfg:             cfg,
+		args:            args,
+		outputDoneCh:    make(chan struct{}),
+		running:         &atomic.Int64{},
+		stopGracePeriod: defaultStopGracePeriod,
 		// Buffer channels so we can send messages without blocking on listeners.
 		doneCh: make(chan struct{}, 1),
 		exitCh: make(chan struct{}, 1),
@@ -398,7 +399,8 @@ func (c *Commander) StartOneShot() ([]byte, []byte, error) {
 			// Time is out. Kill the process.
 			c.logger.Debug(
 				"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
-				zap.Int("pid", pid))
+				zap.Int("pid", pid),
+			)
 			if innerErr = cmd.Process.Signal(os.Kill); innerErr != nil {
 				return
 			}
@@ -435,7 +437,7 @@ func (c *Commander) IsRunning() bool {
 	return c.running.Load() != 0
 }
 
-// Stop the Agent process. Sends SIGTERM to the process and wait for up to stopGracePeriod
+// Stop the Agent process. Sends SIGTERM to the process and wait for up to c.stopGracePeriod
 // and if the process does not finish kills it forcedly by sending SIGKILL.
 // Returns after the process is terminated.
 func (c *Commander) Stop(ctx context.Context) error {
@@ -452,7 +454,7 @@ func (c *Commander) Stop(ctx context.Context) error {
 		return err
 	}
 
-	waitCtx, cancel := context.WithTimeout(ctx, stopGracePeriod)
+	waitCtx, cancel := context.WithTimeout(ctx, c.stopGracePeriod)
 	defer cancel()
 
 	// Setup a goroutine to wait a while for process to finish and send kill signal
@@ -471,7 +473,8 @@ func (c *Commander) Stop(ctx context.Context) error {
 		// Time is out. Kill the process.
 		c.logger.Debug(
 			"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
-			zap.Int("pid", pid))
+			zap.Int("pid", pid),
+		)
 		if err := c.cmd.Process.Signal(os.Kill); err != nil {
 			killErrCh <- err
 		}

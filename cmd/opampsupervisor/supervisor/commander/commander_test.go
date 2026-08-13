@@ -76,10 +76,6 @@ func TestWaitForOutputDrainCapturesFinalPassthroughLine(t *testing.T) {
 }
 
 func TestStopKillsUnresponsiveProcess(t *testing.T) {
-	prevGracePeriod := stopGracePeriod
-	stopGracePeriod = 100 * time.Millisecond
-	t.Cleanup(func() { stopGracePeriod = prevGracePeriod })
-
 	cmdr, err := NewCommander(
 		zap.NewNop(),
 		filepath.Join(t.TempDir(), "agent.log"),
@@ -92,6 +88,7 @@ func TestStopKillsUnresponsiveProcess(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
+	cmdr.stopGracePeriod = 100 * time.Millisecond
 
 	ready := make(chan struct{})
 	var readyOnce sync.Once
