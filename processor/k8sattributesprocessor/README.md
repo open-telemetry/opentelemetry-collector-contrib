@@ -95,6 +95,9 @@ are then also available for the use within association rules. Available attribut
   - k8s.job.name
   - k8s.node.name
   - k8s.node.uid
+  - k8s.owner.kind (the Kind of the pod's controlling owner reference, i.e. the `metadata.ownerReferences` entry with `controller: true`. Unlike the fixed fields above, this isn't limited to known controller kinds - it also covers pods owned by third-party CRDs, e.g. Flux's `HelmRelease` or cert-manager's `Challenge`.)
+  - k8s.owner.name (the name of the pod's controlling owner reference. See k8s.owner.kind.)
+  - k8s.owner.uid (the UID of the pod's controlling owner reference. See k8s.owner.kind.)
   - k8s.cluster.uid
   - [service.namespace](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicenamespace-should-be-calculated)
   - [service.name](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicename-should-be-calculated)
@@ -756,6 +759,9 @@ k8s_attributes:
       - k8s.cronjob.uid
       - k8s.node.name
       - k8s.node.uid
+      - k8s.owner.kind
+      - k8s.owner.name
+      - k8s.owner.uid
       - k8s.cluster.uid
       - k8s.container.name
       - container.id

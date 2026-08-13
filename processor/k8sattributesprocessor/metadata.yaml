@@ -142,6 +142,18 @@ resource_attributes:
     stability: stable
     semantic_convention:
       ref: k8s.md#k8s-node-uid
+  k8s.owner.kind:
+    description: The Kind of the Pod's controlling owner reference (metadata.ownerReferences entry with controller=true), e.g. ReplicaSet, DaemonSet, or a third-party CRD such as HelmRelease or Challenge. Unlike k8s.replicaset.name and similar fields, this is not limited to a fixed set of known controller kinds.
+    type: string
+    enabled: false
+  k8s.owner.name:
+    description: The name of the Pod's controlling owner reference. See k8s.owner.kind.
+    type: string
+    enabled: false
+  k8s.owner.uid:
+    description: The UID of the Pod's controlling owner reference. See k8s.owner.kind.
+    type: string
+    enabled: false
   k8s.pod.hostname:
     description: The hostname of the Pod.
     type: string

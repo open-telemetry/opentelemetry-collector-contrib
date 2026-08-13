@@ -393,6 +393,7 @@ func TestLoadConfig(t *testing.T) {
 						"k8s.replicaset.name", "k8s.replicaset.uid", "k8s.daemonset.name", "k8s.daemonset.uid",
 						"k8s.statefulset.name", "k8s.statefulset.uid", "k8s.job.name", "k8s.job.uid",
 						"k8s.cronjob.name", "k8s.cronjob.uid", "k8s.node.name", "k8s.node.uid",
+						"k8s.owner.kind", "k8s.owner.name", "k8s.owner.uid",
 						"k8s.container.name", "container.id", "container.image.name", "container.image.tag",
 						"container.image.repo_digests", "service.namespace", "service.name",
 						"service.version", "service.instance.id", "k8s.cluster.uid",

@@ -35,6 +35,12 @@ const (
 
 	ResourceSource   = "resource_attribute"
 	ConnectionSource = "connection"
+
+	// K8sOwnerKind, K8sOwnerName, and K8sOwnerUID are not (yet) part of the OTel
+	// semantic conventions, unlike most other extraction keys in this package.
+	K8sOwnerKind = "k8s.owner.kind"
+	K8sOwnerName = "k8s.owner.name"
+	K8sOwnerUID  = "k8s.owner.uid"
 )
 
 // PodIdentifierAttribute represents AssociationSource with matching value for pod
@@ -241,6 +247,9 @@ type ExtractionRules struct {
 	StatefulSetName           bool
 	Node                      bool
 	NodeUID                   bool
+	OwnerKind                 bool
+	OwnerName                 bool
+	OwnerUID                  bool
 	StartTime                 bool
 	ContainerName             bool
 	ContainerID               bool
@@ -274,6 +283,9 @@ func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
 		rules.ReplicaSetName,
 		rules.StatefulSetUID,
 		rules.StatefulSetName,
+		rules.OwnerKind,
+		rules.OwnerName,
+		rules.OwnerUID,
 	}
 	for _, ruleEnabled := range rulesNeedingOwnerMetadata {
 		if ruleEnabled {

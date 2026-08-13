@@ -1544,6 +1544,200 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 	}
 }
 
+func TestOwnerExtractionRules(t *testing.T) {
+	isController := true
+	isNotController := false
+	testCases := []struct {
+		name            string
+		rules           ExtractionRules
+		ownerReferences []meta_v1.OwnerReference
+		attributes      map[string]string
+	}{
+		{
+			name: "no-rules",
+			ownerReferences: []meta_v1.OwnerReference{
+				{Kind: "ReplicaSet", Name: "auth-service-66f5996c7c", UID: "207ea729-c779-401d-8347-008ecbc137e3", Controller: &isController},
+			},
+			rules:      ExtractionRules{},
+			attributes: map[string]string{},
+		},
+		{
+			name: "known-kind-controller",
+			ownerReferences: []meta_v1.OwnerReference{
+				{Kind: "ReplicaSet", Name: "auth-service-66f5996c7c", UID: "207ea729-c779-401d-8347-008ecbc137e3", Controller: &isController},
+			},
+			rules: ExtractionRules{
+				OwnerKind: true,
+				OwnerName: true,
+				OwnerUID:  true,
+			},
+			attributes: map[string]string{
+				"k8s.owner.kind": "ReplicaSet",
+				"k8s.owner.name": "auth-service-66f5996c7c",
+				"k8s.owner.uid":  "207ea729-c779-401d-8347-008ecbc137e3",
+			},
+		},
+		{
+			// The exact motivating case from the issue: a pod owned by a third-party
+			// CRD controller (cert-manager's Challenge) that none of the fixed
+			// k8s.replicaset.*/k8s.daemonset.*/etc fields can represent.
+			name: "third-party-crd-controller",
+			ownerReferences: []meta_v1.OwnerReference{
+				{Kind: "Challenge", Name: "my-cert-1234567890-0", UID: "cccc-dddd-eeee-ffff-000000000000", Controller: &isController},
+			},
+			rules: ExtractionRules{
+				OwnerKind: true,
+				OwnerName: true,
+				OwnerUID:  true,
+			},
+			attributes: map[string]string{
+				"k8s.owner.kind": "Challenge",
+				"k8s.owner.name": "my-cert-1234567890-0",
+				"k8s.owner.uid":  "cccc-dddd-eeee-ffff-000000000000",
+			},
+		},
+		{
+			name: "multiple-owners-only-one-controller",
+			ownerReferences: []meta_v1.OwnerReference{
+				{Kind: "ConfigMap", Name: "some-gc-owner", UID: "aaaa-bbbb-cccc-dddd-000000000000", Controller: &isNotController},
+				{Kind: "ReplicaSet", Name: "auth-service-66f5996c7c", UID: "207ea729-c779-401d-8347-008ecbc137e3", Controller: &isController},
+			},
+			rules: ExtractionRules{
+				OwnerKind: true,
+				OwnerName: true,
+				OwnerUID:  true,
+			},
+			attributes: map[string]string{
+				"k8s.owner.kind": "ReplicaSet",
+				"k8s.owner.name": "auth-service-66f5996c7c",
+				"k8s.owner.uid":  "207ea729-c779-401d-8347-008ecbc137e3",
+			},
+		},
+		{
+			name: "no-controller-marked",
+			ownerReferences: []meta_v1.OwnerReference{
+				{Kind: "ReplicaSet", Name: "auth-service-66f5996c7c", UID: "207ea729-c779-401d-8347-008ecbc137e3"},
+			},
+			rules: ExtractionRules{
+				OwnerKind: true,
+				OwnerName: true,
+				OwnerUID:  true,
+			},
+			attributes: map[string]string{},
+		},
+		{
+			name:            "no-owner-references",
+			ownerReferences: []meta_v1.OwnerReference{},
+			rules: ExtractionRules{
+				OwnerKind: true,
+				OwnerName: true,
+				OwnerUID:  true,
+			},
+			attributes: map[string]string{},
+		},
+		{
+			// Regression guard: OwnerReferences must survive removeUnnecessaryPodData's
+			// field-stripping transform even when OwnerKind is the only owner-related
+			// rule enabled (see ExtractionRules.IncludesOwnerMetadata).
+			name: "only-kind-rule-enabled",
+			ownerReferences: []meta_v1.OwnerReference{
+				{Kind: "ReplicaSet", Name: "auth-service-66f5996c7c", UID: "207ea729-c779-401d-8347-008ecbc137e3", Controller: &isController},
+			},
+			rules: ExtractionRules{
+				OwnerKind: true,
+			},
+			attributes: map[string]string{
+				"k8s.owner.kind": "ReplicaSet",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+			// Disable saving ip into k8s.pod.ip
+			c.Associations[0].Sources[0].Name = ""
+
+			pod := &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:            "auth-service-abc12-xyz3",
+					UID:             "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+					Namespace:       "ns1",
+					OwnerReferences: tc.ownerReferences,
+				},
+				Status: api_v1.PodStatus{
+					PodIP: "1.1.1.1",
+				},
+			}
+
+			c.Rules = tc.rules
+
+			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
+			c.handlePodAdd(transformedPod)
+			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
+			require.True(t, ok)
+
+			assert.Len(t, p.Attributes, len(tc.attributes))
+			for k, v := range tc.attributes {
+				got, ok := p.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
+func TestFindControllerOwnerReference(t *testing.T) {
+	isController := true
+	isNotController := false
+
+	tests := []struct {
+		name     string
+		refs     []meta_v1.OwnerReference
+		expected meta_v1.OwnerReference
+		found    bool
+	}{
+		{
+			name:  "empty",
+			refs:  nil,
+			found: false,
+		},
+		{
+			name: "none marked controller",
+			refs: []meta_v1.OwnerReference{
+				{Kind: "ReplicaSet", Name: "rs1", UID: "uid1"},
+			},
+			found: false,
+		},
+		{
+			name: "single controller",
+			refs: []meta_v1.OwnerReference{
+				{Kind: "ReplicaSet", Name: "rs1", UID: "uid1", Controller: &isController},
+			},
+			expected: meta_v1.OwnerReference{Kind: "ReplicaSet", Name: "rs1", UID: "uid1", Controller: &isController},
+			found:    true,
+		},
+		{
+			name: "controller mixed with non-controller refs",
+			refs: []meta_v1.OwnerReference{
+				{Kind: "ConfigMap", Name: "cm1", UID: "uid1", Controller: &isNotController},
+				{Kind: "HelmRelease", Name: "release1", UID: "uid2", Controller: &isController},
+			},
+			expected: meta_v1.OwnerReference{Kind: "HelmRelease", Name: "release1", UID: "uid2", Controller: &isController},
+			found:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := findControllerOwnerReference(tt.refs)
+			assert.Equal(t, tt.found, ok)
+			if tt.found {
+				assert.Equal(t, tt.expected, got)
+			}
+		})
+	}
+}
+
 func TestRemoveUnnecessaryPodData_ClonesLabelsAndAnnotations(t *testing.T) {
 	rules := ExtractionRules{
 		Labels:      []FieldExtractionRule{{From: MetadataFromPod}},

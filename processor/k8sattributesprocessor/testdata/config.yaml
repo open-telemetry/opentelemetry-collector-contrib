@@ -261,6 +261,9 @@ k8s_attributes/all_metadata_fields:
       - k8s.cronjob.uid
       - k8s.node.name
       - k8s.node.uid
+      - k8s.owner.kind
+      - k8s.owner.name
+      - k8s.owner.uid
       - k8s.container.name
       - container.id
       - container.image.name
