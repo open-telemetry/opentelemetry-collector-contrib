@@ -1197,7 +1197,6 @@ func parseMajorVersion(ver string) (int, error) {
 }
 
 // quoteDatabaseList renders databases as SQL string literals for an IN/NOT IN clause.
-// Empty input yields an empty string, which callers use to omit the clause.
 func quoteDatabaseList(databases []string) string {
 	quoted := make([]string, len(databases))
 	for i, db := range databases {
@@ -1236,8 +1235,6 @@ func functionKey(database, schema, function string) functionIdentifer {
 //go:embed templates/querySampleTemplate.tmpl
 var querySampleTemplate string
 
-// querySampleTmpl is parsed once at init: the template text is embedded at
-// compile time, so per-call parsing would only repeat identical work.
 var querySampleTmpl = template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 
 func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, float64, error) {
@@ -1401,8 +1398,6 @@ func convertToInt(column, value string, logger *zap.Logger) (any, error) {
 //go:embed templates/topQueryTemplate.tmpl
 var topQueryTemplate string
 
-// topQueryTmpl is parsed once at init: the template text is embedded at
-// compile time, so per-call parsing would only repeat identical work.
 var topQueryTmpl = template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
 
 // getTopQuery implements client.
