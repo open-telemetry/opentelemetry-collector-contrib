@@ -28,6 +28,8 @@ $defs:
       lag_record_frequency:
         type: string
         format: duration
+      segment_cache_size:
+        type: integer
       truncate_frequency:
         type: string
         format: duration
@@ -48,9 +50,6 @@ properties:
     type: object
     additionalProperties:
       type: string
-  http:
-    description: HTTP defines the HTTP client configuration in a nested block. This field takes precedence over the squashed ClientConfig when set.
-    $ref: go.opentelemetry.io/collector/config/confighttp.client_config
   include_metadata_keys:
     description: IncludeMetadataKeys is a list of client metadata keys whose values are forwarded as HTTP request headers on every remote write call.
     type: array

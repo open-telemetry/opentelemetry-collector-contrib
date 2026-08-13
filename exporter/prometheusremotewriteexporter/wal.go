@@ -12,9 +12,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cenkalti/backoff/v5"
 	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/tidwall/wal"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -84,9 +86,7 @@ func newPRWWalTelemetry(set exporter.Settings) (prwWalTelemetry, error) {
 	}
 	return &prwWalTelemetryOTel{
 		telemetryBuilder: telemetryBuilder,
-		otelAttrs: []attribute.KeyValue{
-			attribute.String("exporter", set.ID.String()),
-		},
+		otelAttrs:        []attribute.KeyValue{},
 	}, nil
 }
 
@@ -112,13 +112,33 @@ const (
 	defaultWALBufferSize         = 300
 	defaultWALTruncateFrequency  = 1 * time.Minute
 	defaultWALLagRecordFrequency = 15 * time.Second
+
+	// WAL retry backoff bounds used when recovering from WAL errors or when
+	// retrying exports to the remote-write backend.
+	walRetryInitialInterval = 1 * time.Second
+	walRetryMaxInterval     = 30 * time.Second
 )
+
+// newWALRetryBackOff returns an exponential backoff with jitter used to space
+// out WAL error recovery and export retries. The randomization factor adds
+// jitter so that concurrently retrying collectors don't synchronize.
+func newWALRetryBackOff() *backoff.ExponentialBackOff {
+	b := &backoff.ExponentialBackOff{
+		InitialInterval:     walRetryInitialInterval,
+		RandomizationFactor: backoff.DefaultRandomizationFactor,
+		Multiplier:          backoff.DefaultMultiplier,
+		MaxInterval:         walRetryMaxInterval,
+	}
+	b.Reset()
+	return b
+}
 
 type WALConfig struct {
 	Directory          string        `mapstructure:"directory"`
 	BufferSize         int           `mapstructure:"buffer_size"`
 	TruncateFrequency  time.Duration `mapstructure:"truncate_frequency"`
 	LagRecordFrequency time.Duration `mapstructure:"lag_record_frequency"`
+	SegmentCacheSize   int           `mapstructure:"segment_cache_size"`
 }
 
 func (wc *WALConfig) bufferSize() int {
@@ -140,6 +160,13 @@ func (wc *WALConfig) lagRecordInterval() time.Duration {
 		return wc.LagRecordFrequency
 	}
 	return defaultWALLagRecordFrequency
+}
+
+func (wc *WALConfig) segmentCacheSize() int {
+	if wc.SegmentCacheSize > 0 {
+		return wc.SegmentCacheSize
+	}
+	return wc.bufferSize()
 }
 
 func newWAL(walConfig *WALConfig, set exporter.Settings, exportSink func(context.Context, []*prompb.WriteRequest) error) (*prweWAL, error) {
@@ -170,7 +197,10 @@ func newWAL(walConfig *WALConfig, set exporter.Settings, exportSink func(context
 func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
 	walPath := filepath.Join(wc.Directory, "prom_remotewrite")
 	log, err := wal.Open(walPath, &wal.Options{
-		SegmentCacheSize: wc.bufferSize(),
+		// SegmentCacheSize controls how many WAL segments are kept in memory.
+		// Lower values significantly reduce memory usage at the cost of extra
+		// disk reads when the WAL reader needs evicted segments during replay.
+		SegmentCacheSize: wc.segmentCacheSize(),
 		NoCopy:           true,
 		AllowEmpty:       true,
 	})
@@ -257,6 +287,10 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 		defer prweWAL.wg.Done()
 		defer cancel()
 
+		// retryBackOff provides an exponential backoff with jitter between
+		// consecutive WAL processing failures. It is reset after a successful
+		// pass so transient errors don't inflate the delay indefinitely.
+		retryBackOff := newWALRetryBackOff()
 		signalStart := func() { close(waitUntilStartedCh) }
 		for {
 			select {
@@ -267,14 +301,28 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 			default:
 				err := prweWAL.continuallyPopWALThenExport(runCtx, signalStart)
 				signalStart = func() {}
-				if err != nil {
-					// log err
-					logger.Error("error processing WAL entries", zap.Error(err))
-					// Restart WAL
-					if errS := prweWAL.retrieveWALIndices(); errS != nil {
-						logger.Error("unable to re-start write-ahead log after error", zap.Error(errS))
-						return
-					}
+				if err == nil {
+					retryBackOff.Reset()
+					continue
+				}
+				// log err
+				logger.Error("error processing WAL entries", zap.Error(err))
+				// Restart WAL
+				if errS := prweWAL.retrieveWALIndices(); errS != nil {
+					logger.Error("unable to re-start write-ahead log after error", zap.Error(errS))
+					return
+				}
+				// Backoff with jitter before retrying to avoid a tight loop on
+				// persistent WAL errors.
+				retryTimer := time.NewTimer(retryBackOff.NextBackOff())
+				select {
+				case <-runCtx.Done():
+					retryTimer.Stop()
+					return
+				case <-prweWAL.stopChan:
+					retryTimer.Stop()
+					return
+				case <-retryTimer.C:
 				}
 			}
 		}
@@ -425,8 +473,37 @@ func (prweWAL *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*
 		return nil
 	}
 
-	if errL := prweWAL.exportSink(ctx, reqL); errL != nil {
-		return errL
+	// Retry export indefinitely until the backend becomes available.
+	// While retrying, no new data is read from the WAL — this prevents unbounded memory growth.
+	retryBackOff := newWALRetryBackOff()
+	for {
+		if errL := prweWAL.exportSink(ctx, reqL); errL != nil {
+			// Permanent errors (e.g., 400 Bad Request) mean the data is rejected
+			// by the backend and retrying won't help. Skip and truncate.
+			if consumererror.IsPermanent(errL) {
+				// Log the dropped batch so operators can troubleshoot. Kept at
+				// debug level to avoid being too verbose under sustained rejections.
+				if logger, lErr := loggerFromContext(ctx); lErr == nil {
+					logger.Debug("dropping permanently-rejected WAL metric batch",
+						zap.Int("request_count", len(reqL)),
+						zap.Error(errL),
+					)
+				}
+				break
+			}
+			retryTimer := time.NewTimer(retryBackOff.NextBackOff())
+			select {
+			case <-ctx.Done():
+				retryTimer.Stop()
+				return ctx.Err()
+			case <-prweWAL.stopChan:
+				retryTimer.Stop()
+				return nil
+			case <-retryTimer.C:
+				continue
+			}
+		}
+		break
 	}
 	if err := prweWAL.syncAndTruncateFront(); err != nil {
 		return err

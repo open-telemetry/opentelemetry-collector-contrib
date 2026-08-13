@@ -5,6 +5,7 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -25,10 +26,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadatatest"
@@ -54,6 +56,68 @@ func TestWALCreation_nonNilConfig(t *testing.T) {
 	require.NotNil(t, pwal)
 	require.NoError(t, err)
 	assert.NoError(t, pwal.stop())
+}
+
+func TestWALConfig_segmentCacheSize(t *testing.T) {
+	tests := []struct {
+		name       string
+		bufferSize int
+		segment    int
+		want       int
+	}{
+		{
+			name:       "defaults to buffer size when unset",
+			bufferSize: 0,
+			segment:    0,
+			want:       defaultWALBufferSize,
+		},
+		{
+			name:       "defaults to explicit buffer size when unset",
+			bufferSize: 42,
+			segment:    0,
+			want:       42,
+		},
+		{
+			name:       "uses explicit segment cache size when set",
+			bufferSize: 42,
+			segment:    7,
+			want:       7,
+		},
+		{
+			name:       "negative segment cache size falls back to buffer size",
+			bufferSize: 42,
+			segment:    -1,
+			want:       42,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wc := &WALConfig{
+				BufferSize:       tt.bufferSize,
+				SegmentCacheSize: tt.segment,
+			}
+			assert.Equal(t, tt.want, wc.segmentCacheSize())
+		})
+	}
+}
+
+func TestWALCreation_withSegmentCacheSize(t *testing.T) {
+	config := &WALConfig{
+		Directory:        t.TempDir(),
+		SegmentCacheSize: 5,
+	}
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
+	require.NoError(t, err)
+	require.NotNil(t, pwal)
+	t.Cleanup(func() { assert.NoError(t, pwal.stop()) })
+
+	// The WAL should open successfully with the configured segment cache size.
+	log, walPath, err := config.createWAL()
+	require.NoError(t, err)
+	require.NotNil(t, log)
+	assert.NotEmpty(t, walPath)
+	assert.NoError(t, log.Close())
 }
 
 func orderByLabelValueForEach(reqL []*prompb.WriteRequest) {
@@ -225,7 +289,7 @@ func TestExportWithWALEnabled(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
-	cfg.HTTP = clientConfig
+	cfg.ClientConfig = clientConfig
 
 	// Pickup any defaults applied during validation
 	require.NoError(t, cfg.Validate())
@@ -283,7 +347,7 @@ func TestWALWrite_Telemetry(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
-	cfg.HTTP = clientConfig
+	cfg.ClientConfig = clientConfig
 
 	prw, err := newPRWExporter(cfg, set)
 	require.NotNil(t, prw)
@@ -307,9 +371,8 @@ func TestWALWrite_Telemetry(t *testing.T) {
 	// Test successful WAL write
 	err = prw.handleExport(t.Context(), metrics, nil)
 	require.NoError(t, err)
-	exporterAttr := attribute.NewSet(attribute.String("exporter", set.ID.String()))
 	metadatatest.AssertEqualExporterPrometheusremotewriteWalWrites(t, tel,
-		[]metricdata.DataPoint[int64]{{Value: 1, Attributes: exporterAttr}},
+		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 
 	// Test failed WAL write by causing an out-of-order write error
@@ -319,7 +382,7 @@ func TestWALWrite_Telemetry(t *testing.T) {
 	err = prw.handleExport(t.Context(), metrics, nil)
 	require.Error(t, err)
 	metadatatest.AssertEqualExporterPrometheusremotewriteWalWritesFailures(t, tel,
-		[]metricdata.DataPoint[int64]{{Value: 1, Attributes: exporterAttr}},
+		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_write_latency")
@@ -355,7 +418,7 @@ func TestWALRead_Telemetry(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
-	cfg.HTTP = clientConfig
+	cfg.ClientConfig = clientConfig
 
 	prw, err := newPRWExporter(cfg, set)
 	require.NotNil(t, prw)
@@ -433,7 +496,7 @@ func TestWALLag_Telemetry(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
-	cfg.HTTP = clientConfig
+	cfg.ClientConfig = clientConfig
 
 	prw, err := newPRWExporter(cfg, set)
 	require.NotNil(t, prw)
@@ -460,15 +523,8 @@ func TestWALLag_Telemetry(t *testing.T) {
 	// Wait for lag recording to happen (longer than lagRecordFrequency)
 	time.Sleep(5 * cfg.WAL.Get().LagRecordFrequency)
 
-	// The wal_lag metric must carry the exporter attribute set to the
-	// component ID supplied by the test settings. We ideally would use
-	// otelcol.component.id, but the rest of the PRW exporter self-observability
-	// metrics currently use "exporter"; this can be switched for the whole
-	// exporter at a future point.
-	exporterAttr := attribute.NewSet(attribute.String("exporter", set.ID.String()))
-	metadatatest.AssertEqualExporterPrometheusremotewriteWalLag(t, tel,
-		[]metricdata.DataPoint[int64]{{Attributes: exporterAttr}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_lag")
+	require.NoError(t, err)
 }
 
 // TestWAL_IdleFlush verifies that buffered WAL entries are flushed to the
@@ -504,7 +560,7 @@ func TestWAL_IdleFlush(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
-	cfg.HTTP = clientConfig
+	cfg.ClientConfig = clientConfig
 	require.NoError(t, cfg.Validate())
 
 	set := exportertest.NewNopSettings(metadata.Type)
@@ -530,4 +586,170 @@ func TestWAL_IdleFlush(t *testing.T) {
 	assert.EventuallyWithT(t, func(t *assert.CollectT) {
 		assert.GreaterOrEqual(t, requestsReceived.Load(), int64(1))
 	}, 5*time.Second, 10*time.Millisecond, "buffered WAL entry was not flushed while idle")
+}
+
+// sampleWriteRequests returns a small, deterministic batch used by the
+// exportThenFrontTruncateWAL tests.
+func sampleWriteRequests() []*prompb.WriteRequest {
+	return []*prompb.WriteRequest{
+		{
+			Timeseries: []prompb.TimeSeries{
+				{
+					Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric"}},
+					Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+				},
+			},
+		},
+	}
+}
+
+// TestExportThenFrontTruncateWAL_TransientThenSuccess verifies that a transient
+// export error is retried and, once the export succeeds, the batch is exported
+// exactly once more and the WAL front is truncated (indices reset). This guards
+// against regressions in the indefinite-retry-on-transient-error behavior.
+func TestExportThenFrontTruncateWAL_TransientThenSuccess(t *testing.T) {
+	config := &WALConfig{Directory: t.TempDir()}
+	set := exportertest.NewNopSettings(metadata.Type)
+
+	var callCount atomic.Int64
+	sink := func(_ context.Context, _ []*prompb.WriteRequest) error {
+		if callCount.Add(1) == 1 {
+			// First attempt fails with a non-permanent (transient) error.
+			return errors.New("transient backend failure")
+		}
+		return nil
+	}
+
+	pwal, err := newWAL(config, set, sink)
+	require.NoError(t, err)
+	require.NotNil(t, pwal)
+
+	ctx := contextWithLogger(t.Context(), zap.NewNop())
+	require.NoError(t, pwal.retrieveWALIndices())
+	t.Cleanup(func() { assert.NoError(t, pwal.stop()) })
+
+	reqL := sampleWriteRequests()
+	require.NoError(t, pwal.persistToWAL(ctx, reqL))
+
+	// Simulate that the reader has already consumed the persisted entry, so the
+	// truncation is expected to advance the WAL front.
+	lastIndex, err := pwal.wal.LastIndex()
+	require.NoError(t, err)
+	pwal.rWALIndex.Store(lastIndex + 1)
+
+	require.NoError(t, pwal.exportThenFrontTruncateWAL(ctx, reqL))
+
+	// The sink must have been called twice: one transient failure followed by a
+	// single successful export (no extra exports after success).
+	assert.Equal(t, int64(2), callCount.Load())
+
+	// After a successful export the indices are re-retrieved from the truncated
+	// WAL, so the read index tracks the (now empty) WAL's first index.
+	firstIndex, err := pwal.wal.FirstIndex()
+	require.NoError(t, err)
+	assert.Equal(t, firstIndex, pwal.rWALIndex.Load())
+}
+
+// TestExportThenFrontTruncateWAL_PermanentError verifies that a permanent export
+// error causes the batch to be dropped without retrying, and the WAL front is
+// still truncated / indices reset so the poisoned batch is not replayed.
+func TestExportThenFrontTruncateWAL_PermanentError(t *testing.T) {
+	config := &WALConfig{Directory: t.TempDir()}
+	set := exportertest.NewNopSettings(metadata.Type)
+
+	var callCount atomic.Int64
+	sink := func(_ context.Context, _ []*prompb.WriteRequest) error {
+		callCount.Add(1)
+		return consumererror.NewPermanent(errors.New("400 bad request"))
+	}
+
+	pwal, err := newWAL(config, set, sink)
+	require.NoError(t, err)
+	require.NotNil(t, pwal)
+
+	ctx := contextWithLogger(t.Context(), zap.NewNop())
+	require.NoError(t, pwal.retrieveWALIndices())
+	t.Cleanup(func() { assert.NoError(t, pwal.stop()) })
+
+	reqL := sampleWriteRequests()
+	require.NoError(t, pwal.persistToWAL(ctx, reqL))
+
+	lastIndex, err := pwal.wal.LastIndex()
+	require.NoError(t, err)
+	pwal.rWALIndex.Store(lastIndex + 1)
+
+	require.NoError(t, pwal.exportThenFrontTruncateWAL(ctx, reqL))
+
+	// A permanent error must not be retried: the sink is called exactly once.
+	assert.Equal(t, int64(1), callCount.Load())
+
+	// The batch is skipped and the WAL front is truncated / indices reset,
+	// ensuring the permanently-rejected batch is not replayed.
+	firstIndex, err := pwal.wal.FirstIndex()
+	require.NoError(t, err)
+	assert.Equal(t, firstIndex, pwal.rWALIndex.Load())
+}
+
+// TestExportThenFrontTruncateWAL_ContextCanceledDuringRetry verifies that the
+// indefinite retry loop honors context cancellation and returns ctx.Err()
+// instead of spinning forever on a transient error.
+func TestExportThenFrontTruncateWAL_ContextCanceledDuringRetry(t *testing.T) {
+	config := &WALConfig{Directory: t.TempDir()}
+	set := exportertest.NewNopSettings(metadata.Type)
+
+	ctx, cancel := context.WithCancel(contextWithLogger(t.Context(), zap.NewNop()))
+
+	var callCount atomic.Int64
+	sink := func(_ context.Context, _ []*prompb.WriteRequest) error {
+		callCount.Add(1)
+		// Cancel the context so the retry backoff wait unblocks via ctx.Done().
+		cancel()
+		return errors.New("transient backend failure")
+	}
+
+	pwal, err := newWAL(config, set, sink)
+	require.NoError(t, err)
+	require.NotNil(t, pwal)
+
+	require.NoError(t, pwal.retrieveWALIndices())
+	t.Cleanup(func() { assert.NoError(t, pwal.stop()) })
+
+	reqL := sampleWriteRequests()
+	require.NoError(t, pwal.persistToWAL(context.Background(), reqL)) //nolint:usetesting // ctx is canceled on purpose above
+
+	err = pwal.exportThenFrontTruncateWAL(ctx, reqL)
+	require.ErrorIs(t, err, context.Canceled)
+
+	// The retry loop stops after the cancellation; it does not keep retrying.
+	assert.Equal(t, int64(1), callCount.Load())
+}
+
+// TestExportThenFrontTruncateWAL_StopDuringRetry verifies that the indefinite
+// retry loop exits (returning nil) when the WAL is stopped mid-retry, rather
+// than blocking shutdown.
+func TestExportThenFrontTruncateWAL_StopDuringRetry(t *testing.T) {
+	config := &WALConfig{Directory: t.TempDir()}
+	set := exportertest.NewNopSettings(metadata.Type)
+
+	pwal, err := newWAL(config, set, nil)
+	require.NoError(t, err)
+	require.NotNil(t, pwal)
+
+	sink := func(_ context.Context, _ []*prompb.WriteRequest) error {
+		// Signal shutdown so the retry backoff wait unblocks via stopChan.
+		close(pwal.stopChan)
+		return errors.New("transient backend failure")
+	}
+	pwal.exportSink = sink
+
+	ctx := contextWithLogger(t.Context(), zap.NewNop())
+	require.NoError(t, pwal.retrieveWALIndices())
+	t.Cleanup(func() { assert.NoError(t, pwal.closeWAL()) })
+
+	reqL := sampleWriteRequests()
+	require.NoError(t, pwal.persistToWAL(ctx, reqL))
+
+	// When stopped mid-retry the method returns nil (graceful shutdown) without
+	// looping forever.
+	require.NoError(t, pwal.exportThenFrontTruncateWAL(ctx, reqL))
 }
