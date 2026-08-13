@@ -29,7 +29,7 @@ type retryRoundTripper struct {
 	logger *zap.Logger
 
 	// Test seams. Both nil in production. Set once at construction in tests;
-	// must not be mutated after the first call to RoundTrip.
+	// must not be mutated after the first call to retryRoundTripper.
 	now   func() time.Time
 	sleep func(time.Duration) <-chan time.Time
 }
