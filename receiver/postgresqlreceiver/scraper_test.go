@@ -680,36 +680,6 @@ func TestScraperExcludeDatabase(t *testing.T) {
 	runTest(false, "exclude.yaml")
 }
 
-func TestScraperSkipsDatabaseMetricsWhenAllDatabasesExcluded(t *testing.T) {
-	// Validate() only catches this when 'databases' is set explicitly; autodiscovery
-	// resolves the list at scrape time and needs the runtime guard.
-	listClient := new(mockClient)
-	listClient.initMocks(defaultPostgreSQLDatabase, "public", []string{"otel"}, 0)
-
-	factory := new(mockClientFactory)
-	factory.On("getClient", mock.Anything, defaultPostgreSQLDatabase).Return(listClient, nil)
-
-	cfg := createDefaultConfig().(*Config)
-	cfg.ExcludeDatabases = []string{"otel"}
-
-	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
-	require.NoError(t, err)
-
-	_, err = scraper.scrape(t.Context())
-	require.NoError(t, err)
-
-	// See retrieveDBMetrics: an empty list must not fall through to a cluster-wide query.
-	listClient.AssertNotCalled(t, "getDatabaseStats", mock.Anything)
-	listClient.AssertNotCalled(t, "getBackends", mock.Anything)
-	listClient.AssertNotCalled(t, "getDatabaseSize", mock.Anything)
-
-	// Server level collectors carry no database dimension and must still run.
-	listClient.AssertCalled(t, "getMaxConnections", mock.Anything)
-
-	// The excluded database must not be connected to either.
-	factory.AssertNotCalled(t, "getClient", mock.Anything, "otel")
-}
-
 func TestMutualExclusionOfFeatureGates(t *testing.T) {
 	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, true)()
 	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, true)()

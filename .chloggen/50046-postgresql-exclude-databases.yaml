@@ -22,9 +22,6 @@ subtext: |
   cache expiry. Both collectors now filter excluded databases server side and no longer connect
   to them to run EXPLAIN.
 
-  Also: excluding every candidate database no longer runs the per-database retrieval queries against
-  the whole cluster; per-database metrics are skipped instead.
-
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 # Optional: The change log or logs in which this entry should be included.

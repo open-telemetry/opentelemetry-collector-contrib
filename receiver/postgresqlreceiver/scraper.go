@@ -66,9 +66,6 @@ type postgreSQLScraper struct {
 	newestQueryTimestamp   float64
 	serviceInstanceID      string
 	lastExecutionTimestamp time.Time
-	// warnedEmptyDatabases suppresses repeating the empty-database-list warning on
-	// every scrape; it resets once databases are seen again.
-	warnedEmptyDatabases bool
 }
 
 type errsMux struct {
@@ -574,23 +571,6 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 	r *dbRetrieval,
 	errs *errsMux,
 ) {
-	// An empty list means nothing to collect, not "all databases":
-	// filterQueryByDatabases would drop its WHERE clause and scan the whole cluster.
-	if len(databases) == 0 {
-		// Warn once instead of every scrape: an all-excluded (or empty) server is a
-		// legitimate steady state for users who only want server-level metrics.
-		if !p.warnedEmptyDatabases {
-			p.warnedEmptyDatabases = true
-			if len(p.excludes) > 0 {
-				p.logger.Warn("no databases remain after applying exclude_databases; skipping per-database metrics")
-			} else {
-				p.logger.Warn("no non-template databases found; skipping per-database metrics")
-			}
-		}
-		return
-	}
-	p.warnedEmptyDatabases = false
-
 	wg := &sync.WaitGroup{}
 
 	wg.Add(3)
