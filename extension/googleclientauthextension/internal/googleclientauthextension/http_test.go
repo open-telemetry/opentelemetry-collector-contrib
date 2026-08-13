@@ -23,8 +23,15 @@ func init() {
 	_ = os.Setenv("GCE_METADATA_HOST", "127.0.0.1")
 }
 
+type fakeMetadataToken struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	ExpiresIn    int64  `json:"expires_in"`
+}
+
 func TestRoundTripper(t *testing.T) {
-	fakeToken := oauth2.Token{
+	fakeToken := fakeMetadataToken{
 		AccessToken:  "accessToken",
 		TokenType:    "tokenType",
 		RefreshToken: "refreshToken",
@@ -166,7 +173,7 @@ func (fn roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 }
 
 func TestRoundTripperWithProxyAuth(t *testing.T) {
-	fakeToken := oauth2.Token{
+	fakeToken := fakeMetadataToken{
 		AccessToken:  "accessToken",
 		TokenType:    "tokenType",
 		RefreshToken: "refreshToken",
