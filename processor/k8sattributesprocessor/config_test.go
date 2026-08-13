@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -528,12 +528,12 @@ func TestLoadConfig(t *testing.T) {
 			// Set "K8S_NODE" to pass validation.
 			t.Setenv("K8S_NODE", "ip-111.us-west-2.compute.internal")
 			if tt.expected == nil {
-				err = xconfmap.Validate(cfg)
+				err = confmap.Validate(cfg)
 				assert.Error(t, err)
 				return
 			}
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -557,5 +557,5 @@ func TestFilterConfigInvalidEnvVar(t *testing.T) {
 		Labels:         []FieldFilterConfig{},
 		Fields:         []FieldFilterConfig{},
 	}
-	assert.Error(t, xconfmap.Validate(f))
+	assert.Error(t, confmap.Validate(f))
 }

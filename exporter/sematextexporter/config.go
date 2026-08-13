@@ -25,18 +25,18 @@ const (
 )
 
 type Config struct {
-	ClientConfig              confighttp.ClientConfig `mapstructure:",squash"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	ClientConfig  confighttp.ClientConfig                                  `mapstructure:",squash"`
+	BackOffConfig configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	// Region specifies the Sematext region the user is operating in
 	// Options:
 	// - EU
 	// - US
 	Region string `mapstructure:"region"`
 	// MetricsConfig defines the configuration specific to metrics
-	MetricsConfig `mapstructure:"metrics"`
+	MetricsConfig MetricsConfig `mapstructure:"metrics"`
 	// LogsConfig defines the configuration specific to logs
-	LogsConfig `mapstructure:"logs"`
+	LogsConfig LogsConfig `mapstructure:"logs"`
 }
 type MetricsConfig struct {
 	// App token is the token of Sematext Monitoring App to which you want to send the metrics.
@@ -81,12 +81,12 @@ func (cfg *Config) Validate() error {
 	}
 
 	if strings.EqualFold(cfg.Region, euRegion) {
-		cfg.MetricsEndpoint = euMetricsEndpoint
-		cfg.LogsEndpoint = euLogsEndpoint
+		cfg.MetricsConfig.MetricsEndpoint = euMetricsEndpoint
+		cfg.LogsConfig.LogsEndpoint = euLogsEndpoint
 	}
 	if strings.EqualFold(cfg.Region, usRegion) {
-		cfg.MetricsEndpoint = usMetricsEndpoint
-		cfg.LogsEndpoint = usLogsEndpoint
+		cfg.MetricsConfig.MetricsEndpoint = usMetricsEndpoint
+		cfg.LogsConfig.LogsEndpoint = usLogsEndpoint
 	}
 
 	return nil

@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -295,20 +294,20 @@ func TestValidateConnectorComponentConfig(t *testing.T) {
 }
 
 func TestUnmarshal(t *testing.T) {
+	httpConfigs := map[string]any{
+		"read_buffer_size":        100,
+		"write_buffer_size":       200,
+		"timeout":                 "10s",
+		"max_idle_conns":          300,
+		"max_idle_conns_per_host": 150,
+		"max_conns_per_host":      250,
+		"disable_keep_alives":     true,
+		"idle_conn_timeout":       "30s",
+		"tls":                     map[string]any{"insecure_skip_verify": true},
+	}
+	// Create confighttp.ClientConfig via unmarshaling to preserve internal state.
 	cfgWithHTTPConfigs := CreateDefaultConfig().(*Config)
-	idleConnTimeout := 30 * time.Second
-	maxIdleConn := 300
-	maxIdleConnPerHost := 150
-	maxConnPerHost := 250
-	cfgWithHTTPConfigs.ClientConfig.ReadBufferSize = 100
-	cfgWithHTTPConfigs.ClientConfig.WriteBufferSize = 200
-	cfgWithHTTPConfigs.ClientConfig.Timeout = 10 * time.Second
-	cfgWithHTTPConfigs.ClientConfig.MaxIdleConns = maxIdleConn
-	cfgWithHTTPConfigs.ClientConfig.MaxIdleConnsPerHost = maxIdleConnPerHost
-	cfgWithHTTPConfigs.ClientConfig.MaxConnsPerHost = maxConnPerHost
-	cfgWithHTTPConfigs.ClientConfig.IdleConnTimeout = idleConnTimeout
-	cfgWithHTTPConfigs.ClientConfig.DisableKeepAlives = true
-	cfgWithHTTPConfigs.ClientConfig.TLS.InsecureSkipVerify = true
+	require.NoError(t, confmap.NewFromStringMap(httpConfigs).Unmarshal(&cfgWithHTTPConfigs.ClientConfig))
 	cfgWithHTTPConfigs.warnings = nil
 
 	tests := []struct {
@@ -452,19 +451,9 @@ func TestUnmarshal(t *testing.T) {
 			err: "\"metrics::sums::initial_cumulative_monotonic_value\" can only be configured when \"metrics::sums::cumulative_monotonic_mode\" is set to \"to_delta\"",
 		},
 		{
-			name: "unmarshall confighttp client configs",
-			configMap: confmap.NewFromStringMap(map[string]any{
-				"read_buffer_size":        100,
-				"write_buffer_size":       200,
-				"timeout":                 "10s",
-				"max_idle_conns":          300,
-				"max_idle_conns_per_host": 150,
-				"max_conns_per_host":      250,
-				"disable_keep_alives":     true,
-				"idle_conn_timeout":       "30s",
-				"tls":                     map[string]any{"insecure_skip_verify": true},
-			}),
-			cfg: cfgWithHTTPConfigs,
+			name:      "unmarshall confighttp client configs",
+			configMap: confmap.NewFromStringMap(httpConfigs),
+			cfg:       cfgWithHTTPConfigs,
 		},
 	}
 
@@ -882,7 +871,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

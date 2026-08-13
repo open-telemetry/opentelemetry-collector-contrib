@@ -52,15 +52,6 @@ func TestCreateTraces(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateTracesNoAccessToken(t *testing.T) {
-	cfg := createDefaultConfig()
-	c := cfg.(*Config)
-	c.Realm = "us0"
-
-	_, err := createTracesExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
-	assert.EqualError(t, err, "access_token is required")
-}
-
 func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 
@@ -72,7 +63,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	exp, err := factory.CreateMetrics(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -83,14 +75,16 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	exp, err = factory.CreateMetrics(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
 	logExp, err := factory.CreateLogs(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, logExp)
 

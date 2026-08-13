@@ -21,6 +21,7 @@ spec:
           command:
             - /otelcontribcol
             - --config=/conf/relay.yaml
+            - --feature-gates=processor.k8sattributes.EnableKubeletPodSource
           image: "otelcontribcol:latest"
           imagePullPolicy: Never
           ports:
