@@ -119,12 +119,18 @@ func TestRetryOn504(t *testing.T) {
 	assert.Equal(t, int32(2), calls.Load()) // 1 retry + 1 success
 }
 
+// TestRetryOn429 covers a 429 carrying no wait hints at all — no Retry-After
+// and no rate-limit headers. It is still a rate-limit error, so GitHub's
+// "otherwise wait for at least one minute" fallback applies rather than the
+// (much shorter) exponential-backoff schedule used for 502/503/504.
 func TestRetryOn429(t *testing.T) {
 	handler, calls := sequenceHandler(http.StatusTooManyRequests)
 	srv := httptest.NewServer(handler)
 	defer srv.Close()
 
+	var sleptFor time.Duration
 	rt := newTestRetryRT(http.DefaultTransport)
+	rt.sleep = recordingSleep(&sleptFor)
 	client := &http.Client{Transport: rt}
 
 	resp, err := client.Get(srv.URL)
@@ -133,6 +139,7 @@ func TestRetryOn429(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, int32(2), calls.Load())
+	assert.GreaterOrEqual(t, sleptFor, 1*time.Minute, "GitHub requires waiting at least a minute")
 }
 
 func TestRetryOn403WithRetryAfter(t *testing.T) {
@@ -197,6 +204,42 @@ func TestPrimaryRateLimitHonorsResetAt(t *testing.T) {
 	assert.Equal(t, 30*time.Second, sleptFor)
 }
 
+// TestRetryAfterTakesPrecedenceOverRateLimitReset locks in GitHub's documented
+// precedence: when Retry-After is present it wins, even on a response that also
+// carries the primary rate-limit headers.
+// https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#handle-rate-limit-errors-appropriately
+func TestRetryAfterTakesPrecedenceOverRateLimitReset(t *testing.T) {
+	var call atomic.Int32
+	fakeNow := time.Unix(1_700_000_000, 0)
+	resetEpoch := fakeNow.Add(30 * time.Second).Unix()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if call.Add(1) == 1 {
+			w.Header().Set("Retry-After", "1")
+			w.Header().Set("X-RateLimit-Remaining", "0")
+			w.Header().Set("X-RateLimit-Reset", strconv.FormatInt(resetEpoch, 10))
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	var sleptFor time.Duration
+	rt := newTestRetryRT(http.DefaultTransport)
+	rt.now = func() time.Time { return fakeNow }
+	rt.sleep = recordingSleep(&sleptFor)
+
+	client := &http.Client{Transport: rt}
+	resp, err := client.Get(srv.URL)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, int32(2), call.Load())
+	assert.Equal(t, 1*time.Second, sleptFor, "Retry-After must win over X-RateLimit-Reset")
+}
+
 // TestPrimaryRateLimitOn429 verifies primary rate-limit retries also fire
 // when GitHub signals via 429 (alternate shape on some endpoints) rather than
 // the more common 403.
@@ -231,30 +274,36 @@ func TestPrimaryRateLimitOn429(t *testing.T) {
 	assert.Equal(t, 15*time.Second, sleptFor)
 }
 
-// TestNoRetryOnPrimaryRateLimitWithoutReset verifies that a primary
-// rate-limit response (X-RateLimit-Remaining: 0) without a usable
-// X-RateLimit-Reset header is NOT retried. Retrying against an
-// exhausted budget with no wait hint just burns the remaining attempts
-// against the same closed window — better to surface the failure now.
-func TestNoRetryOnPrimaryRateLimitWithoutReset(t *testing.T) {
+// TestPrimaryRateLimitWithoutResetWaitsFallback verifies that a primary
+// rate-limit response (X-RateLimit-Remaining: 0) with no usable
+// X-RateLimit-Reset header still retries, after GitHub's documented
+// "otherwise wait for at least one minute" fallback.
+func TestPrimaryRateLimitWithoutResetWaitsFallback(t *testing.T) {
 	var call atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		call.Add(1)
-		w.Header().Set("X-RateLimit-Remaining", "0")
-		// No X-RateLimit-Reset header set.
-		w.WriteHeader(http.StatusForbidden)
+		if call.Add(1) == 1 {
+			w.Header().Set("X-RateLimit-Remaining", "0")
+			// No X-RateLimit-Reset header set.
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
 
+	var sleptFor time.Duration
 	rt := newTestRetryRT(http.DefaultTransport)
+	rt.sleep = recordingSleep(&sleptFor)
 	client := &http.Client{Transport: rt}
 
 	resp, err := client.Get(srv.URL)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
-	assert.Equal(t, int32(1), call.Load()) // No retry
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, int32(2), call.Load())
+	assert.Equal(t, rateLimitFallbackWait, sleptFor)
+	assert.GreaterOrEqual(t, sleptFor, 1*time.Minute, "GitHub requires waiting at least a minute")
 }
 
 // TestParseRateLimitReset locks in the four observable behaviors of the

@@ -73,18 +73,24 @@ The following responses are retried:
   and an `X-RateLimit-Reset` epoch -- primary rate limit exhausted; waits until
   the reset time. The reset wait is honored as-is (not capped), so a single
   scrape can stall up to the configured GitHub rate-limit window.
-- **429 Too Many Requests** without rate-limit headers -- generic transient
-  throttle; uses exponential backoff.
+- **429 Too Many Requests** without any wait hints -- still a rate-limit error,
+  so it waits at least one minute rather than the shorter exponential schedule.
 - **502 Bad Gateway** -- GitHub's proxy failed to reach the backend
 - **503 Service Unavailable** -- GitHub is temporarily down for maintenance
 - **504 Gateway Timeout** -- GitHub's backend took too long to respond
 
+The wait for a rate-limited response follows the precedence GitHub
+[documents][ghratelimit]: `Retry-After` first, then `X-RateLimit-Reset` when
+`X-RateLimit-Remaining` is `0`, and otherwise a minimum of one minute. That
+one-minute floor also covers a primary rate-limit response whose
+`X-RateLimit-Reset` header is missing or unparseable.
+
 A 403 with neither `Retry-After` nor `X-RateLimit-Remaining: 0` is treated as a
-permission error and **not** retried. A primary rate-limit response with no
-usable `X-RateLimit-Reset` header is also not retried, because retrying against
-a closed budget with no wait hint just burns attempts. Retries are bounded by
-`max_retries` (default 10) and the scrape context, stopping when the next
-collection interval begins.
+permission error and **not** retried. Retries are bounded by `max_retries`
+(default 10) and the scrape context, stopping when the next collection interval
+begins.
+
+[ghratelimit]: https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#handle-rate-limit-errors-appropriately
 
 Retry behaviour is configurable under `retry_on_failure`:
 
