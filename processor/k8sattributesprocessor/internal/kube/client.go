@@ -1060,13 +1060,13 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	if c.Rules.OwnerKind || c.Rules.OwnerName || c.Rules.OwnerUID {
 		if owner, ok := findControllerOwnerReference(pod.OwnerReferences); ok {
 			if c.Rules.OwnerKind {
-				tags[K8sOwnerKind] = owner.Kind
+				tags[string(K8sOwnerKind)] = owner.Kind
 			}
 			if c.Rules.OwnerName {
-				tags[K8sOwnerName] = owner.Name
+				tags[string(K8sOwnerName)] = owner.Name
 			}
 			if c.Rules.OwnerUID {
-				tags[K8sOwnerUID] = string(owner.UID)
+				tags[string(K8sOwnerUID)] = string(owner.UID)
 			}
 		}
 	}

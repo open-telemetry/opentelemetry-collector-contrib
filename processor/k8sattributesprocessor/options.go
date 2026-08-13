@@ -106,13 +106,13 @@ func enabledAttributes() (attributes []string) {
 		attributes = append(attributes, string(conventions.K8SNodeUIDKey))
 	}
 	if defaultConfig.K8sOwnerKind.Enabled {
-		attributes = append(attributes, kube.K8sOwnerKind)
+		attributes = append(attributes, string(kube.K8sOwnerKind))
 	}
 	if defaultConfig.K8sOwnerName.Enabled {
-		attributes = append(attributes, kube.K8sOwnerName)
+		attributes = append(attributes, string(kube.K8sOwnerName))
 	}
 	if defaultConfig.K8sOwnerUID.Enabled {
-		attributes = append(attributes, kube.K8sOwnerUID)
+		attributes = append(attributes, string(kube.K8sOwnerUID))
 	}
 	if defaultConfig.K8sPodHostname.Enabled {
 		attributes = append(attributes, string(conventions.K8SPodHostnameKey))
@@ -204,11 +204,11 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.Node = true
 			case string(conventions.K8SNodeUIDKey):
 				p.rules.NodeUID = true
-			case kube.K8sOwnerKind:
+			case string(kube.K8sOwnerKind):
 				p.rules.OwnerKind = true
-			case kube.K8sOwnerName:
+			case string(kube.K8sOwnerName):
 				p.rules.OwnerName = true
-			case kube.K8sOwnerUID:
+			case string(kube.K8sOwnerUID):
 				p.rules.OwnerUID = true
 			case string(conventions.ContainerIDKey):
 				p.rules.ContainerID = true

@@ -105,7 +105,7 @@ func (cfg *Config) Validate() error {
 			string(conventions.K8SJobNameKey), string(conventions.K8SJobUIDKey),
 			string(conventions.K8SCronJobNameKey), string(conventions.K8SCronJobUIDKey),
 			string(conventions.K8SNodeNameKey), string(conventions.K8SNodeUIDKey),
-			kube.K8sOwnerKind, kube.K8sOwnerName, kube.K8sOwnerUID,
+			string(kube.K8sOwnerKind), string(kube.K8sOwnerName), string(kube.K8sOwnerUID),
 			string(conventions.K8SContainerNameKey), string(conventions.ContainerIDKey),
 			string(conventions.ContainerImageNameKey), containerImageTag, string(conventions.ContainerImageTagsKey),
 			string(conventions.ServiceNamespaceKey), string(conventions.ServiceNameKey),

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/attribute"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
 
@@ -35,12 +36,16 @@ const (
 
 	ResourceSource   = "resource_attribute"
 	ConnectionSource = "connection"
+)
 
-	// K8sOwnerKind, K8sOwnerName, and K8sOwnerUID are not (yet) part of the OTel
-	// semantic conventions, unlike most other extraction keys in this package.
-	K8sOwnerKind = "k8s.owner.kind"
-	K8sOwnerName = "k8s.owner.name"
-	K8sOwnerUID  = "k8s.owner.uid"
+// K8sOwnerKind, K8sOwnerName, and K8sOwnerUID are not (yet) part of the
+// go.opentelemetry.io/otel/semconv package, unlike most other extraction keys
+// in this package, so they're declared here with the same attribute.Key type
+// those use rather than pulled from there.
+const (
+	K8sOwnerKind attribute.Key = "k8s.owner.kind"
+	K8sOwnerName attribute.Key = "k8s.owner.name"
+	K8sOwnerUID  attribute.Key = "k8s.owner.uid"
 )
 
 // PodIdentifierAttribute represents AssociationSource with matching value for pod
