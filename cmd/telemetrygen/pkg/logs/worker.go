@@ -64,15 +64,13 @@ func (w *worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, 
 			tid = trace.TraceID(b)
 		}
 
-		attrs := []log.KeyValue{log.String("app", "server")}
-		for _, attr := range telemetryAttributes {
-			attrs = append(attrs, log.KeyValueFromAttribute(attr))
-		}
+		attrs := []attribute.KeyValue{attribute.String("app", "server")}
+		attrs = append(attrs, telemetryAttributes...)
 
 		// Add load size attributes if specified
 		if w.loadSize > 0 {
 			for j := 0; j < w.loadSize; j++ {
-				attrs = append(attrs, log.String(fmt.Sprintf("load-%v", j), string(make([]byte, config.CharactersPerMB))))
+				attrs = append(attrs, attribute.String(fmt.Sprintf("load-%v", j), string(make([]byte, config.CharactersPerMB))))
 			}
 		}
 
@@ -80,7 +78,7 @@ func (w *worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, 
 			Timestamp:         time.Now(),
 			Severity:          w.severityNumber,
 			SeverityText:      w.severityText,
-			Body:              log.StringValue(w.body),
+			Body:              attribute.StringValue(w.body),
 			Attributes:        attrs,
 			TraceID:           tid,
 			SpanID:            sid,

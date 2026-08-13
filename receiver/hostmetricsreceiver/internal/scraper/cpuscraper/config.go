@@ -9,8 +9,8 @@ import (
 
 // Config relating to CPU Metric Scraper.
 type Config struct {
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	rootPath                      string
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	rootPath             string
 }
 
 func (cfg *Config) SetRootPath(rootPath string) {

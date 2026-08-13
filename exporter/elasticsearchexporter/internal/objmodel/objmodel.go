@@ -36,7 +36,7 @@ import (
 	"io"
 	"maps"
 	"math"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -220,8 +220,8 @@ func (doc *Document) AddLinks(key string, links ptrace.SpanLinkSlice) {
 }
 
 func (doc *Document) sort() {
-	sort.SliceStable(doc.fields, func(i, j int) bool {
-		return doc.fields[i].key < doc.fields[j].key
+	slices.SortStableFunc(doc.fields, func(a, b field) int {
+		return strings.Compare(a.key, b.key)
 	})
 
 	for i := range doc.fields {

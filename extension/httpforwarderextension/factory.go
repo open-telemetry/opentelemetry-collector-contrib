@@ -26,7 +26,8 @@ func NewFactory() extension.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		metadata.ExtensionStability)
+		metadata.ExtensionStability,
+	)
 }
 
 func createDefaultConfig() component.Config {

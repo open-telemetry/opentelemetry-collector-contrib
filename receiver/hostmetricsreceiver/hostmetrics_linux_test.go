@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -55,7 +55,7 @@ func TestLoadInvalidConfig_RootPathNotExist(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-bad-root-path.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, cm.Unmarshal(cfg))
-	assert.ErrorContains(t, xconfmap.Validate(cfg), "invalid root_path:")
+	assert.ErrorContains(t, confmap.Validate(cfg), "invalid root_path:")
 	t.Cleanup(func() { gopsutilenv.SetGlobalRootPath("") })
 }
 
@@ -67,5 +67,5 @@ func TestLoadConfigRootPath_InvalidConfig_InconsistentRootPaths(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-root-path.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, cm.Unmarshal(cfg))
-	assert.EqualError(t, xconfmap.Validate(cfg), "inconsistent root_path configuration detected among components: `foo` != `testdata`")
+	assert.EqualError(t, confmap.Validate(cfg), "inconsistent root_path configuration detected among components: `foo` != `testdata`")
 }

@@ -1,5 +1,5 @@
-azuremonitor:
-azuremonitor/2:
+azure_monitor:
+azure_monitor/2:
   # endpoint is the uri used to communicate with Azure Monitor
   endpoint: "https://dc.services.visualstudio.com/v2/track"
   # instrumentation_key is the unique identifier for your Application Insights resource
@@ -20,7 +20,7 @@ azuremonitor/2:
     num_consumers: 10
     storage: disk
 
-azuremonitor/tag_mappings:
+azure_monitor/tag_mappings:
   connection_string: InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/
   tag_mappings:
     cloud_role_instance: [host.name, service.instance.id, unknown-instance]
