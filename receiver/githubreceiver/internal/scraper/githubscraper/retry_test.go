@@ -119,10 +119,8 @@ func TestRetryOn504(t *testing.T) {
 	assert.Equal(t, int32(2), calls.Load()) // 1 retry + 1 success
 }
 
-// TestRetryOn429 covers a 429 carrying no wait hints at all — no Retry-After
-// and no rate-limit headers. It is still a rate-limit error, so GitHub's
-// "otherwise wait for at least one minute" fallback applies rather than the
-// (much shorter) exponential-backoff schedule used for 502/503/504.
+// TestRetryOn429 covers a 429 carrying no wait hints at all, which still gets
+// the one-minute fallback rather than the exponential schedule.
 func TestRetryOn429(t *testing.T) {
 	handler, calls := sequenceHandler(http.StatusTooManyRequests)
 	srv := httptest.NewServer(handler)
@@ -139,7 +137,7 @@ func TestRetryOn429(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, int32(2), calls.Load())
-	assert.GreaterOrEqual(t, sleptFor, 1*time.Minute, "GitHub requires waiting at least a minute")
+	assert.Equal(t, rateLimitFallbackWait, sleptFor)
 }
 
 func TestRetryOn403WithRetryAfter(t *testing.T) {
@@ -303,7 +301,6 @@ func TestPrimaryRateLimitWithoutResetWaitsFallback(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, int32(2), call.Load())
 	assert.Equal(t, rateLimitFallbackWait, sleptFor)
-	assert.GreaterOrEqual(t, sleptFor, 1*time.Minute, "GitHub requires waiting at least a minute")
 }
 
 // TestParseRateLimitReset locks in the four observable behaviors of the

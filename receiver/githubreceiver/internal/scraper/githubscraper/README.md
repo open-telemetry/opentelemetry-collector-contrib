@@ -67,23 +67,20 @@ using exponential backoff with jitter.
 
 The following responses are retried:
 
-- **403 Forbidden** with `Retry-After` header -- secondary rate limit; waits
-  the server-supplied `Retry-After` seconds.
+- **403 Forbidden** with `Retry-After` header -- secondary rate limit.
 - **403 Forbidden** or **429 Too Many Requests** with `X-RateLimit-Remaining: 0`
-  and an `X-RateLimit-Reset` epoch -- primary rate limit exhausted; waits until
-  the reset time. The reset wait is honored as-is (not capped), so a single
-  scrape can stall up to the configured GitHub rate-limit window.
-- **429 Too Many Requests** without any wait hints -- still a rate-limit error,
-  so it waits at least one minute rather than the shorter exponential schedule.
+  -- primary rate limit exhausted.
+- **429 Too Many Requests** without any wait hints -- still a rate-limit error.
 - **502 Bad Gateway** -- GitHub's proxy failed to reach the backend
 - **503 Service Unavailable** -- GitHub is temporarily down for maintenance
 - **504 Gateway Timeout** -- GitHub's backend took too long to respond
 
 The wait for a rate-limited response follows the precedence GitHub
 [documents][ghratelimit]: `Retry-After` first, then `X-RateLimit-Reset` when
-`X-RateLimit-Remaining` is `0`, and otherwise a minimum of one minute. That
-one-minute floor also covers a primary rate-limit response whose
-`X-RateLimit-Reset` header is missing or unparseable.
+`X-RateLimit-Remaining` is `0`, and otherwise a minimum of one minute -- which
+also covers a primary rate-limit response whose `X-RateLimit-Reset` header is
+missing or unparseable. Header waits are honored as-is (not capped), so a single
+scrape can stall up to the configured GitHub rate-limit window.
 
 A 403 with neither `Retry-After` nor `X-RateLimit-Remaining: 0` is treated as a
 permission error and **not** retried. Retries are bounded by `max_retries`
