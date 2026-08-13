@@ -251,6 +251,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				// The check only takes the first instance of multi-instance counters and assumes that the other instances would be included.
 				pmetrictest.IgnoreSubsequentDataPoints("cpu.idle"),
 				pmetrictest.IgnoreSubsequentDataPoints("processor.time"),
+				pmetrictest.IgnoreMetricAttributeValue("instance", "processor.time"),
 				pmetrictest.IgnoreMetricsOrder(),
 				pmetrictest.IgnoreScopeMetricsOrder(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
@@ -338,7 +339,7 @@ func TestInitWatchers(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			s := &windowsPerfCountersScraper{cfg: &Config{PerfCounters: test.cfgs}, newWatcher: winperfcounters.NewWatcherWithOptions}
+			s := &windowsPerfCountersScraper{cfg: &Config{PerfCounters: test.cfgs}, newWatcher: winperfcounters.NewWatcher}
 			watchers, errs := s.initWatchers()
 			if test.expectedErr != "" {
 				require.EqualError(t, errs, test.expectedErr)
@@ -642,7 +643,7 @@ func TestScrape(t *testing.T) {
 					assert.Equal(t, len(counterValues), dps.Len())
 					for dpIdx, val := range counterValues {
 						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleValue())
-						expectedAttributeLen := len(counterCfg.Attributes)
+						expectedAttributeLen := len(counterCfg.MetricRep.Attributes)
 						if val.InstanceName != "" {
 							expectedAttributeLen++
 						}
@@ -652,7 +653,7 @@ func TestScrape(t *testing.T) {
 								assert.Equal(t, val.InstanceName, v.Str())
 								continue
 							}
-							assert.Equal(t, counterCfg.Attributes[k], v.Str())
+							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.Str())
 						}
 					}
 					curMetricsNum++

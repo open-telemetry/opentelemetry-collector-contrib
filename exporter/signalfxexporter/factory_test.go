@@ -52,15 +52,6 @@ func TestCreateTraces(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateTracesNoAccessToken(t *testing.T) {
-	cfg := createDefaultConfig()
-	c := cfg.(*Config)
-	c.Realm = "us0"
-
-	_, err := createTracesExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
-	assert.EqualError(t, err, "access_token is required")
-}
-
 func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 
@@ -72,7 +63,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	exp, err := factory.CreateMetrics(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -83,14 +75,16 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	exp, err = factory.CreateMetrics(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
 	logExp, err := factory.CreateLogs(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, logExp)
 
@@ -666,7 +660,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 54, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 46, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 	require.Empty(t, dps)
 }

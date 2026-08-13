@@ -1,5 +1,6 @@
 display_name: Span Pruning Processor
-type: spanpruning
+type: span_pruning
+deprecated_type: spanpruning
 
 status:
   class: processor
@@ -156,6 +157,15 @@ telemetry:
     processor_spanpruning_traces_processed:
       enabled: true
       description: Total traces processed
+      unit: "{traces}"
+      stability: development
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_spanpruning_traces_skipped:
+      enabled: true
+      description: Total traces skipped due to conditions not matching
       unit: "{traces}"
       stability: development
       sum:

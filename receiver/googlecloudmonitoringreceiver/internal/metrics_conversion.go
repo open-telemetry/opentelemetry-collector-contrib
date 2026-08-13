@@ -83,6 +83,8 @@ func (mb *MetricsBuilder) ConvertSumToMetrics(ts *monitoringpb.TimeSeries, m pme
 	m.SetUnit(ts.GetUnit())
 	sum := m.SetEmptySum()
 	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	// GCP's cumulative metric kind maps to OTel's monotonic sum
+	sum.SetIsMonotonic(true)
 
 	metricAttributes := convertLabelsToMetricAttributes(ts.GetMetric().GetLabels())
 	for _, point := range ts.GetPoints() {

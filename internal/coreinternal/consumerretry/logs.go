@@ -61,7 +61,8 @@ func (lc *logsConsumer) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
 	for {
 		span.AddEvent(
 			"Sending logs.",
-			trace.WithAttributes(attribute.Int64("retry_num", retryNum)))
+			trace.WithAttributes(attribute.Int64("retry_num", retryNum)),
+		)
 
 		err := lc.Logs.ConsumeLogs(ctx, logs)
 		if err == nil {
@@ -94,7 +95,9 @@ func (lc *logsConsumer) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
 			"ConsumeLogs() failed. Will retry the request after interval.",
 			trace.WithAttributes(
 				attribute.String("interval", backoffDelayStr),
-				attribute.String("error", err.Error())))
+				attribute.String("error", err.Error()),
+			),
+		)
 		lc.logger.Debug(
 			"ConsumeLogs() failed. Will retry the request after interval.",
 			zap.Error(err),

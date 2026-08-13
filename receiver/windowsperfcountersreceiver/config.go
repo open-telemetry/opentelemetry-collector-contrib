@@ -16,7 +16,7 @@ const defaultAggregationName = "_Total"
 
 // Config defines configuration for WindowsPerfCounters receiver.
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	MetricMetaData map[string]MetricConfig `mapstructure:"metrics"`
 	PerfCounters   []ObjectConfig          `mapstructure:"perfcounters"`
@@ -61,9 +61,9 @@ func (oc ObjectConfig) aggregationSettings() (string, bool) {
 
 // CounterConfig defines the individual counter in an object.
 type CounterConfig struct {
-	Name          string `mapstructure:"name"`
-	MetricRep     `mapstructure:",squash"`
-	RecreateQuery bool `mapstructure:"recreate_query"`
+	Name          string    `mapstructure:"name"`
+	MetricRep     MetricRep `mapstructure:",squash"`
+	RecreateQuery bool      `mapstructure:"recreate_query"`
 }
 
 type MetricRep struct {
@@ -74,7 +74,7 @@ type MetricRep struct {
 func (c *Config) Validate() error {
 	var errs error
 
-	if c.CollectionInterval <= 0 {
+	if c.ControllerConfig.CollectionInterval <= 0 {
 		errs = multierr.Append(errs, errors.New("collection_interval must be a positive duration"))
 	}
 
