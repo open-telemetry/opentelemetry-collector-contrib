@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	krb5client "github.com/jcmturner/gokrb5/v8/client"
 	krb5config "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
@@ -327,7 +328,7 @@ func commonOpts(
 		opts = append(opts, kgo.SASL(auth.AsMechanism()))
 	}
 	if clientCfg.Authentication.SASL != nil {
-		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL, host)
+		saslOpt, err := configureKgoSASL(ctx, clientCfg.Authentication.SASL, host)
 		if err != nil {
 			return nil, fmt.Errorf("failed to configure SASL: %w", err)
 		}
@@ -374,7 +375,7 @@ func commonOpts(
 	return opts, nil
 }
 
-func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt, error) {
+func configureKgoSASL(ctx context.Context, cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt, error) {
 	var m sasl.Mechanism
 	switch cfg.Mechanism {
 	case PLAIN:
@@ -384,8 +385,16 @@ func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt
 	case SCRAMSHA512:
 		m = scram.Auth{User: cfg.Username, Pass: cfg.Password}.AsSha512Mechanism()
 	case AWSMSKIAMOAUTHBEARER:
+		// Resolve the AWS credentials provider once and reuse it (via the SDK's
+		// built-in aws.CredentialsCache) for every token generation over this
+		// client's lifetime, instead of resolving credentials -- and potentially
+		// calling AWS STS -- on every single SASL handshake.
+		awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(cfg.AWSMSK.Region))
+		if err != nil {
+			return nil, fmt.Errorf("failed to load AWS config for MSK IAM authentication: %w", err)
+		}
 		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
-			token, _, err := signer.GenerateAuthToken(ctx, cfg.AWSMSK.Region)
+			token, _, err := signer.GenerateAuthTokenFromCredentialsProvider(ctx, cfg.AWSMSK.Region, awsCfg.Credentials)
 			return oauth.Auth{Token: token}, err
 		})
 	case OAUTHBEARER:
