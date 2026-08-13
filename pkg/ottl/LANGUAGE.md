@@ -60,17 +60,23 @@ The following types are supported for single-value parameters in OTTL functions:
 - `Setter`
 - `GetSetter`
 - `Getter`
+- `PMapGetSetter`
 - `PMapGetter`
+- `PSliceGetSetter`
+- `PSliceGetter`
 - `FloatGetter`
 - `FloatLikeGetter`
 - `StringGetter`
 - `StringLikeGetter`
 - `IntGetter`
 - `IntLikeGetter`
+- `DurationGetter`
+- `TimeGetter`
 - `BoolGetter`
 - `BoolLikeGetter`
 - `ByteSliceLikeGetter`
 - `Enum`
+- `Function` (for Lambda Expressions)
 - `string`
 - `float64`
 - `int64`
@@ -80,17 +86,19 @@ For slice parameters, the following types are supported:
 
 - `Getter`
 - `PMapGetter`
+- `PSliceGetter`
 - `FloatGetter`
 - `FloatLikeGetter`
 - `StringGetter`
 - `StringLikeGetter`
 - `IntGetter`
 - `IntLikeGetter`
+- `DurationGetter`
+- `TimeGetter`
 - `string`
 - `float64`
 - `int64`
 - `uint8`. Byte slice literals are parsed as byte slices by OTTL.
-- `Getter`
 
 To make a parameter optional, use the `Optional` type, which takes a type argument for the underlying
 parameter type. For example, an optional string parameter would be specified as `Optional[string]`.
@@ -316,3 +324,18 @@ It is possible to update the Value in a telemetry field using a Setter. For read
 ## Logging inside an OTTL function
 
 To emit logs inside an OTTL function, add a parameter of type [`component.TelemetrySettings`](https://pkg.go.dev/go.opentelemetry.io/collector/component#TelemetrySettings) to the function signature. OTTL will then inject the TelemetrySettings that were passed to `NewParser` into the function.  TelemetrySettings can be used to emit logs.
+
+## Experimental Features
+
+### Lambda Expressions
+
+Lambda Expressions allow passing inline anonymous functions as parameters to OTTL functions. Lambda Expressions take the form of formal parameters surrounded by parentheses, followed by the arrow `=>` and a body expression:
+
+```
+(param1, param2) => param1 == param2
+```
+
+Lambda parameters can be named or blank (`_`).
+
+To use Lambda Expressions in OTTL functions, the `ottl.functions.enableLambda` feature gate must be enabled. When disabled, lambda arguments will be rejected during parsing.
+
