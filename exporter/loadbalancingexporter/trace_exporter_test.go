@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -275,6 +276,103 @@ func TestConsumeTracesByID_MultipleTraceIDs(t *testing.T) {
 		{3}: 1,
 		{4}: 1,
 	}, spansPerTID)
+}
+
+// TestConsumeTracesByID_PartialFailureOnlyRetriesFailedBackend verifies that when one backend
+// out of several fails, the returned error carries only the batch destined for the failed
+// backend (via consumererror.Traces), not the whole original request. Without this, a caller
+// that retries on error (e.g. the exporter's own retry_on_failure/sending_queue settings) would
+// resend the entire original request, duplicating data at backends that already succeeded.
+func TestConsumeTracesByID_PartialFailureOnlyRetriesFailedBackend(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	endpoints := []string{"good-endpoint", "bad-endpoint"}
+	failWant := errors.New("backend unavailable")
+
+	var goodCalls, badCalls int
+	received := ptrace.NewTraces()
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		te := &mockTracesExporter{Component: mockComponent{}}
+		te.ConsumeTracesFn = func(_ context.Context, td ptrace.Traces) error {
+			if endpoint == endpointWithPort("bad-endpoint") {
+				badCalls++
+				return failWant
+			}
+			goodCalls++
+			td.ResourceSpans().MoveAndAppendTo(received.ResourceSpans())
+			return nil
+		}
+		return te, nil
+	}
+
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
+		},
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(ts, cfg)
+	require.NoError(t, err)
+	require.Equal(t, traceIDRouting, p.routingKey)
+	p.loadBalancer = lb
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Find one trace ID that hashes to each endpoint so the batch is split across both backends.
+	var goodTID, badTID pcommon.TraceID
+	for i := byte(0); ; i++ {
+		tid := pcommon.TraceID{i}
+		switch endpointWithPort(lb.ring.endpointFor(tid[:])) {
+		case endpointWithPort("good-endpoint"):
+			goodTID = tid
+		case endpointWithPort("bad-endpoint"):
+			badTID = tid
+		}
+		if goodTID != (pcommon.TraceID{}) && badTID != (pcommon.TraceID{}) {
+			break
+		}
+	}
+
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Spans().AppendEmpty().SetTraceID(goodTID)
+	ss.Spans().AppendEmpty().SetTraceID(badTID)
+
+	err = p.ConsumeTraces(t.Context(), td)
+	require.Error(t, err)
+
+	var partial consumererror.Traces
+	require.ErrorAs(t, err, &partial, "error must carry only the failed batch")
+	assert.ErrorIs(t, err, failWant)
+
+	failed := partial.Data()
+	var failedTIDs []pcommon.TraceID
+	rss := failed.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		spans := rss.At(i).ScopeSpans().At(0).Spans()
+		for j := 0; j < spans.Len(); j++ {
+			failedTIDs = append(failedTIDs, spans.At(j).TraceID())
+		}
+	}
+	assert.Equal(t, []pcommon.TraceID{badTID}, failedTIDs, "only the failed backend's batch should be retried")
+
+	assert.Equal(t, 1, goodCalls)
+	assert.Equal(t, 1, badCalls)
+	assert.Equal(t, 1, received.SpanCount(), "the good backend's already-delivered span must not be retried")
 }
 
 // This test validates that exporter is can concurrently change the endpoints while consuming traces.

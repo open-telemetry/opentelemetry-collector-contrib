@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -141,11 +142,7 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		}
 	}
 
-	var errs error
-	for exp, td := range exporterSegregatedTraces {
-		errs = multierr.Append(errs, e.exportToBackend(ctx, exp, td))
-	}
-	return errs
+	return e.exportBatches(ctx, exporterSegregatedTraces)
 }
 
 // consumeTracesByID routes each span to the backend for its trace ID, accumulating spans
@@ -216,11 +213,36 @@ func (e *traceExporterImp) consumeTracesByID(ctx context.Context, td ptrace.Trac
 		}
 	}
 
-	var errs error
+	batches := make(exporterTraces, len(dests))
 	for exp, d := range dests {
-		errs = multierr.Append(errs, e.exportToBackend(ctx, exp, d.traces))
+		batches[exp] = d.traces
 	}
-	return errs
+	return e.exportBatches(ctx, batches)
+}
+
+// exportBatches sends each backend's batch and, if any fail, returns a consumererror.Traces
+// wrapping only the batches that actually failed. This ensures a retry (via the exporter's own
+// retry_on_failure/sending_queue settings) resends just the failed data instead of the whole
+// original request - re-sending everything would duplicate data at backends that already
+// received their batch successfully.
+func (e *traceExporterImp) exportBatches(ctx context.Context, batches exporterTraces) error {
+	var errs error
+	var failed ptrace.Traces
+	hasFailed := false
+	for exp, td := range batches {
+		if err := e.exportToBackend(ctx, exp, td); err != nil {
+			errs = multierr.Append(errs, err)
+			if !hasFailed {
+				failed = ptrace.NewTraces()
+				hasFailed = true
+			}
+			failed = mergeTraces(failed, td)
+		}
+	}
+	if errs != nil {
+		return consumererror.NewTraces(errs, failed)
+	}
+	return nil
 }
 
 // exportToBackend sends td to one backend, records per-backend telemetry, and signals the
