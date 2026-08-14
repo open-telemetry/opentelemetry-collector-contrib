@@ -975,3 +975,168 @@ func TestSerializedEmptyTraceState_MatchesFullSerialize(t *testing.T) {
 		assert.Equal(t, sb.String(), serializedEmptyTraceState(th), "prob %v", prob)
 	}
 }
+
+func TestProcessor_ShutdownDrainsPendingTraces(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour, // decisions can only come from the drain
+		DecisionDelay: time.Hour,
+		NumTraces:     10,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	first := pcommon.TraceID([16]byte{0xE1})
+	second := pcommon.TraceID([16]byte{0xE2})
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(first, ptrace.StatusCodeUnset)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(second, ptrace.StatusCodeUnset)))
+
+	require.NoError(t, p.Shutdown(t.Context()))
+
+	require.Equal(t, 2, sink.SpanCount(), "shutdown must decide and forward buffered traces, not drop them")
+	out := sink.AllTraces()
+	firstSpan := out[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	assert.Equal(t, first, firstSpan.TraceID(), "drain should decide in arrival order")
+	rule, ok := firstSpan.Attributes().Get(ruleAttributeKey)
+	require.True(t, ok)
+	assert.Equal(t, "default", rule.AsString())
+	assert.Contains(t, firstSpan.TraceState().AsRaw(), "th:", "drained-and-kept trace must carry ot=th")
+
+	// Second Shutdown (the test-helper cleanup also triggers one) must be a
+	// no-op: nothing new forwarded, no error.
+	require.NoError(t, p.Shutdown(t.Context()))
+	assert.Equal(t, 2, sink.SpanCount())
+}
+
+func TestProcessor_ShutdownDrain_DropsUnmatched(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Hour,
+		NumTraces:     10,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+		Rules: []RuleConfig{
+			{Name: "never-matches", Conditions: []string{`span.attributes["nonexistent"] == "x"`}, Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID([16]byte{0xE3}), ptrace.StatusCodeUnset)))
+	require.NoError(t, p.Shutdown(t.Context()))
+
+	assert.Equal(t, 0, sink.SpanCount(), "unmatched drained trace is dropped, same as the timer path")
+}
+
+func TestProcessor_ShutdownDrain_Metrics(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Hour,
+		NumTraces:     10,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID([16]byte{0xE4}), ptrace.StatusCodeUnset)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID([16]byte{0xE5}), ptrace.StatusCodeUnset)))
+	require.NoError(t, p.Shutdown(t.Context()))
+
+	metadatatest.AssertEqualProcessorDynamicSamplingDecisionTriggers(t, tt,
+		[]metricdata.DataPoint[int64]{{
+			Value:      2,
+			Attributes: attribute.NewSet(attribute.String("trigger", "shutdown")),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
+}
+
+func TestProcessor_ShutdownDrain_TriggeredTraceNotDoubleCounted(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Hour, // triggered traces sit in the delay window until shutdown
+		NumTraces:     10,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+
+	// Root span triggers the decision (trigger=root_span) but the decision
+	// itself waits on decision_delay, so the trace is still pending at
+	// shutdown.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newRootTrace(pcommon.TraceID([16]byte{0xE6}))))
+	require.NoError(t, p.Shutdown(t.Context()))
+
+	require.Equal(t, 1, sink.SpanCount(), "triggered trace must still be drained")
+	metadatatest.AssertEqualProcessorDynamicSamplingDecisionTriggers(t, tt,
+		[]metricdata.DataPoint[int64]{{
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("trigger", "root_span")),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
+}
+
+func TestProcessor_Eviction_TriggeredTraceNotDoubleCounted(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Hour,
+		NumTraces:     1,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	// First trace is a root trace: counted under trigger=root_span, then held
+	// in its decision_delay window. The second trace overflows the buffer and
+	// evicts it mid-delay; that decision must not be counted again.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newRootTrace(pcommon.TraceID([16]byte{0xE7}))))
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID([16]byte{0xE8}), ptrace.StatusCodeUnset)))
+
+	require.Equal(t, 1, sink.SpanCount(), "evicted trace is still decided and forwarded")
+	metadatatest.AssertEqualProcessorDynamicSamplingDecisionTriggers(t, tt,
+		[]metricdata.DataPoint[int64]{{
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("trigger", "root_span")),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
+	metadatatest.AssertEqualProcessorDynamicSamplingTracesEvicted(t, tt,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
+}
