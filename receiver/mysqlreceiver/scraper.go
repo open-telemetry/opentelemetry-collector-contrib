@@ -14,6 +14,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -262,6 +263,7 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 
 	m.recordDataPages(now, globalStats, errs)
 	m.recordDataUsage(now, globalStats, errs)
+	m.recordReplicaOpenTempTables(now, globalStats, errs)
 
 	for k, v := range globalStats {
 		switch k {
@@ -454,6 +456,20 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsWrites))
 		case "Innodb_os_log_fsyncs":
 			addPartialIfError(errs, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsFsyncs))
+
+		// innodb.data_file.io
+		case "Innodb_data_read":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbDataFileIoDataPoint(now, v, metadata.AttributeDiskIoDirectionRead))
+		case "Innodb_data_written":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbDataFileIoDataPoint(now, v, metadata.AttributeDiskIoDirectionWrite))
+
+		// innodb.operation.pending
+		case "Innodb_data_pending_fsyncs":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbOperationPendingDataPoint(now, v, metadata.AttributeOperationsFsyncs))
+		case "Innodb_data_pending_reads":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbOperationPendingDataPoint(now, v, metadata.AttributeOperationsReads))
+		case "Innodb_data_pending_writes":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbOperationPendingDataPoint(now, v, metadata.AttributeOperationsWrites))
 
 		// operations
 		case "Innodb_data_fsyncs":
@@ -751,6 +767,35 @@ func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 		}
 
 		m.mb.RecordMysqlReplicaSQLDelayDataPoint(now, s.sqlDelay)
+		m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaIORunning), metadata.AttributeMysqlReplicaThreadTypeIo, s.channelName)
+		m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaSQLRunning), metadata.AttributeMysqlReplicaThreadTypeSQL, s.channelName)
+	}
+}
+
+func replicaThreadRunningValue(status string) int64 {
+	if strings.EqualFold(status, "yes") {
+		return 1
+	}
+	return 0
+}
+
+func (m *mySQLScraper) recordReplicaOpenTempTables(now pcommon.Timestamp, globalStats map[string]string, errs *scrapererror.ScrapeErrors) {
+	if !m.config.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled {
+		return
+	}
+	for _, key := range []string{"Replica_open_temp_tables", "Slave_open_temp_tables"} {
+		v, ok := globalStats[key]
+		if !ok {
+			continue
+		}
+		val, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			m.logger.Warn("Replica open temporary tables global status is not an integer", zap.String("key", key), zap.String("value", v), zap.Error(err))
+			errs.AddPartial(1, err)
+			return
+		}
+		m.mb.RecordMysqlReplicaTempTableOpenDataPoint(now, val)
+		return
 	}
 }
 
