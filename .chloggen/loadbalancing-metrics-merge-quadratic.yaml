@@ -19,7 +19,7 @@ subtext: |
   Merging N routed batches into an endpoint's payload re-computed the identity hash of every
   already-merged ResourceMetrics/ScopeMetrics/Metric on each merge, making a ConsumeMetrics call
   O(N^2) in the number of routed batches. The identities of the accumulated payload are now cached
-  while merging, which makes the assembly O(N). With 1000 single-metric resources routed by streamID
+  while merging, which makes the assembly O(N). With 1000 resources (2 metrics x 2 datapoints each) routed by streamID
   across 5 endpoints, ConsumeMetrics goes from ~50ms to ~12ms; in production CPU profiles of a
   streamID-keyed load balancer, this re-hashing accounted for the majority of total CPU time.
 
