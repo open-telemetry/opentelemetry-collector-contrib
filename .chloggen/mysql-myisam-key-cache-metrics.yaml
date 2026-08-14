@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: receiver/mysql
+
+note: Add MyISAM key cache metrics to the mysqlreceiver.
+
+issues: [0]
+
+change_logs: [user]
