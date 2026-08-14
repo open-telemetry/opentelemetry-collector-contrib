@@ -862,3 +862,22 @@ func enableSortByMTimeFeature(t *testing.T) {
 		})
 	}
 }
+
+func TestNewFollowSymlinks(t *testing.T) {
+	// Unset preserves the prior behavior of following symlinks.
+	m, err := New(Criteria{Include: []string{"*.log"}})
+	require.NoError(t, err)
+	assert.False(t, m.noFollow)
+
+	// Explicit false stops the glob descending symlinked directories.
+	followFalse := false
+	m, err = New(Criteria{Include: []string{"*.log"}, FollowSymlinks: &followFalse})
+	require.NoError(t, err)
+	assert.True(t, m.noFollow)
+
+	// Explicit true is equivalent to unset.
+	followTrue := true
+	m, err = New(Criteria{Include: []string{"*.log"}, FollowSymlinks: &followTrue})
+	require.NoError(t, err)
+	assert.False(t, m.noFollow)
+}

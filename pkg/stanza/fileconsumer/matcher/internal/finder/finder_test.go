@@ -213,7 +213,7 @@ func TestFindFiles(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, file.Close())
 			}
-			files, err := FindFiles(tc.include, tc.exclude)
+			files, err := FindFiles(tc.include, tc.exclude, false)
 			assert.NoError(t, err)
 			assert.ElementsMatch(t, tc.expected, files)
 		})
@@ -271,7 +271,7 @@ func TestFindFilesWithIOErrors(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			files, err := FindFiles(tc.include, []string{})
+			files, err := FindFiles(tc.include, []string{}, false)
 			assert.ErrorContains(t, err, tc.failedMsg)
 			assert.ElementsMatch(t, tc.expected, files)
 		})
@@ -303,8 +303,43 @@ func BenchmarkFind10kFiles(b *testing.B) {
 	var r []string
 
 	for b.Loop() {
-		r, _ = FindFiles(includeGlobs, excludeGlobs)
+		r, _ = FindFiles(includeGlobs, excludeGlobs, false)
 	}
 
 	benchResult = r
+}
+
+// TestFindFilesNoFollowSymlinks verifies that follow_symlinks=false stops the
+// glob from descending symlinked directories. A directory symlink pointing back
+// to an ancestor forms a loop: following it makes the ** glob re-traverse the
+// tree and surface each real file many times, while not following it returns
+// each real file once.
+func TestFindFilesNoFollowSymlinks(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("directory symlink semantics differ on Windows")
+	}
+	root := t.TempDir()
+
+	// One real file, reachable without traversing any symlink.
+	realDir := filepath.Join(root, "svc")
+	require.NoError(t, os.MkdirAll(realDir, 0o755))
+	realLog := filepath.Join(realDir, "app.log")
+	require.NoError(t, os.WriteFile(realLog, []byte("x\n"), 0o644))
+
+	// A directory symlink pointing back to the root: a loop.
+	require.NoError(t, os.Symlink(root, filepath.Join(root, "loop")))
+
+	include := []string{filepath.Join(root, "**", "*.log")}
+
+	// Not following: exactly the one real file; the loop is not descended.
+	noFollow, err := FindFiles(include, nil, true)
+	require.NoError(t, err)
+	assert.Equal(t, []string{realLog}, noFollow)
+
+	// Following (the default): the loop is descended, so the same file is
+	// surfaced repeatedly via loop/svc/app.log, loop/loop/svc/app.log, ...
+	follow, _ := FindFiles(include, nil, false)
+	assert.Contains(t, follow, realLog)
+	assert.Greater(t, len(follow), len(noFollow),
+		"following the symlink loop should surface more matches than not following it")
 }

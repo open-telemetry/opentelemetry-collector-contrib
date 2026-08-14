@@ -22,13 +22,17 @@ func Validate(globs []string) error {
 	return nil
 }
 
-// FindFiles gets a list of paths given an array of glob patterns to include and exclude
-func FindFiles(includes, excludes []string) ([]string, error) {
+// FindFiles gets a list of paths given an array of glob patterns to include and exclude.
+// When noFollow is true, the glob does not descend into symlinked directories.
+func FindFiles(includes, excludes []string, noFollow bool) ([]string, error) {
 	var errs error
 
 	allSet := make(map[string]struct{}, len(includes))
 	for _, include := range includes {
 		defaultDoublestarOpts := getDefaultDoublestarOptions()
+		if noFollow {
+			defaultDoublestarOpts = append(defaultDoublestarOpts, doublestar.WithNoFollow())
+		}
 		matches, err := doublestar.FilepathGlob(
 			include,
 			append(defaultDoublestarOpts, doublestar.WithFilesOnly(), doublestar.WithFailOnIOErrors())...,

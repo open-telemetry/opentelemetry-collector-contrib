@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: pkg/stanza
+
+note: Add an optional `follow_symlinks` setting to the fileconsumer file matcher (used by the filelog receiver). When set to `false`, the `include` globs do not descend into symlinked directories, avoiding re-traversal of a subtree reached through a directory-symlink loop.
+
+issues: [50258]
+
+change_logs: [user]

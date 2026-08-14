@@ -31,6 +31,15 @@ type Criteria struct {
 	Include []string `mapstructure:"include,omitempty"`
 	Exclude []string `mapstructure:"exclude,omitempty"`
 
+	// FollowSymlinks controls whether the include globs descend into symlinked
+	// directories. It is a pointer so that an unset value preserves the prior
+	// behavior of following symlinks; set it to false to stop descending them.
+	// This is useful when a watched tree contains a symlink to an ancestor (a
+	// loop) or to a large out-of-tree directory, where following it makes the
+	// glob walk re-traverse the same subtree and inflate CPU with duplicate
+	// matches.
+	FollowSymlinks *bool `mapstructure:"follow_symlinks,omitempty"`
+
 	// ExcludeOlderThan allows excluding files whose modification time is older
 	// than the specified age.
 	ExcludeOlderThan time.Duration    `mapstructure:"exclude_older_than"`
@@ -69,6 +78,12 @@ func New(c Criteria) (*Matcher, error) {
 	m := &Matcher{
 		include: c.Include,
 		exclude: c.Exclude,
+	}
+
+	// Unset (nil) preserves the prior behavior of following symlinked
+	// directories; only an explicit false stops the glob descending them.
+	if c.FollowSymlinks != nil && !*c.FollowSymlinks {
+		m.noFollow = true
 	}
 
 	if c.ExcludeOlderThan != 0 {
@@ -158,6 +173,7 @@ func orderingCriteriaNeedsRegex(sorts []Sort) bool {
 type Matcher struct {
 	include    []string
 	exclude    []string
+	noFollow   bool
 	regex      *regexp.Regexp
 	filterOpts []filter.Option
 	groupBy    *regexp.Regexp
@@ -166,7 +182,7 @@ type Matcher struct {
 // MatchFiles gets a list of paths given an array of glob patterns to include and exclude
 func (m Matcher) MatchFiles() ([]string, error) {
 	var errs error
-	files, err := finder.FindFiles(m.include, m.exclude)
+	files, err := finder.FindFiles(m.include, m.exclude, m.noFollow)
 	errs = multierr.Append(errs, err)
 	if len(files) == 0 {
 		return files, multierr.Append(errors.New("no files match the configured criteria"), errs)
