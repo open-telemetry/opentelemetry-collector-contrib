@@ -8,11 +8,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.34
 	github.com/aws/aws-sdk-go-v2/service/sts v1.45.4
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.64.1-0.20260805181402-19664a7b14af
+	go.opentelemetry.io/collector/component v1.64.1-0.20260813201048-a4a8565f65e7
 	go.opentelemetry.io/collector/component/componenttest v0.158.1-0.20260805181402-19664a7b14af
-	go.opentelemetry.io/collector/confmap v1.64.1-0.20260805181402-19664a7b14af
-	go.opentelemetry.io/collector/extension v1.64.1-0.20260805181402-19664a7b14af
-	go.opentelemetry.io/collector/extension/extensionauth v1.64.1-0.20260805181402-19664a7b14af
+	go.opentelemetry.io/collector/confmap v1.64.1-0.20260813201048-a4a8565f65e7
+	go.opentelemetry.io/collector/extension v1.64.1-0.20260813201048-a4a8565f65e7
+	go.opentelemetry.io/collector/extension/extensionauth v1.64.1-0.20260813201048-a4a8565f65e7
 	go.opentelemetry.io/collector/extension/extensiontest v0.158.1-0.20260805181402-19664a7b14af
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
@@ -47,9 +47,9 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.64.1-0.20260805181402-19664a7b14af // indirect
+	go.opentelemetry.io/collector/featuregate v1.64.1-0.20260813201048-a4a8565f65e7 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.158.1-0.20260805181402-19664a7b14af // indirect
-	go.opentelemetry.io/collector/pdata v1.64.1-0.20260805181402-19664a7b14af // indirect
+	go.opentelemetry.io/collector/pdata v1.64.1-0.20260813201048-a4a8565f65e7 // indirect
 	go.opentelemetry.io/otel v1.45.0 // indirect
 	go.opentelemetry.io/otel/metric v1.45.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.45.0 // indirect
