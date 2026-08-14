@@ -29,6 +29,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
@@ -315,19 +317,19 @@ func TestSignalHeader(t *testing.T) {
 		}
 		require.Len(t, got, 4)
 
-		td, err := (&ptrace.ProtoUnmarshaler{}).UnmarshalTraces(got[kafka.SignalTraces])
+		td, err := (&ptrace.ProtoUnmarshaler{}).UnmarshalTraces(got[pipeline.SignalTraces.String()])
 		require.NoError(t, err)
 		require.Positive(t, td.SpanCount())
 
-		md, err := (&pmetric.ProtoUnmarshaler{}).UnmarshalMetrics(got[kafka.SignalMetrics])
+		md, err := (&pmetric.ProtoUnmarshaler{}).UnmarshalMetrics(got[pipeline.SignalMetrics.String()])
 		require.NoError(t, err)
 		require.Positive(t, md.MetricCount())
 
-		ld, err := (&plog.ProtoUnmarshaler{}).UnmarshalLogs(got[kafka.SignalLogs])
+		ld, err := (&plog.ProtoUnmarshaler{}).UnmarshalLogs(got[pipeline.SignalLogs.String()])
 		require.NoError(t, err)
 		require.Positive(t, ld.LogRecordCount())
 
-		pd, err := (&pprofile.ProtoUnmarshaler{}).UnmarshalProfiles(got[kafka.SignalProfiles])
+		pd, err := (&pprofile.ProtoUnmarshaler{}).UnmarshalProfiles(got[xpipeline.SignalProfiles.String()])
 		require.NoError(t, err)
 		require.Positive(t, pd.ResourceProfiles().Len())
 	})
