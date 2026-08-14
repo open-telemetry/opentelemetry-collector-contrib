@@ -22,8 +22,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	apmcorrelation "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
@@ -39,10 +37,7 @@ func TestLoadConfig(t *testing.T) {
 	seventy := 70
 	hundred := 100
 	idleConnTimeout := 30 * time.Second
-	defaultMaxIdleConns := http.DefaultTransport.(*http.Transport).MaxIdleConns
-	defaultMaxIdleConnsPerHost := http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
 	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
-	defaultIdleConnTimeout := http.DefaultTransport.(*http.Transport).IdleConnTimeout
 
 	defaultClientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
@@ -54,16 +49,6 @@ func TestLoadConfig(t *testing.T) {
 	defaultClientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
 	defaultClientConfig.HTTP2PingTimeout = 10 * time.Second
 	defaultClientConfig.ForceAttemptHTTP2 = true
-
-	defaultCorrelationClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	defaultCorrelationClientConfig.Endpoint = ""
-	defaultCorrelationClientConfig.Timeout = 5 * time.Second
-	defaultCorrelationClientConfig.MaxIdleConns = defaultMaxIdleConns
-	defaultCorrelationClientConfig.MaxIdleConnsPerHost = defaultMaxIdleConnsPerHost
-	defaultCorrelationClientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
-	defaultCorrelationClientConfig.IdleConnTimeout = defaultIdleConnTimeout
-	defaultCorrelationClientConfig.ForceAttemptHTTP2 = true
 
 	allSettingsClientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
@@ -79,16 +64,6 @@ func TestLoadConfig(t *testing.T) {
 	allSettingsClientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
 	allSettingsClientConfig.HTTP2PingTimeout = 10 * time.Second
 	allSettingsClientConfig.ForceAttemptHTTP2 = true
-
-	allSettingsCorrelationClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	allSettingsCorrelationClientConfig.Endpoint = ""
-	allSettingsCorrelationClientConfig.Timeout = 5 * time.Second
-	allSettingsCorrelationClientConfig.MaxIdleConns = defaultMaxIdleConns
-	allSettingsCorrelationClientConfig.MaxIdleConnsPerHost = defaultMaxIdleConnsPerHost
-	allSettingsCorrelationClientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
-	allSettingsCorrelationClientConfig.IdleConnTimeout = defaultIdleConnTimeout
-	allSettingsCorrelationClientConfig.ForceAttemptHTTP2 = true
 
 	tests := []struct {
 		id       component.ID
@@ -124,26 +99,10 @@ func TestLoadConfig(t *testing.T) {
 					DropTags:            false,
 					StripK8sLabelPrefix: true,
 				},
-				ExcludeMetrics:      nil,
-				IncludeMetrics:      nil,
-				DeltaTranslationTTL: 3600,
-				ExcludeProperties:   nil,
-				Correlation: &correlation.Config{
-					ClientConfig:        defaultCorrelationClientConfig,
-					StaleServiceTimeout: 5 * time.Minute,
-					SyncAttributes: map[string]string{
-						"k8s.pod.uid":  "k8s.pod.uid",
-						"container.id": "container.id",
-					},
-					Config: apmcorrelation.Config{
-						MaxRequests:     20,
-						MaxBuffered:     10_000,
-						MaxRetries:      2,
-						LogUpdates:      false,
-						RetryDelay:      30 * time.Second,
-						CleanupInterval: 1 * time.Minute,
-					},
-				},
+				ExcludeMetrics:                nil,
+				IncludeMetrics:                nil,
+				DeltaTranslationTTL:           3600,
+				ExcludeProperties:             nil,
 				NonAlphanumericDimensionChars: "_-.",
 				SendOTLPHistograms:            false,
 			},
@@ -246,22 +205,6 @@ func TestLoadConfig(t *testing.T) {
 						PropertyValue:  mustStringFilter(t, "!globbed*value"),
 						DimensionName:  mustStringFilter(t, "globbed*"),
 						DimensionValue: mustStringFilter(t, "!globbed*value"),
-					},
-				},
-				Correlation: &correlation.Config{
-					ClientConfig:        allSettingsCorrelationClientConfig,
-					StaleServiceTimeout: 5 * time.Minute,
-					SyncAttributes: map[string]string{
-						"k8s.pod.uid":  "k8s.pod.uid",
-						"container.id": "container.id",
-					},
-					Config: apmcorrelation.Config{
-						MaxRequests:     20,
-						MaxBuffered:     10_000,
-						MaxRetries:      2,
-						LogUpdates:      false,
-						RetryDelay:      30 * time.Second,
-						CleanupInterval: 1 * time.Minute,
 					},
 				},
 				NonAlphanumericDimensionChars: "_-.",

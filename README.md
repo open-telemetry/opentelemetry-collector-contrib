@@ -105,6 +105,7 @@ For more information about the approver role, see the [community repository](htt
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Khushi Jain](https://github.com/khushijain21), Elastic
+- [Mike Goldsmith](https://github.com/MikeGoldsmith), Honeycomb
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Paulo Dias](https://github.com/paulojmdias), Five9
