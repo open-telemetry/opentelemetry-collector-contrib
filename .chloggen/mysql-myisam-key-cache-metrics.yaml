@@ -4,6 +4,6 @@ component: receiver/mysql
 
 note: Add MyISAM key cache metrics to the mysqlreceiver.
 
-issues: [0]
+issues: [50247]
 
 change_logs: [user]
