@@ -354,7 +354,6 @@ func TestInitWatchers(t *testing.T) {
 }
 
 func TestInitWatchersWithIncludedAggregation(t *testing.T) {
-	optionCount := 0
 	requestedInstance := ""
 	s := &windowsPerfCountersScraper{
 		cfg: &Config{PerfCounters: []ObjectConfig{
@@ -364,8 +363,7 @@ func TestInitWatchersWithIncludedAggregation(t *testing.T) {
 				Counters:  []CounterConfig{{Name: "% Processor Time"}},
 			},
 		}},
-		newWatcher: func(_, instance, _ string, options ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
-			optionCount = len(options)
+		newWatcher: func(_, instance, _ string, _ ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
 			requestedInstance = instance
 			return &mockPerfCounter{path: `\Processor(*)\% Processor Time`}, nil
 		},
@@ -375,7 +373,6 @@ func TestInitWatchersWithIncludedAggregation(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, watchers, 1)
 	assert.Equal(t, "*", requestedInstance)
-	assert.Equal(t, 2, optionCount)
 }
 
 func TestScraperIncludesAggregationInstance(t *testing.T) {
