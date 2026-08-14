@@ -752,7 +752,7 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 		s.recordWTLogBytes(now, document, errs)
 	}
 
-	if s.config.MetricsBuilderConfig.Metrics.MongodbWtLogOperations.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtLogOperationCount.Enabled {
 		s.recordWTLogOperations(now, document, errs)
 	}
 

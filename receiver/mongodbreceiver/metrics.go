@@ -444,14 +444,14 @@ func (s *mongodbScraper) recordWTLogOperations(now pcommon.Timestamp, doc bson.M
 	if !isWiredTiger(doc) {
 		return
 	}
-	metricName := "mongodb.wt.log.operations"
+	metricName := "mongodb.wt.log.operation.count"
 	for fieldKey, attr := range wtLogOperationsMap {
 		val, err := collectMetric(doc, []string{"wiredTiger", "log", fieldKey})
 		if err != nil {
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, attr.String(), err))
 			continue
 		}
-		s.mb.RecordMongodbWtLogOperationsDataPoint(now, val, attr)
+		s.mb.RecordMongodbWtLogOperationCountDataPoint(now, val, attr)
 	}
 }
 

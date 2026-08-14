@@ -783,7 +783,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
     attributes: []
-  mongodb.wt.log.operations:
+  mongodb.wt.log.operation.count:
     description: The total number of WiredTiger journal operations.
     stability: development
     unit: "{operation}"
