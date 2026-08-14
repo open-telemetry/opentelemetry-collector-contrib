@@ -66,7 +66,7 @@ func newWTScraper(t *testing.T) *mongodbScraper {
 	t.Helper()
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtLogBytes.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.MongodbWtLogOperations.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbWtLogOperationCount.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtLogSyncTime.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtFsyncCount.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionsOut.Enabled = true
@@ -99,7 +99,7 @@ func TestRecordWTLogOperations(t *testing.T) {
 	s.recordWTLogOperations(now, doc, errs)
 	require.NoError(t, errs.Combine())
 
-	m := findMetric(t, s.mb.Emit(), "mongodb.wt.log.operations")
+	m := findMetric(t, s.mb.Emit(), "mongodb.wt.log.operation.count")
 	require.Equal(t, pmetric.MetricTypeSum, m.Type())
 	byType := sumIntByAttr(t, m, "mongodb.wt.log.operation.type")
 	require.Equal(t, map[string]int64{

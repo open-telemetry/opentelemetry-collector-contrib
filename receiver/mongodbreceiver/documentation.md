@@ -556,7 +556,7 @@ The total number of bytes written to the WiredTiger journal.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
 
-### mongodb.wt.log.operations
+### mongodb.wt.log.operation.count
 
 The total number of WiredTiger journal operations.
 
