@@ -9,7 +9,7 @@ import (
 
 // obfuscateSQLConfig obfuscates literals and normalizes the statement so that two
 // textually different but semantically identical queries (differing only in
-// whitespace, casing, comments, or literal values) produce identical output. This
+// whitespace, comments, or literal values) produce identical output. This
 // canonical form is what downstream consumers hash into a stable query signature;
 // with the previous obfuscate_only mode the original formatting was preserved, so
 // the same Oracle sql_id could yield multiple query_text values (and signatures)
