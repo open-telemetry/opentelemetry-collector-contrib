@@ -432,6 +432,11 @@ func DefaultSupervisor() Supervisor {
 		defaultStorageDir = filepath.Join(programDataDir, "Otelcol", "Supervisor")
 	}
 
+	defaultAgentBinary := "otelcol-contrib"
+	if runtime.GOOS == "windows" {
+		defaultAgentBinary += ".exe"
+	}
+
 	serverConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
@@ -467,7 +472,8 @@ func DefaultSupervisor() Supervisor {
 			CollectorCrashLogSnippetKiB: 0,
 			ValidateConfig:              false,
 			Package: AgentPackage{
-				Verifier: Verifier{Type: VerifierTypeNone},
+				AgentBinary: defaultAgentBinary,
+				Verifier:    Verifier{Type: VerifierTypeNone},
 			},
 		},
 		Telemetry: Telemetry{
