@@ -6,6 +6,7 @@ package dynamicsamplingprocessor // import "github.com/open-telemetry/openteleme
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -237,6 +238,9 @@ func (c *Config) Validate() error {
 		r := &c.Rules[i]
 		if r.Name == "" {
 			return fmt.Errorf("rules[%d]: name is required", i)
+		}
+		if strings.HasPrefix(r.Name, "_") {
+			return fmt.Errorf("rules[%d]: rule name %q is invalid: the \"_\" prefix is reserved for processor-internal decision labels", i, r.Name)
 		}
 		if _, dup := names[r.Name]; dup {
 			return fmt.Errorf("rules[%d]: duplicate rule name %q", i, r.Name)
