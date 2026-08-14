@@ -635,28 +635,6 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErrorFunc: simpleError("unsupported verifier type"),
 		},
-		{
-			name: "Package with unsupported verifier type (cosign not yet supported)",
-			config: Supervisor{
-				Server: OpAMPServer{
-					Endpoint: "wss://localhost:9090/opamp",
-					TLS:      tlsConfig,
-				},
-				Agent: Agent{
-					Executable:              "${file_path}",
-					OrphanDetectionInterval: 5 * time.Second,
-					ConfigApplyTimeout:      2 * time.Second,
-					BootstrapTimeout:        5 * time.Second,
-					Package: AgentPackage{
-						Verifier: Verifier{Type: "cosign"},
-					},
-				},
-				Capabilities: Capabilities{AcceptsRemoteConfig: true},
-				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
-				HealthCheck:  defaultHealthCheck,
-			},
-			expectedErrorFunc: simpleError("unsupported verifier type"),
-		},
 	}
 
 	// create some fake files for validating agent config
@@ -981,10 +959,9 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
 		},
 		{
-			name: "Package capabilities are reported",
+			name: "AcceptsPackages enables both package capabilities",
 			capabilities: Capabilities{
-				AcceptsPackages:        true,
-				ReportsPackageStatuses: true,
+				AcceptsPackages: true,
 			},
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages |
@@ -1005,7 +982,6 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				ReportsAvailableComponents:     true,
 				ReportsHeartbeat:               true,
 				AcceptsPackages:                true,
-				ReportsPackageStatuses:         true,
 			},
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
@@ -1119,6 +1095,8 @@ agent:
   passthrough_logs: true
   automatic_config_rollback: true
   collector_crash_log_snippet_kib: 100
+  package:
+    agent_binary: custom-otelcol
 
 telemetry:
   logs:
@@ -1170,7 +1148,10 @@ telemetry:
 						CollectorCrashLogSnippetKiB: 100,
 						AutomaticConfigRollback:     true,
 						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
-						Package:                     DefaultSupervisor().Agent.Package,
+						Package: AgentPackage{
+							AgentBinary: "custom-otelcol",
+							Verifier:    DefaultSupervisor().Agent.Package.Verifier,
+						},
 					},
 					Telemetry: Telemetry{
 						Logs: Logs{

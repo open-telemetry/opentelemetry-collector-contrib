@@ -27,9 +27,9 @@ var (
 
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Targets                        []*confignet.TCPAddrConfig `mapstructure:"targets"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	Targets              []*confignet.TCPAddrConfig     `mapstructure:"targets"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

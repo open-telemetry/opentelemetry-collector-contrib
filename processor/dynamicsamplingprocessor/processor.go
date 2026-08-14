@@ -20,10 +20,19 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor/internal/sampler"
 )
+
+// rootSpanConditionRuleLabel is the sentinel value stamped on the
+// ProcessorDynamicSamplingOttlEvalErrors counter's `rule` label when the
+// root_span_condition expression fails to evaluate. Chosen to sort separately
+// from user-defined rule names and to be recognizable as processor-owned.
+const rootSpanConditionRuleLabel = "_root_span_condition"
 
 // ruleAttributeKey is the namespaced attribute set on every span in a sampled
 // trace to record which rule selected it. This is an interim convention; a
@@ -38,7 +47,43 @@ type triggerSource string
 const (
 	triggerRootSpan     triggerSource = "root_span"
 	triggerTraceTimeout triggerSource = "trace_timeout"
+	triggerEviction     triggerSource = "eviction"
+	triggerShutdown     triggerSource = "shutdown"
 )
+
+// evictionRuleLabel is the sentinel `rule` label used on decision metrics for
+// traces decided by the probabilistic eviction policy, which bypasses rule
+// evaluation entirely. Same convention as rootSpanConditionRuleLabel.
+const evictionRuleLabel = "_eviction"
+
+// unmatchedRuleLabel is the sentinel `rule` label for traces dropped because
+// no rule matched. All processor-owned labels share the reserved "_" prefix,
+// which config validation forbids in user rule names.
+const unmatchedRuleLabel = "_unmatched"
+
+// Precomputed measurement options for fixed label values, so hot paths avoid
+// rebuilding attribute sets per call.
+var (
+	unmatchedRuleAttr       = metric.WithAttributes(attribute.String("rule", unmatchedRuleLabel))
+	evictionRuleAttr        = metric.WithAttributes(attribute.String("rule", evictionRuleLabel))
+	triggerRootSpanAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerRootSpan)))
+	triggerTraceTimeoutAttr = metric.WithAttributes(attribute.String("trigger", string(triggerTraceTimeout)))
+	triggerEvictionAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerEviction)))
+	triggerShutdownAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerShutdown)))
+)
+
+func triggerAttr(source triggerSource) metric.MeasurementOption {
+	switch source {
+	case triggerRootSpan:
+		return triggerRootSpanAttr
+	case triggerTraceTimeout:
+		return triggerTraceTimeoutAttr
+	case triggerShutdown:
+		return triggerShutdownAttr
+	default:
+		return triggerEvictionAttr
+	}
+}
 
 // pendingTrace holds spans accumulated for a single trace plus its arrival
 // metadata. Access is guarded by dynamicSamplingProcessor.mu.
@@ -66,6 +111,18 @@ type dynamicSamplingProcessor struct {
 	rules   []*rule
 	stopped bool
 	cache   *decisionCache
+	// arrival records traceIDs in first-seen order so eviction can pick the
+	// oldest pending trace. Entries are appended exactly once per trace and
+	// lazily skipped when the trace has already been decided (popped ids are
+	// checked against the traces map). Guarded by mu.
+	arrival []pcommon.TraceID
+
+	rootSpanCond         *ottl.Condition[*ottlspan.TransformContext]
+	rootSpanCondEvalErrs metric.Int64Counter
+	rootSpanCondAttrSet  metric.MeasurementOption
+	// rootSpanFastPath is set when the effective root-span condition is the
+	// default IsRootSpan(), letting the per-span check skip OTTL entirely.
+	rootSpanFastPath bool
 
 	wg sync.WaitGroup
 }
@@ -80,12 +137,17 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*d
 		return nil, err
 	}
 
-	rules, err := buildRules(cfg)
+	rules, err := buildRules(cfg, set.TelemetrySettings, tb.ProcessorDynamicSamplingOttlEvalErrors)
 	if err != nil {
 		return nil, err
 	}
 
 	warnUnreachableRules(set.Logger, cfg.Rules)
+
+	rootSpanCond, err := compileRootSpanCondition(cfg.effectiveRootSpanCondition(), set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 
 	cache, err := newDecisionCache(cfg.DecisionCache)
 	if err != nil {
@@ -93,15 +155,35 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*d
 	}
 
 	return &dynamicSamplingProcessor{
-		logger:    set.Logger,
-		telemetry: tb,
-		cfg:       cfg,
-		next:      next,
-		traces:    make(map[pcommon.TraceID]*pendingTrace),
-		timers:    make(map[pcommon.TraceID]*time.Timer),
-		rules:     rules,
-		cache:     cache,
+		logger:               set.Logger,
+		telemetry:            tb,
+		cfg:                  cfg,
+		next:                 next,
+		traces:               make(map[pcommon.TraceID]*pendingTrace),
+		timers:               make(map[pcommon.TraceID]*time.Timer),
+		rules:                rules,
+		cache:                cache,
+		rootSpanCond:         rootSpanCond,
+		rootSpanCondEvalErrs: tb.ProcessorDynamicSamplingOttlEvalErrors,
+		rootSpanCondAttrSet:  metric.WithAttributes(attribute.String("rule", rootSpanConditionRuleLabel)),
+		rootSpanFastPath:     cfg.effectiveRootSpanCondition() == defaultRootSpanCondition,
 	}, nil
+}
+
+// compileRootSpanCondition parses the operator-supplied (or defaulted) OTTL
+// expression once and returns the compiled condition for per-span evaluation.
+// The same ottlspan parser configuration is used as for rule conditions so the
+// two share the same function set and path-context conventions.
+func compileRootSpanCondition(expr string, settings component.TelemetrySettings) (*ottl.Condition[*ottlspan.TransformContext], error) {
+	parser, err := ottlspan.NewParser(filterottl.StandardSpanFuncs(), settings, ottlspan.EnablePathContextNames())
+	if err != nil {
+		return nil, fmt.Errorf("root_span_condition: build OTTL parser: %w", err)
+	}
+	cond, err := parser.ParseCondition(expr)
+	if err != nil {
+		return nil, fmt.Errorf("root_span_condition: %w", err)
+	}
+	return cond, nil
 }
 
 // warnUnreachableRules logs a warning when a no-conditions catch-all rule is
@@ -120,7 +202,7 @@ func warnUnreachableRules(logger *zap.Logger, rules []RuleConfig) {
 	}
 }
 
-func buildRules(cfg *Config) ([]*rule, error) {
+func buildRules(cfg *Config, settings component.TelemetrySettings, evalErrs metric.Int64Counter) ([]*rule, error) {
 	rules := make([]*rule, 0, len(cfg.Rules))
 	for i := range cfg.Rules {
 		rc := &cfg.Rules[i]
@@ -128,7 +210,7 @@ func buildRules(cfg *Config) ([]*rule, error) {
 		if err != nil {
 			return nil, fmt.Errorf("rule %q: %w", rc.Name, err)
 		}
-		r, err := compileRule(rc, s, keyFields)
+		r, err := compileRule(rc, s, keyFields, settings, evalErrs)
 		if err != nil {
 			return nil, err
 		}
@@ -138,42 +220,39 @@ func buildRules(cfg *Config) ([]*rule, error) {
 }
 
 func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []string, error) {
-	switch rc.Sampler.Type {
+	sc := rc.Sampler
+	switch sc.Type {
 	case AlwaysSample:
 		return sampler.NewAlwaysSample(), nil, nil
 	case Deterministic:
-		s, err := sampler.NewDeterministic(rc.Sampler.Deterministic.SamplingPercentage)
+		s, err := sampler.NewDeterministic(sc.SamplingPercentage)
 		return s, nil, err
 	case EMADynamic:
-		c := rc.Sampler.EMADynamic
 		s, err := sampler.NewEMADynamic(sampler.EMADynamicConfig{
-			GoalSamplingPercentage: c.GoalSamplingPercentage,
-			AdjustmentInterval:     c.AdjustmentInterval,
-			Weight:                 c.Weight,
-			MaxKeys:                c.MaxKeys,
+			GoalSamplingPercentage: sc.GoalSamplingPercentage,
+			AdjustmentInterval:     sc.AdjustmentInterval,
+			Weight:                 sc.Weight,
+			MaxKeys:                sc.MaxKeys,
 		})
-		return s, append([]string(nil), c.KeyFields...), err
+		return s, append([]string(nil), sc.KeyAttributes...), err
 	case EMAThroughput:
-		c := rc.Sampler.EMAThroughput
 		s, err := sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
-			GoalThroughputPerSec: c.GoalThroughputPerSec,
-			InitialSamplingRate:  c.InitialSamplingRate,
-			AdjustmentInterval:   c.AdjustmentInterval,
-			Weight:               c.Weight,
-			MaxKeys:              c.MaxKeys,
+			GoalThroughputPerSec: sc.GoalThroughputPerSec,
+			AdjustmentInterval:   sc.AdjustmentInterval,
+			Weight:               sc.Weight,
+			MaxKeys:              sc.MaxKeys,
 		})
-		return s, append([]string(nil), c.KeyFields...), err
+		return s, append([]string(nil), sc.KeyAttributes...), err
 	case WindowedThroughput:
-		c := rc.Sampler.WindowedThroughput
 		s, err := sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
-			GoalThroughputPerSec: c.GoalThroughputPerSec,
-			UpdateFrequency:      c.UpdateFrequency,
-			LookbackFrequency:    c.LookbackFrequency,
-			MaxKeys:              c.MaxKeys,
+			GoalThroughputPerSec: float64(sc.GoalThroughputPerSec),
+			UpdateFrequency:      sc.UpdateFrequency,
+			LookbackFrequency:    sc.LookbackFrequency,
+			MaxKeys:              sc.MaxKeys,
 		})
-		return s, append([]string(nil), c.KeyFields...), err
+		return s, append([]string(nil), sc.KeyAttributes...), err
 	default:
-		return nil, nil, fmt.Errorf("unknown sampler type %q", rc.Sampler.Type)
+		return nil, nil, fmt.Errorf("unknown sampler type %q", sc.Type)
 	}
 }
 
@@ -195,8 +274,14 @@ func (p *dynamicSamplingProcessor) Start(context.Context, component.Host) error 
 
 // Shutdown cancels any pending decision timers, stops samplers, and waits for
 // in-flight decisions to drain.
-func (p *dynamicSamplingProcessor) Shutdown(context.Context) error {
+func (p *dynamicSamplingProcessor) Shutdown(ctx context.Context) error {
 	p.mu.Lock()
+	if p.stopped {
+		// Shutdown already ran (drained and stopped the samplers); a second
+		// call must not drain or stop anything again.
+		p.mu.Unlock()
+		return nil
+	}
 	p.stopped = true
 	for id, t := range p.timers {
 		if t.Stop() {
@@ -206,9 +291,34 @@ func (p *dynamicSamplingProcessor) Shutdown(context.Context) error {
 		}
 		delete(p.timers, id)
 	}
+	// Snapshot pending traces in arrival order for the drain below. Every
+	// buffered trace has exactly one arrival entry, but entries may be stale
+	// (already decided or evicted), so only ids still in the map are taken.
+	pending := make([]*pendingTrace, 0, len(p.traces))
+	for _, id := range p.arrival {
+		if pt, ok := p.traces[id]; ok {
+			pending = append(pending, pt)
+			delete(p.traces, id)
+		}
+	}
+	p.arrival = nil
 	p.mu.Unlock()
 
 	p.wg.Wait()
+
+	// Drain: decide every pending trace with the spans seen so far rather
+	// than silently dropping the buffer. Runs the normal rule path (samplers
+	// are still running), skipping decision_delay because nothing more will
+	// arrive. Bounded by num_traces. The pipeline shuts down front to back,
+	// so the next consumer still accepts the forwarded traces.
+	for _, pt := range pending {
+		// A trace already in its decision_delay window was counted when its
+		// trigger fired; shutdown merely completes that decision early.
+		if !pt.triggered {
+			p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerShutdownAttr)
+		}
+		p.decideTrace(ctx, pt)
+	}
 
 	var errs error
 	for _, r := range p.rules {
@@ -238,7 +348,11 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 	}
 	var lateForwards []lateSampled
 	var newTraces []pcommon.TraceID
+	var evicted []*pendingTrace
 	triggered := make(map[pcommon.TraceID]struct{})
+	// dropped memoizes not-sampled cache hits so repeat late spans of a
+	// dropped trace skip the LRU lookup within a batch.
+	dropped := make(map[pcommon.TraceID]struct{})
 
 	p.mu.Lock()
 	for _, rs := range td.ResourceSpans().All() {
@@ -253,44 +367,50 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 		for _, ss := range rs.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
 				id := span.TraceID()
-				md, sampled, found := p.cache.lookup(id)
-				if found {
-					if !sampled {
+				// The pending map is checked before the decision cache: spans
+				// of buffered traces (the common case) would otherwise pay
+				// two guaranteed-miss LRU lookups, and the caches never hold
+				// a trace that is still pending.
+				pt, exists := p.traces[id]
+				if !exists {
+					if b, ok := lateBuckets[id]; ok {
+						dstSS := findOrAppendScopeSpans(b.rs, ss)
+						span.MoveTo(dstSS.Spans().AppendEmpty())
 						continue
 					}
-					b, ok := lateBuckets[id]
-					if !ok {
+					if _, ok := dropped[id]; ok {
+						continue
+					}
+					md, sampled, found := p.cache.lookup(id)
+					if found {
+						if !sampled {
+							dropped[id] = struct{}{}
+							continue
+						}
 						rsCopy := ptrace.NewResourceSpans()
 						rs.Resource().CopyTo(rsCopy.Resource())
 						rsCopy.SetSchemaUrl(rs.SchemaUrl())
-						b = struct {
+						b := struct {
 							rs ptrace.ResourceSpans
 							md cachedDecision
 						}{rs: rsCopy, md: md}
 						lateBuckets[id] = b
-					}
-					dstSS := findOrAppendScopeSpans(b.rs, ss)
-					span.CopyTo(dstSS.Spans().AppendEmpty())
-					continue
-				}
-				pt, exists := p.traces[id]
-				if !exists {
-					if len(p.traces) >= p.cfg.NumTraces {
-						for evictID := range p.traces {
-							delete(p.traces, evictID)
-							p.telemetry.ProcessorDynamicSamplingTracesEvicted.Add(ctx, 1)
-							break
-						}
+						dstSS := findOrAppendScopeSpans(b.rs, ss)
+						span.MoveTo(dstSS.Spans().AppendEmpty())
+						continue
 					}
 					pt = &pendingTrace{
 						traceID:   id,
 						firstSeen: now,
 					}
 					p.traces[id] = pt
+					p.arrival = append(p.arrival, id)
 					newTraces = append(newTraces, id)
 				}
 				pt.spanCount++
-				if span.ParentSpanID().IsEmpty() {
+				// hasRootSpan only matters until the trace triggers, so skip
+				// the condition for spans arriving during decision_delay.
+				if !pt.hasRootSpan && !pt.triggered && p.evalRootSpanCondition(ctx, rs, ss, span) {
 					pt.hasRootSpan = true
 				}
 				if _, ok := pendingBuckets[id]; !ok {
@@ -300,7 +420,7 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 					pendingBuckets[id] = rsCopy
 				}
 				dstSS := findOrAppendScopeSpans(pendingBuckets[id], ss)
-				span.CopyTo(dstSS.Spans().AppendEmpty())
+				span.MoveTo(dstSS.Spans().AppendEmpty())
 			}
 		}
 		for id, copied := range pendingBuckets {
@@ -318,6 +438,28 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 			b.rs.MoveTo(out.ResourceSpans().AppendEmpty())
 			lateForwards = append(lateForwards, lateSampled{traceID: id, md: b.md, td: out})
 		}
+	}
+
+	// Enforce the buffer cap after the whole batch is attached, so an evicted
+	// trace always carries every span seen so far (evicting mid-batch would
+	// decide it without the spans still sitting in this batch's buckets, and
+	// a trace evicted then re-seen within one batch would split in two). The
+	// buffer may transiently exceed NumTraces by the number of new traces in
+	// a single batch.
+	for len(p.traces) > p.cfg.NumTraces {
+		ev := p.evictOldestLocked(ctx)
+		if ev == nil {
+			break
+		}
+		evicted = append(evicted, ev)
+	}
+
+	// The arrival list is only consumed by eviction, so during normal
+	// operation (buffer never full) entries for decided traces would
+	// accumulate forever. Compact it once stale entries dominate; amortized
+	// O(1) per trace.
+	if len(p.arrival) > arrivalCompactionFactor*len(p.traces)+arrivalCompactionFloor {
+		p.compactArrivalLocked()
 	}
 
 	active := len(p.traces)
@@ -340,7 +482,13 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 			p.mu.Unlock()
 		})
 		p.mu.Lock()
-		if p.stopped {
+		// Skip storing the timer if we're shutting down, if the trace was
+		// evicted within this same batch (created and then displaced before
+		// its timer was armed), or if a timer already exists (trace evicted
+		// and re-created within one batch lists the id in newTraces twice).
+		_, stillPending := p.traces[traceID]
+		_, hasTimer := p.timers[traceID]
+		if p.stopped || !stillPending || hasTimer {
 			if timer.Stop() {
 				p.wg.Done()
 			}
@@ -352,9 +500,15 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 	}
 
 	if stopped {
-		// Drop late forwards if we're shutting down rather than push into the
-		// downstream consumer.
+		// Drop late forwards and evicted traces if we're shutting down rather
+		// than push into the downstream consumer.
 		return nil
+	}
+
+	// Decide evicted traces outside the lock. Bounded work: at most one
+	// eviction per new trace in the batch.
+	for _, pt := range evicted {
+		p.decideEvicted(ctx, pt)
 	}
 
 	for _, lf := range lateForwards {
@@ -364,6 +518,87 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 		}
 	}
 	return nil
+}
+
+// Compaction tuning for the arrival list. Not configurable: entries are
+// 16-byte traceIDs, so the factor bounds the list's memory at a fraction of a
+// percent of the buffered span data it shadows, and the floor only prevents
+// thrashing on a near-empty buffer. Compaction cost is amortized O(1) per
+// trace at any factor > 1.
+const (
+	arrivalCompactionFactor = 2
+	arrivalCompactionFloor  = 1024
+)
+
+// compactArrivalLocked rebuilds the arrival order in place, dropping ids
+// whose traces have already been decided, preserving first-seen order for the
+// rest. The caller must hold p.mu.
+func (p *dynamicSamplingProcessor) compactArrivalLocked() {
+	live := p.arrival[:0]
+	for _, id := range p.arrival {
+		if _, ok := p.traces[id]; ok {
+			live = append(live, id)
+		}
+	}
+	p.arrival = live
+}
+
+// evictOldestLocked removes and returns the oldest pending trace, canceling
+// its trace_timeout timer. Returns nil if nothing is evictable. The caller
+// must hold p.mu.
+func (p *dynamicSamplingProcessor) evictOldestLocked(ctx context.Context) *pendingTrace {
+	for len(p.arrival) > 0 {
+		id := p.arrival[0]
+		p.arrival = p.arrival[1:]
+		// Reclaim the backing array once the live window is a small fraction
+		// of it, so popped head entries don't pin memory indefinitely.
+		if cap(p.arrival) > 1024 && len(p.arrival)*4 < cap(p.arrival) {
+			p.arrival = append([]pcommon.TraceID(nil), p.arrival...)
+		}
+		pt, ok := p.traces[id]
+		if !ok {
+			// Already decided; its arrival entry was left behind by design.
+			continue
+		}
+		delete(p.traces, id)
+		if t, ok := p.timers[id]; ok {
+			if t.Stop() {
+				p.wg.Done()
+			}
+			delete(p.timers, id)
+		}
+		p.telemetry.ProcessorDynamicSamplingTracesEvicted.Add(ctx, 1)
+		return pt
+	}
+	return nil
+}
+
+// evalRootSpanCondition returns true if the operator-configured OTTL boolean
+// expression matches the given span. Evaluation errors are counted on
+// ProcessorDynamicSamplingOttlEvalErrors under the sentinel
+// rootSpanConditionRuleLabel so operators can distinguish them from rule
+// condition errors, and treated as a non-match so a broken expression can't
+// silently trigger every trace.
+//
+// When the condition is the default IsRootSpan() the OTTL machinery is
+// bypassed: the function is exactly ParentSpanID().IsEmpty() and cannot
+// error, and this runs per span inside the ConsumeTraces critical section,
+// so the ~40x cheaper direct check matters (15ns vs 0.4ns per span).
+func (p *dynamicSamplingProcessor) evalRootSpanCondition(ctx context.Context, rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, span ptrace.Span) bool {
+	if p.rootSpanFastPath {
+		return span.ParentSpanID().IsEmpty()
+	}
+	tCtx := ottlspan.NewTransformContextPtr(rs, ss, span)
+	ok, err := p.rootSpanCond.Eval(ctx, tCtx)
+	tCtx.Close()
+	if err != nil {
+		if p.rootSpanCondEvalErrs != nil {
+			p.rootSpanCondEvalErrs.Add(ctx, 1, p.rootSpanCondAttrSet)
+		}
+		p.logger.Debug("root_span_condition evaluation failed", zap.Error(err))
+		return false
+	}
+	return ok
 }
 
 // trigger transitions a pending trace from the buffering phase to the
@@ -379,8 +614,7 @@ func (p *dynamicSamplingProcessor) trigger(id pcommon.TraceID, source triggerSou
 		return false
 	}
 	pt.triggered = true
-	p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(context.Background(), 1,
-		metric.WithAttributes(attribute.String("trigger", string(source))))
+	p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(context.Background(), 1, triggerAttr(source))
 	// Cancel the existing timer (trace_timeout). If Stop returns false, the
 	// timer's callback is already running or queued; that callback will re-enter
 	// trigger under the mutex, see triggered=true, and bail without harm.
@@ -399,11 +633,12 @@ func (p *dynamicSamplingProcessor) trigger(id pcommon.TraceID, source triggerSou
 // stampLateBatch stamps every span in a late batch with the original rule
 // attribution and ot=th TraceState.
 func (p *dynamicSamplingProcessor) stampLateBatch(ctx context.Context, td ptrace.Traces, md cachedDecision) {
+	emptyTS := serializedEmptyTraceState(md.threshold)
 	for _, rs := range td.ResourceSpans().All() {
 		for _, ss := range rs.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
 				span.Attributes().PutStr(ruleAttributeKey, md.ruleName)
-				p.updateTraceState(ctx, span, md.threshold)
+				p.updateTraceState(ctx, span, md.threshold, emptyTS)
 			}
 		}
 	}
@@ -439,18 +674,24 @@ func (p *dynamicSamplingProcessor) decide(id pcommon.TraceID) {
 	delete(p.timers, id)
 	p.mu.Unlock()
 
-	matchedRule, rate := p.evaluate(pt)
+	p.decideTrace(ctx, pt)
+}
+
+// decideTrace evaluates rules for an already-popped pending trace and either
+// forwards or drops its spans. Shared by the timer-driven decide path and the
+// evaluate eviction policy.
+func (p *dynamicSamplingProcessor) decideTrace(ctx context.Context, pt *pendingTrace) {
+	matchedRule, rate := p.evaluate(ctx, pt)
 	if matchedRule == nil {
 		// No matching rule and no catch-all: drop the trace.
-		p.telemetry.ProcessorDynamicSamplingTracesDropped.Add(ctx, 1,
-			metric.WithAttributes(attribute.String("rule", "unmatched")))
-		p.cache.recordNotSampled(id)
+		p.telemetry.ProcessorDynamicSamplingTracesDropped.Add(ctx, 1, unmatchedRuleAttr)
+		p.cache.recordNotSampled(pt.traceID)
 		return
 	}
 
-	ruleAttr := metric.WithAttributes(attribute.String("rule", matchedRule.name))
+	ruleAttr := matchedRule.ruleAttrSet
 
-	upstreamTh, randomness := p.readIncomingSampling(ctx, pt.spans, id)
+	upstreamTh, randomness := p.readIncomingSampling(ctx, pt.spans, pt.traceID)
 	effectiveTh, err := effectiveThreshold(upstreamTh, rate)
 	if err != nil {
 		// The error path is unreachable in practice (rate is clamped to >= 1
@@ -458,31 +699,78 @@ func (p *dynamicSamplingProcessor) decide(id pcommon.TraceID) {
 		// falling back to the upstream threshold preserves whatever decision
 		// upstream already made rather than dropping the trace outright.
 		p.logger.Debug("effective threshold calculation failed, falling back to upstream",
-			zap.Error(err), zap.Stringer("traceID", id))
+			zap.Error(err), zap.Stringer("traceID", pt.traceID))
 		effectiveTh = upstreamTh
 	}
+	p.finishDecision(ctx, pt, matchedRule.name, ruleAttr, effectiveTh, randomness)
+}
+
+// finishDecision applies an already-composed effective threshold: records the
+// sample-rate histogram, performs the keep/drop check, updates the decision
+// cache, and forwards sampled traces. Shared by every decision path.
+func (p *dynamicSamplingProcessor) finishDecision(ctx context.Context, pt *pendingTrace, ruleName string, ruleAttr metric.MeasurementOption, effectiveTh sampling.Threshold, randomness sampling.Randomness) {
 	// Record the effective (post-composition) rate rather than the raw sampler
 	// rate: under equalizing, an upstream stricter than the sampler's rate caps
 	// what we emit, and the histogram should reflect that.
 	p.telemetry.ProcessorDynamicSamplingDecisionSampleRate.Record(ctx, int64(effectiveTh.AdjustedCount()), ruleAttr)
 	if !effectiveTh.ShouldSample(randomness) {
 		p.telemetry.ProcessorDynamicSamplingTracesDropped.Add(ctx, 1, ruleAttr)
-		p.cache.recordNotSampled(id)
+		p.cache.recordNotSampled(pt.traceID)
 		return
 	}
 
-	p.cache.recordSampled(id, cachedDecision{ruleName: matchedRule.name, threshold: effectiveTh})
-	annotated := p.assembleTrace(ctx, pt.spans, matchedRule.name, effectiveTh)
+	p.cache.recordSampled(pt.traceID, cachedDecision{ruleName: ruleName, threshold: effectiveTh})
+	// assembleTrace consumes pt.spans; nothing may read them after this call.
+	annotated := p.assembleTrace(ctx, pt.spans, ruleName, effectiveTh)
+	pt.spans = nil
 	p.telemetry.ProcessorDynamicSamplingTracesSampled.Add(ctx, 1, ruleAttr)
 	if err := p.next.ConsumeTraces(ctx, annotated); err != nil {
-		p.logger.Error("forwarding sampled trace failed", zap.Error(err), zap.Stringer("traceID", id))
+		p.logger.Error("forwarding sampled trace failed", zap.Error(err), zap.Stringer("traceID", pt.traceID))
 	}
 }
 
+// decideEvicted decides a trace displaced by buffer pressure, per the
+// configured eviction policy. The trace may be incomplete; decision_delay is
+// deliberately skipped because there is no room to wait.
+func (p *dynamicSamplingProcessor) decideEvicted(ctx context.Context, pt *pendingTrace) {
+	// Same rule as the shutdown drain: a trace already in its decision_delay
+	// window was counted when its trigger fired, so eviction of a mid-delay
+	// trace must not count the decision twice.
+	if !pt.triggered {
+		p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerEvictionAttr)
+	}
+	if p.cfg.Eviction.Policy == EvictionProbabilistic {
+		p.decideEvictedProbabilistic(ctx, pt)
+		return
+	}
+	p.decideTrace(ctx, pt)
+}
+
+// decideEvictedProbabilistic sheds an evicted trace with constant-time work:
+// no rule evaluation, just the configured probability composed with any
+// upstream threshold. Kept traces still carry a correct ot=th, so downstream
+// weighting remains accurate even under pressure.
+func (p *dynamicSamplingProcessor) decideEvictedProbabilistic(ctx context.Context, pt *pendingTrace) {
+	evAttr := evictionRuleAttr
+	upstreamTh, randomness := p.readIncomingSampling(ctx, pt.spans, pt.traceID)
+	effectiveTh := upstreamTh
+	if ours, err := sampling.ProbabilityToThreshold(p.cfg.Eviction.SamplingPercentage / 100); err == nil {
+		if !sampling.ThresholdGreater(upstreamTh, ours) {
+			effectiveTh = ours
+		}
+	} else {
+		// Unreachable with a validated config; fall back to the upstream
+		// threshold rather than dropping outright.
+		p.logger.Debug("eviction threshold calculation failed, falling back to upstream",
+			zap.Error(err), zap.Stringer("traceID", pt.traceID))
+	}
+	p.finishDecision(ctx, pt, evictionRuleLabel, evAttr, effectiveTh, randomness)
+}
+
 // evaluate returns the first matching rule and the sample rate it produced.
-func (p *dynamicSamplingProcessor) evaluate(pt *pendingTrace) (*rule, int) {
+func (p *dynamicSamplingProcessor) evaluate(ctx context.Context, pt *pendingTrace) (*rule, int) {
 	for _, r := range p.rules {
-		if !r.matches(pt.spans) {
+		if !r.matches(ctx, pt.spans) {
 			continue
 		}
 		var key string
@@ -576,15 +864,20 @@ func effectiveThreshold(upstream sampling.Threshold, rate int) (sampling.Thresho
 
 // assembleTrace combines accumulated ResourceSpans into a single ptrace.Traces
 // and stamps every span with the rule attribute and `ot=th` TraceState.
+// The buffered ResourceSpans are MOVED into the output, not copied: they are
+// processor-owned (created fresh in ConsumeTraces) and the pendingTrace is
+// discarded after the decision, so the sources are left empty deliberately.
+// readIncomingSampling must run before this (it reads the same spans).
 func (p *dynamicSamplingProcessor) assembleTrace(ctx context.Context, spans []ptrace.ResourceSpans, ruleName string, threshold sampling.Threshold) ptrace.Traces {
+	emptyTS := serializedEmptyTraceState(threshold)
 	out := ptrace.NewTraces()
 	for _, rs := range spans {
 		dst := out.ResourceSpans().AppendEmpty()
-		rs.CopyTo(dst)
+		rs.MoveTo(dst)
 		for _, ss := range dst.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
 				span.Attributes().PutStr(ruleAttributeKey, ruleName)
-				p.updateTraceState(ctx, span, threshold)
+				p.updateTraceState(ctx, span, threshold, emptyTS)
 			}
 		}
 	}
@@ -597,8 +890,16 @@ func (p *dynamicSamplingProcessor) assembleTrace(ctx context.Context, spans []pt
 // threshold; that is spec-correct and treated as a silent no-op. Parse
 // failures on the incoming tracestate are counted in readIncomingSampling
 // (which runs on every decision path); here we silently skip the span.
-func (*dynamicSamplingProcessor) updateTraceState(_ context.Context, span ptrace.Span, threshold sampling.Threshold) {
+// emptyTS is the precomputed serialized tracestate to apply when the span has
+// no incoming tracestate; the threshold is trace-constant, so callers compute
+// it once per decision instead of running the parse/update/serialize round
+// trip per span. It must equal what that round trip produces for empty input.
+func (*dynamicSamplingProcessor) updateTraceState(_ context.Context, span ptrace.Span, threshold sampling.Threshold, emptyTS string) {
 	raw := span.TraceState().AsRaw()
+	if raw == "" {
+		span.TraceState().FromRaw(emptyTS)
+		return
+	}
 	w3c, err := sampling.NewW3CTraceState(raw)
 	if err != nil {
 		return
@@ -611,4 +912,11 @@ func (*dynamicSamplingProcessor) updateTraceState(_ context.Context, span ptrace
 		return
 	}
 	span.TraceState().FromRaw(sb.String())
+}
+
+// serializedEmptyTraceState returns the tracestate emitted for spans with no
+// incoming tracestate, byte-identical to serializing a parsed empty state
+// after UpdateTValueWithSampling(threshold).
+func serializedEmptyTraceState(threshold sampling.Threshold) string {
+	return "ot=th:" + threshold.TValue()
 }
