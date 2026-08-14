@@ -1348,7 +1348,7 @@ func TestProcessor_ThroughputSamplersEndToEnd(t *testing.T) {
 			// (the trace IDs carry maximal randomness), each with a valid
 			// ot=th. This pins the end-to-end wiring (keying, GetSampleRate,
 			// threshold composition) for both types.
-			for i := 0; i < 3; i++ {
+			for i := range 3 {
 				// Max out the randomness bytes so the traces are kept at any
 				// initial rate the sampler chooses; the test pins the wiring,
 				// not the rate.
