@@ -214,9 +214,11 @@ func (e *Exporter) startArrowStream(ctx context.Context, ws *streamWorkState) {
 }
 
 // runStreamController starts the initial set of streams, then waits for streams to
-// terminate one at a time and restarts them.  If streams come back with a nil
-// client (meaning that OTel-Arrow was not supported by the endpoint), it will
-// not be restarted.
+// terminate one at a time and restarts them.  If a stream comes back with a nil
+// client and its work state has never previously connected (meaning that
+// OTel-Arrow was not supported by the endpoint), it will not be restarted.
+// Once a work state has proven the endpoint supports Arrow, later connection
+// failures for it are treated as transient and always restarted.
 func (e *Exporter) runStreamController(exportCtx, downCtx context.Context, downDc doneCancel) {
 	defer e.cancel()
 	defer e.wg.Done()
@@ -226,13 +228,18 @@ func (e *Exporter) runStreamController(exportCtx, downCtx context.Context, downD
 	for {
 		select {
 		case stream := <-e.returning:
-			if stream.client != nil || e.disableDowngrade {
-				// The stream closed or broken.  Restart it.
+			if stream.client != nil || e.disableDowngrade || stream.workState.everConnected.Load() {
+				// The stream closed or broken, or this work
+				// state previously proved that the endpoint
+				// supports Arrow, so this failure is known to
+				// be transient.  Restart it.
 				e.startArrowStream(downCtx, stream.workState)
 				continue
 			}
-			// Otherwise, the stream never got started.  It was
-			// downgraded and senders will use the standard OTLP path.
+			// Otherwise, the stream never got started and this
+			// endpoint's support for Arrow has not been
+			// established.  It was downgraded and senders will
+			// use the standard OTLP path.
 			running--
 
 			// None of the streams were able to connect to

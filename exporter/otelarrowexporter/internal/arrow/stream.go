@@ -9,6 +9,7 @@ import (
 	"errors"
 	"io"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
@@ -80,6 +81,14 @@ type streamWorkState struct {
 
 	// waiters is the response channel for each active batch.
 	waiters map[int64]chan<- error
+
+	// everConnected is set once a stream using this work state has
+	// successfully connected and was not rejected as unsupported
+	// (i.e., it proved the endpoint accepts Arrow streams).  Once
+	// set, later connection failures for this work state are known
+	// to be transient and are always retried instead of being
+	// counted toward a downgrade decision.
+	everConnected atomic.Bool
 }
 
 // writeItem is passed from the sender (a pipeline consumer) to the
@@ -223,6 +232,13 @@ func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClie
 	}
 	if writeErr != nil {
 		s.logStreamError("writer", writeErr)
+	}
+
+	if s.client != nil {
+		// Reaching here with a non-nil client means the stream
+		// connected and was not rejected as Unimplemented, proving
+		// the endpoint supports Arrow streams.
+		s.workState.everConnected.Store(true)
 	}
 
 	s.workState.lock.Lock()

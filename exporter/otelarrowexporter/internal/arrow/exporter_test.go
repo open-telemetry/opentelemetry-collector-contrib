@@ -327,6 +327,47 @@ func TestArrowExporterStreamConnectError(t *testing.T) {
 	}
 }
 
+// TestArrowExporterReconnectAfterTransientConnectError tests that once a
+// stream's work state has successfully connected, a later transient
+// connect error (e.g., an auth handshake timeout) is retried rather than
+// treated as a downgrade signal and the work state abandoned.
+func TestArrowExporterReconnectAfterTransientConnectError(t *testing.T) {
+	for _, pname := range AllPrioritizers {
+		t.Run(string(pname), func(t *testing.T) {
+			tc := newSingleStreamTestCase(t, pname)
+			initial := newUnresponsiveTestChannel()
+			connErr := newConnectErrorTestChannel()
+			healthy := newHealthyTestChannel()
+
+			tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(initial, connErr, healthy))
+
+			var wg sync.WaitGroup
+			wg.Go(func() {
+				outputData := <-healthy.sendChannel()
+				healthy.recv <- statusOKFor(outputData.BatchId)
+			})
+
+			bg := t.Context()
+			require.NoError(t, tc.exporter.Start(bg))
+
+			// Close the first stream once it has connected (proving the
+			// endpoint supports Arrow), forcing a reconnect that hits a
+			// transient connect error.  A work state that had never
+			// connected would be abandoned on that error (see
+			// TestArrowExporterStreamConnectError); this one already
+			// proved Arrow support and must be retried instead.
+			initial.unblock()
+
+			sent, err := tc.exporter.SendAndWait(bg, twoTraces)
+			require.True(t, sent, "exporter should recover from the transient connect error instead of downgrading")
+			require.NoError(t, err)
+
+			wg.Wait()
+			require.NoError(t, tc.exporter.Shutdown(bg))
+		})
+	}
+}
+
 // TestArrowExporterDowngrade tests that if the Recv() returns an
 // Unimplemented code (as gRPC does) that the connection is downgraded
 // without error.
