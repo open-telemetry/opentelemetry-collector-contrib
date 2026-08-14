@@ -702,7 +702,7 @@ func TestSetSamplingPolicy(t *testing.T) {
 			},
 		},
 	}
-	p.(*tailSamplingSpanProcessor).SetSamplingPolicy(cfgs)
+	p.(*shardedProcessor).SetSamplingPolicy(cfgs)
 
 	controller.waitForTick()
 
@@ -1382,7 +1382,7 @@ func TestDropLargeTraces(t *testing.T) {
 	assert.Len(t, allSampledTraces, 1)
 
 	// Verify that the config can be changed without restarting the processor.
-	processor.(*tailSamplingSpanProcessor).SetMaximumTraceSizeBytes(1 << 20)
+	processor.(*shardedProcessor).SetMaximumTraceSizeBytes(1 << 20)
 	controller.waitForTick()
 
 	largeOnly := ptrace.NewTraces()
@@ -1501,7 +1501,7 @@ func TestSetMaxTraceSizeDrainedBeforeEvaluation(t *testing.T) {
 	}()
 
 	// Raise the limit so the large trace should be accepted.
-	processor.(*tailSamplingSpanProcessor).SetMaximumTraceSizeBytes(1 << 20) // 1 MB
+	processor.(*shardedProcessor).SetMaximumTraceSizeBytes(1 << 20) // 1 MB
 
 	// Send a large trace that exceeds the original 1024-byte limit but is
 	// well within the new 1 MB limit. Because the drain logic in iter
@@ -1565,9 +1565,9 @@ func TestDeleteQueueCleared(t *testing.T) {
 	allSampledTraces := nextConsumer.AllTraces()
 	assert.Len(t, allSampledTraces, 128)
 	// All traces should be flushed from the map.
-	assert.Empty(t, sp.(*tailSamplingSpanProcessor).idToTrace)
+	assert.Empty(t, shard0(sp).idToTrace)
 	// All traces should be removed from the delete queue.
-	assert.Zero(t, sp.(*tailSamplingSpanProcessor).deleteTraceQueue.Len())
+	assert.Zero(t, shard0(sp).deleteTraceQueue.Len())
 }
 
 func TestRootReceivedBatcher(t *testing.T) {
@@ -1744,7 +1744,7 @@ func TestSpanIngestPendingStorageDeletedOnDecisionWait(t *testing.T) {
 			controller.waitForTick()
 			controller.waitForTick()
 
-			tsp := p.(*tailSamplingSpanProcessor)
+			tsp := shard0(p)
 			assert.Positive(t, host.extension.appendCount, "span batch must have been written to storage")
 			assert.Positive(t, host.extension.deleteCount, "storage entry must be deleted after pending trace is finalized")
 			assert.Empty(t, tsp.idToTrace, "trace must be evicted from the in-memory map")
@@ -1815,11 +1815,59 @@ func TestSpanIngestPendingStorageDeletedOnNumTracesOverflow(t *testing.T) {
 			// path; our fix drops trace 2 from memory and storage.
 			controller.waitForTick()
 
-			tsp := p.(*tailSamplingSpanProcessor)
+			tsp := shard0(p)
 			assert.GreaterOrEqual(t, host.extension.deleteCount, host.extension.appendCount,
 				"every appended trace must have been deleted from storage")
 			assert.Empty(t, tsp.idToTrace, "both traces must be evicted from the in-memory map")
 			assert.Zero(t, tsp.deleteTraceQueue.Len(), "both traces must be removed from the delete queue")
+		})
+	}
+}
+
+func TestTailStorageTakeErrorDropsTraceState(t *testing.T) {
+	enableTailStorageFeatureGateForTest(t)
+
+	for _, tc := range []struct {
+		name     string
+		strategy samplingStrategy
+		waitTick bool
+	}{
+		{name: "trace complete", strategy: samplingStrategyTraceComplete, waitTick: true},
+		{name: "span ingest", strategy: samplingStrategySpanIngest},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			controller := newTestTSPController()
+			sink := new(consumertest.TracesSink)
+
+			cfg := Config{
+				DecisionWait:     defaultTestDecisionWait,
+				NumTraces:        defaultNumTraces,
+				SamplingStrategy: tc.strategy,
+				PolicyCfgs:       testPolicy,
+				TailStorageID:    &testExtensionID,
+				Options:          []Option{withTestController(controller)},
+			}
+
+			host := &extensionHost{
+				extension: &extension{takeErr: errors.New("boom")},
+			}
+			p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), sink, cfg)
+			require.NoError(t, err)
+			require.NoError(t, p.Start(t.Context(), host))
+
+			require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
+			if tc.waitTick {
+				controller.waitForTick()
+				controller.waitForTick()
+			}
+
+			require.NoError(t, p.Shutdown(t.Context()))
+
+			tsp := shard0(p)
+			assert.Empty(t, sink.AllTraces(), "trace must not be forwarded when tail storage Take fails")
+			assert.Empty(t, tsp.idToTrace, "trace state must be dropped after Take failure")
+			assert.Zero(t, tsp.deleteTraceQueue.Len(), "delete queue must be cleaned after Take failure")
+			assert.Positive(t, host.extension.takeCount, "tail storage Take must be exercised")
 		})
 	}
 }
@@ -1908,6 +1956,7 @@ type extension struct {
 	policyName string
 	cfg        map[string]any
 	storage    tailstorageextension.TailStorage
+	takeErr    error
 	appendCount,
 	takeCount,
 	deleteCount int
@@ -1940,6 +1989,9 @@ func (e *extension) Append(traceID pcommon.TraceID, td ptrace.Traces) error {
 func (e *extension) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 	e.ensureStorage()
 	e.takeCount++
+	if e.takeErr != nil {
+		return ptrace.NewTraces(), e.takeErr
+	}
 	return e.storage.Take(traceID)
 }
 
