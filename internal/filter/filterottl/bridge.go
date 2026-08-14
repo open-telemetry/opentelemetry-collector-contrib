@@ -385,21 +385,38 @@ func createMetricStatement(mp filterconfig.MetricMatchProperties) (*string, erro
 		return nil, errors.New("expressions configuration cannot be converted to OTTL - see https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor#configuration for OTTL configuration")
 	}
 
-	if len(mp.MetricNames) == 0 {
+	if len(mp.MetricNames) == 0 && len(mp.ResourceAttributes) == 0 {
 		return nil, nil
 	}
 
-	metricNameStatement := nameStaticStatement
-	if mp.MatchType == filterconfig.MetricRegexp {
-		metricNameStatement = nameRegexStatement
+	var conditions []string
+
+	if len(mp.MetricNames) > 0 {
+		metricNameStatement := nameStaticStatement
+		if mp.MatchType == filterconfig.MetricRegexp {
+			metricNameStatement = nameRegexStatement
+		}
+		metricNameConditions := createBasicConditions(metricNameStatement, mp.MetricNames)
+		format := "%v"
+		if len(metricNameConditions) > 1 {
+			format = "(%v)"
+		}
+		conditions = append(conditions, fmt.Sprintf(format, strings.Join(metricNameConditions, " or ")))
 	}
-	metricNameConditions := createBasicConditions(metricNameStatement, mp.MetricNames)
-	var format string
-	if len(metricNameConditions) > 1 {
-		format = "(%v)"
-	} else {
-		format = "%v"
+
+	if len(mp.ResourceAttributes) > 0 {
+		resourceAttrStatement := resourceAttributesStaticStatement
+		if mp.MatchType == filterconfig.MetricRegexp {
+			resourceAttrStatement = resourceAttributesRegexStatement
+		}
+		resourceConditions := createAttributeConditions(
+			resourceAttrStatement,
+			mp.ResourceAttributes,
+			filterset.MatchType(mp.MatchType),
+		)
+		conditions = append(conditions, strings.Join(resourceConditions, " and "))
 	}
-	statement := fmt.Sprintf(format, strings.Join(metricNameConditions, " or "))
+
+	statement := strings.Join(conditions, " and ")
 	return &statement, nil
 }
