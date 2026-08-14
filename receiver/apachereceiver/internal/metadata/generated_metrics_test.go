@@ -583,11 +583,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "apache.worker.limit":
 					assert.False(t, validatedMetrics["apache.worker.limit"], "Found a duplicate in the metrics slice: apache.worker.limit")
 					validatedMetrics["apache.worker.limit"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "The maximum number of worker slots configured for the HTTP server, derived from the scoreboard length.", mi.Description())
 					assert.Equal(t, "{worker}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

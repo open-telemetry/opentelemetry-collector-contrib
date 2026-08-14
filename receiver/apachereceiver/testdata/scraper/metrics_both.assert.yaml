@@ -146,8 +146,10 @@ resources:
               temporality: cumulative
               monotonic: false
             - name: apache.worker.limit
-              type: gauge
+              type: sum
               unit: '{worker}'
+              temporality: cumulative
+              monotonic: false
             - name: apache.worker.status
               type: sum
               unit: "1"

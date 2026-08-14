@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver" //nolint:staticcheck // SA1019
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 

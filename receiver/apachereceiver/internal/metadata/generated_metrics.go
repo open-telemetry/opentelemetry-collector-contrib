@@ -1541,14 +1541,16 @@ func (m *metricApacheWorkerLimit) init() {
 	m.data.SetName("apache.worker.limit")
 	m.data.SetDescription("The maximum number of worker slots configured for the HTTP server, derived from the scoreboard length.")
 	m.data.SetUnit("{worker}")
-	m.data.SetEmptyGauge()
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricApacheWorkerLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -1556,14 +1558,14 @@ func (m *metricApacheWorkerLimit) recordDataPoint(start pcommon.Timestamp, ts pc
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricApacheWorkerLimit) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricApacheWorkerLimit) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
