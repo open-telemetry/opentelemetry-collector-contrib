@@ -197,7 +197,7 @@ attributes:
     description: The MyISAM key cache block state.
     type: string
     enum: [used, unused]
-    requirement_level: recommended
+    requirement_level: required
   mysql.query_plan:
     description: The query plan for the statement, if available.
     type: string
@@ -591,7 +591,7 @@ metrics:
       input_type: string
       monotonic: false
       aggregation_temporality: cumulative
-  mysql.myisam.key_cache.blocks:
+  mysql.myisam.key_cache.block:
     enabled: true
     description: The number of MyISAM key cache blocks.
     stability: development

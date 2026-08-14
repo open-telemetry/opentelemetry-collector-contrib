@@ -803,7 +803,7 @@ resourceMetrics:
                         stringValue: used
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: mysql.myisam.key_cache.blocks
+            name: mysql.myisam.key_cache.block
             unit: "1"
           - description: The number of physical MyISAM key cache disk operations.
             name: mysql.myisam.key_cache.disk.operation

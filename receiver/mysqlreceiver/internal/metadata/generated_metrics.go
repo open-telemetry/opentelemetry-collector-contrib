@@ -1256,8 +1256,8 @@ var MetricsInfo = metricsInfo{
 	MysqlMaxUsedConnections: metricInfo{
 		Name: "mysql.max_used_connections",
 	},
-	MysqlMyisamKeyCacheBlocks: metricInfo{
-		Name:       "mysql.myisam.key_cache.blocks",
+	MysqlMyisamKeyCacheBlock: metricInfo{
+		Name:       "mysql.myisam.key_cache.block",
 		Attributes: []string{"mysql.myisam.key_cache.state"},
 	},
 	MysqlMyisamKeyCacheDiskOperation: metricInfo{
@@ -1418,7 +1418,7 @@ type metricsInfo struct {
 	MysqlLocks                       metricInfo
 	MysqlLogOperations               metricInfo
 	MysqlMaxUsedConnections          metricInfo
-	MysqlMyisamKeyCacheBlocks        metricInfo
+	MysqlMyisamKeyCacheBlock         metricInfo
 	MysqlMyisamKeyCacheDiskOperation metricInfo
 	MysqlMyisamKeyCacheRequest       metricInfo
 	MysqlMysqlxConnections           metricInfo
@@ -3194,87 +3194,50 @@ func newMetricMysqlMaxUsedConnections(cfg MysqlMaxUsedConnectionsMetricConfig) m
 	return m
 }
 
-type metricMysqlMyisamKeyCacheBlocks struct {
-	data          pmetric.Metric                        // data buffer for generated metric.
-	config        MysqlMyisamKeyCacheBlocksMetricConfig // metric config provided by user.
-	capacity      int                                   // max observed number of data points added to the metric.
-	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
+type metricMysqlMyisamKeyCacheBlock struct {
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   MysqlMyisamKeyCacheBlockMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
-// init fills mysql.myisam.key_cache.blocks metric with initial data.
-func (m *metricMysqlMyisamKeyCacheBlocks) init() {
-	m.data.SetName("mysql.myisam.key_cache.blocks")
+// init fills mysql.myisam.key_cache.block metric with initial data.
+func (m *metricMysqlMyisamKeyCacheBlock) init() {
+	m.data.SetName("mysql.myisam.key_cache.block")
 	m.data.SetDescription("The number of MyISAM key cache blocks.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricMysqlMyisamKeyCacheBlocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mysqlMyisamKeyCacheStateAttributeValue string) {
+func (m *metricMysqlMyisamKeyCacheBlock) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mysqlMyisamKeyCacheStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, MysqlMyisamKeyCacheBlocksMetricAttributeKeyMysqlMyisamKeyCacheState) {
-		dp.Attributes().PutStr("state", mysqlMyisamKeyCacheStateAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
+	dp.Attributes().PutStr("state", mysqlMyisamKeyCacheStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMysqlMyisamKeyCacheBlocks) updateCapacity() {
+func (m *metricMysqlMyisamKeyCacheBlock) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMysqlMyisamKeyCacheBlocks) emit(metrics pmetric.MetricSlice) {
+func (m *metricMysqlMyisamKeyCacheBlock) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlMyisamKeyCacheBlocks(cfg MysqlMyisamKeyCacheBlocksMetricConfig) metricMysqlMyisamKeyCacheBlocks {
-	m := metricMysqlMyisamKeyCacheBlocks{config: cfg}
+func newMetricMysqlMyisamKeyCacheBlock(cfg MysqlMyisamKeyCacheBlockMetricConfig) metricMysqlMyisamKeyCacheBlock {
+	m := metricMysqlMyisamKeyCacheBlock{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -6260,7 +6223,7 @@ type MetricsBuilder struct {
 	metricMysqlLocks                       metricMysqlLocks
 	metricMysqlLogOperations               metricMysqlLogOperations
 	metricMysqlMaxUsedConnections          metricMysqlMaxUsedConnections
-	metricMysqlMyisamKeyCacheBlocks        metricMysqlMyisamKeyCacheBlocks
+	metricMysqlMyisamKeyCacheBlock         metricMysqlMyisamKeyCacheBlock
 	metricMysqlMyisamKeyCacheDiskOperation metricMysqlMyisamKeyCacheDiskOperation
 	metricMysqlMyisamKeyCacheRequest       metricMysqlMyisamKeyCacheRequest
 	metricMysqlMysqlxConnections           metricMysqlMysqlxConnections
@@ -6343,7 +6306,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlLocks:                       newMetricMysqlLocks(mbc.Metrics.MysqlLocks),
 		metricMysqlLogOperations:               newMetricMysqlLogOperations(mbc.Metrics.MysqlLogOperations),
 		metricMysqlMaxUsedConnections:          newMetricMysqlMaxUsedConnections(mbc.Metrics.MysqlMaxUsedConnections),
-		metricMysqlMyisamKeyCacheBlocks:        newMetricMysqlMyisamKeyCacheBlocks(mbc.Metrics.MysqlMyisamKeyCacheBlocks),
+		metricMysqlMyisamKeyCacheBlock:         newMetricMysqlMyisamKeyCacheBlock(mbc.Metrics.MysqlMyisamKeyCacheBlock),
 		metricMysqlMyisamKeyCacheDiskOperation: newMetricMysqlMyisamKeyCacheDiskOperation(mbc.Metrics.MysqlMyisamKeyCacheDiskOperation),
 		metricMysqlMyisamKeyCacheRequest:       newMetricMysqlMyisamKeyCacheRequest(mbc.Metrics.MysqlMyisamKeyCacheRequest),
 		metricMysqlMysqlxConnections:           newMetricMysqlMysqlxConnections(mbc.Metrics.MysqlMysqlxConnections),
@@ -6509,7 +6472,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlLocks.emit(ils.Metrics())
 	mb.metricMysqlLogOperations.emit(ils.Metrics())
 	mb.metricMysqlMaxUsedConnections.emit(ils.Metrics())
-	mb.metricMysqlMyisamKeyCacheBlocks.emit(ils.Metrics())
+	mb.metricMysqlMyisamKeyCacheBlock.emit(ils.Metrics())
 	mb.metricMysqlMyisamKeyCacheDiskOperation.emit(ils.Metrics())
 	mb.metricMysqlMyisamKeyCacheRequest.emit(ils.Metrics())
 	mb.metricMysqlMysqlxConnections.emit(ils.Metrics())
@@ -6767,13 +6730,13 @@ func (mb *MetricsBuilder) RecordMysqlMaxUsedConnectionsDataPoint(ts pcommon.Time
 	return nil
 }
 
-// RecordMysqlMyisamKeyCacheBlocksDataPoint adds a data point to mysql.myisam.key_cache.blocks metric.
-func (mb *MetricsBuilder) RecordMysqlMyisamKeyCacheBlocksDataPoint(ts pcommon.Timestamp, inputVal string, mysqlMyisamKeyCacheStateAttributeValue AttributeMysqlMyisamKeyCacheState) error {
+// RecordMysqlMyisamKeyCacheBlockDataPoint adds a data point to mysql.myisam.key_cache.block metric.
+func (mb *MetricsBuilder) RecordMysqlMyisamKeyCacheBlockDataPoint(ts pcommon.Timestamp, inputVal string, mysqlMyisamKeyCacheStateAttributeValue AttributeMysqlMyisamKeyCacheState) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
-		return fmt.Errorf("failed to parse int64 for MysqlMyisamKeyCacheBlocks, value was %s: %w", inputVal, err)
+		return fmt.Errorf("failed to parse int64 for MysqlMyisamKeyCacheBlock, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlMyisamKeyCacheBlocks.recordDataPoint(mb.startTime, ts, val, mysqlMyisamKeyCacheStateAttributeValue.String())
+	mb.metricMysqlMyisamKeyCacheBlock.recordDataPoint(mb.startTime, ts, val, mysqlMyisamKeyCacheStateAttributeValue.String())
 	return nil
 }
 
