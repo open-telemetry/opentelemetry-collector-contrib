@@ -1,17 +1,21 @@
 $defs:
   http_mappings_config:
+    description: HTTPMappingsConfig configures mappings applied to HTTP spans.
     type: object
     properties:
       success:
-        $ref: httpsuccess_config
-  httpsuccess_config:
+        $ref: http_success_config
+  http_success_config:
+    description: HTTPSuccessConfig configures how HTTP response status codes map to Application Insights Success.
     type: object
     properties:
       additional_success_status_codes:
+        description: AdditionalSuccessStatusCodes are treated as successful for HTTP server and client spans.
         type: array
         items:
           type: integer
       server_policy:
+        description: ServerPolicy may be set to "otel" to follow OpenTelemetry HTTP server span semantics.
         type: string
   tag_mappings_config:
     description: TagMappingsConfig overrides the precedence used to populate selected Application Insights envelope tags from OpenTelemetry resource attributes. Each field is an ordered list of sources consulted left-to-right; the first source that resolves to a non-empty string wins. A source entry is interpreted as a resource attribute key when it contains a "." (e.g. "service.instance.id"); otherwise it is treated as a string literal terminal default (e.g. "unknown-instance"). When a field is left unset, the factory default — which preserves the historical hardcoded behavior — is used. This feature is alpha and the schema may evolve.
@@ -33,6 +37,7 @@ $defs:
       traces:
         $ref: trace_mappings_config
   trace_mappings_config:
+    description: TraceMappingsConfig configures mappings applied when exporting traces.
     type: object
     properties:
       http:

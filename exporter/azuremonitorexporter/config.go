@@ -31,16 +31,19 @@ type Config struct {
 }
 
 type TelemetryMappingsConfig struct {
+	_      struct{}
 	Traces TraceMappingsConfig `mapstructure:"traces"`
 }
 
 // TraceMappingsConfig configures mappings applied when exporting traces.
 type TraceMappingsConfig struct {
+	_    struct{}
 	HTTP HTTPMappingsConfig `mapstructure:"http"`
 }
 
 // HTTPMappingsConfig configures mappings applied to HTTP spans.
 type HTTPMappingsConfig struct {
+	_       struct{}
 	Success HTTPSuccessConfig `mapstructure:"success"`
 }
 
