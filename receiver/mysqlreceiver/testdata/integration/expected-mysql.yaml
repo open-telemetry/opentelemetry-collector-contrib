@@ -368,6 +368,67 @@ resourceMetrics:
                   timeUnixNano: "1674545265375344000"
               isMonotonic: true
             unit: "1"
+          - description: The number of MyISAM key cache blocks.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1674545255370693000"
+                  timeUnixNano: "1674545265375344000"
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: unused
+                  startTimeUnixNano: "1674545255370693000"
+                  timeUnixNano: "1674545265375344000"
+            name: mysql.myisam.key_cache.blocks
+            unit: "1"
+          - description: The number of physical MyISAM key cache disk operations.
+            name: mysql.myisam.key_cache.disk.operation
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1674545255370693000"
+                  timeUnixNano: "1674545265375344000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1674545255370693000"
+                  timeUnixNano: "1674545265375344000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of logical MyISAM key cache requests.
+            name: mysql.myisam.key_cache.request
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1674545255370693000"
+                  timeUnixNano: "1674545265375344000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1674545255370693000"
+                  timeUnixNano: "1674545265375344000"
+              isMonotonic: true
+            unit: "1"
           - description: The number of mysqlx connections.
             name: mysql.mysqlx_connections
             sum:
