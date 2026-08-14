@@ -457,6 +457,20 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Innodb_os_log_fsyncs":
 			addPartialIfError(errs, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsFsyncs))
 
+		// myisam.key_cache
+		case "Key_blocks_used":
+			addPartialIfError(errs, m.mb.RecordMysqlMyisamKeyCacheBlocksDataPoint(now, v, metadata.AttributeMysqlMyisamKeyCacheStateUsed))
+		case "Key_blocks_unused":
+			addPartialIfError(errs, m.mb.RecordMysqlMyisamKeyCacheBlocksDataPoint(now, v, metadata.AttributeMysqlMyisamKeyCacheStateUnused))
+		case "Key_read_requests":
+			addPartialIfError(errs, m.mb.RecordMysqlMyisamKeyCacheRequestDataPoint(now, v, metadata.AttributeMysqlMyisamKeyCacheOperationRead))
+		case "Key_reads":
+			addPartialIfError(errs, m.mb.RecordMysqlMyisamKeyCacheDiskOperationDataPoint(now, v, metadata.AttributeMysqlMyisamKeyCacheOperationRead))
+		case "Key_write_requests":
+			addPartialIfError(errs, m.mb.RecordMysqlMyisamKeyCacheRequestDataPoint(now, v, metadata.AttributeMysqlMyisamKeyCacheOperationWrite))
+		case "Key_writes":
+			addPartialIfError(errs, m.mb.RecordMysqlMyisamKeyCacheDiskOperationDataPoint(now, v, metadata.AttributeMysqlMyisamKeyCacheOperationWrite))
+
 		// innodb.data_file.io
 		case "Innodb_data_read":
 			addPartialIfError(errs, m.mb.RecordMysqlInnodbDataFileIoDataPoint(now, v, metadata.AttributeDiskIoDirectionRead))

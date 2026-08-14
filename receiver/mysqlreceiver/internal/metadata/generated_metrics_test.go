@@ -83,6 +83,9 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["mysql.joins"] = mb.metricMysqlJoins.config.AggregationStrategy
 			aggMap["mysql.locks"] = mb.metricMysqlLocks.config.AggregationStrategy
 			aggMap["mysql.log_operations"] = mb.metricMysqlLogOperations.config.AggregationStrategy
+			aggMap["mysql.myisam.key_cache.blocks"] = mb.metricMysqlMyisamKeyCacheBlocks.config.AggregationStrategy
+			aggMap["mysql.myisam.key_cache.disk.operation"] = mb.metricMysqlMyisamKeyCacheDiskOperation.config.AggregationStrategy
+			aggMap["mysql.myisam.key_cache.request"] = mb.metricMysqlMyisamKeyCacheRequest.config.AggregationStrategy
 			aggMap["mysql.mysqlx_connections"] = mb.metricMysqlMysqlxConnections.config.AggregationStrategy
 			aggMap["mysql.mysqlx_worker_threads"] = mb.metricMysqlMysqlxWorkerThreads.config.AggregationStrategy
 			aggMap["mysql.opened_resources"] = mb.metricMysqlOpenedResources.config.AggregationStrategy
@@ -226,6 +229,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMysqlMaxUsedConnectionsDataPoint(ts, "1")
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMysqlMyisamKeyCacheBlocksDataPoint(ts, "1", AttributeMysqlMyisamKeyCacheStateUsed)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMysqlMyisamKeyCacheBlocksDataPoint(ts, "3", AttributeMysqlMyisamKeyCacheStateUnused)
+			}
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMysqlMyisamKeyCacheDiskOperationDataPoint(ts, "1", AttributeMysqlMyisamKeyCacheOperationRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMysqlMyisamKeyCacheDiskOperationDataPoint(ts, "3", AttributeMysqlMyisamKeyCacheOperationWrite)
+			}
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMysqlMyisamKeyCacheRequestDataPoint(ts, "1", AttributeMysqlMyisamKeyCacheOperationRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMysqlMyisamKeyCacheRequestDataPoint(ts, "3", AttributeMysqlMyisamKeyCacheOperationWrite)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlMysqlxConnectionsDataPoint(ts, "1", AttributeConnectionStatusAccepted)
@@ -427,6 +448,9 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricMysqlJoins.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlLocks.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlLogOperations.aggDataPoints)
+				assert.Empty(t, mb.metricMysqlMyisamKeyCacheBlocks.aggDataPoints)
+				assert.Empty(t, mb.metricMysqlMyisamKeyCacheDiskOperation.aggDataPoints)
+				assert.Empty(t, mb.metricMysqlMyisamKeyCacheRequest.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlMysqlxConnections.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlMysqlxWorkerThreads.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlOpenedResources.aggDataPoints)
@@ -1280,6 +1304,134 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.myisam.key_cache.blocks":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mysql.myisam.key_cache.blocks"], "Found a duplicate in the metrics slice: mysql.myisam.key_cache.blocks")
+						validatedMetrics["mysql.myisam.key_cache.blocks"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The number of MyISAM key cache blocks.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						mysqlMyisamKeyCacheStateAttrVal, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "used", mysqlMyisamKeyCacheStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mysql.myisam.key_cache.blocks"], "Found a duplicate in the metrics slice: mysql.myisam.key_cache.blocks")
+						validatedMetrics["mysql.myisam.key_cache.blocks"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The number of MyISAM key cache blocks.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mysql.myisam.key_cache.blocks"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("state")
+						assert.False(t, ok)
+					}
+				case "mysql.myisam.key_cache.disk.operation":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mysql.myisam.key_cache.disk.operation"], "Found a duplicate in the metrics slice: mysql.myisam.key_cache.disk.operation")
+						validatedMetrics["mysql.myisam.key_cache.disk.operation"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of physical MyISAM key cache disk operations.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						mysqlMyisamKeyCacheOperationAttrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "read", mysqlMyisamKeyCacheOperationAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mysql.myisam.key_cache.disk.operation"], "Found a duplicate in the metrics slice: mysql.myisam.key_cache.disk.operation")
+						validatedMetrics["mysql.myisam.key_cache.disk.operation"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of physical MyISAM key cache disk operations.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mysql.myisam.key_cache.disk.operation"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("operation")
+						assert.False(t, ok)
+					}
+				case "mysql.myisam.key_cache.request":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mysql.myisam.key_cache.request"], "Found a duplicate in the metrics slice: mysql.myisam.key_cache.request")
+						validatedMetrics["mysql.myisam.key_cache.request"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of logical MyISAM key cache requests.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						mysqlMyisamKeyCacheOperationAttrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "read", mysqlMyisamKeyCacheOperationAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mysql.myisam.key_cache.request"], "Found a duplicate in the metrics slice: mysql.myisam.key_cache.request")
+						validatedMetrics["mysql.myisam.key_cache.request"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of logical MyISAM key cache requests.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mysql.myisam.key_cache.request"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("operation")
+						assert.False(t, ok)
+					}
 				case "mysql.mysqlx_connections":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.mysqlx_connections"], "Found a duplicate in the metrics slice: mysql.mysqlx_connections")

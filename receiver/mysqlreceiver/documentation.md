@@ -174,6 +174,48 @@ The number of InnoDB log operations.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | operation | The log operation types. 'fsyncs' aren't available in MariaDB 10.8 or later. | Str: ``waits``, ``write_requests``, ``writes``, ``fsyncs`` | Recommended | - |
 
+### mysql.myisam.key_cache.blocks
+
+The number of MyISAM key cache blocks.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| state | The MyISAM key cache block state. | Str: ``used``, ``unused`` | Recommended | - |
+
+### mysql.myisam.key_cache.disk.operation
+
+The number of physical MyISAM key cache disk operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MyISAM key cache operation type. | Str: ``read``, ``write`` | Recommended | - |
+
+### mysql.myisam.key_cache.request
+
+The number of logical MyISAM key cache requests.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MyISAM key cache operation type. | Str: ``read``, ``write`` | Recommended | - |
+
 ### mysql.mysqlx_connections
 
 The number of mysqlx connections.
