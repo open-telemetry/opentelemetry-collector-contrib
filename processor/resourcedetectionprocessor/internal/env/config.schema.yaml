@@ -1,8 +1,20 @@
 description: Config holds user-specified configuration for the env detector.
 type: object
 properties:
-  allow_list:
-    description: Allowlist restricts which attribute keys from the environment variable are emitted. If unset, all keys are emitted; otherwise only the listed keys.
-    type: array
-    items:
-      type: string
+  attributes:
+    description: |
+      Filters which resource attribute keys from the environment variable are emitted.
+      Entries in `included` and `excluded` support `*` as a wildcard matching any run
+      of characters. When `included` is empty, every key is considered included by
+      default. `excluded` is applied after `included`, so a key matched by both is
+      dropped.
+    type: object
+    properties:
+      included:
+        type: array
+        items:
+          type: string
+      excluded:
+        type: array
+        items:
+          type: string

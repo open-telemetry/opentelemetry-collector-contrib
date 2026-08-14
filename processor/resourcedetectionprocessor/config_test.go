@@ -51,7 +51,10 @@ func TestLoadConfig(t *testing.T) {
 
 	envConfig := detectorCreateDefaultConfig()
 	envConfig.EnvConfig = env.Config{
-		Allowlist: []string{"deployment.environment.name", "k8s.cluster.name"},
+		Attributes: env.AttributesConfig{
+			Included: []string{"deployment.environment.name", "k8s.*"},
+			Excluded: []string{"k8s.pod.name"},
+		},
 	}
 
 	systemConfig := detectorCreateDefaultConfig()
@@ -298,11 +301,11 @@ func TestGetConfigFromType(t *testing.T) {
 			detectorType: env.TypeStr,
 			inputDetectorConfig: DetectorConfig{
 				EnvConfig: env.Config{
-					Allowlist: []string{"service.name"},
+					Attributes: env.AttributesConfig{Included: []string{"service.name"}},
 				},
 			},
 			expectedConfig: env.Config{
-				Allowlist: []string{"service.name"},
+				Attributes: env.AttributesConfig{Included: []string{"service.name"}},
 			},
 		},
 	}

@@ -68,9 +68,12 @@ resource_detection/env:
   timeout: 2s
   override: false
   env:
-    allow_list:
-      - deployment.environment.name
-      - k8s.cluster.name
+    attributes:
+      included:
+        - deployment.environment.name
+        - k8s.*
+      excluded:
+        - k8s.pod.name
 
 resource_detection/refresh:
   detectors: [system]

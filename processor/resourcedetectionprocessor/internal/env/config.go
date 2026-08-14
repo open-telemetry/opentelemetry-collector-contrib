@@ -5,9 +5,18 @@ package env // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 // Config holds user-specified configuration for the env detector.
 type Config struct {
-	// Allowlist restricts which attribute keys from the environment variable
-	// are emitted. If unset, all keys are emitted; otherwise only the listed keys.
-	Allowlist []string `mapstructure:"allow_list"`
+	// Attributes filters the resource attributes emitted by the env detector.
+	Attributes AttributesConfig `mapstructure:"attributes"`
+}
+
+// AttributesConfig configures which resource attribute keys the env detector emits.
+// Both included and excluded entries support `*` as a wildcard matching zero or more
+// characters. When included is empty, every key is considered included by default.
+// excluded is applied after included, so a key matched by both is dropped.
+// See https://github.com/open-telemetry/opentelemetry-configuration/blob/v1.1.0/schema/common.yaml#L2-L27
+type AttributesConfig struct {
+	Included []string `mapstructure:"included"`
+	Excluded []string `mapstructure:"excluded"`
 }
 
 // CreateDefaultConfig returns the default configuration for the env detector.

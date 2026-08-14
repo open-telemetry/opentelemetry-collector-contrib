@@ -41,19 +41,27 @@ processors:
     override: false
 ```
 
-Use `allow_list` to restrict which keys from `OTEL_RESOURCE_ATTRIBUTES` are
-emitted. If unset, all keys are emitted; otherwise only the listed keys.
+Use `attributes.included` and `attributes.excluded` to filter which keys from
+`OTEL_RESOURCE_ATTRIBUTES` are emitted. Both lists support `*` as a wildcard
+matching any run of characters. When `included` is empty every key is included
+by default. `excluded` is applied after `included`, so a key matched by both is
+dropped.
 
-For example, inject `deployment.environment.name` and `k8s.cluster.name` via
-`OTEL_RESOURCE_ATTRIBUTES` and allow-list only these, so other env vars on
-the collector itself (e.g. its own pod name) don't leak into the telemetry.
+For example, inject `deployment.environment.name` and every `k8s.*` key via
+`OTEL_RESOURCE_ATTRIBUTES` while dropping `k8s.pod.name`, so other env vars on
+the collector itself (e.g. its own pod name) don't leak into the telemetry:
 
 ```yaml
 processors:
   resource_detection/env:
     detectors: [env]
     env:
-      allow_list: [deployment.environment.name, k8s.cluster.name]
+      attributes:
+        included:
+          - deployment.environment.name
+          - k8s.*
+        excluded:
+          - k8s.pod.name
 ```
 
 > [!NOTE]

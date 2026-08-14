@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/resource_detection
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `allow_list` option to the `env` detector to restrict which attribute keys from `OTEL_RESOURCE_ATTRIBUTES` are emitted. If unset, all keys are emitted; otherwise only the listed keys.
+note: Add `attributes.included` and `attributes.excluded` options to the `env` detector to filter which attribute keys from `OTEL_RESOURCE_ATTRIBUTES` are emitted. Both lists support `*` as a wildcard, and `excluded` is applied after `included`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49970]
