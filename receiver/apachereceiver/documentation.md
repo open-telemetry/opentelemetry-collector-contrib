@@ -133,9 +133,9 @@ The amount of time that the server has been running in seconds.
 
 The maximum number of worker slots configured for the HTTP server, derived from the scoreboard length.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {worker} | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {worker} | Sum | Int | Cumulative | false | Development |
 
 ### apache.workers
 

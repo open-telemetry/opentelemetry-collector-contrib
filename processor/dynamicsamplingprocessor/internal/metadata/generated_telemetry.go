@@ -72,7 +72,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorDynamicSamplingDecisionTriggers, err = builder.meter.Int64Counter(
 		"otelcol_processor_dynamic_sampling_decision_triggers",
-		metric.WithDescription("Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction). [Development]"),
+		metric.WithDescription("Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown). [Development]"),
 		metric.WithUnit("{decisions}"),
 	)
 	errs = errors.Join(errs, err)
@@ -84,7 +84,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorDynamicSamplingOttlEvalErrors, err = builder.meter.Int64Counter(
 		"otelcol_processor_dynamic_sampling_ottl_eval_errors",
-		metric.WithDescription("Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to. [Development]"),
+		metric.WithDescription("Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to (_root_span_condition for the root-span condition). [Development]"),
 		metric.WithUnit("{errors}"),
 	)
 	errs = errors.Join(errs, err)
@@ -96,7 +96,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorDynamicSamplingTracesDropped, err = builder.meter.Int64Counter(
 		"otelcol_processor_dynamic_sampling_traces_dropped",
-		metric.WithDescription("Number of traces that were dropped, labelled by the rule that selected them. [Development]"),
+		metric.WithDescription("Number of traces that were dropped, labelled by the rule that selected them. Sentinel rule values are prefixed with an underscore (e.g. _unmatched, _eviction). [Development]"),
 		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
@@ -108,7 +108,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorDynamicSamplingTracesSampled, err = builder.meter.Int64Counter(
 		"otelcol_processor_dynamic_sampling_traces_sampled",
-		metric.WithDescription("Number of traces that were sampled, labelled by the rule that selected them. [Development]"),
+		metric.WithDescription("Number of traces that were sampled, labelled by the rule that selected them. Sentinel rule values are prefixed with an underscore (e.g. _eviction). [Development]"),
 		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
