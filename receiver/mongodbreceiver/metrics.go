@@ -459,7 +459,7 @@ func (s *mongodbScraper) recordWTLogSyncTime(now pcommon.Timestamp, doc bson.M, 
 	if !isWiredTiger(doc) {
 		return
 	}
-	metricPath := []string{"wiredTiger", "log", "log sync time duration"}
+	metricPath := []string{"wiredTiger", "log", "log sync time duration (usecs)"}
 	metricName := "mongodb.wt.log.sync.time"
 	val, err := collectMetric(doc, metricPath)
 	if err != nil {

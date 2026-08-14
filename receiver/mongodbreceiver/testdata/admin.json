@@ -418,7 +418,7 @@
 			"log flush operations": {
 				"$numberLong": "8100"
 			},
-			"log sync time duration": {
+			"log sync time duration (usecs)": {
 				"$numberLong": "5000000"
 			}
 		},
