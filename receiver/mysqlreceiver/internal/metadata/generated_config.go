@@ -884,13 +884,33 @@ func (ms *MysqlMaxUsedConnectionsMetricConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// MysqlMyisamKeyCacheBlockMetricConfig provides config for the mysql.myisam.key_cache.block metric.
-type MysqlMyisamKeyCacheBlockMetricConfig struct {
+// MysqlMyisamKeyCacheBlockUnusedMetricConfig provides config for the mysql.myisam.key_cache.block.unused metric.
+type MysqlMyisamKeyCacheBlockUnusedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MysqlMyisamKeyCacheBlockMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *MysqlMyisamKeyCacheBlockUnusedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlMyisamKeyCacheBlockUsedMaxMetricConfig provides config for the mysql.myisam.key_cache.block.used.max metric.
+type MysqlMyisamKeyCacheBlockUsedMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlMyisamKeyCacheBlockUsedMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2397,7 +2417,8 @@ type MetricsConfig struct {
 	MysqlLocks                       MysqlLocksMetricConfig                       `mapstructure:"mysql.locks"`
 	MysqlLogOperations               MysqlLogOperationsMetricConfig               `mapstructure:"mysql.log_operations"`
 	MysqlMaxUsedConnections          MysqlMaxUsedConnectionsMetricConfig          `mapstructure:"mysql.max_used_connections"`
-	MysqlMyisamKeyCacheBlock         MysqlMyisamKeyCacheBlockMetricConfig         `mapstructure:"mysql.myisam.key_cache.block"`
+	MysqlMyisamKeyCacheBlockUnused   MysqlMyisamKeyCacheBlockUnusedMetricConfig   `mapstructure:"mysql.myisam.key_cache.block.unused"`
+	MysqlMyisamKeyCacheBlockUsedMax  MysqlMyisamKeyCacheBlockUsedMaxMetricConfig  `mapstructure:"mysql.myisam.key_cache.block.used.max"`
 	MysqlMyisamKeyCacheDiskOperation MysqlMyisamKeyCacheDiskOperationMetricConfig `mapstructure:"mysql.myisam.key_cache.disk.operation"`
 	MysqlMyisamKeyCacheRequest       MysqlMyisamKeyCacheRequestMetricConfig       `mapstructure:"mysql.myisam.key_cache.request"`
 	MysqlMysqlxConnections           MysqlMysqlxConnectionsMetricConfig           `mapstructure:"mysql.mysqlx_connections"`
@@ -2533,7 +2554,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		MysqlMaxUsedConnections: MysqlMaxUsedConnectionsMetricConfig{
 			Enabled: false,
 		},
-		MysqlMyisamKeyCacheBlock: MysqlMyisamKeyCacheBlockMetricConfig{
+		MysqlMyisamKeyCacheBlockUnused: MysqlMyisamKeyCacheBlockUnusedMetricConfig{
+			Enabled: true,
+		},
+		MysqlMyisamKeyCacheBlockUsedMax: MysqlMyisamKeyCacheBlockUsedMaxMetricConfig{
 			Enabled: true,
 		},
 		MysqlMyisamKeyCacheDiskOperation: MysqlMyisamKeyCacheDiskOperationMetricConfig{

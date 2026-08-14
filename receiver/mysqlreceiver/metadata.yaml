@@ -192,12 +192,6 @@ attributes:
     type: string
     enum: [read, write]
     requirement_level: recommended
-  mysql.myisam.key_cache.state:
-    name_override: state
-    description: The MyISAM key cache block state.
-    type: string
-    enum: [used, unused]
-    requirement_level: required
   mysql.query_plan:
     description: The query plan for the statement, if available.
     type: string
@@ -591,15 +585,22 @@ metrics:
       input_type: string
       monotonic: false
       aggregation_temporality: cumulative
-  mysql.myisam.key_cache.block:
+  mysql.myisam.key_cache.block.unused:
     enabled: true
-    description: The number of MyISAM key cache blocks.
+    description: The number of unused MyISAM key cache blocks.
     stability: development
     unit: "1"
     gauge:
       value_type: int
       input_type: string
-    attributes: [mysql.myisam.key_cache.state]
+  mysql.myisam.key_cache.block.used.max:
+    enabled: true
+    description: The maximum number of MyISAM key cache blocks simultaneously in use since the server started or status counters were reset.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: int
+      input_type: string
   mysql.myisam.key_cache.disk.operation:
     enabled: true
     description: The number of physical MyISAM key cache disk operations.

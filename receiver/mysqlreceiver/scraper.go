@@ -459,9 +459,9 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 
 		// myisam.key_cache
 		case "Key_blocks_used":
-			addPartialIfError(errs, m.mb.RecordMysqlMyisamKeyCacheBlockDataPoint(now, v, metadata.AttributeMysqlMyisamKeyCacheStateUsed))
+			addPartialIfError(errs, m.mb.RecordMysqlMyisamKeyCacheBlockUsedMaxDataPoint(now, v))
 		case "Key_blocks_unused":
-			addPartialIfError(errs, m.mb.RecordMysqlMyisamKeyCacheBlockDataPoint(now, v, metadata.AttributeMysqlMyisamKeyCacheStateUnused))
+			addPartialIfError(errs, m.mb.RecordMysqlMyisamKeyCacheBlockUnusedDataPoint(now, v))
 		case "Key_read_requests":
 			addPartialIfError(errs, m.mb.RecordMysqlMyisamKeyCacheRequestDataPoint(now, v, metadata.AttributeMysqlMyisamKeyCacheOperationRead))
 		case "Key_reads":
