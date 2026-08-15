@@ -53,7 +53,7 @@ The following settings can be optionally configured:
 - `topic_from_attribute` (default = ""): Specify the resource attribute whose value should be used as the message's topic. See [Destination Topic](#destination-topic) below for more details.
 - `include_metadata_keys` (default = []): Specifies a list of metadata keys to propagate as Kafka message headers. If one or more keys aren't found in the metadata, they are ignored. When `sending_queue::batch` is enabled, `sending_queue::batch::partition::metadata_keys` must be configured and include all values configured in `include_metadata_keys`.
 - `record_headers` (default = {}): Specifies a map of key/value pairs to set as static headers on every outgoing Kafka record.
-- `signal_header` (default = false): Adds an `otel.signal` header (`logs`, `metrics`, `traces`, or `profiles`) to every record. See [Shared signal topic](#shared-signal-topic).
+- `signal_header` (default = false): Adds an `otelcol.signal` header (`logs`, `metrics`, `traces`, or `profiles`) to every record. See [Shared signal topic](#shared-signal-topic).
 - `partition_traces_by_id` (default = false): configures the exporter to include the trace ID as the message key in trace messages sent to kafka. *Please note:* this setting does not have any effect on Jaeger encoding exporters since Jaeger exporters include trace ID as the message key by default.
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
 - `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
@@ -152,10 +152,14 @@ exporters:
 
 You MUST turn the header on before you share topics. Existing receivers ignore unknown headers, so
 the current per-signal topics keep working. Do not write mixed signals to a receiver that does not
-have `signal_header` enabled. Keep separate topics when you need independent retention, access
-control, or failure isolation.
+have `signal_header` enabled.
 
-`otel.signal` cannot be set in `record_headers` or `include_metadata_keys` while this option is
+A shared topic is a good fit when you are partition-constrained or running at low throughput, or
+when you already isolate with templated topics and do not want another topic per signal. Keep
+separate topics when you need independent retention, access control, or failure isolation, or when
+you want to scale consumers per signal.
+
+`otelcol.signal` cannot be set in `record_headers` or `include_metadata_keys` while this option is
 enabled.
 
 ### Supported encodings

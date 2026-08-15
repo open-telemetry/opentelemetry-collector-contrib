@@ -4,6 +4,6 @@
 package kafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 
 // SignalHeaderKey is the Kafka record header that identifies the telemetry
-// signal. Values are pipeline.Signal.String(): logs, metrics, traces, or
-// profiles.
-const SignalHeaderKey = "otel.signal"
+// signal. The name matches the collector's otelcol.signal attribute. Values
+// are pipeline.Signal.String(): logs, metrics, traces, or profiles.
+const SignalHeaderKey = "otelcol.signal"

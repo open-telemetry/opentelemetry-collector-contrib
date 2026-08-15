@@ -412,22 +412,22 @@ func TestSignalHeaderValidation(t *testing.T) {
 	t.Run("metadata header collision", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.SignalHeader = true
-		cfg.IncludeMetadataKeys = []string{"otel.signal"}
+		cfg.IncludeMetadataKeys = []string{"otelcol.signal"}
 
-		assert.ErrorContains(t, cfg.Validate(), `"otel.signal" is reserved when signal_header is enabled`)
+		assert.ErrorContains(t, cfg.Validate(), `"otelcol.signal" is reserved when signal_header is enabled`)
 	})
 
 	t.Run("record header collision", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.SignalHeader = true
-		cfg.RecordHeaders = []kafkaclient.RecordHeader{{Name: "otel.signal"}}
+		cfg.RecordHeaders = []kafkaclient.RecordHeader{{Name: "otelcol.signal"}}
 
-		assert.ErrorContains(t, cfg.Validate(), `"otel.signal" is reserved when signal_header is enabled`)
+		assert.ErrorContains(t, cfg.Validate(), `"otelcol.signal" is reserved when signal_header is enabled`)
 	})
 
 	t.Run("disabled", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
-		cfg.RecordHeaders = []kafkaclient.RecordHeader{{Name: "otel.signal"}}
+		cfg.RecordHeaders = []kafkaclient.RecordHeader{{Name: "otelcol.signal"}}
 
 		assert.NoError(t, cfg.Validate())
 	})

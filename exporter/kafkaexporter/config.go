@@ -154,7 +154,7 @@ type Config struct {
 	// RecordHeaders sets static headers on every outgoing Kafka record.
 	RecordHeaders []kafkaclient.RecordHeader `mapstructure:"record_headers"`
 
-	// SignalHeader adds the "otel.signal" header to every outgoing Kafka record.
+	// SignalHeader adds the "otelcol.signal" header to every outgoing Kafka record.
 	SignalHeader bool `mapstructure:"signal_header"`
 
 	// TopicFromAttribute is the name of the attribute to use as the topic name.
