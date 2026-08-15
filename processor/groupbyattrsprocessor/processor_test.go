@@ -190,6 +190,72 @@ func assertResourceContainsAttributes(t *testing.T, resource pcommon.Resource, a
 	}
 }
 
+func TestGroupingAcrossOriginResources(t *testing.T) {
+	appendRecord := func(ld plog.Logs, resourceOther, resourceAttr, recordAttr string) {
+		rl := ld.ResourceLogs().AppendEmpty()
+		if resourceOther != "" {
+			rl.Resource().Attributes().PutStr("other", resourceOther)
+		}
+		if resourceAttr != "" {
+			rl.Resource().Attributes().PutStr("attr", resourceAttr)
+		}
+		lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		if recordAttr != "" {
+			lr.Attributes().PutStr("attr", recordAttr)
+		}
+	}
+
+	tests := []struct {
+		name string
+		// each entry is a {resourceOther, resourceAttr, recordAttr} triple
+		records             [][3]string
+		outputResourceCount int
+	}{
+		{
+			name:                "same grouping attribute under distinct resources stays separate",
+			records:             [][3]string{{"resource-a", "", "grouped"}, {"resource-b", "", "grouped"}},
+			outputResourceCount: 2,
+		},
+		{
+			name:                "identical resources are joined into one group",
+			records:             [][3]string{{"resource-a", "", "grouped"}, {"resource-a", "", "grouped"}},
+			outputResourceCount: 1,
+		},
+		{
+			name:                "grouping attribute overriding the resource attribute collapses",
+			records:             [][3]string{{"", "one", "two"}, {"", "two", ""}},
+			outputResourceCount: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inputLogs := plog.NewLogs()
+			for _, r := range tt.records {
+				appendRecord(inputLogs, r[0], r[1], r[2])
+			}
+
+			gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{"attr"})
+			require.NoError(t, err)
+
+			processedLogs, err := gap.processLogs(t.Context(), inputLogs)
+			require.NoError(t, err)
+			assert.Equal(t, tt.outputResourceCount, processedLogs.ResourceLogs().Len())
+
+			totalRecords := 0
+			for i := 0; i < processedLogs.ResourceLogs().Len(); i++ {
+				rl := processedLogs.ResourceLogs().At(i)
+				_, found := rl.Resource().Attributes().Get("attr")
+				assert.True(t, found)
+				for j := 0; j < rl.ScopeLogs().Len(); j++ {
+					totalRecords += rl.ScopeLogs().At(j).LogRecords().Len()
+				}
+			}
+			assert.Len(t, tt.records, totalRecords)
+		})
+	}
+}
+
 // The "complex" use case has following input data:
 //   - Resource[Spans|Logs|Metrics] #1
 //     Attributes: resourceAttrIndex => <resource_no> (when `withResourceAttrIndex` set to true)

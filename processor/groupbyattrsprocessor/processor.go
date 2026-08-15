@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor/internal/metadata"
 )
 
@@ -28,6 +29,8 @@ func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td ptrace.T
 
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
+		// Constant for every record below, so hash it once.
+		originHash := pdatautil.MapHash(rs.Resource().Attributes())
 
 		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
@@ -47,7 +50,7 @@ func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td ptrace.T
 
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
-				groupedResourceSpans := tg.findOrCreateResourceSpans(rs.Resource(), requiredAttributes)
+				groupedResourceSpans := tg.findOrCreateResourceSpans(rs.Resource(), originHash, requiredAttributes)
 				sp := matchingScopeSpans(groupedResourceSpans, ils.Scope()).Spans().AppendEmpty()
 				span.CopyTo(sp)
 			}
@@ -66,6 +69,8 @@ func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld plog.Logs)
 
 	for i := 0; i < rl.Len(); i++ {
 		ls := rl.At(i)
+		// Constant for every record below, so hash it once.
+		originHash := pdatautil.MapHash(ls.Resource().Attributes())
 
 		ills := ls.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
@@ -85,7 +90,7 @@ func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld plog.Logs)
 
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
-				groupedResourceLogs := lg.findOrCreateResourceLogs(ls.Resource(), requiredAttributes)
+				groupedResourceLogs := lg.findOrCreateResourceLogs(ls.Resource(), originHash, requiredAttributes)
 				lr := matchingScopeLogs(groupedResourceLogs, sl.Scope()).LogRecords().AppendEmpty()
 				log.CopyTo(lr)
 			}
@@ -104,6 +109,8 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
+		// Constant for every datapoint below, so hash it once.
+		originHash := pdatautil.MapHash(rm.Resource().Attributes())
 
 		ilms := rm.ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
@@ -116,35 +123,35 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 				case pmetric.MetricTypeGauge:
 					for pointIndex := 0; pointIndex < metric.Gauge().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Gauge().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, originHash, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Gauge().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeSum:
 					for pointIndex := 0; pointIndex < metric.Sum().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Sum().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, originHash, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Sum().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeSummary:
 					for pointIndex := 0; pointIndex < metric.Summary().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Summary().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, originHash, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Summary().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeHistogram:
 					for pointIndex := 0; pointIndex < metric.Histogram().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Histogram().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, originHash, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Histogram().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeExponentialHistogram:
 					for pointIndex := 0; pointIndex < metric.ExponentialHistogram().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.ExponentialHistogram().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, originHash, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.ExponentialHistogram().DataPoints().AppendEmpty())
 					}
 
@@ -233,6 +240,7 @@ func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 	ctx context.Context,
 	mg *metricsGroup,
 	originResourceMetrics pmetric.ResourceMetrics,
+	originHash [16]byte,
 	ilm pmetric.ScopeMetrics,
 	metric pmetric.Metric,
 	attributes pcommon.Map,
@@ -248,7 +256,7 @@ func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 	}
 
 	// Get the ResourceMetrics matching with these attributes
-	groupedResourceMetrics := mg.findOrCreateResourceMetrics(originResourceMetrics.Resource(), requiredAttributes)
+	groupedResourceMetrics := mg.findOrCreateResourceMetrics(originResourceMetrics.Resource(), originHash, requiredAttributes)
 
 	// Get the corresponding instrumentation library
 	groupedInstrumentationLibrary := matchingScopeMetrics(groupedResourceMetrics, ilm.Scope())

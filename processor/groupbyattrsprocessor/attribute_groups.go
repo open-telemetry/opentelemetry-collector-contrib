@@ -12,86 +12,129 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
+type resourceCacheKey struct {
+	origin   [16]byte
+	required [16]byte
+}
+
+// resourceIndex resolves which grouped Resource a record belongs to. byPair skips the merge for
+// an already known group; byMerged is still needed because different origin resources can merge
+// into the same attribute set.
+type resourceIndex struct {
+	byPair   map[resourceCacheKey]int
+	byMerged map[[16]byte]int
+}
+
+func newResourceIndex() resourceIndex {
+	return resourceIndex{
+		byPair:   make(map[resourceCacheKey]int),
+		byMerged: make(map[[16]byte]int),
+	}
+}
+
+func (ri *resourceIndex) lookup(key resourceCacheKey) (int, bool) {
+	idx, ok := ri.byPair[key]
+	return idx, ok
+}
+
+// resolve maps key onto the group identified by mergedHash, calling newIndex to append one when
+// mergedHash is new.
+func (ri *resourceIndex) resolve(key resourceCacheKey, mergedHash [16]byte, newIndex func() int) int {
+	idx, ok := ri.byMerged[mergedHash]
+	if !ok {
+		idx = newIndex()
+		ri.byMerged[mergedHash] = idx
+	}
+	ri.byPair[key] = idx
+	return idx
+}
+
 type tracesGroup struct {
-	traces         ptrace.Traces
-	resourceHashes [][16]byte
+	traces ptrace.Traces
+	index  resourceIndex
 }
 
 func newTracesGroup() *tracesGroup {
-	return &tracesGroup{traces: ptrace.NewTraces()}
+	return &tracesGroup{traces: ptrace.NewTraces(), index: newResourceIndex()}
 }
 
 // findOrCreateResource searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
-func (tg *tracesGroup) findOrCreateResourceSpans(originResource pcommon.Resource, requiredAttributes pcommon.Map) ptrace.ResourceSpans {
+func (tg *tracesGroup) findOrCreateResourceSpans(originResource pcommon.Resource, originHash [16]byte, requiredAttributes pcommon.Map) ptrace.ResourceSpans {
+	rss := tg.traces.ResourceSpans()
+
+	key := resourceCacheKey{origin: originHash, required: pdatautil.MapHash(requiredAttributes)}
+	if idx, ok := tg.index.lookup(key); ok {
+		return rss.At(idx)
+	}
+
 	referenceResource := buildReferenceResource(originResource, requiredAttributes)
 	referenceResourceHash := pdatautil.MapHash(referenceResource.Attributes())
 
-	rss := tg.traces.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
-		if tg.resourceHashes[i] == referenceResourceHash {
-			return rss.At(i)
-		}
-	}
-
-	rs := tg.traces.ResourceSpans().AppendEmpty()
-	referenceResource.MoveTo(rs.Resource())
-	tg.resourceHashes = append(tg.resourceHashes, referenceResourceHash)
-	return rs
+	idx := tg.index.resolve(key, referenceResourceHash, func() int {
+		rs := rss.AppendEmpty()
+		referenceResource.MoveTo(rs.Resource())
+		return rss.Len() - 1
+	})
+	return rss.At(idx)
 }
 
 type metricsGroup struct {
-	metrics        pmetric.Metrics
-	resourceHashes [][16]byte
+	metrics pmetric.Metrics
+	index   resourceIndex
 }
 
 func newMetricsGroup() *metricsGroup {
-	return &metricsGroup{metrics: pmetric.NewMetrics()}
+	return &metricsGroup{metrics: pmetric.NewMetrics(), index: newResourceIndex()}
 }
 
 // findOrCreateResourceMetrics searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
-func (mg *metricsGroup) findOrCreateResourceMetrics(originResource pcommon.Resource, requiredAttributes pcommon.Map) pmetric.ResourceMetrics {
+func (mg *metricsGroup) findOrCreateResourceMetrics(originResource pcommon.Resource, originHash [16]byte, requiredAttributes pcommon.Map) pmetric.ResourceMetrics {
+	rms := mg.metrics.ResourceMetrics()
+
+	key := resourceCacheKey{origin: originHash, required: pdatautil.MapHash(requiredAttributes)}
+	if idx, ok := mg.index.lookup(key); ok {
+		return rms.At(idx)
+	}
+
 	referenceResource := buildReferenceResource(originResource, requiredAttributes)
 	referenceResourceHash := pdatautil.MapHash(referenceResource.Attributes())
 
-	rms := mg.metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		if mg.resourceHashes[i] == referenceResourceHash {
-			return rms.At(i)
-		}
-	}
-
-	rm := mg.metrics.ResourceMetrics().AppendEmpty()
-	referenceResource.MoveTo(rm.Resource())
-	mg.resourceHashes = append(mg.resourceHashes, referenceResourceHash)
-	return rm
+	idx := mg.index.resolve(key, referenceResourceHash, func() int {
+		rm := rms.AppendEmpty()
+		referenceResource.MoveTo(rm.Resource())
+		return rms.Len() - 1
+	})
+	return rms.At(idx)
 }
 
 type logsGroup struct {
-	logs           plog.Logs
-	resourceHashes [][16]byte
+	logs  plog.Logs
+	index resourceIndex
 }
 
 // newLogsGroup returns new logsGroup with predefined capacity
 func newLogsGroup() *logsGroup {
-	return &logsGroup{logs: plog.NewLogs()}
+	return &logsGroup{logs: plog.NewLogs(), index: newResourceIndex()}
 }
 
 // findOrCreateResourceLogs searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
-func (lg *logsGroup) findOrCreateResourceLogs(originResource pcommon.Resource, requiredAttributes pcommon.Map) plog.ResourceLogs {
+func (lg *logsGroup) findOrCreateResourceLogs(originResource pcommon.Resource, originHash [16]byte, requiredAttributes pcommon.Map) plog.ResourceLogs {
+	rls := lg.logs.ResourceLogs()
+
+	key := resourceCacheKey{origin: originHash, required: pdatautil.MapHash(requiredAttributes)}
+	if idx, ok := lg.index.lookup(key); ok {
+		return rls.At(idx)
+	}
+
 	referenceResource := buildReferenceResource(originResource, requiredAttributes)
 	referenceResourceHash := pdatautil.MapHash(referenceResource.Attributes())
 
-	rls := lg.logs.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		if lg.resourceHashes[i] == referenceResourceHash {
-			return rls.At(i)
-		}
-	}
-
-	rl := lg.logs.ResourceLogs().AppendEmpty()
-	referenceResource.MoveTo(rl.Resource())
-	lg.resourceHashes = append(lg.resourceHashes, referenceResourceHash)
-	return rl
+	idx := lg.index.resolve(key, referenceResourceHash, func() int {
+		rl := rls.AppendEmpty()
+		referenceResource.MoveTo(rl.Resource())
+		return rls.Len() - 1
+	})
+	return rls.At(idx)
 }
 
 func instrumentationLibrariesEqual(il1, il2 pcommon.InstrumentationScope) bool {
