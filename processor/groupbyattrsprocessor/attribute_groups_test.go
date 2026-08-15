@@ -115,6 +115,15 @@ func TestResourceAttributeScenarios(t *testing.T) {
 	}
 }
 
+// TestFindOrCreateWithoutStartResource pins the precondition documented on findOrCreateResource*:
+// the origin is unset without it, so the call fails immediately rather than mis-grouping.
+func TestFindOrCreateWithoutStartResource(t *testing.T) {
+	lg := newLogsGroup()
+	assert.Panics(t, func() {
+		lg.findOrCreateResourceLogs(pcommon.NewMap())
+	})
+}
+
 func TestInstrumentationLibraryMatching(t *testing.T) {
 	rl := plog.NewResourceLogs()
 	rs := ptrace.NewResourceSpans()
