@@ -114,9 +114,9 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-		mg.index.startResource(rm.Resource(), dataPointCount(rm.ScopeMetrics()))
-
 		ilms := rm.ScopeMetrics()
+		mg.index.startResource(rm.Resource(), dataPointCount(ilms))
+
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {

@@ -226,23 +226,31 @@ func TestGroupingAcrossOriginResources(t *testing.T) {
 	tests := []struct {
 		name string
 		// each entry is a {resourceOther, resourceAttr, recordAttr} triple
-		records             [][3]string
-		outputResourceCount int
+		records [][3]string
+		// the full attributes expected on each output resource, in output order
+		wantResources []map[string]any
 	}{
 		{
-			name:                "same grouping attribute under distinct resources stays separate",
-			records:             [][3]string{{"resource-a", "", "grouped"}, {"resource-b", "", "grouped"}},
-			outputResourceCount: 2,
+			name:    "same grouping attribute under distinct resources stays separate",
+			records: [][3]string{{"resource-a", "", "grouped"}, {"resource-b", "", "grouped"}},
+			wantResources: []map[string]any{
+				{"other": "resource-a", "attr": "grouped"},
+				{"other": "resource-b", "attr": "grouped"},
+			},
 		},
 		{
-			name:                "identical resources are joined into one group",
-			records:             [][3]string{{"resource-a", "", "grouped"}, {"resource-a", "", "grouped"}},
-			outputResourceCount: 1,
+			name:    "identical resources are joined into one group",
+			records: [][3]string{{"resource-a", "", "grouped"}, {"resource-a", "", "grouped"}},
+			wantResources: []map[string]any{
+				{"other": "resource-a", "attr": "grouped"},
+			},
 		},
 		{
-			name:                "grouping attribute overriding the resource attribute collapses",
-			records:             [][3]string{{"", "one", "two"}, {"", "two", ""}},
-			outputResourceCount: 1,
+			name:    "grouping attribute overriding the resource attribute collapses",
+			records: [][3]string{{"", "one", "two"}, {"", "two", ""}},
+			wantResources: []map[string]any{
+				{"attr": "two"},
+			},
 		},
 	}
 
@@ -262,17 +270,17 @@ func TestGroupingAcrossOriginResources(t *testing.T) {
 
 				processed, err := newProcessor(t).processLogs(t.Context(), input)
 				require.NoError(t, err)
-				assert.Equal(t, tt.outputResourceCount, processed.ResourceLogs().Len())
 
+				gotResources := []map[string]any{}
 				totalRecords := 0
 				for i := 0; i < processed.ResourceLogs().Len(); i++ {
 					rl := processed.ResourceLogs().At(i)
-					_, found := rl.Resource().Attributes().Get("attr")
-					assert.True(t, found)
+					gotResources = append(gotResources, rl.Resource().Attributes().AsRaw())
 					for j := 0; j < rl.ScopeLogs().Len(); j++ {
 						totalRecords += rl.ScopeLogs().At(j).LogRecords().Len()
 					}
 				}
+				assert.Equal(t, tt.wantResources, gotResources)
 				assert.Equal(t, len(tt.records), totalRecords)
 			})
 
@@ -284,17 +292,17 @@ func TestGroupingAcrossOriginResources(t *testing.T) {
 
 				processed, err := newProcessor(t).processTraces(t.Context(), input)
 				require.NoError(t, err)
-				assert.Equal(t, tt.outputResourceCount, processed.ResourceSpans().Len())
 
+				gotResources := []map[string]any{}
 				totalRecords := 0
 				for i := 0; i < processed.ResourceSpans().Len(); i++ {
 					rs := processed.ResourceSpans().At(i)
-					_, found := rs.Resource().Attributes().Get("attr")
-					assert.True(t, found)
+					gotResources = append(gotResources, rs.Resource().Attributes().AsRaw())
 					for j := 0; j < rs.ScopeSpans().Len(); j++ {
 						totalRecords += rs.ScopeSpans().At(j).Spans().Len()
 					}
 				}
+				assert.Equal(t, tt.wantResources, gotResources)
 				assert.Equal(t, len(tt.records), totalRecords)
 			})
 
@@ -306,13 +314,12 @@ func TestGroupingAcrossOriginResources(t *testing.T) {
 
 				processed, err := newProcessor(t).processMetrics(t.Context(), input)
 				require.NoError(t, err)
-				assert.Equal(t, tt.outputResourceCount, processed.ResourceMetrics().Len())
 
+				gotResources := []map[string]any{}
 				totalRecords := 0
 				for i := 0; i < processed.ResourceMetrics().Len(); i++ {
 					rm := processed.ResourceMetrics().At(i)
-					_, found := rm.Resource().Attributes().Get("attr")
-					assert.True(t, found)
+					gotResources = append(gotResources, rm.Resource().Attributes().AsRaw())
 					for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 						metrics := rm.ScopeMetrics().At(j).Metrics()
 						for k := 0; k < metrics.Len(); k++ {
@@ -320,6 +327,7 @@ func TestGroupingAcrossOriginResources(t *testing.T) {
 						}
 					}
 				}
+				assert.Equal(t, tt.wantResources, gotResources)
 				assert.Equal(t, len(tt.records), totalRecords)
 			})
 		})
