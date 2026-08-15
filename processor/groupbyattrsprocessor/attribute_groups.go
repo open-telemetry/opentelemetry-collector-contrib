@@ -75,7 +75,7 @@ func newTracesGroup() *tracesGroup {
 }
 
 // findOrCreateResource searches for a Resource with matching attributes and returns it. If nothing is found, it is being created.
-// Requires a preceding startResource call; without one the origin is unset and this panics.
+// Requires a preceding startResource call.
 func (tg *tracesGroup) findOrCreateResourceSpans(requiredAttributes pcommon.Map) ptrace.ResourceSpans {
 	rss := tg.traces.ResourceSpans()
 
@@ -105,7 +105,7 @@ func newMetricsGroup() *metricsGroup {
 }
 
 // findOrCreateResourceMetrics searches for a Resource with matching attributes and returns it. If nothing is found, it is being created.
-// Requires a preceding startResource call; without one the origin is unset and this panics.
+// Requires a preceding startResource call.
 func (mg *metricsGroup) findOrCreateResourceMetrics(requiredAttributes pcommon.Map) pmetric.ResourceMetrics {
 	rms := mg.metrics.ResourceMetrics()
 
@@ -136,7 +136,7 @@ func newLogsGroup() *logsGroup {
 }
 
 // findOrCreateResourceLogs searches for a Resource with matching attributes and returns it. If nothing is found, it is being created.
-// Requires a preceding startResource call; without one the origin is unset and this panics.
+// Requires a preceding startResource call.
 func (lg *logsGroup) findOrCreateResourceLogs(requiredAttributes pcommon.Map) plog.ResourceLogs {
 	rls := lg.logs.ResourceLogs()
 
