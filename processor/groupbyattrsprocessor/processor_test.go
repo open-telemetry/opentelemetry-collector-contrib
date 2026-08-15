@@ -191,18 +191,36 @@ func assertResourceContainsAttributes(t *testing.T, resource pcommon.Resource, a
 }
 
 func TestGroupingAcrossOriginResources(t *testing.T) {
-	appendRecord := func(ld plog.Logs, resourceOther, resourceAttr, recordAttr string) {
-		rl := ld.ResourceLogs().AppendEmpty()
+	fillResource := func(res pcommon.Resource, resourceOther, resourceAttr string) {
 		if resourceOther != "" {
-			rl.Resource().Attributes().PutStr("other", resourceOther)
+			res.Attributes().PutStr("other", resourceOther)
 		}
 		if resourceAttr != "" {
-			rl.Resource().Attributes().PutStr("attr", resourceAttr)
+			res.Attributes().PutStr("attr", resourceAttr)
 		}
-		lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	}
+	fillRecord := func(attrs pcommon.Map, recordAttr string) {
 		if recordAttr != "" {
-			lr.Attributes().PutStr("attr", recordAttr)
+			attrs.PutStr("attr", recordAttr)
 		}
+	}
+
+	appendLog := func(ld plog.Logs, resourceOther, resourceAttr, recordAttr string) {
+		rl := ld.ResourceLogs().AppendEmpty()
+		fillResource(rl.Resource(), resourceOther, resourceAttr)
+		fillRecord(rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes(), recordAttr)
+	}
+	appendSpan := func(td ptrace.Traces, resourceOther, resourceAttr, recordAttr string) {
+		rs := td.ResourceSpans().AppendEmpty()
+		fillResource(rs.Resource(), resourceOther, resourceAttr)
+		fillRecord(rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes(), recordAttr)
+	}
+	appendDataPoint := func(md pmetric.Metrics, resourceOther, resourceAttr, recordAttr string) {
+		rm := md.ResourceMetrics().AppendEmpty()
+		fillResource(rm.Resource(), resourceOther, resourceAttr)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetName("metric")
+		fillRecord(metric.SetEmptyGauge().DataPoints().AppendEmpty().Attributes(), recordAttr)
 	}
 
 	tests := []struct {
@@ -230,28 +248,80 @@ func TestGroupingAcrossOriginResources(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			inputLogs := plog.NewLogs()
-			for _, r := range tt.records {
-				appendRecord(inputLogs, r[0], r[1], r[2])
+			newProcessor := func(t *testing.T) *groupByAttrsProcessor {
+				gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{"attr"})
+				require.NoError(t, err)
+				return gap
 			}
 
-			gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{"attr"})
-			require.NoError(t, err)
-
-			processedLogs, err := gap.processLogs(t.Context(), inputLogs)
-			require.NoError(t, err)
-			assert.Equal(t, tt.outputResourceCount, processedLogs.ResourceLogs().Len())
-
-			totalRecords := 0
-			for i := 0; i < processedLogs.ResourceLogs().Len(); i++ {
-				rl := processedLogs.ResourceLogs().At(i)
-				_, found := rl.Resource().Attributes().Get("attr")
-				assert.True(t, found)
-				for j := 0; j < rl.ScopeLogs().Len(); j++ {
-					totalRecords += rl.ScopeLogs().At(j).LogRecords().Len()
+			t.Run("logs", func(t *testing.T) {
+				input := plog.NewLogs()
+				for _, r := range tt.records {
+					appendLog(input, r[0], r[1], r[2])
 				}
-			}
-			assert.Len(t, tt.records, totalRecords)
+
+				processed, err := newProcessor(t).processLogs(t.Context(), input)
+				require.NoError(t, err)
+				assert.Equal(t, tt.outputResourceCount, processed.ResourceLogs().Len())
+
+				totalRecords := 0
+				for i := 0; i < processed.ResourceLogs().Len(); i++ {
+					rl := processed.ResourceLogs().At(i)
+					_, found := rl.Resource().Attributes().Get("attr")
+					assert.True(t, found)
+					for j := 0; j < rl.ScopeLogs().Len(); j++ {
+						totalRecords += rl.ScopeLogs().At(j).LogRecords().Len()
+					}
+				}
+				assert.Equal(t, len(tt.records), totalRecords)
+			})
+
+			t.Run("traces", func(t *testing.T) {
+				input := ptrace.NewTraces()
+				for _, r := range tt.records {
+					appendSpan(input, r[0], r[1], r[2])
+				}
+
+				processed, err := newProcessor(t).processTraces(t.Context(), input)
+				require.NoError(t, err)
+				assert.Equal(t, tt.outputResourceCount, processed.ResourceSpans().Len())
+
+				totalRecords := 0
+				for i := 0; i < processed.ResourceSpans().Len(); i++ {
+					rs := processed.ResourceSpans().At(i)
+					_, found := rs.Resource().Attributes().Get("attr")
+					assert.True(t, found)
+					for j := 0; j < rs.ScopeSpans().Len(); j++ {
+						totalRecords += rs.ScopeSpans().At(j).Spans().Len()
+					}
+				}
+				assert.Equal(t, len(tt.records), totalRecords)
+			})
+
+			t.Run("metrics", func(t *testing.T) {
+				input := pmetric.NewMetrics()
+				for _, r := range tt.records {
+					appendDataPoint(input, r[0], r[1], r[2])
+				}
+
+				processed, err := newProcessor(t).processMetrics(t.Context(), input)
+				require.NoError(t, err)
+				assert.Equal(t, tt.outputResourceCount, processed.ResourceMetrics().Len())
+
+				totalRecords := 0
+				for i := 0; i < processed.ResourceMetrics().Len(); i++ {
+					rm := processed.ResourceMetrics().At(i)
+					_, found := rm.Resource().Attributes().Get("attr")
+					assert.True(t, found)
+					for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+						metrics := rm.ScopeMetrics().At(j).Metrics()
+						for k := 0; k < metrics.Len(); k++ {
+							totalRecords += metrics.At(k).Gauge().DataPoints().Len()
+						}
+					}
+				}
+				assert.Equal(t, len(tt.records), totalRecords)
+			})
 		})
 	}
 }
