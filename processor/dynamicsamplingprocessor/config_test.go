@@ -111,6 +111,14 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "name is required",
 		},
 		{
+			name: "reserved_rule_name_prefix",
+			cfg: baseCfg(RuleConfig{
+				Name:    "_eviction",
+				Sampler: SamplerConfig{Type: AlwaysSample},
+			}),
+			wantErr: `the "_" prefix is reserved`,
+		},
+		{
 			name: "duplicate_rule_name",
 			cfg: baseCfg(
 				RuleConfig{Name: "a", Sampler: SamplerConfig{Type: AlwaysSample}},
