@@ -8,7 +8,7 @@
     "primaries" : {
         "docs" : {
           "count" : 40,
-          "deleted" : 0
+          "deleted" : 7
         },
         "shard_stats" : {
           "total_count" : 1
@@ -136,7 +136,7 @@
     "total" : {
         "docs" : {
           "count" : 40,
-          "deleted" : 0
+          "deleted" : 11
         },
         "shard_stats" : {
           "total_count" : 1
@@ -268,7 +268,7 @@
       "primaries" : {
           "docs" : {
             "count" : 40,
-            "deleted" : 0
+            "deleted" : 13
           },
           "shard_stats" : {
             "total_count" : 1
@@ -396,7 +396,7 @@
       "total" : {
           "docs" : {
             "count" : 40,
-            "deleted" : 0
+            "deleted" : 17
           },
           "shard_stats" : {
             "total_count" : 1

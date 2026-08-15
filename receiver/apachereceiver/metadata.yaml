@@ -223,8 +223,10 @@ metrics:
     stability: development
     description: The maximum number of worker slots configured for the HTTP server, derived from the scoreboard length.
     unit: "{worker}"
-    gauge:
+    sum:
       value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
     attributes: []
   apache.workers:
     enabled: true
