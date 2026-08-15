@@ -1863,7 +1863,7 @@ func TestTailStorageTakeErrorDropsTraceState(t *testing.T) {
 
 			require.NoError(t, p.Shutdown(t.Context()))
 
-			tsp := p.(*tailSamplingSpanProcessor)
+			tsp := shard0(p)
 			assert.Empty(t, sink.AllTraces(), "trace must not be forwarded when tail storage Take fails")
 			assert.Empty(t, tsp.idToTrace, "trace state must be dropped after Take failure")
 			assert.Zero(t, tsp.deleteTraceQueue.Len(), "delete queue must be cleaned after Take failure")

@@ -434,6 +434,27 @@ SDKs → Collectors (loadbalancing exporter, hash by traceID)
            → Backend
 ```
 
+## Known limitations
+
+- **Decisions are per-instance.** All spans of a trace must reach the same
+  instance; scale out with the two-tier `loadbalancing` pattern above. Shared
+  storage for a single-tier deployment is future work.
+- **The buffer is bounded by trace count, not bytes.** Steady-state memory is
+  approximately span rate x buffer window (`decision_delay` after the decision
+  triggers, up to `trace_timeout`) x average span size, plus the decision
+  caches. Trace shape barely matters: per-trace bookkeeping is small, so many
+  small traces cost slightly more than a few giant ones at the same span rate.
+  When `num_traces` is exceeded the oldest trace is evicted with a real
+  decision (see the eviction policy section).
+- **Shutdown drains rather than discards.** Pending traces are decided with
+  the spans seen so far and kept traces are forwarded, so a clean restart or
+  rollout does not silently lose the buffer. A crash still loses it.
+- **Rules are fixed at startup.** Changing rules means a restart (which
+  drains, see above). Hot reload is future work.
+- **Traces only.** Rule conditions use the OTTL span context, and the
+  configuration is trace-scoped; correlated log sampling is future work and
+  will add log-specific configuration alongside the existing fields.
+
 ## Relationship to `processor/tail_sampling`
 
 This processor sits next to `tail_sampling` rather than extending it. The two are close in shape (both buffer traces and decide once a trigger fires) but use different evaluation models, and `tail_sampling`'s current model has several mechanical features that a rate-bearing sampler does not fit cleanly into.
@@ -475,6 +496,39 @@ The processor honours any incoming `ot=th` (sampling threshold) and `ot=rv` (exp
 - **Population-relative rate (equalizing).** The rule's rate `N` is interpreted as the operator's target for the original population: "keep 1-in-N of all traces before any sampling." The effective absolute keep probability is `min(P_upstream, 1/N)`. This is the same composition mode as `equalizing` in [`processor/probabilisticsamplerprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor#equalizing).
 - **Threshold monotonicity.** If a span already carries an `ot=th` stricter than what this processor would emit, the incoming value is preserved. This matches the consistent probability spec: a downstream stage may raise a threshold but never lower it.
 
+### Worked example: composing with a head sampler
+
+```yaml
+processors:
+  probabilistic_sampler:
+    sampling_percentage: 50
+    mode: equalizing # writes ot=th on kept spans
+  dynamic_sampling:
+    rules:
+      - name: default
+        sampler:
+          type: ema_dynamic
+          goal_sampling_percentage: 10
+          key_attributes: ["service.name"]
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [probabilistic_sampler, dynamic_sampling]
+      exporters: [otlphttp]
+```
+
+The stricter stage wins, and the surviving `ot=th` always reflects the
+effective end-to-end probability:
+
+- With the 10% goal above, roughly 10% of the *original* traffic survives (not
+  10% of the upstream sampler's 50%), and every kept span carries the 10%
+  threshold, so adjusted counts reconstruct the original volume.
+- If the rule were looser than upstream (e.g. `always_sample`), all arriving
+  spans are kept and retain the upstream 50% threshold, so adjusted counts
+  remain honest.
+
 ### Accuracy under non-uniform upstream sampling
 
 The equalizing composition above is exact when upstream sampling is uniform across the keys the rule's adaptive sampler uses (`key_attributes`). If upstream head-samples different classes of traffic at different rates and those classes overlap with the tail sampler's keys, the adaptive samplers observe a population that under-represents heavily-downsampled keys and can misjudge their per-key rate. Improving accuracy in that case requires per-key upstream tracking in the sampler and is tracked as follow-up work in [#49517](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49517). Under uniform upstream sampling (the common case, e.g. an SDK `TraceIdRatioBased` sampler) the rates are exact.
@@ -508,10 +562,19 @@ Future work on shared trace context across collector instances (tracked under "C
 | `otelcol_processor_dynamic_sampling_traces_sampled` | Counter  | `rule`   | Traces kept, attributed to the rule that selected them.                     |
 | `otelcol_processor_dynamic_sampling_traces_dropped` | Counter  | `rule`   | Traces dropped, attributed to the rule that selected them.                  |
 | `otelcol_processor_dynamic_sampling_decision_sample_rate` | Histogram | `rule` | Distribution of effective sample rates produced per rule.                  |
-| `otelcol_processor_dynamic_sampling_decision_triggers` | Counter  | `trigger` | Number of trace decisions made, labelled by which event triggered them (`root_span`, `trace_timeout`). |
-| `otelcol_processor_dynamic_sampling_traces_evicted` | Counter  |          | Traces evicted from the buffer before a decision could be made.             |
+| `otelcol_processor_dynamic_sampling_decision_triggers` | Counter  | `trigger` | Number of trace decisions made, labelled by which event triggered them (`root_span`, `trace_timeout`, `eviction`, `shutdown`). |
+| `otelcol_processor_dynamic_sampling_traces_evicted` | Counter  |          | Traces evicted from the buffer under pressure. Each still receives a decision per the eviction policy. |
 | `otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable` | Counter |     | Spans whose incoming W3C tracestate could not be parsed while applying the sampling threshold. |
 | `otelcol_processor_dynamic_sampling_ottl_eval_errors` | Counter | `rule`  | OTTL condition evaluation errors, labelled by the rule the condition belongs to. |
+
+The `rule` label carries the matched rule's name from the config. Values
+prefixed with `_` are processor-owned sentinels rather than user rules:
+`_unmatched` (dropped with no matching rule), `_eviction` (decided by the
+probabilistic eviction policy), and `_root_span_condition` (on
+`ottl_eval_errors`, when the root-span condition itself fails to evaluate).
+Config validation rejects user rule names starting with `_`, so the two can
+never collide. These labels and the `trigger` values above are part of the
+component's telemetry contract; build dashboards on them freely.
 
 ## Output attributes
 
@@ -525,6 +588,8 @@ The sample rate is encoded in W3C TraceState as `ot=th:<hex>` per the OTel consi
 
 ## Future work
 
-- OTTL-based conditions
 - Shared-storage backed scaling for single-tier deployments
 - Rule and sampler hot-reload
+- Span-count decision trigger (SpanLimit parity)
+- Stress-relief style overload activation
+- Correlated log sampling

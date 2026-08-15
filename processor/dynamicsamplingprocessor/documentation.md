@@ -32,7 +32,7 @@ Number of spans whose incoming W3C tracestate could not be parsed when applying 
 
 ### otelcol_processor_dynamic_sampling_ottl_eval_errors
 
-Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to.
+Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to (_root_span_condition for the root-span condition).
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -48,7 +48,7 @@ Number of traces currently in the accumulation buffer awaiting a decision.
 
 ### otelcol_processor_dynamic_sampling_traces_dropped
 
-Number of traces that were dropped, labelled by the rule that selected them.
+Number of traces that were dropped, labelled by the rule that selected them. Sentinel rule values are prefixed with an underscore (e.g. _unmatched, _eviction).
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -64,7 +64,7 @@ Number of traces evicted from the buffer due to num_traces pressure. Evicted tra
 
 ### otelcol_processor_dynamic_sampling_traces_sampled
 
-Number of traces that were sampled, labelled by the rule that selected them.
+Number of traces that were sampled, labelled by the rule that selected them. Sentinel rule values are prefixed with an underscore (e.g. _eviction).
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
