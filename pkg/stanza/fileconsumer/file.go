@@ -40,12 +40,15 @@ type Manager struct {
 	tracker       tracker.Tracker
 	noTracking    bool
 
-	pollInterval   time.Duration
-	persister      operator.Persister
-	maxBatches     int
-	maxBatchFiles  int
-	pollsToArchive int
-	onTruncate     string
+	pollInterval        time.Duration
+	pollsPerDiscovery   int
+	pollsSinceDiscovery int
+	lastMatches         []string
+	persister           operator.Persister
+	maxBatches          int
+	maxBatchFiles       int
+	pollsToArchive      int
+	onTruncate          string
 
 	telemetryBuilder *metadata.TelemetryBuilder
 
@@ -135,12 +138,11 @@ func (m *Manager) poll(ctx context.Context) {
 	// Used to keep track of the number of batches processed in this poll cycle
 	batchesProcessed := 0
 
-	// Get the list of paths on disk
-	matches, err := m.fileMatcher.MatchFiles()
-	if err != nil {
-		m.set.Logger.Debug("finding files", zap.Error(err))
-	}
-	m.set.Logger.Debug("matched files", zap.Strings("paths", matches))
+	// Get the list of paths on disk. When discovery_interval is configured, the
+	// glob walk runs only once per discovery_interval (rounded up to a whole
+	// number of poll intervals) and its result is reused on the polls in
+	// between, decoupling the walk cost from read latency.
+	matches := m.discover()
 
 	for len(matches) > m.maxBatchFiles {
 		m.consume(ctx, matches[:m.maxBatchFiles])
@@ -169,6 +171,34 @@ func (m *Manager) poll(ctx context.Context) {
 	}
 	// rotate at end of every poll()
 	m.tracker.EndPoll(ctx)
+}
+
+// discover returns the set of matched file paths for this poll. When
+// discovery_interval is configured (pollsPerDiscovery > 0), it runs the glob
+// walk only when due and reuses the previous result on the polls in between;
+// otherwise it walks on every poll, preserving the prior behavior.
+func (m *Manager) discover() []string {
+	if m.pollsPerDiscovery > 0 && m.lastMatches != nil && m.pollsSinceDiscovery > 0 {
+		m.pollsSinceDiscovery--
+		return m.lastMatches
+	}
+
+	matches, err := m.fileMatcher.MatchFiles()
+	if err != nil {
+		m.set.Logger.Debug("finding files", zap.Error(err))
+		// Keep the previously discovered set on a transient walk error so a
+		// one-off failure does not drop files that are still present.
+		if m.lastMatches != nil {
+			matches = m.lastMatches
+		}
+	}
+	m.set.Logger.Debug("matched files", zap.Strings("paths", matches))
+
+	if m.pollsPerDiscovery > 0 {
+		m.lastMatches = matches
+		m.pollsSinceDiscovery = m.pollsPerDiscovery - 1
+	}
+	return matches
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {

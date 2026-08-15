@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: pkg/stanza
+
+note: Add an optional `discovery_interval` to the fileconsumer file matcher (used by the filelog receiver). When set, the file-discovery glob walk runs at most once per `discovery_interval` (rounded up to a whole number of `poll_interval`s) and its result is reused on the polls in between, decoupling the walk cost from read latency. Default behavior is unchanged.
+
+issues: [50261]
+
+change_logs: [user]

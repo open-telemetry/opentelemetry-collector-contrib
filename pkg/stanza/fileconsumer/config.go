@@ -81,6 +81,7 @@ type Config struct {
 	matcher.Criteria        `mapstructure:",squash"`
 	attrs.Resolver          `mapstructure:",squash"`
 	PollInterval            time.Duration   `mapstructure:"poll_interval,omitempty"`
+	DiscoveryInterval       time.Duration   `mapstructure:"discovery_interval,omitempty"`
 	MaxConcurrentFiles      int             `mapstructure:"max_concurrent_files,omitempty"`
 	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
 	StartAt                 string          `mapstructure:"start_at,omitempty"`
@@ -194,17 +195,28 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		maxBatchFiles = 1
 	}
 
+	// pollsPerDiscovery is how many poll cycles reuse a single glob walk when
+	// discovery_interval is set. Zero means walk on every poll (the default).
+	pollsPerDiscovery := 0
+	if c.DiscoveryInterval > 0 && c.PollInterval > 0 {
+		pollsPerDiscovery = int((c.DiscoveryInterval + c.PollInterval - 1) / c.PollInterval)
+		if pollsPerDiscovery < 1 {
+			pollsPerDiscovery = 1
+		}
+	}
+
 	return &Manager{
-		set:              set,
-		readerFactory:    readerFactory,
-		fileMatcher:      fileMatcher,
-		pollInterval:     c.PollInterval,
-		maxBatchFiles:    maxBatchFiles,
-		maxBatches:       c.MaxBatches,
-		telemetryBuilder: telemetryBuilder,
-		noTracking:       o.noTracking,
-		pollsToArchive:   c.PollsToArchive,
-		onTruncate:       c.OnTruncate,
+		set:               set,
+		readerFactory:     readerFactory,
+		fileMatcher:       fileMatcher,
+		pollInterval:      c.PollInterval,
+		pollsPerDiscovery: pollsPerDiscovery,
+		maxBatchFiles:     maxBatchFiles,
+		maxBatches:        c.MaxBatches,
+		telemetryBuilder:  telemetryBuilder,
+		noTracking:        o.noTracking,
+		pollsToArchive:    c.PollsToArchive,
+		onTruncate:        c.OnTruncate,
 	}, nil
 }
 
@@ -227,6 +239,10 @@ func (c Config) validate() error {
 
 	if c.MaxBatches < 0 {
 		return errors.New("'max_batches' must not be negative")
+	}
+
+	if c.DiscoveryInterval < 0 {
+		return errors.New("'discovery_interval' must not be negative")
 	}
 
 	switch c.MaxLogSizeBehavior {

@@ -1727,3 +1727,64 @@ func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
 	}
 	sink2.ExpectNoCalls(t)
 }
+
+// TestDiscoveryIntervalReusesWalk verifies that with discovery_interval set, the
+// glob walk runs only once per discovery_interval (rounded up to a whole number
+// of poll intervals) and its result is reused on the polls in between, so a new
+// file is not discovered until the next walk.
+func TestDiscoveryIntervalReusesWalk(t *testing.T) {
+	t.Parallel()
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.PollInterval = 10 * time.Millisecond
+	cfg.DiscoveryInterval = 30 * time.Millisecond // pollsPerDiscovery = ceil(30/10) = 3
+
+	operator, sink := testManager(t, cfg)
+	require.Equal(t, 3, operator.pollsPerDiscovery)
+
+	ctx := t.Context()
+
+	// A file present before the first poll is found by the walk on that poll.
+	a := filetest.OpenTemp(t, tempDir)
+	filetest.WriteString(t, a, "log-a\n")
+
+	operator.poll(ctx) // poll 1: walks
+	sink.ExpectToken(t, []byte("log-a"))
+
+	// A file created after the first poll is not discovered until the walk runs
+	// again, which with pollsPerDiscovery=3 is the 4th poll.
+	b := filetest.OpenTemp(t, tempDir)
+	filetest.WriteString(t, b, "log-b\n")
+
+	operator.poll(ctx) // poll 2: reuses the cached match set
+	operator.poll(ctx) // poll 3: reuses the cached match set
+	sink.ExpectNoCalls(t)
+
+	operator.poll(ctx) // poll 4: walks again, discovers b
+	sink.ExpectToken(t, []byte("log-b"))
+}
+
+// TestDiscoveryIntervalUnsetWalksEveryPoll confirms the default (unset) walks on
+// every poll: a new file is discovered on the very next poll.
+func TestDiscoveryIntervalUnsetWalksEveryPoll(t *testing.T) {
+	t.Parallel()
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+
+	operator, sink := testManager(t, cfg)
+	require.Equal(t, 0, operator.pollsPerDiscovery)
+
+	ctx := t.Context()
+
+	a := filetest.OpenTemp(t, tempDir)
+	filetest.WriteString(t, a, "log-a\n")
+	operator.poll(ctx)
+	sink.ExpectToken(t, []byte("log-a"))
+
+	b := filetest.OpenTemp(t, tempDir)
+	filetest.WriteString(t, b, "log-b\n")
+	operator.poll(ctx) // walks again immediately
+	sink.ExpectToken(t, []byte("log-b"))
+}

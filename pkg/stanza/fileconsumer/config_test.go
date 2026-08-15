@@ -477,6 +477,24 @@ func TestBuild(t *testing.T) {
 			},
 		},
 		{
+			"DiscoveryIntervalNegative",
+			func(cfg *Config) {
+				cfg.DiscoveryInterval = -1 * time.Second
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"DiscoveryIntervalRoundsUpToPollCycles",
+			func(cfg *Config) {
+				cfg.DiscoveryInterval = 30 * time.Millisecond // base poll_interval is 10ms
+			},
+			require.NoError,
+			func(t *testing.T, m *Manager) {
+				require.Equal(t, 3, m.pollsPerDiscovery)
+			},
+		},
+		{
 			"BadIncludeGlob",
 			func(cfg *Config) {
 				cfg.Include = []string{"["}
