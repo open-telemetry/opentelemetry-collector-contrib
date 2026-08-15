@@ -83,8 +83,9 @@ func BenchmarkGroupByAttrsLogs(bb *testing.B) {
 				template.CopyTo(ld)
 				b.StartTimer()
 
-				_, err := gap.processLogs(b.Context(), ld)
-				require.NoError(b, err)
+				if _, err := gap.processLogs(b.Context(), ld); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	}
@@ -105,8 +106,9 @@ func BenchmarkGroupByAttrsTraces(bb *testing.B) {
 				template.CopyTo(td)
 				b.StartTimer()
 
-				_, err := gap.processTraces(b.Context(), td)
-				require.NoError(b, err)
+				if _, err := gap.processTraces(b.Context(), td); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	}

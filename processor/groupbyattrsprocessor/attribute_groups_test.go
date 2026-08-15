@@ -13,8 +13,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 func simpleResource() pcommon.Resource {
@@ -48,10 +46,9 @@ func randomGroups(count int) []pcommon.Map {
 }
 
 var (
-	count   = 1000
-	groups  = randomGroups(count)
-	res     = simpleResource()
-	resHash = pdatautil.MapHash(res.Attributes())
+	count  = 1000
+	groups = randomGroups(count)
+	res    = simpleResource()
 )
 
 func TestResourceAttributeScenarios(t *testing.T) {
@@ -101,6 +98,7 @@ func TestResourceAttributeScenarios(t *testing.T) {
 	lg := newLogsGroup()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			lg.index.startResource(tt.baseResource, 2)
 			recordAttributeMap := pcommon.NewMap()
 			if tt.fillRecordAttributesFun != nil {
 				tt.fillRecordAttributesFun(recordAttributeMap)
@@ -111,7 +109,7 @@ func TestResourceAttributeScenarios(t *testing.T) {
 				tt.fillExpectedResourceFun(tt.baseResource, expectedResource)
 			}
 
-			rl := lg.findOrCreateResourceLogs(tt.baseResource, pdatautil.MapHash(tt.baseResource.Attributes()), recordAttributeMap)
+			rl := lg.findOrCreateResourceLogs(recordAttributeMap)
 			assert.Equal(t, expectedResource.Attributes().AsRaw(), rl.Resource().Attributes().AsRaw())
 		})
 	}
@@ -151,8 +149,9 @@ func TestInstrumentationLibraryMatching(t *testing.T) {
 
 func BenchmarkAttrGrouping(b *testing.B) {
 	lg := newLogsGroup()
+	lg.index.startResource(res, 2)
 	b.ReportAllocs()
 	for b.Loop() {
-		lg.findOrCreateResourceLogs(res, resHash, groups[rand.IntN(count)])
+		lg.findOrCreateResourceLogs(groups[rand.IntN(count)])
 	}
 }

@@ -12,40 +12,56 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
-type resourceCacheKey struct {
-	origin   [16]byte
-	required [16]byte
-}
-
-// resourceIndex resolves which grouped Resource a record belongs to. byPair skips the merge for
-// an already known group; byMerged is still needed because different origin resources can merge
-// into the same attribute set.
+// resourceIndex resolves which grouped Resource a record belongs to.
+//
+// byRequired is scoped to one origin resource, which is constant for every record the caller
+// visits between startResource calls, so the grouping attributes alone identify the merged
+// resource and the merge can be skipped entirely. byMerged spans the whole batch and is what
+// still joins different origin resources that merge into the same attribute set.
 type resourceIndex struct {
-	byPair   map[resourceCacheKey]int
-	byMerged map[[16]byte]int
+	origin     pcommon.Resource
+	reuse      bool
+	byRequired map[[16]byte]int
+	byMerged   map[[16]byte]int
 }
 
 func newResourceIndex() resourceIndex {
 	return resourceIndex{
-		byPair:   make(map[resourceCacheKey]int),
-		byMerged: make(map[[16]byte]int),
+		byRequired: make(map[[16]byte]int),
+		byMerged:   make(map[[16]byte]int),
 	}
 }
 
-func (ri *resourceIndex) lookup(key resourceCacheKey) (int, bool) {
-	idx, ok := ri.byPair[key]
-	return idx, ok
+// startResource sets the origin resource for the records that follow. It owns the origin so that
+// byRequired cannot outlive it. recordCount is what the resource contributes: with a single
+// record there is nothing to amortize over, so byRequired is bypassed rather than paying a hash,
+// a miss and an insert that are never read. Clearing keeps the map's capacity.
+func (ri *resourceIndex) startResource(origin pcommon.Resource, recordCount int) {
+	ri.origin = origin
+	ri.reuse = recordCount > 1
+	clear(ri.byRequired)
 }
 
-// resolve maps key onto the group identified by mergedHash, calling newIndex to append one when
-// mergedHash is new.
-func (ri *resourceIndex) resolve(key resourceCacheKey, mergedHash [16]byte, newIndex func() int) int {
+func (ri *resourceIndex) lookup(requiredAttributes pcommon.Map) (requiredHash [16]byte, idx int, ok bool) {
+	if !ri.reuse {
+		return requiredHash, 0, false
+	}
+	requiredHash = pdatautil.MapHash(requiredAttributes)
+	idx, ok = ri.byRequired[requiredHash]
+	return requiredHash, idx, ok
+}
+
+// resolve maps requiredHash onto the group identified by mergedHash, calling newIndex to append
+// one when mergedHash is new.
+func (ri *resourceIndex) resolve(requiredHash, mergedHash [16]byte, newIndex func() int) int {
 	idx, ok := ri.byMerged[mergedHash]
 	if !ok {
 		idx = newIndex()
 		ri.byMerged[mergedHash] = idx
 	}
-	ri.byPair[key] = idx
+	if ri.reuse {
+		ri.byRequired[requiredHash] = idx
+	}
 	return idx
 }
 
@@ -59,18 +75,18 @@ func newTracesGroup() *tracesGroup {
 }
 
 // findOrCreateResource searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
-func (tg *tracesGroup) findOrCreateResourceSpans(originResource pcommon.Resource, originHash [16]byte, requiredAttributes pcommon.Map) ptrace.ResourceSpans {
+func (tg *tracesGroup) findOrCreateResourceSpans(requiredAttributes pcommon.Map) ptrace.ResourceSpans {
 	rss := tg.traces.ResourceSpans()
 
-	key := resourceCacheKey{origin: originHash, required: pdatautil.MapHash(requiredAttributes)}
-	if idx, ok := tg.index.lookup(key); ok {
+	requiredHash, idx, ok := tg.index.lookup(requiredAttributes)
+	if ok {
 		return rss.At(idx)
 	}
 
-	referenceResource := buildReferenceResource(originResource, requiredAttributes)
+	referenceResource := buildReferenceResource(tg.index.origin, requiredAttributes)
 	referenceResourceHash := pdatautil.MapHash(referenceResource.Attributes())
 
-	idx := tg.index.resolve(key, referenceResourceHash, func() int {
+	idx = tg.index.resolve(requiredHash, referenceResourceHash, func() int {
 		rs := rss.AppendEmpty()
 		referenceResource.MoveTo(rs.Resource())
 		return rss.Len() - 1
@@ -88,18 +104,18 @@ func newMetricsGroup() *metricsGroup {
 }
 
 // findOrCreateResourceMetrics searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
-func (mg *metricsGroup) findOrCreateResourceMetrics(originResource pcommon.Resource, originHash [16]byte, requiredAttributes pcommon.Map) pmetric.ResourceMetrics {
+func (mg *metricsGroup) findOrCreateResourceMetrics(requiredAttributes pcommon.Map) pmetric.ResourceMetrics {
 	rms := mg.metrics.ResourceMetrics()
 
-	key := resourceCacheKey{origin: originHash, required: pdatautil.MapHash(requiredAttributes)}
-	if idx, ok := mg.index.lookup(key); ok {
+	requiredHash, idx, ok := mg.index.lookup(requiredAttributes)
+	if ok {
 		return rms.At(idx)
 	}
 
-	referenceResource := buildReferenceResource(originResource, requiredAttributes)
+	referenceResource := buildReferenceResource(mg.index.origin, requiredAttributes)
 	referenceResourceHash := pdatautil.MapHash(referenceResource.Attributes())
 
-	idx := mg.index.resolve(key, referenceResourceHash, func() int {
+	idx = mg.index.resolve(requiredHash, referenceResourceHash, func() int {
 		rm := rms.AppendEmpty()
 		referenceResource.MoveTo(rm.Resource())
 		return rms.Len() - 1
@@ -118,18 +134,18 @@ func newLogsGroup() *logsGroup {
 }
 
 // findOrCreateResourceLogs searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
-func (lg *logsGroup) findOrCreateResourceLogs(originResource pcommon.Resource, originHash [16]byte, requiredAttributes pcommon.Map) plog.ResourceLogs {
+func (lg *logsGroup) findOrCreateResourceLogs(requiredAttributes pcommon.Map) plog.ResourceLogs {
 	rls := lg.logs.ResourceLogs()
 
-	key := resourceCacheKey{origin: originHash, required: pdatautil.MapHash(requiredAttributes)}
-	if idx, ok := lg.index.lookup(key); ok {
+	requiredHash, idx, ok := lg.index.lookup(requiredAttributes)
+	if ok {
 		return rls.At(idx)
 	}
 
-	referenceResource := buildReferenceResource(originResource, requiredAttributes)
+	referenceResource := buildReferenceResource(lg.index.origin, requiredAttributes)
 	referenceResourceHash := pdatautil.MapHash(referenceResource.Attributes())
 
-	idx := lg.index.resolve(key, referenceResourceHash, func() int {
+	idx = lg.index.resolve(requiredHash, referenceResourceHash, func() int {
 		rl := rls.AppendEmpty()
 		referenceResource.MoveTo(rl.Resource())
 		return rls.Len() - 1
