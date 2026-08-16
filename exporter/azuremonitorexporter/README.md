@@ -44,6 +44,8 @@ The following settings can be optionally configured:
   - `storage` (default = `none`): When set, enables persistence and uses the component specified as a storage extension for the persistent queue
 - `shutdown_timeout` (default = 1s): Timeout to wait for graceful shutdown. Once exceeded, the component will shut down forcibly, dropping any element in queue.
 - `custom_events_enabled` (default = `false`): Enables export log record to custom events when there's attribute `microsoft.custom_event.name` or `APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE`.
+- `telemetry_mappings.traces.http.success.server_policy` (default = unset): Set to `otel` to export HTTP server spans with 4xx response codes with Application Insights request `Success=true`, matching OpenTelemetry HTTP semantic conventions. HTTP client dependencies are unaffected.
+- `telemetry_mappings.traces.http.success.additional_success_status_codes` (default = `[]`): Additional HTTP status codes to export with Application Insights `Success=true` for both HTTP server requests and HTTP client dependencies.
 
 ### Tag mappings (alpha)
 
