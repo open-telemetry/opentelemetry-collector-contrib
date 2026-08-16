@@ -86,6 +86,8 @@ func (cfg *targetConfig) compileValidations() error {
 	var err error
 
 	for i := range cfg.Validations {
+		// Reset first so the compiled pattern can never outlive the string it came from.
+		cfg.Validations[i].regex = nil
 		if cfg.Validations[i].Regex == "" {
 			continue
 		}

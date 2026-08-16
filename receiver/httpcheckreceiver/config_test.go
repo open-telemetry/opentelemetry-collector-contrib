@@ -4,7 +4,6 @@
 package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
@@ -173,23 +172,6 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: multierr.Combine(
 				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "www.opentelemetry.io/docs": invalid URI for request`),
-			),
-		},
-		{
-			desc: "invalid regex validation",
-			cfg: &Config{
-				Targets: []*targetConfig{
-					{
-						ClientConfig: clientConfigValid1,
-						Validations: []validationConfig{
-							{Regex: "["},
-						},
-					},
-				},
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-			},
-			expectedErr: multierr.Combine(
-				fmt.Errorf("%w %q: %w", errInvalidRegex, "[", errors.New("error parsing regexp: missing closing ]: `[`")),
 			),
 		},
 		{
@@ -362,4 +344,42 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateInvalidRegex(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "https://opentelemetry.io"
+
+	cfg := &Config{
+		Targets: []*targetConfig{
+			{
+				ClientConfig: clientConfig,
+				Validations:  []validationConfig{{Regex: "["}},
+			},
+		},
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+	}
+
+	err := cfg.Validate()
+	require.ErrorIs(t, err, errInvalidRegex)
+	// The offending pattern is reported; the wording of the compile error itself belongs to Go.
+	require.Contains(t, err.Error(), `"["`)
+}
+
+// TestCompileValidationsClearsStalePattern pins that a compiled pattern cannot outlive the string
+// it came from if compileValidations runs again after the configuration changed.
+func TestCompileValidationsClearsStalePattern(t *testing.T) {
+	target := &targetConfig{Validations: []validationConfig{{Regex: "^ok$"}}}
+	require.NoError(t, target.compileValidations())
+	require.NotNil(t, target.Validations[0].regex)
+
+	target.Validations[0].Regex = ""
+	require.NoError(t, target.compileValidations())
+	require.Nil(t, target.Validations[0].regex)
+
+	target.Validations[0].Regex = "^ok$"
+	require.NoError(t, target.compileValidations())
+	target.Validations[0].Regex = "["
+	require.Error(t, target.compileValidations())
+	require.Nil(t, target.Validations[0].regex)
 }
