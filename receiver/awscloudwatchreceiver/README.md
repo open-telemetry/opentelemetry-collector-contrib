@@ -92,13 +92,44 @@ List every metric you want to collect. Each entry supports:
 
 Instead of listing metrics manually, the receiver can call [ListMetrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_ListMetrics.html) to discover them automatically.
 
-| Parameter              | Type            | Default | Description |
-| ---------------------- | --------------- | ------- | ----------- |
-| `filters`              | Object          | —       | Optional sub-block to narrow which metrics are discovered. If omitted, all metrics in all namespaces are discovered. |
-| `filters.namespace`    | String          | —       | Restrict discovery to a single namespace (e.g. `AWS/EC2`). |
-| `filters.metric_name`  | String          | —       | Restrict discovery to metrics with this name. |
-| `limit`                | Integer         | 100     | Maximum number of metrics to discover and scrape per collection cycle. |
-| `stats`                | List of strings | —       | Statistics to fetch for every discovered metric. Same values as in `queries`. |
+| Parameter | Type            | Default | Description |
+| --------- | --------------- | ------- | ----------- |
+| `filters` | List            | —       | Optional list of filter entries narrowing which metrics are discovered. If omitted, all metrics in all namespaces are discovered. |
+| `limit`   | Integer         | 100     | Maximum number of metrics to discover and scrape per collection cycle. This is a global cap across all filter entries. |
+| `stats`   | List of strings | —       | **Deprecated**, use `filters[].stats`. Statistics to fetch for discovered metrics whose filter entry does not set its own `stats`. |
+
+Each `filters` entry supports:
+
+| Parameter      | Type            | Required | Description |
+| -------------- | --------------- | -------- | ----------- |
+| `namespace`    | String          | yes      | CloudWatch namespace to discover metrics in, e.g. `AWS/EC2`. |
+| `metric_names` | List of strings | no       | Restrict discovery within the namespace to these metric names. When omitted, every metric in the namespace is discovered. One `ListMetrics` call is made per name. |
+| `stats`        | List of strings | no       | Which CloudWatch statistics to fetch for the metrics discovered by this entry. Same semantics as in `queries`, see [Statistics](#statistics) below. When omitted, falls back to the deprecated top-level `discovery.stats`, and then to the Summary default. |
+
+The same namespace may be repeated across entries, for example to use different statistics for
+different metrics. Entries are processed in the order they are configured, and when two entries
+discover the same metric (same namespace, metric name and dimensions), the first one wins.
+
+##### Deprecated single-object `filters`
+
+The single-object form of `filters` is deprecated but still accepted; it is treated as a
+one-entry list. Migrate as follows:
+
+```yaml
+# Deprecated
+discovery:
+  filters:
+    namespace: AWS/EC2
+    metric_name: CPUUtilization
+  stats: [Average]
+
+# Equivalent, current form
+discovery:
+  filters:
+    - namespace: AWS/EC2
+      metric_names: [CPUUtilization]
+      stats: [Average]
+```
 
 #### Statistics
 
@@ -173,8 +204,33 @@ awscloudwatch:
     delay: 10m
     discovery:
       filters:
-        namespace: AWS/EC2
+        - namespace: AWS/EC2
       limit: 200
+```
+
+Auto-discover a subset of metrics per namespace, with different statistics per entry:
+
+```yaml
+awscloudwatch:
+  region: us-east-1
+  metrics:
+    collection_interval: 5m
+    period: 300s
+    delay: 10m
+    discovery:
+      limit: 500
+      filters:
+        - namespace: AWS/EC2
+          metric_names: [CPUUtilization]
+          stats: [Average, Maximum]
+        - namespace: AWS/EC2
+          metric_names: [NetworkIn, NetworkOut]
+          stats: [Sum]
+        - namespace: AWS/EC2
+          metric_names: [StatusCheckFailed_Instance]
+          # no stats: the four standard statistics are combined into a Summary
+        - namespace: AWS/RDS
+          # no metric_names: all metrics in the namespace
 ```
 
 #### Logs Autodiscovery Example Configuration
