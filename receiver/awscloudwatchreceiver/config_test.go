@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -385,8 +384,9 @@ func TestLoadMetricsConfig(t *testing.T) {
 					Period:           300 * time.Second,
 					Delay:            defaultMetricsDelay,
 					Discovery: &MetricsDiscoveryConfig{
-						Filters: configoptional.Some(MetricsDiscoveryFilters{Namespace: "AWS/EC2"}),
-						Limit:   200,
+						Filters:           []MetricsDiscoveryFilter{{Namespace: "AWS/EC2"}},
+						Limit:             200,
+						legacyFiltersForm: true,
 					},
 				},
 			},
@@ -420,9 +420,10 @@ func TestLoadMetricsConfig(t *testing.T) {
 					Period:           300 * time.Second,
 					Delay:            defaultMetricsDelay,
 					Discovery: &MetricsDiscoveryConfig{
-						Filters: configoptional.Some(MetricsDiscoveryFilters{Namespace: "AWS/EC2"}),
-						Limit:   100,
-						Stats:   []string{"Sum", "Average"},
+						Filters: []MetricsDiscoveryFilter{
+							{Namespace: "AWS/EC2", Stats: []string{"Sum", "Average"}},
+						},
+						Limit: 100,
 					},
 				},
 			},
@@ -442,6 +443,85 @@ func TestLoadMetricsConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "metrics-discovery-filter-list",
+			expectedConfig: &Config{
+				Region: "us-east-1",
+				Logs:   defaultLogs(),
+				Metrics: MetricsConfig{
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 5 * time.Minute, InitialDelay: time.Second},
+					Period:           300 * time.Second,
+					Delay:            defaultMetricsDelay,
+					Discovery: &MetricsDiscoveryConfig{
+						Filters: []MetricsDiscoveryFilter{
+							{Namespace: "AWS/EC2", MetricNames: []string{"CPUUtilization"}, Stats: []string{"Average", "Maximum"}},
+							{Namespace: "AWS/EC2", MetricNames: []string{"NetworkIn", "NetworkOut"}, Stats: []string{"Sum"}},
+							{Namespace: "AWS/EC2", MetricNames: []string{"StatusCheckFailed_Instance"}},
+							{Namespace: "AWS/RDS"},
+						},
+						Limit: 500,
+					},
+				},
+			},
+		},
+		{
+			name: "metrics-discovery-legacy-filters",
+			expectedConfig: &Config{
+				Region: "us-east-1",
+				Logs:   defaultLogs(),
+				Metrics: MetricsConfig{
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 5 * time.Minute, InitialDelay: time.Second},
+					Period:           300 * time.Second,
+					Delay:            defaultMetricsDelay,
+					Discovery: &MetricsDiscoveryConfig{
+						Filters: []MetricsDiscoveryFilter{
+							{Namespace: "AWS/EC2", MetricNames: []string{"CPUUtilization"}},
+						},
+						Limit:             100,
+						legacyFiltersForm: true,
+					},
+				},
+			},
+		},
+		{
+			name: "metrics-discovery-legacy-global-stats",
+			expectedConfig: &Config{
+				Region: "us-east-1",
+				Logs:   defaultLogs(),
+				Metrics: MetricsConfig{
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 5 * time.Minute, InitialDelay: time.Second},
+					Period:           300 * time.Second,
+					Delay:            defaultMetricsDelay,
+					Discovery: &MetricsDiscoveryConfig{
+						Filters: []MetricsDiscoveryFilter{
+							{Namespace: "AWS/EC2", Stats: []string{"Maximum"}},
+							{Namespace: "AWS/RDS"},
+						},
+						Limit: 100,
+						Stats: []string{"Sum", "Average"},
+					},
+				},
+			},
+		},
+		{
+			name: "metrics-discovery-legacy-metric-name-only",
+			expectedConfig: &Config{
+				Region: "us-east-1",
+				Logs:   defaultLogs(),
+				Metrics: MetricsConfig{
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 5 * time.Minute, InitialDelay: time.Second},
+					Period:           300 * time.Second,
+					Delay:            defaultMetricsDelay,
+					Discovery: &MetricsDiscoveryConfig{
+						Filters: []MetricsDiscoveryFilter{
+							{MetricNames: []string{"CPUUtilization"}},
+						},
+						Limit:             100,
+						legacyFiltersForm: true,
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -456,6 +536,46 @@ func TestLoadMetricsConfig(t *testing.T) {
 			require.NoError(t, confmap.Validate(cfg))
 		})
 	}
+}
+
+// TestLoadMetricsConfig_UnknownKeyInLegacyFilters ensures the legacy filters conversion rejects typos.
+func TestLoadMetricsConfig_UnknownKeyInLegacyFilters(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"region": "us-east-1",
+		"metrics": map[string]any{
+			"discovery": map[string]any{
+				"limit": 10,
+				"filters": map[string]any{
+					"namespace":    "AWS/EC2",
+					"metric_named": "CPUUtilization",
+				},
+			},
+		},
+	})
+	cfg := NewFactory().CreateDefaultConfig()
+	require.ErrorContains(t, conf.Unmarshal(cfg), "metric_named")
+}
+
+// TestLoadMetricsConfig_LegacyEmptyMetricName ensures an empty legacy metric_name behaves as unset.
+func TestLoadMetricsConfig_LegacyEmptyMetricName(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"region": "us-east-1",
+		"metrics": map[string]any{
+			"discovery": map[string]any{
+				"limit": 10,
+				"filters": map[string]any{
+					"namespace":   "AWS/EC2",
+					"metric_name": "",
+				},
+			},
+		},
+	})
+	cfg := NewFactory().CreateDefaultConfig()
+	require.NoError(t, conf.Unmarshal(cfg))
+	discovery := cfg.(*Config).Metrics.Discovery
+	require.Equal(t, []MetricsDiscoveryFilter{{Namespace: "AWS/EC2"}}, discovery.Filters)
+	require.True(t, discovery.legacyFiltersForm)
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func TestValidateMetricsConfig(t *testing.T) {
@@ -513,6 +633,67 @@ func TestValidateMetricsConfig(t *testing.T) {
 				Discovery: &MetricsDiscoveryConfig{Limit: 0},
 			}),
 			expectedErr: errInvalidDiscoveryLimit,
+		},
+		{
+			name: "discovery multiple filter entries valid",
+			config: withMetrics(MetricsConfig{
+				Period: 300 * time.Second,
+				Discovery: &MetricsDiscoveryConfig{
+					Limit: 100,
+					Filters: []MetricsDiscoveryFilter{
+						{Namespace: "AWS/EC2", MetricNames: []string{"CPUUtilization"}, Stats: []string{"Average"}},
+						{Namespace: "AWS/EC2", MetricNames: []string{"NetworkIn", "NetworkOut"}},
+						{Namespace: "AWS/RDS"},
+					},
+				},
+			}),
+		},
+		{
+			name: "discovery filter missing namespace",
+			config: withMetrics(MetricsConfig{
+				Discovery: &MetricsDiscoveryConfig{
+					Limit:   100,
+					Filters: []MetricsDiscoveryFilter{{MetricNames: []string{"CPUUtilization"}}},
+				},
+			}),
+			expectedErr: errDiscoveryFilterMissingNamespace,
+		},
+		{
+			name: "discovery filter missing namespace allowed in legacy form",
+			config: withMetrics(MetricsConfig{
+				Discovery: &MetricsDiscoveryConfig{
+					Limit:             100,
+					Filters:           []MetricsDiscoveryFilter{{MetricNames: []string{"CPUUtilization"}}},
+					legacyFiltersForm: true,
+				},
+			}),
+		},
+		{
+			name: "discovery filter empty metric name",
+			config: withMetrics(MetricsConfig{
+				Discovery: &MetricsDiscoveryConfig{
+					Limit:   100,
+					Filters: []MetricsDiscoveryFilter{{Namespace: "AWS/EC2", MetricNames: []string{""}}},
+				},
+			}),
+			expectedErr: errEmptyMetricName,
+		},
+		{
+			name: "discovery filter empty stat name",
+			config: withMetrics(MetricsConfig{
+				Discovery: &MetricsDiscoveryConfig{
+					Limit:   100,
+					Filters: []MetricsDiscoveryFilter{{Namespace: "AWS/EC2", Stats: []string{""}}},
+				},
+			}),
+			expectedErr: errEmptyStatName,
+		},
+		{
+			name: "discovery deprecated top-level empty stat name",
+			config: withMetrics(MetricsConfig{
+				Discovery: &MetricsDiscoveryConfig{Limit: 100, Stats: []string{""}},
+			}),
+			expectedErr: errEmptyStatName,
 		},
 		{
 			name: "collection interval too short",
