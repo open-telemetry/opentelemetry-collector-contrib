@@ -2,7 +2,6 @@ type: filter
 
 status:
   disable_codecov_badge: true
-  class: pkg
   stability:
     alpha: [logs, metrics, traces]
   codeowners:
