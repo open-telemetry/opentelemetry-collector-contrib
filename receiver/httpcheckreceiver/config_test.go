@@ -4,6 +4,7 @@
 package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -173,6 +174,38 @@ func TestValidate(t *testing.T) {
 			expectedErr: multierr.Combine(
 				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "www.opentelemetry.io/docs": invalid URI for request`),
 			),
+		},
+		{
+			desc: "invalid regex validation",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						ClientConfig: clientConfigValid1,
+						Validations: []validationConfig{
+							{Regex: "["},
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: multierr.Combine(
+				fmt.Errorf("%w %q: %w", errInvalidRegex, "[", errors.New("error parsing regexp: missing closing ]: `[`")),
+			),
+		},
+		{
+			desc: "valid regex validation",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						ClientConfig: clientConfigValid1,
+						Validations: []validationConfig{
+							{Regex: `^\{"status":"ok"`},
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: nil,
 		},
 		{
 			desc: "valid config",

@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptrace"
-	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -186,7 +185,7 @@ func validateResponse(body []byte, validations []validationConfig) (passed, fail
 
 		// Regex validations
 		if validation.Regex != "" {
-			if matched, err := regexp.Match(validation.Regex, body); err == nil && matched {
+			if validation.regex != nil && validation.regex.Match(body) {
 				passed["regex"]++
 			} else {
 				failed["regex"]++
@@ -205,6 +204,13 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 		if target.ClientConfig.Timeout == 0 {
 			// Set a reasonable timeout to prevent hanging requests
 			target.ClientConfig.Timeout = 30 * time.Second
+		}
+
+		// Config validation already rejects invalid patterns, so this only populates the
+		// compiled form for targets built without going through Validate.
+		if compileErr := target.compileValidations(); compileErr != nil {
+			err = multierr.Append(err, compileErr)
+			continue
 		}
 
 		// Create a unified list of endpoints

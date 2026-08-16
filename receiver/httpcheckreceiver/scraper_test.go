@@ -1020,6 +1020,65 @@ func TestResponseValidation(t *testing.T) {
 	assert.True(t, foundMetrics["httpcheck.response.size"])
 }
 
+func TestRegexValidation(t *testing.T) {
+	body := []byte(`{"status": "ok", "count": 5, "message": "healthy"}`)
+
+	tests := []struct {
+		desc         string
+		regex        string
+		expectPassed int
+		expectFailed int
+	}{
+		{desc: "matching pattern", regex: `"status":\s*"ok"`, expectPassed: 1},
+		{desc: "non-matching pattern", regex: `"status":\s*"error"`, expectFailed: 1},
+		{desc: "anchored pattern", regex: `^\{"status"`, expectPassed: 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			target := &targetConfig{Validations: []validationConfig{{Regex: tt.regex}}}
+			require.NoError(t, target.compileValidations())
+
+			passed, failed := validateResponse(body, target.Validations)
+			assert.Equal(t, tt.expectPassed, passed["regex"])
+			assert.Equal(t, tt.expectFailed, failed["regex"])
+		})
+	}
+}
+
+// TestRegexValidationCompiledOnStart pins that the scrape path gets a compiled pattern, since an
+// uncompiled one silently fails every check.
+func TestRegexValidationCompiledOnStart(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(`{"status": "ok"}`))
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = server.URL
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Targets = []*targetConfig{
+		{
+			ClientConfig: clientConfig,
+			Validations:  []validationConfig{{Regex: `"status":\s*"ok"`}},
+		},
+	}
+
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	require.Len(t, scraper.cfg.Targets, 1)
+	require.Len(t, scraper.cfg.Targets[0].Validations, 1)
+	require.NotNil(t, scraper.cfg.Targets[0].Validations[0].regex)
+}
+
 func TestResponseValidationFailures(t *testing.T) {
 	// Create a mock server that returns JSON with some failing conditions
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
