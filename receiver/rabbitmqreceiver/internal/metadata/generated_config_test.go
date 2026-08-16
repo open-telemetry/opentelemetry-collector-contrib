@@ -276,6 +276,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					RabbitmqClusterName:  ResourceAttributeConfig{Enabled: true},
 					RabbitmqExchangeName: ResourceAttributeConfig{Enabled: true},
 					RabbitmqExchangeType: ResourceAttributeConfig{Enabled: true},
 					RabbitmqNodeName:     ResourceAttributeConfig{Enabled: true},
@@ -538,6 +539,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					RabbitmqClusterName:  ResourceAttributeConfig{Enabled: false},
 					RabbitmqExchangeName: ResourceAttributeConfig{Enabled: false},
 					RabbitmqExchangeType: ResourceAttributeConfig{Enabled: false},
 					RabbitmqNodeName:     ResourceAttributeConfig{Enabled: false},
@@ -590,6 +592,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
+				RabbitmqClusterName:  ResourceAttributeConfig{Enabled: true},
 				RabbitmqExchangeName: ResourceAttributeConfig{Enabled: true},
 				RabbitmqExchangeType: ResourceAttributeConfig{Enabled: true},
 				RabbitmqNodeName:     ResourceAttributeConfig{Enabled: true},
@@ -600,6 +603,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
+				RabbitmqClusterName:  ResourceAttributeConfig{Enabled: false},
 				RabbitmqExchangeName: ResourceAttributeConfig{Enabled: false},
 				RabbitmqExchangeType: ResourceAttributeConfig{Enabled: false},
 				RabbitmqNodeName:     ResourceAttributeConfig{Enabled: false},

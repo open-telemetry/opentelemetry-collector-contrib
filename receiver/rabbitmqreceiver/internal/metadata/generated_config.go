@@ -2044,6 +2044,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for rabbitmq resource attributes.
 type ResourceAttributesConfig struct {
+	RabbitmqClusterName  ResourceAttributeConfig `mapstructure:"rabbitmq.cluster.name"`
 	RabbitmqExchangeName ResourceAttributeConfig `mapstructure:"rabbitmq.exchange.name"`
 	RabbitmqExchangeType ResourceAttributeConfig `mapstructure:"rabbitmq.exchange.type"`
 	RabbitmqNodeName     ResourceAttributeConfig `mapstructure:"rabbitmq.node.name"`
@@ -2053,6 +2054,9 @@ type ResourceAttributesConfig struct {
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		RabbitmqClusterName: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		RabbitmqExchangeName: ResourceAttributeConfig{
 			Enabled: true,
 		},

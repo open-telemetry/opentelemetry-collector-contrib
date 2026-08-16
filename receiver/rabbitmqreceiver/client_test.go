@@ -24,9 +24,10 @@ import (
 )
 
 const (
-	queuesAPIResponseFile    = "get_queues_response.json"
-	nodesAPIResponseFile     = "get_nodes_response.json"
-	exchangesAPIResponseFile = "get_exchanges_response.json"
+	queuesAPIResponseFile      = "get_queues_response.json"
+	nodesAPIResponseFile       = "get_nodes_response.json"
+	exchangesAPIResponseFile   = "get_exchanges_response.json"
+	clusterNameAPIResponseFile = "get_cluster_name_response.json"
 )
 
 func TestNewClient(t *testing.T) {
@@ -291,6 +292,71 @@ func TestGetExchangesDetails(t *testing.T) {
 				exchanges, err := tc.GetExchanges(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, expected, exchanges)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, tc.testFunc)
+	}
+}
+
+func TestGetClusterNameDetails(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		testFunc func(*testing.T)
+	}{
+		{
+			desc: "Non-200 Response for GetClusterName",
+			testFunc: func(t *testing.T) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(http.StatusForbidden)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				clusterName, err := tc.GetClusterName(t.Context())
+				require.Empty(t, clusterName)
+				require.EqualError(t, err, "non 200 code returned 403")
+			},
+		},
+		{
+			desc: "Bad payload returned for GetClusterName",
+			testFunc: func(t *testing.T) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					_, err := w.Write([]byte("{invalid-json}"))
+					assert.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				clusterName, err := tc.GetClusterName(t.Context())
+				require.Empty(t, clusterName)
+				require.ErrorContains(t, err, "failed to decode response payload")
+			},
+		},
+		{
+			desc: "Successful GetClusterName call",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, clusterNameAPIResponseFile)
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					require.Equal(t, clusterNamePath, req.URL.Path)
+					_, err := w.Write(data)
+					assert.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				var expected models.ClusterName
+				err := json.Unmarshal(data, &expected)
+				require.NoError(t, err)
+
+				clusterName, err := tc.GetClusterName(t.Context())
+				require.NoError(t, err)
+				require.Equal(t, expected.Name, clusterName)
 			},
 		},
 	}

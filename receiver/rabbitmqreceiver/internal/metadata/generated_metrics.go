@@ -3,14 +3,13 @@
 package metadata
 
 import (
-	"slices"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"slices"
+	"time"
 )
 
 const (
@@ -4890,6 +4889,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricRabbitmqNodeUptime:                          newMetricRabbitmqNodeUptime(mbc.Metrics.RabbitmqNodeUptime),
 		resourceAttributeIncludeFilter:                    make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                    make(map[string]filter.Filter),
+	}
+	if mbc.ResourceAttributes.RabbitmqClusterName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["rabbitmq.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqClusterName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.RabbitmqClusterName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["rabbitmq.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqClusterName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.RabbitmqExchangeName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["rabbitmq.exchange.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqExchangeName.MetricsInclude)
