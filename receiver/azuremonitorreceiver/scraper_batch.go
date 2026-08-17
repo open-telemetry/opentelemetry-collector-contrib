@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"slices"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -537,7 +537,10 @@ func (s *azureBatchScraper) loadMetricsDefinitionByType(subscriptionID, resource
 			s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey].metrics, metricName,
 		)
 	} else {
-		s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{metrics: []string{metricName}}
+		s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{
+			metrics:               []string{metricName},
+			lastEmittedTimestamps: make(map[string]time.Time),
+		}
 	}
 }
 
@@ -556,7 +559,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 	}
 
 	for compositeKey, metricsByGrain := range resType.metricsByCompositeKey {
-		now := time.Now().UTC()
+		now := s.time.Now().UTC()
 
 		// Anti-duplicate guard: do not re-scrape a (resourceType, compositeKey) pair more often
 		// than its Azure timeGrain. The batch scraper emits points using the original Azure
@@ -638,6 +641,10 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 					logFields = append(logFields, zap.Int("metrics_count", len(response.Values)))
 					s.settings.Logger.Debug("Collected Azure Metrics values from Azure", logFields...)
 
+					if metricsByGrain.lastEmittedTimestamps == nil {
+						metricsByGrain.lastEmittedTimestamps = make(map[string]time.Time)
+					}
+
 					for _, metricValues := range response.Values {
 						if metricValues.ResourceID == nil {
 							continue
@@ -660,10 +667,22 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 									attributes[name] = value
 								}
 								attributes["timegrain"] = &compositeKey.timeGrain
-								for _, metricValue := range slices.Backward(timeseriesElement.Data) { // reverse for loop because newest timestamp is at the end of the slice
-									if metricValueIsNotEmpty(metricValue) {
+
+								var metricName string
+								if metric.Name != nil && metric.Name.Value != nil {
+									metricName = *metric.Name.Value
+								}
+								tsKeyPrefix := resID + "#" + metricName + "#" + serializeMetadataValues(timeseriesElement.MetadataValues)
+
+								for _, metricValue := range timeseriesElement.Data {
+									if !metricValueIsNotEmpty(metricValue) || metricValue.TimeStamp == nil {
+										continue
+									}
+									t := *metricValue.TimeStamp
+									lastTime, exists := metricsByGrain.lastEmittedTimestamps[tsKeyPrefix]
+									if !exists || t.After(lastTime) {
 										s.processQueryTimeseriesData(mb, resID, metric, metricValue, attributes)
-										break
+										metricsByGrain.lastEmittedTimestamps[tsKeyPrefix] = t
 									}
 								}
 							}
@@ -741,4 +760,18 @@ func (s *azureBatchScraper) processQueryTimeseriesData(
 			)
 		}
 	}
+}
+
+func serializeMetadataValues(metadataValues []azmetrics.MetadataValue) string {
+	if len(metadataValues) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(metadataValues))
+	for _, val := range metadataValues {
+		if val.Name != nil && val.Name.Value != nil && val.Value != nil {
+			parts = append(parts, *val.Name.Value+"="+*val.Value)
+		}
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, ",")
 }
