@@ -293,3 +293,39 @@ func TestParseSimplifiedXMLMaxDepth(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "exceeded maximum XML nesting depth")
 }
+
+func Test_ParseSimplifiedXMLFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewParseSimplifiedXMLFactory[any]()
+		assert.Equal(t, "ParseSimplifiedXML", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewParseSimplifiedXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ParseSimplifiedXMLArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewParseSimplifiedXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+		xmlArgs, ok := args.(*ParseSimplifiedXMLArguments[any])
+		require.True(t, ok)
+		xmlArgs.Target = ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "<a>b</a>", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createParseSimplifiedXMLFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ParseSimplifiedXML args must be of type *ParseSimplifiedXMLAguments[K]")
+	})
+}

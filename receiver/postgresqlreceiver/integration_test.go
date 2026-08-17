@@ -335,6 +335,7 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 // count for the two shapes that broke text-based $N counting: a placeholder repeated in the
 // query text, and a string literal that merely looks like one.
 func TestExplainQueryParamCount(t *testing.T) {
+	t.Skip("flaky test http://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50144")
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
