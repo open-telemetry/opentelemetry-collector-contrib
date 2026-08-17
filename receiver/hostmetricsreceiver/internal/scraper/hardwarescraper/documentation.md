@@ -24,10 +24,10 @@ Temperature in degrees Celsius.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| id | An identifier for the hardware component, unique within the monitored host. | Any Str | Recommended | - |
-| name | An easily-recognizable name for the hardware component. | Any Str | Recommended | - |
-| parent | Unique identifier of the parent component (typically the id attribute of the enclosure, or disk controller). | Any Str | Recommended | - |
-| sensor_location | Location of the sensor. | Any Str | Recommended | - |
+| hw.id | An identifier for the hardware component, unique within the monitored host. | Any Str | Recommended | - |
+| hw.name | An easily-recognizable name for the hardware component. | Any Str | Recommended | - |
+| hw.parent | Unique identifier of the parent component (typically the id attribute of the enclosure, or disk controller). | Any Str | Recommended | - |
+| hw.sensor_location | Location of the sensor. | Any Str | Recommended | - |
 
 ## Optional Metrics
 
@@ -51,8 +51,8 @@ Temperature limit in degrees Celsius.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| id | An identifier for the hardware component, unique within the monitored host. | Any Str | Recommended | - |
-| limit_type | Type of limit for hardware components. | Str: ``high.critical``, ``high.degraded``, ``low.critical``, ``low.degraded`` | Recommended | - |
-| name | An easily-recognizable name for the hardware component. | Any Str | Recommended | - |
-| parent | Unique identifier of the parent component (typically the id attribute of the enclosure, or disk controller). | Any Str | Recommended | - |
-| sensor_location | Location of the sensor. | Any Str | Recommended | - |
+| hw.id | An identifier for the hardware component, unique within the monitored host. | Any Str | Recommended | - |
+| hw.limit_type | Type of limit for hardware components. | Str: ``high.critical``, ``high.degraded``, ``low.critical``, ``low.degraded`` | Recommended | - |
+| hw.name | An easily-recognizable name for the hardware component. | Any Str | Recommended | - |
+| hw.parent | Unique identifier of the parent component (typically the id attribute of the enclosure, or disk controller). | Any Str | Recommended | - |
+| hw.sensor_location | Location of the sensor. | Any Str | Recommended | - |

@@ -14,32 +14,32 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 55
                   attributes:
-                    - key: id
+                    - key: hw.id
                       value:
                         stringValue: nvme_hwmon0_temp1
-                    - key: name
+                    - key: hw.name
                       value:
-                        stringValue: Composite
-                    - key: parent
+                        stringValue: nvme
+                    - key: hw.parent
                       value:
                         stringValue: nvme_hwmon0
-                    - key: sensor_location
+                    - key: hw.sensor_location
                       value:
-                        stringValue: NVME_HWMON0_TEMP1
+                        stringValue: Composite
                 - asDouble: 72
                   attributes:
-                    - key: id
+                    - key: hw.id
                       value:
                         stringValue: amdgpu_hwmon1_temp1
-                    - key: name
+                    - key: hw.name
                       value:
-                        stringValue: edge
-                    - key: parent
+                        stringValue: amdgpu
+                    - key: hw.parent
                       value:
                         stringValue: amdgpu_hwmon1
-                    - key: sensor_location
+                    - key: hw.sensor_location
                       value:
-                        stringValue: AMDGPU_HWMON1_TEMP1
+                        stringValue: edge
           - name: hw.temperature.limit
             description: Temperature limit in degrees Celsius.
             unit: Cel
@@ -47,52 +47,52 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 100
                   attributes:
-                    - key: id
+                    - key: hw.id
                       value:
                         stringValue: nvme_hwmon0_temp1
-                    - key: limit_type
+                    - key: hw.limit_type
                       value:
                         stringValue: high.critical
-                    - key: name
+                    - key: hw.name
                       value:
-                        stringValue: Composite
-                    - key: parent
+                        stringValue: nvme
+                    - key: hw.parent
                       value:
                         stringValue: nvme_hwmon0
-                    - key: sensor_location
+                    - key: hw.sensor_location
                       value:
-                        stringValue: NVME_HWMON0_TEMP1
+                        stringValue: Composite
                 - asDouble: 85
                   attributes:
-                    - key: id
+                    - key: hw.id
                       value:
                         stringValue: nvme_hwmon0_temp1
-                    - key: limit_type
+                    - key: hw.limit_type
                       value:
                         stringValue: high.degraded
-                    - key: name
+                    - key: hw.name
                       value:
-                        stringValue: Composite
-                    - key: parent
+                        stringValue: nvme
+                    - key: hw.parent
                       value:
                         stringValue: nvme_hwmon0
-                    - key: sensor_location
+                    - key: hw.sensor_location
                       value:
-                        stringValue: NVME_HWMON0_TEMP1
+                        stringValue: Composite
                 - asDouble: 95
                   attributes:
-                    - key: id
+                    - key: hw.id
                       value:
                         stringValue: amdgpu_hwmon1_temp1
-                    - key: limit_type
+                    - key: hw.limit_type
                       value:
                         stringValue: high.critical
-                    - key: name
+                    - key: hw.name
                       value:
-                        stringValue: edge
-                    - key: parent
+                        stringValue: amdgpu
+                    - key: hw.parent
                       value:
                         stringValue: amdgpu_hwmon1
-                    - key: sensor_location
+                    - key: hw.sensor_location
                       value:
-                        stringValue: AMDGPU_HWMON1_TEMP1
+                        stringValue: edge

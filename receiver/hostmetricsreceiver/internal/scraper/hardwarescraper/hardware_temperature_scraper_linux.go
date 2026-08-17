@@ -89,10 +89,10 @@ func (s *hardwareTemperatureScraper) scrape(_ context.Context, mb *metadata.Metr
 		for _, sensor := range s.sensors {
 			tempCelsius, err := s.readTemperatureCelsius(sensor.tempFile)
 			if err != nil {
-				errors.AddPartial(hardwareTemperatureMetricsLen, fmt.Errorf("failed to read temperature for %s: %w", sensor.label, err))
+				errors.AddPartial(hardwareTemperatureMetricsLen, fmt.Errorf("failed to read temperature for %s: %w", sensor.location, err))
 				continue
 			}
-			mb.RecordHwTemperatureDataPoint(now, tempCelsius, sensor.id, sensor.label, sensor.parent, sensor.location)
+			mb.RecordHwTemperatureDataPoint(now, tempCelsius, sensor.id, sensor.name, sensor.parent, sensor.location)
 		}
 	}
 
@@ -115,7 +115,7 @@ type temperatureLimits struct {
 
 type sensorInfo struct {
 	id        string
-	label     string
+	name      string
 	parent    string
 	location  string
 	hwmonDir  string
@@ -198,9 +198,9 @@ func (s *hardwareTemperatureScraper) buildSensorInfo(tempFile, deviceName string
 
 	sensor := sensorInfo{
 		id:        fmt.Sprintf("%s_temp%s", deviceID, sensorNum),
-		label:     sensorLabel,
+		name:      deviceName,
 		parent:    deviceID,
-		location:  fmt.Sprintf("%s_TEMP%s", strings.ToUpper(deviceID), sensorNum),
+		location:  sensorLabel,
 		hwmonDir:  hwmonDir,
 		sensorNum: sensorNum,
 		tempFile:  tempFile,
@@ -252,8 +252,8 @@ func (*hardwareTemperatureScraper) recordTemperatureLimits(now pcommon.Timestamp
 				now,
 				*info.target,
 				sensor.id,
-				metadata.MapAttributeLimitType[info.limitType],
-				sensor.label,
+				metadata.MapAttributeHwLimitType[info.limitType],
+				sensor.name,
 				sensor.parent,
 				sensor.location,
 			)

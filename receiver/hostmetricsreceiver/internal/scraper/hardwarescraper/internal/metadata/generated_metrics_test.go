@@ -68,18 +68,17 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordHwTemperatureDataPoint(ts, 1, "id-val", "name-val", "parent-val", "sensor_location-val")
+			mb.RecordHwTemperatureDataPoint(ts, 1, "hw.id-val", "hw.name-val", "hw.parent-val", "hw.sensor_location-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordHwTemperatureDataPoint(ts, 3, "id-val-2", "name-val-2", "parent-val-2", "sensor_location-val-2")
+				mb.RecordHwTemperatureDataPoint(ts, 3, "hw.id-val-2", "hw.name-val-2", "hw.parent-val-2", "hw.sensor_location-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordHwTemperatureLimitDataPoint(ts, 1, "id-val", AttributeLimitTypeHighCritical, "name-val", "parent-val", "sensor_location-val")
+			mb.RecordHwTemperatureLimitDataPoint(ts, 1, "hw.id-val", AttributeHwLimitTypeHighCritical, "hw.name-val", "hw.parent-val", "hw.sensor_location-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordHwTemperatureLimitDataPoint(ts, 3, "id-val-2", AttributeLimitTypeHighDegraded, "name-val-2", "parent-val-2", "sensor_location-val-2")
+				mb.RecordHwTemperatureLimitDataPoint(ts, 3, "hw.id-val-2", AttributeHwLimitTypeHighDegraded, "hw.name-val-2", "hw.parent-val-2", "hw.sensor_location-val-2")
 			}
 
 			res := pcommon.NewResource()
@@ -127,18 +126,18 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						idAttrVal, ok := dp.Attributes().Get("id")
+						hwIDAttrVal, ok := dp.Attributes().Get("hw.id")
 						assert.True(t, ok)
-						assert.Equal(t, "id-val", idAttrVal.Str())
-						nameAttrVal, ok := dp.Attributes().Get("name")
+						assert.Equal(t, "hw.id-val", hwIDAttrVal.Str())
+						hwNameAttrVal, ok := dp.Attributes().Get("hw.name")
 						assert.True(t, ok)
-						assert.Equal(t, "name-val", nameAttrVal.Str())
-						parentAttrVal, ok := dp.Attributes().Get("parent")
+						assert.Equal(t, "hw.name-val", hwNameAttrVal.Str())
+						hwParentAttrVal, ok := dp.Attributes().Get("hw.parent")
 						assert.True(t, ok)
-						assert.Equal(t, "parent-val", parentAttrVal.Str())
-						sensorLocationAttrVal, ok := dp.Attributes().Get("sensor_location")
+						assert.Equal(t, "hw.parent-val", hwParentAttrVal.Str())
+						hwSensorLocationAttrVal, ok := dp.Attributes().Get("hw.sensor_location")
 						assert.True(t, ok)
-						assert.Equal(t, "sensor_location-val", sensorLocationAttrVal.Str())
+						assert.Equal(t, "hw.sensor_location-val", hwSensorLocationAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["hw.temperature"], "Found a duplicate in the metrics slice: hw.temperature")
 						validatedMetrics["hw.temperature"] = true
@@ -160,13 +159,13 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("id")
+						_, ok := dp.Attributes().Get("hw.id")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("name")
+						_, ok = dp.Attributes().Get("hw.name")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("parent")
+						_, ok = dp.Attributes().Get("hw.parent")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("sensor_location")
+						_, ok = dp.Attributes().Get("hw.sensor_location")
 						assert.False(t, ok)
 					}
 				case "hw.temperature.limit":
@@ -182,21 +181,21 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						idAttrVal, ok := dp.Attributes().Get("id")
+						hwIDAttrVal, ok := dp.Attributes().Get("hw.id")
 						assert.True(t, ok)
-						assert.Equal(t, "id-val", idAttrVal.Str())
-						limitTypeAttrVal, ok := dp.Attributes().Get("limit_type")
+						assert.Equal(t, "hw.id-val", hwIDAttrVal.Str())
+						hwLimitTypeAttrVal, ok := dp.Attributes().Get("hw.limit_type")
 						assert.True(t, ok)
-						assert.Equal(t, "high.critical", limitTypeAttrVal.Str())
-						nameAttrVal, ok := dp.Attributes().Get("name")
+						assert.Equal(t, "high.critical", hwLimitTypeAttrVal.Str())
+						hwNameAttrVal, ok := dp.Attributes().Get("hw.name")
 						assert.True(t, ok)
-						assert.Equal(t, "name-val", nameAttrVal.Str())
-						parentAttrVal, ok := dp.Attributes().Get("parent")
+						assert.Equal(t, "hw.name-val", hwNameAttrVal.Str())
+						hwParentAttrVal, ok := dp.Attributes().Get("hw.parent")
 						assert.True(t, ok)
-						assert.Equal(t, "parent-val", parentAttrVal.Str())
-						sensorLocationAttrVal, ok := dp.Attributes().Get("sensor_location")
+						assert.Equal(t, "hw.parent-val", hwParentAttrVal.Str())
+						hwSensorLocationAttrVal, ok := dp.Attributes().Get("hw.sensor_location")
 						assert.True(t, ok)
-						assert.Equal(t, "sensor_location-val", sensorLocationAttrVal.Str())
+						assert.Equal(t, "hw.sensor_location-val", hwSensorLocationAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["hw.temperature.limit"], "Found a duplicate in the metrics slice: hw.temperature.limit")
 						validatedMetrics["hw.temperature.limit"] = true
@@ -218,15 +217,15 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("id")
+						_, ok := dp.Attributes().Get("hw.id")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("limit_type")
+						_, ok = dp.Attributes().Get("hw.limit_type")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("name")
+						_, ok = dp.Attributes().Get("hw.name")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("parent")
+						_, ok = dp.Attributes().Get("hw.parent")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("sensor_location")
+						_, ok = dp.Attributes().Get("hw.sensor_location")
 						assert.False(t, ok)
 					}
 				}
