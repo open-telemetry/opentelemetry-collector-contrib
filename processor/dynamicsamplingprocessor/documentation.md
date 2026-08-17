@@ -16,7 +16,7 @@ Distribution of effective sample rates produced per rule. Useful for detecting a
 
 ### otelcol_processor_dynamic_sampling_decision_triggers
 
-Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout).
+Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown).
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -30,6 +30,14 @@ Number of spans whose incoming W3C tracestate could not be parsed when applying 
 | ---- | ----------- | ---------- | --------- | --------- |
 | {spans} | Sum | Int | true | Development |
 
+### otelcol_processor_dynamic_sampling_ottl_eval_errors
+
+Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to (_root_span_condition for the root-span condition).
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {errors} | Sum | Int | true | Development |
+
 ### otelcol_processor_dynamic_sampling_traces_active
 
 Number of traces currently in the accumulation buffer awaiting a decision.
@@ -40,7 +48,7 @@ Number of traces currently in the accumulation buffer awaiting a decision.
 
 ### otelcol_processor_dynamic_sampling_traces_dropped
 
-Number of traces that were dropped, labelled by the rule that selected them.
+Number of traces that were dropped, labelled by the rule that selected them. Sentinel rule values are prefixed with an underscore (e.g. _unmatched, _eviction).
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -48,7 +56,7 @@ Number of traces that were dropped, labelled by the rule that selected them.
 
 ### otelcol_processor_dynamic_sampling_traces_evicted
 
-Number of traces evicted from the buffer before a decision could be made.
+Number of traces evicted from the buffer due to num_traces pressure. Evicted traces are decided immediately per the configured eviction policy.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -56,7 +64,7 @@ Number of traces evicted from the buffer before a decision could be made.
 
 ### otelcol_processor_dynamic_sampling_traces_sampled
 
-Number of traces that were sampled, labelled by the rule that selected them.
+Number of traces that were sampled, labelled by the rule that selected them. Sentinel rule values are prefixed with an underscore (e.g. _eviction).
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

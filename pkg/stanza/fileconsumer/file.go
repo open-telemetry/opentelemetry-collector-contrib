@@ -340,12 +340,14 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 				m.set.Logger.Debug(
 					"File has been rotated(truncated)",
 					zap.String("original_path", oldReader.GetFileName()),
-					zap.String("rotated_path", file.Name()))
+					zap.String("rotated_path", file.Name()),
+				)
 			} else {
 				m.set.Logger.Debug(
 					"File has been rotated(moved)",
 					zap.String("original_path", oldReader.GetFileName()),
-					zap.String("rotated_path", file.Name()))
+					zap.String("rotated_path", file.Name()),
+				)
 			}
 		}
 		// Close old reader and adjust offset if needed.

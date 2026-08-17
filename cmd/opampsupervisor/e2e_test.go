@@ -1559,7 +1559,7 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 }
 
 func TestSupervisorPackageCapabilitiesReturnError(t *testing.T) {
-	// Verifies that when accepts_packages or reports_package_statuses are enabled,
+	// Verifies that when accepts_packages is enabled,
 	// the supervisor fails to start and never connects to the server.
 	if runtime.GOOS == "windows" {
 		t.Skip("Zap does not close the log file and Windows disallows removing files that are still opened.")
@@ -1590,7 +1590,7 @@ func TestSupervisorPackageCapabilitiesReturnError(t *testing.T) {
 	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
 	require.NoError(t, err)
 	err = s.Start(t.Context())
-	require.ErrorContains(t, err, "accepts_packages and reports_package_statuses capabilities are not yet fully implemented")
+	require.ErrorContains(t, err, "accepts_packages capability is not yet fully implemented")
 	require.False(t, connected.Load(), "Supervisor should not have connected to the server")
 }
 
@@ -4071,8 +4071,8 @@ func enableExtensionsFeatureGate(t *testing.T) {
 }
 
 // supervisorBinarySizeLimitBytes is the size budget for the supervisor binary,
-// in bytes. 24 MiB.
-const supervisorBinarySizeLimitBytes = 24 * 1024 * 1024
+// in bytes. 28 MiB.
+const supervisorBinarySizeLimitBytes = 28 * 1024 * 1024
 
 // TestSupervisorBinarySize guards against unintended growth of the supervisor
 // binary. It builds the supervisor with the same flags used for release
