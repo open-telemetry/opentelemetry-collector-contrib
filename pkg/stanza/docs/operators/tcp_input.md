@@ -16,6 +16,7 @@ The `tcp_input` operator listens for logs on one or more TCP connections. The op
 | `resource`                              | {}                   | A map of `key: value` pairs to add to the entry's resource. Keys must be strings, values must be strings or [expressions](../types/expression.md) that evaluate to a string. |
 | `add_attributes`                        | false                | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/semantic-conventions/blob/main/docs/registry/attributes/network.md#network-attributes]. |
 | `multiline`                     |                  | A `multiline` configuration block. See below for details. |
+| `auth`                                  | nil                  | An optional server authenticator configuration (see the auth configuration section). |
 | `preserve_leading_whitespaces`          | false                | Whether to preserve leading whitespaces.                                                                                                                                                                                                                         |
 | `preserve_trailing_whitespaces`         | false                | Whether to preserve trailing whitespaces.                                                                                                                                                                                                                            |
 | `encoding`                              | `utf-8`              | The encoding of the file being read. See the list of supported encodings below for available options. |
@@ -33,6 +34,23 @@ config more detail [opentelemetry-collector#configtls](https://github.com/open-t
 | `key_file`        |                  | Path to the TLS key to use for TLS required connections.                                                                                              |
 | `ca_file`         |                  | Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA. |
 | `client_ca_file`  |                  | Path to the TLS cert to use by the server to verify a client certificate. (optional)                                                                  |
+
+#### Auth Configuration
+
+The `tcp_input` operator can delegate connection-level authentication to a server auth extension (`extensionauth.Server`), disabled by default. When configured, the authenticator runs once per accepted connection before any logs are read. If authentication fails, the connection is closed and no logs are emitted. The connection's remote address is exposed to the authenticator through the `client.Info` in the context.
+
+| Field           | Default | Description                                                            |
+| ---             | ---     | ---                                                                    |
+| `authenticator` |         | The component ID of a configured server auth extension to use. |
+
+Example:
+
+```yaml
+- type: tcp_input
+  listen_address: "0.0.0.0:6514"
+  auth:
+    authenticator: myauth
+```
 
 #### `multiline` configuration
 

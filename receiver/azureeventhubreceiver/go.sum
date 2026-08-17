@@ -112,6 +112,8 @@ go.opentelemetry.io/collector/component v1.64.1-0.20260813201048-a4a8565f65e7 h1
 go.opentelemetry.io/collector/component v1.64.1-0.20260813201048-a4a8565f65e7/go.mod h1:QagJRhT9ANU8G79vpaGa+Yjih9Tr1KSdw4JaRDnDVyQ=
 go.opentelemetry.io/collector/component/componenttest v0.158.1-0.20260813201048-a4a8565f65e7 h1:l/siAqSh63ePyp3QhoBfQh/6S4ueeuFm0OVzq2N2few=
 go.opentelemetry.io/collector/component/componenttest v0.158.1-0.20260813201048-a4a8565f65e7/go.mod h1:QBVtgrnvcQzRXcAeNISSdEMoZYH5CvBWRZr07LOVbDQ=
+go.opentelemetry.io/collector/config/configauth v1.64.1-0.20260813201048-a4a8565f65e7 h1:VunQNJDwaH35xyTmKl6tR7+skOCUWU6iaSds5Q1Y7Vg=
+go.opentelemetry.io/collector/config/configauth v1.64.1-0.20260813201048-a4a8565f65e7/go.mod h1:MvoL1t3fmGKA8jQ2yVYnDWHcf6A1g4ZLg12XmxHmIsc=
 go.opentelemetry.io/collector/confmap v1.64.1-0.20260813201048-a4a8565f65e7 h1:0yI/MOaMbPbg/4Z8ISfBYiwm9zFT3wxQ+3NFHSjcJdM=
 go.opentelemetry.io/collector/confmap v1.64.1-0.20260813201048-a4a8565f65e7/go.mod h1:vAwdZZ81VsgHzLYaHaT7y9OqCGaum+SEdGBhMadv+xo=
 go.opentelemetry.io/collector/consumer v1.64.1-0.20260813201048-a4a8565f65e7 h1:k2sCsPny49mTbXOE8K1oO15/MFUXvf4SWLS97C8wdDY=
@@ -124,6 +126,10 @@ go.opentelemetry.io/collector/consumer/xconsumer v0.158.1-0.20260813201048-a4a85
 go.opentelemetry.io/collector/consumer/xconsumer v0.158.1-0.20260813201048-a4a8565f65e7/go.mod h1:mstFkZpznEGVmSCm/DixeoDv4j7EJNOCZkY28sybvso=
 go.opentelemetry.io/collector/extension v1.64.1-0.20260813201048-a4a8565f65e7 h1:Fk9vYXCVuoNPizWRNn9omTlaalLocjLui53gq92oaxM=
 go.opentelemetry.io/collector/extension v1.64.1-0.20260813201048-a4a8565f65e7/go.mod h1:rFuvv/loG/NZ9+GzzJj5Utr1MzULpt0MnuXkaTAQxx4=
+go.opentelemetry.io/collector/extension/extensionauth v1.64.1-0.20260813201048-a4a8565f65e7 h1:MA2w0l/2jOT2xp30JCYQ7YjgxApt4x64D3TvaM0Qtew=
+go.opentelemetry.io/collector/extension/extensionauth v1.64.1-0.20260813201048-a4a8565f65e7/go.mod h1:39qT9L7ZUF5DHbDv7zV6i++Av36ovvPrJQL2d/QbKyE=
+go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.158.0 h1:eL7dc+eTK9GT2A/EihZCG3MzzpNK4o9ghT0pabEMBso=
+go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.158.0/go.mod h1:vjgZxv20vRlWsylB8r4fGT5pkifLi+JIzI+1u05SRt0=
 go.opentelemetry.io/collector/extension/xextension v0.158.1-0.20260813201048-a4a8565f65e7 h1:TvnEjwWPfNiTqgRv5+FyxtybajwBDeVPYQjRW6CFbH0=
 go.opentelemetry.io/collector/extension/xextension v0.158.1-0.20260813201048-a4a8565f65e7/go.mod h1:7wDdbHoGrB6ID6Kg57jvQgRTyBdobIARNLvyBHOMjJQ=
 go.opentelemetry.io/collector/featuregate v1.64.1-0.20260813201048-a4a8565f65e7 h1:MlJgTBYa2LimRDfSpwQKF1661CSRI+d8nTZcZDHmDHI=

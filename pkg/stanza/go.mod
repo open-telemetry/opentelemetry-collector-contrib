@@ -15,12 +15,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.158.0
 	github.com/stretchr/testify v1.11.1
 	github.com/valyala/fastjson v1.6.10
+	go.opentelemetry.io/collector/client v1.64.1-0.20260813201048-a4a8565f65e7
 	go.opentelemetry.io/collector/component v1.64.1-0.20260813201048-a4a8565f65e7
 	go.opentelemetry.io/collector/component/componenttest v0.158.1-0.20260813201048-a4a8565f65e7
+	go.opentelemetry.io/collector/config/configauth v1.64.1-0.20260813201048-a4a8565f65e7
 	go.opentelemetry.io/collector/config/configtls v1.64.1-0.20260813201048-a4a8565f65e7
 	go.opentelemetry.io/collector/confmap v1.64.1-0.20260813201048-a4a8565f65e7
 	go.opentelemetry.io/collector/consumer v1.64.1-0.20260813201048-a4a8565f65e7
 	go.opentelemetry.io/collector/consumer/consumertest v0.158.1-0.20260813201048-a4a8565f65e7
+	go.opentelemetry.io/collector/extension/extensionauth v1.64.1-0.20260813201048-a4a8565f65e7
 	go.opentelemetry.io/collector/extension/xextension v0.158.1-0.20260813201048-a4a8565f65e7
 	go.opentelemetry.io/collector/featuregate v1.64.1-0.20260813201048-a4a8565f65e7
 	go.opentelemetry.io/collector/pdata v1.64.1-0.20260813201048-a4a8565f65e7
