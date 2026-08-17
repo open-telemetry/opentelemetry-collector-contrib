@@ -12,3 +12,9 @@ prometheus/2:
   send_timestamps: true
   metric_expiration: 60m
   add_metric_suffixes: false
+
+prometheus/3:
+  resource_constant_labels:
+    included:
+      - service.name
+      - k8s.pod.name

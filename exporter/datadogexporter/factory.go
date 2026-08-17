@@ -369,9 +369,11 @@ func (f *factory) createMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
-	return resourcetotelemetry.WrapMetricsExporter(
-		resourcetotelemetry.Settings{Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags}, exporter,
-	), nil
+	var rttSettings resourcetotelemetry.Settings
+	if cfg.Metrics.ExporterConfig.ResourceAttributesAsTags {
+		rttSettings.Included = []string{"*"}
+	}
+	return resourcetotelemetry.WrapMetricsExporter(rttSettings, exporter), nil
 }
 
 // createTracesExporter creates a trace exporter based on this config.

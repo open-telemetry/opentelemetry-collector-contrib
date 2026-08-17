@@ -1,0 +1,7 @@
+change_type: enhancement
+component: exporter/prometheus_remote_write
+note: "Add `resource_constant_labels` option to transform OTLP resource attributes into Prometheus constant labels."
+issues: [48862]
+subtext: |
+  Supports specifying wildcard patterns via `included` and `excluded` lists to selectively transform resource attributes into labels in compliance with the OTel Prometheus specification.
+change_logs: [user]

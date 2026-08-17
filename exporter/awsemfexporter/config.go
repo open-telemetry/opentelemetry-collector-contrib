@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -105,6 +106,13 @@ var _ component.Config = (*Config)(nil)
 
 // Validate filters out invalid metricDeclarations and metricDescriptors
 func (config *Config) Validate() error {
+	if metadata.ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate.IsEnabled() {
+		config.ResourceToTelemetrySettings.Enabled = false                  //nolint:staticcheck // ignore deprecated field
+		config.ResourceToTelemetrySettings.ExcludeServiceAttributes = false //nolint:staticcheck // ignore deprecated field
+	}
+	if err := config.ResourceToTelemetrySettings.Validate(); err != nil {
+		return err
+	}
 	var validDeclarations []*MetricDeclaration
 	for _, declaration := range config.MetricDeclarations {
 		err := declaration.init(config.logger)
