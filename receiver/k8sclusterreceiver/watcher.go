@@ -363,7 +363,10 @@ func (rw *resourceWatcher) startWatchingResources(ctx context.Context, inf share
 
 // setupInformer adds event handlers to informers and setups a metadataStore.
 func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, namespace string, informer cache.SharedIndexInformer) {
-	err := informer.SetTransform(transformObject)
+	podContainerCfg := rw.config.podContainerMetricsConfig()
+	err := informer.SetTransform(func(object any) (any, error) {
+		return transformObject(object, podContainerCfg)
+	})
 	if err != nil {
 		rw.logger.Error("error setting informer transform function", zap.Error(err))
 	}
@@ -419,7 +422,7 @@ func (rw *resourceWatcher) onDelete(oldObj any) {
 func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		return pod.GetMetadata(o, rw.metadataStore, rw.logger)
+		return pod.GetMetadata(o, rw.metadataStore, rw.logger, rw.config.podContainerMetricsConfig())
 	case *corev1.Node:
 		return node.GetMetadata(o)
 	case *corev1.ReplicationController:

@@ -47,13 +47,7 @@ var allContainerStatusReasons = []metadata.AttributeK8sContainerStatusReason{
 // RecordSpecMetrics metricizes values from the container spec.
 // This includes values like resource requests and limits.
 func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1.Container, pod *corev1.Pod, ts pcommon.Timestamp) {
-	var cs *corev1.ContainerStatus
-	for i := range pod.Status.ContainerStatuses {
-		if pod.Status.ContainerStatuses[i].Name == c.Name {
-			cs = &pod.Status.ContainerStatuses[i]
-			break
-		}
-	}
+	cs := findContainerStatus(pod, c.Name)
 
 	var containerID string
 	if cs != nil {
@@ -151,6 +145,24 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 	}
 
 	eb.Emit()
+}
+
+// findContainerStatus looks up the status matching the given container name across regular,
+// init (sidecar) and ephemeral container statuses. Container names are unique within a pod
+// regardless of container type, so a name match is unambiguous.
+func findContainerStatus(pod *corev1.Pod, name string) *corev1.ContainerStatus {
+	for _, statuses := range [][]corev1.ContainerStatus{
+		pod.Status.ContainerStatuses,
+		pod.Status.InitContainerStatuses,
+		pod.Status.EphemeralContainerStatuses,
+	} {
+		for i := range statuses {
+			if statuses[i].Name == name {
+				return &statuses[i]
+			}
+		}
+	}
+	return nil
 }
 
 func GetMetadata(pod *corev1.Pod, cs corev1.ContainerStatus, logger *zap.Logger) *metadata.KubernetesMetadata {

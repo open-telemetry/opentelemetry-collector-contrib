@@ -34,9 +34,19 @@ const (
 	podStatusReason = "k8s.pod.status_reason"
 )
 
+// ContainerMetricsConfig controls which non-primary pod containers are included when collecting
+// k8s.container metrics and entities.
+type ContainerMetricsConfig struct {
+	// CollectAllInitContainers includes all init containers when true. When false, only sidecar
+	// containers (init containers with restartPolicy: Always) are included.
+	CollectAllInitContainers bool
+	// CollectEphemeralContainers includes ephemeral (debug) containers when true.
+	CollectEphemeralContainers bool
+}
+
 // Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
 // IMPORTANT: Make sure to update this function before using new pod fields.
-func Transform(pod *corev1.Pod) *corev1.Pod {
+func Transform(pod *corev1.Pod, cfg ContainerMetricsConfig) *corev1.Pod {
 	newPod := &corev1.Pod{
 		ObjectMeta: metadata.TransformObjectMeta(pod.ObjectMeta),
 		Spec: corev1.PodSpec{
@@ -70,10 +80,85 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 			},
 		})
 	}
+
+	// Sidecar containers (init containers with restartPolicy: Always) run for the lifetime of
+	// the pod like regular containers, so keep them and their statuses around for metric
+	// collection. Regular init containers are only kept when CollectAllInitContainers is set,
+	// since they are short-lived and complete before the pod's main containers start.
+	initNames := make(map[string]struct{})
+	for _, c := range collectedInitContainers(pod, cfg) {
+		initNames[c.Name] = struct{}{}
+		newPod.Spec.InitContainers = append(newPod.Spec.InitContainers, corev1.Container{
+			Name:          c.Name,
+			RestartPolicy: c.RestartPolicy,
+			Resources: corev1.ResourceRequirements{
+				Requests: c.Resources.Requests,
+				Limits:   c.Resources.Limits,
+			},
+		})
+	}
+	for i := range pod.Status.InitContainerStatuses {
+		cs := &pod.Status.InitContainerStatuses[i]
+		if _, ok := initNames[cs.Name]; !ok {
+			continue
+		}
+		newPod.Status.InitContainerStatuses = append(newPod.Status.InitContainerStatuses, corev1.ContainerStatus{
+			Name:                 cs.Name,
+			Image:                cs.Image,
+			ContainerID:          cs.ContainerID,
+			RestartCount:         cs.RestartCount,
+			Ready:                cs.Ready,
+			State:                cs.State,
+			LastTerminationState: cs.LastTerminationState,
+		})
+	}
+
+	// Ephemeral (debug) containers are kept only when explicitly enabled.
+	if cfg.CollectEphemeralContainers {
+		for i := range pod.Spec.EphemeralContainers {
+			c := &pod.Spec.EphemeralContainers[i]
+			newPod.Spec.EphemeralContainers = append(newPod.Spec.EphemeralContainers, corev1.EphemeralContainer{
+				EphemeralContainerCommon: corev1.EphemeralContainerCommon{
+					Name: c.Name,
+					Resources: corev1.ResourceRequirements{
+						Requests: c.Resources.Requests,
+						Limits:   c.Resources.Limits,
+					},
+				},
+			})
+		}
+		for i := range pod.Status.EphemeralContainerStatuses {
+			cs := &pod.Status.EphemeralContainerStatuses[i]
+			newPod.Status.EphemeralContainerStatuses = append(newPod.Status.EphemeralContainerStatuses, corev1.ContainerStatus{
+				Name:                 cs.Name,
+				Image:                cs.Image,
+				ContainerID:          cs.ContainerID,
+				RestartCount:         cs.RestartCount,
+				Ready:                cs.Ready,
+				State:                cs.State,
+				LastTerminationState: cs.LastTerminationState,
+			})
+		}
+	}
+
 	return newPod
 }
 
-func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.Pod, ts pcommon.Timestamp) {
+// collectedInitContainers returns the init containers whose metrics should be collected given cfg:
+// all init containers when CollectAllInitContainers is set, otherwise only sidecars (init
+// containers with restartPolicy: Always, GA since Kubernetes 1.29).
+func collectedInitContainers(pod *corev1.Pod, cfg ContainerMetricsConfig) []*corev1.Container {
+	var containers []*corev1.Container
+	for i := range pod.Spec.InitContainers {
+		c := &pod.Spec.InitContainers[i]
+		if cfg.CollectAllInitContainers || (c.RestartPolicy != nil && *c.RestartPolicy == corev1.ContainerRestartPolicyAlways) {
+			containers = append(containers, c)
+		}
+	}
+	return containers
+}
+
+func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.Pod, ts pcommon.Timestamp, cfg ContainerMetricsConfig) {
 	e := metadata.NewK8sPodEntity(string(pod.UID))
 	e.SetK8sPodName(pod.Name)
 	e.SetK8sPodQosClass(string(pod.Status.QOSClass))
@@ -87,6 +172,15 @@ func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.
 	for i := range pod.Spec.Containers {
 		c := pod.Spec.Containers[i]
 		container.RecordSpecMetrics(logger, mb, c, pod, ts)
+	}
+	for _, c := range collectedInitContainers(pod, cfg) {
+		container.RecordSpecMetrics(logger, mb, *c, pod, ts)
+	}
+	if cfg.CollectEphemeralContainers {
+		for i := range pod.Spec.EphemeralContainers {
+			c := corev1.Container(pod.Spec.EphemeralContainers[i].EphemeralContainerCommon)
+			container.RecordSpecMetrics(logger, mb, c, pod, ts)
+		}
 	}
 }
 
@@ -125,7 +219,7 @@ func phaseToInt(phase corev1.PodPhase) int32 {
 }
 
 // GetMetadata returns all metadata associated with the pod.
-func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
+func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger, cfg ContainerMetricsConfig) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	meta := map[string]string{}
 	for k, v := range pod.Labels {
 		meta[fmt.Sprintf("k8s.pod.label.%s", k)] = v
@@ -180,7 +274,7 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 			ResourceID:    podID,
 			Metadata:      meta,
 		},
-	}, getPodContainerProperties(pod, logger))
+	}, getPodContainerProperties(pod, logger, cfg))
 }
 
 // collectPodJobProperties checks if pod owner of type Job is cached. Check owners reference
@@ -273,12 +367,41 @@ func getWorkloadProperties(ref *v1.OwnerReference, labelKey string) map[string]s
 	}
 }
 
-func getPodContainerProperties(pod *corev1.Pod, logger *zap.Logger) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
+func getPodContainerProperties(pod *corev1.Pod, logger *zap.Logger, cfg ContainerMetricsConfig) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	km := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
 	for i := range pod.Status.ContainerStatuses {
 		cs := pod.Status.ContainerStatuses[i]
 		md := container.GetMetadata(pod, cs, logger)
 		km[md.ResourceID] = md
+	}
+
+	initNames := make(map[string]struct{})
+	for _, c := range collectedInitContainers(pod, cfg) {
+		initNames[c.Name] = struct{}{}
+	}
+	for i := range pod.Status.InitContainerStatuses {
+		cs := pod.Status.InitContainerStatuses[i]
+		if _, ok := initNames[cs.Name]; !ok {
+			continue
+		}
+		// Skip containers without an ID: the container entity is keyed on container.id, so an
+		// empty ID has no stable identity and would collide with other not-yet-started containers.
+		if cs.ContainerID == "" {
+			continue
+		}
+		md := container.GetMetadata(pod, cs, logger)
+		km[md.ResourceID] = md
+	}
+
+	if cfg.CollectEphemeralContainers {
+		for i := range pod.Status.EphemeralContainerStatuses {
+			cs := pod.Status.EphemeralContainerStatuses[i]
+			if cs.ContainerID == "" {
+				continue
+			}
+			md := container.GetMetadata(pod, cs, logger)
+			km[md.ResourceID] = md
+		}
 	}
 	return km
 }

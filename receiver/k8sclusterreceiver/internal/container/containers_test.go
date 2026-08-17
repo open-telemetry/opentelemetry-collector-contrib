@@ -159,6 +159,38 @@ func TestRecordSpecMetrics(t *testing.T) {
 	}
 }
 
+func TestFindContainerStatus(t *testing.T) {
+	pod := &corev1.Pod{
+		Status: corev1.PodStatus{
+			ContainerStatuses: []corev1.ContainerStatus{
+				{Name: "app", ContainerID: "docker://app-id"},
+			},
+			InitContainerStatuses: []corev1.ContainerStatus{
+				{Name: "sidecar", ContainerID: "docker://sidecar-id"},
+			},
+			EphemeralContainerStatuses: []corev1.ContainerStatus{
+				{Name: "debugger", ContainerID: "docker://debugger-id"},
+			},
+		},
+	}
+
+	tests := []struct {
+		name          string
+		containerName string
+		want          *corev1.ContainerStatus
+	}{
+		{name: "regular container", containerName: "app", want: &pod.Status.ContainerStatuses[0]},
+		{name: "sidecar container", containerName: "sidecar", want: &pod.Status.InitContainerStatuses[0]},
+		{name: "ephemeral container", containerName: "debugger", want: &pod.Status.EphemeralContainerStatuses[0]},
+		{name: "no match", containerName: "missing", want: nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, findContainerStatus(pod, tt.containerName))
+		})
+	}
+}
+
 func TestGetMetadata(t *testing.T) {
 	refTime := v1.Now()
 	pod := &corev1.Pod{
