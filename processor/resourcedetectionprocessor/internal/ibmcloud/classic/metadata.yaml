@@ -51,7 +51,3 @@ resource_attributes:
     description: The hostname of the instance.
     type: string
     enabled: true
-
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true
