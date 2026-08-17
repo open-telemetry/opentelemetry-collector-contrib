@@ -33,5 +33,6 @@ This component has the following feature gates:
 | `filelog.mtimeSortType` | alpha | When enabled, allows usage of `ordering_criteria.mode` = `mtime`. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812) |
 | `filelog.protobufCheckpointEncoding` | beta | Use protobuf encoding for checkpoint storage instead of JSON. | v0.148.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266) |
 | `filelog.windows.caseInsensitive` | alpha | On Windows, make matching patterns in include/exclude case insensitive. | v0.142.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777) |
+| `filelog.windows.keepFilesOpen` | alpha | On Windows, keep file handles open between poll cycles so that data written to a file that was rotated out of the matching pattern can still be read, matching the behavior on other platforms. When disabled (the default), files are closed immediately after each poll on Windows. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49213) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

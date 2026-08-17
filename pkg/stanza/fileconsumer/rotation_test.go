@@ -166,7 +166,9 @@ func TestMoveFile(t *testing.T) {
 }
 
 func TestTrackMovedAwayFiles(t *testing.T) {
-	t.Parallel()
+	// Reading a file that was moved out of the matching pattern relies on keeping the
+	// handle open between polls, which is opt-in on Windows.
+	enableKeepFilesOpen(t)
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
@@ -206,7 +208,9 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 // Check if we read log lines from a rotated file before lines from the newly created file
 // Note that we don't guarantee ordering based on file identity - only that we read from rotated files first
 func TestTrackRotatedFilesLogOrder(t *testing.T) {
-	t.Parallel()
+	// Reading from a rotated-away file relies on keeping the handle open between
+	// polls, which is opt-in on Windows.
+	enableKeepFilesOpen(t)
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
@@ -258,7 +262,9 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 // When a file it rotated out of pattern via move/create, we should
 // detect that our old handle is still valid attempt to read from it.
 func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
-	t.Parallel()
+	// Detecting that our old handle is still valid after a file is rotated out of the
+	// pattern relies on keeping the handle open between polls, which is opt-in on Windows.
+	enableKeepFilesOpen(t)
 
 	tempDir := t.TempDir()
 	cfg := NewConfig()

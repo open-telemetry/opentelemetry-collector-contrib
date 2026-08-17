@@ -276,8 +276,14 @@ then truncated before the operator has a chance to consume the new data.
 ### File rotation via move/create on Windows
 
 On Windows, files are opened with the `FILE_SHARE_DELETE` flag, which allows them to be moved or
-deleted by other processes while the operator still holds an open handle. Like other platforms,
-the operator keeps file handles open between poll cycles so that data written to a file that was
-rotated out of the matching pattern can still be read from the retained handle. The handle is
-released within a couple of poll cycles once the file is no longer matched, so it is never held
-perpetually.
+deleted by other processes while the operator still holds an open handle. This makes it possible
+for the operator to keep file handles open between poll cycles so that data written to a file that
+was rotated out of the matching pattern can still be read from the retained handle, matching the
+behavior on other platforms. The handle is released within a couple of poll cycles once the file is
+no longer matched, so it is never held perpetually.
+
+On Windows this behavior is opt-in via the `filelog.windows.keepFilesOpen` feature gate, which is
+disabled by default. When the gate is disabled, files are closed immediately after each poll on
+Windows (the legacy behavior), which can cause data loss when files are rotated out of the matching
+pattern between polls. The gate only affects Windows; on other platforms handles are always kept
+open between polls regardless of the gate.

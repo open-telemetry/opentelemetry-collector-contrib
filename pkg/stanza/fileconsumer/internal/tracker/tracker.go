@@ -6,6 +6,7 @@ package tracker // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"os"
+	"runtime"
 	"slices"
 
 	"go.opentelemetry.io/collector/component"
@@ -14,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/archive"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
@@ -152,20 +154,46 @@ func (t *fileTracker) ClosePreviousFiles() (filesClosed int) {
 	return filesClosed
 }
 
+// keepFilesOpenBetweenPolls reports whether file handles should be retained between
+// poll cycles. On non-Windows platforms this is always the case. On Windows it is
+// opt-in via the filelog.windows.keepFilesOpen feature gate; when the gate is disabled
+// (the default) files are closed immediately after each poll, preserving the legacy
+// Windows behavior so users are unaffected until they choose to enable the new behavior.
+func keepFilesOpenBetweenPolls() bool {
+	return runtime.GOOS != "windows" || metadata.FilelogWindowsKeepFilesOpenFeatureGate.IsEnabled()
+}
+
 // EndConsume closes the files from the previous poll and promotes the current
-// poll's files to be the previous poll's files. The current poll's files are
-// kept open between polls so that we can detect and read "lost" files, which
-// have been moved out of the matching pattern. On Windows, files are opened
-// with FILE_SHARE_DELETE so they can still be moved or deleted while we hold
-// the handle; the handle is released here within a couple of polls once the
-// file is no longer matched, so it is never held perpetually.
+// poll's files to be the previous poll's files.
+//
+// When keepFilesOpenBetweenPolls reports true, the previous poll's files are closed
+// first and then the current poll's files are promoted while still open, so that we
+// can detect and read "lost" files, which have been moved out of the matching pattern.
+// On Windows, files are opened with FILE_SHARE_DELETE so they can still be moved or
+// deleted while we hold the handle; the handle is released within a couple of polls
+// once the file is no longer matched, so it is never held perpetually.
+//
+// When it reports false (the default Windows behavior, unless the
+// filelog.windows.keepFilesOpen feature gate is enabled), the current poll's files are
+// promoted and then closed immediately, so no handles are held open between polls.
 func (t *fileTracker) EndConsume() (filesClosed int) {
 	spare := t.previousPollFiles
-	filesClosed = t.ClosePreviousFiles()
 
-	// t.currentPollFiles -> t.previousPollFiles
-	t.previousPollFiles = t.currentPollFiles
-	t.previousPollFiles.Reindex()
+	if keepFilesOpenBetweenPolls() {
+		filesClosed = t.ClosePreviousFiles()
+
+		// t.currentPollFiles -> t.previousPollFiles
+		t.previousPollFiles = t.currentPollFiles
+		t.previousPollFiles.Reindex()
+	} else {
+		// t.currentPollFiles -> t.previousPollFiles
+		t.previousPollFiles = t.currentPollFiles
+		t.previousPollFiles.Reindex()
+
+		// Close the just-promoted files so nothing is kept open between polls.
+		filesClosed = t.ClosePreviousFiles()
+	}
+
 	if spare == nil {
 		t.currentPollFiles = fileset.New[*reader.Reader](t.maxBatchFiles)
 	} else {
