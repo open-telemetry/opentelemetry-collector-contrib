@@ -11,6 +11,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
@@ -76,9 +78,6 @@ func (r *functionsReceiver) registerEventHubRoutes(mux *http.ServeMux, host comp
 	if t == nil || t.EventHub == nil {
 		return nil
 	}
-	if len(t.EventHub.Logs) == 0 && len(t.EventHub.Metrics) == 0 {
-		return nil
-	}
 	eh := t.EventHub
 
 	decoder := transport.NewBinaryDecoder()
@@ -88,7 +87,7 @@ func (r *functionsReceiver) registerEventHubRoutes(mux *http.ServeMux, host comp
 	}
 
 	if r.nextLogs != nil && len(eh.Logs) > 0 {
-		unmarshalers, err := loadLogsUnmarshalers(host, eh.Logs)
+		unmarshalers, err := loadUnmarshalers[plog.Unmarshaler](host, eh.Logs, "logs")
 		if err != nil {
 			return err
 		}
@@ -102,7 +101,7 @@ func (r *functionsReceiver) registerEventHubRoutes(mux *http.ServeMux, host comp
 	}
 
 	if r.nextMetrics != nil && len(eh.Metrics) > 0 {
-		unmarshalers, err := loadMetricsUnmarshalers(host, eh.Metrics)
+		unmarshalers, err := loadUnmarshalers[pmetric.Unmarshaler](host, eh.Metrics, "metrics")
 		if err != nil {
 			return err
 		}
