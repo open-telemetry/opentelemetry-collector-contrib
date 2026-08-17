@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -2642,4 +2643,76 @@ func newMockLogsExporter(consumelogsfn func(ctx context.Context, ld plog.Logs) e
 
 func newNopMockLogsExporter() exporter.Logs {
 	return &mockLogsExporter{Component: mockComponent{}}
+}
+
+// TestExportBatches_PropagatesSubExporterPartialFailureLogs checks that a sub-exporter's own
+// consumererror.Logs subset is propagated, not the whole batch it was sent.
+func TestExportBatches_PropagatesSubExporterPartialFailureLogs(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	// 2 records in; the sub-exporter will claim only the first failed.
+	ld := plog.NewLogs()
+	sl := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty().Body().SetStr("log-failed")
+	sl.LogRecords().AppendEmpty().Body().SetStr("log-succeeded")
+
+	subFailed := plog.NewLogs()
+	subFailed.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-failed")
+
+	backendErr := errors.New("partial backend failure")
+	badEndpoint := endpointWithPort("bad")
+	bad := newWrappedExporter(newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+		return consumererror.NewLogs(backendErr, subFailed)
+	}), badEndpoint)
+
+	// exportBatches works off pre-routed batches, so no load balancer is needed here.
+	e := &logExporterImp{logger: ts.Logger, telemetry: tb}
+
+	bad.consumeWG.Add(1)
+	err := e.exportBatches(t.Context(), exporterLogs{bad: ld})
+
+	var logsErr consumererror.Logs
+	require.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, 1, logsErr.Data().LogRecordCount(),
+		"should propagate sub-exporter's reported failed subset, not the full batch")
+	assert.Equal(t, "log-failed", logsErr.Data().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+}
+
+func TestConsumeLogs_PartialFailureOnlyRetriesFailedBackend(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	backendErr := errors.New("backend unavailable")
+	goodCalls := 0
+
+	endpoints := []string{"endpoint-1", "endpoint-2"}
+	ring := newHashRing(endpoints)
+	svcGood := serviceNameForEndpoint(t, ring, "endpoint-1")
+	svcBad := serviceNameForEndpoint(t, ring, "endpoint-2")
+
+	goodEndpoint := endpointWithPort("endpoint-1")
+	badEndpoint := endpointWithPort("endpoint-2")
+
+	good := newWrappedExporter(newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+		goodCalls++
+		return nil
+	}), goodEndpoint)
+	bad := newWrappedExporter(newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+		return backendErr
+	}), badEndpoint)
+
+	lb := &loadBalancer{
+		ring:      ring,
+		exporters: map[string]*wrappedExporter{goodEndpoint: good, badEndpoint: bad},
+	}
+	e := &logExporterImp{loadBalancer: lb, routingKey: svcRouting, logger: ts.Logger, telemetry: tb}
+
+	ld := mergeLogs(simpleLogWithServiceName(svcGood), simpleLogWithServiceName(svcBad))
+
+	err := e.ConsumeLogs(t.Context(), ld)
+
+	// Must be a typed error, otherwise the retry machinery re-sends the whole batch.
+	var logsErr consumererror.Logs
+	require.ErrorAs(t, err, &logsErr, "expected consumererror.Logs, got %T: %v", err, err)
+	assert.Equal(t, 1, logsErr.Data().LogRecordCount(), "failed payload should contain only the bad backend's log")
+	assert.Equal(t, 1, goodCalls, "good backend must not be re-sent")
 }
