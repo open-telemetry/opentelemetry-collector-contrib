@@ -90,19 +90,23 @@ func (s *hardwareTemperatureScraper) scrape(_ context.Context, mb *metadata.Metr
 
 	if s.metricsBuilderConfig.Metrics.HwTemperatureLimit.Enabled {
 		for _, sensor := range sensors {
-			limits := s.readTemperatureLimits(sensor)
-			s.recordTemperatureLimits(now, sensor, limits, mb)
+			s.recordTemperatureLimits(now, sensor, mb)
 		}
 	}
 
 	return errors.Combine()
 }
 
-type temperatureLimits struct {
-	maxTemp     *float64
-	critTemp    *float64
-	minTemp     *float64
-	lowCritTemp *float64
+// temperatureLimitTypes maps the hwmon threshold file suffix to the semconv
+// limit type it represents.
+var temperatureLimitTypes = []struct {
+	suffix    string
+	limitType metadata.AttributeHwLimitType
+}{
+	{"crit", metadata.AttributeHwLimitTypeHighCritical},
+	{"max", metadata.AttributeHwLimitTypeHighDegraded},
+	{"lcrit", metadata.AttributeHwLimitTypeLowCritical},
+	{"min", metadata.AttributeHwLimitTypeLowDegraded},
 }
 
 type sensorInfo struct {
@@ -201,55 +205,28 @@ func (s *hardwareTemperatureScraper) buildSensorInfo(tempFile, deviceName string
 	return sensor, nil
 }
 
-func (s *hardwareTemperatureScraper) readTemperatureLimits(sensor sensorInfo) temperatureLimits {
-	limits := temperatureLimits{}
+func (s *hardwareTemperatureScraper) recordTemperatureLimits(now pcommon.Timestamp, sensor sensorInfo, mb *metadata.MetricsBuilder) {
+	for _, limit := range temperatureLimitTypes {
+		limitPath := filepath.Join(sensor.hwmonDir, fmt.Sprintf("temp%s_%s", sensor.sensorNum, limit.suffix))
 
-	limitFiles := map[string]struct {
-		limitType string
-		target    **float64
-	}{
-		fmt.Sprintf("temp%s_crit", sensor.sensorNum):  {"high.critical", &limits.critTemp},
-		fmt.Sprintf("temp%s_max", sensor.sensorNum):   {"high.degraded", &limits.maxTemp},
-		fmt.Sprintf("temp%s_lcrit", sensor.sensorNum): {"low.critical", &limits.lowCritTemp},
-		fmt.Sprintf("temp%s_min", sensor.sensorNum):   {"low.degraded", &limits.minTemp},
-	}
-
-	for limitFile, info := range limitFiles {
-		limitPath := filepath.Join(sensor.hwmonDir, limitFile)
-		if limitCelsius, err := s.readTemperatureCelsius(limitPath); err == nil {
-			// Validate temperature limit is within reasonable range
-			if limitCelsius >= minReasonableTemp && limitCelsius <= maxReasonableTemp {
-				*info.target = &limitCelsius
-			}
+		limitCelsius, err := s.readTemperatureCelsius(limitPath)
+		if err != nil {
+			continue
 		}
-	}
-
-	return limits
-}
-
-func (*hardwareTemperatureScraper) recordTemperatureLimits(now pcommon.Timestamp, sensor sensorInfo, limits temperatureLimits, mb *metadata.MetricsBuilder) {
-	limitFiles := map[string]struct {
-		limitType string
-		target    *float64
-	}{
-		fmt.Sprintf("temp%s_crit", sensor.sensorNum):  {"high.critical", limits.critTemp},
-		fmt.Sprintf("temp%s_max", sensor.sensorNum):   {"high.degraded", limits.maxTemp},
-		fmt.Sprintf("temp%s_lcrit", sensor.sensorNum): {"low.critical", limits.lowCritTemp},
-		fmt.Sprintf("temp%s_min", sensor.sensorNum):   {"low.degraded", limits.minTemp},
-	}
-
-	for _, info := range limitFiles {
-		if info.target != nil {
-			mb.RecordHwTemperatureLimitDataPoint(
-				now,
-				*info.target,
-				sensor.id,
-				metadata.MapAttributeHwLimitType[info.limitType],
-				sensor.name,
-				sensor.parent,
-				sensor.location,
-			)
+		// Validate temperature limit is within reasonable range
+		if limitCelsius < minReasonableTemp || limitCelsius > maxReasonableTemp {
+			continue
 		}
+
+		mb.RecordHwTemperatureLimitDataPoint(
+			now,
+			limitCelsius,
+			sensor.id,
+			limit.limitType,
+			sensor.name,
+			sensor.parent,
+			sensor.location,
+		)
 	}
 }
 
