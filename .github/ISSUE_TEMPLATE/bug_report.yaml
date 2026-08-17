@@ -132,6 +132,7 @@ body:
       - extension/opampcustommessages
       - extension/pprof
       - extension/remotetap
+      - extension/sdnotify
       - extension/sigv4auth
       - extension/solarwindsapmsettings
       - extension/storage

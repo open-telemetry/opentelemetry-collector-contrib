@@ -253,7 +253,6 @@ func WithPayloadsConfig() ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
 		pkgconfig.Set("enable_payloads.events", true, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("enable_payloads.json_to_v1_intake", true, pkgconfigmodel.SourceDefault)
-		pkgconfig.Set("enable_sketch_stream_payload_serialization", true, pkgconfigmodel.SourceDefault)
 	}
 }
 
