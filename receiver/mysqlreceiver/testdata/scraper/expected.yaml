@@ -697,21 +697,21 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: mysql.innodb.row_lock.wait.count
             unit: "{wait}"
-          - description: The average InnoDB row lock wait time.
+          - description: The average InnoDB row lock wait duration.
             gauge:
               dataPoints:
                 - asDouble: 0.267
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: mysql.innodb.row_lock.wait.time.avg
+            name: mysql.innodb.row_lock.wait.duration.avg
             unit: s
-          - description: The maximum InnoDB row lock wait time.
+          - description: The maximum InnoDB row lock wait duration.
             gauge:
               dataPoints:
                 - asDouble: 0.268
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: mysql.innodb.row_lock.wait.time.max
+            name: mysql.innodb.row_lock.wait.duration.max
             unit: s
           - description: The number of joins that perform table scans.
             name: mysql.joins

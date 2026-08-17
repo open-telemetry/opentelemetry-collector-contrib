@@ -460,17 +460,17 @@ The number of InnoDB row lock waits currently pending.
 | ---- | ----------- | ---------- | --------- |
 | {wait} | Gauge | Int | Development |
 
-### mysql.innodb.row_lock.wait.time.avg
+### mysql.innodb.row_lock.wait.duration.avg
 
-The average InnoDB row lock wait time.
+The average InnoDB row lock wait duration.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Double | Development |
 
-### mysql.innodb.row_lock.wait.time.max
+### mysql.innodb.row_lock.wait.duration.max
 
-The maximum InnoDB row lock wait time.
+The maximum InnoDB row lock wait duration.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

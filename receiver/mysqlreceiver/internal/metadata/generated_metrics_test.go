@@ -210,10 +210,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMysqlInnodbRowLockWaitCountDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordMysqlInnodbRowLockWaitTimeAvgDataPoint(ts, 1)
+			mb.RecordMysqlInnodbRowLockWaitDurationAvgDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordMysqlInnodbRowLockWaitTimeMaxDataPoint(ts, 1)
+			mb.RecordMysqlInnodbRowLockWaitDurationMaxDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordMysqlJoinsDataPoint(ts, "1", AttributeJoinKindFull)
@@ -1155,24 +1155,24 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "mysql.innodb.row_lock.wait.time.avg":
-					assert.False(t, validatedMetrics["mysql.innodb.row_lock.wait.time.avg"], "Found a duplicate in the metrics slice: mysql.innodb.row_lock.wait.time.avg")
-					validatedMetrics["mysql.innodb.row_lock.wait.time.avg"] = true
+				case "mysql.innodb.row_lock.wait.duration.avg":
+					assert.False(t, validatedMetrics["mysql.innodb.row_lock.wait.duration.avg"], "Found a duplicate in the metrics slice: mysql.innodb.row_lock.wait.duration.avg")
+					validatedMetrics["mysql.innodb.row_lock.wait.duration.avg"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "The average InnoDB row lock wait time.", mi.Description())
+					assert.Equal(t, "The average InnoDB row lock wait duration.", mi.Description())
 					assert.Equal(t, "s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "mysql.innodb.row_lock.wait.time.max":
-					assert.False(t, validatedMetrics["mysql.innodb.row_lock.wait.time.max"], "Found a duplicate in the metrics slice: mysql.innodb.row_lock.wait.time.max")
-					validatedMetrics["mysql.innodb.row_lock.wait.time.max"] = true
+				case "mysql.innodb.row_lock.wait.duration.max":
+					assert.False(t, validatedMetrics["mysql.innodb.row_lock.wait.duration.max"], "Found a duplicate in the metrics slice: mysql.innodb.row_lock.wait.duration.max")
+					validatedMetrics["mysql.innodb.row_lock.wait.duration.max"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "The maximum InnoDB row lock wait time.", mi.Description())
+					assert.Equal(t, "The maximum InnoDB row lock wait duration.", mi.Description())
 					assert.Equal(t, "s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
