@@ -38,8 +38,6 @@ type hardwareTemperatureScraper struct {
 
 	includeFilter filterset.FilterSet
 	excludeFilter filterset.FilterSet
-
-	sensors []sensorInfo
 }
 
 func (s *hardwareTemperatureScraper) start(ctx context.Context) error {
@@ -63,17 +61,6 @@ func (s *hardwareTemperatureScraper) start(ctx context.Context) error {
 		}
 	}
 
-	if _, statErr := os.Stat(s.hwmonPath); os.IsNotExist(statErr) {
-		s.logger.Debug("hwmon path does not exist, no sensors will be available", zap.String("path", s.hwmonPath))
-		s.sensors = []sensorInfo{} // Empty sensors list
-		return nil
-	}
-
-	s.sensors, err = s.scanTemperatureSensors()
-	if err != nil {
-		s.logger.Debug("Failed to scan temperature sensors", zap.Error(err))
-	}
-
 	return nil
 }
 
@@ -81,12 +68,17 @@ func (s *hardwareTemperatureScraper) scrape(_ context.Context, mb *metadata.Metr
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var errors scrapererror.ScrapeErrors
 
-	if s.sensors == nil {
-		return nil
+	// Sensors are enumerated on every scrape rather than cached at start, so that
+	// hwmon devices appearing or disappearing at runtime (module load, hotplug) are
+	// reflected in the emitted metrics.
+	sensors, err := s.scanTemperatureSensors()
+	if err != nil {
+		errors.AddPartial(hardwareTemperatureMetricsLen, fmt.Errorf("failed to scan temperature sensors: %w", err))
+		return errors.Combine()
 	}
 
 	if s.metricsBuilderConfig.Metrics.HwTemperature.Enabled {
-		for _, sensor := range s.sensors {
+		for _, sensor := range sensors {
 			tempCelsius, err := s.readTemperatureCelsius(sensor.tempFile)
 			if err != nil {
 				errors.AddPartial(hardwareTemperatureMetricsLen, fmt.Errorf("failed to read temperature for %s: %w", sensor.location, err))
@@ -97,7 +89,7 @@ func (s *hardwareTemperatureScraper) scrape(_ context.Context, mb *metadata.Metr
 	}
 
 	if s.metricsBuilderConfig.Metrics.HwTemperatureLimit.Enabled {
-		for _, sensor := range s.sensors {
+		for _, sensor := range sensors {
 			limits := s.readTemperatureLimits(sensor)
 			s.recordTemperatureLimits(now, sensor, limits, mb)
 		}
