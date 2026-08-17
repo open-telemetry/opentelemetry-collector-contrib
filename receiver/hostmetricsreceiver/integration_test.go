@@ -135,7 +135,7 @@ func Test_HardwareScrape(t *testing.T) {
 		scraperinttest.WithCustomConfig(
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.CollectionInterval = time.Second
+				rCfg.ControllerConfig.CollectionInterval = time.Second
 				rCfg.RootPath = rootPath
 				f := hardwarescraper.NewFactory()
 				hCfg := f.CreateDefaultConfig().(*hardwarescraper.Config)
@@ -144,7 +144,8 @@ func Test_HardwareScrape(t *testing.T) {
 				rCfg.Scrapers = map[component.Type]component.Config{
 					f.Type(): hCfg,
 				}
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
@@ -168,7 +169,7 @@ func Test_HardwareScrapeWithSensorFiltering(t *testing.T) {
 		scraperinttest.WithCustomConfig(
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.CollectionInterval = time.Second
+				rCfg.ControllerConfig.CollectionInterval = time.Second
 				rCfg.RootPath = rootPath
 				f := hardwarescraper.NewFactory()
 				hCfg := f.CreateDefaultConfig().(*hardwarescraper.Config)
@@ -176,7 +177,8 @@ func Test_HardwareScrapeWithSensorFiltering(t *testing.T) {
 				rCfg.Scrapers = map[component.Type]component.Config{
 					f.Type(): hCfg,
 				}
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
