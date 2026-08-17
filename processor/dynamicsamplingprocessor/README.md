@@ -273,12 +273,15 @@ Adjusts rates per key to hit a target sustained throughput in events per second.
 ```yaml
 sampler:
   type: ema_throughput
-  goal_throughput_per_sec: 100            # target events/sec across all keys
+  goal_throughput_per_sec: 100            # target events/sec per instance, across all keys
   key_attributes: ["service.name", "http.status_code"]
   adjustment_interval: 15s
   weight: 0.5
   max_keys: 500
 ```
+
+> [!IMPORTANT]
+> `goal_throughput_per_sec` is enforced **per collector instance**. Each instance targets the goal against the traffic it sees, so a fleet of N instances emits up to N times the configured throughput. Divide the backend budget by the instance count when sizing this value. See [Deployment considerations](#deployment-considerations).
 
 #### `windowed_throughput`
 
@@ -287,12 +290,15 @@ Sliding-window throughput sampler that decouples how often rates are recalculate
 ```yaml
 sampler:
   type: windowed_throughput
-  goal_throughput_per_sec: 100
+  goal_throughput_per_sec: 100            # target events/sec per instance, across all keys
   key_attributes: ["service.name", "http.status_code"]
   update_frequency: 1s                    # how often rates recalculate
   lookback_frequency: 30s                 # historical window used in the calculation
   max_keys: 500
 ```
+
+> [!IMPORTANT]
+> `goal_throughput_per_sec` is enforced **per collector instance**. Each instance targets the goal against the traffic it sees, so a fleet of N instances emits up to N times the configured throughput. Divide the backend budget by the instance count when sizing this value. See [Deployment considerations](#deployment-considerations).
 
 ### Sampling keys
 
@@ -433,6 +439,8 @@ SDKs → Collectors (loadbalancing exporter, hash by traceID)
          → Collectors (dynamic_sampling processor)
            → Backend
 ```
+
+Each processor instance runs its samplers independently against the traffic it sees; there is no coordination between instances. For the throughput samplers (`ema_throughput`, `windowed_throughput`) this means `goal_throughput_per_sec` is a **per-instance** target: a fleet of N instances emits up to N times the configured goal, so divide the backend's ingest budget by the instance count when sizing it. The percentage-based samplers (`ema_dynamic`, `deterministic`) are unaffected, since a target percentage composes across instances. Automatic cluster-size awareness for the throughput goal is not currently implemented.
 
 ## Known limitations
 
