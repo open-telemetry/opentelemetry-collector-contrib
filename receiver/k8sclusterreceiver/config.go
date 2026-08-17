@@ -11,6 +11,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 )
 
 // Config defines configuration for kubernetes cluster receiver.
@@ -53,6 +54,24 @@ type Config struct {
 	// K8sLeaderElector defines the reference to the k8s leader elector extension
 	// use this when k8s cluster receiver needs to be deployed in HA mode
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
+
+	// CollectAllInitContainerMetrics enables collection of k8s.container metrics and entities for
+	// all init containers. By default only sidecar containers (init containers with
+	// restartPolicy: Always, which run for the pod's lifetime) are collected. Enable this to also
+	// collect regular, short-lived init containers.
+	CollectAllInitContainerMetrics bool `mapstructure:"collect_all_init_container_metrics"`
+
+	// CollectEphemeralContainerMetrics enables collection of k8s.container metrics and entities for
+	// ephemeral (debug) containers. Disabled by default.
+	CollectEphemeralContainerMetrics bool `mapstructure:"collect_ephemeral_container_metrics"`
+}
+
+// podContainerMetricsConfig maps the receiver config to the pod package's container collection config.
+func (cfg *Config) podContainerMetricsConfig() pod.ContainerMetricsConfig {
+	return pod.ContainerMetricsConfig{
+		CollectAllInitContainers:   cfg.CollectAllInitContainerMetrics,
+		CollectEphemeralContainers: cfg.CollectEphemeralContainerMetrics,
+	}
 }
 
 func (cfg *Config) Validate() error {

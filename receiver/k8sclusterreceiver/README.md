@@ -80,6 +80,12 @@ When enabled, this setting produces the following node-level metrics (one per se
 
 - `metrics`: Allows to enable/disable metrics.
 - `resource_attributes`: Allows to enable/disable resource attributes.
+- `collect_all_init_container_metrics` (default = `false`): When enabled, `k8s.container` metrics and
+entities are collected for all init containers. By default only sidecar containers (init containers
+with `restartPolicy: Always`, which run for the pod's lifetime) are collected; enable this to also
+collect regular, short-lived init containers.
+- `collect_ephemeral_container_metrics` (default = `false`): When enabled, `k8s.container` metrics and
+entities are collected for ephemeral (debug) containers.
 - `namespace` (deprecated, use `namespaces` instead): Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed.
 - `namespaces`: Allows to observe resources for a list of given namespaces. If this option is set, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed, as those are cluster-scoped resources.
 

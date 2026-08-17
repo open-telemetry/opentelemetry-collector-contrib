@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -46,7 +47,7 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
-	RecordMetrics(zap.NewNop(), mb, pod, ts)
+	RecordMetrics(zap.NewNop(), mb, pod, ts, ContainerMetricsConfig{})
 	m := mb.Emit()
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
@@ -73,7 +74,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.Enabled = true
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
-	RecordMetrics(zap.NewNop(), mb, pod, ts)
+	RecordMetrics(zap.NewNop(), mb, pod, ts, ContainerMetricsConfig{})
 	m := mb.Emit()
 
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_evicted.yaml"))
@@ -90,6 +91,188 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 
 var containerIDWithPrefix = func(containerID string) string {
 	return "docker://" + containerID
+}
+
+func TestPodAndSidecarContainerMetricsReportCPUMetrics(t *testing.T) {
+	pod := testutils.NewPodWithContainer(
+		"1",
+		testutils.NewPodSpecWithSidecarContainer("container-name", "sidecar-name"),
+		testutils.NewPodStatusWithSidecarContainer("container-name", containerIDWithPrefix("container-id"), "sidecar-name", containerIDWithPrefix("sidecar-id")),
+	)
+
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	RecordMetrics(zap.NewNop(), mb, pod, ts, ContainerMetricsConfig{})
+	m := mb.Emit()
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_sidecar.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
+	)
+}
+
+func TestRecordMetricsIgnoresRegularInitContainer(t *testing.T) {
+	pod := testutils.NewPodWithContainer(
+		"1",
+		testutils.NewPodSpecWithContainer("container-name"),
+		testutils.NewPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
+	)
+	pod.Spec.InitContainers = []corev1.Container{
+		{
+			Name: "regular-init-container",
+			Resources: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceCPU: *resource.NewQuantity(2, resource.DecimalSI),
+				},
+			},
+		},
+	}
+	pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
+		{
+			Name:  "regular-init-container",
+			Ready: false,
+			State: corev1.ContainerState{
+				Terminated: &corev1.ContainerStateTerminated{},
+			},
+		},
+	}
+
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	RecordMetrics(zap.NewNop(), mb, pod, ts, ContainerMetricsConfig{})
+	m := mb.Emit()
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
+	)
+}
+
+func TestPodAndEphemeralContainerMetricsReportCPUMetrics(t *testing.T) {
+	pod := testutils.NewPodWithContainer(
+		"1",
+		testutils.NewPodSpecWithContainer("container-name"),
+		testutils.NewPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
+	)
+	pod.Spec.EphemeralContainers = []corev1.EphemeralContainer{
+		{
+			EphemeralContainerCommon: corev1.EphemeralContainerCommon{
+				Name:  "debugger",
+				Image: "busybox:latest",
+			},
+		},
+	}
+	pod.Status.EphemeralContainerStatuses = []corev1.ContainerStatus{
+		{
+			Name:  "debugger",
+			Ready: false,
+			Image: "busybox:latest",
+			State: corev1.ContainerState{
+				Running: &corev1.ContainerStateRunning{
+					StartedAt: v1.Time{Time: time.Date(1, time.January, 1, 1, 1, 1, 1, time.UTC)},
+				},
+			},
+		},
+	}
+
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	RecordMetrics(zap.NewNop(), mb, pod, ts, ContainerMetricsConfig{CollectEphemeralContainers: true})
+	m := mb.Emit()
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_ephemeral.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
+	)
+}
+
+// containerNamesFromMetrics returns the k8s.container.name of every container resource emitted.
+func containerNamesFromMetrics(m pmetric.Metrics) []string {
+	var names []string
+	rms := m.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		if v, ok := rms.At(i).Resource().Attributes().Get("k8s.container.name"); ok {
+			names = append(names, v.Str())
+		}
+	}
+	return names
+}
+
+func TestRecordMetricsContainerCollectionConfig(t *testing.T) {
+	alwaysRestart := corev1.ContainerRestartPolicyAlways
+	newPod := func() *corev1.Pod {
+		pod := testutils.NewPodWithContainer(
+			"1",
+			testutils.NewPodSpecWithContainer("app"),
+			testutils.NewPodStatusWithContainer("app", containerIDWithPrefix("app-id")),
+		)
+		pod.Spec.InitContainers = []corev1.Container{
+			{Name: "regular-init"},
+			{Name: "my-sidecar", RestartPolicy: &alwaysRestart},
+		}
+		pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
+			{Name: "regular-init", ContainerID: containerIDWithPrefix("regular-init-id"), State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}}},
+			{Name: "my-sidecar", ContainerID: containerIDWithPrefix("sidecar-id"), Ready: true, State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}}},
+		}
+		pod.Spec.EphemeralContainers = []corev1.EphemeralContainer{
+			{EphemeralContainerCommon: corev1.EphemeralContainerCommon{Name: "debugger"}},
+		}
+		pod.Status.EphemeralContainerStatuses = []corev1.ContainerStatus{
+			{Name: "debugger", ContainerID: containerIDWithPrefix("debugger-id"), State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}}},
+		}
+		return pod
+	}
+
+	tests := []struct {
+		name           string
+		cfg            ContainerMetricsConfig
+		wantContainers []string
+	}{
+		{
+			name:           "default collects regular and sidecar containers",
+			cfg:            ContainerMetricsConfig{},
+			wantContainers: []string{"app", "my-sidecar"},
+		},
+		{
+			name:           "all init containers",
+			cfg:            ContainerMetricsConfig{CollectAllInitContainers: true},
+			wantContainers: []string{"app", "my-sidecar", "regular-init"},
+		},
+		{
+			name:           "ephemeral containers",
+			cfg:            ContainerMetricsConfig{CollectEphemeralContainers: true},
+			wantContainers: []string{"app", "my-sidecar", "debugger"},
+		},
+		{
+			name:           "all init and ephemeral containers",
+			cfg:            ContainerMetricsConfig{CollectAllInitContainers: true, CollectEphemeralContainers: true},
+			wantContainers: []string{"app", "my-sidecar", "regular-init", "debugger"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := pcommon.Timestamp(time.Now().UnixNano())
+			mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+			RecordMetrics(zap.NewNop(), mb, newPod(), ts, tt.cfg)
+			assert.ElementsMatch(t, tt.wantContainers, containerNamesFromMetrics(mb.Emit()))
+		})
+	}
 }
 
 func TestPhaseToInt(t *testing.T) {
@@ -186,7 +369,7 @@ func TestDataCollectorSyncMetadataForPodWorkloads(t *testing.T) {
 
 			name := fmt.Sprintf("(%s) - %s", kind, tt.name)
 			t.Run(name, func(t *testing.T) {
-				actual := GetMetadata(testCase.resource, testCase.metadataStore, logger)
+				actual := GetMetadata(testCase.resource, testCase.metadataStore, logger, ContainerMetricsConfig{})
 				require.Len(t, actual, len(testCase.want))
 
 				for key, item := range testCase.want {
@@ -535,7 +718,117 @@ func TestTransform(t *testing.T) {
 			},
 		},
 	}
-	assert.Equal(t, wantPod, Transform(originalPod))
+	assert.Equal(t, wantPod, Transform(originalPod, ContainerMetricsConfig{}))
+}
+
+func TestTransformKeepsSidecarButDropsRegularInitContainers(t *testing.T) {
+	alwaysRestart := corev1.ContainerRestartPolicyAlways
+	originalPod := &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{Name: "my-pod", Namespace: "default"},
+		Spec: corev1.PodSpec{
+			NodeName: "node-1",
+			InitContainers: []corev1.Container{
+				{
+					Name:  "regular-init",
+					Image: "busybox:latest",
+					Resources: corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1")},
+					},
+				},
+				{
+					Name:          "my-sidecar",
+					Image:         "alpine:latest",
+					RestartPolicy: &alwaysRestart,
+					Resources: corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("2")},
+					},
+				},
+			},
+			EphemeralContainers: []corev1.EphemeralContainer{
+				{
+					EphemeralContainerCommon: corev1.EphemeralContainerCommon{
+						Name:  "debugger",
+						Image: "busybox:latest",
+						Resources: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1")},
+						},
+					},
+				},
+			},
+		},
+		Status: corev1.PodStatus{
+			InitContainerStatuses: []corev1.ContainerStatus{
+				{Name: "regular-init", Image: "busybox:latest", State: corev1.ContainerState{Terminated: &corev1.ContainerStateTerminated{}}},
+				{Name: "my-sidecar", Image: "alpine:latest", Ready: true, State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}}},
+			},
+			EphemeralContainerStatuses: []corev1.ContainerStatus{
+				{Name: "debugger", Image: "busybox:latest", State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}}},
+			},
+		},
+	}
+
+	got := Transform(originalPod, ContainerMetricsConfig{CollectEphemeralContainers: true})
+
+	require.Len(t, got.Spec.InitContainers, 1)
+	assert.Equal(t, "my-sidecar", got.Spec.InitContainers[0].Name)
+	require.Len(t, got.Status.InitContainerStatuses, 1)
+	assert.Equal(t, "my-sidecar", got.Status.InitContainerStatuses[0].Name)
+
+	require.Len(t, got.Spec.EphemeralContainers, 1)
+	assert.Equal(t, "debugger", got.Spec.EphemeralContainers[0].Name)
+	require.Len(t, got.Status.EphemeralContainerStatuses, 1)
+	assert.Equal(t, "debugger", got.Status.EphemeralContainerStatuses[0].Name)
+}
+
+func TestTransformContainerCollectionConfig(t *testing.T) {
+	alwaysRestart := corev1.ContainerRestartPolicyAlways
+	newPod := func() *corev1.Pod {
+		return &corev1.Pod{
+			ObjectMeta: v1.ObjectMeta{Name: "my-pod", Namespace: "default"},
+			Spec: corev1.PodSpec{
+				NodeName: "node-1",
+				InitContainers: []corev1.Container{
+					{Name: "regular-init"},
+					{Name: "my-sidecar", RestartPolicy: &alwaysRestart},
+				},
+				EphemeralContainers: []corev1.EphemeralContainer{
+					{EphemeralContainerCommon: corev1.EphemeralContainerCommon{Name: "debugger"}},
+				},
+			},
+			Status: corev1.PodStatus{
+				InitContainerStatuses: []corev1.ContainerStatus{
+					{Name: "regular-init"},
+					{Name: "my-sidecar"},
+				},
+				EphemeralContainerStatuses: []corev1.ContainerStatus{
+					{Name: "debugger"},
+				},
+			},
+		}
+	}
+
+	initNames := func(pod *corev1.Pod) []string {
+		var names []string
+		for _, c := range pod.Spec.InitContainers {
+			names = append(names, c.Name)
+		}
+		return names
+	}
+
+	// Default: only sidecars, no ephemeral.
+	got := Transform(newPod(), ContainerMetricsConfig{})
+	assert.Equal(t, []string{"my-sidecar"}, initNames(got))
+	assert.Empty(t, got.Spec.EphemeralContainers)
+
+	// CollectAllInitContainers: all init containers kept, still no ephemeral.
+	got = Transform(newPod(), ContainerMetricsConfig{CollectAllInitContainers: true})
+	assert.ElementsMatch(t, []string{"regular-init", "my-sidecar"}, initNames(got))
+	assert.Empty(t, got.Spec.EphemeralContainers)
+
+	// CollectEphemeralContainers: ephemeral kept, sidecars only for init.
+	got = Transform(newPod(), ContainerMetricsConfig{CollectEphemeralContainers: true})
+	assert.Equal(t, []string{"my-sidecar"}, initNames(got))
+	require.Len(t, got.Spec.EphemeralContainers, 1)
 }
 
 func TestPodMetadata(t *testing.T) {
@@ -595,7 +888,7 @@ func TestPodMetadata(t *testing.T) {
 				withParentOR: true,
 			})
 			logger := zap.NewNop()
-			meta := GetMetadata(pod, metadataStore, logger)
+			meta := GetMetadata(pod, metadataStore, logger, ContainerMetricsConfig{})
 
 			require.NotNil(t, meta)
 			require.Contains(t, meta, experimentalmetricmetadata.ResourceID("test-pod-0-uid"))
@@ -609,6 +902,72 @@ func TestPodMetadata(t *testing.T) {
 	}
 }
 
+func TestGetPodContainerProperties(t *testing.T) {
+	alwaysRestart := corev1.ContainerRestartPolicyAlways
+	pod := &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-namespace",
+			UID:       types.UID("test-pod-uid"),
+		},
+		Spec: corev1.PodSpec{
+			NodeName: "test-node",
+			InitContainers: []corev1.Container{
+				{Name: "regular-init"},
+				{Name: "my-sidecar", RestartPolicy: &alwaysRestart},
+			},
+		},
+		Status: corev1.PodStatus{
+			ContainerStatuses: []corev1.ContainerStatus{
+				{Name: "app", ContainerID: "docker://app-id"},
+			},
+			InitContainerStatuses: []corev1.ContainerStatus{
+				{Name: "regular-init", ContainerID: "docker://regular-init-id"},
+				{Name: "my-sidecar", ContainerID: "docker://sidecar-id"},
+			},
+			EphemeralContainerStatuses: []corev1.ContainerStatus{
+				{Name: "debugger", ContainerID: "docker://debugger-id"},
+			},
+		},
+	}
+
+	props := getPodContainerProperties(pod, zap.NewNop(), ContainerMetricsConfig{})
+
+	assert.Contains(t, props, experimentalmetricmetadata.ResourceID("app-id"))
+	assert.Contains(t, props, experimentalmetricmetadata.ResourceID("sidecar-id"))
+	assert.NotContains(t, props, experimentalmetricmetadata.ResourceID("debugger-id"))
+	assert.NotContains(t, props, experimentalmetricmetadata.ResourceID("regular-init-id"))
+
+	// Enabling ephemeral and all init containers includes them.
+	props = getPodContainerProperties(pod, zap.NewNop(), ContainerMetricsConfig{CollectAllInitContainers: true, CollectEphemeralContainers: true})
+	assert.Contains(t, props, experimentalmetricmetadata.ResourceID("app-id"))
+	assert.Contains(t, props, experimentalmetricmetadata.ResourceID("sidecar-id"))
+	assert.Contains(t, props, experimentalmetricmetadata.ResourceID("debugger-id"))
+	assert.Contains(t, props, experimentalmetricmetadata.ResourceID("regular-init-id"))
+}
+
+func TestGetPodContainerPropertiesSkipsEmptyContainerID(t *testing.T) {
+	alwaysRestart := corev1.ContainerRestartPolicyAlways
+	pod := &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{Name: "test-pod", Namespace: "test-namespace", UID: types.UID("test-pod-uid")},
+		Spec: corev1.PodSpec{
+			NodeName:       "test-node",
+			InitContainers: []corev1.Container{{Name: "my-sidecar", RestartPolicy: &alwaysRestart}},
+		},
+		Status: corev1.PodStatus{
+			InitContainerStatuses: []corev1.ContainerStatus{
+				{Name: "my-sidecar", ContainerID: ""},
+			},
+			EphemeralContainerStatuses: []corev1.ContainerStatus{
+				{Name: "debugger", ContainerID: ""},
+			},
+		},
+	}
+
+	props := getPodContainerProperties(pod, zap.NewNop(), ContainerMetricsConfig{CollectEphemeralContainers: true})
+	assert.NotContains(t, props, experimentalmetricmetadata.ResourceID(""))
+}
+
 func TestPodContainerStateMetrics(t *testing.T) {
 	pod := testutils.NewPodWithContainer(
 		"1",
@@ -620,7 +979,7 @@ func TestPodContainerStateMetrics(t *testing.T) {
 	mbc.Metrics.K8sContainerStatusState.Enabled = true
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
-	RecordMetrics(zap.NewNop(), mb, pod, ts)
+	RecordMetrics(zap.NewNop(), mb, pod, ts, ContainerMetricsConfig{})
 	m := mb.Emit()
 
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_container_state.yaml"))
@@ -658,7 +1017,7 @@ func TestPodContainerReasonMetrics(t *testing.T) {
 	mbc.Metrics.K8sContainerStatusReason.Enabled = true
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
-	RecordMetrics(zap.NewNop(), mb, pod, ts)
+	RecordMetrics(zap.NewNop(), mb, pod, ts, ContainerMetricsConfig{})
 	m := mb.Emit()
 
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_container_reason.yaml"))
