@@ -30,6 +30,10 @@ const (
 	maxReasonableTemp = 200.0
 )
 
+// hardwareTemperatureMetricsLen is how many metrics a single sensor can produce,
+// and therefore how many are lost when reading one sensor fails.
+const hardwareTemperatureMetricsLen = 2
+
 type hardwareTemperatureScraper struct {
 	logger               *zap.Logger
 	config               *TemperatureConfig

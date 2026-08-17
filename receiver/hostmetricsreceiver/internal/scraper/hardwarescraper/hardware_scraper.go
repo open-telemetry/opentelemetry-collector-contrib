@@ -18,11 +18,6 @@ import (
 
 var ErrHwmonUnavailable = errors.New("hwmon not available")
 
-const (
-	hardwareTemperatureMetricsLen = 2
-	metricsLen                    = hardwareTemperatureMetricsLen
-)
-
 // temperatureScraper interface for temperature sensor scraping
 type temperatureScraper interface {
 	start(context.Context) error
@@ -74,7 +69,14 @@ func (s *hardwareScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if s.temperatureScraper != nil {
 		if err := s.temperatureScraper.scrape(ctx, s.mb); err != nil {
 			s.logger.Debug("Temperature scraper returned error", zap.Error(err))
-			errs.AddPartial(metricsLen, err)
+			// The sub-scraper already counts every metric it failed to collect, so
+			// carry that count through instead of overwriting it with metricsLen.
+			var partialErr scrapererror.PartialScrapeError
+			if errors.As(err, &partialErr) {
+				errs.AddPartial(partialErr.Failed, err)
+			} else {
+				errs.Add(err)
+			}
 		}
 	}
 
