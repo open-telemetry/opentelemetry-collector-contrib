@@ -18,5 +18,3 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44052
 
 # TODO: Update the receiver to pass the tests
-tests:
-  skip_lifecycle: true
