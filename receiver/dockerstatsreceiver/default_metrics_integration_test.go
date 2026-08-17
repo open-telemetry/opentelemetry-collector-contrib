@@ -50,7 +50,7 @@ func TestIntegration(t *testing.T) {
 				rCfg := cfg.(*Config)
 				rCfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
 				rCfg.MetricsBuilderConfig.ResourceAttributes.ContainerName.MetricsInclude = []filter.Config{{Strict: "dockerstatsreceiver-test"}}
-				rCfg.MetricsBuilderConfig.Metrics.ContainerHealthStatus.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.ContainerStateHealthStatus.Enabled = true
 			},
 		),
 		scraperinttest.WithCompareOptions(
@@ -60,7 +60,6 @@ func TestIntegration(t *testing.T) {
 			pmetrictest.IgnoreResourceAttributeValue("container.runtime"),
 			pmetrictest.IgnoreMetricAttributeValue("device_major", "container.blockio.io_service_bytes_recursive"),
 			pmetrictest.IgnoreMetricAttributeValue("device_minor", "container.blockio.io_service_bytes_recursive"),
-			pmetrictest.IgnoreSubsequentDataPoints("container.blockio.io_service_bytes_recursive"),
 			pmetrictest.IgnoreMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),

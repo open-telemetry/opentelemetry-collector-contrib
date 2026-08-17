@@ -175,22 +175,7 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 	r.mb.RecordContainerRestartsDataPoint(now, int64(container.RestartCount))
 
 	// Record container health status metrics
-	if container.State != nil && container.State.Health != nil {
-		switch container.State.Health.Status {
-		case "starting":
-			r.mb.RecordContainerHealthStatusDataPoint(now, 1, metadata.AttributeContainerHealthStateStarting)
-			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStateHealthy)
-			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStateUnhealthy)
-		case "healthy":
-			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStateStarting)
-			r.mb.RecordContainerHealthStatusDataPoint(now, 1, metadata.AttributeContainerHealthStateHealthy)
-			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStateUnhealthy)
-		case "unhealthy":
-			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStateStarting)
-			r.mb.RecordContainerHealthStatusDataPoint(now, 0, metadata.AttributeContainerHealthStateHealthy)
-			r.mb.RecordContainerHealthStatusDataPoint(now, 1, metadata.AttributeContainerHealthStateUnhealthy)
-		}
-	}
+	r.recordContainerHealthMetrics(now, container)
 
 	// Always-present resource attrs + the user-configured resource attrs
 	rb := r.mb.NewResourceBuilder()
@@ -366,4 +351,23 @@ func (r *metricsReceiver) recordHostConfigMetrics(now pcommon.Timestamp, contain
 		r.mb.RecordContainerCPULimitDataPoint(now, cpuLimit)
 	}
 	return nil
+}
+
+func (r *metricsReceiver) recordContainerHealthMetrics(now pcommon.Timestamp, container *docker.Container) {
+	if container.State != nil && container.State.Health != nil {
+		switch container.State.Health.Status {
+		case "starting":
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 1, metadata.AttributeContainerStateHealthStateStarting)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateHealthy)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateUnhealthy)
+		case "healthy":
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateStarting)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 1, metadata.AttributeContainerStateHealthStateHealthy)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateUnhealthy)
+		case "unhealthy":
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateStarting)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateHealthy)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 1, metadata.AttributeContainerStateHealthStateUnhealthy)
+		}
+	}
 }

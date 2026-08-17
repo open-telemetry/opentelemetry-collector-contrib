@@ -59,7 +59,7 @@ resource_attributes:
     enabled: true
 
 attributes:
-  container.health.state:
+  container.state.health.state:
     description: "The health state of the container."
     type: string
     requirement_level: recommended
@@ -314,20 +314,6 @@ metrics:
     unit: "1"
     gauge:
       value_type: double
-
-  # Health
-  container.health.status:
-    enabled: false
-    stability: development
-    description: "Describes the number of containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero."
-    unit: "{container}"
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-    attributes:
-      - container.health.state
-
   container.memory.active_anon:
     enabled: false
     stability: development
@@ -810,6 +796,19 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+
+  # Health
+  container.state.health.status:
+    enabled: false
+    stability: development
+    description: "The number of containers that are currently in a given health state. All possible container health states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current health state will be non-zero."
+    unit: "{container}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes:
+      - container.state.health.state
 
   # Base
   container.uptime:

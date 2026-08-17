@@ -3,10 +3,10 @@ resourceMetrics:
       attributes:
         - key: container.hostname
           value:
-            stringValue: 9a7551457842
+            stringValue: 4e20200aaff3
         - key: container.id
           value:
-            stringValue: 9a7551457842da38cbcf6c4d6e692b1d540f1cbf5ed5415d82ed9c1d0cf163e9
+            stringValue: 4e20200aaff3cd3e28b280c26b614878088009c09c8cf4263c24d4deaf0c2128
         - key: container.image.name
           value:
             stringValue: docker.io/library/nginx:1.17
@@ -24,7 +24,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "7362000"
+                - asInt: "6277000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -34,7 +34,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "25243000"
+                - asInt: "26154000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -44,7 +44,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "17881000"
+                - asInt: "19877000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -52,51 +52,24 @@ resourceMetrics:
           - description: Percent of CPU used by the container.
             gauge:
               dataPoints:
-                - asDouble: 0.0004885589851799775
+                - asDouble: 1.5378994960422893e-05
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.cpu.utilization
             unit: "1"
-          - description: Describes the number of containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
-            name: container.health.status
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: container.health.state
-                      value:
-                        stringValue: healthy
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "1"
-                  attributes:
-                    - key: container.health.state
-                      value:
-                        stringValue: starting
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: container.health.state
-                      value:
-                        stringValue: unhealthy
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: '{container}'
           - description: Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2).
             name: container.memory.file
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "12288"
+                - asInt: "8192"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
           - description: Percentage of memory used. Not supported on Windows.
             gauge:
               dataPoints:
-                - asDouble: 0.004077483605457793
+                - asDouble: 0.004020398834981384
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.memory.percent
@@ -115,7 +88,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2048000"
+                - asInt: "2019328"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -124,7 +97,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "966"
+                - asInt: "624"
                   attributes:
                     - key: interface
                       value:
@@ -175,6 +148,33 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{packets}'
+          - description: The number of containers that are currently in a given health state. All possible container health states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current health state will be non-zero.
+            name: container.state.health.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: container.state.health.state
+                      value:
+                        stringValue: healthy
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: container.state.health.state
+                      value:
+                        stringValue: starting
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: container.state.health.state
+                      value:
+                        stringValue: unhealthy
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{container}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
           version: latest

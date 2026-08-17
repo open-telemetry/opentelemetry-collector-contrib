@@ -7,7 +7,7 @@ change_type: 'enhancement'
 component: receiver/dockerstats
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add a new metric `container.health.status` that reports container health status with attribute `container.health.state` which can have values 'starting', 'healthy', or 'unhealthy'. Disabled by default."
+note: "Add a new metric `container.state.health.status` that reports container health status with attribute `container.state.health.state` which can have values 'starting', 'healthy', or 'unhealthy'. Disabled by default."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50063]

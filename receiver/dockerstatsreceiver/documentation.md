@@ -370,20 +370,6 @@ Note this is the usage for the system, not the container.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ns | Sum | Int | Cumulative | true | Development |
 
-### container.health.status
-
-Describes the number of containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {container} | Sum | Int | Cumulative | false | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| container.health.state | The health state of the container. | Str: ``starting``, ``healthy``, ``unhealthy`` | Recommended | - |
-
 ### container.memory.active_anon
 
 The amount of anonymous memory that has been identified as active by the kernel.
@@ -753,6 +739,20 @@ Number of restarts for the container.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {restarts} | Sum | Int | Cumulative | true | Development |
+
+### container.state.health.status
+
+The number of containers that are currently in a given health state. All possible container health states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current health state will be non-zero.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {container} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| container.state.health.state | The health state of the container. | Str: ``starting``, ``healthy``, ``unhealthy`` | Recommended | - |
 
 ### container.uptime
 
