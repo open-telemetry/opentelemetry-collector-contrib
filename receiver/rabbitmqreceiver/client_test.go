@@ -342,7 +342,7 @@ func TestGetClusterNameDetails(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				data := loadAPIResponseData(t, clusterNameAPIResponseFile)
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-					require.Equal(t, clusterNamePath, req.URL.Path)
+					assert.Equal(t, clusterNamePath, req.URL.Path)
 					_, err := w.Write(data)
 					assert.NoError(t, err)
 				}))
