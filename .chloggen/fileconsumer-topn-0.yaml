@@ -1,0 +1,12 @@
+change_type: breaking
+
+component: receiver/file_log
+
+note: "`ordering_criteria::top_n: 0` now means 'match all files' instead of silently behaving like `top_n: 1`."
+
+issues: [47444]
+
+subtext: |
+  To restore the previous behavior of matching the first file only, set `ordering_criteria::top_n: 1`.
+
+change_logs: [user]
