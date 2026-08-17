@@ -42,6 +42,12 @@ all_set:
     mysql.index.io.wait.time:
       enabled: true
       attributes: ["operation","table","schema","index"]
+    mysql.innodb.data_file.io:
+      enabled: true
+      attributes: ["disk.io.direction"]
+    mysql.innodb.operation.pending:
+      enabled: true
+      attributes: ["operation"]
     mysql.innodb.row_lock.wait.count:
       enabled: true
     mysql.innodb.row_lock.wait.time.avg:
@@ -210,6 +216,12 @@ reaggregate_set:
       enabled: true
       attributes: []
     mysql.index.io.wait.time:
+      enabled: true
+      attributes: []
+    mysql.innodb.data_file.io:
+      enabled: true
+      attributes: []
+    mysql.innodb.operation.pending:
       enabled: true
       attributes: []
     mysql.innodb.row_lock.wait.count:
@@ -382,6 +394,12 @@ none_set:
     mysql.index.io.wait.time:
       enabled: false
       attributes: ["operation","table","schema","index"]
+    mysql.innodb.data_file.io:
+      enabled: false
+      attributes: ["disk.io.direction"]
+    mysql.innodb.operation.pending:
+      enabled: false
+      attributes: ["operation"]
     mysql.innodb.row_lock.wait.count:
       enabled: false
     mysql.innodb.row_lock.wait.time.avg:
