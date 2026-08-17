@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/google/pprof v0.0.0-20260604005048-7023385849c0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof v0.158.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof v0.159.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.65.0
 	go.opentelemetry.io/collector/component/componentstatus v0.159.0

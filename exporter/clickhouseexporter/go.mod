@@ -6,7 +6,7 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.47.0
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/cespare/xxhash/v2 v2.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.158.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.159.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.44.0
 	go.opentelemetry.io/collector/component v1.65.0
