@@ -6,17 +6,17 @@ require (
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.158.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.158.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.158.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.158.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.159.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.159.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.159.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.159.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.64.1-0.20260813201048-a4a8565f65e7
-	go.opentelemetry.io/collector/confmap v1.64.1-0.20260813201048-a4a8565f65e7
-	go.opentelemetry.io/collector/consumer v1.64.1-0.20260813201048-a4a8565f65e7
-	go.opentelemetry.io/collector/featuregate v1.64.1-0.20260813201048-a4a8565f65e7
-	go.opentelemetry.io/collector/pdata v1.64.1-0.20260813201048-a4a8565f65e7
-	go.opentelemetry.io/collector/processor v1.64.1-0.20260813201048-a4a8565f65e7
+	go.opentelemetry.io/collector/component v1.65.0
+	go.opentelemetry.io/collector/confmap v1.65.0
+	go.opentelemetry.io/collector/consumer v1.65.0
+	go.opentelemetry.io/collector/featuregate v1.65.0
+	go.opentelemetry.io/collector/pdata v1.65.0
+	go.opentelemetry.io/collector/processor v1.65.0
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/metric v1.45.0
 	go.opentelemetry.io/otel/sdk/metric v1.45.0
@@ -26,9 +26,9 @@ require (
 )
 
 require (
-	go.opentelemetry.io/collector/component/componenttest v0.158.1-0.20260813201048-a4a8565f65e7
-	go.opentelemetry.io/collector/consumer/consumertest v0.158.1-0.20260813201048-a4a8565f65e7
-	go.opentelemetry.io/collector/processor/processortest v0.158.1-0.20260813201048-a4a8565f65e7
+	go.opentelemetry.io/collector/component/componenttest v0.159.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.159.0
+	go.opentelemetry.io/collector/processor/processortest v0.159.0
 	golang.org/x/time v0.15.0
 )
 
@@ -63,15 +63,15 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/client v1.64.1-0.20260813201048-a4a8565f65e7 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.158.1-0.20260813201048-a4a8565f65e7 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.158.1-0.20260813201048-a4a8565f65e7 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.158.1-0.20260813201048-a4a8565f65e7 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.158.1-0.20260813201048-a4a8565f65e7 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.158.1-0.20260813201048-a4a8565f65e7 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.158.1-0.20260813201048-a4a8565f65e7 // indirect
-	go.opentelemetry.io/collector/pipeline v1.64.1-0.20260813201048-a4a8565f65e7 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.158.1-0.20260813201048-a4a8565f65e7 // indirect
+	go.opentelemetry.io/collector/client v1.65.0 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.159.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.159.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.159.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.159.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.159.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.159.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.65.0 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.159.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.45.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
