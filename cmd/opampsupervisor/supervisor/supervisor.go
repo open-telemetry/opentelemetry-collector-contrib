@@ -2263,7 +2263,7 @@ func (s *Supervisor) validateConfig(configContent string) error {
 	ctx, cancel := context.WithTimeout(parentCtx, 10*time.Second)
 	defer cancel()
 
-	if err := s.commander.ValidateConfig(ctx, tempFile.Name()); err != nil {
+	if err := s.commander.ValidateConfig(ctx, tempFile.Name(), s.getFeatureGateFlag()...); err != nil {
 		return fmt.Errorf("configuration validation failed: %w", err)
 	}
 
