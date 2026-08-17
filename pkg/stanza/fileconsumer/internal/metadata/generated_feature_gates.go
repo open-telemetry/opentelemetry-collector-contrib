@@ -8,7 +8,7 @@ import (
 
 var FilelogAllowFileDeletionFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filelog.allowFileDeletion",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
 	featuregate.WithRegisterFromVersion("v0.70.0"),
@@ -48,7 +48,7 @@ var FilelogRequireExplicitTopNFeatureGate = featuregate.GlobalRegistry().MustReg
 
 var FilelogWindowsCaseInsensitiveFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filelog.windows.caseInsensitive",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("On Windows, make matching patterns in include/exclude case insensitive."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777"),
 	featuregate.WithRegisterFromVersion("v0.142.0"),

@@ -242,10 +242,10 @@ attributes:
     description: Total number of temp blocks written by the statement, reported in delta value.
     type: int
   postgresql.total_exec_time:
-    description: Total time spent executing the statement, in delta milliseconds.
+    description: Total time spent executing the statement, in delta seconds.
     type: double
   postgresql.total_plan_time:
-    description: Total time spent planning the statement, in delta milliseconds.
+    description: Total time spent planning the statement, in delta seconds.
     type: double
   postgresql.wait_event:
     description: Wait event name if backend is currently waiting, otherwise NULL.
