@@ -167,6 +167,17 @@ The hardwarescraper currently supports the following sub-scrapers:
 
 **Note**: Hardware scraping is currently only supported on Linux systems that expose hardware sensors through the sysfs hwmon interface. Only temperature monitoring is implemented at this time.
 
+Known limitations, both of which come from the hwmon interface itself:
+
+- Some drivers expose `tempN_input` files for sensors they never populate. Such a
+  file reads successfully and contains `0`, which is indistinguishable from a
+  genuine 0 °C measurement, so those sensors are reported as `0 °C`. Sensors the
+  driver reports as absent (a read failing with `ENXIO`) are skipped instead.
+- On chips that use external thermistors, the hwmon interface carries millivolts
+  in the `temp*` files rather than millidegrees Celsius, and the conversion is
+  expected to happen outside the kernel. The unit is not exposed anywhere in
+  sysfs, so such readings are published as if they were temperatures.
+
 ## Advanced Configuration
 
 ### Filtering

@@ -25,11 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper/internal/metadata"
 )
 
-const (
-	minReasonableTemp = -40.0
-	maxReasonableTemp = 200.0
-)
-
 // hardwareTemperatureMetricsLen is how many metrics a single sensor can produce,
 // and therefore how many are lost when reading one sensor fails.
 const hardwareTemperatureMetricsLen = 2
@@ -215,10 +210,6 @@ func (s *hardwareTemperatureScraper) recordTemperatureLimits(now pcommon.Timesta
 
 		limitCelsius, err := s.readTemperatureCelsius(limitPath)
 		if err != nil {
-			continue
-		}
-		// Validate temperature limit is within reasonable range
-		if limitCelsius < minReasonableTemp || limitCelsius > maxReasonableTemp {
 			continue
 		}
 
