@@ -12,7 +12,7 @@
   ],
   "minimumReleaseAge": "2 days",
   "extends": [
-    "config:recommended",
+    "config:best-practices",
     "helpers:pinGitHubActionDigestsToSemver"
   ],
   "ignorePaths": [
