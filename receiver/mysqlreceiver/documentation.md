@@ -174,6 +174,14 @@ The number of InnoDB log operations.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | operation | The log operation types. 'fsyncs' aren't available in MariaDB 10.8 or later. | Str: ``waits``, ``write_requests``, ``writes``, ``fsyncs`` | Recommended | - |
 
+### mysql.myisam.key_cache.block.max_used
+
+The maximum number of MyISAM key cache blocks simultaneously in use since the server started or status counters were reset.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
 ### mysql.myisam.key_cache.block.unused
 
 The number of unused MyISAM key cache blocks.
@@ -182,15 +190,7 @@ The number of unused MyISAM key cache blocks.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Int | Development |
 
-### mysql.myisam.key_cache.block.used.max
-
-The maximum number of MyISAM key cache blocks simultaneously in use since the server started or counters were reset.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
-
-### mysql.myisam.key_cache.disk.operation
+### mysql.myisam.key_cache.disk.operation.count
 
 The number of physical MyISAM key cache disk operations.
 

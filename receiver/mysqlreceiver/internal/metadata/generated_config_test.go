@@ -122,21 +122,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlMaxUsedConnections: MysqlMaxUsedConnectionsMetricConfig{
 						Enabled: true,
 					},
+					MysqlMyisamKeyCacheBlockMaxUsed: MysqlMyisamKeyCacheBlockMaxUsedMetricConfig{
+						Enabled: true,
+					},
 					MysqlMyisamKeyCacheBlockUnused: MysqlMyisamKeyCacheBlockUnusedMetricConfig{
 						Enabled: true,
 					},
-					MysqlMyisamKeyCacheBlockUsedMax: MysqlMyisamKeyCacheBlockUsedMaxMetricConfig{
-						Enabled: true,
-					},
-					MysqlMyisamKeyCacheDiskOperation: MysqlMyisamKeyCacheDiskOperationMetricConfig{
+					MysqlMyisamKeyCacheDiskOperationCount: MysqlMyisamKeyCacheDiskOperationCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MysqlMyisamKeyCacheDiskOperationMetricAttributeKey{MysqlMyisamKeyCacheDiskOperationMetricAttributeKeyMysqlMyisamKeyCacheOperation},
+						EnabledAttributes:   []MysqlMyisamKeyCacheDiskOperationCountMetricAttributeKey{MysqlMyisamKeyCacheDiskOperationCountMetricAttributeKeyMysqlMyisamKeyCacheOperationType},
 					},
 					MysqlMyisamKeyCacheRequest: MysqlMyisamKeyCacheRequestMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MysqlMyisamKeyCacheRequestMetricAttributeKey{MysqlMyisamKeyCacheRequestMetricAttributeKeyMysqlMyisamKeyCacheOperation},
+						EnabledAttributes:   []MysqlMyisamKeyCacheRequestMetricAttributeKey{MysqlMyisamKeyCacheRequestMetricAttributeKeyMysqlMyisamKeyCacheOperationType},
 					},
 					MysqlMysqlxConnections: MysqlMysqlxConnectionsMetricConfig{
 						Enabled:             true,
@@ -398,21 +398,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlMaxUsedConnections: MysqlMaxUsedConnectionsMetricConfig{
 						Enabled: false,
 					},
+					MysqlMyisamKeyCacheBlockMaxUsed: MysqlMyisamKeyCacheBlockMaxUsedMetricConfig{
+						Enabled: false,
+					},
 					MysqlMyisamKeyCacheBlockUnused: MysqlMyisamKeyCacheBlockUnusedMetricConfig{
 						Enabled: false,
 					},
-					MysqlMyisamKeyCacheBlockUsedMax: MysqlMyisamKeyCacheBlockUsedMaxMetricConfig{
-						Enabled: false,
-					},
-					MysqlMyisamKeyCacheDiskOperation: MysqlMyisamKeyCacheDiskOperationMetricConfig{
+					MysqlMyisamKeyCacheDiskOperationCount: MysqlMyisamKeyCacheDiskOperationCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MysqlMyisamKeyCacheDiskOperationMetricAttributeKey{MysqlMyisamKeyCacheDiskOperationMetricAttributeKeyMysqlMyisamKeyCacheOperation},
+						EnabledAttributes:   []MysqlMyisamKeyCacheDiskOperationCountMetricAttributeKey{MysqlMyisamKeyCacheDiskOperationCountMetricAttributeKeyMysqlMyisamKeyCacheOperationType},
 					},
 					MysqlMyisamKeyCacheRequest: MysqlMyisamKeyCacheRequestMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MysqlMyisamKeyCacheRequestMetricAttributeKey{MysqlMyisamKeyCacheRequestMetricAttributeKeyMysqlMyisamKeyCacheOperation},
+						EnabledAttributes:   []MysqlMyisamKeyCacheRequestMetricAttributeKey{MysqlMyisamKeyCacheRequestMetricAttributeKeyMysqlMyisamKeyCacheOperationType},
 					},
 					MysqlMysqlxConnections: MysqlMysqlxConnectionsMetricConfig{
 						Enabled:             false,
@@ -579,7 +579,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MysqlBufferPoolDataPagesMetricConfig{}, MysqlBufferPoolLimitMetricConfig{}, MysqlBufferPoolOperationsMetricConfig{}, MysqlBufferPoolPageFlushesMetricConfig{}, MysqlBufferPoolPagesMetricConfig{}, MysqlBufferPoolUsageMetricConfig{}, MysqlClientNetworkIoMetricConfig{}, MysqlCommandsMetricConfig{}, MysqlConnectionCountMetricConfig{}, MysqlConnectionErrorsMetricConfig{}, MysqlDoubleWritesMetricConfig{}, MysqlFileOpenMetricConfig{}, MysqlHandlersMetricConfig{}, MysqlIndexIoWaitCountMetricConfig{}, MysqlIndexIoWaitTimeMetricConfig{}, MysqlInnodbDataFileIoMetricConfig{}, MysqlInnodbOperationPendingMetricConfig{}, MysqlJoinsMetricConfig{}, MysqlLocksMetricConfig{}, MysqlLogOperationsMetricConfig{}, MysqlMaxUsedConnectionsMetricConfig{}, MysqlMyisamKeyCacheBlockUnusedMetricConfig{}, MysqlMyisamKeyCacheBlockUsedMaxMetricConfig{}, MysqlMyisamKeyCacheDiskOperationMetricConfig{}, MysqlMyisamKeyCacheRequestMetricConfig{}, MysqlMysqlxConnectionsMetricConfig{}, MysqlMysqlxWorkerThreadsMetricConfig{}, MysqlOpenedResourcesMetricConfig{}, MysqlOperationsMetricConfig{}, MysqlPageOperationsMetricConfig{}, MysqlPageSizeMetricConfig{}, MysqlPreparedStatementsMetricConfig{}, MysqlQueryClientCountMetricConfig{}, MysqlQueryCountMetricConfig{}, MysqlQuerySlowCountMetricConfig{}, MysqlReplicaSQLDelayMetricConfig{}, MysqlReplicaTempTableOpenMetricConfig{}, MysqlReplicaThreadRunningMetricConfig{}, MysqlReplicaTimeBehindSourceMetricConfig{}, MysqlRowLocksMetricConfig{}, MysqlRowOperationsMetricConfig{}, MysqlSortsMetricConfig{}, MysqlStatementEventCountMetricConfig{}, MysqlStatementEventWaitTimeMetricConfig{}, MysqlTableAverageRowLengthMetricConfig{}, MysqlTableIoWaitCountMetricConfig{}, MysqlTableIoWaitTimeMetricConfig{}, MysqlTableLockWaitReadCountMetricConfig{}, MysqlTableLockWaitReadTimeMetricConfig{}, MysqlTableLockWaitWriteCountMetricConfig{}, MysqlTableLockWaitWriteTimeMetricConfig{}, MysqlTableOpenMetricConfig{}, MysqlTableRowsMetricConfig{}, MysqlTableSizeMetricConfig{}, MysqlTableOpenCacheMetricConfig{}, MysqlThreadSlowLaunchMetricConfig{}, MysqlThreadsMetricConfig{}, MysqlTmpResourcesMetricConfig{}, MysqlUptimeMetricConfig{}, DbSystemNameResourceAttributeConfig{}, DbSystemVersionResourceAttributeConfig{}, MysqlInstanceEndpointResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MysqlBufferPoolDataPagesMetricConfig{}, MysqlBufferPoolLimitMetricConfig{}, MysqlBufferPoolOperationsMetricConfig{}, MysqlBufferPoolPageFlushesMetricConfig{}, MysqlBufferPoolPagesMetricConfig{}, MysqlBufferPoolUsageMetricConfig{}, MysqlClientNetworkIoMetricConfig{}, MysqlCommandsMetricConfig{}, MysqlConnectionCountMetricConfig{}, MysqlConnectionErrorsMetricConfig{}, MysqlDoubleWritesMetricConfig{}, MysqlFileOpenMetricConfig{}, MysqlHandlersMetricConfig{}, MysqlIndexIoWaitCountMetricConfig{}, MysqlIndexIoWaitTimeMetricConfig{}, MysqlInnodbDataFileIoMetricConfig{}, MysqlInnodbOperationPendingMetricConfig{}, MysqlJoinsMetricConfig{}, MysqlLocksMetricConfig{}, MysqlLogOperationsMetricConfig{}, MysqlMaxUsedConnectionsMetricConfig{}, MysqlMyisamKeyCacheBlockMaxUsedMetricConfig{}, MysqlMyisamKeyCacheBlockUnusedMetricConfig{}, MysqlMyisamKeyCacheDiskOperationCountMetricConfig{}, MysqlMyisamKeyCacheRequestMetricConfig{}, MysqlMysqlxConnectionsMetricConfig{}, MysqlMysqlxWorkerThreadsMetricConfig{}, MysqlOpenedResourcesMetricConfig{}, MysqlOperationsMetricConfig{}, MysqlPageOperationsMetricConfig{}, MysqlPageSizeMetricConfig{}, MysqlPreparedStatementsMetricConfig{}, MysqlQueryClientCountMetricConfig{}, MysqlQueryCountMetricConfig{}, MysqlQuerySlowCountMetricConfig{}, MysqlReplicaSQLDelayMetricConfig{}, MysqlReplicaTempTableOpenMetricConfig{}, MysqlReplicaThreadRunningMetricConfig{}, MysqlReplicaTimeBehindSourceMetricConfig{}, MysqlRowLocksMetricConfig{}, MysqlRowOperationsMetricConfig{}, MysqlSortsMetricConfig{}, MysqlStatementEventCountMetricConfig{}, MysqlStatementEventWaitTimeMetricConfig{}, MysqlTableAverageRowLengthMetricConfig{}, MysqlTableIoWaitCountMetricConfig{}, MysqlTableIoWaitTimeMetricConfig{}, MysqlTableLockWaitReadCountMetricConfig{}, MysqlTableLockWaitReadTimeMetricConfig{}, MysqlTableLockWaitWriteCountMetricConfig{}, MysqlTableLockWaitWriteTimeMetricConfig{}, MysqlTableOpenMetricConfig{}, MysqlTableRowsMetricConfig{}, MysqlTableSizeMetricConfig{}, MysqlTableOpenCacheMetricConfig{}, MysqlThreadSlowLaunchMetricConfig{}, MysqlThreadsMetricConfig{}, MysqlTmpResourcesMetricConfig{}, MysqlUptimeMetricConfig{}, DbSystemNameResourceAttributeConfig{}, DbSystemVersionResourceAttributeConfig{}, MysqlInstanceEndpointResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -776,14 +776,14 @@ func TestMysqlLogOperationsMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestMysqlMyisamKeyCacheDiskOperationMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().MysqlMyisamKeyCacheDiskOperation
+func TestMysqlMyisamKeyCacheDiskOperationCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlMyisamKeyCacheDiskOperationCount
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []MysqlMyisamKeyCacheDiskOperationMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric mysql.myisam.key_cache.disk.operation doesn't have an attribute invalid, valid attributes: [operation]")
+	cfg.EnabledAttributes = []MysqlMyisamKeyCacheDiskOperationCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.myisam.key_cache.disk.operation.count doesn't have an attribute invalid, valid attributes: [operation]")
 
-	cfg = DefaultMetricsConfig().MysqlMyisamKeyCacheDiskOperation
+	cfg = DefaultMetricsConfig().MysqlMyisamKeyCacheDiskOperationCount
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }

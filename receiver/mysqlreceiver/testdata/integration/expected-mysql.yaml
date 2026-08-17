@@ -368,6 +368,14 @@ resourceMetrics:
                   timeUnixNano: "1674545265375344000"
               isMonotonic: true
             unit: "1"
+          - description: The maximum number of MyISAM key cache blocks simultaneously in use since the server started or status counters were reset.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1674545255370693000"
+                  timeUnixNano: "1674545265375344000"
+            name: mysql.myisam.key_cache.block.max_used
+            unit: "1"
           - description: The number of unused MyISAM key cache blocks.
             gauge:
               dataPoints:
@@ -376,16 +384,8 @@ resourceMetrics:
                   timeUnixNano: "1674545265375344000"
             name: mysql.myisam.key_cache.block.unused
             unit: "1"
-          - description: The maximum number of MyISAM key cache blocks simultaneously in use since the server started or counters were reset.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1674545255370693000"
-                  timeUnixNano: "1674545265375344000"
-            name: mysql.myisam.key_cache.block.used.max
-            unit: "1"
           - description: The number of physical MyISAM key cache disk operations.
-            name: mysql.myisam.key_cache.disk.operation
+            name: mysql.myisam.key_cache.disk.operation.count
             sum:
               aggregationTemporality: 2
               dataPoints:
