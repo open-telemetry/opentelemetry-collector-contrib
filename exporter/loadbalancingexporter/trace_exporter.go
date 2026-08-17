@@ -13,12 +13,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -150,11 +150,7 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		}
 	}
 
-	var errs error
-	for exp, td := range exporterSegregatedTraces {
-		errs = multierr.Append(errs, e.exportToBackend(ctx, exp, td))
-	}
-	return errs
+	return e.exportBatches(ctx, exporterSegregatedTraces)
 }
 
 // spanTraceIDIdentifier is the identifierFor function for traceID routing.
@@ -286,11 +282,11 @@ func (e *traceExporterImp) consumeTracesPerSpan(ctx context.Context, td ptrace.T
 		}
 	}
 
-	var errs error
+	batches := make(exporterTraces, len(dests))
 	for exp, d := range dests {
-		errs = multierr.Append(errs, e.exportToBackend(ctx, exp, d.traces))
+		batches[exp] = d.traces
 	}
-	return errs
+	return e.exportBatches(ctx, batches)
 }
 
 // exportToBackend sends td to one backend, records per-backend telemetry, and signals the
@@ -298,8 +294,8 @@ func (e *traceExporterImp) consumeTracesPerSpan(ctx context.Context, td ptrace.T
 func (e *traceExporterImp) exportToBackend(ctx context.Context, exp *wrappedExporter, td ptrace.Traces) error {
 	start := time.Now()
 	err := exp.ConsumeTraces(ctx, td)
-	exp.consumeWG.Done()
 	duration := time.Since(start)
+	exp.consumeWG.Done()
 	e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
 	if err == nil {
 		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
@@ -308,6 +304,27 @@ func (e *traceExporterImp) exportToBackend(ctx context.Context, exp *wrappedExpo
 		e.logger.Debug("failed to export traces", zap.Error(err))
 	}
 	return err
+}
+
+// exportBatches sends each pre-routed batch to its backend, returning a consumererror.Traces
+// carrying only the subset that failed so retries do not re-send already-delivered data.
+func (e *traceExporterImp) exportBatches(ctx context.Context, batches exporterTraces) error {
+	var errs error
+	var failed []ptrace.Traces
+	for exp, td := range batches {
+		if err := e.exportToBackend(ctx, exp, td); err != nil {
+			errs = errors.Join(errs, err)
+			failed = append(failed, failedTracesFromError(err, td))
+		}
+	}
+	if len(failed) == 0 {
+		return nil
+	}
+	// Merging into the first failed batch leaves the common single-failure case a no-op.
+	for _, td := range failed[1:] {
+		mergeTraces(failed[0], td)
+	}
+	return consumererror.NewTraces(errs, failed[0])
 }
 
 // routingIdentifiersFromTraces reads the traces and determines an identifier that can be used to define a position on the
