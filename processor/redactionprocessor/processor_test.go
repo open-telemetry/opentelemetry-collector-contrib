@@ -1404,8 +1404,6 @@ func TestLogBodyRedactionDifferentTypes(t *testing.T) {
 	assert.Equal(t, int64(1), val.Int())
 }
 
-// TestLogBodyMaskBlockedKeyPatterns validates that log body keys matching the blocked key
-// patterns have their values masked, both at the top level and inside nested maps
 func TestLogBodyMaskBlockedKeyPatterns(t *testing.T) {
 	body := pcommon.NewValueMap()
 	body.Map().PutStr("secret_token", "4111111111111111")
