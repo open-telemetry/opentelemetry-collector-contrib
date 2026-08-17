@@ -14,15 +14,15 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 55
                   attributes:
-                    - key: id
+                    - key: hw.id
                       value:
                         stringValue: nvme_hwmon0_temp1
-                    - key: name
+                    - key: hw.name
                       value:
-                        stringValue: Composite
-                    - key: parent
+                        stringValue: nvme
+                    - key: hw.parent
                       value:
                         stringValue: nvme_hwmon0
-                    - key: sensor_location
+                    - key: hw.sensor_location
                       value:
-                        stringValue: NVME_HWMON0_TEMP1
+                        stringValue: Composite

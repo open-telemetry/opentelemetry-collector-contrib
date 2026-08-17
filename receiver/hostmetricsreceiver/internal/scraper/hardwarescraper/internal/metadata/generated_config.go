@@ -12,10 +12,10 @@ import (
 type HwTemperatureMetricAttributeKey string
 
 const (
-	HwTemperatureMetricAttributeKeyID             HwTemperatureMetricAttributeKey = "id"
-	HwTemperatureMetricAttributeKeyName           HwTemperatureMetricAttributeKey = "name"
-	HwTemperatureMetricAttributeKeyParent         HwTemperatureMetricAttributeKey = "parent"
-	HwTemperatureMetricAttributeKeySensorLocation HwTemperatureMetricAttributeKey = "sensor_location"
+	HwTemperatureMetricAttributeKeyHwID             HwTemperatureMetricAttributeKey = "hw.id"
+	HwTemperatureMetricAttributeKeyHwName           HwTemperatureMetricAttributeKey = "hw.name"
+	HwTemperatureMetricAttributeKeyHwParent         HwTemperatureMetricAttributeKey = "hw.parent"
+	HwTemperatureMetricAttributeKeyHwSensorLocation HwTemperatureMetricAttributeKey = "hw.sensor_location"
 )
 
 // HwTemperatureMetricConfig provides config for the hw.temperature metric.
@@ -44,9 +44,9 @@ func (ms *HwTemperatureMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *HwTemperatureMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case HwTemperatureMetricAttributeKeyID, HwTemperatureMetricAttributeKeyName, HwTemperatureMetricAttributeKeyParent, HwTemperatureMetricAttributeKeySensorLocation:
+		case HwTemperatureMetricAttributeKeyHwID, HwTemperatureMetricAttributeKeyHwName, HwTemperatureMetricAttributeKeyHwParent, HwTemperatureMetricAttributeKeyHwSensorLocation:
 		default:
-			return fmt.Errorf("metric hw.temperature doesn't have an attribute %v, valid attributes: [id, name, parent, sensor_location]", val)
+			return fmt.Errorf("metric hw.temperature doesn't have an attribute %v, valid attributes: [hw.id, hw.name, hw.parent, hw.sensor_location]", val)
 		}
 	}
 
@@ -63,11 +63,11 @@ func (ms *HwTemperatureMetricConfig) Validate() error {
 type HwTemperatureLimitMetricAttributeKey string
 
 const (
-	HwTemperatureLimitMetricAttributeKeyID             HwTemperatureLimitMetricAttributeKey = "id"
-	HwTemperatureLimitMetricAttributeKeyLimitType      HwTemperatureLimitMetricAttributeKey = "limit_type"
-	HwTemperatureLimitMetricAttributeKeyName           HwTemperatureLimitMetricAttributeKey = "name"
-	HwTemperatureLimitMetricAttributeKeyParent         HwTemperatureLimitMetricAttributeKey = "parent"
-	HwTemperatureLimitMetricAttributeKeySensorLocation HwTemperatureLimitMetricAttributeKey = "sensor_location"
+	HwTemperatureLimitMetricAttributeKeyHwID             HwTemperatureLimitMetricAttributeKey = "hw.id"
+	HwTemperatureLimitMetricAttributeKeyHwLimitType      HwTemperatureLimitMetricAttributeKey = "hw.limit_type"
+	HwTemperatureLimitMetricAttributeKeyHwName           HwTemperatureLimitMetricAttributeKey = "hw.name"
+	HwTemperatureLimitMetricAttributeKeyHwParent         HwTemperatureLimitMetricAttributeKey = "hw.parent"
+	HwTemperatureLimitMetricAttributeKeyHwSensorLocation HwTemperatureLimitMetricAttributeKey = "hw.sensor_location"
 )
 
 // HwTemperatureLimitMetricConfig provides config for the hw.temperature.limit metric.
@@ -96,9 +96,9 @@ func (ms *HwTemperatureLimitMetricConfig) Unmarshal(parser *confmap.Conf) error 
 func (ms *HwTemperatureLimitMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case HwTemperatureLimitMetricAttributeKeyID, HwTemperatureLimitMetricAttributeKeyLimitType, HwTemperatureLimitMetricAttributeKeyName, HwTemperatureLimitMetricAttributeKeyParent, HwTemperatureLimitMetricAttributeKeySensorLocation:
+		case HwTemperatureLimitMetricAttributeKeyHwID, HwTemperatureLimitMetricAttributeKeyHwLimitType, HwTemperatureLimitMetricAttributeKeyHwName, HwTemperatureLimitMetricAttributeKeyHwParent, HwTemperatureLimitMetricAttributeKeyHwSensorLocation:
 		default:
-			return fmt.Errorf("metric hw.temperature.limit doesn't have an attribute %v, valid attributes: [id, limit_type, name, parent, sensor_location]", val)
+			return fmt.Errorf("metric hw.temperature.limit doesn't have an attribute %v, valid attributes: [hw.id, hw.limit_type, hw.name, hw.parent, hw.sensor_location]", val)
 		}
 	}
 
@@ -122,12 +122,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		HwTemperature: HwTemperatureMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []HwTemperatureMetricAttributeKey{HwTemperatureMetricAttributeKeyID, HwTemperatureMetricAttributeKeyName, HwTemperatureMetricAttributeKeyParent, HwTemperatureMetricAttributeKeySensorLocation},
+			EnabledAttributes:   []HwTemperatureMetricAttributeKey{HwTemperatureMetricAttributeKeyHwID, HwTemperatureMetricAttributeKeyHwName, HwTemperatureMetricAttributeKeyHwParent, HwTemperatureMetricAttributeKeyHwSensorLocation},
 		},
 		HwTemperatureLimit: HwTemperatureLimitMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []HwTemperatureLimitMetricAttributeKey{HwTemperatureLimitMetricAttributeKeyID, HwTemperatureLimitMetricAttributeKeyLimitType, HwTemperatureLimitMetricAttributeKeyName, HwTemperatureLimitMetricAttributeKeyParent, HwTemperatureLimitMetricAttributeKeySensorLocation},
+			EnabledAttributes:   []HwTemperatureLimitMetricAttributeKey{HwTemperatureLimitMetricAttributeKeyHwID, HwTemperatureLimitMetricAttributeKeyHwLimitType, HwTemperatureLimitMetricAttributeKeyHwName, HwTemperatureLimitMetricAttributeKeyHwParent, HwTemperatureLimitMetricAttributeKeyHwSensorLocation},
 		},
 	}
 }

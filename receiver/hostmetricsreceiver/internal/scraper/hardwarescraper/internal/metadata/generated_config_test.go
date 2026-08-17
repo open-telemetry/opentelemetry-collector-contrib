@@ -29,12 +29,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					HwTemperature: HwTemperatureMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []HwTemperatureMetricAttributeKey{HwTemperatureMetricAttributeKeyID, HwTemperatureMetricAttributeKeyName, HwTemperatureMetricAttributeKeyParent, HwTemperatureMetricAttributeKeySensorLocation},
+						EnabledAttributes:   []HwTemperatureMetricAttributeKey{HwTemperatureMetricAttributeKeyHwID, HwTemperatureMetricAttributeKeyHwName, HwTemperatureMetricAttributeKeyHwParent, HwTemperatureMetricAttributeKeyHwSensorLocation},
 					},
 					HwTemperatureLimit: HwTemperatureLimitMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []HwTemperatureLimitMetricAttributeKey{HwTemperatureLimitMetricAttributeKeyID, HwTemperatureLimitMetricAttributeKeyLimitType, HwTemperatureLimitMetricAttributeKeyName, HwTemperatureLimitMetricAttributeKeyParent, HwTemperatureLimitMetricAttributeKeySensorLocation},
+						EnabledAttributes:   []HwTemperatureLimitMetricAttributeKey{HwTemperatureLimitMetricAttributeKeyHwID, HwTemperatureLimitMetricAttributeKeyHwLimitType, HwTemperatureLimitMetricAttributeKeyHwName, HwTemperatureLimitMetricAttributeKeyHwParent, HwTemperatureLimitMetricAttributeKeyHwSensorLocation},
 					},
 				},
 			},
@@ -46,12 +46,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					HwTemperature: HwTemperatureMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []HwTemperatureMetricAttributeKey{HwTemperatureMetricAttributeKeyID, HwTemperatureMetricAttributeKeyName, HwTemperatureMetricAttributeKeyParent, HwTemperatureMetricAttributeKeySensorLocation},
+						EnabledAttributes:   []HwTemperatureMetricAttributeKey{HwTemperatureMetricAttributeKeyHwID, HwTemperatureMetricAttributeKeyHwName, HwTemperatureMetricAttributeKeyHwParent, HwTemperatureMetricAttributeKeyHwSensorLocation},
 					},
 					HwTemperatureLimit: HwTemperatureLimitMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []HwTemperatureLimitMetricAttributeKey{HwTemperatureLimitMetricAttributeKeyID, HwTemperatureLimitMetricAttributeKeyLimitType, HwTemperatureLimitMetricAttributeKeyName, HwTemperatureLimitMetricAttributeKeyParent, HwTemperatureLimitMetricAttributeKeySensorLocation},
+						EnabledAttributes:   []HwTemperatureLimitMetricAttributeKey{HwTemperatureLimitMetricAttributeKeyHwID, HwTemperatureLimitMetricAttributeKeyHwLimitType, HwTemperatureLimitMetricAttributeKeyHwName, HwTemperatureLimitMetricAttributeKeyHwParent, HwTemperatureLimitMetricAttributeKeyHwSensorLocation},
 					},
 				},
 			},
@@ -64,6 +64,29 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+func TestHwTemperatureMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HwTemperature
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HwTemperatureMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric hw.temperature doesn't have an attribute invalid, valid attributes: [hw.id, hw.name, hw.parent, hw.sensor_location]")
+
+	cfg = DefaultMetricsConfig().HwTemperature
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestHwTemperatureLimitMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HwTemperatureLimit
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HwTemperatureLimitMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric hw.temperature.limit doesn't have an attribute invalid, valid attributes: [hw.id, hw.limit_type, hw.name, hw.parent, hw.sensor_location]")
+
+	cfg = DefaultMetricsConfig().HwTemperatureLimit
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {

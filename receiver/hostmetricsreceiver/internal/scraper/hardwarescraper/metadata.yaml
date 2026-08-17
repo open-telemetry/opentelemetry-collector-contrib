@@ -12,24 +12,24 @@ status:
 sem_conv_version: 1.9.0
 
 attributes:
-  id:
+  hw.id:
     description: An identifier for the hardware component, unique within the monitored host.
     type: string
 
-  limit_type:
+  hw.limit_type:
     description: Type of limit for hardware components.
     type: string
     enum: [high.critical, high.degraded, low.critical, low.degraded]
 
-  name:
+  hw.name:
     description: An easily-recognizable name for the hardware component.
     type: string
 
-  parent:
+  hw.parent:
     description: Unique identifier of the parent component (typically the id attribute of the enclosure, or disk controller).
     type: string
 
-  sensor_location:
+  hw.sensor_location:
     description: Location of the sensor.
     type: string
 
@@ -41,7 +41,7 @@ metrics:
     stability: development
     gauge:
       value_type: double
-    attributes: [id, name, parent, sensor_location]
+    attributes: [hw.id, hw.name, hw.parent, hw.sensor_location]
 
   hw.temperature.limit:
     enabled: false
@@ -50,4 +50,4 @@ metrics:
     stability: development
     gauge:
       value_type: double
-    attributes: [id, limit_type, name, parent, sensor_location]
+    attributes: [hw.id, hw.limit_type, hw.name, hw.parent, hw.sensor_location]

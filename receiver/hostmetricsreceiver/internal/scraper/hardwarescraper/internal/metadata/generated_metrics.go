@@ -20,46 +20,48 @@ const (
 	AggregationStrategyMax = "max"
 )
 
-// AttributeLimitType specifies the value limit_type attribute.
-type AttributeLimitType int
+// AttributeHwLimitType specifies the value hw.limit_type attribute.
+type AttributeHwLimitType int
 
 const (
-	_ AttributeLimitType = iota
-	AttributeLimitTypeHighCritical
-	AttributeLimitTypeHighDegraded
-	AttributeLimitTypeLowCritical
-	AttributeLimitTypeLowDegraded
+	_ AttributeHwLimitType = iota
+	AttributeHwLimitTypeHighCritical
+	AttributeHwLimitTypeHighDegraded
+	AttributeHwLimitTypeLowCritical
+	AttributeHwLimitTypeLowDegraded
 )
 
-// String returns the string representation of the AttributeLimitType.
-func (av AttributeLimitType) String() string {
+// String returns the string representation of the AttributeHwLimitType.
+func (av AttributeHwLimitType) String() string {
 	switch av {
-	case AttributeLimitTypeHighCritical:
+	case AttributeHwLimitTypeHighCritical:
 		return "high.critical"
-	case AttributeLimitTypeHighDegraded:
+	case AttributeHwLimitTypeHighDegraded:
 		return "high.degraded"
-	case AttributeLimitTypeLowCritical:
+	case AttributeHwLimitTypeLowCritical:
 		return "low.critical"
-	case AttributeLimitTypeLowDegraded:
+	case AttributeHwLimitTypeLowDegraded:
 		return "low.degraded"
 	}
 	return ""
 }
 
-// MapAttributeLimitType is a helper map of string to AttributeLimitType attribute value.
-var MapAttributeLimitType = map[string]AttributeLimitType{
-	"high.critical": AttributeLimitTypeHighCritical,
-	"high.degraded": AttributeLimitTypeHighDegraded,
-	"low.critical":  AttributeLimitTypeLowCritical,
-	"low.degraded":  AttributeLimitTypeLowDegraded,
+// MapAttributeHwLimitType is a helper map of string to AttributeHwLimitType attribute value.
+var MapAttributeHwLimitType = map[string]AttributeHwLimitType{
+	"high.critical": AttributeHwLimitTypeHighCritical,
+	"high.degraded": AttributeHwLimitTypeHighDegraded,
+	"low.critical":  AttributeHwLimitTypeLowCritical,
+	"low.degraded":  AttributeHwLimitTypeLowDegraded,
 }
 
 var MetricsInfo = metricsInfo{
 	HwTemperature: metricInfo{
-		Name: "hw.temperature",
+		Name:       "hw.temperature",
+		Attributes: []string{"hw.id", "hw.name", "hw.parent", "hw.sensor_location"},
 	},
 	HwTemperatureLimit: metricInfo{
-		Name: "hw.temperature.limit",
+		Name:       "hw.temperature.limit",
+		Attributes: []string{"hw.id", "hw.limit_type", "hw.name", "hw.parent", "hw.sensor_location"},
 	},
 }
 
@@ -69,7 +71,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricHwTemperature struct {
@@ -89,7 +92,7 @@ func (m *metricHwTemperature) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricHwTemperature) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, idAttributeValue string, nameAttributeValue string, parentAttributeValue string, sensorLocationAttributeValue string) {
+func (m *metricHwTemperature) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, hwIDAttributeValue string, hwNameAttributeValue string, hwParentAttributeValue string, hwSensorLocationAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -97,17 +100,17 @@ func (m *metricHwTemperature) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, HwTemperatureMetricAttributeKeyID) {
-		dp.Attributes().PutStr("id", idAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, HwTemperatureMetricAttributeKeyHwID) {
+		dp.Attributes().PutStr("hw.id", hwIDAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, HwTemperatureMetricAttributeKeyName) {
-		dp.Attributes().PutStr("name", nameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, HwTemperatureMetricAttributeKeyHwName) {
+		dp.Attributes().PutStr("hw.name", hwNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, HwTemperatureMetricAttributeKeyParent) {
-		dp.Attributes().PutStr("parent", parentAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, HwTemperatureMetricAttributeKeyHwParent) {
+		dp.Attributes().PutStr("hw.parent", hwParentAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, HwTemperatureMetricAttributeKeySensorLocation) {
-		dp.Attributes().PutStr("sensor_location", sensorLocationAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, HwTemperatureMetricAttributeKeyHwSensorLocation) {
+		dp.Attributes().PutStr("hw.sensor_location", hwSensorLocationAttributeValue)
 	}
 
 	var s string
@@ -187,7 +190,7 @@ func (m *metricHwTemperatureLimit) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricHwTemperatureLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, idAttributeValue string, limitTypeAttributeValue string, nameAttributeValue string, parentAttributeValue string, sensorLocationAttributeValue string) {
+func (m *metricHwTemperatureLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, hwIDAttributeValue string, hwLimitTypeAttributeValue string, hwNameAttributeValue string, hwParentAttributeValue string, hwSensorLocationAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -195,20 +198,20 @@ func (m *metricHwTemperatureLimit) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, HwTemperatureLimitMetricAttributeKeyID) {
-		dp.Attributes().PutStr("id", idAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, HwTemperatureLimitMetricAttributeKeyHwID) {
+		dp.Attributes().PutStr("hw.id", hwIDAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, HwTemperatureLimitMetricAttributeKeyLimitType) {
-		dp.Attributes().PutStr("limit_type", limitTypeAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, HwTemperatureLimitMetricAttributeKeyHwLimitType) {
+		dp.Attributes().PutStr("hw.limit_type", hwLimitTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, HwTemperatureLimitMetricAttributeKeyName) {
-		dp.Attributes().PutStr("name", nameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, HwTemperatureLimitMetricAttributeKeyHwName) {
+		dp.Attributes().PutStr("hw.name", hwNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, HwTemperatureLimitMetricAttributeKeyParent) {
-		dp.Attributes().PutStr("parent", parentAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, HwTemperatureLimitMetricAttributeKeyHwParent) {
+		dp.Attributes().PutStr("hw.parent", hwParentAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, HwTemperatureLimitMetricAttributeKeySensorLocation) {
-		dp.Attributes().PutStr("sensor_location", sensorLocationAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, HwTemperatureLimitMetricAttributeKeyHwSensorLocation) {
+		dp.Attributes().PutStr("hw.sensor_location", hwSensorLocationAttributeValue)
 	}
 
 	var s string
@@ -398,13 +401,13 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordHwTemperatureDataPoint adds a data point to hw.temperature metric.
-func (mb *MetricsBuilder) RecordHwTemperatureDataPoint(ts pcommon.Timestamp, val float64, idAttributeValue string, nameAttributeValue string, parentAttributeValue string, sensorLocationAttributeValue string) {
-	mb.metricHwTemperature.recordDataPoint(mb.startTime, ts, val, idAttributeValue, nameAttributeValue, parentAttributeValue, sensorLocationAttributeValue)
+func (mb *MetricsBuilder) RecordHwTemperatureDataPoint(ts pcommon.Timestamp, val float64, hwIDAttributeValue string, hwNameAttributeValue string, hwParentAttributeValue string, hwSensorLocationAttributeValue string) {
+	mb.metricHwTemperature.recordDataPoint(mb.startTime, ts, val, hwIDAttributeValue, hwNameAttributeValue, hwParentAttributeValue, hwSensorLocationAttributeValue)
 }
 
 // RecordHwTemperatureLimitDataPoint adds a data point to hw.temperature.limit metric.
-func (mb *MetricsBuilder) RecordHwTemperatureLimitDataPoint(ts pcommon.Timestamp, val float64, idAttributeValue string, limitTypeAttributeValue AttributeLimitType, nameAttributeValue string, parentAttributeValue string, sensorLocationAttributeValue string) {
-	mb.metricHwTemperatureLimit.recordDataPoint(mb.startTime, ts, val, idAttributeValue, limitTypeAttributeValue.String(), nameAttributeValue, parentAttributeValue, sensorLocationAttributeValue)
+func (mb *MetricsBuilder) RecordHwTemperatureLimitDataPoint(ts pcommon.Timestamp, val float64, hwIDAttributeValue string, hwLimitTypeAttributeValue AttributeHwLimitType, hwNameAttributeValue string, hwParentAttributeValue string, hwSensorLocationAttributeValue string) {
+	mb.metricHwTemperatureLimit.recordDataPoint(mb.startTime, ts, val, hwIDAttributeValue, hwLimitTypeAttributeValue.String(), hwNameAttributeValue, hwParentAttributeValue, hwSensorLocationAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
