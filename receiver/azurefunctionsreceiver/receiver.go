@@ -18,6 +18,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/eventhub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/transport"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/trigger"
 )
 
 type functionsReceiver struct {
@@ -86,34 +87,49 @@ func (r *functionsReceiver) registerEventHubRoutes(mux *http.ServeMux, host comp
 		extractor = eventhub.ExtractMetadata
 	}
 
-	if r.nextLogs != nil && len(eh.Logs) > 0 {
-		unmarshalers, err := loadUnmarshalers[plog.Unmarshaler](host, eh.Logs, "logs")
+	if r.nextLogs != nil {
+		err := registerEventHubSignalRoutes(
+			mux, host, eh.Logs, "logs", decoder, r.settings.Logger, extractor,
+			func(u plog.Unmarshaler) trigger.Consumer { return eventhub.NewLogsConsumer(u, r.nextLogs) },
+		)
 		if err != nil {
 			return err
 		}
-		for _, b := range eh.Logs {
-			u := unmarshalers[b.Name]
-			protocol := newInvokeProtocol(decoder, r.settings.Logger, extractor)
-			cons := eventhub.NewLogsConsumer(u, r.nextLogs)
-			prof := newProfile(b.Name, protocol, cons)
-			mux.Handle("/"+b.Name, createHandler(prof))
-		}
 	}
 
-	if r.nextMetrics != nil && len(eh.Metrics) > 0 {
-		unmarshalers, err := loadUnmarshalers[pmetric.Unmarshaler](host, eh.Metrics, "metrics")
+	if r.nextMetrics != nil {
+		err := registerEventHubSignalRoutes(
+			mux, host, eh.Metrics, "metrics", decoder, r.settings.Logger, extractor,
+			func(u pmetric.Unmarshaler) trigger.Consumer { return eventhub.NewMetricsConsumer(u, r.nextMetrics) },
+		)
 		if err != nil {
 			return err
 		}
-		for _, b := range eh.Metrics {
-			u := unmarshalers[b.Name]
-			protocol := newInvokeProtocol(decoder, r.settings.Logger, extractor)
-			cons := eventhub.NewMetricsConsumer(u, r.nextMetrics)
-			prof := newProfile(b.Name, protocol, cons)
-			mux.Handle("/"+b.Name, createHandler(prof))
-		}
 	}
 
+	return nil
+}
+
+// registerEventHubSignalRoutes registers one HTTP route per Event Hub binding.
+func registerEventHubSignalRoutes[T any](
+	mux *http.ServeMux,
+	host component.Host,
+	bindings []EncodingConfig,
+	signalType string,
+	decoder *transport.BinaryDecoder,
+	logger *zap.Logger,
+	extractor MetadataExtractor,
+	newConsumer func(T) trigger.Consumer,
+) error {
+	unmarshalers, err := loadUnmarshalers[T](host, bindings, signalType)
+	if err != nil {
+		return err
+	}
+	for _, b := range bindings {
+		protocol := newInvokeProtocol(decoder, logger, extractor)
+		consumer := newConsumer(unmarshalers[b.Name])
+		mux.Handle("/"+b.Name, createHandler(newProfile(b.Name, protocol, consumer)))
+	}
 	return nil
 }
 
