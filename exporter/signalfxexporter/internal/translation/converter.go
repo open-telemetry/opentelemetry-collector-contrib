@@ -207,27 +207,26 @@ func (dpv *datapointValidator) sanitizeDimensionKeys(dims []*sfxpb.Dimension) {
 
 // logIfInvalid logs a single debug message listing every distinct constraint a datapoint violates.
 func (dpv *datapointValidator) logIfInvalid(dp *sfxpb.DataPoint) {
-	seen := make(map[string]struct{}, 4)
-	var reasons []string
-	addReason := func(reason string) {
-		if _, ok := seen[reason]; !ok {
-			seen[reason] = struct{}{}
-			reasons = append(reasons, reason)
-		}
-	}
+	var (
+		reasons             []string
+		dimNameReasonAdded  bool
+		dimValueReasonAdded bool
+	)
 
 	if len(dp.Metric) > maxMetricNameLength {
-		addReason(invalidMetricNameReason)
+		reasons = append(reasons, invalidMetricNameReason)
 	}
 	if len(dp.Dimensions) > maxNumberOfDimensions {
-		addReason(invalidNumberOfDimensions)
+		reasons = append(reasons, invalidNumberOfDimensions)
 	}
 	for _, d := range dp.Dimensions {
-		if len(d.Key) > maxDimensionNameLength {
-			addReason(invalidDimensionNameReason)
+		if len(d.Key) > maxDimensionNameLength && !dimNameReasonAdded {
+			dimNameReasonAdded = true
+			reasons = append(reasons, invalidDimensionNameReason)
 		}
-		if len(d.Value) > maxDimensionValueLength {
-			addReason(invalidDimensionValueReason)
+		if len(d.Value) > maxDimensionValueLength && !dimValueReasonAdded {
+			dimValueReasonAdded = true
+			reasons = append(reasons, invalidDimensionValueReason)
 		}
 	}
 
