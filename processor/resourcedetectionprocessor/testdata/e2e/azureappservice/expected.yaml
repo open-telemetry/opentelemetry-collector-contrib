@@ -28,7 +28,7 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: test-app-service
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
     scopeMetrics:
       - metrics:
           - description: Number of available logical CPUs.
