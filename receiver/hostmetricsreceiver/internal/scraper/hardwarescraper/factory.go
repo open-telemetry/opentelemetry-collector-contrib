@@ -5,12 +5,19 @@ package hardwarescraper // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
+	"runtime"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper/internal/metadata"
+)
+
+var (
+	supportedOS      = runtime.GOOS == "linux"
+	errUnsupportedOS = errors.New("the hardware scraper is only available on Linux")
 )
 
 // NewFactory creates a new factory for hardwarescraper.
@@ -38,6 +45,10 @@ func createMetricsScraper(
 	settings scraper.Settings,
 	config component.Config,
 ) (scraper.Metrics, error) {
+	if !supportedOS {
+		return nil, errUnsupportedOS
+	}
+
 	cfg := config.(*Config)
 	s := newHardwareScraper(ctx, settings, cfg)
 

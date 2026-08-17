@@ -24,6 +24,11 @@ func TestCreateMetrics(t *testing.T) {
 
 	scraper, err := factory.CreateMetrics(t.Context(), scrapertest.NewNopSettings(metadata.Type), cfg)
 
-	assert.NoError(t, err)
-	assert.NotNil(t, scraper)
+	if supportedOS {
+		assert.NoError(t, err)
+		assert.NotNil(t, scraper)
+	} else {
+		assert.ErrorIs(t, err, errUnsupportedOS)
+		assert.Nil(t, scraper)
+	}
 }
