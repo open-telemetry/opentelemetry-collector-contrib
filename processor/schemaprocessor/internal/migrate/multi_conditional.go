@@ -59,7 +59,7 @@ func (ca *MultiConditionalAttributeSet) check(keyToCheckVals map[string]string) 
 	for k, inVal := range keyToCheckVals {
 		// We must already have a key matching the input key!  If not, return an error
 		// indicates a programming error, should be impossible if using the class correctly
-		valToMatch, ok := (ca.keysToPossibleValues)[k]
+		valToMatch, ok := ca.keysToPossibleValues[k]
 		if !ok {
 			return false, errors.New("passed in a key that doesn't exist in MultiConditionalAttributeSet")
 		}
