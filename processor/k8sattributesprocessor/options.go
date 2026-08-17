@@ -4,6 +4,7 @@
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
+	"errors"
 	"os"
 	"regexp"
 	"time"
@@ -439,6 +440,22 @@ func withWatchSyncPeriod(duration time.Duration) option {
 func withPodDeleteGracePeriod(duration time.Duration) option {
 	return func(p *kubernetesprocessor) error {
 		p.podDeleteGracePeriod = duration
+		return nil
+	}
+}
+
+func withKubeletConfig(cfg KubeletConfig) option {
+	return func(p *kubernetesprocessor) error {
+		if cfg.Enabled && !metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate.IsEnabled() {
+			return errors.New("kubelet.enabled requires feature gate processor.k8sattributes.EnableKubeletPodSource")
+		}
+		p.kubelet = kube.KubeletConfig{
+			Enabled:            cfg.Enabled,
+			PollInterval:       cfg.PollInterval,
+			Endpoint:           cfg.Endpoint,
+			InsecureSkipVerify: cfg.InsecureSkipVerify,
+			AllowInsecureHTTP:  cfg.AllowInsecureHTTP,
+		}
 		return nil
 	}
 }

@@ -200,6 +200,7 @@ internal/aws/k8s
 internal/aws/xray/testdata/sampleapp
 internal/aws/xray/testdata/sampleserver
 internal/collectd
+internal/kubelet
 processor/k8sattributesprocessor
 processor/probabilisticsamplerprocessor
 processor/resourcedetectionprocessor
@@ -209,7 +210,6 @@ receiver/filelogreceiver
 internal/datadog/e2e
 internal/k8sinventory
 internal/k8sleaderelectortest
-internal/kubelet
 internal/sqlquery
 internal/tools
 pkg/expohisto
