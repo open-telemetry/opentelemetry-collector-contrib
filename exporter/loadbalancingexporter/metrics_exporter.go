@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/metric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -29,6 +28,8 @@ import (
 )
 
 var _ exporter.Metrics = (*metricExporterImp)(nil)
+
+type exporterMetrics map[*wrappedExporter]pmetric.Metrics
 
 type metricExporterImp struct {
 	loadBalancer *loadBalancer
@@ -126,11 +127,10 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	}
 
 	// Now assign each batch to an exporter, and merge as we go
-	metricsByExporter := map[*wrappedExporter]pmetric.Metrics{}
-	exporterEndpoints := map[*wrappedExporter]string{}
+	metricsByExporter := exporterMetrics{}
 
 	for routingID, mds := range batches {
-		exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
+		exp, _, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
 		if err != nil {
 			return err
 		}
@@ -140,30 +140,50 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 			exp.consumeWG.Add(1)
 			expMetrics = pmetric.NewMetrics()
 			metricsByExporter[exp] = expMetrics
-			exporterEndpoints[exp] = endpoint
 		}
 
 		metrics.Merge(expMetrics, mds)
 	}
 
-	var errs error
-	for exp, mds := range metricsByExporter {
-		start := time.Now()
-		err := exp.ConsumeMetrics(ctx, mds)
-		duration := time.Since(start)
+	return e.exportBatches(ctx, metricsByExporter)
+}
 
-		exp.consumeWG.Done()
-		errs = multierr.Append(errs, err)
-		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
-		if err == nil {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
-		} else {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
-			e.logger.Debug("failed to export metrics", zap.Error(err))
+// exportToBackend sends md to one backend, records per-backend telemetry, and signals the
+// exporter's consume wait group.
+func (e *metricExporterImp) exportToBackend(ctx context.Context, exp *wrappedExporter, md pmetric.Metrics) error {
+	start := time.Now()
+	err := exp.ConsumeMetrics(ctx, md)
+	duration := time.Since(start)
+	exp.consumeWG.Done()
+	e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
+	if err == nil {
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
+	} else {
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
+		e.logger.Debug("failed to export metrics", zap.Error(err))
+	}
+	return err
+}
+
+// exportBatches sends each pre-routed batch to its backend, returning a consumererror.Metrics
+// carrying only the subset that failed so retries do not re-send already-delivered data.
+func (e *metricExporterImp) exportBatches(ctx context.Context, batches exporterMetrics) error {
+	var errs error
+	var failed []pmetric.Metrics
+	for exp, mds := range batches {
+		if err := e.exportToBackend(ctx, exp, mds); err != nil {
+			errs = errors.Join(errs, err)
+			failed = append(failed, failedMetricsFromError(err, mds))
 		}
 	}
-
-	return errs
+	if len(failed) == 0 {
+		return nil
+	}
+	// Merging into the first failed batch avoids metrics.Merge's deep copy when only one failed.
+	for _, mds := range failed[1:] {
+		metrics.Merge(failed[0], mds)
+	}
+	return consumererror.NewMetrics(errs, failed[0])
 }
 
 func splitMetricsByResourceServiceName(md pmetric.Metrics) (map[string]pmetric.Metrics, []error) {
