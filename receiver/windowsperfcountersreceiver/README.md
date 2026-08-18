@@ -49,6 +49,7 @@ windowsperfcounters:
   perfcounters:
     - object: <object name>
       instances: [<instance name>]*
+      aggregation_name: <aggregation instance name> # default = "_Total"
       counters:
         - name: <counter name>
           metric: <metric name>
@@ -62,38 +63,55 @@ windowsperfcounters:
 Value | Interpretation
 -- | --
 Not specified | This is the only valid value if the counter has no instances.
-`"*"` | All instances, excluding `_Total`.
+`"*"` | All instances, excluding the configured aggregation instance (`_Total` by default).
+`["*", "_Total"]` | All instances, including `_Total`, with the `instance` attribute preserved.
 `"_Total"` | The "total" instance, that aggregates the values of all other instances. See below for its special treatment.
 `"instance1"` | A single instance.
 `["instance1", "instance2", ...]` | A set of instances.
 
-### Aggregation counter and the behavior of the `_Total` instance
+### Aggregation instances
 
-The `_Total` must be collected individually on its own metric,
-since it is dropped when collected together with other instances.
+By default, the receiver treats `_Total` as the aggregation instance. When a
+query returns `_Total` with other instances, `_Total` is omitted because it can
+be derived in the backend. When `_Total` is collected by itself, its `instance`
+attribute is omitted.
+
+Set `aggregation_name` to change which instance receives this treatment. For
+example, `aggregation_name: "_Global_"` omits `_Global_` instead of `_Total`.
+To retain the aggregation instance alongside the wildcard results, explicitly
+include its name in `instances`. This still creates one wildcard query:
 
 ```yaml
 windowsperfcounters:
   metrics:
-    processor.time.total:
-      description: Total CPU active and idle time
+    processor.time:
+      description: CPU active and idle time
       unit: "%"
       gauge:
   collection_interval: 30s
   perfcounters:
     - object: "Processor"
-      instances:
-          - "_Total"
+      instances: ["*", "_Total"]
       counters:
         - name: "% Processor Time"
-          metric: processor.time.total
+          metric: processor.time
+```
+
+For a counter whose aggregation instance has a different name, configure that
+name consistently in both fields. For example:
+
+```yaml
+perfcounters:
+  - object: "Custom Object"
+    instances: ["*", "_Global_"]
+    aggregation_name: "_Global_"
+    counters:
+      - name: "Custom Counter"
 ```
 
 > [!WARNING]
-> When using the `"*"` for `instances`, check what is the aggregation
-> instance used by the counter. If the counter uses something other than `_Total`,
-> e.g.: `_Global_`, special care is needed to avoid double-counting when
-> aggregating the metrics after they are scraped by the receiver.
+> Retaining an aggregation instance alongside its component instances can cause
+> double-counting. Prefer deriving aggregate values in the backend when possible.
 
 ### Recreating the query on every scrape
 

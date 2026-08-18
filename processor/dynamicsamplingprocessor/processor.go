@@ -224,30 +224,31 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []string, error) {
 	switch sc.Type {
 	case AlwaysSample:
 		return sampler.NewAlwaysSample(), nil, nil
-	case Deterministic:
+	case Probabilistic:
 		s, err := sampler.NewDeterministic(sc.SamplingPercentage)
 		return s, nil, err
-	case EMADynamic:
+	case DynamicPercentage:
 		s, err := sampler.NewEMADynamic(sampler.EMADynamicConfig{
-			GoalSamplingPercentage: sc.GoalSamplingPercentage,
+			GoalSamplingPercentage: sc.GoalPercentage,
 			AdjustmentInterval:     sc.AdjustmentInterval,
 			Weight:                 sc.Weight,
 			MaxKeys:                sc.MaxKeys,
 		})
 		return s, append([]string(nil), sc.KeyAttributes...), err
-	case EMAThroughput:
+	case DynamicThroughput:
+		if sc.effectiveAlgorithm() == AlgorithmWindowed {
+			s, err := sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
+				GoalThroughputPerSec: float64(sc.GoalThroughput),
+				UpdateFrequency:      sc.UpdateFrequency,
+				LookbackFrequency:    sc.LookbackFrequency,
+				MaxKeys:              sc.MaxKeys,
+			})
+			return s, append([]string(nil), sc.KeyAttributes...), err
+		}
 		s, err := sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
-			GoalThroughputPerSec: sc.GoalThroughputPerSec,
+			GoalThroughputPerSec: sc.GoalThroughput,
 			AdjustmentInterval:   sc.AdjustmentInterval,
 			Weight:               sc.Weight,
-			MaxKeys:              sc.MaxKeys,
-		})
-		return s, append([]string(nil), sc.KeyAttributes...), err
-	case WindowedThroughput:
-		s, err := sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
-			GoalThroughputPerSec: float64(sc.GoalThroughputPerSec),
-			UpdateFrequency:      sc.UpdateFrequency,
-			LookbackFrequency:    sc.LookbackFrequency,
 			MaxKeys:              sc.MaxKeys,
 		})
 		return s, append([]string(nil), sc.KeyAttributes...), err
@@ -463,7 +464,6 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 	}
 
 	active := len(p.traces)
-	stopped := p.stopped
 	p.mu.Unlock()
 	p.telemetry.ProcessorDynamicSamplingTracesActive.Record(ctx, int64(active))
 
@@ -499,10 +499,19 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 		p.mu.Unlock()
 	}
 
-	if stopped {
-		// Drop late forwards and evicted traces if we're shutting down rather
-		// than push into the downstream consumer.
-		return nil
+	// Re-read stopped under the lock rather than using a snapshot from the
+	// top of the batch: the timer-arming loop above may have observed a newer
+	// value, and the forward decision should be at least as fresh. Skipped
+	// entirely when there is nothing to forward.
+	if len(evicted) > 0 || len(lateForwards) > 0 {
+		p.mu.Lock()
+		stopped := p.stopped
+		p.mu.Unlock()
+		if stopped {
+			// Drop late forwards and evicted traces if we're shutting down
+			// rather than push into the downstream consumer.
+			return nil
+		}
 	}
 
 	// Decide evicted traces outside the lock. Bounded work: at most one
@@ -759,7 +768,8 @@ func (p *dynamicSamplingProcessor) decideEvictedProbabilistic(ctx context.Contex
 			effectiveTh = ours
 		}
 	} else {
-		// Unreachable with a validated config; fall back to the upstream
+		// Unreachable with a validated config unless sampling_percentage is
+		// below the sampling package's probability floor (~1e-15%); fall back to the upstream
 		// threshold rather than dropping outright.
 		p.logger.Debug("eviction threshold calculation failed, falling back to upstream",
 			zap.Error(err), zap.Stringer("traceID", pt.traceID))
