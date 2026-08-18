@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	defaultforwarderimpl "github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/impl"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/metrics/event"
@@ -933,7 +933,7 @@ func (m *mockSerializer) Start() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.startCalled = true
-	m.state = defaultforwarder.Started
+	m.state = defaultforwarderimpl.Started
 	return nil
 }
 
@@ -941,7 +941,7 @@ func (m *mockSerializer) Stop() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.stopCalled = true
-	m.state = defaultforwarder.Stopped
+	m.state = defaultforwarderimpl.Stopped
 }
 
 func (*mockSerializer) SendSeriesWithMetadata(_ metrics.Series) error {
@@ -1001,6 +1001,10 @@ func (*mockSerializer) SendOrchestratorManifests([]types.ProcessMessageBody, str
 	return nil
 }
 
+func (*mockSerializer) SendAgentShutdownEvent(context.Context, *event.Event) error {
+	return nil
+}
+
 // Mock serializer that fails SendPayload for testing error paths
 type mockFailingSerializer struct {
 	mockSerializer
@@ -1055,7 +1059,7 @@ func TestExtensionLivenessMetric(t *testing.T) {
 	t.Run("sends liveness metric with configured hostname", func(t *testing.T) {
 		// Create tracking mock serializer
 		mockSerializer := &trackingMockSerializer{}
-		mockSerializer.state = defaultforwarder.Started
+		mockSerializer.state = defaultforwarderimpl.Started
 
 		// Create extension with test config
 		serverConfig := confighttp.NewDefaultServerConfig()
@@ -1137,7 +1141,7 @@ func TestExtensionLivenessMetric(t *testing.T) {
 	t.Run("sends liveness metric with inferred hostname", func(t *testing.T) {
 		// Create tracking mock serializer
 		mockSerializer := &trackingMockSerializer{}
-		mockSerializer.state = defaultforwarder.Started
+		mockSerializer.state = defaultforwarderimpl.Started
 
 		// Create extension without configured hostname
 		serverConfig := confighttp.NewDefaultServerConfig()
@@ -1215,7 +1219,7 @@ func TestExtensionLivenessMetric(t *testing.T) {
 	t.Run("liveness metric sent periodically", func(t *testing.T) {
 		// Create tracking mock serializer
 		mockSerializer := &trackingMockSerializer{}
-		mockSerializer.state = defaultforwarder.Started
+		mockSerializer.state = defaultforwarderimpl.Started
 
 		// Create extension
 		serverConfig := confighttp.NewDefaultServerConfig()

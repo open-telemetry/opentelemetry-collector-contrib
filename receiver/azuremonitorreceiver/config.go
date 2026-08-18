@@ -239,23 +239,23 @@ type DimensionsConfig struct {
 
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
-	scraperhelper.ControllerConfig    `mapstructure:",squash"`
-	MetricsBuilderConfig              metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	Cloud                             string                        `mapstructure:"cloud"`
-	SubscriptionIDs                   []string                      `mapstructure:"subscription_ids"`
-	DiscoverSubscriptions             bool                          `mapstructure:"discover_subscriptions"`
-	TenantID                          string                        `mapstructure:"tenant_id"`
-	ResourceGroups                    []string                      `mapstructure:"resource_groups"`
-	Services                          []string                      `mapstructure:"services"`
-	Metrics                           NestedListAlias               `mapstructure:"metrics"`
-	CacheResources                    float64                       `mapstructure:"cache_resources"`
-	CacheResourcesDefinitions         float64                       `mapstructure:"cache_resources_definitions"`
-	MaximumNumberOfMetricsInACall     int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
-	MaximumNumberOfRecordsPerResource int32                         `mapstructure:"maximum_number_of_records_per_resource"`
-	AppendTagsAsAttributes            []string                      `mapstructure:"append_tags_as_attributes"`
-	UseBatchAPI                       bool                          `mapstructure:"use_batch_api"`
-	Dimensions                        DimensionsConfig              `mapstructure:"dimensions"`
-	MaximumResourcesPerBatch          int                           `mapstructure:"maximum_resources_per_batch"`
+	ControllerConfig                  scraperhelper.ControllerConfig `mapstructure:",squash"`
+	MetricsBuilderConfig              metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	Cloud                             string                         `mapstructure:"cloud"`
+	SubscriptionIDs                   []string                       `mapstructure:"subscription_ids"`
+	DiscoverSubscriptions             bool                           `mapstructure:"discover_subscriptions"`
+	TenantID                          string                         `mapstructure:"tenant_id"`
+	ResourceGroups                    []string                       `mapstructure:"resource_groups"`
+	Services                          []string                       `mapstructure:"services"`
+	Metrics                           NestedListAlias                `mapstructure:"metrics"`
+	CacheResources                    float64                        `mapstructure:"cache_resources"`
+	CacheResourcesDefinitions         float64                        `mapstructure:"cache_resources_definitions"`
+	MaximumNumberOfMetricsInACall     int                            `mapstructure:"maximum_number_of_metrics_in_a_call"`
+	MaximumNumberOfRecordsPerResource int32                          `mapstructure:"maximum_number_of_records_per_resource"`
+	AppendTagsAsAttributes            []string                       `mapstructure:"append_tags_as_attributes"`
+	UseBatchAPI                       bool                           `mapstructure:"use_batch_api"`
+	Dimensions                        DimensionsConfig               `mapstructure:"dimensions"`
+	MaximumResourcesPerBatch          int                            `mapstructure:"maximum_resources_per_batch"`
 
 	// Authentication accepts the component azureauthextension,
 	// and uses it to get an access token to make requests.

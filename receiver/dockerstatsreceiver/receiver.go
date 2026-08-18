@@ -54,7 +54,7 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 
 func (r *metricsReceiver) clientOptions() []client.Opt {
 	var opts []client.Opt
-	if r.config.Endpoint == "" {
+	if r.config.Config.Endpoint == "" {
 		opts = append(opts, client.WithHostFromEnv())
 	}
 	return opts
@@ -97,13 +97,14 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 	// holds the value for number of containers in each state
 	containerStatus := make(map[string]*atomic.Uint64)
 
-	if r.config.StreamStats {
+	if r.config.Config.StreamStats {
 		for _, container := range containers {
-			stats, ok := r.client.LatestContainerStats(container.ID, r.config.CollectionInterval)
+			stats, ok := r.client.LatestContainerStats(container.ID, r.config.ControllerConfig.CollectionInterval)
 			if !ok {
 				// Stream is still starting up; skip until first frame arrives.
 				errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(
-					fmt.Errorf("no stats available yet for container %s", container.ID), 0))
+					fmt.Errorf("no stats available yet for container %s", container.ID), 0,
+				))
 				continue
 			}
 			if err := r.recordContainerStats(now, stats, &container, containerStatus); err != nil {
@@ -294,7 +295,8 @@ func recordSingleBlkioStat(now pcommon.Timestamp, statEntries []ctypes.BlkioStat
 			int64(stat.Value),
 			strconv.FormatUint(stat.Major, 10),
 			strconv.FormatUint(stat.Minor, 10),
-			strings.ToLower(stat.Op))
+			strings.ToLower(stat.Op),
+		)
 	}
 }
 

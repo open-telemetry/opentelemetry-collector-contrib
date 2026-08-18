@@ -1,0 +1,25 @@
+type: tcp_input
+
+status:
+  class: pkg
+  stability:
+    beta: [logs]
+
+telemetry:
+  metrics:
+    tcp_input_active_connections:
+      description: Number of active TCP connections.
+      unit: "1"
+      enabled: true
+      stability: development
+      sum:
+        value_type: int
+        monotonic: false
+    tcp_input_refused_connections:
+      description: Number of TCP connections refused because the max_connections limit was reached.
+      unit: "1"
+      enabled: true
+      stability: development
+      sum:
+        value_type: int
+        monotonic: true
