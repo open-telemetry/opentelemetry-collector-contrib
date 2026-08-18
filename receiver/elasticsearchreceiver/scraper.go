@@ -40,6 +40,7 @@ type elasticsearchScraper struct {
 	mb          *metadata.MetricsBuilder
 	version     *version.Version
 	clusterName string
+	clusterUUID string
 }
 
 func newElasticSearchScraper(
@@ -80,6 +81,7 @@ func (r *elasticsearchScraper) getClusterMetadata(ctx context.Context, errs *scr
 	}
 
 	r.clusterName = response.ClusterName
+	r.clusterUUID = response.ClusterUUID
 
 	esVersion, err := version.NewVersion(response.Version.Number)
 	if err != nil {
@@ -316,6 +318,7 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 
 		rb := r.mb.NewResourceBuilder()
 		rb.SetElasticsearchClusterName(nodeStats.ClusterName)
+		rb.SetElasticsearchClusterUUID(r.clusterUUID)
 		rb.SetElasticsearchNodeName(info.Name)
 
 		if node, ok := nodesInfo.Nodes[id]; ok {
@@ -336,6 +339,7 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 
 	rb := r.mb.NewResourceBuilder()
 	rb.SetElasticsearchClusterName(r.clusterName)
+	rb.SetElasticsearchClusterUUID(r.clusterUUID)
 	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
@@ -683,5 +687,6 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 	rb := r.mb.NewResourceBuilder()
 	rb.SetElasticsearchIndexName(name)
 	rb.SetElasticsearchClusterName(r.clusterName)
+	rb.SetElasticsearchClusterUUID(r.clusterUUID)
 	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
