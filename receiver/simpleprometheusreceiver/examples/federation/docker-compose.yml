@@ -8,7 +8,7 @@ services:
     restart: always
   # The Prometheus server:
   prometheus:
-    image: prom/prometheus
+    image: prom/prometheus@sha256:5ce7540c3c00ef4ab0c9d2c995c6a5b9c421f44b4a115d97a2c7af3b1c21cbb0
     container_name: prometheus
     ports:
       - 9090:9090
@@ -16,7 +16,7 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
   # OpenTelemetry Collector
   otelcollector:
-    image: otel/opentelemetry-collector-contrib-dev:latest
+    image: otel/opentelemetry-collector-contrib-dev:latest@sha256:8c779b368c0c1b8f92e838550f6109218188664731b91e2837809b50e26ee58d
     container_name: otelcollector
     command: ["--config=/etc/otel-collector-config.yml"]
     volumes:
