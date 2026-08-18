@@ -23,8 +23,8 @@ components:
         - awss3
         - awsxray
         - azure_blob
+        - azure_monitor
         - azuredataexplorer
-        - azuremonitor
         - bmc_helix
         - cassandra
         - clickhouse
@@ -64,6 +64,7 @@ components:
     extension:
         - ack
         - asapclient
+        - aws_iam_db_auth
         - aws_logs_encoding
         - awscloudwatchmetricstreams_encoding
         - awsproxy
@@ -88,7 +89,6 @@ components:
         - json_log_encoding
         - k8s_leader_elector
         - k8s_observer
-        - kafkatopics_observer
         - oauth2client
         - oidc
         - opamp
@@ -96,6 +96,7 @@ components:
         - pebble_tail_storage
         - pprof
         - redis_storage
+        - sd_notify
         - sigv4auth
         - skywalking_encoding
         - text_encoding
@@ -174,6 +175,7 @@ components:
         - google_cloud_spanner
         - googlecloudmonitoring
         - googlecloudpubsub
+        - googlecloudpubsubpush
         - haproxy
         - host_metrics
         - http_check
@@ -223,7 +225,7 @@ components:
         - solace
         - splunk_enterprise
         - splunk_hec
-        - sqlquery
+        - sql_query
         - sqlserver
         - ssh_check
         - statsd

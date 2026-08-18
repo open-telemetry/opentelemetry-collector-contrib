@@ -331,6 +331,85 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 	require.Contains(t, indexStats, indexKey("otel", "public", "table2", "table2_pkey"))
 }
 
+// TestExplainQueryParamCount verifies pg_prepared_statements reports the correct parameter
+// count for the two shapes that broke text-based $N counting: a placeholder repeated in the
+// query text, and a string literal that merely looks like one.
+func TestExplainQueryParamCount(t *testing.T) {
+	t.Skip("flaky test http://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50144")
+	ci, err := testcontainers.GenericContainer(
+		t.Context(),
+		testcontainers.GenericContainerRequest{
+			ProviderType: testcontainers.ProviderPodman,
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: fmt.Sprintf("postgres:%s", post17TestVersion),
+				Env: map[string]string{
+					"POSTGRES_USER":     "root",
+					"POSTGRES_PASSWORD": "otel",
+					"POSTGRES_DB":       "otel",
+				},
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+					ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+					FileMode:          700,
+				}},
+				ExposedPorts: []string{postgresqlPort},
+				WaitingFor: wait.ForListeningPort(postgresqlPort).
+					WithStartupTimeout(2 * time.Minute),
+			},
+		},
+	)
+	require.NoError(t, err)
+	require.NoError(t, ci.Start(t.Context()))
+	defer testcontainers.CleanupContainer(t, ci)
+
+	p, err := ci.MappedPort(t.Context(), postgresqlPort)
+	require.NoError(t, err)
+
+	clientDB, err := getDB(t.Context(), postgreSQLConfig{
+		username: "otelu",
+		password: "otelp",
+		address: confignet.AddrConfig{
+			Endpoint: net.JoinHostPort("localhost", p.Port()),
+		},
+		tls: configtls.ClientConfig{
+			Insecure: true,
+		},
+	}, "otel")
+	require.NoError(t, err)
+	client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
+	defer func() {
+		require.NoError(t, client.Close())
+	}()
+
+	logger := zap.Must(zap.NewProduction())
+
+	testCases := []struct {
+		name  string
+		query string
+	}{
+		{
+			name:  "repeated placeholder counts as one parameter",
+			query: "SELECT * FROM table1 WHERE id = $1 OR id = $1",
+		},
+		{
+			name:  "dollar-sign inside a string literal is not a parameter",
+			query: "SELECT * FROM table1 WHERE id::text = '$123'",
+		},
+	}
+
+	// A text-based $N count gets both cases wrong: 2 instead of 1 for the repeated
+	// placeholder (which PostgreSQL rejects outright -- "wrong number of parameters"), and
+	// 1 instead of 0 for the string literal (which happens to still run, just with an unused
+	// bound null). pg_prepared_statements reports the correct count either way.
+	for i, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			plan, err := client.explainQuery(t.Context(), tc.query, fmt.Sprintf("paramcount%d", i), logger)
+			require.NoError(t, err)
+			require.NotEmpty(t, plan)
+		})
+	}
+}
+
 func TestScrapeLogsFromContainer(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
