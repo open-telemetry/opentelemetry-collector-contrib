@@ -6,7 +6,7 @@ require (
 	github.com/klauspost/compress v1.19.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.159.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver v0.159.0
-	github.com/open-telemetry/otel-arrow/go v0.50.0
+	github.com/open-telemetry/otel-arrow/go v0.51.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.65.0
 	go.opentelemetry.io/collector/component/componenttest v0.159.0
@@ -97,7 +97,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.70.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.55.0 // indirect
-	golang.org/x/exp v0.0.0-20260709172345-9ea1abe57597 // indirect
+	golang.org/x/exp v0.0.0-20260727155853-b88d891fe743 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect

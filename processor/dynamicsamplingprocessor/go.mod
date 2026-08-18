@@ -25,6 +25,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.45.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -79,7 +80,6 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	google.golang.org/grpc v1.83.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
